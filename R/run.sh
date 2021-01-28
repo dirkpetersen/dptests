@@ -1,6 +1,6 @@
 #! /bin/bash
 
-DEBUG=1
+DEBUG=0
 
 ml fhR/4
 echo using R version:
