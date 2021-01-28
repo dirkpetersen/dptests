@@ -5,11 +5,11 @@ args <- commandArgs(trailingOnly = TRUE)
 infile <- args[1]
 outfile <- args[2]
 
-if (restartcount > == 0) {
+if (restartcount > 0) {
   if (file.exists(outfile)) {
     file.remove(outfile)
   }
 }
 
 df1 <- read.csv(file = infile)
-write.csv(df1, outfile, row.names = FALSE)
+write.csv(head(df1), outfile, row.names = FALSE)
