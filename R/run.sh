@@ -6,6 +6,7 @@ ml fhR/4
 echo using R version:
 which R
 
+mkdir -p $2
 for f in $(ls -1 $1); do
   base=$(basename $f)
   if [[ ${DEBUG} -eq 0 ]]; then
