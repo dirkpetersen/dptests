@@ -1,7 +1,0 @@
-#! /bin/bash
-
-for f in (ls -1 $1); do
-  base=$(basename $f)
-  sbatch -p restart-new --requeue -c 1 --wrap think.R ${f} $2/out-${base}
-done
-
