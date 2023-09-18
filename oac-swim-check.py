@@ -25,36 +25,45 @@ WHATSAPP_GROUP_ID = "Kub9KMB0XXXXXXXXXXXX"
 
 def main():
     print('checking OAC, please wait ...')
-    text, html = check_web_table()
+    text = check_web_table()
     print('OAC Reponse:', text)
     
-    html = remove_line_if_word_found(html,'name="CSRFToken"')
+    #html = remove_line_if_word_found(html,'name="CSRFToken"')
     
     home = os.path.expanduser("~")
-    file_path = os.path.join(home, ".oac.check.html")
+    file_path = os.path.join(home, ".oac.check.txt")
 
     # Compute MD5 of table_html
-    html_md5 = compute_md5(text)
+    text_md5 = compute_md5(text)
 
     # Check if file exists and compare MD5
     write_file = True
+    send_text = False
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             file_content = file.read()
             file_md5 = compute_md5(file_content)            
-            if file_md5 == html_md5:
+            if file_md5 == text_md5:
                 write_file = False
             else:
                 print(f'New md5sum in {file_path} !')
+        if len(file_content) < len(text):
+            send_text = True
+    else:
+        send_text = True
     # If MD5s are different or file doesn't exist, write html to file
     if write_file:
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(text)
-        if not "No available appointment times were found" in text:
-            msg = 'New OAC Swim Slot(s):\n' + text
-            print('Sending WhatsApp Message ...')
-            if send_message(msg):
-                print('WhatsApp Message sent successfully')    
+            
+    if "No available appointment times were found" in text:
+        send_text = False
+    
+    if send_text:
+        msg = 'Dedicated OAC Swim Slot(s):\n\n' + text
+        print('Sending WhatsApp Message ...')
+        if send_message(msg):
+            print('WhatsApp Message sent successfully')    
     return True
 
 def send_message(msg):
@@ -124,11 +133,11 @@ def check_web_table():
     table_html = ''
     table_text = ''
     for table in tables:
-        table_html += table.get_attribute('outerHTML')
+        #table_html += table.get_attribute('outerHTML')
         table_text += table.text + '\n'        
     driver.quit()
     #print(table_text)
-    return table_text, table_html
+    return table_text
 
 if __name__ == "__main__":
     if main():
