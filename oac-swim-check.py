@@ -34,7 +34,7 @@ def main():
     file_path = os.path.join(home, ".oac.check.html")
 
     # Compute MD5 of table_html
-    html_md5 = compute_md5(html)
+    html_md5 = compute_md5(text)
 
     # Check if file exists and compare MD5
     write_file = True
@@ -49,9 +49,9 @@ def main():
     # If MD5s are different or file doesn't exist, write html to file
     if write_file:
         with open(file_path, 'w', encoding='utf-8') as file:
-            file.write(html)
+            file.write(text)
         if not "No available appointment times were found" in text:
-            msg = 'New OAC Swim Slot:\n' + text
+            msg = 'New OAC Swim Slot(s):\n' + text
             print('Sending WhatsApp Message ...')
             if send_message(msg):
                 print('WhatsApp Message sent successfully')    
@@ -119,10 +119,15 @@ def check_web_table():
     #self.driver.find_element(By.LINK_TEXT, "Book").click()
     #elem = self.driver.find_element(By.LINK_TEXT, "Book")
     #table = self.driver.find_element(By.CLASS_NAME, 'appointmentSearchResults')
-    table = driver.find_element(By.ID, 'table1')
-    table_html = table.get_attribute('outerHTML')
-    table_text = table.text
+    #table = driver.find_element(By.ID, 'table1')
+    tables = driver.find_elements(By.CLASS_NAME, 'appointmentSearchResults')
+    table_html = ''
+    table_text = ''
+    for table in tables:
+        table_html += table.get_attribute('outerHTML')
+        table_text += table.text + '\n'        
     driver.quit()
+    #print(table_text)
     return table_text, table_html
 
 if __name__ == "__main__":
