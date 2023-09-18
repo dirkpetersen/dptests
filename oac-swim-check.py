@@ -22,6 +22,7 @@ from selenium.webdriver.firefox.options import Options
 
 # WhatsApp Group: OAC Swim Alert
 WHATSAPP_GROUP_ID = "Kub9KMB0XXXXXXXXXXXX"
+NO_AVAIL = "No available appointment times were found"
 
 def main():
     print('checking OAC, please wait ...')
@@ -45,7 +46,7 @@ def main():
                 write_file = False
             else:
                 print(f'New md5sum in {file_path} !')
-        if len(file_content) < len(text):
+        if len(file_content) < len(text) and not NO_AVAIL in text:
             send_text = True
     else:
         send_text = True
@@ -55,7 +56,7 @@ def main():
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(text)
 
-    if "No available appointment times were found" in text:
+    if NO_AVAIL in text:
         send_text = False
     
     if send_text:
