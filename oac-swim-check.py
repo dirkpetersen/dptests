@@ -30,15 +30,13 @@ def main():
     
     #html = remove_line_if_word_found(html,'name="CSRFToken"')
     
-    home = os.path.expanduser("~")
-    file_path = os.path.join(home, ".oac.check.txt")
-
     # Compute MD5 of table_html
     text_md5 = compute_md5(text)
-
-    # Check if file exists and compare MD5
+   
     write_file = True
     send_text = False
+    home = os.path.expanduser("~")
+    file_path = os.path.join(home, ".oac.check.txt")
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             file_content = file.read()
@@ -51,11 +49,12 @@ def main():
             send_text = True
     else:
         send_text = True
-    # If MD5s are different or file doesn't exist, write html to file
+
     if write_file:
+        # if md5sums are different 
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(text)
-            
+
     if "No available appointment times were found" in text:
         send_text = False
     
