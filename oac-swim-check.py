@@ -112,6 +112,20 @@ def remove_line_if_word_found(text, search_word):
     filtered_lines = [line for line in lines if search_word not in line]
     return '\n'.join(filtered_lines)
 
+def kill_firefox():
+    # Get the list of all running process IDs
+    import psutil
+    for process in psutil.process_iter():
+        try:
+            # Get process details as a named tuple
+            pinfo = process.as_dict(attrs=['pid', 'name'])
+            # Check if the process name contains "firefox"
+            if "firefox" in pinfo['name'].lower():
+                # Kill the process
+                psutil.Process(pinfo['pid']).kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
 def check_web_table():
     myoptions = Options()
     myoptions.add_argument("--headless") 
