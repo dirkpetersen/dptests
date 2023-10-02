@@ -1,0 +1,16 @@
+name: Pull On Commit
+
+on:
+  push:
+    branches:
+      - main # or the name of your default branch
+
+jobs:
+  pull:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      
+      - name: Pull Latest Code
+        run: git pull origin main # or the name of your default branch
