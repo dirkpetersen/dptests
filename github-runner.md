@@ -9,9 +9,18 @@ mkdir -p ~/gh && cd ~/gh
 export RUNNER_ALLOW_RUNASROOT=1
 ```
 
-* In your githb repos go to settings -> Actions -> Runners and setup a new self hosted runner and then paste all the commands into your shell 
+* In your githus repos go to settings -> Actions -> Runners and setup a new self hosted runner and then paste all the commands into your shell 
 
-* Do NOT execute run.sh instead install and run it as a sysyemd service 
+* this will be something similar to 
+
+```
+mkdir actions-runner && cd actions-runner
+curl -o actions-runner-linux-x64-2.309.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.309.0/actions-runner-linux-x64-2.309.0.tar.gz
+tar xzf ./actions-runner-linux-x64-2.309.0.tar.gz
+./config.sh --url https://github.com/dirkpetersen/dptests --token XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+* Do NOT execute run.sh instead install and run it as a system service 
 
 ```
 ./svc.sh install

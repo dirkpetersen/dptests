@@ -2,6 +2,8 @@
 
 # installs the redis compatible KV store kvrocks on Ubuntu 22.04
 
+export DEBIAN_FRONTEND=noninteractive
+
 sudo apt install -y git build-essential cmake libtool python3 libssl-dev
 sudo mkdir -p /etc/kvrocks
 
