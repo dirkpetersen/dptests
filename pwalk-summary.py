@@ -23,22 +23,45 @@ def main():
     if args.subcmd in ['report', 'rep']:
     
         # Initialize DuckDB connection
-        conn = duckdb.connect()
+        cores = 8
+        conn = duckdb.connect(':memory:')
+        conn.execute(f'PRAGMA threads={cores};')
 
+        print('Using:', args.csvpath)
         # Create a union view over all the CSV files in the directory
-        print('csv_files ....', flush=True)        
+        print('csv_files ....', flush=True)
         csv_files = conn.execute(f"SELECT * FROM glob('{args.csvpath}/*.csv')").fetchall()
-        print('query_parts ....', flush=True)        
+        print('csv_files', csv_files)
+        print('query_parts ....', flush=True)
         query_parts = [f"SELECT * FROM read_csv_auto('{csv_file[0]}')" for csv_file in csv_files]
-        print('union_query ....', flush=True)        
+        print('union_query ....', flush=True)
         union_query = " UNION ALL ".join(query_parts)
+        print(union_query)
         conn.execute(f"CREATE VIEW combined_csvs AS {union_query}")
 
         # Now you can query the combined data from all CSV files directly
-        print('fetch_all ....', flush=True)        
-        result = conn.execute("SELECT * FROM combined_csvs WHERE ...").fetchall()
-
-        print(result)
+        print('fetch_all ....', flush=True)
+        #rows = conn.execute("SELECT SUM(st_size)/1024/1024/1024 as GiB FROM combined_csvs").fetchall()
+        #total = rows[0][0]
+        #print('total:',total)
+        rows = conn.execute(f"""
+            WITH TotalCost AS (
+                SELECT SUM(CAST(st_size AS FLOAT))/1024/1024/1024 AS total_cost
+                FROM combined_csvs
+            )                            
+            SELECT fileExtension, 
+                SUM(CAST(st_size as FLOAT))/1024/1024/1024 as GiB, 
+                GiB/tc.total_cost as pct
+            FROM combined_csvs 
+            CROSS JOIN TotalCost as tc
+            where pw_dirsum=0 
+            group by fileExtension 
+            order by GiB desc 
+            limit 100
+            """).fetchall()
+        
+        for row in rows:
+            print(row)
 
 
 class Reporter:
