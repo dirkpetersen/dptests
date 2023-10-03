@@ -142,7 +142,8 @@ def check_web_table():
         driver = webdriver.Firefox(options=myoptions)
     driver.get(SWIM_URL)                
     wait = WebDriverWait(driver, 15)
-    element = wait.until(EC.presence_of_element_located((By.ID, "tabA113")))        
+    if not sys.platform.startswith('linux'):
+        element = wait.until(EC.presence_of_element_located((By.ID, "tabA113")))        
     driver.find_element(By.ID, "tabA113").click()
     driver.find_element(By.LINK_TEXT, "30 minutes - Lap Swim").click()
     driver.find_element(By.NAME, "SearchButton").click()
