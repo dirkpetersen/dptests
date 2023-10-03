@@ -135,6 +135,7 @@ def check_web_table():
     myoptions.add_argument("--headless") 
     if sys.platform.startswith('linux'):
         myoptions.add_argument('--disable-gpu')
+        myoptions.add_argument('--no-sandbox')
         driver = webdriver.Chrome(options=myoptions)
     else:
         myoptions.set_preference("network.proxy.type", 0)
