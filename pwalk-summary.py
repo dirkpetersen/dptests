@@ -31,14 +31,14 @@ def main():
         # Create a union view over all the CSV files in the directory
         print('find csv files ....', flush=True)
         csv_files = conn.execute(f"SELECT * FROM glob('{args.csvpath}/*.csv')").fetchall()
-        print('csv_files', csv_files)
+        #print('csv_files', csv_files)
         query_parts = [f"SELECT * FROM read_csv_auto('{csv_file[0]}')" for csv_file in csv_files]
         union_query = " UNION ALL ".join(query_parts)
         print("Execute query:", union_query)
         conn.execute(f"CREATE VIEW combined_csvs AS {union_query}")
         # Now you can query the combined data from all CSV files directly
         print('Fetch result ....', flush=True)
-        
+
         #rows = conn.execute("SELECT SUM(st_size)/1024/1024/1024 as GiB FROM combined_csvs").fetchall()
         #total = rows[0][0]
         #print('total:',total)
@@ -61,20 +61,19 @@ def main():
 
         rows = conn.execute(f"""
             SELECT fileExtension,
-                SUM(st_size as FLOAT/1024/1024/1024) as GiB,
+                SUM(st_size) as Bytes
             FROM combined_csvs
-            where pw_dirsum=0
+            where pw_dirsum=0 AND st_size>0
             group by fileExtension
-            order by GiB desc            
+            order by Bytes desc
             """).fetchall()
-        
-        print('\nExtension, GiB')
+
+        print('\nExtension, Bytes')
         cnt = 0
         for row in rows:
             print(f'{row[0]}, {row[1]}')
             cnt+=1
-        
-        print("Total File types:", cnt)
+        #print("Total File types:", cnt)
 
 class Reporter:
     def __init__(self, args):
