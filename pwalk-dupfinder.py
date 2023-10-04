@@ -59,6 +59,9 @@ def main():
                 ARRAY_AGG(filename) as duplicate_files  -- Collect the full paths of the duplicates
             FROM
                 combined_csvs
+            WHERE
+                filename NOT LIKE '%/miniconda3/%'
+                AND filename NOT LIKE '%/miniconda2/%'                          
             GROUP BY
                 file_name_no_ext, 
                 st_mtime,
