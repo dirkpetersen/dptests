@@ -48,11 +48,16 @@ def main():
         rows = conn.execute(f"""
             SELECT
                 -- Extract the filename without path and extension
+            --    SUBSTRING(
+            --        filename FROM LENGTH(filename) - POSITION('/' IN REVERSE(filename)) + 2
+            --        FOR 
+            --        LENGTH(filename) - POSITION('/' IN REVERSE(filename)) - POSITION('.' IN REVERSE(filename)) + 1
+            --    ) AS file_name_no_ext,
                 SUBSTRING(
                     filename FROM LENGTH(filename) - POSITION('/' IN REVERSE(filename)) + 2
                     FOR 
-                    LENGTH(filename) - POSITION('/' IN REVERSE(filename)) - POSITION('.' IN REVERSE(filename)) + 1
-                ) AS file_name_no_ext,
+                    POSITION('.' IN REVERSE(filename)) - 2
+                ) AS file_name_no_ext,                
                 st_mtime,
                 st_size,
                 COUNT(*) as duplicates_count,
