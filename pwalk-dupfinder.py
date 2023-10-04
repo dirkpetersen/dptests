@@ -76,15 +76,19 @@ def main():
             ORDER BY
                 duplicates_count DESC;
             """
-        print(f'Fetch result of query ...\n{dedupquery}', flush=True)
+        print(f'{dedupquery}\n\nFetch result of query ...', flush=True)
         rows = conn.execute(dedupquery).fetchall()
         #print('\nExtension, Bytes')
         cnt = 0
+        extrabytes = 0
         for row in rows:
             print (row)
             #print(f'{row[0]}, {row[1]}')
             #cnt+=1
+            extrabytes+=row[2]*(row[3]-1)
         #print("Total File types:", cnt)
+
+        print(f'Extra bytes: {extrabytes} ({extrabytes/1024/1024/1024} GB)')
 
 class Reporter:
     def __init__(self, args):
