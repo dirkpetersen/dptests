@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 
 """
-Froster automates much of the challening tasks when 
-archiving many Terabytes of data on large (HPC) systems.
+pwalk-summary aggregates multiple pwalk output files and
+groups by file extension and space usage.
 """
 # internal modules
 import sys, os, argparse, json, configparser, csv, platform, asyncio

@@ -138,6 +138,7 @@ def kill_firefox():
 
 def check_web_table():
     myoptions = Options()
+    #--headless --disable-extensions --no-sandbox --disable-gpu --window-size=1920,1200 --ignore-certificate-errors --disable-dev-shm-usage
     myoptions.add_argument("--headless") 
     if sys.platform.startswith('linux'):
         myoptions.add_argument('--disable-gpu')
