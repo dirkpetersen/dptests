@@ -76,7 +76,7 @@ def main():
             """
         print(f'{dedupquery}\n\nWrite query to duplicates.csv ...', flush=True)
         rows = conn.execute(dedupquery).fetchall()
-        column_names = "file, mod, size, duplicates" #[desc.name for desc in conn.description()]
+        column_names = ['filename', 'modified', 'bytesize', 'no', 'duplicates'] #[desc.name for desc in conn.description()]
         extrabytes = 0
         # Write the results to a CSV file using the csv module
         with open('duplicates.csv', 'w', newline='') as file:
