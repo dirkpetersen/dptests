@@ -27,13 +27,20 @@ def main():
         conn = duckdb.connect(':memory:')
         conn.execute(f'PRAGMA threads={cores};')
 
-        #print('Using:', args.csvpath)
-        # Create a union view over all the CSV files in the directory
-        print('find csv files ....', flush=True)
-        csv_files = conn.execute(f"SELECT * FROM glob('{args.csvpath}/*.csv')").fetchall()
-        #print('csv_files', csv_files)
-        query_parts = [f"SELECT * FROM read_csv_auto('{csv_file[0]}')" for csv_file in csv_files]
-        union_query = " UNION ALL ".join(query_parts)
+        #remove trailing slash
+        if args.csvpath.endswith('/'):
+            args.csvpath = args.csvpath[:-1]
+        
+        if os.path.isdir(args.csvpath):
+            #print('Using:', args.csvpath)
+            # Create a union view over all the CSV files in the directory
+            print('find csv files ....', flush=True)
+            csv_files = conn.execute(f"SELECT * FROM glob('{args.csvpath}/*.csv')").fetchall()
+            #print('csv_files', csv_files)
+            query_parts = [f"SELECT * FROM read_csv_auto('{csv_file[0]}')" for csv_file in csv_files]
+            union_query = " UNION ALL ".join(query_parts)
+        else:
+            union_query = f"SELECT * FROM read_csv_auto('{args.csvpath}')")
         print("Execute query:", union_query)
         conn.execute(f"CREATE VIEW combined_csvs AS {union_query}")
         # Now you can query the combined data from all CSV files directly
@@ -51,7 +58,7 @@ def main():
                 COUNT(*) as duplicates_count,
                 ARRAY_AGG(filename) as duplicate_files  -- Collect the full paths of the duplicates
             FROM
-                your_table
+                combined_csvs
             GROUP BY
                 file_name_no_ext, 
                 st_mtime,
@@ -61,7 +68,7 @@ def main():
             ORDER BY
                 duplicates_count DESC;
             """).fetchall()
-        print('\nExtension, Bytes')
+        #print('\nExtension, Bytes')
         cnt = 0
         for row in rows:
             print (row)
