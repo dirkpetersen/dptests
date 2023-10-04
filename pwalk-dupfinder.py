@@ -44,20 +44,19 @@ def main():
         print("Execute query:", union_query)
         conn.execute(f"CREATE VIEW combined_csvs AS {union_query}")
         # Now you can query the combined data from all CSV files directly
-        print('Fetch result ....', flush=True)
-        rows = conn.execute(f"""
-            SELECT
+        dedupquery=f"""
+           SELECT
                 -- Extract the filename without path and extension
-            --    SUBSTRING(
-            --        filename FROM LENGTH(filename) - POSITION('/' IN REVERSE(filename)) + 2
-            --        FOR 
-            --        LENGTH(filename) - POSITION('/' IN REVERSE(filename)) - POSITION('.' IN REVERSE(filename)) + 1
-            --    ) AS file_name_no_ext,
                 SUBSTRING(
                     filename FROM LENGTH(filename) - POSITION('/' IN REVERSE(filename)) + 2
                     FOR 
-                    POSITION('.' IN REVERSE(filename)) - 2
-                ) AS file_name_no_ext,                
+                    LENGTH(filename) - POSITION('/' IN REVERSE(filename)) - POSITION('.' IN REVERSE(filename)) + 1
+                ) AS file_name_no_ext,
+            --    SUBSTRING(
+            --        filename FROM LENGTH(filename) - POSITION('/' IN REVERSE(filename)) + 2
+            --        FOR 
+            --        POSITION('.' IN REVERSE(filename)) - 2
+            --    ) AS file_name_no_ext,                
                 st_mtime,
                 st_size,
                 COUNT(*) as duplicates_count,
@@ -65,8 +64,9 @@ def main():
             FROM
                 combined_csvs
             WHERE
-                filename NOT LIKE '%/miniconda3/%'
-                AND filename NOT LIKE '%/miniconda2/%'                          
+                filename NOT LIKE '%/miniconda3/%' AND
+                filename NOT LIKE '%/miniconda2/%' AND
+                st_size > 1024*1024                         
             GROUP BY
                 file_name_no_ext, 
                 st_mtime,
@@ -75,7 +75,9 @@ def main():
                 COUNT(*) > 1  -- Only groups with more than one file are duplicates
             ORDER BY
                 duplicates_count DESC;
-            """).fetchall()
+            """
+        print(f'Fetch result of query ...\n{dedupquery}', flush=True)
+        rows = conn.execute(dedupquery).fetchall()
         #print('\nExtension, Bytes')
         cnt = 0
         for row in rows:
