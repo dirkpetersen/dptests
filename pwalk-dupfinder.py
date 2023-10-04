@@ -40,7 +40,7 @@ def main():
             query_parts = [f"SELECT * FROM read_csv_auto('{csv_file[0]}')" for csv_file in csv_files]
             union_query = " UNION ALL ".join(query_parts)
         else:
-            union_query = f"SELECT * FROM read_csv_auto('{args.csvpath}')")
+            union_query = f"SELECT * FROM read_csv_auto('{args.csvpath}')"
         print("Execute query:", union_query)
         conn.execute(f"CREATE VIEW combined_csvs AS {union_query}")
         # Now you can query the combined data from all CSV files directly
