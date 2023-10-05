@@ -1,8 +1,9 @@
 #! /usr/bin/env python3
 
 """
-pwalk-summary aggregates multiple pwalk output files and
-groups by file extension and space usage.
+pwalk-dupfinder aggregates pwalk output files and
+finds dupicate files in different paths that have 
+the same filename, modification time and size
 """
 # internal modules
 import sys, os, argparse, csv, platform, textwrap, inspect
@@ -16,16 +17,16 @@ __version__ = '0.0.1'
 
 def main():
 
+    #remove trailing slash
+    if args.csvpath.endswith('/'):
+        args.csvpath = args.csvpath[:-1]
+
     if args.subcmd in ['report', 'rep']:
     
         # Initialize DuckDB connection
         cores = 16
         conn = duckdb.connect(':memory:')
         conn.execute(f'PRAGMA threads={cores};')
-
-        #remove trailing slash
-        if args.csvpath.endswith('/'):
-            args.csvpath = args.csvpath[:-1]
                 
         if os.path.isdir(args.csvpath):
             #print('Using:', args.csvpath)
@@ -43,49 +44,6 @@ def main():
         print("Execute query:", union_query)
         conn.execute(f"CREATE VIEW combined_csvs AS {union_query}")
         # Now you can query the combined data from all CSV files directly
-        dedupquery=f"""
-            -- WITH DuplicateFinder AS (
-                SELECT
-                    -- Extract the filename without path 
-                    SUBSTRING(
-                        filename FROM LENGTH(filename) - POSITION('/' IN REVERSE(filename)) + 2
-                        FOR 
-                        LENGTH(filename) - POSITION('/' IN REVERSE(filename)) - POSITION('.' IN REVERSE(filename)) + 1
-                    ) AS plain_file_name,         
-                    st_mtime,
-                    st_size,
-                    COUNT(*) as duplicates_count,
-                    ARRAY_AGG(filename) as duplicate_files  -- Collect the full paths of the duplicates
-                FROM
-                    combined_csvs
-                WHERE
-                    filename NOT LIKE '%/miniconda3/%' AND
-                    filename NOT LIKE '%/miniconda2/%' AND
-                    st_size > 1024*1024                         
-                GROUP BY
-                    plain_file_name, 
-                    st_mtime,
-                    st_size
-                HAVING
-                    COUNT(*) > 1  -- Only groups with more than one file are duplicates
-                ORDER BY
-                    duplicates_count DESC;
-            -- )
-            -- COPY DuplicateFinder TO 'duplicates.csv' WITH (FORMAT 'CSV', HEADER);            
-            """
-        print(f'{dedupquery}\n\nWrite query to duplicates.csv ...', flush=True)
-        rows = conn.execute(dedupquery).fetchall()
-        column_names = ['filename', 'modified', 'bytesize', 'no', 'duplicates'] #[desc.name for desc in conn.description()]
-        extrabytes = 0
-        # Write the results to a CSV file using the csv module
-        with open('duplicates.csv', 'w', newline='') as file:
-            writer = csv.writer(file)            
-            writer.writerow(column_names)            
-            for row in rows:
-                writer.writerow(row)
-                extrabytes+=row[2]*(row[3]-1) 
-
-        print(f'Extra bytes: {extrabytes} ({extrabytes/1024/1024/1024} GB)')
         
 
 

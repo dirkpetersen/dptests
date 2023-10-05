@@ -50,6 +50,20 @@ def main():
     print('Fetch result ....', flush=True)
 
 
+    # ***************************************************************
+    if args.subcmd in ['total', 'tot']:
+    
+        rows = conn.execute(f"""
+            SELECT SUM(st_size) from combined_csvs where pw_dirsum=0
+            """).fetchall()
+
+        total = rows[0][0]
+        
+        print("Total Bytes:", total)
+        print("Total GiB:", round(total/1024/1024/1024,3))
+
+
+    # ***************************************************************
     if args.subcmd in ['filetypes', 'typ']:
     
         rows = conn.execute(f"""
@@ -76,6 +90,7 @@ def main():
         print("Total Bytes:", total)
         print("Total GiB:", round(total/1024/1024/1024,3))
 
+    # ***************************************************************
     if args.subcmd in ['duplicates', 'dup']:
     
         dedupquery=f"""
@@ -114,7 +129,7 @@ def main():
         extrabytes = 0
 
         # Write the results to a CSV file using the csv module
-        with open('duplicates.csv', 'w', newline='') as file:
+        with open(args.outfile, 'w', newline='') as file:
             writer = csv.writer(file)            
             writer.writerow(column_names)            
             for row in rows:
@@ -123,14 +138,12 @@ def main():
 
         print(f'Extra bytes: {extrabytes} ({extrabytes/1024/1024/1024} GB)')
         
-
 def parse_arguments():
     """
     Gather command-line arguments.
     """       
     parser = argparse.ArgumentParser(prog='pwalk-info ',
-        description='A (mostly) automated tool for archiving large scale data ' + \
-                    'after finding folders in the file system that are worth archiving.')
+        description='Provide some details on one or multiple pwalk output files')
     parser.add_argument( '--debug', '-d', dest='debug', action='store_true', default=False,
         help="verbose output for all commands")
     parser.add_argument('--cores', '-c', dest='cores', action='store', default='4', 
@@ -147,28 +160,42 @@ def parse_arguments():
     parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',
         metavar='<email@address.org>', help='setup as a monitoring cronjob ' +
         'on a machine and notify an email address')
-    
+
+     # ***************************************************************    
+    parser_total = subparsers.add_parser('total', aliases=['tot'], 
+        help=textwrap.dedent(f'''
+            print the total number of bytes and GiB in the csv file             
+        '''), formatter_class=argparse.RawTextHelpFormatter)
+    parser_total.add_argument('csvpath', action='store',
+        help='csv path can be a file or a folder')
+
+     # ***************************************************************    
     parser_filetypes = subparsers.add_parser('filetypes', aliases=['typ'], 
         help=textwrap.dedent(f'''
             Print a pwalk report by file extension             
         '''), formatter_class=argparse.RawTextHelpFormatter)
-    parser_filetypes.add_argument('csvpath', action='store', default="", nargs='?',
+    parser_filetypes.add_argument('csvpath', action='store',
         help='csv path can be a file or a folder')
     
+     # ***************************************************************
     parser_duplicates = subparsers.add_parser('duplicates', aliases=['dup'], 
         help=textwrap.dedent(f'''
             Print a pwalk report by file extension             
         '''), formatter_class=argparse.RawTextHelpFormatter)
-    parser_duplicates.add_argument('csvpath', action='store', default="", nargs='?',
+    parser_duplicates.add_argument( '--outfile', '-o', dest='outfile', action='store', default='duplicates.csv',
+        metavar='<./duplicates.csv>', help='report file that contains all the dups')
+    parser_duplicates.add_argument('csvpath', action='store',
         help='csv path can be a file or a folder')
     
     
     # ***
+    args = parser.parse_args()
 
-    if len(sys.argv) == 1:
-        parser.print_help(sys.stdout)               
+    if len(sys.argv) == 1 or not args.subcmd or not args.csvpath:
+        parser.print_help(sys.stdout)  
+        sys.exit(1)
 
-    return parser.parse_args()
+    return args
 
 if __name__ == "__main__":
     try:
