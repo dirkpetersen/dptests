@@ -5,9 +5,14 @@ pwalk-info aggregates one or multiple pwalk output files and provides
 summary information about the files in the file system or generates
 a list of duplicates
 
-- the 'summary' subcommand groups by file extension and space usage
-- the 'duplicates' subcommand finds dupicate files in different paths
+- the 'total' subcommand prints the total number of bytes and GiB in the csv file
+- the 'filetypes' subcommand groups by file extension and space usage
+- the 'duplicates' subcommand finds duplicate files in different paths
   that have the same filename, modification time and size
+
+to add more commands add a "subparsers.add_parser" section in the parse_arguments() function
+and add the corresponding "if args.subcmd in ['command', 'cmd']:" section in the main() function
+
 """
 
 # internal modules
@@ -15,7 +20,10 @@ import sys, os, argparse, csv, platform, textwrap, inspect
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
-import duckdb
+try:
+    import duckdb
+except:
+    print('Could not import duckdb. Please run "python3 -m pip install --upgrade duckdb"')
 
 __app__ = 'pwalk info'
 __version__ = '0.0.1'
@@ -27,7 +35,8 @@ def main():
         args.csvpath = args.csvpath[:-1]
 
     # Initialize DuckDB connection
-    threads = 16
+    cores = int(os.getenv('SLURM_CPUS_ON_NODE', args.cores))
+    threads = cores*2
     conn = duckdb.connect(':memory:')
     conn.execute(f'PRAGMA threads={threads};')
 
@@ -60,7 +69,7 @@ def main():
         total = rows[0][0]
         
         print("Total Bytes:", total)
-        print("Total GiB:", round(total/1024/1024/1024,3))
+        print("Total   GiB:", round(total/1024/1024/1024,3))
 
 
     # ***************************************************************
@@ -146,7 +155,7 @@ def parse_arguments():
         description='Provide some details on one or multiple pwalk output files')
     parser.add_argument( '--debug', '-d', dest='debug', action='store_true', default=False,
         help="verbose output for all commands")
-    parser.add_argument('--cores', '-c', dest='cores', action='store', default='4', 
+    parser.add_argument('--cores', '-c', dest='cores', action='store', default='16', 
         help='Number of cores to be allocated for the machine. (default=4)')
     parser.add_argument('--version', '-v', dest='version', action='store_true', default=False, 
         help='print Froster and Python version info')
@@ -188,10 +197,10 @@ def parse_arguments():
         help='csv path can be a file or a folder')
     
     
-    # ***
-    args = parser.parse_args()
 
-    if len(sys.argv) == 1 or not args.subcmd or not args.csvpath:
+    # ***************
+    args = parser.parse_args()
+    if len(sys.argv) == 1 or not args.subcmd or not 'csvpath' in args:
         parser.print_help(sys.stdout)  
         sys.exit(1)
 
