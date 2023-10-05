@@ -130,7 +130,7 @@ def main():
                 ORDER BY
                     duplicates_count DESC;          
             """
-        print(f'{dedupquery}\n\nWrite query to duplicates.csv ...', flush=True)
+        print(f'{dedupquery}\n\nWrite query to {args.outfile} ...', flush=True)
         rows = conn.execute(dedupquery).fetchall()
         column_names = ['filename', 'modified', 'bytesize', 'no', 'duplicates'] #[desc.name for desc in conn.description()]
         extrabytes = 0
