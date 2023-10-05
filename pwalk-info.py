@@ -10,8 +10,9 @@ a list of duplicates
 - the 'duplicates' subcommand finds duplicate files in different paths
   that have the same filename, modification time and size
 
-to add more commands add a "subparsers.add_parser" section in the parse_arguments() function
-and add the corresponding "if args.subcmd in ['command', 'cmd']:" section in the main() function
+To add more commands add a "subparsers.add_parser" section in the 
+parse_arguments() function and add the corresponding 
+"if args.subcmd in ['command', 'cmd']:" section in the main() function
 
 """
 
@@ -103,7 +104,6 @@ def main():
     if args.subcmd in ['duplicates', 'dup']:
     
         dedupquery=f"""
-            -- WITH DuplicateFinder AS (
                 SELECT
                     -- Extract the filename without path 
                     SUBSTRING(
@@ -114,13 +114,13 @@ def main():
                     st_mtime,
                     st_size,
                     COUNT(*) as duplicates_count,
-                    ARRAY_AGG(filename) as duplicate_files  -- Collect the full paths of the duplicates
+                    ARRAY_AGG(filename) as duplicate_files  -- Collect the full paths of all duplicates
                 FROM
                     combined_csvs
-                WHERE
+                WHERE 
                     filename NOT LIKE '%/miniconda3/%' AND
-                    filename NOT LIKE '%/miniconda2/%' AND
-                    st_size > 1024*1024                         
+                    filename NOT LIKE '%/miniconda2/%' AND    -- let's ignore all that miniconda stuff
+                    st_size > 1024*1024                       -- we only look at files > 1 MB
                 GROUP BY
                     plain_file_name, 
                     st_mtime,
@@ -128,9 +128,7 @@ def main():
                 HAVING
                     COUNT(*) > 1  -- Only groups with more than one file are duplicates
                 ORDER BY
-                    duplicates_count DESC;
-            -- )
-            -- COPY DuplicateFinder TO 'duplicates.csv' WITH (FORMAT 'CSV', HEADER);            
+                    duplicates_count DESC;          
             """
         print(f'{dedupquery}\n\nWrite query to duplicates.csv ...', flush=True)
         rows = conn.execute(dedupquery).fetchall()
