@@ -24,7 +24,8 @@ if sys.platform.startswith('linux'):
 try:
     import duckdb
 except:
-    print('Could not import duckdb. Please run "python3 -m pip install --upgrade duckdb"')
+    print('Could not import module "duckdb". Please run "python3 -m pip install --upgrade --user duckdb"')
+    sys.exit(1)
 
 __app__ = 'pwalk info'
 __version__ = '0.0.1'
@@ -130,14 +131,16 @@ def main():
                 ORDER BY
                     duplicates_count DESC;          
             """
-        print(f'{dedupquery}\n\nWrite query to {args.outfile} ...', flush=True)
-        rows = conn.execute(dedupquery).fetchall()
+        
+        print(f'{dedupquery}\n\nWrite query result to {args.outfile} ...', flush=True)
         column_names = ['filename', 'modified', 'bytesize', 'no', 'duplicates'] #[desc.name for desc in conn.description()]
+        print(f'Column names: {column_names}')
+        rows = conn.execute(dedupquery).fetchall()
+        
         extrabytes = 0
-
         # Write the results to a CSV file using the csv module
         with open(args.outfile, 'w', newline='') as file:
-            writer = csv.writer(file)            
+            writer = csv.writer(file, dialect='excel')            
             writer.writerow(column_names)            
             for row in rows:
                 writer.writerow(row)
@@ -159,14 +162,15 @@ def parse_arguments():
         help='print Froster and Python version info')
     
     subparsers = parser.add_subparsers(dest="subcmd", help='sub-command help')
+
     # ***
-    parser_config = subparsers.add_parser('config', aliases=['cfg'], 
-        help=textwrap.dedent(f'''
-            Print a pwalk report             
-        '''), formatter_class=argparse.RawTextHelpFormatter)
-    parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',
-        metavar='<email@address.org>', help='setup as a monitoring cronjob ' +
-        'on a machine and notify an email address')
+    # parser_config = subparsers.add_parser('config', aliases=['cfg'], 
+    #     help=textwrap.dedent(f'''
+    #         Print a pwalk report             
+    #     '''), formatter_class=argparse.RawTextHelpFormatter)
+    # parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',
+    #     metavar='<email@address.org>', help='setup as a monitoring cronjob ' +
+    #     'on a machine and notify an email address')
 
      # ***************************************************************    
     parser_total = subparsers.add_parser('total', aliases=['tot'], 
