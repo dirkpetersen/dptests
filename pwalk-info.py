@@ -92,9 +92,17 @@ def main():
         
         print('\nExtension, %, Bytes')
         cnt = 0
-        for row in rows:
-            print(f'{row[0]}, {row[1]/total:.2f}, {row[1]}')
-            cnt+=1
+        try: 
+            for row in rows:
+                print(f'{row[0]}, {row[1]/total:.2f}, {row[1]}')
+                cnt+=1
+        except BrokenPipeError:
+            # Pipe is broken (e.g., when output is piped to 'head'). Exit silently.
+            sys.stdout.close()
+            os._exit(0)
+        except Exception as e:
+            print(f'Error: {e}')
+            sys.exit(1)
         
         print('\n----------------------------')
         print("Total File types:", cnt)
