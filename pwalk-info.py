@@ -146,7 +146,7 @@ def main():
                 writer.writerow(row)
                 extrabytes+=row[2]*(row[3]-1) 
 
-        print(f'Extra bytes: {extrabytes} ({extrabytes/1024/1024/1024} GB)')
+        print(f'Extra/duplicate data: {extrabytes} Bytes or ({extrabytes/1024/1024/1024} GiB)')
         
 def parse_arguments():
     """
