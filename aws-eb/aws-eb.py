@@ -13,6 +13,8 @@ if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
 import requests, boto3, botocore, psutil
+from easybuild.framework.easyconfig.parser import EasyConfigParser
+from easybuild.tools.build_log import EasyBuildError
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
 __version__ = '0.1.0.1'
@@ -310,13 +312,12 @@ class Builder:
     def __init__(self, args, cfg):        
         self.args = args
         self.cfg = cfg
-        self.allowed_toolchains = ['SYSTEM', 'GCC', 'GCCcore', 'foss', 'fosscuda']
+        self.allowed_toolchains = ['system', 'GCC', 'GCCcore', 'foss', 'fosscuda']
         self.eb_software_root = os.path.join('/', 'opt', 'eb', 'software')
 
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
-        ARCH='x86_64' 
         # build all easyconfigs in a folder tree
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" ... ')
@@ -414,43 +415,19 @@ class Builder:
         return version_file_dict[latest_version]
 
     def _read_easyconfig(self, ebfile):
+        
+        try:
+            # Initialize EasyConfigParser with the easyconfig file
+            ec_dict = EasyConfigParser(ebfile).get_config_dict()
+        except EasyBuildError as e:
+            print("An error occurred while parsing the easyconfig file:", e)
 
-        ARCH='x86_64' # _archs = {'x86_64': 'x86', 'aarch64': 'aarch64'}
+        toolchain = ec_dict.get('toolchain', {})
+        name = ec_dict.get('name', "")
+        version = ec_dict.get('version', "")
+        versionsuffix = ec_dict.get('versionsuffix', "")
 
-        # The context in which to execute the file, initializing toolchain
-        exec_context = {}
-
-        with open(ebfile, 'r') as file:
-            # Read the file content
-            file_content = file.read()
-            # Execute the content in the provided context
-            exec(file_content, exec_context)
-
-        # Now, exec_context may contain the 'toolchain' key.
-        # It could be a dict or a string.
-        toolchain = exec_context.get('toolchain', None)
-        tc = {}
-
-        if isinstance(toolchain, str) and toolchain == 'SYSTEM':
-            # Handle the case where toolchain is the string "system"
-            tc['name'] = toolchain
-            tc['version'] = ''
-            print("Toolchain is set to 'SYSTEM'.")
-        elif isinstance(toolchain, dict):
-            # Handle the case where toolchain is a dictionary
-            print(f"Toolchain dictionary: {toolchain}")
-            tc = toolchain
-        else:
-            print("Toolchain is not defined or has an unexpected type.")
-
-        # constuct the target folder:
-        # 
-        # Construct the toolchain string
-        name = exec_context.get('name', "")
-        version = exec_context.get('version', "")
-        versionsuffix = exec_context.get('versionsuffix', "")
-
-        toolchain_str = f"-{tc['name']}-{tc['version']}" if tc['name'] != 'SYSTEM' else ""
+        toolchain_str = f"-{toolchain['name']}-{toolchain['version']}" if toolchain['name'] != 'system' else ""
 
         # Construct the version suffix string
         version_suffix_str = f"{version}{versionsuffix}" if versionsuffix else version
@@ -458,10 +435,7 @@ class Builder:
         # Construct the installation directory path
         install_dir = f"{name}/{version_suffix_str}{toolchain_str}"
 
-        return tc, exec_context.get('osdependencies', ""), exec_context.get('moduleclass', ""), install_dir
-
-        # At this point, 'toolchain' is either a dict with toolchain info
-        # or a string 'system', or None if not defined.
+        return toolchain, ec_dict.get('osdependencies', ""), ec_dict.get('moduleclass', ""), install_dir
 
     def _get_os_type(self):
         os_info = {}
