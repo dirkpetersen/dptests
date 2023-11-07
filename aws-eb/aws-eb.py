@@ -338,7 +338,7 @@ class Builder:
                     self._install_packages(dep)
                 # install easybuild package 
                 print(f" Installing {ebfile} ... ")
-                subprocess.run(['eb', '--robot', '--umask=0022', ebpath], check=True)
+                subprocess.run(['eb', '--robot', '--allow-modules-tool-mismatch', '--umask=0022', ebpath], check=True)
                 instpath = os.path.join(self.eb_software_root, instdir)
                 if not os.path.isdir(instpath):
                     print(f'  Error: {instdir} not found.')
