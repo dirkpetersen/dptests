@@ -5,10 +5,10 @@ AWS-EB builds Easybuild packages on AWS EC2 instances
 and uploads them to S3 buckets for later use.
 """
 # internal modules
-import sys, os, argparse, json, configparser, csv, platform, asyncio
-import urllib3, datetime, tarfile, zipfile, textwrap, tarfile, time
-import concurrent.futures, hashlib, fnmatch, io, math, signal, shlex
-import shutil, tempfile, glob, subprocess, itertools, socket, inspect
+import sys, os, argparse, json, configparser, tarfile 
+import urllib3, datetime, tarfile, zipfile, textwrap 
+import hashlib, math, signal, shlex, time, re, inspect
+import shutil, tempfile, glob, subprocess, socket 
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -26,15 +26,15 @@ def main():
         print(textwrap.dedent(f'''\n
             For example, use one of these commands:
               aws-eb config 
-              aws-eb build
+              aws-eb launch
               aws-eb download
               aws-eb ssh
             '''))
 
     # Instantiate classes required by all functions         
     cfg = ConfigManager(args)
-    arch = Archiver(args, cfg)
-    aws = AWSBoto(args, cfg, arch)
+    bld = Builder(args, cfg)
+    aws = AWSBoto(args, cfg, bld)
 
     if args.version:
         args_version(cfg)
@@ -43,10 +43,10 @@ def main():
     # call a function for each sub command in our CLI
     if args.subcmd in ['config', 'cnf']:
         subcmd_config(args, cfg, aws)
-    elif args.subcmd in ['build', 'bld']:
-        subcmd_build(args, cfg, arch, aws)
+    elif args.subcmd in ['launch', 'lau']:
+        subcmd_launch(args, cfg, bld, aws)
     elif args.subcmd in ['download', 'bld']:
-        subcmd_download(args, cfg, arch, aws)
+        subcmd_download(args, cfg, bld, aws)
     elif args.subcmd in ['ssh', 'scp']: #or args.unmount:
         subcmd_ssh(args, cfg, aws)
 
@@ -93,9 +93,9 @@ def subcmd_config(args, cfg, aws):
 
     if args.monitor:
         # monitoring only setup, do not continue 
-        fro = os.path.join(binfolder,'aws-eb')
+        me = os.path.join(binfolder,'aws-eb')
         cfg.write('general', 'email', args.monitor)
-        cfg.add_systemd_cron_job(f'{fro} restore --monitor','30') 
+        cfg.add_systemd_cron_job(f'{me} launch --monitor','30')
         return True
     
     print('\n*** Asking a few questions ***')
@@ -159,25 +159,34 @@ def subcmd_config(args, cfg, aws):
     print('\nDone!\n')
 
 
-def subcmd_build(args,cfg,arch,aws):
+def subcmd_launch(args,cfg,bld,aws):
 
     cfg.printdbg ("build:", args.awsprofile)
     cfg.printdbg(f'default cmdline: aws-eb build')
 
+    if args.monitor:
+        # aws inactivity and cost monitoring
+        aws.monitor_ec2()
+        return True
+
+    if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
+        print(f'Profile "{args.awsprofile}" not found.')
+        return False    
+    
     if args.list:
         # list all folders in the archive
-        print("CPU Type    Instance Families")
-        print("--------------------------------")
-        for c, i in aws.cpu_types.items():
-            print(f'{c}: {" ".join(i)}')
-        print("\nGPU    Instance Families")
-        print("--------------------------")
-        for c, i in aws.gpu_types.items():
-            print(f'{c}: {i}')       
         print('\nAll available EC2 instance families:')
         print("--------------------------------------")
         fams = aws.get_ec2_instance_families()
-        print(' '.join(fams))
+        print(' '.join(fams))        
+        print("\nGPU    Instance Families")
+        print("--------------------------")
+        for c, i in aws.gpu_types.items():
+            print(f'{c}: {i}')               
+        print("\nCPU Type    Instance Families")
+        print("--------------------------------")
+        for c, i in aws.cpu_types.items():
+            print(f'{c}: {" ".join(i)}')
         return True
     
     # GPU types trump CPU types 
@@ -216,31 +225,19 @@ def subcmd_build(args,cfg,arch,aws):
     instance_type = aws.get_ec2_cheapest_instance_type(fam, args.vcpus, args.mem*1024)
     print('Cheapest:', instance_type)
 
-    aws.ec2_deploy(1024, instance_type, s3_prefix)
-
-    return False
-
-    # ********* 
-    if args.monitor:
-        # aws inactivity and cost monitoring
-        aws.monitor_ec2()
-        return True
-    
-    if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
-        print(f'Profile "{args.awsprofile}" not found.')
-        return False    
-    if not aws.check_bucket_access_folders(args.folders):
-        return False
-    
-
-    
-    
-    if args.ec2:
-        # run ec2_deploy(self, bucket='', prefix='', recursive=False, profile=None):
-        ret = aws.ec2_deploy(args.folders)
+    if not args.build:    
+        aws.ec2_deploy(args.mem*1024, instance_type, s3_prefix)
         return True
 
-def subcmd_download(args,cfg,arch,aws):
+    # *******************************************
+    # Start EasyBuild process here     
+    ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
+    bld.build_all(ecfgroot, s3_prefix, bio_only=True)
+
+    #if not aws.check_bucket_access_folders(args.folders):
+    #    return False
+        
+def subcmd_download(args,cfg,bld,aws):
 
     cfg.printdbg ("restore:",args.cores, args.awsprofile, args.noslurm, 
         args.days, args.retrieveopt, args.nodownload, args.folders)
@@ -309,41 +306,197 @@ def subcmd_ssh(args, cfg, aws):
             return False
         print(ret.stdout,ret.stderr)
 
-class Archiver:
+class Builder:
     def __init__(self, args, cfg):
         self.args = args
         self.cfg = cfg
+        self.allowed_toolchains = ['SYSTEM', 'GCC', 'GCCcore', 'foss', 'fosscuda']
+        self.eb_software_root = os.path.join('/', 'opt', 'eb', 'software')
 
-    def archive(self, folder, meta, isrecursive=False, issubfolder=False):
+    def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
+        # build all easyconfigs in a folder tree
+        for root, dirs, files in self._walker(easyconfigroot):
+            archpath=root
+            print(f'  Processing folder "{archpath}" ... ')
+            try:
+                if easyconfigroot==root:
+                    # main directory do something there
+                    pass
+                ebfile = self._get_latest_easyconfig(root)
+                ebpath = os.path.join(root, ebfile)
+                if not os.path.isfile(ebpath):
+                    continue 
+                tc, dep, cls, instdir = self._read_easyconfig(self, ebpath)
+                if tc['name'] not in self.allowed_toolchains:
+                    print(f'  Toolchain {tc["name"]} not supported.')
+                    continue
+                if cls != 'bio' and bio_only:
+                    # we want to may be only build bio packages
+                    continue
+                if dep:
+                    print(f'  installing OS dependencies: {dep}')
+                    self._install_packages(dep)
+                # install easybuild package 
+                print(f" Installing {ebfile} ... ")
+                subprocess.run(['eb', '--robot', '--umask=0022', ebpath], check=True)
+                instpath = os.path.join(self.eb_software_root, instdir)
+                if not os.path.isdir(instpath):
+                    print(f'  Error: {instdir} not found.')
+                    continue
+                # tar up the software folder for archiving 
+                self._tar_folder(instpath)
+                # upload to S3
+                s3_object = f'{self.cfg.archiveroot}/{s3_prefix}/{instdir}.tar.gz'
+                self._upload_file_to_s3(f'{instdir}.tar.gz', self.cfg.bucket, object_name=s3_object)
+                                                
+            except subprocess.CalledProcessError:                
+                print(f"  Builder.build_all: An error occurred while building {ebfile}.")
+                ## make sure we store the logfile
+                continue
 
-        source = os.path.abspath(folder)
+            except Exception as e:
+                print(f"  Builder.build_all: An unexpected error occurred:\n{e}")
+                continue
+        return True
+    
+    def _tar_folder(self, folder):
+        # Ensure the directory exists
+        if not os.path.isdir(folder):
+            raise ValueError(f"The directory {folder} does not exist.")    
+        # Define the name of the tarball
+        tarball_name = f'{folder}.tar.gz'
+        # Create a tar.gz archive
+        with tarfile.open(tarball_name, 'w:gz') as tar:
+            # Add the directory to the tarball
+            tar.add(folder, arcname=os.path.basename(folder))
+        print(f'Directory {folder} has been archived as {tarball_name}')        
+
+    def _get_latest_easyconfig(self,directory):
+        versioned_files = []
+        version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-|\.eb$)')
+
+        for filename in os.listdir(directory):
+            version_match = version_pattern.search(filename)
+            if version_match:
+                # Extract the version and convert it into a tuple of integers
+                version = tuple(map(int, version_match.group(1).split('.')))
+                versioned_files.append((filename, version))
+
+        if not versioned_files:
+            return None
+
+        # Sort files by version. The max function will find the file with the greatest version number.
+        latest_file = max(versioned_files, key=lambda x: x[1])[0]
+        
+        return latest_file    
+
+    def _read_easyconfig(self, ebfile):
+
+        # The context in which to execute the file, initializing toolchain
+        exec_context = {}
+
+        with open(ebfile, 'r') as file:
+            # Read the file content
+            file_content = file.read()
+            # Execute the content in the provided context
+            exec(file_content, exec_context)
+
+        # Now, exec_context may contain the 'toolchain' key.
+        # It could be a dict or a string.
+        toolchain = exec_context.get('toolchain', None)
+        tc = {}
+
+        if isinstance(toolchain, str) and toolchain == 'SYSTEM':
+            # Handle the case where toolchain is the string "system"
+            tc['name'] = toolchain
+            tc['version'] = ''
+            print("Toolchain is set to 'SYSTEM'.")
+        elif isinstance(toolchain, dict):
+            # Handle the case where toolchain is a dictionary
+            print(f"Toolchain dictionary: {toolchain}")
+            tc = toolchain
+        else:
+            print("Toolchain is not defined or has an unexpected type.")
+
+        # constuct the target folder:
+        # 
+        # Construct the toolchain string
+        name = exec_context.get('name', "")
+        version = exec_context.get('version', "")
+        versionsuffix = exec_context.get('versionsuffix', "")
+
+        toolchain_str = f"-{tc['name']}-{tc['version']}" if tc['name'] != 'SYSTEM' else ""
+
+        # Construct the version suffix string
+        version_suffix_str = f"{version}{versionsuffix}" if versionsuffix else version
+
+        # Construct the installation directory path
+        install_dir = f"{name}/{version_suffix_str}{toolchain_str}"
+
+        return tc, exec_context.get('osdependencies', ""), exec_context.get('moduleclass', ""), install_dir
+
+        # At this point, 'toolchain' is either a dict with toolchain info
+        # or a string 'system', or None if not defined.
+
+    def _get_os_type(self):
+        os_info = {}
+        if os.path.isfile("/etc/os-release"):
+            with open("/etc/os-release") as f:
+                for line in f:
+                    key, value = line.strip().split("=", 1)
+                    os_info[key] = value.strip('"')
+        # Prioritize ID_LIKE over ID
+        os_type = os_info.get('ID_LIKE', os_info.get('ID', None))
+        # Handle the case where ID_LIKE can contain multiple space-separated strings
+        if os_type and ' ' in os_type:
+            os_type = os_type.split(' ')[0]  # Get the first 'like' identifier
+        return os_type
+
+    def _install_packages(self, os_dependencies):
+        os_type = self._get_os_type()
+        
+        # Determine the appropriate package manager for the detected OS type
+        package_manager = None
+        if os_type in ['debian', 'ubuntu']:
+            package_manager = 'apt'
+        elif os_type in ['fedora', 'centos', 'redhat', 'rhel']:
+            package_manager = 'dnf'
+        
+        if not package_manager:
+            print("Unsupported operating system.")
+            return
+        
+        for package_tuple in os_dependencies:
+            installed = False
+            for package_name in package_tuple:
+                # Check if the package has a known OS-specific suffix
+                if (package_name.endswith('-dev') and os_type in ['debian', 'ubuntu']) or \
+                (package_name.endswith('-devel') and os_type in ['fedora', 'centos', 'redhat']):
+                    print(f"Installing {package_name} with {package_manager}")
+                    subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
+                    installed = True
+                    break
+            
+            # If none of the packages in the tuple had a suffix, we try to install each until one succeeds
+            if not installed:
+                for package_name in package_tuple:
+                    try:
+                        print(f"Attempting to install {package_name} with {package_manager}")
+                        subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
+                        print(f"Installed {package_name} successfully.")
+                        break  # Stop trying after the first successful install
+                    except subprocess.CalledProcessError:
+                        # If the package installation failed, it might be the wrong package for the OS,
+                        # so continue trying the next packages in the tuple
+                        pass
+
+    def upload(self, source, target):
+
+        source = os.path.abspath(source)
         target = os.path.join(f':s3:{self.cfg.archivepath}',
                               source.lstrip(os.path.sep))
 
-        if os.path.isfile(os.path.join(source,".aws-eb.md5sum")):
-            print(f'  The hashfile ".aws-eb.md5sum" already exists in {source} from a previous archiving process.')
-            print('  You need to manually rename the file before you can proceed.')
-            print('  Without a valid ".aws-eb.md5sum" in a folder you will not be able to use "aws-eb" for restores')
-            return False
-
-        if not self.args.notar:
-            ret=self._tar_small_files(source,self.thresholdKB)
-            if ret == 13: # cannot write to folder 
-                return False
-            elif not ret:
-                print ('  Could not create AWS-EB.smallfiles.tar') 
-                print ('  Perhaps there are no files or the folder does not exist?')
-                return False
     
-        ret = self._gen_md5sums(source,'.aws-eb.md5sum')
-        if ret == 13: # cannot write to folder 
-            return False
-        elif not ret:
-            print ('  Could not create hashfile .aws-eb.md5sum.') 
-            print ('  Perhaps there are no files or the folder does not exist?')
-            return False
-        hashfile = os.path.join(source,'.aws-eb.md5sum')
-
         rclone = Rclone(self.args,self.cfg)
 
         print ('  Copying files to archive ... ', end="")
@@ -353,6 +506,7 @@ class Archiver:
                         '--exclude', 'AWS-EB.allfiles.csv', 
                         '--exclude', 'Where-did-the-files-go.txt'
                         )
+        
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
         if ret['stats']['errors'] > 0:
@@ -363,6 +517,7 @@ class Archiver:
         
         ttransfers=ret['stats']['totalTransfers']
         tbytes=ret['stats']['totalBytes']
+        total=self.convert_size(tbytes)
         if self.args.debug:
             print('\n')
             print('Speed:', ret['stats']['speed'])
@@ -376,299 +531,31 @@ class Archiver:
         #    'renames': 0, 'retryError': True, 'speed': 0, 'totalBytes': 0, 'totalChecks': 0, 
         #    'totalTransfers': 0, 'transferTime': 0, 'transfers': 0}   
         
-
-        # upload of AWS-EB.allfiles.csv to INTELLIGENT_TIERING 
-        # 
-        allf_s = os.path.join(source,'AWS-EB.allfiles.csv')
-        allf_d = os.path.join(self.cfg.archiveroot, 
-                            source.lstrip(os.path.sep),
-                            'AWS-EB.allfiles.csv')
-        if os.path.exists(allf_s):
-            self._upload_file_to_s3(allf_s, self.cfg.bucket, allf_d)
-
-        ret = rclone.checksum(hashfile,target,'--max-depth', '1')
-        self.cfg.printdbg('*** RCLONE checksum ret ***:\n', ret, '\n')
-        if ret['stats']['errors'] > 0:
-            print('Last Error:', ret['stats']['lastError'])
-            print('Checksum test was not successful.')
-            return False
-
-        # If success, write metadata to aws-eb-archives.json database
-        s3_storage_class=os.getenv('RCLONE_S3_STORAGE_CLASS','STANDARD')
-        timestamp=datetime.datetime.now().isoformat()
-        archive_mode="Single"
-        if isrecursive:
-            archive_mode="Recursive"
-        #meta = #['R41HL129728', '2016-09-30', '2017-07-31', 'MOLLER, DAVID ROBERT', 
-        # 'Developing a Diagnostic Blood Test for Sarcoidosis', 'SARCOIDOSIS DIAGNOSTIC TESTING, LLC',
-        #  'https://reporter.nih.gov/project-details/9331239', '12519577']
-        dictrow = {'local_folder': source, 'archive_folder': target,
-                   's3_storage_class': s3_storage_class, 
-                   'profile': self.cfg.awsprofile, 'archive_mode': archive_mode, 
-                   'timestamp': timestamp, 'timestamp_archive': timestamp, 
-                   'user': getpass.getuser()
-                   }
-        if meta:
-            dictrow['nih_project'] = meta[0]
-            dictrow['nih_project_url'] = meta[6]
-            dictrow['nih_project_pi'] = meta[3]
-
-        if not issubfolder:
-            self._archive_json_put_row(source, dictrow)        
-
-        total=self.convert_size(tbytes)
         print(f'  Source and archive are identical. {ttransfers} files with {total} transferred.\n')
 
-    
 
-    def test_write(self, directory):
-        testpath=os.path.join(directory,'.aws-eb.test')
-        try:
-            with open(testpath, "w") as f:
-                f.write('just a test')
-            os.remove(testpath)
-            return True
-        except PermissionError as e:
-            if e.errno == 13:  # Check if error number is 13 (Permission denied)
-                #print("Permission denied. Please ensure you have the necessary permissions to access the file or directory.")
-                return 13
-            else:
-                print(f"An unexpected PermissionError occurred in {directory}:\n{e}")            
-                return False
-        except Exception as e:
-            if e.errno == 2:
-                #No such file or directory:
-                return 2
-            else:
-                print(f"An unexpected error occurred in {directory}:\n{e}")
-                return False
+    def download(self, source, target):
 
-    def _gen_md5sums(self, directory, hash_file, num_workers=4, no_subdirs=True):
-        for root, dirs, files in self._walker(directory):
-            if no_subdirs and root != directory:
-                break            
-            hashpath=os.path.join(root, hash_file)
-            try:
-                print(f'  Generating hash file {hash_file} ... ', end='')
-                with open(hashpath, "w") as out_f:
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-                        tasks = {}
-                        for filen in files:
-                            file_path = os.path.join(root, filen)
-                            if os.path.isfile(file_path) and \
-                                    filen != os.path.basename(hash_file) and \
-                                    filen != "Where-did-the-files-go.txt" and \
-                                    filen != ".aws-eb.md5sum" and \
-                                    filen != ".aws-eb-restored.md5sum":
-                                task = executor.submit(self.md5sum, file_path)
-                                tasks[task] = file_path
-                        for future in concurrent.futures.as_completed(tasks):
-                            filen = os.path.basename(tasks[future])
-                            md5 = future.result()
-                            out_f.write(f"{md5}  {filen}\n")
-                if os.path.getsize(hashpath) == 0:
-                    os.remove(hashpath)
-                    return False
-                print('Done.')
-            except PermissionError as e:
-                if e.errno == 13:  # Check if error number is 13 (Permission denied)
-                    print("Permission denied. Please ensure you have the necessary permissions to access the file or directory.")
-                    return 13
-                else:
-                    print(f"An unexpected PermissionError occurred:\n{e}")            
-                    return False
-            except Exception as e:
-                print(f"An unexpected error occurred:\n{e}")
-                return False
-        return True
-        
-    def _tar_small_files(self, directory, smallsize=1024, recursive=False):
-        for root, dirs, files in self._walker(directory):
-            if not recursive and root != directory:
-                break
-            tar_path=os.path.join(root,'AWS-EB.smallfiles.tar')
-            csv_path=os.path.join(root,'AWS-EB.allfiles.csv')
-            if os.path.exists(tar_path):
-                print(f'AWS-EB.smallfiles.tar alreadly exists, skipping folder {root}')
-                continue
-            if not self._is_small_file_in_dir(root,smallsize):
-                continue             
-            try:
-                print(f'  Creating AWS-EB.smallfiles.tar ... ', end='')
-                with tarfile.open(tar_path, "w") as tar, open(csv_path, 'w', newline='') as f:
-                    writer = csv.writer(f)
-                    # write the header
-                    writer.writerow(["File", "Size(bytes)", "Date-Modified", "Date-Accessed", "Tarred"])
-                    for filen in files:
-                        file_path = os.path.join(root, filen)
-                        # check if file is larger than X MB
-                        size, mtime, atime =  self._get_file_stats(file_path)
-                        # get last modified and accessed dates 
-                        mdate = datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
-                        adate = datetime.datetime.fromtimestamp(atime).strftime('%Y-%m-%d %H:%M:%S')
-                        # write file info to the csv file
-                        tarred="No"
-                        if size < smallsize*1024:
-                            # add to tar file
-                            tar.add(file_path, arcname=filen)
-                            # remove original file
-                            os.remove(file_path)
-                            tarred="Yes"
-                        writer.writerow([filen, size, mdate, adate, tarred])
-                print('Done.')
-            except PermissionError as e:
-                if e.errno == 13:  # Check if error number is 13 (Permission denied)
-                    print("Permission denied. Please ensure you have the necessary permissions to access the file or directory.")
-                    return 13
-                else:
-                    print(f"An unexpected PermissionError occurred:\n{e}")            
-                    return False
-            except Exception as e:
-                print(f"An unexpected error occurred:\n{e}")
-                return False
-                #raise e
-        return True
-        
-    def _untar_files(self, directory, recursive=False):
-        for root, dirs, files in self._walker(directory):
-            if not recursive and root != directory:
-                break
-            tar_path=os.path.join(root, 'AWS-EB.smallfiles.tar')
-            if not os.path.exists(tar_path):
-                #print('{tar_path} does not exist, skipping folder {root}')
-                continue 
-            try:
-                print(f'  Untarring AWS-EB.smallfiles.tar ... ', end='')
-                with tarfile.open(tar_path, "r") as tar:
-                    tar.extractall(path=root)
-                os.remove(tar_path)
-                print('Done.')
-            except PermissionError as e:
-                if e.errno == 13:  # Check if error number is 13 (Permission denied)
-                    print("Permission denied. Please ensure you have the necessary permissions to access the file or directory.")
-                    return 13
-                else:
-                    print(f"An unexpected PermissionError occurred:\n{e}")            
-                    return False
-            except Exception as e:
-                print(f"An unexpected error occurred:\n{e}")
-                return False
-        return True
-    
-    def _is_small_file_in_dir(self, dir, small=1024):
-        # Get all files in the specified directory
-        files = [os.path.join(dir, f) for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
-        #print("** files:",files)
-        # Check if there's any file less than small
-        is_there_small_file = False
-        for f in files:
-            try:
-                s, *_ = self._get_file_stats(f)
-                if s < small*1024:
-                    is_there_small_file = True
-                    break
-            except FileNotFoundError:
-                # Handle the error (e.g., print a message or continue to the next file)
-                print(f"File not found: {f}")
-                continue
-        return is_there_small_file
-
-    def _get_file_stats(self,filepath):
-        try:
-            # Use lstat to get stats of symlink itself, not the file it points to
-            stats = os.lstat(filepath)
-            return stats.st_size, stats.st_mtime, stats.st_atime
-        except FileNotFoundError:
-            print(f"{filepath} not found.")
-            return None, None, None
-        
-    
-    def _delete_tar_content(self, directory, files):
-        deleted = []
-        for f in files:
-            fp = os.path.join(directory,f)
-
-            if os.path.isfile(fp) or os.path.islink(fp):
-                os.remove(fp)
-                deleted.append(f)
-        self.cfg.printdbg(f'Files deleted in _delete_tar_content: {", ".join(deleted)}')
-
-        return deleted
-
-    def _get_tar_content(self,directory):
-        files = []
-        tar_path = os.path.join(directory,'AWS-EB.smallfiles.tar')
-        if os.path.exists(tar_path):
-            with tarfile.open(tar_path, 'r') as tar:
-                for member in tar.getmembers():
-                    files.append(member.name)
-        csv_path = os.path.join(directory,'AWS-EB.allfiles.csv')
-        if os.path.exists(csv_path):
-            file_list = []
-            with open(csv_path, 'r') as csvfile:
-                # Use csv reader
-                reader = csv.DictReader(csvfile)
-                # Iterate over each row in the csv
-                for row in reader:
-                    # If "Tarred" is "Yes", append the "File" to the list
-                    if row['Tarred'] == 'Yes':
-                        if not row['File'] in files:
-                            files.append(row['File'])
-        self.cfg.printdbg(f'Files founds in _get_tar_content: {", ".join(files)}')
-        return files
-
-    def restore(self, folder, recursive=False):
-
-        # copied from archive
-        rowdict = self.archive_json_get_row(folder)
-        if rowdict == None:
-            return False
-        tail=''
-        if 'archive_mode' in rowdict:
-            if rowdict['archive_mode'] == "Recursive":
-                recursive = True        
-        if folder != rowdict['local_folder']:
-            self.cfg.printdbg(f"rowdict[local_folder]: {rowdict['local_folder']}")
-            # try to restore from subdir, we need to check if archived recursively
-            if not recursive:
-                print(textwrap.dedent(f'''\n
-                    You are trying to restore a sub folder but the parent archive 
-                    was not saved recursively. You can try restoring this folder:
-                    {rowdict['local_folder']}
-                    '''))
-                return False
-            tail = folder.replace(rowdict['local_folder'],'')
-
-        source = rowdict['archive_folder']+tail+'/'
-        target = folder
                
-        buc, pre, recur, isglacier = self.archive_get_bucket_info(target)
-        if isglacier:
-            #sps = source.split('/', 1)
-            #bk = sps[0].replace(':s3:','')
-            #pr = f'{sps[1]}/' # trailing slash ensured 
-            trig, rest, done, notg = self._glacier_restore(buc, pre, 
-                    self.args.days, self.args.retrieveopt, recur)
-            print ('Triggered Glacier retrievals:',len(trig))
-            print ('Currently retrieving from Glacier:',len(rest))
-            print ('Retrieved from Glacier:',len(done))
-            print ('Not in Glacier:',len(notg))
-            if len(trig) > 0 or len(rest) > 0:
-                # glacier is still ongoing, return # of pending ops                
-                return len(trig)+len(rest)
-            
-        if self.args.nodownload:
-            return -1
+        # buc, pre, recur, isglacier = self.archive_get_bucket_info(target)
+        # isglacier = False 
+        # if isglacier:
+        #     #sps = source.split('/', 1)
+        #     #bk = sps[0].replace(':s3:','')
+        #     #pr = f'{sps[1]}/' # trailing slash ensured 
+        #     trig, rest, done, notg = self._glacier_restore(buc, pre, 
+        #             self.args.days, self.args.retrieveopt, recur)
+        #     print ('Triggered Glacier retrievals:',len(trig))
+        #     print ('Currently retrieving from Glacier:',len(rest))
+        #     print ('Retrieved from Glacier:',len(done))
+        #     print ('Not in Glacier:',len(notg))
+        #     if len(trig) > 0 or len(rest) > 0:
+        #         # glacier is still ongoing, return # of pending ops                
+        #         return len(trig)+len(rest)
             
         rclone = Rclone(self.args,self.cfg)
             
-        if recursive:
-            print (f'Recursively copying files from archive to "{target}" ...')
-            ret = rclone.copy(source,target)
-        else:
-            print (f'Copying files from archive to "{target}" ...')
-            ret = rclone.copy(source,target,'--max-depth', '1')
-            
+        ret = rclone.copy(source,target)
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
         if ret['stats']['errors'] > 0:
@@ -694,13 +581,45 @@ class Archiver:
         #    'totalTransfers': 0, 'transferTime': 0, 'transfers': 0}   
         # checksum
 
-        if self._restore_verify(source, target, recursive):
-            print(f'Target and archive are identical. {ttransfers} files with {total} transferred.')
-        else:
-            print(f'Problem: target and archive are NOT identical.') 
-            return False
+ 
+        print(f'Upload finished {ttransfers} files with {total} transferred.')
    
         return -1
+
+
+    def test_write(self, directory):
+        testpath=os.path.join(directory,'.aws-eb.test')
+        try:
+            with open(testpath, "w") as f:
+                f.write('just a test')
+            os.remove(testpath)
+            return True
+        except PermissionError as e:
+            if e.errno == 13:  # Check if error number is 13 (Permission denied)
+                #print("Permission denied. Please ensure you have the necessary permissions to access the file or directory.")
+                return 13
+            else:
+                print(f"An unexpected PermissionError occurred in {directory}:\n{e}")            
+                return False
+        except Exception as e:
+            if e.errno == 2:
+                #No such file or directory:
+                return 2
+            else:
+                print(f"An unexpected error occurred in {directory}:\n{e}")
+                return False
+
+        
+
+    def _get_file_stats(self,filepath):
+        try:
+            # Use lstat to get stats of symlink itself, not the file it points to
+            stats = os.lstat(filepath)
+            return stats.st_size, stats.st_mtime, stats.st_atime
+        except FileNotFoundError:
+            print(f"{filepath} not found.")
+            return None, None, None
+            
     
     
     def md5sumex(self, file_path):
@@ -755,27 +674,7 @@ class Archiver:
         i = int(math.floor(math.log(size_bytes, 1024)))
         p = math.pow(1024, i)
         s = round(size_bytes/p, 3)
-        return f"{s} {size_name[i]}"
-        
-    def archive_get_bucket_info(self, folder):
-        # returns bucket(str), prefix(str), recursive(bool), glacier(bool) 
-        recursive = False
-        glacier = False
-        rowdict = self.archive_json_get_row(folder)
-        self.cfg.printdbg(f'path: {folder} rowdict: {rowdict}')
-        if rowdict == None:
-            return None, None, recursive, glacier
-        if 'archive_mode' in rowdict:
-            if rowdict['archive_mode'] == "Recursive":
-                recursive = True
-        s3_storage_class = rowdict['s3_storage_class']
-        if s3_storage_class in ['DEEP_ARCHIVE', 'GLACIER']:
-            glacier = True
-        sps = rowdict['archive_folder'].split('/', 1)
-        bucket = sps[0].replace(':s3:','')
-        prefix = f'{sps[1]}/' # trailing slash ensured
-        return bucket, prefix, recursive, glacier
-    
+        return f"{s} {size_name[i]}"    
     
     def _get_newest_file_atime(self, folder_path, folder_atime=None):
         # Because the folder atime is reset when crawling we need
@@ -796,30 +695,6 @@ class Archiver:
         if last_accessed_time == None:
             last_accessed_time = folder_atime
         return last_accessed_time
-
-    def _get_hotspots_path(self,folder):
-        # get a full path name of a new hotspots file
-        # based on a folder name that has been crawled
-        hsfld = os.path.join(self.cfg.config_root, 'hotspots')
-        os.makedirs(hsfld,exist_ok=True)
-        return os.path.join(hsfld,self._get_hotspots_file(folder))
-
-    def _get_hotspots_file(self,folder):
-        # get a full path name of a new hotspots file
-        # based on a folder name that has been crawled
-        mountlist = self._get_mount_info()
-        traildir = ''
-        hsfile = folder.replace('/','+') + '.csv'
-        for mnt in mountlist:
-            if folder.startswith(mnt['mount_point']):
-                traildir = self._get_last_directory(
-                    mnt['mount_point'])
-                hsfile = folder.replace(mnt['mount_point'],'')
-                hsfile = hsfile.replace('/','+') + '.csv'
-                hsfile = f'@{traildir}{hsfile}'
-                if len(hsfile) > 255:
-                    hsfile = f'{hsfile[:25]}.....{hsfile[-225:]}'
-        return hsfile
     
 
     def _walker(self, top, skipdirs=['.snapshot',]):
@@ -868,18 +743,6 @@ class Archiver:
                     })
         return mountinfo_list
         
-
-    # def _s3_dir_walk(self, bucket, prefix, profile='default'):
-    #     session = boto3.Session(profile_name=profile)
-    #     s3_client = session.client('s3')
-    #     paginator = s3_client.get_paginator('list_objects_v2')
-    #     if not prefix.endswith('/'):
-    #         prefix += '/'
-    #     for result in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter='/'):
-    #         for prefix in result.get('CommonPrefixes', []):
-    #             yield prefix['Prefix']
-
-
 
     def download_restored_file(self, bucket_name, object_key, local_path):
         s3 = boto3.resource('s3')
@@ -1130,10 +993,10 @@ class AWSBoto:
     # entries can be strings, lists that are written as 
     # multi-line files and dictionaries which are written to json
 
-    def __init__(self, args, cfg, arch):
+    def __init__(self, args, cfg, bld):
         self.args = args
         self.cfg = cfg
-        self.arch = arch
+        self.bld = bld
         self.awsprofile = self.cfg.awsprofile
         self.cpu_types = {
             "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
@@ -1244,22 +1107,22 @@ class AWSBoto:
             except:
                 return ['us-west-2','us-west-1', 'us-east-1', '']
 
-    def check_bucket_access_folders(self, folders, readwrite=False):
-        # check all the buckets that have been used for archiving 
-        sufficient = True
-        myaccess = 'read'
-        if readwrite:
-            myaccess = 'write'
-        buckets = []
-        for folder in folders:
-            bucket, *_ = self.arch.archive_get_bucket_info(folder)
-            buckets.append(bucket)
-        buckets = list(set(buckets)) # remove dups
-        for bucket in buckets:
-            if not self.check_bucket_access(bucket, readwrite):
-                print (f' You have no {myaccess} access to bucket "{bucket}" !')
-                sufficient = False
-        return sufficient
+    # def check_bucket_access_folders(self, folders, readwrite=False):
+    #     # check all the buckets that have been used for archiving 
+    #     sufficient = True
+    #     myaccess = 'read'
+    #     if readwrite:
+    #         myaccess = 'write'
+    #     buckets = []
+    #     for folder in folders:
+    #         bucket, *_ = self.bld.archive_get_bucket_info(folder)
+    #         buckets.append(bucket)
+    #     buckets = list(set(buckets)) # remove dups
+    #     for bucket in buckets:
+    #         if not self.check_bucket_access(bucket, readwrite):
+    #             print (f' You have no {myaccess} access to bucket "{bucket}" !')
+    #             sufficient = False
+    #     return sufficient
 
     def check_bucket_access(self, bucket_name, readwrite=False, profile=None):
         
@@ -1442,37 +1305,37 @@ class AWSBoto:
             sys.exit(1)
         return True
     
-    def _get_s3_data_size(self, folders, profile=None):
-        """
-        Get the size of data in GiB aggregated from multiple 
-        S3 buckets from aws-eb archives identified by a 
-        list of folders 
+    # def _get_s3_data_size(self, folders, profile=None):
+    #     """
+    #     Get the size of data in GiB aggregated from multiple 
+    #     S3 buckets from aws-eb archives identified by a 
+    #     list of folders 
 
-        :return: Size of the data in GiB.
-        """
-        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-        s3 = session.client('s3')
+    #     :return: Size of the data in GiB.
+    #     """
+    #     session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+    #     s3 = session.client('s3')
 
-        # Initialize total size
-        total_size_bytes = 0
+    #     # Initialize total size
+    #     total_size_bytes = 0
         
-        #bucket_name, prefix, recursive=False
-        for fld in folders:
-            buc, pre, recur, _ = self.arch.archive_get_bucket_info(fld)
-            # returns bucket(str), prefix(str), recursive(bool), glacier(bool)
-            # Use paginator to handle buckets with large number of objects
-            paginator = s3.get_paginator('list_objects_v2')
-            for page in paginator.paginate(Bucket=buc, Prefix=pre):
-                if "Contents" in page:  # Ensure there are objects under the specified prefix
-                    for obj in page['Contents']:
-                        key = obj['Key']
-                        if recur or (key.count('/') == pre.count('/') and key.startswith(pre)):
-                            total_size_bytes += obj['Size']
+    #     #bucket_name, prefix, recursive=False
+    #     for fld in folders:
+    #         buc, pre, recur, _ = self.arch.archive_get_bucket_info(fld)
+    #         # returns bucket(str), prefix(str), recursive(bool), glacier(bool)
+    #         # Use paginator to handle buckets with large number of objects
+    #         paginator = s3.get_paginator('list_objects_v2')
+    #         for page in paginator.paginate(Bucket=buc, Prefix=pre):
+    #             if "Contents" in page:  # Ensure there are objects under the specified prefix
+    #                 for obj in page['Contents']:
+    #                     key = obj['Key']
+    #                     if recur or (key.count('/') == pre.count('/') and key.startswith(pre)):
+    #                         total_size_bytes += obj['Size']
         
-        total_size_gib = total_size_bytes / (1024 ** 3)  # Convert bytes to GiB
-        return total_size_gib
+    #     total_size_gib = total_size_bytes / (1024 ** 3)  # Convert bytes to GiB
+    #     return total_size_gib
 
-    def ec2_deploy(self, disk_gib, instance_type, s3_prefix, awsprofile=None):
+    def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
         if not awsprofile: 
             awsprofile = self.cfg.awsprofile
@@ -1493,6 +1356,8 @@ class AWSBoto:
         if not '--profile' in cmdlist and self.args.awsprofile:
             cmdlist.insert(1,'--profile')
             cmdlist.insert(2, self.args.awsprofile)
+        if not '--build' in cmdlist:
+            cmdlist.insert(-1,'--build')
         cmdline = 'aws-eb ' + " ".join(map(shlex.quote, cmdlist[1:])) #original cmdline
         ### end block 
 
@@ -1834,7 +1699,8 @@ class AWSBoto:
         userdata = textwrap.dedent(f'''
         #! /bin/bash
         dnf install -y gcc mdadm
-        bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
+        #bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
+        bigdisks='/dev/sdh'
         numdisk=$(echo $bigdisks | wc -w)
         mkdir /opt/eb
         if [[ $numdisk -gt 1 ]]; then
@@ -2753,7 +2619,6 @@ class ConfigManager:
         self.config_root_local = os.path.join(self.home_dir, '.config', 'aws-eb')
         self.config_root = self._get_config_root()
         self.binfolder = self.read('general', 'binfolder')
-        self.nih = self.read('general', 'prompt_nih_reporter')        
         self.homepaths = self._get_home_paths()
         self.awscredsfile = os.path.join(self.home_dir, '.aws', 'credentials')
         self.awsconfigfile = os.path.join(self.home_dir, '.aws', 'config')
@@ -2845,7 +2710,6 @@ class ConfigManager:
         except Exception as e:
             # Return two empty strings in case of an error
             return "", ""
-
 
     def _get_home_paths(self):
         path_dirs = os.environ['PATH'].split(os.pathsep)
@@ -3242,7 +3106,7 @@ class ConfigManager:
                 print("  No endpoint_url found in aws profile:", profile)
             return None
         
-    def _get_aws_s3_session_endpoint_url(self, profile=None):        
+    def _get_aws_s3_session_endpoint_url(self, profile=None):
         # retrieve endpoint url through boto API, not configparser
         import botocore.session  # only botocore Session object has attribute 'full_config'
         if not profile:
@@ -3458,6 +3322,7 @@ def parse_arguments():
         help='print AWS-EB and Python version info')
     
     subparsers = parser.add_subparsers(dest="subcmd", help='sub-command help')
+
     # ***
     parser_config = subparsers.add_parser('config', aliases=['cnf'], 
         help=textwrap.dedent(f'''
@@ -3469,30 +3334,28 @@ def parse_arguments():
         'on an ec2 instance and notify an email address')
 
     # ***
-
-    parser_build = subparsers.add_parser('build', aliases=['bld'],
+    parser_launch = subparsers.add_parser('launch', aliases=['lau'],
         help=textwrap.dedent(f'''
-            Build new Easybuild packages and upload them to AWS.              
+            Launch EC2 instance, build new Easybuild packages and upload them to S3
         '''), formatter_class=argparse.RawTextHelpFormatter) 
-    parser_build.add_argument( '--ec2', '-e', dest='ec2', action='store_true', default=False,
-        help="Restore folder on new EC2 instance instead of local machine")    
-    parser_build.add_argument('--instance-type', '-i', dest='instancetype', action='store', default="",
+    parser_launch.add_argument('--instance-type', '-i', dest='instancetype', action='store', default="",
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
-    parser_build.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
+    parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
         help='run --list to see available GPU types')       
-    parser_build.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
+    parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')        
-    parser_build.add_argument( '--monitor', '-n', dest='monitor', action='store_true', default=False,
-        help="Monitor EC2 server for cost and idle time.")
-    parser_build.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
+    parser_launch.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List CPU and GPU types")
-    parser_build.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, 
+    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, 
         help='Number of cores to be allocated for the machine. (default=4)')    
-    parser_build.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, 
+    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, 
         help='GB Memory allocated to instance  (default=8)')    
-           
+    parser_launch.add_argument( '--monitor', '-n', dest='monitor', action='store_true', default=False,
+        help="Monitor EC2 server for cost and idle time.")
+    parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
+        help="Build the Easybuild packages on current system.")
+    
     # ***
-
     parser_download = subparsers.add_parser('download', aliases=['dld'],
         help=textwrap.dedent(f'''
             Download built eb packages to /opt/eb
@@ -3501,7 +3364,6 @@ def parse_arguments():
         metavar='<target_folder>', help='Download to other folder than default')    
     
     # ***
-       
     parser_ssh = subparsers.add_parser('ssh', aliases=['scp'],
         help=textwrap.dedent(f'''
             Login to an AWS EC2 instance to which data was restored with the --ec2 option
