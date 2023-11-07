@@ -307,11 +307,12 @@ def subcmd_ssh(args, cfg, aws):
         print(ret.stdout,ret.stderr)
 
 class Builder:
-    def __init__(self, args, cfg):
+    def __init__(self, args, cfg):        
         self.args = args
         self.cfg = cfg
         self.allowed_toolchains = ['SYSTEM', 'GCC', 'GCCcore', 'foss', 'fosscuda']
         self.eb_software_root = os.path.join('/', 'opt', 'eb', 'software')
+
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
@@ -377,6 +378,7 @@ class Builder:
 
     def _get_latest_easyconfig(self,directory):
 
+        from packaging.version import parse, InvalidVersion
         version_file_dict = {}
         version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-(\w+(?:-\d+(?:\.\d+)*(?:[ab]\d+)?)?))?\.')
 
@@ -387,12 +389,12 @@ class Builder:
                 toolchain_version = match.group(2) if match.group(2) else '0'  # Default to '0' if no toolchain
                 # Attempt to parse the toolchain version as a semantic version
                 try:
-                    toolchain_version_parsed = packaging.version.parse(toolchain_version)
-                except packaging.version.InvalidVersion:
+                    toolchain_version_parsed = parse(toolchain_version)
+                except InvalidVersion:
                     # If it's not a valid semantic version, we will use the string itself for comparison
                     toolchain_version_parsed = toolchain_version
                 
-                version_tuple = (packaging.version.parse(software_version), toolchain_version_parsed)
+                version_tuple = (parse(software_version), toolchain_version_parsed)
                 version_file_dict[version_tuple] = filename
         
         if not version_file_dict:
