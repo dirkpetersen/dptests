@@ -326,7 +326,7 @@ class Builder:
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
                     continue 
-                tc, dep, cls, instdir = self._read_easyconfig(self, ebpath)
+                tc, dep, cls, instdir = self._read_easyconfig(ebpath)
                 if tc['name'] not in self.allowed_toolchains:
                     print(f'  Toolchain {tc["name"]} not supported.')
                     continue
