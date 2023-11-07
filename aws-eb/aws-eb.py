@@ -8,7 +8,7 @@ and uploads them to S3 buckets for later use.
 import sys, os, argparse, json, configparser, tarfile 
 import urllib3, datetime, tarfile, zipfile, textwrap 
 import hashlib, math, signal, shlex, time, re, inspect
-import shutil, tempfile, glob, subprocess, socket 
+import shutil, tempfile, glob, subprocess, socket, packaging
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -315,18 +315,9 @@ class Builder:
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
-# Cheapest: c5ad.xlarge
-#   Processing folder "/home/users/peterdir/.local/easybuild/easyconfigs" ...
-#   Builder.build_all: An unexpected error occurred:
-# join() argument must be str, bytes, or os.PathLike object, not 'NoneType'
-#   Processing folder "/home/users/peterdir/.local/easybuild/easyconfigs/b" ...
-#   Builder.build_all: An unexpected error occurred:
-# join() argument must be str, bytes, or os.PathLike object, not 'NoneType'
-
         # build all easyconfigs in a folder tree
         for root, dirs, files in self._walker(easyconfigroot):
-            archpath=root
-            print(f'  Processing folder "{archpath}" ... ')
+            print(f'  Processing folder "{root}" ... ')
             try:
                 if easyconfigroot==root:
                     # main directory do something there
@@ -334,6 +325,7 @@ class Builder:
                 ebfile = self._get_latest_easyconfig(root)
                 if not ebfile:
                     continue
+                print(f'  Processing easyconfig "{ebfile}" ... ')
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
                     continue 
@@ -384,23 +376,39 @@ class Builder:
         print(f'Directory {folder} has been archived as {tarball_name}')        
 
     def _get_latest_easyconfig(self,directory):
-        versioned_files = []
-        version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-|\.eb$)')
+
+        version_file_dict = {}
+        version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-(\w+(?:-\d+(?:\.\d+)*(?:[ab]\d+)?)?))?\.')
 
         for filename in os.listdir(directory):
-            version_match = version_pattern.search(filename)
-            if version_match:
-                # Extract the version and convert it into a tuple of integers
-                version = tuple(map(int, version_match.group(1).split('.')))
-                versioned_files.append((filename, version))
-
-        if not versioned_files:
+            match = version_pattern.search(filename)
+            if match:
+                software_version = match.group(1)
+                toolchain_version = match.group(2) if match.group(2) else '0'  # Default to '0' if no toolchain
+                # Attempt to parse the toolchain version as a semantic version
+                try:
+                    toolchain_version_parsed = packaging.version.parse(toolchain_version)
+                except packaging.version.InvalidVersion:
+                    # If it's not a valid semantic version, we will use the string itself for comparison
+                    toolchain_version_parsed = toolchain_version
+                
+                version_tuple = (packaging.version.parse(software_version), toolchain_version_parsed)
+                version_file_dict[version_tuple] = filename
+        
+        if not version_file_dict:
             return None
 
-        # Sort files by version. The max function will find the file with the greatest version number.
-        latest_file = max(versioned_files, key=lambda x: x[1])[0]
-        
-        return latest_file    
+        # Sort by software version and then toolchain version
+        # Custom sort to handle non-standard version strings
+        def sort_key(version_tuple):
+            software, toolchain = version_tuple
+            if isinstance(toolchain, str):
+                # Assume non-standard versions are older, set them as the minimum
+                return software, parse('0')
+            return software, toolchain
+
+        latest_version = sorted(version_file_dict.keys(), key=sort_key, reverse=True)[0]
+        return version_file_dict[latest_version]
 
     def _read_easyconfig(self, ebfile):
 
