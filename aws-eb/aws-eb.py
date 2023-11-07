@@ -414,6 +414,8 @@ class Builder:
 
     def _read_easyconfig(self, ebfile):
 
+        ARCH='x86_64' # _archs = {'x86_64': 'x86', 'aarch64': 'aarch64'}
+
         # The context in which to execute the file, initializing toolchain
         exec_context = {}
 
