@@ -316,6 +316,7 @@ class Builder:
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
+        ARCH='x86_64' 
         # build all easyconfigs in a folder tree
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" ... ')
