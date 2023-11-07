@@ -314,6 +314,15 @@ class Builder:
         self.eb_software_root = os.path.join('/', 'opt', 'eb', 'software')
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
+
+# Cheapest: c5ad.xlarge
+#   Processing folder "/home/users/peterdir/.local/easybuild/easyconfigs" ...
+#   Builder.build_all: An unexpected error occurred:
+# join() argument must be str, bytes, or os.PathLike object, not 'NoneType'
+#   Processing folder "/home/users/peterdir/.local/easybuild/easyconfigs/b" ...
+#   Builder.build_all: An unexpected error occurred:
+# join() argument must be str, bytes, or os.PathLike object, not 'NoneType'
+
         # build all easyconfigs in a folder tree
         for root, dirs, files in self._walker(easyconfigroot):
             archpath=root
@@ -323,6 +332,8 @@ class Builder:
                     # main directory do something there
                     pass
                 ebfile = self._get_latest_easyconfig(root)
+                if not ebfile:
+                    continue
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
                     continue 
@@ -332,6 +343,7 @@ class Builder:
                     continue
                 if cls != 'bio' and bio_only:
                     # we want to may be only build bio packages
+                    print(f'  Not a bio package')
                     continue
                 if dep:
                     print(f'  installing OS dependencies: {dep}')
@@ -697,7 +709,7 @@ class Builder:
         return last_accessed_time
     
 
-    def _walker(self, top, skipdirs=['.snapshot',]):
+    def _walker(self, top, skipdirs=['.snapshot', '__archive__']):
         """ returns subset of os.walk  """
         for root, dirs, files in os.walk(top,topdown=True,onerror=self._walkerr): 
             for skipdir in skipdirs:
