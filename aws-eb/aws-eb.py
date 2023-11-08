@@ -322,6 +322,7 @@ class Builder:
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
         # install all OS dependencies
+        package_skip_set = {}
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
@@ -330,7 +331,13 @@ class Builder:
                     tc, dep, cls, instdir = self._read_easyconfig(ebpath)
                     if dep:
                         print(f'  installing OS dependencies: {dep}')
-                        self._install_packages(dep)
+                        self._install_packages(dep, package_skip_set)
+                        for package_tuple in dep: # avoid duplicates
+                            if isinstance(package_tuple, str):
+                                package_tuple = (package_tuple,)                            
+                            for package_name in package_tuple:
+                                package_skip_set.add(package_name)
+                        
 
         # build all new easyconfigs in a folder tree
         for root, dirs, files in self._walker(easyconfigroot):
@@ -465,9 +472,8 @@ class Builder:
             os_type = os_type.split(' ')[0]  # Get the first 'like' identifier
         return os_type
 
-    def _install_packages(self, os_dependencies):
-        os_type = self._get_os_type()
-        
+    def _install_packages(self, os_dependencies, package_skip_set)
+        os_type = self._get_os_type()        
         # Determine the appropriate package manager for the detected OS type
         package_manager = None
         if os_type in ['debian', 'ubuntu']:
@@ -485,6 +491,8 @@ class Builder:
             installed = False
             for package_name in package_tuple:
                 # Check if the package has a known OS-specific suffix
+                if package_name in package_skip_set:
+                    continue
                 if (package_name.endswith('-dev') and os_type in ['debian', 'ubuntu']) or \
                 (package_name.endswith('-devel') and os_type in ['fedora', 'centos', 'redhat']):
                     try:
