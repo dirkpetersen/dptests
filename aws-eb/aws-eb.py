@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.7'
+__version__ = '0.1.0.8'
 
 def main():
         
@@ -315,28 +315,12 @@ class Builder:
         self.args = args
         self.cfg = cfg
         self.allowed_toolchains = ['system', 'GCC', 'GCCcore', 'foss', 'fosscuda']
-        self.eb_software_root = os.path.join('/', 'opt', 'eb', 'software')
-
+        self.eb_root = os.path.join('/', 'opt', 'eb')
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
-        # install all OS dependencies
-        package_skip_set = set() # avoid duplicates
-        for root, dirs, files in self._walker(easyconfigroot):
-            print(f'  Processing folder "{root}" for OS depts... ')
-            for ebfile in files:
-                if ebfile.endswith('.eb'):
-                    ebpath = os.path.join(root, ebfile)
-                    tc, dep, cls, instdir = self._read_easyconfig(ebpath)
-                    if dep:
-                        print(f'  installing OS dependencies: {dep}')
-                        self._install_packages(dep, package_skip_set)
-                        for package_tuple in dep: # avoid duplicates
-                            if isinstance(package_tuple, str):
-                                package_tuple = (package_tuple,)                            
-                            for package_name in package_tuple:
-                                package_skip_set.add(package_name)
-                        
+        # install a lot of required junk 
+        self._install_os_dependencies(easyconfigroot)
 
         # build all new easyconfigs in a folder tree
         for root, dirs, files in self._walker(easyconfigroot):
@@ -364,20 +348,20 @@ class Builder:
                     print(f'  installing OS dependencies: {dep}')
                     self._install_packages(dep)
                 # install easybuild package 
+                print(f" Downloading previous packages ... ")
+                self.download(f':s3:{self.cfg.archiveroot}', self.eb_root, s3_prefix)
+                print(f" Unpacking previous packages ... ")
+                all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ")
-                subprocess.run(['eb', '--robot', '--allow-modules-tool-mismatch', '--umask=002', ebpath], check=True)
-                instpath = os.path.join(self.eb_software_root, instdir)
-                if not os.path.isdir(instpath):
-                    print(f'  Error: {instdir} not found.')
-                    continue
-                # tar up the software folder for archiving 
-                self._tar_folder(instpath)
-                # upload to S3
-                s3_object = f'{self.cfg.archiveroot}/{s3_prefix}/{instdir}.tar.gz'
-                self._upload_file_to_s3(f'{instdir}.tar.gz', self.cfg.bucket, object_name=s3_object)
+                subprocess.run(['eb', '--robot', '--umask=002', ebpath], check=True)                
+                softwaredir = os.path.join(self.eb_root, 'software')
+                print(f" Tarring up new packages ... ")
+                all_tars, new_tars = self._tar_eb_software(softwaredir)
+                print(f" Uploading new packages ... ")
+                self.upload(self.eb_root, f':s3:{self.cfg.archiveroot}', s3_prefix)
                                                 
             except subprocess.CalledProcessError:                
-                print(f"  Builder.build_all: An error occurred while building {ebfile}.")
+                print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.")
                 ## make sure we store the logfile
                 continue
 
@@ -386,7 +370,26 @@ class Builder:
                 continue
         return True
     
-    def _tar_folder(self, folder):
+    def _install_os_dependencies(self, easyconfigroot):
+        # install OS dependencies from all easyconfigs (~ 400 packages)        
+        self._install_packages(['pigz'])
+        package_skip_set = set() # avoid duplicates
+        for root, dirs, files in self._walker(easyconfigroot):
+            print(f'  Processing folder "{root}" for OS depts... ')
+            for ebfile in files:
+                if ebfile.endswith('.eb'):
+                    ebpath = os.path.join(root, ebfile)
+                    tc, dep, cls, instdir = self._read_easyconfig(ebpath)
+                    if dep:
+                        print(f'  installing OS dependencies: {dep}')
+                        self._install_packages(dep, package_skip_set)
+                        for package_tuple in dep: # avoid duplicates
+                            if isinstance(package_tuple, str):
+                                package_tuple = (package_tuple,)                            
+                            for package_name in package_tuple:
+                                package_skip_set.add(package_name)
+
+    def _tar_folder_old(self, folder):
         # Ensure the directory exists
         if not os.path.isdir(folder):
             raise ValueError(f"The directory {folder} does not exist.")    
@@ -396,10 +399,86 @@ class Builder:
         with tarfile.open(tarball_name, 'w:gz') as tar:
             # Add the directory to the tarball
             tar.add(folder, arcname=os.path.basename(folder))
-        print(f'Directory {folder} has been archived as {tarball_name}')        
+        print(f'Directory {folder} has been archived as {tarball_name}')
+
+    def _tar_eb_software(self, folder):
+        new_tars = []
+        all_tars = []
+        for root, dirs, files in self._walker(folder):
+            # Check if 'easybuild' is in the directories
+            if 'easybuild' in dirs:
+                # Extract the folder name which should be the version, and the parent folder which should be the package
+                version_dir = os.path.basename(root)
+                package_dir = os.path.basename(os.path.dirname(root))
+                package_root = os.path.dirname(root)
+
+                # Create the tarball name
+                tarball_name = f"{package_dir}-{version_dir}.eb.tar.gz"
+                tarball_path = os.path.join(folder, package_dir, tarball_name)
+                tarball_path_tmp = os.path.join(tarball_path, ".tmp")
+                all_tars.append(tarball_path)
+                if os.path.isfile(tarball_path):
+                    print(f"Tarball {tarball_path} already exists ...")
+                    continue
+                new_tars.append(tarball_path)
+
+                # Print info for the user
+                print(f"Creating tarball {tarball_path} from {root}...")
+
+                # Use tar with pigz for compression
+                try:
+                    subprocess.run([
+                        "tar",
+                        "-I", f"pigz -p {self.args.vcpus}",  # Call pigz for compression with X CPUs
+                        "-cf", tarball_path_tmp,  # Create and verbosely list files processed
+                        "-C", package_root,  # Change to the parent directory of version
+                        version_dir  # Specify the directory to compress
+                    ], check=True)
+                    os.rename(tarball_path_tmp, tarball_path)
+                    print(f"Successfully created tarball: {tarball_path}")
+                except subprocess.CalledProcessError as e:
+                    print(f"An error occurred while creating tarball: {e}")
+        return all_tars, new_tars
+    
+    def _untar_eb_software(self, folder):
+        new_tars = []
+        all_tars = []
+        for root, dirs, files in self._walker(folder):
+            # Extract package name from the root directory
+            package_name = os.path.basename(root)
+            for filename in files:
+                if filename.endswith('.eb.tar.gz'):
+                    # Strip the '.tar.gz' extension and then extract the version
+                    version = filename.replace('.eb.tar.gz', '').replace(package_name + '-', '')
+
+                    # Construct the expected path for the version directory
+                    version_dir_path = os.path.join(root, version)
+
+                    # Check if the 'easybuild' directory exists within the version directory
+                    easybuild_path = os.path.join(version_dir_path, 'easybuild')
+                    file_path = os.path.join(root, filename)
+                    all_tars.append(file_path)
+                    if not os.path.exists(easybuild_path):
+                        print(f"Unpacking {file_path} into {version_dir_path}...")
+                        try:
+                            # Decompress with pigz through tar command
+                            subprocess.run([
+                                "tar",
+                                "-I", f"pigz -p {self.args.vcpus}",
+                                "-xf", file_path,
+                                "-C", root 
+                            ], check=True)
+                            print(f"Successfully unpacked: {file_path}")
+                            new_tars.append(file_path)
+                        except subprocess.CalledProcessError as e:
+                            print(f"An error occurred while unpacking {file_path}: {e}")
+                    else:
+                        pass
+                        #print(f"Skipping unpacking of {file_path} as 'easybuild' directory already exists in {version_dir_path}.")
+        return all_tars, new_tars
 
     def _get_latest_easyconfig(self,directory):
-
+ 
         from packaging.version import parse, InvalidVersion
         version_file_dict = {}
         version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-(\w+(?:-\d+(?:\.\d+)*(?:[ab]\d+)?)?))?\.')
@@ -519,31 +598,37 @@ class Builder:
                         # so continue trying the next packages in the tuple
                         pass
 
-    def upload(self, source, target):
+    def upload(self, source, target, s3_prefix=None):
 
         source = os.path.abspath(source)
-        target = os.path.join(f':s3:{self.cfg.archivepath}',
-                              source.lstrip(os.path.sep))
-
     
         rclone = Rclone(self.args,self.cfg)
 
-        print ('  Copying files to archive ... ', end="")
-        ret = rclone.copy(source,target,'--max-depth', '1', '--links',
-                        '--exclude', '.aws-eb.md5sum', 
-                        '--exclude', '.aws-eb-restored.md5sum',
-                        '--exclude', 'AWS-EB.allfiles.csv', 
-                        '--exclude', 'Where-did-the-files-go.txt'
+        print ('  Copying Modules ... ')
+        ret = rclone.copy(os.path.join(source,'modules'),
+                          f'{target}/{s3_prefix}/modules/', 
+                          '--links' 
                         )
-        
+
+        print ('  Copying Sources ... ')
+        ret = rclone.copy(os.path.join(source,'sources'),
+                          f'{target}/sources/', 
+                          '--links'
+                        )
+
+        print ('  Copying Software ... ')
+        ret = rclone.copy(os.path.join(source,'software'),
+                          f'{target}/{s3_prefix}/software/', 
+                          '--links', '--include', '*.eb.tar.gz' 
+                        )
+                
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
         if ret['stats']['errors'] > 0:
             print('Last Error:', ret['stats']['lastError'])
             print('Copying was not successful.')
             return False
-        print('Done.')
-        
+                
         ttransfers=ret['stats']['totalTransfers']
         tbytes=ret['stats']['totalBytes']
         total=self.convert_size(tbytes)
@@ -560,9 +645,9 @@ class Builder:
         #    'renames': 0, 'retryError': True, 'speed': 0, 'totalBytes': 0, 'totalChecks': 0, 
         #    'totalTransfers': 0, 'transferTime': 0, 'transfers': 0}   
         
-        print(f'  Source and archive are identical. {ttransfers} files with {total} transferred.\n')
+        print(f'  Source and s3 are identical. {ttransfers} files with {total} transferred.\n')
 
-    def download(self, source, target):
+    def download(self, source, target, s3_prefix=None):
                
         # buc, pre, recur, isglacier = self.archive_get_bucket_info(target)
         # isglacier = False 
@@ -582,7 +667,24 @@ class Builder:
             
         rclone = Rclone(self.args,self.cfg)
             
-        ret = rclone.copy(source,target)
+        print ('  Copying Modules ... ')
+        ret = rclone.copy(f'{source}/{s3_prefix}/modules/',
+                          os.path.join(target,'modules'), 
+                          '--links' 
+                        )
+
+        print ('  Copying Sources ... ')
+        ret = rclone.copy(f'{source}/{s3_prefix}/sources/',
+                          os.path.join(target,'sources'), 
+                          '--links'
+                        )
+
+        print ('  Copying Software ... ')
+        ret = rclone.copy(f'{source}/{s3_prefix}/software/',
+                          os.path.join(target,'software'), 
+                          '--links', '--include', '*.eb.tar.gz' 
+                        )
+
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
         if ret['stats']['errors'] > 0:
@@ -1390,8 +1492,8 @@ class AWSBoto:
 
         print(f" will execute '{cmdline}' on {ip} ... ")
         bootstrap_build += '\n' + cmdline + ' > ~/out.easybuild 2>&1'
-        # once retrieved from Glacier we need to restore this 5 and 12 hours from now 
-        
+        # once everything is done, commit suicide:   
+        bootstrap_build += f'\naws-eb.py ssh --terminate {iid}'
         ret = self.ssh_upload('ec2-user', ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
         ret = self.ssh_upload('ec2-user', ip,
@@ -1405,8 +1507,9 @@ class AWSBoto:
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
         print(' but you can already login using "aws-eb ssh"')
 
-        os.system(f'echo "tail -f out.easybuild" >> ~/.bash_history')
-        os.system(f'echo "tail -f out.bootstrap" >> ~/.bash_history')
+        os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild" >> ~/.bash_history')
+        os.system(f'echo "tail -f ~/out.easybuild" >> ~/.bash_history')
+        os.system(f'echo "tail -f ~/out.bootstrap" >> ~/.bash_history')
         ret = self.ssh_upload('ec2-user', ip,
             "~/.bash_history", ".bash_history")
         if ret.stdout or ret.stderr:
@@ -1762,7 +1865,7 @@ class AWSBoto:
         return textwrap.dedent(f'''        
         test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
         # export MODULEPATH=/opt/eb/modules/all
-        export MODULEPATH=/opt/eb/modules/compiler:/opt/eb/modules/lang:/opt/eb/modules/tools:/opt/eb/modules/bio
+        export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         #
         export EASYBUILD_JOB_CORES={self.args.vcpus}
         export EASYBUILD_CUDA_COMPUTE_CAPABILITIES=7.5,8.0,8.6,9.0
