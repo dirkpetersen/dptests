@@ -8,13 +8,16 @@ and uploads them to S3 buckets for later use.
 import sys, os, argparse, json, configparser, tarfile 
 import urllib3, datetime, tarfile, zipfile, textwrap 
 import hashlib, math, signal, shlex, time, re, inspect
-import shutil, tempfile, glob, subprocess, socket, packaging
+import shutil, tempfile, glob, subprocess, socket
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
-import requests, boto3, botocore, psutil
-from easybuild.framework.easyconfig.parser import EasyConfigParser
-from easybuild.tools.build_log import EasyBuildError
+import requests, boto3, botocore, psutil, packaging
+try:
+    from easybuild.framework.easyconfig.parser import EasyConfigParser
+    from easybuild.tools.build_log import EasyBuildError    
+except:
+    print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
 __version__ = '0.1.0.1'
@@ -227,8 +230,8 @@ def subcmd_launch(args,cfg,bld,aws):
     instance_type = aws.get_ec2_cheapest_instance_type(fam, args.vcpus, args.mem*1024)
     print('Cheapest:', instance_type)
 
-    if not args.build:    
-        aws.ec2_deploy(args.mem*1024, instance_type, s3_prefix)
+    if not args.build:
+        aws.ec2_deploy(args.mem*1024, instance_type)
         return True
 
     # *******************************************
@@ -318,9 +321,20 @@ class Builder:
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
-        # build all easyconfigs in a folder tree
+        # install all OS dependencies
         for root, dirs, files in self._walker(easyconfigroot):
-            print(f'  Processing folder "{root}" ... ')
+            print(f'  Processing folder "{root}" for OS depts... ')
+            for ebfile in files:
+                if ebfile.endswith('.eb'):
+                    ebpath = os.path.join(root, ebfile)
+                    tc, dep, cls, instdir = self._read_easyconfig(ebpath)
+                    if dep:
+                        print(f'  installing OS dependencies: {dep}')
+                        self._install_packages(dep)
+
+        # build all new easyconfigs in a folder tree
+        for root, dirs, files in self._walker(easyconfigroot):
+            print(f'  Processing folder "{root}" newest easyconfigs... ')
             try:
                 if easyconfigroot==root:
                     # main directory do something there
@@ -345,7 +359,7 @@ class Builder:
                     self._install_packages(dep)
                 # install easybuild package 
                 print(f" Installing {ebfile} ... ")
-                subprocess.run(['eb', '--robot', '--allow-modules-tool-mismatch', '--umask=022', ebpath], check=True)
+                subprocess.run(['eb', '--robot', '--allow-modules-tool-mismatch', '--umask=002', ebpath], check=True)
                 instpath = os.path.join(self.eb_software_root, instdir)
                 if not os.path.isdir(instpath):
                     print(f'  Error: {instdir} not found.')
@@ -532,9 +546,7 @@ class Builder:
         
         print(f'  Source and archive are identical. {ttransfers} files with {total} transferred.\n')
 
-
     def download(self, source, target):
-
                
         # buc, pre, recur, isglacier = self.archive_get_bucket_info(target)
         # isglacier = False 
@@ -1377,7 +1389,7 @@ class AWSBoto:
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
         print(' but you can already login using "aws-eb ssh"')
 
-        os.system(f'echo "ls -l {self.args.folders[0]}" >> ~/.bash_history')
+        #os.system(f'echo "ls -l {self.args.folders[0]}" >> ~/.bash_history')
         ret = self.ssh_upload('ec2-user', ip,
             "~/.bash_history", ".bash_history")
         if ret.stdout or ret.stderr:
@@ -1730,7 +1742,7 @@ class AWSBoto:
     
     def _ec2_easybuildrc(self, bscript='~/easybuildrc'):
         return textwrap.dedent(f'''
-        # source /usr/local/lmod/lmod/init/bash
+        source /usr/local/lmod/lmod/init/bash
         export MODULEPATH=/opt/eb/modules/all
         #
         export EASYBUILD_JOB_CORES=4
@@ -1753,32 +1765,21 @@ class AWSBoto:
         return textwrap.dedent(f'''
         #! /bin/bash
         mkdir -p ~/.config/aws-eb
-        sleep 3 # give us some time to upload json to ~/.config/aws-eb
         echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
+        echo 'source ~/easybuildrc' >> ~/.bashrc
         echo '#export EC2_INSTANCE_ID={instance_id}' >> ~/.bashrc
         echo '#export AWS_DEFAULT_REGION={self.cfg.aws_region}' >> ~/.bashrc
         echo '#export TZ={long_timezone}' >> ~/.bashrc
-        echo '#alias singularity="apptainer"' >> ~/.bashrc
-        cd /tmp
-        # curl https://raw.githubusercontent.com/dirkpetersen/aws-eb/main/install.sh | bash 
-        curl -Ls https://raw.githubusercontent.com/dirkpetersen/froster/main/froster.py \
-                 -o ~/.local/bin/froster.py
-        aws-eb config --monitor '{emailaddr}'
+        echo '#alias singularity="apptainer"' >> ~/.bashrc        
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
         aws configure set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
         aws configure set region {self.cfg.aws_region}
         aws configure --profile {self.cfg.awsprofile} set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
         aws configure --profile {self.cfg.awsprofile} set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
         aws configure --profile {self.cfg.awsprofile} set region {self.cfg.aws_region}
-        python3 -m pip install boto3 easybuild
         sed -i 's/aws_access_key_id [^ ]*/aws_access_key_id /' {bscript}
         sed -i 's/aws_secret_access_key [^ ]*/aws_secret_access_key /' {bscript}
         curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
-        ## curl -OkL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-        ## bash Miniconda3-latest-Linux-x86_64.sh -b
-        ## ~/miniconda3/bin/conda init bash
-        ## source ~/.bashrc
-        ## conda activate
         echo '#! /bin/bash' > ~/.local/bin/get-public-ip
         echo 'ETOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")' >> ~/.local/bin/get-public-ip
         cp -f ~/.local/bin/get-public-ip ~/.local/bin/get-local-ip
@@ -1786,18 +1787,16 @@ class AWSBoto:
         echo 'curl -sH "X-aws-ec2-metadata-token: $ETOKEN" http://169.254.169.254/latest/meta-data/local-ipv4' >> ~/.local/bin/get-local-ip
         chmod +x ~/.local/bin/get-public-ip
         chmod +x ~/.local/bin/get-local-ip
-        ## ~/miniconda3/bin/conda install -y jupyterlab
-        ## ~/miniconda3/bin/conda install -y -c r r-irkernel r # R kernel and R for Jupyter
-        ## conda run bash -c "~/miniconda3/bin/jupyter-lab --ip=$(get-local-ip) --no-browser --autoreload --notebook-dir=~ > ~/.jupyter.log 2>&1" &
-        sleep 60
-        # sed "s/$(get-local-ip)/$(get-public-ip)/g" ~/.jupyter.log > ~/.jupyter-public.log
-        echo 'test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash' >> ~/.bashrc
-        echo "" >> ~/.bash_profile
-        # echo 'echo "Access JupyterLab:"' >> ~/.bash_profile
-        # url=$(tail -n 7 ~/.jupyter-public.log | grep $(get-public-ip) |  tr -d ' ')
-        # echo "echo \\" $url\\"" >> ~/.bash_profile
-        # echo 'echo "type \\"conda deactivate\\" to leave current conda environment"' >> ~/.bash_profile
+        # curl https://raw.githubusercontent.com/dirkpetersen/aws-eb/main/install.sh | bash 
+        curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py -o ~/.local/bin/aws-eb.py
+        chmod +x ~/.local/bin/aws-eb.py
+        # wait for pip3 to exist in PATH and lmod to be installed
+        until which pip3 > /dev/null 2>&1; do sleep 5; done; echo "pip3 is now in PATH"
+        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists."   
+        python3 -m pip install wheel boto3 easybuild packaging
         source ~/easybuildrc
+        aws-eb.py config --monitor '{emailaddr}'
+        echo "" >> ~/.bash_profile
         ''').strip()
     
     def _ec2_create_instance(self, disk_gib, instance_type, iamprofile=None, profile=None):
