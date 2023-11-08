@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.1'
+__version__ = '0.1.0.2'
 
 def main():
         
@@ -472,7 +472,7 @@ class Builder:
             os_type = os_type.split(' ')[0]  # Get the first 'like' identifier
         return os_type
 
-    def _install_packages(self, os_dependencies, package_skip_set)
+    def _install_packages(self, os_dependencies, package_skip_set):
         os_type = self._get_os_type()        
         # Determine the appropriate package manager for the detected OS type
         package_manager = None
