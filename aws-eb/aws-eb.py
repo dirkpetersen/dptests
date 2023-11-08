@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.3'
+__version__ = '0.1.0.4'
 
 def main():
         
@@ -492,6 +492,7 @@ class Builder:
             for package_name in package_tuple:
                 # Check if the package has a known OS-specific suffix
                 if package_name in package_skip_set:
+                    print(f"Skipping {package_name} because it was already installed.")
                     continue
                 if (package_name.endswith('-dev') and os_type in ['debian', 'ubuntu']) or \
                 (package_name.endswith('-devel') and os_type in ['fedora', 'centos', 'redhat']):
@@ -506,6 +507,9 @@ class Builder:
             # If none of the packages in the tuple had a suffix, we try to install each until one succeeds
             if not installed:
                 for package_name in package_tuple:
+                    if package_name in package_skip_set:
+                        print(f"Skipping {package_name} because it was already installed.")
+                        continue                    
                     try:
                         print(f"Attempting to install {package_name} with {package_manager}")
                         subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
