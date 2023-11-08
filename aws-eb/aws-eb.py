@@ -98,7 +98,7 @@ def subcmd_config(args, cfg, aws):
 
     if args.monitor:
         # monitoring only setup, do not continue 
-        me = os.path.join(binfolder,'aws-eb')
+        me = os.path.join(binfolder,'aws-eb.py')
         cfg.write('general', 'email', args.monitor)
         cfg.add_systemd_cron_job(f'{me} launch --monitor','30')
         return True
@@ -1368,8 +1368,8 @@ class AWSBoto:
             cmdlist.insert(1,'--profile')
             cmdlist.insert(2, self.args.awsprofile)
         if not '--build' in cmdlist:
-            cmdlist.insert(-1,'--build')
-        cmdline = 'aws-eb ' + " ".join(map(shlex.quote, cmdlist[1:])) #original cmdline
+            cmdlist.append('--build')
+        cmdline = 'aws-eb.py ' + " ".join(map(shlex.quote, cmdlist[1:])) #original cmdline
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
