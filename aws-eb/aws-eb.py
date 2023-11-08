@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.2'
+__version__ = '0.1.0.3'
 
 def main():
         
