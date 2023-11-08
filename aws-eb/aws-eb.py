@@ -322,7 +322,7 @@ class Builder:
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
         # install all OS dependencies
-        package_skip_set = {}
+        package_skip_set = set() # avoid duplicates
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
