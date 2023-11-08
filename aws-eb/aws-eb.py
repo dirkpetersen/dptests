@@ -480,6 +480,8 @@ class Builder:
             return
         
         for package_tuple in os_dependencies:
+            if isinstance(package_tuple, str):
+                package_tuple = (package_tuple,)
             installed = False
             for package_name in package_tuple:
                 # Check if the package has a known OS-specific suffix
@@ -1741,8 +1743,8 @@ class AWSBoto:
         return userdata
     
     def _ec2_easybuildrc(self, bscript='~/easybuildrc'):
-        return textwrap.dedent(f'''
-        source /usr/local/lmod/lmod/init/bash
+        return textwrap.dedent(f'''        
+        test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash'
         export MODULEPATH=/opt/eb/modules/all
         #
         export EASYBUILD_JOB_CORES=4
