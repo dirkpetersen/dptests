@@ -487,10 +487,13 @@ class Builder:
                 # Check if the package has a known OS-specific suffix
                 if (package_name.endswith('-dev') and os_type in ['debian', 'ubuntu']) or \
                 (package_name.endswith('-devel') and os_type in ['fedora', 'centos', 'redhat']):
-                    print(f"Installing {package_name} with {package_manager}")
-                    subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
-                    installed = True
-                    break
+                    try:
+                        print(f"Installing {package_name} with {package_manager}")                    
+                        subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
+                        installed = True
+                        break
+                    except subprocess.CalledProcessError:
+                        pass
             
             # If none of the packages in the tuple had a suffix, we try to install each until one succeeds
             if not installed:
