@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.6'
+__version__ = '0.1.0.7'
 
 def main():
         
@@ -1826,11 +1826,11 @@ class AWSBoto:
         # Define the block device mapping for an EBS volume to be attached to the instance
         block_device_mappings = [
         {
-            'DeviceName': '/dev/sdh',  # Ensure that this device name is supported and free in your EC2 instance
+            'DeviceName': '/dev/sdm',  # Ensure that this device name is supported and free in your EC2 instance
             'Ebs': {
                 'VolumeSize': disk_gib,  # Volume size in GiB (1 TB = 1024 GiB)
                 'DeleteOnTermination': True,  # True if the volume should be deleted after instance is terminated
-                'VolumeType': 'gp3',  # The type of volume to create (gp3 is generally a good default)
+                'VolumeType': 'gp2',  # The type of volume to create (gp3 is generally a good default)
                 # Additional parameters like Iops and Throughput can be specified for 'gp3' volume type
             },
         }]    
