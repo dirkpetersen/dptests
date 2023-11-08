@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.4'
+__version__ = '0.1.0.5'
 
 def main():
         
@@ -1390,7 +1390,7 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n' + cmdline
+        bootstrap_build += '\n' + cmdline + ' > ~/easybuild.out 2>&1'
         # once retrieved from Glacier we need to restore this 5 and 12 hours from now 
         
         ret = self.ssh_upload('ec2-user', ip,
@@ -1758,8 +1758,9 @@ class AWSBoto:
         return userdata
     
     def _ec2_easybuildrc(self, bscript='~/easybuildrc'):
+        threads = self.args.vcpus*2
         return textwrap.dedent(f'''        
-        test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash'
+        test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
         export MODULEPATH=/opt/eb/modules/all
         #
         export EASYBUILD_JOB_CORES=4
@@ -1768,7 +1769,7 @@ class AWSBoto:
         export EASYBUILD_PREFIX=/opt/eb
         export EASYBUILD_JOB_OUTPUT_DIR=$EASYBUILD_PREFIX/batch-output
         export EASYBUILD_JOB_BACKEND=Slurm
-        export EASYBUILD_PARALLEL=16
+        export EASYBUILD_PARALLEL={threads}
         #export EASYBUILD_GITHUB_USER=$USER
         export  EASYBUILD_UPDATE_MODULES_TOOL_CACHE=True
         export  EASYBUILD_ROBOT_PATHS=/home/ec2-user/.local/easybuild/easyconfigs:/opt/eb/fh/fh_easyconfigs
