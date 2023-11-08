@@ -1389,7 +1389,7 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n' + cmdline + ' > ~/easybuild.out 2>&1'
+        bootstrap_build += '\n' + cmdline + ' > ~/out.easybuild 2>&1'
         # once retrieved from Glacier we need to restore this 5 and 12 hours from now 
         
         ret = self.ssh_upload('ec2-user', ip,
@@ -1399,13 +1399,14 @@ class AWSBoto:
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
         ret = self.ssh_execute('ec2-user', ip, 
-            'nohup bash bootstrap.sh < /dev/null > bootstrap.out 2>&1 &')
+            'nohup bash bootstrap.sh < /dev/null > out.bootstrap 2>&1 &')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
         print(' but you can already login using "aws-eb ssh"')
 
-        #os.system(f'echo "ls -l {self.args.folders[0]}" >> ~/.bash_history')
+        os.system(f'echo "tail -f out.easybuild" >> ~/.bash_history')
+        os.system(f'echo "tail -f out.bootstrap" >> ~/.bash_history')
         ret = self.ssh_upload('ec2-user', ip,
             "~/.bash_history", ".bash_history")
         if ret.stdout or ret.stderr:
