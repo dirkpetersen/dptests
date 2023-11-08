@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.5'
+__version__ = '0.1.0.6'
 
 def main():
         
@@ -225,17 +225,16 @@ def subcmd_launch(args,cfg,bld,aws):
     if args.gputype:
         s3_prefix += f'_{args.gputype}'
 
-    print('s3_prefix:', s3_prefix)
-
     instance_type = aws.get_ec2_cheapest_instance_type(fam, args.vcpus, args.mem*1024)
     print('Cheapest:', instance_type)
 
     if not args.build:
-        aws.ec2_deploy(args.mem*1024, instance_type)
+        aws.ec2_deploy(2*1024, instance_type) # 2TB disk for the build instance
         return True
 
     # *******************************************
-    # Start EasyBuild process here     
+    # Start EasyBuild process here 
+    print('s3_prefix:', s3_prefix)
     ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
     bld.build_all(ecfgroot, s3_prefix, bio_only=True)
 
@@ -1728,7 +1727,7 @@ class AWSBoto:
         #! /bin/bash
         dnf install -y gcc mdadm
         #bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
-        bigdisks='/dev/sdh'
+        bigdisks='/dev/sdm'
         numdisk=$(echo $bigdisks | wc -w)
         mkdir /opt/eb
         if [[ $numdisk -gt 1 ]]; then
@@ -1761,16 +1760,17 @@ class AWSBoto:
         threads = self.args.vcpus*2
         return textwrap.dedent(f'''        
         test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
-        export MODULEPATH=/opt/eb/modules/all
+        # export MODULEPATH=/opt/eb/modules/all
+        export MODULEPATH=/opt/eb/modules/compiler:/opt/eb/modules/lang:/opt/eb/modules/tools:/opt/eb/modules/bio
         #
-        export EASYBUILD_JOB_CORES=4
+        export EASYBUILD_JOB_CORES={self.args.vcpus}
         export EASYBUILD_CUDA_COMPUTE_CAPABILITIES=7.5,8.0,8.6,9.0
-        export EASYBUILD_BUILDPATH=/dev/shm/$USER
+        # export EASYBUILD_BUILDPATH=/dev/shm/$USER # could run out of space
         export EASYBUILD_PREFIX=/opt/eb
         export EASYBUILD_JOB_OUTPUT_DIR=$EASYBUILD_PREFIX/batch-output
         export EASYBUILD_JOB_BACKEND=Slurm
         export EASYBUILD_PARALLEL={threads}
-        #export EASYBUILD_GITHUB_USER=$USER
+        # export EASYBUILD_GITHUB_USER=$USER
         export  EASYBUILD_UPDATE_MODULES_TOOL_CACHE=True
         export  EASYBUILD_ROBOT_PATHS=/home/ec2-user/.local/easybuild/easyconfigs:/opt/eb/fh/fh_easyconfigs
         ''').strip()
