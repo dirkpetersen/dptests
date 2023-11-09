@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.12'
+__version__ = '0.1.0.13'
 
 def main():
         
@@ -413,9 +413,8 @@ class Builder:
                 package_root = os.path.dirname(root)
 
                 # Create the tarball name
-                tarball_name = f"{package_dir}-{version_dir}.eb.tar.gz"
+                tarball_name = f'{package_dir}-{version_dir}.eb.tar.gz'
                 tarball_path = os.path.join(folder, package_dir, tarball_name)
-                tarball_path_tmp = os.path.join(tarball_path, ".tmp")
                 all_tars.append(tarball_path)
                 if os.path.isfile(tarball_path):
                     print(f"Tarball {tarball_path} already exists ...")
@@ -430,11 +429,11 @@ class Builder:
                     subprocess.run([
                         "tar",
                         "-I", f"pigz -p {self.args.vcpus}",  # Call pigz for compression with X CPUs
-                        "-cf", tarball_path_tmp,  # Create and verbosely list files processed
+                        "-cf", f'{tarball_path}.tmp',  # Create and verbosely list files processed
                         "-C", package_root,  # Change to the parent directory of version
                         version_dir  # Specify the directory to compress
                     ], check=True)
-                    os.rename(tarball_path_tmp, tarball_path)
+                    os.rename(f'{tarball_path}.tmp', tarball_path)
                     print(f"Successfully created tarball: {tarball_path}")
                 except subprocess.CalledProcessError as e:
                     print(f"An error occurred while creating tarball: {e}")
