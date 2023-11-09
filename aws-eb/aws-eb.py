@@ -1873,8 +1873,8 @@ class AWSBoto:
         threads = self.args.vcpus*2
         return textwrap.dedent(f'''        
         test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
-        # export MODULEPATH=/opt/eb/modules/all
-        export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
+        export MODULEPATH=/opt/eb/modules/all
+        # export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         #
         export EASYBUILD_JOB_CORES={self.args.vcpus}
         export EASYBUILD_CUDA_COMPUTE_CAPABILITIES=7.5,8.0,8.6,9.0
@@ -2733,8 +2733,6 @@ class AWSBoto:
         return monthly_cost, monthly_unit, daily_costs_by_instance, user_monthly_cost, \
                user_monthly_unit, user_daily_cost, user_daily_unit, user_name
     
-
-
 class ConfigManager:
     # we write all config entries as files to '~/.config'
     # to make it easier for bash users to read entries 
