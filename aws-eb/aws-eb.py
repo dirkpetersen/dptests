@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.18'
+__version__ = '0.1.0.19'
 
 def main():
         
@@ -231,7 +231,7 @@ def subcmd_launch(args,cfg,bld,aws):
     print('Cheapest:', instance_type)
 
     if not args.build:
-        aws.ec2_deploy(2*1024, instance_type) # 2TB disk for the build instance
+        aws.ec2_deploy(1024, instance_type) # 2TB disk for the build instance
         return True
 
     # *******************************************
@@ -356,7 +356,8 @@ class Builder:
                 print(f" Unpacking previous packages ... ")
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ")
-                subprocess.run(['eb', '--robot', '--umask=002', ebpath], check=True)                                
+                ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath], check=True)
+                print(f'*** EASYBUILD RETURNCODE: {ret.returncode}')
                 print(f" Tarring up new packages ... ")
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
                 print(f" Uploading new packages ... ")
@@ -461,17 +462,24 @@ class Builder:
                     all_tars.append(file_path)
                     if not os.path.exists(easybuild_path):
                         print(f"Unpacking {file_path} into {version_dir_path}...")
+                        # try:
+                        #     # Decompress with pigz through tar command
+                        #     subprocess.run([
+                        #         "tar",
+                        #         "-I", f"pigz -p {self.args.vcpus}",
+                        #         "-xf", file_path,
+                        #         "-C", root 
+                        #     ], check=True)
+                        #     print(f"Successfully unpacked: {file_path}")
+                        #     new_tars.append(file_path)
+                        # except subprocess.CalledProcessError as e:
+                        #     print(f"An error occurred while unpacking {file_path}: {e}")
                         try:
-                            # Decompress with pigz through tar command
-                            subprocess.run([
-                                "tar",
-                                "-I", f"pigz -p {self.args.vcpus}",
-                                "-xf", file_path,
-                                "-C", root 
-                            ], check=True)
+                            # Extract the tar.gz file using tarfile
+                            with tarfile.open(file_path, "r:gz") as tar:
+                                tar.extractall(path=root)
                             print(f"Successfully unpacked: {file_path}")
-                            new_tars.append(file_path)
-                        except subprocess.CalledProcessError as e:
+                        except Exception as e:
                             print(f"An error occurred while unpacking {file_path}: {e}")
                     else:
                         pass
