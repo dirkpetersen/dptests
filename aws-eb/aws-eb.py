@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.14'
+__version__ = '0.1.0.15'
 
 def main():
         
@@ -59,7 +59,7 @@ def args_version(cfg):
     print(f'AWS-EB version: {__version__}')
     print(f'Python version:\n{sys.version}')
     try:
-        print('Rclone version:', subprocess.run([os.path.join(cfg.binfolder, 'rclone'), '--version'], 
+        print('Rclone version:', subprocess.run([os.path.join(cfg.binfolderx, 'rclone'), '--version'], 
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True).stdout.split('\n')[0])
     except FileNotFoundError as e:
         print(f'Error: {e}')
@@ -71,25 +71,27 @@ def subcmd_config(args, cfg, aws):
     # arguments are Class instances passed from main
 
     first_time=True
-    binfolder = cfg.read('general', 'binfolder')
-    if not binfolder:
-        binfolder = f'{cfg.home_dir}/.local/bin'
-        if not os.path.exists(binfolder):
-            os.makedirs(binfolder, mode=0o775)
+    
+    if not cfg.binfolder:
+        binfolder = '~/.local/bin'
+        cfg.binfolderx = os.path.expanduser(binfolder)
+        if not os.path.exists(binfolderx):
+            os.makedirs(binfolderx, mode=0o775)
         cfg.write('general', 'binfolder', binfolder)
     else:
         first_time=False
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     if not cfg.read('general', 'no-rclone-download'):
-        if os.path.exists(os.path.join(binfolder,'rclone')):
-            if os.path.exists(os.path.join(binfolder,'bak.rclone')):
-                os.remove(os.path.join(binfolder,'bak.rclone'))
-            os.rename(os.path.join(binfolder,'rclone'),os.path.join(binfolder,'bak.rclone'))
+        
+        if os.path.exists(os.path.join(cfg.binfolderx,'rclone')):
+            if os.path.exists(os.path.join(cfg.binfolderx,'bak.rclone')):
+                os.remove(os.path.join(cfg.binfolderx,'bak.rclone'))
+            os.rename(os.path.join(cfg.binfolderx,'rclone'),os.path.join(cfg.binfolderx,'bak.rclone'))
         print(" Installing rclone ... please wait ... ", end='', flush=True)
         rclone_url = 'https://downloads.rclone.org/rclone-current-linux-amd64.zip'
         cfg.copy_binary_from_zip_url(rclone_url, 'rclone', 
-                            '/rclone-v*/',binfolder)
+                            '/rclone-v*/',cfg.binfolderx)
         print("Done!",flush=True)
 
     # general setup 
@@ -98,7 +100,7 @@ def subcmd_config(args, cfg, aws):
 
     if args.monitor:
         # monitoring only setup, do not continue 
-        me = os.path.join(binfolder,'aws-eb.py')
+        me = os.path.join(cfg.binfolderx,'aws-eb.py')
         cfg.write('general', 'email', args.monitor)
         cfg.add_systemd_cron_job(f'{me} launch --monitor','30')
         return True
@@ -903,7 +905,7 @@ class Rclone:
     def __init__(self, args, cfg):
         self.args = args
         self.cfg = cfg
-        self.rc = os.path.join(self.cfg.binfolder,'rclone')
+        self.rc = os.path.join(self.cfg.binfolderx,'rclone')
 
     # ensure that file exists or nagging /home/dp/.config/rclone/rclone.conf
 
@@ -2745,7 +2747,8 @@ class ConfigManager:
         self.home_dir = os.path.expanduser('~')
         self.config_root_local = os.path.join(self.home_dir, '.config', 'aws-eb')
         self.config_root = self._get_config_root()
-        self.binfolder = self.read('general', 'binfolder')
+        self.binfolder = self.read('general', 'binfolder').replace(self.home_dir,'~')
+        self.binfolderx = os.path.expanduser(self.binfolder)
         self.homepaths = self._get_home_paths()
         self.awscredsfile = os.path.join(self.home_dir, '.aws', 'credentials')
         self.awsconfigfile = os.path.join(self.home_dir, '.aws', 'config')
