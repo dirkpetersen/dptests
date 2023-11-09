@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.13'
+__version__ = '0.1.0.14'
 
 def main():
         
@@ -236,7 +236,7 @@ def subcmd_launch(args,cfg,bld,aws):
     # Start EasyBuild process here 
     print('s3_prefix:', s3_prefix)
     ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
-    bld.build_all(ecfgroot, s3_prefix, bio_only=True)
+    bld.build_all(ecfgroot, s3_prefix, bio_only=args.bioonly)
 
     #if not aws.check_bucket_access_folders(args.folders):
     #    return False
@@ -1496,9 +1496,17 @@ class AWSBoto:
         ret = self.ssh_upload('ec2-user', ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
         ret = self.ssh_upload('ec2-user', ip,
-            bootstrap_build, "bootstrap.sh", is_string=True)
+            bootstrap_build, "bootstrap.sh", is_string=True)        
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
+        ret = self.ssh_execute('ec2-user', ip, 
+            'mkdir -p ~/.config/aws-eb/general')
+        if ret.stdout or ret.stderr:
+            print(ret.stdout, ret.stderr)        
+        ret = self.ssh_upload('ec2-user', ip,
+            "~/.config/aws-eb/general/*", ".config/aws-eb/general/")
+        if ret.stdout or ret.stderr:
+            print(ret.stdout, ret.stderr)        
         ret = self.ssh_execute('ec2-user', ip, 
             'nohup bash bootstrap.sh < /dev/null > out.bootstrap 2>&1 &')
         if ret.stdout or ret.stderr:
@@ -3470,6 +3478,8 @@ def parse_arguments():
     parser_launch.add_argument( '--monitor', '-n', dest='monitor', action='store_true', default=False,
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
+        help="Build the Easybuild packages on current system.")
+    parser_launch.add_argument( '--bio-only', '-o', dest='bioonly', action='store_true', default=False,
         help="Build the Easybuild packages on current system.")
     
     # ***
