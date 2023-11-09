@@ -205,6 +205,157 @@ optional arguments:
                         Download to other folder than default
 ```
 
+
+## after 1 day 
+
+after 24h of building I see this: 
+
+```
+ec2-user@aws-eb:~$ ml avail
+
+--------------------------------------- /opt/eb/modules/all ----------------------------------------
+   ADMIXTURE/1.3.0                                     XML-LibXML/2.0207-GCCcore-11.3.0
+   ATK/2.38.0-GCCcore-11.3.0                           XPLOR-NIH/3.4-Linux_x86_64
+   Archive-Zip/1.68-GCCcore-11.3.0                     XZ/5.2.5-GCCcore-11.2.0
+   Arrow/8.0.0-foss-2022a                              XZ/5.2.5-GCCcore-11.3.0             (D)
+   Autoconf/2.71-GCCcore-11.2.0                        Xvfb/21.1.3-GCCcore-11.3.0
+   Autoconf/2.71-GCCcore-11.3.0                        ZeroMQ/4.3.4-GCCcore-11.3.0
+   Autoconf/2.71                               (D)     Zip/3.0-GCCcore-11.3.0
+   Automake/1.16.4-GCCcore-11.2.0                      arrow-R/8.0.0-foss-2022a-R-4.2.1
+   Automake/1.16.5-GCCcore-11.3.0                      binutils/2.32
+   Automake/1.16.5                             (D)     binutils/2.34
+   Autotools/20210726-GCCcore-11.2.0                   binutils/2.35
+   Autotools/20220317-GCCcore-11.3.0                   binutils/2.36.1
+   Autotools/20220317                          (D)     binutils/2.37-GCCcore-11.2.0
+   BLAST/2.2.26-Linux_x86_64                           binutils/2.37
+   BLIS/0.9.0-GCC-11.3.0                               binutils/2.38-GCCcore-11.3.0
+   BeautifulSoup/4.10.0-GCCcore-11.3.0                 binutils/2.38
+   Bio-DB-HTS/3.01-GCC-11.3.0                          binutils/2.39-GCCcore-12.2.0
+   BioPerl/1.7.8-GCCcore-11.3.0                        binutils/2.39                       (D)
+   Biopython/1.79-foss-2022a                           bzip2/1.0.8-GCCcore-11.2.0
+   Bison/3.3.2                                         bzip2/1.0.8-GCCcore-11.3.0          (D)
+   Bison/3.7.6-GCCcore-11.2.0                          cURL/7.78.0-GCCcore-11.2.0
+   Bison/3.8.2-GCCcore-11.3.0                          cURL/7.83.0-GCCcore-11.3.0          (D)
+   Bison/3.8.2-GCCcore-12.2.0                          cairo/1.17.4-GCCcore-11.3.0
+   Bison/3.8.2                                 (D)     expat/2.4.1-GCCcore-11.2.0
+   Blosc/1.21.3-GCCcore-11.3.0                         expat/2.4.8-GCCcore-11.3.0
+   Blosc2/2.6.1-GCCcore-11.3.0                         expat/2.4.9-GCCcore-12.2.0          (D)
+   Boost/1.79.0-GCC-11.3.0                             flex/2.6.4-GCCcore-11.2.0
+   Brotli/1.0.9-GCCcore-11.2.0                         flex/2.6.4-GCCcore-11.3.0
+   Brotli/1.0.9-GCCcore-11.3.0                 (D)     flex/2.6.4-GCCcore-12.2.0
+   CMake/3.21.1-GCCcore-11.2.0                         flex/2.6.4                          (D)
+   CMake/3.23.1-GCCcore-11.3.0                         fontconfig/2.14.0-GCCcore-11.3.0
+   CMake/3.24.3-GCCcore-11.3.0                 (D)     foss/2022a
+   Compress-Raw-Zlib/2.202-GCCcore-11.3.0              freetype/2.11.0-GCCcore-11.2.0
+   DB/18.1.40-GCCcore-11.2.0                           freetype/2.12.1-GCCcore-11.3.0      (D)
+   DB/18.1.40-GCCcore-11.3.0                           gettext/0.21-GCCcore-11.2.0
+   DB/18.1.40-GCCcore-12.2.0                   (D)     gettext/0.21-GCCcore-11.3.0
+   DB_File/1.858-GCCcore-11.3.0                        gettext/0.21                        (D)
+   Doxygen/1.9.4-GCCcore-11.3.0                        git/2.33.1-GCCcore-11.2.0-nodocs
+   Eigen/3.4.0-GCCcore-11.3.0                          git/2.36.0-GCCcore-11.3.0-nodocs    (D)
+   FFTW.MPI/3.3.10-gompi-2022a                         gompi/2022a
+   FFTW/3.3.10-GCC-11.3.0                              googletest/1.11.0-GCCcore-11.3.0
+   FLAC/1.3.4-GCCcore-11.3.0                           gperf/3.1-GCCcore-11.2.0
+   Flask/2.2.2-GCCcore-11.3.0                          gperf/3.1-GCCcore-11.3.0            (D)
+   FlexiBLAS/3.2.0-GCC-11.3.0                          groff/1.22.4-GCCcore-11.2.0
+   FriBidi/1.0.12-GCCcore-11.3.0                       groff/1.22.4-GCCcore-11.3.0
+   GCC/11.2.0                                          groff/1.22.4-GCCcore-12.2.0         (D)
+   GCC/11.3.0                                          gzip/1.12-GCCcore-11.3.0
+   GCC/12.2.0                                  (D)     help2man/1.48.3-GCCcore-11.2.0
+   GCCcore/11.2.0                                      help2man/1.49.2-GCCcore-11.3.0
+   GCCcore/11.3.0                                      help2man/1.49.2-GCCcore-12.2.0      (D)
+   GCCcore/12.2.0                              (D)     hwloc/2.7.1-GCCcore-11.3.0
+   GDAL/3.5.0-foss-2022a                               hypothesis/6.46.7-GCCcore-11.3.0
+   GEOS/3.10.3-GCC-11.3.0                              intltool/0.51.0-GCCcore-11.2.0
+   GLPK/5.0-GCCcore-11.3.0                             intltool/0.51.0-GCCcore-11.3.0      (D)
+   GLib/2.72.1-GCCcore-11.3.0                          jbigkit/2.1-GCCcore-11.3.0
+   GMP/6.2.1-GCCcore-11.2.0                            jemalloc/5.3.0-GCCcore-11.3.0
+   GMP/6.2.1-GCCcore-11.3.0                    (D)     libGLU/9.0.2-GCCcore-11.3.0
+   GObject-Introspection/1.72.0-GCCcore-11.3.0         libaec/1.0.6-GCCcore-11.3.0
+   GSL/2.7-GCC-11.2.0                                  libaio/0.3.112-GCCcore-11.3.0
+   GSL/2.7-GCC-11.3.0                          (D)     libarchive/3.5.1-GCCcore-11.2.0
+   GTK2/2.24.33-GCCcore-11.3.0                         libarchive/3.6.1-GCCcore-11.3.0     (D)
+   Gdk-Pixbuf/2.42.8-GCCcore-11.3.0                    libdeflate/1.10-GCCcore-11.3.0
+   Ghostscript/9.56.1-GCCcore-11.3.0                   libdrm/2.4.110-GCCcore-11.3.0
+   GitPython/3.1.27-GCCcore-11.3.0                     libevent/2.1.12-GCCcore-11.3.0
+   HDF/4.2.15-GCCcore-11.3.0                           libfabric/1.15.1-GCCcore-11.3.0
+   HDF5/1.12.2-gompi-2022a                             libffi/3.4.2-GCCcore-11.2.0
+   HTSlib/1.15.1-GCC-11.3.0                            libffi/3.4.2-GCCcore-11.3.0         (D)
+   HarfBuzz/4.2.1-GCCcore-11.3.0                       libgeotiff/1.7.1-GCCcore-11.3.0
+   ICU/71.1-GCCcore-11.3.0                             libgit2/1.4.3-GCCcore-11.3.0
+   IPython/8.5.0-GCCcore-11.3.0                        libglvnd/1.4.0-GCCcore-11.3.0
+   ImageMagick/7.1.0-37-GCCcore-11.3.0                 libiconv/1.17-GCCcore-11.3.0
+   JasPer/2.0.33-GCCcore-11.3.0                        libjpeg-turbo/2.0.6-GCCcore-11.2.0
+   Java/11.0.20                                (11)    libjpeg-turbo/2.1.3-GCCcore-11.3.0  (D)
+   Judy/1.0.5-GCCcore-11.3.0                           libogg/1.3.5-GCCcore-11.3.0
+   LAME/3.100-GCCcore-11.3.0                           libopus/1.3.1-GCCcore-11.3.0
+   LLVM/14.0.3-GCCcore-11.3.0                          libpciaccess/0.16-GCCcore-11.3.0
+   LZO/2.10-GCCcore-11.3.0                             libpng/1.6.37-GCCcore-11.2.0
+   LibTIFF/4.3.0-GCCcore-11.3.0                        libpng/1.6.37-GCCcore-11.3.0        (D)
+   LittleCMS/2.13.1-GCCcore-11.3.0                     libreadline/8.1-GCCcore-11.2.0
+   M4/1.4.18                                           libreadline/8.1.2-GCCcore-11.3.0
+   M4/1.4.19-GCCcore-11.2.0                            libreadline/8.2-GCCcore-12.2.0      (D)
+   M4/1.4.19-GCCcore-11.3.0                            libsndfile/1.1.0-GCCcore-11.3.0
+   M4/1.4.19-GCCcore-12.2.0                            libsodium/1.0.18-GCCcore-11.3.0
+   M4/1.4.19                                   (D)     libtirpc/1.3.2-GCCcore-11.3.0
+   MPFR/4.1.0-GCCcore-11.3.0                           libtool/2.4.6-GCCcore-11.2.0
+   Mako/1.2.0-GCCcore-11.3.0                           libtool/2.4.7-GCCcore-11.3.0
+   Maven/3.6.3                                         libtool/2.4.7                       (D)
+   Mesa/22.0.3-GCCcore-11.3.0                          libunwind/1.6.2-GCCcore-11.3.0
+   Meson/0.62.1-GCCcore-11.3.0                         libvorbis/1.3.7-GCCcore-11.3.0
+   MetaGeneAnnotator/20080819-x86-64                   libxml2/2.9.10-GCCcore-11.2.0
+   NASM/2.15.05-GCCcore-11.2.0                         libxml2/2.9.13-GCCcore-11.3.0       (D)
+   NASM/2.15.05-GCCcore-11.3.0                 (D)     libxslt/1.1.34-GCCcore-11.3.0
+   NLopt/2.7.1-GCCcore-11.3.0                          libyaml/0.2.5-GCCcore-11.3.0
+   Ninja/1.10.2-GCCcore-11.3.0                         lxml/4.9.1-GCCcore-11.3.0
+   OpenBLAS/0.3.20-GCC-11.3.0                          lz4/1.9.3-GCCcore-11.3.0
+   OpenJPEG/2.5.0-GCCcore-11.3.0                       make/4.3-GCCcore-11.3.0
+   OpenMPI/4.1.4-GCC-11.3.0                            ncurses/6.2-GCCcore-11.2.0
+   OpenPGM/5.2.122-GCCcore-11.3.0                      ncurses/6.2
+   OpenSSL/1.1                                         ncurses/6.3-GCCcore-11.3.0
+   PCRE/8.45-GCCcore-11.2.0                            ncurses/6.3-GCCcore-12.2.0          (D)
+   PCRE/8.45-GCCcore-11.3.0                    (D)     netCDF/4.9.0-gompi-2022a
+   PCRE2/10.40-GCCcore-11.3.0                          nettle/3.8-GCCcore-11.3.0
+   PMIx/4.1.2-GCCcore-11.3.0                           networkx/2.8.4-foss-2022a
+   PROJ/9.0.0-GCCcore-11.3.0                           nlohmann_json/3.10.5-GCCcore-11.3.0
+   Pango/1.50.7-GCCcore-11.3.0                         nodejs/16.15.1-GCCcore-11.3.0
+   Perl/5.34.0-GCCcore-11.2.0                          numactl/2.0.14-GCCcore-11.3.0
+   Perl/5.34.1-GCCcore-11.3.0                  (D)     pixman/0.40.0-GCCcore-11.3.0
+   PyTables/3.8.0-foss-2022a                           pkg-config/0.29.2-GCCcore-11.2.0
+   PyYAML/6.0-GCCcore-11.3.0                           pkg-config/0.29.2-GCCcore-11.3.0    (D)
+   Python/3.9.6-GCCcore-11.2.0-bare                    pkgconf/1.8.0-GCCcore-11.3.0
+   Python/3.10.4-GCCcore-11.3.0-bare                   pkgconf/1.8.0
+   Python/3.10.4-GCCcore-11.3.0                (D)     pkgconf/1.9.3-GCCcore-12.2.0        (D)
+   R/4.2.1-foss-2022a                                  py-cpuinfo/9.0.0-GCCcore-11.3.0
+   RE2/2022-06-01-GCCcore-11.3.0                       pybind11/2.9.2-GCCcore-11.3.0
+   RapidJSON/1.1.0-GCCcore-11.3.0                      ruamel.yaml/0.17.21-GCCcore-11.3.0
+   Rust/1.60.0-GCCcore-11.3.0                          scikit-build/0.15.0-GCCcore-11.3.0
+   SQLite/3.36-GCCcore-11.2.0                          scikit-learn/1.1.2-foss-2022a
+   SQLite/3.38.3-GCCcore-11.3.0                (D)     snakemake/7.22.0-foss-2022a
+   SWIG/4.0.2-GCCcore-11.2.0                           snappy/1.1.9-GCCcore-11.3.0
+   ScaLAPACK/2.2.0-gompi-2022a-fb                      tabixpp/1.1.2-GCC-11.3.0
+   SciPy-bundle/2022.05-foss-2022a                     tantan/40-GCC-11.2.0
+   Szip/2.1.1-GCCcore-11.3.0                           tbl2asn/20230713-linux64
+   Tcl/8.6.11-GCCcore-11.2.0                           unimap/0.1-GCCcore-11.3.0
+   Tcl/8.6.12-GCCcore-11.3.0                   (D)     utf8proc/2.7.0-GCCcore-11.3.0
+   Tk/8.6.12-GCCcore-11.3.0                            util-linux/2.37-GCCcore-11.2.0
+   UCC/1.0.0-GCCcore-11.3.0                            util-linux/2.38-GCCcore-11.3.0      (D)
+   UCX/1.12.1-GCCcore-11.3.0                           vispr/0.4.14-foss-2022a
+   UDUNITS/2.2.28-GCCcore-11.3.0                       webin-cli/1.8.9
+   USEARCH/11.0.667-i86linux32                         wgsim/20111017-GCC-11.2.0
+   UnZip/6.0-GCCcore-11.2.0                            xorg-macros/1.19.3-GCCcore-11.3.0
+   UnZip/6.0-GCCcore-11.3.0                    (D)     zlib/1.2.11-GCCcore-11.2.0
+   UniFrac/1.3.2-foss-2022a                            zlib/1.2.11
+   VSEARCH/2.22.1-GCC-11.3.0                           zlib/1.2.12-GCCcore-11.3.0
+   VarScan/2.4.4-Java-11                               zlib/1.2.12-GCCcore-12.2.0
+   VirSorter2/2.2.4-foss-2022a                         zlib/1.2.12                         (D)
+   WFA2/2.3.3-GCCcore-11.3.0                           zstd/1.5.2-GCCcore-11.3.0
+   X11/20220504-GCCcore-11.3.0
+
+```
+
+
+
 ## supported OS 
 
 ```
