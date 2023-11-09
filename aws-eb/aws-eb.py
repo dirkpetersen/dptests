@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.17'
+__version__ = '0.1.0.18'
 
 def main():
         
@@ -680,6 +680,8 @@ class Builder:
                           os.path.join(target,'sources'), 
                           '--links', '--checksum'
                         )
+        
+        self._make_files_executable(os.path.join(target,'sources','generic'))
 
         print ('  Downloading Software ... ')
         ret = rclone.copy(f'{source}/{s3_prefix}/software/',
@@ -718,6 +720,14 @@ class Builder:
    
         return -1
 
+    def _make_files_executable(self, path):
+        for root, dirs, files in self._walker(path):
+            for file in files:
+                if not file.endswith('.tar.gz'):
+                    file_path = os.path.join(root, file)
+                    if not os.access(file_path, os.X_OK):
+                        print(f'Making {file_path} executable')
+                        os.chmod(file_path, os.stat(file_path).st_mode | 0o111)
 
     def test_write(self, directory):
         testpath=os.path.join(directory,'.aws-eb.test')
