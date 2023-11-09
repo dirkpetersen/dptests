@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.15'
+__version__ = '0.1.0.17'
 
 def main():
         
@@ -608,19 +608,20 @@ class Builder:
         print ('  Uploading Modules ... ')
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
-                          '--links' 
+                          '--links', '--checksum'  
                         )
 
         print ('  Uploading Sources ... ')
         ret = rclone.copy(os.path.join(source,'sources'),
                           f'{target}/sources/', 
-                          '--links'
+                          '--links', '--checksum'
                         )
 
         print ('  Uploading Software ... ')
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
-                          '--links', '--include', '*.eb.tar.gz' 
+                          '--links', '--checksum',
+                          '--include', '*.eb.tar.gz' 
                         )
                 
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
@@ -646,7 +647,7 @@ class Builder:
         #    'renames': 0, 'retryError': True, 'speed': 0, 'totalBytes': 0, 'totalChecks': 0, 
         #    'totalTransfers': 0, 'transferTime': 0, 'transfers': 0}   
         
-        print(f'  Source and s3 are identical. {ttransfers} files with {total} transferred.\n')
+        print(f'Upload finished. {ttransfers} files with {total} transferred.\n')
 
     def download(self, source, target, s3_prefix=None):
                
@@ -671,19 +672,20 @@ class Builder:
         print ('  Downloading Modules ... ')
         ret = rclone.copy(f'{source}/{s3_prefix}/modules/',
                           os.path.join(target,'modules'), 
-                          '--links' 
+                          '--links', '--checksum'
                         )
 
         print ('  Downloading Sources ... ')
         ret = rclone.copy(f'{source}/sources/',
                           os.path.join(target,'sources'), 
-                          '--links'
+                          '--links', '--checksum'
                         )
 
         print ('  Downloading Software ... ')
         ret = rclone.copy(f'{source}/{s3_prefix}/software/',
                           os.path.join(target,'software'), 
-                          '--links', '--include', '*.eb.tar.gz' 
+                          '--links', '--checksum', 
+                          '--include', '*.eb.tar.gz' 
                         )
 
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
@@ -712,7 +714,7 @@ class Builder:
         # checksum
 
  
-        print(f'Upload finished {ttransfers} files with {total} transferred.')
+        print(f'Download finished. {ttransfers} files with {total} transferred.')
    
         return -1
 
@@ -1923,8 +1925,9 @@ class AWSBoto:
         chmod +x ~/.local/bin/aws-eb.py
         # wait for pip3 to exist in PATH and lmod to be installed
         until which pip3 > /dev/null 2>&1; do sleep 5; done; echo "pip3 is now in PATH"
-        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists."   
-        python3 -m pip install wheel boto3 easybuild packaging
+        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists."  
+        python3 -m pip install --upgrade wheel
+        python3 -m pip install boto3 easybuild packaging
         source ~/easybuildrc
         aws-eb.py config --monitor '{emailaddr}'
         echo "" >> ~/.bash_profile
@@ -3481,7 +3484,7 @@ def parse_arguments():
     parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
         help="Build the Easybuild packages on current system.")
     parser_launch.add_argument( '--bio-only', '-o', dest='bioonly', action='store_true', default=False,
-        help="Build the Easybuild packages on current system.")
+        help="Build only life sciences (bio) packages and dependencies.")
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
