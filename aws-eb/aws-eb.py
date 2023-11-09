@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.10'
+__version__ = '0.1.0.11'
 
 def main():
         
@@ -349,7 +349,7 @@ class Builder:
                     self._install_packages(dep)
                 # install easybuild package 
                 print(f" Downloading previous packages ... ")
-                self.download(f':s3:{self.cfg.archiveroot}', self.eb_root, s3_prefix)
+                self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix)
                 print(f" Unpacking previous packages ... ")
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ")
@@ -358,7 +358,7 @@ class Builder:
                 print(f" Tarring up new packages ... ")
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
                 print(f" Uploading new packages ... ")
-                self.upload(self.eb_root, f':s3:{self.cfg.archiveroot}', s3_prefix)
+                self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
                                                 
             except subprocess.CalledProcessError:                
                 print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.")
@@ -2745,9 +2745,7 @@ class ConfigManager:
         self.awsconfigfileshr = os.path.join(self.config_root, 'aws_config')
         self.bucket = self.read('general','bucket')
         self.archiveroot = self.read('general','archiveroot')
-        self.archivepath = os.path.join( 
-             self.bucket,
-             self.archiveroot,)
+        self.archivepath = f'{self.bucket}/{self.archiveroot}'
         self.awsprofile = os.getenv('AWS_PROFILE', 'default')
         profs = self.get_aws_profiles()
         if "aws" in profs:
