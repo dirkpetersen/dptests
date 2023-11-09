@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.11'
+__version__ = '0.1.0.12'
 
 def main():
         
@@ -321,6 +321,7 @@ class Builder:
 
         # install a lot of required junk 
         self._install_os_dependencies(easyconfigroot)
+        softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
         for root, dirs, files in self._walker(easyconfigroot):
@@ -353,8 +354,7 @@ class Builder:
                 print(f" Unpacking previous packages ... ")
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ")
-                subprocess.run(['eb', '--robot', '--umask=002', ebpath], check=True)                
-                softwaredir = os.path.join(self.eb_root, 'software')
+                subprocess.run(['eb', '--robot', '--umask=002', ebpath], check=True)                                
                 print(f" Tarring up new packages ... ")
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
                 print(f" Uploading new packages ... ")
@@ -604,19 +604,19 @@ class Builder:
     
         rclone = Rclone(self.args,self.cfg)
 
-        print ('  Copying Modules ... ')
+        print ('  Uploading Modules ... ')
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
                           '--links' 
                         )
 
-        print ('  Copying Sources ... ')
+        print ('  Uploading Sources ... ')
         ret = rclone.copy(os.path.join(source,'sources'),
                           f'{target}/sources/', 
                           '--links'
                         )
 
-        print ('  Copying Software ... ')
+        print ('  Uploading Software ... ')
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
                           '--links', '--include', '*.eb.tar.gz' 
@@ -667,19 +667,19 @@ class Builder:
             
         rclone = Rclone(self.args,self.cfg)
             
-        print ('  Copying Modules ... ')
+        print ('  Downloading Modules ... ')
         ret = rclone.copy(f'{source}/{s3_prefix}/modules/',
                           os.path.join(target,'modules'), 
                           '--links' 
                         )
 
-        print ('  Copying Sources ... ')
-        ret = rclone.copy(f'{source}/{s3_prefix}/sources/',
+        print ('  Downloading Sources ... ')
+        ret = rclone.copy(f'{source}/sources/',
                           os.path.join(target,'sources'), 
                           '--links'
                         )
 
-        print ('  Copying Software ... ')
+        print ('  Downloading Software ... ')
         ret = rclone.copy(f'{source}/{s3_prefix}/software/',
                           os.path.join(target,'software'), 
                           '--links', '--include', '*.eb.tar.gz' 
