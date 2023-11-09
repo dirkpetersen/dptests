@@ -1,17 +1,37 @@
 # AWS-EB (Easybuild in AWS)
 
-This tool builds HPC Software using the Easybuild (EB) Framework. It attempts to build the latest version of all packages and then tar and upload these builds to AWS S3. The EB root (EASYBUILD_PREFIX) is currently set to /opt/eb.
+This tool builds HPC software using the Easybuild (EB) Framework. It attempts to compile the latest version of all packages and then tar and upload these builds to AWS S3. The EB root (EASYBUILD_PREFIX) is currently set to /opt/eb.
+
+## Try it
+
+Make sure you have your AWS creds in ~/.aws/credentials and your AWS region is set. First run the config and then launch --list to see what cpu types are there. 
+
+```
+./aws-eb.py config
+./aws-eb.py launch --list
+./aws-eb.py launch --cpu-type epyc-gen-4 --bio-only
+```
 
 ## Build Workflow 
 
+This is happening behind the scenes: 
+
 1. Launch AWS instance 
-1. Upload and launch bootstrap.sh script 
+1. Attach 1TB EBS volumne to /opt/eb
+1. Upload and launch bootstrap.sh script and other configs
 1. Install basic software (Python3, Apptainer, etc) 
-1. Launch aws-eb script with --build option and same parameters as launched first
+1. Launch aws-eb script with `--build` option and same parameters as launched first
 1. Download all tarred binaries from S3 and unpack them and download sources and modules
-1. Loop through all *.eb files (except __archive__) and build the latest version of each software
-1. Tar up results after each build and upload to S3 
-1. Downloads happen before AND after each eb --robot execution. This allows multiple build machines to be running in parallel building for the same architecture while they are synced using S3
+1. Loop through all *.eb files (except `__archive__`) and for each eb file:
+   1. check for allowed toolchains and see if --bio-only
+   1. install all osdependencies via dnf or apt
+   1. download software from shared S3 bucket 
+   1. set all files under sources/generic to executable 
+   1. untar .eb.tar.gz files 
+   1. build the latest version of each software using `eb --robot`
+   1. tar new software to .eb.tar.gz files 
+   1. upload software to shared S3 bucket 
+1. run `aws-eb.py ssh --terminate <instance>` after the all easyconfigs are processed.
 
 ## S3 Folder Layout 
 
@@ -26,41 +46,41 @@ Each CPU family or GPU type is mapped to all AWS instance families that have thi
 This will allow to pick any spot instance that has a certain compatible hardware configuration. 
 
 ```
-        self.cpu_types = {
-            "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
-            "graviton-3": ['m7g', 'c7g', 'c7gn'],
-            "epyc-gen-1": ['t3a'],
-            "epyc-gen-2": ['c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
-            "epyc-gen-3": ['c6a', 'm6a', 'r6a', 'p5'],
-            "epyc-gen-4": ['c7a', 'm7a', 'r7a'],
-            "xeon-gen-1": ['c4', 'm4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3'],
-            "xeon-gen-2": ['c5', 'm5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
-            "xeon-gen-3": ['c6i', 'm6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
-            "xeon-gen-4": ['c7i', 'm7i', 'm7i-flex'],
-            "core-i7-mac": ['mac1']
-        }
-        self.gpu_types = {
-            "h100": 'p5',
-            "a100": 'p4',
-            "v100": 'p3',  
-            "k80": 'p2',
-            "gaudi": 'dl1',
-            "trainium": 'trn1',
-            "inferentia2": 'inf2',
-            "inferentia1": 'inf1',
-            "t4g": 'g5g',
-            "a10g": 'g5',
-            "t4": 'g4dn',
-            "v520": 'g4ad',
-            "m60": 'g3',
-            "fpga": 'f1',
-            "u30": 'vt1'            
-        }
+self.cpu_types = {
+    "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
+    "graviton-3": ['m7g', 'c7g', 'c7gn'],
+    "epyc-gen-1": ['t3a'],
+    "epyc-gen-2": ['c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
+    "epyc-gen-3": ['c6a', 'm6a', 'r6a', 'p5'],
+    "epyc-gen-4": ['c7a', 'm7a', 'r7a'],
+    "xeon-gen-1": ['c4', 'm4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3'],
+    "xeon-gen-2": ['c5', 'm5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
+    "xeon-gen-3": ['c6i', 'm6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
+    "xeon-gen-4": ['c7i', 'm7i', 'm7i-flex'],
+    "core-i7-mac": ['mac1']
+}
+self.gpu_types = {
+    "h100": 'p5',
+    "a100": 'p4',
+    "v100": 'p3',  
+    "k80": 'p2',
+    "gaudi": 'dl1',
+    "trainium": 'trn1',
+    "inferentia2": 'inf2',
+    "inferentia1": 'inf1',
+    "t4g": 'g5g',
+    "a10g": 'g5',
+    "t4": 'g4dn',
+    "v520": 'g4ad',
+    "m60": 'g3',
+    "fpga": 'f1',
+    "u30": 'vt1'            
+}
 ```
 
 ## build-machine 
 
-The most cost efficient instance type is not clear yet. I started with c7a.xlarge with 4 cpus and 8GB RAM. It is not clear if it would make sense to use a larger instance type As there are long periods of time where only a single vcpu is running. At the tail end it installs R packages for hours which is limited to a single CPU 
+The most cost efficient instance type is not clear yet. I started with c7a.xlarge with 4 vcpus and 8GB RAM. It may not make sense to use a larger instance type as there are long periods of time where only a single vcpu is running. At the tail end it installs R packages for hours which is limited to a single vcpu. Perhaps run just more instances  
 
 ![image](https://github.com/dirkpetersen/dptests/assets/1427719/973f973d-14f0-41af-8f7e-838d59ad58f4)
 
@@ -87,21 +107,103 @@ export  EASYBUILD_UPDATE_MODULES_TOOL_CACHE=True
 export  EASYBUILD_ROBOT_PATHS=/home/ec2-user/.local/easybuild/easyconfigs:/opt/eb/fh/fh_easyconfigs
 ```
 
+## allowed toolchains 
 
-## eb toolchains 
+These are currently the only allowed toolchains 
 
-allowed_toolchains = ['GCC', 'GCCcore', 'SYSTEM', 'foss', 'fosscuda']
+`allowed_toolchains = ['system', 'GCC', 'GCCcore', 'foss', 'fosscuda']`
 
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xESMF/xESMF-0.3.0-intel-2020b.eb:toolchain = {'name': 'intel', 'version': '2020b'}
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xarray/xarray-0.16.2-fosscuda-2020b.eb:toolchain = {'name': 'fosscuda', 'version': '2020b'}
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xarray/xarray-2022.6.0-foss-2022a.eb:toolchain = {'name': 'foss', 'version': '2022a'}
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xarray/xarray-2023.4.2-gfbf-2022b.eb:toolchain = {'name': 'gfbf', 'version': '2022b'}
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xbitmaps/xbitmaps-1.1.1.eb:toolchain = SYSTEM
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xclip/xclip-0.13-GCCcore-11.3.0.eb:toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xmlf90/xmlf90-1.5.4-GCC-10.2.0.eb:toolchain = {'name': 'GCC', 'version': '10.2.0'}
-/home/ec2-user/miniconda3/easybuild/easyconfigs/x/xmlf90/xmlf90-1.5.4-iccifort-2019.5.281.eb:toolchain = {'name': 'iccifort', 'version': '2019.5.281'}
+## CLI
+
+```
+usage: aws-eb  [-h] [--debug] [--profile AWSPROFILE] [--version]
+               {config,cnf,launch,lau,download,dld,ssh,scp} ...
+
+A (mostly) for building stuff on AWS after finding folders in the file system that are worth
+archiving.
+
+positional arguments:
+  {config,cnf,launch,lau,download,dld,ssh,scp}
+                        sub-command help
+    config (cnf)        Bootstrap the configuration, install dependencies and setup your
+                        environment. You will need to answer a few questions about your cloud and
+                        hpc setup.
+    launch (lau)        Launch EC2 instance, build new Easybuild packages and upload them to S3
+    download (dld)      Download built eb packages to /opt/eb
+    ssh (scp)           Login to an AWS EC2 instance 
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --debug, -d           verbose output for all commands
+  --profile AWSPROFILE, -p AWSPROFILE
+                        which AWS profile in ~/.aws/ should be used. default="aws"
+  --version, -v         print AWS-EB and Python version info
+```
 
 
+```
+./aws-eb.py config --help
+Error: EasyBuild not found. Please install it first.
+usage: aws-eb config [-h] [--monitor <email@address.org>]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --monitor <email@address.org>, -m <email@address.org>
+                        setup aws-eb as a monitoring cronjob on an ec2 instance and notify an email address
+```
+
+GPU is not yet implemented 
+
+```
+./aws-eb.py launch --help
+usage: aws-eb launch [-h] [--instance-type INSTANCETYPE] [--gpu-type GPUTYPE] [--cpu-type CPUTYPE]
+                     [--list] [--vcpus VCPUS] [--mem MEM] [--monitor] [--build] [--bio-only]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --instance-type INSTANCETYPE, -i INSTANCETYPE
+                        The EC2 instance type is auto-selected, but you can pick any other type here
+  --gpu-type GPUTYPE, -g GPUTYPE
+                        run --list to see available GPU types
+  --cpu-type CPUTYPE, -c CPUTYPE
+                        run --list to see available CPU types
+  --list, -l            List CPU and GPU types
+  --vcpus VCPUS, -v VCPUS
+                        Number of cores to be allocated for the machine. (default=4)
+  --mem MEM, -m MEM     GB Memory allocated to instance  (default=8)
+  --monitor, -n         Monitor EC2 server for cost and idle time.
+  --build, -b           Build the Easybuild packages on current system.
+  --bio-only, -o        Build only life sciences (bio) packages and dependencies.
+```
+
+just run `./aws-eb.py ssh` to connect to the EC2 instance you created last
+
+```
+./aws-eb.py ssh --help
+usage: aws-eb ssh [-h] [--list] [--terminate <hostname>] [sshargs ...]
+
+positional arguments:
+  sshargs               multiple arguments to ssh/scp such as hostname or user@hostname oder folder
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --list, -l            List running AWS-EB EC2 instances
+  --terminate <hostname>, -t <hostname>
+                        Terminate EC2 instance with this public IP Address.
+```
+
+
+Standalone Download is not yet implemented 
+
+```
+./aws-eb.py download --help
+usage: aws-eb download [-h] [--target <target_folder>]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --target <target_folder>, -t <target_folder>
+                        Download to other folder than default
+```
 
 ## supported OS 
 
