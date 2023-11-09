@@ -17,6 +17,7 @@ This tool builds HPC Software using the Easybuild (EB) Framework. It attempts to
 
 Tarred binaries and modules are copied to a platform specific folder (e.g amzn-2023_epyc-gen-4/software) and sources are copies to a shared folder that all platforms use.
 
+![image](https://github.com/dirkpetersen/dptests/assets/1427719/91b2542e-81c4-4859-ad9e-d6ed7b7ac1c3)
 
 
 ## Instance Mapping 
@@ -59,8 +60,9 @@ This will allow to pick any spot instance that has a certain compatible hardware
 
 ## build-machine 
 
-The most cost efficient instance type is not clear yet. I started with c7a.xlarge with 4 cpus and 8GB RAM. 
+The most cost efficient instance type is not clear yet. I started with c7a.xlarge with 4 cpus and 8GB RAM. It is not clear if it would make sense to use a larger instance type As there are long periods of time where only a single vcpu is running. At the tail end it installs R packages for hours which is limited to a single CPU 
 
+![image](https://github.com/dirkpetersen/dptests/assets/1427719/973f973d-14f0-41af-8f7e-838d59ad58f4)
 
 
 
