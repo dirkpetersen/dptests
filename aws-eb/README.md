@@ -375,7 +375,7 @@ SUPPORT_END="2028-03-01"
 ```
 
 ```
-petersen@rhino03:~$ cat /etc/os-release
+dp@r03:~$ cat /etc/os-release
 NAME="Ubuntu"
 VERSION="18.04.6 LTS (Bionic Beaver)"
 ID=ubuntu
@@ -391,7 +391,7 @@ UBUNTU_CODENAME=bionic
 ```
 
 ```
-[peterdir@exanode-08-1 ~]$ cat /etc/os-release
+[dp@node-08-1 ~]$ cat /etc/os-release
 NAME="CentOS Linux"
 VERSION="7 (Core)"
 ID="centos"
