@@ -1525,7 +1525,6 @@ class AWSBoto:
         # once everything is done, commit suicide:
         if not os.path.isfile(os.path.expanduser('~/no-terminate')):
             bootstrap_build += f'\naws-eb.py ssh --terminate {iid}'
-        fi
         ret = self.ssh_upload('ec2-user', ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
         ret = self.ssh_upload('ec2-user', ip,
