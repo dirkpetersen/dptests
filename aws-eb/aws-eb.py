@@ -1522,9 +1522,8 @@ class AWSBoto:
         print(f" will execute '{cmdline}' on {ip} ... ")
         bootstrap_build += '\n' + cmdline + f' > ~/out.easybuild.{ip}.txt 2>&1'
         bootstrap_build += '\naws s3 cp ' + f'~/out.easybuild.{ip}.txt s3://{self.cfg.archivepath}/{s3_prefix}/'
-        # once everything is done, commit suicide:
-        if not os.path.isfile(os.path.expanduser('~/no-terminate')):
-            bootstrap_build += f'\naws-eb.py ssh --terminate {iid}'
+        # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
+        bootstrap_build += f'\n[ ! -f ~/no-terminate ] && aws-eb.py ssh --terminate {iid}'
         ret = self.ssh_upload('ec2-user', ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
         ret = self.ssh_upload('ec2-user', ip,
