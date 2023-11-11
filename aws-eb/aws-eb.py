@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.21'
+__version__ = '0.1.0.22'
 
 def main():
         
@@ -231,7 +231,7 @@ def subcmd_launch(args,cfg,bld,aws):
     print('Cheapest:', instance_type)
 
     if not args.build:
-        aws.ec2_deploy(256, instance_type) # 256GB disk for the build instance
+        aws.ec2_deploy(256, instance_type, s3_prefix) # 256GB disk for the build instance
         return True
 
     # *******************************************
@@ -1493,7 +1493,7 @@ class AWSBoto:
     #     total_size_gib = total_size_bytes / (1024 ** 3)  # Convert bytes to GiB
     #     return total_size_gib
 
-    def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
+    def ec2_deploy(self, disk_gib, instance_type, s3_prefix, awsprofile=None):
 
         if not awsprofile: 
             awsprofile = self.cfg.awsprofile
@@ -1520,9 +1520,12 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n' + cmdline + ' > ~/out.easybuild 2>&1'
-        # once everything is done, commit suicide:   
-        bootstrap_build += f'\naws-eb.py ssh --terminate {iid}'
+        bootstrap_build += '\n' + cmdline + f' > ~/out.easybuild.{ip}.txt 2>&1'
+        bootstrap_build += '\naws s3 cp ' + f'~/out.easybuild.{ip}.txt s3://{self.cfg.archivepath}/{s3_prefix}/'
+        # once everything is done, commit suicide:
+        if not os.path.isfile(os.path.expanduser('~/no-terminate')):
+            bootstrap_build += f'\naws-eb.py ssh --terminate {iid}'
+        fi
         ret = self.ssh_upload('ec2-user', ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
         ret = self.ssh_upload('ec2-user', ip,
@@ -1544,7 +1547,9 @@ class AWSBoto:
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
         print(' but you can already login using "aws-eb ssh"')
 
-        os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild" >> ~/.bash_history')
+        os.system(f'echo "aws s3 cp ~/out.easybuild.{ip}.txt s3://{self.cfg.archivepath}/{s3_prefix}/" >> ~/.bash_history')
+        os.system(f'echo "touch ~/no-terminate" >> ~/.bash_history')
+        os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
         os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
         os.system(f'echo "tail -f ~/out.bootstrap.txt" >> ~/.bash_history')
         ret = self.ssh_upload('ec2-user', ip,
