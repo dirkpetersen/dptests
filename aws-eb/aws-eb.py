@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.19'
+__version__ = '0.1.0.20'
 
 def main():
         
@@ -316,7 +316,9 @@ class Builder:
     def __init__(self, args, cfg):        
         self.args = args
         self.cfg = cfg
-        self.allowed_toolchains = ['system', 'GCC', 'GCCcore', 'foss', 'fosscuda']
+        #self.allowed_toolchains = ['system', 'GCC', 'GCCcore', 'foss', 'fosscuda']
+        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0'}
+        #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2021a', 'fosscuda': '2021a'}
         self.eb_root = os.path.join('/', 'opt', 'eb')
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
@@ -340,8 +342,11 @@ class Builder:
                 if not os.path.isfile(ebpath):
                     continue 
                 tc, dep, cls, instdir = self._read_easyconfig(ebpath)
-                if tc['name'] not in self.allowed_toolchains:
-                    print(f'  Toolchain {tc["name"]} not supported.')
+                if tc['name'] not in self.min_toolchains.keys():
+                    print(f'  * Toolchain {tc["name"]} not supported.')
+                    continue
+                if tc['version'] < self.min_toolchains[tc['name']]:
+                    print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old.')
                     continue
                 if cls != 'bio' and bio_only:
                     # we want to may be only build bio packages
@@ -1901,6 +1906,7 @@ class AWSBoto:
         # export EASYBUILD_BUILDPATH=/dev/shm/$USER # could run out of space
         export EASYBUILD_PREFIX=/opt/eb
         export EASYBUILD_JOB_OUTPUT_DIR=$EASYBUILD_PREFIX/batch-output
+        export EASYBUILD_DEPRECATED=5.0
         export EASYBUILD_JOB_BACKEND=Slurm
         export EASYBUILD_PARALLEL={threads}
         # export EASYBUILD_GITHUB_USER=$USER
