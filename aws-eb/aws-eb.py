@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.20'
+__version__ = '0.1.0.21'
 
 def main():
         
@@ -231,7 +231,7 @@ def subcmd_launch(args,cfg,bld,aws):
     print('Cheapest:', instance_type)
 
     if not args.build:
-        aws.ec2_deploy(1024, instance_type) # 2TB disk for the build instance
+        aws.ec2_deploy(256, instance_type) # 256GB disk for the build instance
         return True
 
     # *******************************************
@@ -317,7 +317,7 @@ class Builder:
         self.args = args
         self.cfg = cfg
         #self.allowed_toolchains = ['system', 'GCC', 'GCCcore', 'foss', 'fosscuda']
-        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0'}
+        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0'}
         #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2021a', 'fosscuda': '2021a'}
         self.eb_root = os.path.join('/', 'opt', 'eb')
 
@@ -341,7 +341,10 @@ class Builder:
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
                     continue 
-                tc, dep, cls, instdir = self._read_easyconfig(ebpath)
+                name, version, tc, dep, cls, instdir = self._read_easyconfig(ebpath)
+                if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
+                    if version < self.min_toolchains[tc['name']]:
+                        continue
                 if tc['name'] not in self.min_toolchains.keys():
                     print(f'  * Toolchain {tc["name"]} not supported.')
                     continue
@@ -387,7 +390,7 @@ class Builder:
             for ebfile in files:
                 if ebfile.endswith('.eb'):
                     ebpath = os.path.join(root, ebfile)
-                    tc, dep, cls, instdir = self._read_easyconfig(ebpath)
+                    _, _, _, dep, _, _ = self._read_easyconfig(ebpath)
                     if dep:
                         print(f'  installing OS dependencies: {dep}')
                         self._install_packages(dep, package_skip_set)
@@ -548,7 +551,7 @@ class Builder:
         # Construct the installation directory path
         install_dir = f"{name}/{version_suffix_str}{toolchain_str}"
 
-        return toolchain, ec_dict.get('osdependencies', ""), ec_dict.get('moduleclass', ""), install_dir
+        return name, version, toolchain, ec_dict.get('osdependencies', ""), ec_dict.get('moduleclass', ""), install_dir
 
     def _get_os_type(self):
         os_info = {}
@@ -1542,8 +1545,8 @@ class AWSBoto:
         print(' but you can already login using "aws-eb ssh"')
 
         os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild" >> ~/.bash_history')
-        os.system(f'echo "tail -f ~/out.easybuild" >> ~/.bash_history')
-        os.system(f'echo "tail -f ~/out.bootstrap" >> ~/.bash_history')
+        os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
+        os.system(f'echo "tail -f ~/out.bootstrap.txt" >> ~/.bash_history')
         ret = self.ssh_upload('ec2-user', ip,
             "~/.bash_history", ".bash_history")
         if ret.stdout or ret.stderr:
