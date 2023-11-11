@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.22'
+__version__ = '0.1.0.23'
 
 def main():
         
@@ -1540,7 +1540,7 @@ class AWSBoto:
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)        
         ret = self.ssh_execute('ec2-user', ip, 
-            'nohup bash bootstrap.sh < /dev/null > out.bootstrap 2>&1 &')
+            'nohup bash bootstrap.sh < /dev/null > out.bootstrap.txt 2>&1 &')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
