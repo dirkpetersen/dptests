@@ -433,7 +433,7 @@ class Builder:
                 new_tars.append(tarball_path)
 
                 # Print info for the user
-                print(f"Creating tarball {tarball_path} from {root}...")
+                print(f"Creating tarball {tarball_path} from {root}...", flush=True)
 
                 # Use tar with pigz for compression
                 try:
@@ -469,7 +469,7 @@ class Builder:
                     file_path = os.path.join(root, filename)
                     all_tars.append(file_path)
                     if not os.path.exists(easybuild_path):
-                        print(f"Unpacking {file_path} into {version_dir_path}...")
+                        print(f"Unpacking {file_path} into {version_dir_path}...", flush=True)
                         # try:
                         #     # Decompress with pigz through tar command
                         #     subprocess.run([
@@ -621,19 +621,19 @@ class Builder:
     
         rclone = Rclone(self.args,self.cfg)
 
-        print ('  Uploading Modules ... ')
+        print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
                           '--links', '--checksum'  
                         )
 
-        print ('  Uploading Sources ... ')
+        print ('  Uploading Sources ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'sources'),
                           f'{target}/sources/', 
                           '--links', '--checksum'
                         )
 
-        print ('  Uploading Software ... ')
+        print ('  Uploading Software ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
                           '--links', '--checksum',
@@ -685,13 +685,13 @@ class Builder:
             
         rclone = Rclone(self.args,self.cfg)
             
-        print ('  Downloading Modules ... ')
+        print ('  Downloading Modules ... ', flush=True)
         ret = rclone.copy(f'{source}/{s3_prefix}/modules/',
                           os.path.join(target,'modules'), 
                           '--links', '--checksum'
                         )
 
-        print ('  Downloading Sources ... ')
+        print ('  Downloading Sources ... ', flush=True)
         ret = rclone.copy(f'{source}/sources/',
                           os.path.join(target,'sources'), 
                           '--links', '--checksum'
@@ -699,7 +699,7 @@ class Builder:
         
         self._make_files_executable(os.path.join(target,'sources','generic'))
 
-        print ('  Downloading Software ... ')
+        print ('  Downloading Software ... ', flush=True)
         ret = rclone.copy(f'{source}/{s3_prefix}/software/',
                           os.path.join(target,'software'), 
                           '--links', '--checksum', 
