@@ -1558,7 +1558,7 @@ class AWSBoto:
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)        
         ret = self.ssh_execute('ec2-user', ip, 
-            'nohup bash bootstrap.sh < /dev/null > out.bootstrap.txt 2>&1 &')
+            f'nohup bash bootstrap.sh < /dev/null > out.bootstrap.{ip}.txt 2>&1 &')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
