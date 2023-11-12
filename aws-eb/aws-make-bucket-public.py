@@ -7,7 +7,7 @@ import json
 s3_client = boto3.client('s3')
 
 # Define the bucket name
-bucket_name = 'easybuild-cache-ohsu'
+bucket_name = 'easybuild-cache'
 
 # Bucket policy that grants public read access
 public_policy = {
