@@ -8,7 +8,7 @@ and uploads them to S3 buckets for later use.
 import sys, os, argparse, json, configparser, tarfile 
 import urllib3, datetime, tarfile, zipfile, textwrap 
 import hashlib, math, signal, shlex, time, re, inspect
-import shutil, tempfile, glob, subprocess, socket
+import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.26'
+__version__ = '0.1.0.28'
 
 def main():
         
@@ -231,7 +231,7 @@ def subcmd_launch(args,cfg,bld,aws):
     print('Cheapest:', instance_type)
 
     if not args.build:
-        aws.ec2_deploy(256, instance_type, s3_prefix) # 256GB disk for the build instance
+        aws.ec2_deploy(256, instance_type) # 256GB disk for the build instance
         return True
 
     # *******************************************
@@ -318,8 +318,8 @@ class Builder:
         self.cfg = cfg
         self.rclone_download_compare = '--checksum'
         self.rclone_upload_compare = '--checksum'
-        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0'}
-        #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2021a', 'fosscuda': '2021a'}
+        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2022a'}
+        #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2022a', 'fosscuda': '2021a'}
         self.eb_root = os.path.join('/', 'opt', 'eb')
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
@@ -380,6 +380,7 @@ class Builder:
 
             except Exception as e:
                 print(f"  Builder.build_all: An unexpected error occurred:\n{e}", flush=True)
+                traceback.print_exc()
                 continue
         try:
             print(f" Final upload using checksums ... ", flush=True)
@@ -543,6 +544,7 @@ class Builder:
 
     def _read_easyconfig(self, ebfile):
         
+        ec_dict = {}
         try:
             # Initialize EasyConfigParser with the easyconfig file
             ec_dict = EasyConfigParser(ebfile).get_config_dict()
@@ -632,6 +634,12 @@ class Builder:
     
         rclone = Rclone(self.args,self.cfg)
 
+        if not self.rclone_upload_compare == '--size-only':
+            print ('  Uploading Bootstrap output ... ', flush=True)
+            ret = rclone.copy(os.path.expanduser(f'~/out.bootstrap.*'),
+                            f'{target}/{s3_prefix}/logs/'
+                            )        
+
         print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
@@ -653,7 +661,7 @@ class Builder:
         
         print ('  Uploading EB output ... ', flush=True)
         ret = rclone.copy(os.path.expanduser(f'~/out.easybuild.*'),
-                          f'{target}/{s3_prefix}/'
+                          f'{target}/{s3_prefix}/logs/'
                         )        
 
         # after the first successful upload do a size only compare
@@ -1515,7 +1523,7 @@ class AWSBoto:
     #     total_size_gib = total_size_bytes / (1024 ** 3)  # Convert bytes to GiB
     #     return total_size_gib
 
-    def ec2_deploy(self, disk_gib, instance_type, s3_prefix, awsprofile=None):
+    def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
         if not awsprofile: 
             awsprofile = self.cfg.awsprofile
@@ -1525,8 +1533,7 @@ class AWSBoto:
         if not self.cfg.wait_for_ssh_ready(ip):
             return False
 
-        bootstrap_build = self._ec2_user_space_script(iid)
-        bootstrap_build += '\naws s3 cp ' + f'~/out.bootstrap.{ip}.txt s3://{self.cfg.archivepath}/{s3_prefix}/'
+        bootstrap_build = self._ec2_user_space_script(iid)        
 
         ### this block may need to be moved to a function
         argl = ['--ec2', '-e']
@@ -1567,7 +1574,6 @@ class AWSBoto:
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
         print(' but you can already login using "aws-eb ssh"')
 
-        os.system(f'echo "aws s3 cp ~/out.easybuild.{ip}.txt s3://{self.cfg.archivepath}/{s3_prefix}/" >> ~/.bash_history')
         os.system(f'echo "touch ~/no-terminate" >> ~/.bash_history')
         os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
         os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
@@ -1976,7 +1982,7 @@ class AWSBoto:
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py -o ~/.local/bin/aws-eb.py
         chmod +x ~/.local/bin/aws-eb.py
         # wait for pip3 to exist in PATH and lmod to be installed
-        until which pip3 > /dev/null 2>&1; do sleep 5; done; echo "pip3 is now in PATH"
+        until which pip3 > /dev/null 2>&1; do sleep 5; done; echo "pip3 is now in PATH, please wait ..."
         until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists."  
         python3 -m pip install --upgrade wheel
         python3 -m pip install boto3 easybuild packaging
@@ -2882,8 +2888,17 @@ class ConfigManager:
         Returns:
         tuple: A tuple of integers representing the major, minor, and patch versions.
         """
-        major, minor, patch = version_str.split('.')
-        return (int(major), int(minor), int(patch))
+        parts = version_str.split('.')
+        major, minor, patch, minip = 0, 0, 0, 0
+        if len(parts) > 0:
+            major = int(parts[0])
+        if len(parts) > 1:
+            minor = int(parts[1])
+        if len(parts) > 2:
+            patch = int(parts[2])
+        if len(parts) > 3:
+            minip = int(parts[3])
+        return (major, minor, patch, minip)
     
     def get_os_release_info(self):
         try:
