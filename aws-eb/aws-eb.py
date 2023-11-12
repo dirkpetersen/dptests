@@ -255,11 +255,7 @@ def subcmd_download(args,cfg,bld,aws):
         return False    
     
     if args.list:
-        # list all folders in the archive
-        print('\nAll available EC2 instance families:')
-        print("--------------------------------------")
-        fams = aws.get_ec2_instance_families()
-        print(' '.join(fams))        
+        # list all folders in the archive      
         print("\nGPU    Instance Families")
         print("--------------------------")
         for c, i in aws.gpu_types.items():
