@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.30'
+__version__ = '0.1.0.31'
 
 def main():
         
@@ -318,7 +318,7 @@ class Builder:
         self.cfg = cfg
         self.rclone_download_compare = '--checksum'
         self.rclone_upload_compare = '--checksum'
-        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2022a'}
+        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2023a'}
         #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2022a', 'fosscuda': '2021a'}
         self.eb_root = os.path.join('/', 'opt', 'eb')
 
