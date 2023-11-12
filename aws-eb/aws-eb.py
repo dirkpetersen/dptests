@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.33'
+__version__ = '0.1.0.34'
 
 def main():
         
@@ -1848,11 +1848,15 @@ class AWSBoto:
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2_client = session.client('ec2')
 
+        myarch = 'x86_64'
+        if self.args.cputype.startswith('graviton'):
+            myarch = 'arm64'
+
         response = ec2_client.describe_images(
             Filters=[
                 {'Name': 'name', 'Values': ['al2023-ami-*']},
                 {'Name': 'state', 'Values': ['available']},
-                {'Name': 'architecture', 'Values': ['x86_64']},
+                {'Name': 'architecture', 'Values': [myarch]},
                 {'Name': 'virtualization-type', 'Values': ['hvm']}
             ],
             Owners=['amazon']
