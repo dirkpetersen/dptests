@@ -623,7 +623,7 @@ class Builder:
                         # so continue trying the next packages in the tuple
                         pass
 
-    def upload(self, source, target, s3_prefix=None):
+    def upload(self, source, target, s3_prefix, ip):
 
         source = os.path.abspath(source)
     
@@ -648,6 +648,11 @@ class Builder:
                           '--include', '*.eb.tar.gz' 
                         )
         
+        print ('  Uploading EB output ... ', flush=True)
+        ret = rclone.copy(os.path.expanduser(f'~/out.easybuild.*'),
+                          f'{target}/{s3_prefix}/'
+                        )        
+
         # after the first successful upload do a size only compare
         self.rclone_upload_compare  = '--size-only'
                 
@@ -1518,6 +1523,7 @@ class AWSBoto:
             return False
 
         bootstrap_build = self._ec2_user_space_script(iid)
+        bootstrap_build += '\naws s3 cp ' + f'~/out.bootstrap.{ip}.txt s3://{self.cfg.archivepath}/{s3_prefix}/'
 
         ### this block may need to be moved to a function
         argl = ['--ec2', '-e']
@@ -1534,8 +1540,7 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n' + cmdline + f' > ~/out.easybuild.{ip}.txt 2>&1'
-        bootstrap_build += '\naws s3 cp ' + f'~/out.easybuild.{ip}.txt s3://{self.cfg.archivepath}/{s3_prefix}/'
+        bootstrap_build += '\n' + cmdline + f' > ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         bootstrap_build += f'\n[ ! -f ~/no-terminate ] && aws-eb.py ssh --terminate {iid}'
         ret = self.ssh_upload('ec2-user', ip,
@@ -1563,7 +1568,7 @@ class AWSBoto:
         os.system(f'echo "touch ~/no-terminate" >> ~/.bash_history')
         os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
         os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
-        os.system(f'echo "tail -f ~/out.bootstrap.txt" >> ~/.bash_history')
+        os.system(f'echo "tail -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history')
         ret = self.ssh_upload('ec2-user', ip,
             "~/.bash_history", ".bash_history")
         if ret.stdout or ret.stderr:
