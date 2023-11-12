@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.31'
+__version__ = '0.1.0.32'
 
 def main():
         
@@ -1576,12 +1576,12 @@ class AWSBoto:
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
         print(' but you can already login using "aws-eb ssh"')
 
-        os.system(f'echo "touch ~/no-terminate" >> ~/.bash_history')
-        os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
-        os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history')
-        os.system(f'echo "tail -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history')
+        os.system(f'echo "touch ~/no-terminate" >> ~/.bash_history.tmp')
+        os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "tail -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history.tmp')
         ret = self.ssh_upload('ec2-user', ip,
-            "~/.bash_history", ".bash_history")
+            "~/.bash_history.tmp", ".bash_history")
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
 
@@ -1983,8 +1983,9 @@ class AWSBoto:
         # curl https://raw.githubusercontent.com/dirkpetersen/aws-eb/main/install.sh | bash 
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py -o ~/.local/bin/aws-eb.py
         chmod +x ~/.local/bin/aws-eb.py
-        # wait for pip3 to exist in PATH and lmod to be installed
-        until which pip3 > /dev/null 2>&1; do sleep 5; done; echo "pip3 is now in PATH, please wait ..."
+        # wait for pip3 and lmod to be installed
+        #until which pip3 > /dev/null 2>&1; do sleep 5; done; echo "pip3 is now in PATH, please wait ..."
+        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists."  
         until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists."  
         python3 -m pip install --upgrade wheel
         python3 -m pip install boto3 easybuild packaging
