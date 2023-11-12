@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.39'
+__version__ = '0.1.0.40'
 
 def main():
         
@@ -279,6 +279,7 @@ def subcmd_download(args,cfg,bld,aws):
         print(f'\nERROR: Folder "{bld.eb_root}" must exist and you need write access to it.')
         return False        
 
+    bld.rclone_download_compare = '--size-only'    
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
 
     print('All software was downloaded to:', bld.eb_root)
