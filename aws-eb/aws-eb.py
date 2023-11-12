@@ -386,7 +386,7 @@ class Builder:
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
         except Exception as e:
-            print(f"  Builder.build_all: An unexpected error occurred when uploading:\n{e}", flush=True)
+            print(f"  Builder.build_all(final): An unexpected error occurred when uploading:\n{e}", flush=True)
             pass
 
         return True
@@ -499,6 +499,7 @@ class Builder:
                             print(f"Successfully unpacked: {file_path}")
                         except Exception as e:
                             print(f"An error occurred while unpacking {file_path}: {e}")
+
                     else:
                         pass
                         #print(f"Skipping unpacking of {file_path} as 'easybuild' directory already exists in {version_dir_path}.")
@@ -625,7 +626,7 @@ class Builder:
                         # so continue trying the next packages in the tuple
                         pass
 
-    def upload(self, source, target, s3_prefix, ip):
+    def upload(self, source, target, s3_prefix):
 
         source = os.path.abspath(source)
     
