@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.36'
+__version__ = '0.1.0.37'
 
 def main():
         
@@ -247,15 +247,28 @@ def subcmd_launch(args,cfg,bld,aws):
         
 def subcmd_download(args,cfg,bld,aws):
 
-    cfg.printdbg ("restore:",args.cores, args.awsprofile)
-    fld = '" "'.join(args.folders)
-    cfg.printdbg(f'default cmdline: aws-eb download "{fld}"')
+    cfg.printdbg ("restore")
+    cfg.printdbg(f'default cmdline: aws-eb download')
 
     if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
         print(f'Profile "{args.awsprofile}" not found.')
         return False    
-    if not aws.check_bucket_access_folders(args.folders):
-        return False
+    
+    if args.list:
+        # list all folders in the archive
+        print('\nAll available EC2 instance families:')
+        print("--------------------------------------")
+        fams = aws.get_ec2_instance_families()
+        print(' '.join(fams))        
+        print("\nGPU    Instance Families")
+        print("--------------------------")
+        for c, i in aws.gpu_types.items():
+            print(f'{c}: {i}')               
+        print("\nCPU Type    Instance Families")
+        print("--------------------------------")
+        for c, i in aws.cpu_types.items():
+            print(f'{c}: {" ".join(i)}')
+        return True    
     
     os_id, version_id = cfg.get_os_release_info()
     if not os_id or not version_id:
@@ -3556,6 +3569,8 @@ def parse_arguments():
         help='run --list to see available GPU types')       
     parser_download.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
+    parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
+        help="List CPU and GPU types")    
     parser_launch.add_argument( '--with-source', '-s', dest='with_source', action='store_true', default=False,
         help="Also download the source packages")    
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
