@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.38'
+__version__ = '0.1.0.39'
 
 def main():
         
@@ -3567,7 +3567,7 @@ def parse_arguments():
         help='run --list to see available CPU types')
     parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List CPU and GPU types")    
-    parser_launch.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
+    parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
         help="Also download the source packages")    
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
         metavar='<target_folder>', help='Download to other folder than default')    
