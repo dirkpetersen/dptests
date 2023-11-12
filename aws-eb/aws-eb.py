@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.28'
+__version__ = '0.1.0.30'
 
 def main():
         
@@ -636,8 +636,9 @@ class Builder:
 
         if not self.rclone_upload_compare == '--size-only':
             print ('  Uploading Bootstrap output ... ', flush=True)
-            ret = rclone.copy(os.path.expanduser(f'~/out.bootstrap.*'),
-                            f'{target}/{s3_prefix}/logs/'
+            ret = rclone.copy(os.path.expanduser('~/'),
+                            f'{target}/{s3_prefix}/logs/',
+                            '--include', 'out.bootstrap.*' 
                             )        
 
         print ('  Uploading Modules ... ', flush=True)
@@ -660,8 +661,9 @@ class Builder:
                         )
         
         print ('  Uploading EB output ... ', flush=True)
-        ret = rclone.copy(os.path.expanduser(f'~/out.easybuild.*'),
-                          f'{target}/{s3_prefix}/logs/'
+        ret = rclone.copy(os.path.expanduser('~/'),
+                          f'{target}/{s3_prefix}/logs/',
+                          '--include', 'out.easybuild.*' 
                         )        
 
         # after the first successful upload do a size only compare
@@ -1932,7 +1934,7 @@ class AWSBoto:
         threads = self.args.vcpus*2
         return textwrap.dedent(f'''        
         test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
-        export MODULEPATH=/opt/eb/modules/all
+        export MODULEPATH=/opt/eb/modules/all:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/ai:/opt/eb/modules/bio
         # export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         #
         export EASYBUILD_JOB_CORES={self.args.vcpus}
@@ -2889,16 +2891,13 @@ class ConfigManager:
         tuple: A tuple of integers representing the major, minor, and patch versions.
         """
         parts = version_str.split('.')
-        major, minor, patch, minip = 0, 0, 0, 0
-        if len(parts) > 0:
-            major = int(parts[0])
-        if len(parts) > 1:
-            minor = int(parts[1])
-        if len(parts) > 2:
-            patch = int(parts[2])
-        if len(parts) > 3:
-            minip = int(parts[3])
-        return (major, minor, patch, minip)
+        version = []
+        for part in parts:
+            if part.isdigit():
+                version.append(int(part))  # Convert numeric strings to integers
+            else:
+                version.append(part)  # Keep non-numeric strings as is
+        return tuple(version)
     
     def get_os_release_info(self):
         try:
