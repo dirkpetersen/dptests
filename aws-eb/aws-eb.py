@@ -265,6 +265,11 @@ def subcmd_download(args,cfg,bld,aws):
     if args.gputype:
         s3_prefix += f'_{args.gputype}'
 
+    ret = bld.test_write(bld.eb_root)
+    if ret==13 or ret == 2:       
+        print(f'\nERROR: Folder "{bld.eb_root}" must exist and you need write access to it.')
+        return False        
+
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
 
     print('All software was downloaded to:', bld.eb_root)
