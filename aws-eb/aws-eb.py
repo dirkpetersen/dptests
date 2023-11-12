@@ -338,53 +338,55 @@ class Builder:
                 ebfile = self._get_latest_easyconfig(root)
                 if not ebfile:
                     continue
-                print(f'  Processing easyconfig "{ebfile}" ... ')
+                print(f'  Processing easyconfig "{ebfile}" ... ', flush=True)
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
                     continue 
                 name, version, tc, dep, cls, instdir = self._read_easyconfig(ebpath)
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
-                    if version < self.min_toolchains[tc['name']]:
+                    if version < self.min_toolchains[name]:
+                        print(f'  * Easyconfig {name} version {version} too old.', flush=True)
                         continue
                 if tc['name'] not in self.min_toolchains.keys():
-                    print(f'  * Toolchain {tc["name"]} not supported.')
+                    print(f'  * Toolchain {tc["name"]} not supported.', flush=True)
                     continue
                 if tc['version'] < self.min_toolchains[tc['name']]:
-                    print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old.')
+                    print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old.', flush=True)
                     continue
                 if cls != 'bio' and bio_only:
                     # we want to may be only build bio packages
-                    print(f'  Not a bio package')
+                    print(f'  {name} is not a bio package', flush=True)
                     continue
                 if dep:
-                    print(f'  installing OS dependencies: {dep}')
+                    print(f'  installing OS dependencies: {dep}', flush=True)
                     self._install_packages(dep)
                 # install easybuild package 
-                print(f" Downloading previous packages ... ")
+                print(f" Downloading previous packages ... ", flush=True)
                 self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix)
-                print(f" Unpacking previous packages ... ")
+                print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
-                print(f" Installing {ebfile} ... ")
+                print(f" Installing {ebfile} ... ", flush=True)
                 ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath], check=True)
-                print(f'*** EASYBUILD RETURNCODE: {ret.returncode}')
-                print(f" Tarring up new packages ... ")
+                print(f'*** EASYBUILD RETURNCODE: {ret.returncode}', flush=True)
+                print(f" Tarring up new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
-                print(f" Uploading new packages ... ")
+                print(f" Uploading new packages ... ", flush=True)
                 self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
                                                 
             except subprocess.CalledProcessError:                
-                print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.")
+                print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.", flush=True)
                 ## make sure we store the logfile
                 continue
 
             except Exception as e:
-                print(f"  Builder.build_all: An unexpected error occurred:\n{e}")
+                print(f"  Builder.build_all: An unexpected error occurred:\n{e}", flush=True)
                 continue
         try:
+            print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
         except Exception as e:
-            print(f"  Builder.build_all: An unexpected error occurred when uploading:\n{e}")
+            print(f"  Builder.build_all: An unexpected error occurred when uploading:\n{e}", flush=True)
             pass
 
         return True
