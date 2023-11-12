@@ -6,7 +6,7 @@ and uploads them to S3 buckets for later use.
 """
 # internal modules
 import sys, os, argparse, json, configparser, tarfile 
-import urllib3, datetime, tarfile, zipfile, textwrap 
+import urllib3, datetime, tarfile, zipfile, textwrap, platform  
 import hashlib, math, signal, shlex, time, re, inspect
 import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.32'
+__version__ = '0.1.0.33'
 
 def main():
         
@@ -75,8 +75,8 @@ def subcmd_config(args, cfg, aws):
     if not cfg.binfolder:
         binfolder = '~/.local/bin'
         cfg.binfolderx = os.path.expanduser(binfolder)
-        if not os.path.exists(binfolderx):
-            os.makedirs(binfolderx, mode=0o775)
+        if not os.path.exists(cfg.binfolderx):
+            os.makedirs(cfg.binfolderx, mode=0o775)
         cfg.write('general', 'binfolder', binfolder)
     else:
         first_time=False
@@ -89,7 +89,10 @@ def subcmd_config(args, cfg, aws):
                 os.remove(os.path.join(cfg.binfolderx,'bak.rclone'))
             os.rename(os.path.join(cfg.binfolderx,'rclone'),os.path.join(cfg.binfolderx,'bak.rclone'))
         print(" Installing rclone ... please wait ... ", end='', flush=True)
-        rclone_url = 'https://downloads.rclone.org/rclone-current-linux-amd64.zip'
+        if platform.machine() in ['arm64', 'aarch64']:
+            rclone_url = 'https://downloads.rclone.org/rclone-current-linux-arm64.zip'
+        else:
+            rclone_url = 'https://downloads.rclone.org/rclone-current-linux-amd64.zip'
         cfg.copy_binary_from_zip_url(rclone_url, 'rclone', 
                             '/rclone-v*/',cfg.binfolderx)
         print("Done!",flush=True)
@@ -366,7 +369,7 @@ class Builder:
                 print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ", flush=True)
-                ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath], check=True)
+                ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath])
                 print(f'*** EASYBUILD RETURNCODE: {ret.returncode}', flush=True)
                 print(f" Tarring up new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
@@ -696,22 +699,6 @@ class Builder:
 
     def download(self, source, target, s3_prefix=None):
                
-        # buc, pre, recur, isglacier = self.archive_get_bucket_info(target)
-        # isglacier = False 
-        # if isglacier:
-        #     #sps = source.split('/', 1)
-        #     #bk = sps[0].replace(':s3:','')
-        #     #pr = f'{sps[1]}/' # trailing slash ensured 
-        #     trig, rest, done, notg = self._glacier_restore(buc, pre, 
-        #             self.args.days, self.args.retrieveopt, recur)
-        #     print ('Triggered Glacier retrievals:',len(trig))
-        #     print ('Currently retrieving from Glacier:',len(rest))
-        #     print ('Retrieved from Glacier:',len(done))
-        #     print ('Not in Glacier:',len(notg))
-        #     if len(trig) > 0 or len(rest) > 0:
-        #         # glacier is still ongoing, return # of pending ops                
-        #         return len(trig)+len(rest)
-            
         rclone = Rclone(self.args,self.cfg)
             
         print ('  Downloading Modules ... ', flush=True)
@@ -1192,13 +1179,13 @@ class AWSBoto:
             "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
             "graviton-3": ['m7g', 'c7g', 'c7gn'],
             "epyc-gen-1": ['t3a'],
-            "epyc-gen-2": ['c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
-            "epyc-gen-3": ['c6a', 'm6a', 'r6a', 'p5'],
-            "epyc-gen-4": ['c7a', 'm7a', 'r7a'],
-            "xeon-gen-1": ['c4', 'm4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3'],
-            "xeon-gen-2": ['c5', 'm5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
-            "xeon-gen-3": ['c6i', 'm6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
-            "xeon-gen-4": ['c7i', 'm7i', 'm7i-flex'],
+            "epyc-gen-2": ['m5a', 'c5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
+            "epyc-gen-3": ['m6a', 'c6a', 'r6a', 'p5'],
+            "epyc-gen-4": ['m7a', 'c7a', 'r7a'],
+            "xeon-gen-1": ['m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3'],
+            "xeon-gen-2": ['m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
+            "xeon-gen-3": ['m6i', 'c6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
+            "xeon-gen-4": ['m7i', 'c7i', 'm7i-flex'],
             "core-i7-mac": ['mac1']
         }
         self.gpu_types = {
@@ -1984,9 +1971,8 @@ class AWSBoto:
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py -o ~/.local/bin/aws-eb.py
         chmod +x ~/.local/bin/aws-eb.py
         # wait for pip3 and lmod to be installed
-        #until which pip3 > /dev/null 2>&1; do sleep 5; done; echo "pip3 is now in PATH, please wait ..."
-        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists."  
-        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists."  
+        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."  
+        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."  
         python3 -m pip install --upgrade wheel
         python3 -m pip install boto3 easybuild packaging
         source ~/easybuildrc
