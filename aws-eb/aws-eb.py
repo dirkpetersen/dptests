@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.23'
+__version__ = '0.1.0.24'
 
 def main():
         
@@ -316,7 +316,8 @@ class Builder:
     def __init__(self, args, cfg):        
         self.args = args
         self.cfg = cfg
-        #self.allowed_toolchains = ['system', 'GCC', 'GCCcore', 'foss', 'fosscuda']
+        self.rclone_download_compare = '--checksum'
+        self.rclone_upload_compare = '--checksum'
         self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0'}
         #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2021a', 'fosscuda': '2021a'}
         self.eb_root = os.path.join('/', 'opt', 'eb')
@@ -379,6 +380,13 @@ class Builder:
             except Exception as e:
                 print(f"  Builder.build_all: An unexpected error occurred:\n{e}")
                 continue
+        try:
+            self.rclone_upload_compare = '--checksum'
+            self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
+        except Exception as e:
+            print(f"  Builder.build_all: An unexpected error occurred when uploading:\n{e}")
+            pass
+
         return True
     
     def _install_os_dependencies(self, easyconfigroot):
@@ -624,21 +632,24 @@ class Builder:
         print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
-                          '--links', '--checksum'  
+                          '--links', self.rclone_upload_compare
                         )
 
         print ('  Uploading Sources ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'sources'),
                           f'{target}/sources/', 
-                          '--links', '--checksum'
+                          '--links', self.rclone_upload_compare
                         )
 
         print ('  Uploading Software ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
-                          '--links', '--checksum',
+                          '--links', self.rclone_upload_compare,
                           '--include', '*.eb.tar.gz' 
                         )
+        
+        # after the first successful upload do a size only compare
+        self.rclone_upload_compare  = '--size-only'
                 
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
@@ -688,13 +699,13 @@ class Builder:
         print ('  Downloading Modules ... ', flush=True)
         ret = rclone.copy(f'{source}/{s3_prefix}/modules/',
                           os.path.join(target,'modules'), 
-                          '--links', '--checksum'
+                          '--links', self.rclone_download_compare
                         )
 
         print ('  Downloading Sources ... ', flush=True)
         ret = rclone.copy(f'{source}/sources/',
                           os.path.join(target,'sources'), 
-                          '--links', '--checksum'
+                          '--links', self.rclone_download_compare
                         )
         
         self._make_files_executable(os.path.join(target,'sources','generic'))
@@ -702,9 +713,12 @@ class Builder:
         print ('  Downloading Software ... ', flush=True)
         ret = rclone.copy(f'{source}/{s3_prefix}/software/',
                           os.path.join(target,'software'), 
-                          '--links', '--checksum', 
+                          '--links', self.rclone_download_compare, 
                           '--include', '*.eb.tar.gz' 
                         )
+        
+        # for subsequent download comparison size is enough
+        self.rclone_download_compare = '--size-only'
 
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
