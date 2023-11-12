@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.34'
+__version__ = '0.1.0.36'
 
 def main():
         
@@ -43,7 +43,6 @@ def main():
 
     if args.version:
         args_version(cfg)
-
 
     # call a function for each sub command in our CLI
     if args.subcmd in ['config', 'cnf']:
@@ -248,29 +247,33 @@ def subcmd_launch(args,cfg,bld,aws):
         
 def subcmd_download(args,cfg,bld,aws):
 
-    cfg.printdbg ("restore:",args.cores, args.awsprofile, args.noslurm, 
-        args.days, args.retrieveopt, args.nodownload, args.folders)
+    cfg.printdbg ("restore:",args.cores, args.awsprofile)
     fld = '" "'.join(args.folders)
-    cfg.printdbg(f'default cmdline: aws-eb restore "{fld}"')
+    cfg.printdbg(f'default cmdline: aws-eb download "{fld}"')
 
-    # ********* 
-    if args.monitor:
-        # aws inactivity and cost monitoring
-        aws.monitor_ec2()
-        return True
-    
     if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
         print(f'Profile "{args.awsprofile}" not found.')
         return False    
     if not aws.check_bucket_access_folders(args.folders):
         return False
     
-    if args.ec2:
-        # run ec2_deploy(self, bucket='', prefix='', recursive=False, profile=None):
-        ret = aws.ec2_deploy(args.folders)
-        return True
+    os_id, version_id = cfg.get_os_release_info()
+    if not os_id or not version_id:
+        print('Could not determine OS release information.')
+        return False        
+    s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
+    if args.gputype:
+        s3_prefix += f'_{args.gputype}'
 
+    bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
 
+    print('All software was downloaded to:', bld.eb_root)
+
+    print('\nTo use these software modules add this line to .bashrc, e.g.: ')
+    print('echo "export MODULEPATH=${MODULEPATH}:/opt/eb/modules/all" >> ~/.bashrc')    
+    if not os.getenv('LMOD_VERSION'):
+        print('\nLmod is not installed. Please ask your sysadmin to install Lmod to use this software stack.')
+        
 def subcmd_ssh(args, cfg, aws):
 
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
@@ -323,7 +326,7 @@ class Builder:
         self.rclone_upload_compare = '--checksum'
         self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2023a'}
         #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2022a', 'fosscuda': '2021a'}
-        self.eb_root = os.path.join('/', 'opt', 'eb')
+        self.eb_root = '/opt/eb'
 
     def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
 
@@ -642,19 +645,22 @@ class Builder:
             ret = rclone.copy(os.path.expanduser('~/'),
                             f'{target}/{s3_prefix}/logs/',
                             '--include', 'out.bootstrap.*' 
-                            )        
+                            )
+            self._transfer_status(ret)   
 
         print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
                           '--links', self.rclone_upload_compare
                         )
+        self._transfer_status(ret)
 
         print ('  Uploading Sources ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'sources'),
                           f'{target}/sources/', 
                           '--links', self.rclone_upload_compare
                         )
+        self._transfer_status(ret)
 
         print ('  Uploading Software ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'software'),
@@ -662,42 +668,19 @@ class Builder:
                           '--links', self.rclone_upload_compare,
                           '--include', '*.eb.tar.gz' 
                         )
+        self._transfer_status(ret)
         
         print ('  Uploading EB output ... ', flush=True)
         ret = rclone.copy(os.path.expanduser('~/'),
                           f'{target}/{s3_prefix}/logs/',
                           '--include', 'out.easybuild.*' 
-                        )        
-
+                        )
+        self._transfer_status(ret)
+        
         # after the first successful upload do a size only compare
         self.rclone_upload_compare  = '--size-only'
                 
-        self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
-        #print ('Message:', ret['msg'].replace('\n',';'))
-        if ret['stats']['errors'] > 0:
-            print('Last Error:', ret['stats']['lastError'])
-            print('Copying was not successful.')
-            return False
-                
-        ttransfers=ret['stats']['totalTransfers']
-        tbytes=ret['stats']['totalBytes']
-        total=self.convert_size(tbytes)
-        if self.args.debug:
-            print('\n')
-            print('Speed:', ret['stats']['speed'])
-            print('Transfers:', ret['stats']['transfers'])
-            print('Tot Transfers:', ret['stats']['totalTransfers'])
-            print('Tot Bytes:', ret['stats']['totalBytes'])
-            print('Tot Checks:', ret['stats']['totalChecks'])
-
-        #   {'bytes': 0, 'checks': 0, 'deletedDirs': 0, 'deletes': 0, 'elapsedTime': 2.783003019, 
-        #    'errors': 1, 'eta': None, 'fatalError': False, 'lastError': 'directory not found', 
-        #    'renames': 0, 'retryError': True, 'speed': 0, 'totalBytes': 0, 'totalChecks': 0, 
-        #    'totalTransfers': 0, 'transferTime': 0, 'transfers': 0}   
-        
-        print(f'Upload finished. {ttransfers} files with {total} transferred.\n')
-
-    def download(self, source, target, s3_prefix=None):
+    def download(self, source, target, s3_prefix=None, with_source=False):
                
         rclone = Rclone(self.args,self.cfg)
             
@@ -706,14 +689,17 @@ class Builder:
                           os.path.join(target,'modules'), 
                           '--links', self.rclone_download_compare
                         )
+        self._transfer_status(ret)
 
-        print ('  Downloading Sources ... ', flush=True)
-        ret = rclone.copy(f'{source}/sources/',
-                          os.path.join(target,'sources'), 
-                          '--links', self.rclone_download_compare
-                        )
-        
-        self._make_files_executable(os.path.join(target,'sources','generic'))
+        if with_source:
+            print ('  Downloading Sources ... ', flush=True)
+            ret = rclone.copy(f'{source}/sources/',
+                            os.path.join(target,'sources'), 
+                            '--links', self.rclone_download_compare
+                            )
+            self._transfer_status(ret)
+            
+            self._make_files_executable(os.path.join(target,'sources','generic'))
 
         print ('  Downloading Software ... ', flush=True)
         ret = rclone.copy(f'{source}/{s3_prefix}/software/',
@@ -721,28 +707,32 @@ class Builder:
                           '--links', self.rclone_download_compare, 
                           '--include', '*.eb.tar.gz' 
                         )
+        self._transfer_status(ret)
         
         # for subsequent download comparison size is enough
         self.rclone_download_compare = '--size-only'
-
-        self.cfg.printdbg('*** RCLONE copy ret ***:\n', ret, '\n')
+   
+        return -1
+    
+    def _transfer_status(self, rclone_ret):
+        self.cfg.printdbg('*** RCLONE copy ret ***:\n', rclone_ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
-        if ret['stats']['errors'] > 0:
-            print('Last Error:', ret['stats']['lastError'])
+        if rclone_ret['stats']['errors'] > 0:
+            print('Last Error:', rclone_ret['stats']['lastError'])
             print('Copying was not successful.')
             return False
             # lastError could contain: Object in GLACIER, restore first
 
-        ttransfers=ret['stats']['totalTransfers']
-        tbytes=ret['stats']['totalBytes']
+        ttransfers=rclone_ret['stats']['totalTransfers']
+        tbytes=rclone_ret['stats']['totalBytes']
         total=self.convert_size(tbytes)
         if self.args.debug:
             print('\n')
-            print('Speed:', ret['stats']['speed'])
-            print('Transfers:', ret['stats']['transfers'])
-            print('Tot Transfers:', ret['stats']['totalTransfers'])
-            print('Tot Bytes:', ret['stats']['totalBytes'])
-            print('Tot Checks:', ret['stats']['totalChecks'])
+            print('Speed:', rclone_ret['stats']['speed'])
+            print('Transfers:', rclone_ret['stats']['transfers'])
+            print('Tot Transfers:', rclone_ret['stats']['totalTransfers'])
+            print('Tot Bytes:', rclone_ret['stats']['totalBytes'])
+            print('Tot Checks:', rclone_ret['stats']['totalChecks'])
 
         #   {'bytes': 0, 'checks': 0, 'deletedDirs': 0, 'deletes': 0, 'elapsedTime': 2.783003019, 
         #    'errors': 1, 'eta': None, 'fatalError': False, 'lastError': 'directory not found', 
@@ -750,11 +740,9 @@ class Builder:
         #    'totalTransfers': 0, 'transferTime': 0, 'transfers': 0}   
         # checksum
 
- 
-        print(f'Download finished. {ttransfers} files with {total} transferred.')
-   
-        return -1
-
+        if ttransfers:
+            print(f'   Rclone copy: {ttransfers} file(s) with {total} transferred.')
+        
     def _make_files_executable(self, path):
         for root, dirs, files in self._walker(path):
             for file in files:
@@ -3509,8 +3497,8 @@ def parse_arguments():
     Gather command-line arguments.
     """       
     parser = argparse.ArgumentParser(prog='aws-eb ',
-        description='A (mostly) for building stuff on AWS  ' + \
-                    'after finding folders in the file system that are worth archiving.')
+        description='A (mostly) automated build tool for building Sci packages on AWS  ' + \
+                    'The binary packages are stored in an S3 bucket and can be downloaded by anyone.')
     parser.add_argument( '--debug', '-d', dest='debug', action='store_true', default=False,
         help="verbose output for all commands")
     parser.add_argument('--profile', '-p', dest='awsprofile', action='store', default='', 
@@ -3557,8 +3545,14 @@ def parse_arguments():
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
         help=textwrap.dedent(f'''
-            Download built eb packages to /opt/eb
+            Download built eb packages and lmod modules to /opt/eb
         '''), formatter_class=argparse.RawTextHelpFormatter) 
+    parser_download.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
+        help='run --list to see available GPU types')       
+    parser_download.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
+        help='run --list to see available CPU types')
+    parser_launch.add_argument( '--with-source', '-s', dest='with_source', action='store_true', default=False,
+        help="Also download the source packages")    
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
         metavar='<target_folder>', help='Download to other folder than default')    
     
