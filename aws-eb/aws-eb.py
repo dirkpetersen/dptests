@@ -20,7 +20,7 @@ except:
     print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.24'
+__version__ = '0.1.0.26'
 
 def main():
         
@@ -344,13 +344,13 @@ class Builder:
                     continue 
                 name, version, tc, dep, cls, instdir = self._read_easyconfig(ebpath)
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
-                    if version < self.min_toolchains[name]:
+                    if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
                         print(f'  * Easyconfig {name} version {version} too old.', flush=True)
                         continue
                 if tc['name'] not in self.min_toolchains.keys():
                     print(f'  * Toolchain {tc["name"]} not supported.', flush=True)
                     continue
-                if tc['version'] < self.min_toolchains[tc['name']]:
+                if self.cfg.sversion(tc['version']) < self.cfg.sversion(self.min_toolchains[tc['name']]):
                     print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old.', flush=True)
                     continue
                 if cls != 'bio' and bio_only:
@@ -2872,6 +2872,17 @@ class ConfigManager:
                 os.environ['RCLONE_S3_STORAGE_CLASS'] = prf['storage_class']
 
         return True
+
+    def sversion(self, version_str):
+        """
+        Parse a semantic versioning string into a tuple of integers.
+        Args:
+        version_str (str): A string representing the version, e.g., "8.2.45".
+        Returns:
+        tuple: A tuple of integers representing the major, minor, and patch versions.
+        """
+        major, minor, patch = version_str.split('.')
+        return (int(major), int(minor), int(patch))
     
     def get_os_release_info(self):
         try:
