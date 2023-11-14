@@ -7,7 +7,7 @@ and uploads them to S3 buckets for later use.
 # internal modules
 import sys, os, argparse, json, configparser, tarfile 
 import urllib3, datetime, tarfile, zipfile, textwrap, platform  
-import hashlib, math, signal, shlex, time, re, inspect
+import hashlib, math, signal, shlex, time, re, inspect, requests
 import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.42'
+__version__ = '0.1.0.43'
 
 def main():
         
@@ -253,7 +253,7 @@ def subcmd_download(args,cfg,bld,aws):
 
     if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
         print(f'Profile "{args.awsprofile}" not found.')
-        return False    
+        return False
     
     if args.list:
         # list all folders in the archive      
@@ -265,8 +265,20 @@ def subcmd_download(args,cfg,bld,aws):
         print("--------------------------------")
         for c, i in aws.cpu_types.items():
             print(f'{c}: {" ".join(i)}')
-        return True    
-    
+        return True
+
+    if not args.cputype: 
+        fam = aws.get_ec2_my_instance_family()
+        if fam:
+            for k, v in aws.cpu_types.items():
+                if fam in v:
+                    args.cputype = k
+                    break
+                
+    if not args.cputype:
+        print('Please specify a CPU type. Run build --list to see types.')
+        return False
+
     os_id, version_id = cfg.get_os_release_info()
     if not os_id or not version_id:
         print('Could not determine OS release information.')
@@ -338,7 +350,7 @@ def subcmd_ssh(args, cfg, aws):
         print(ret.stdout,ret.stderr)
 
 class Builder:
-    def __init__(self, args, cfg):        
+    def __init__(self, args, cfg):
         self.args = args
         self.cfg = cfg
         self.rclone_download_compare = '--checksum'
@@ -367,6 +379,8 @@ class Builder:
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
                     continue 
+                if not ebpath.endswith('.eb'):
+                    continue
                 name, version, tc, dep, cls, instdir = self._read_easyconfig(ebpath)
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
@@ -2519,6 +2533,12 @@ class AWSBoto:
     
         return response.text
     
+    import requests
+
+    def get_ec2_my_instance_family(self):
+        instance_type =self._get_ec2_metadata('instance-type')
+        return instance_type.split('.')[0]
+ 
     def monitor_ec2(self):
 
         # if system is idle self-destroy 
