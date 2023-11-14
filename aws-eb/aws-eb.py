@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.41'
+__version__ = '0.1.0.42'
 
 def main():
         
@@ -234,7 +234,7 @@ def subcmd_launch(args,cfg,bld,aws):
     print('Cheapest:', instance_type)
 
     if not args.build:
-        aws.ec2_deploy(256, instance_type) # 256GB disk for the build instance
+        aws.ec2_deploy(512, instance_type) # 256GB disk for the build instance
         return True
 
     # *******************************************
@@ -3550,9 +3550,9 @@ def parse_arguments():
         help='run --list to see available CPU types')        
     parser_launch.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List CPU and GPU types")
-    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, 
+    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
         help='Number of cores to be allocated for the machine. (default=4)')    
-    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, 
+    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=16, 
         help='GB Memory allocated to instance  (default=8)')    
     parser_launch.add_argument( '--monitor', '-n', dest='monitor', action='store_true', default=False,
         help="Monitor EC2 server for cost and idle time.")
