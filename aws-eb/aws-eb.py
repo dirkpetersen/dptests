@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.43'
+__version__ = '0.1.0.44'
 
 def main():
         
@@ -241,7 +241,7 @@ def subcmd_launch(args,cfg,bld,aws):
     # Start EasyBuild process here 
     print('s3_prefix:', s3_prefix)
     ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
-    bld.build_all(ecfgroot, s3_prefix, bio_only=args.bioonly)
+    bld.build_all(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
 
     #if not aws.check_bucket_access_folders(args.folders):
     #    return False
@@ -359,7 +359,10 @@ class Builder:
         #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2022a', 'fosscuda': '2021a'}
         self.eb_root = '/opt/eb'
 
-    def build_all(self, easyconfigroot, s3_prefix, bio_only=False):
+    def build_all(self, easyconfigroot, s3_prefix, include, exclude):
+
+        includes = include.split(',') if include else []
+        excludes = exclude.split(',') if exclude else []
 
         # install a lot of required junk 
         self._install_os_dependencies(easyconfigroot)
@@ -392,10 +395,15 @@ class Builder:
                 if self.cfg.sversion(tc['version']) < self.cfg.sversion(self.min_toolchains[tc['name']]):
                     print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old.', flush=True)
                     continue
-                if cls != 'bio' and bio_only:
-                    # we want to may be only build bio packages
-                    print(f'  {name} is not a bio package', flush=True)
-                    continue
+                if includes: 
+                    if cls not in includes:
+                        # we want to may be only build bio packages
+                        print(f'  {name} is not a module class in --include {include} ', flush=True)
+                        continue
+                elif excludes:
+                    if cls in excludes:
+                        print(f'  {name} is a module class in --exclude {exclude} ', flush=True)
+                        continue
                 if dep:
                     print(f'  installing OS dependencies: {dep}', flush=True)
                     self._install_packages(dep)
@@ -3578,8 +3586,10 @@ def parse_arguments():
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
         help="Build the Easybuild packages on current system.")
-    parser_launch.add_argument( '--bio-only', '-o', dest='bioonly', action='store_true', default=False,
-        help="Build only life sciences (bio) packages and dependencies.")
+    parser_launch.add_argument('--include', '-d', dest='include', action='store', default="",
+        help='limit builds to certain module classes, e.g "bio" or "bio,ai"')     
+    parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
+        help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')            
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
