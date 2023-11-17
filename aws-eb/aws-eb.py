@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.44'
+__version__ = '0.1.0.45'
 
 def main():
         
@@ -486,7 +486,8 @@ class Builder:
                 tarball_path = os.path.join(folder, package_dir, tarball_name)
                 all_tars.append(tarball_path)
                 if os.path.isfile(tarball_path):
-                    print(f"Tarball {tarball_path} already exists ...")
+                    if self.args.debug:
+                        self.cfg.printdbg(f'Tarball {tarball_path} already exists ...')   
                     continue
                 new_tars.append(tarball_path)
 
