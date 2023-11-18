@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.48'
+__version__ = '0.20.1'
 
 def main():
         
@@ -410,7 +410,10 @@ class Builder:
                     self._install_packages(dep)
                 # install easybuild package 
                 print(f" Downloading previous packages ... ", flush=True)
-                self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix)
+                getsource = True
+                if self.args.skipsources:
+                    getsource = False
+                self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
                 print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ", flush=True)
@@ -3640,6 +3643,8 @@ def parse_arguments():
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
         help="Build the Easybuild packages on current system.")
+    parser_launch.add_argument( '--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
+        help="Do not pre-download sources from build cache, let EB download them.")
     parser_launch.add_argument('--include', '-d', dest='include', action='store', default="",
         help='limit builds to certain module classes, e.g "bio" or "bio,ai"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
