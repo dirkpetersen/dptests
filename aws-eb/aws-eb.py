@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.47'
+__version__ = '0.1.0.48'
 
 def main():
         
@@ -772,7 +772,7 @@ class Builder:
         # after the first successful upload do a size only compare
         self.rclone_upload_compare  = '--size-only'
                 
-    def download(self, source, target, s3_prefix=None, with_source=False):
+    def download(self, source, target, s3_prefix=None, with_source=True):
                
         rclone = Rclone(self.args,self.cfg)
             
@@ -1050,6 +1050,9 @@ class Rclone:
 
         command = self._add_opt(command, '--verbose')
         command = self._add_opt(command, '--use-json-log')
+        command = self._add_opt(command, '--transfers', self.args.vcpus*2)
+        command = self._add_opt(command, '--checkers', self.args.vcpus*2)
+
         self.cfg.printdbg('Rclone command:', " ".join(command))
         try:
             ret = subprocess.run(command, capture_output=True, text=True, env=self.cfg.envrn)
