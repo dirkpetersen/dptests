@@ -1050,8 +1050,8 @@ class Rclone:
 
         command = self._add_opt(command, '--verbose')
         command = self._add_opt(command, '--use-json-log')
-        command = self._add_opt(command, '--transfers', self.args.vcpus*2)
-        command = self._add_opt(command, '--checkers', self.args.vcpus*2)
+        command = self._add_opt(command, '--transfers', str(self.args.vcpus*2))
+        command = self._add_opt(command, '--checkers', str(self.args.vcpus*2))
 
         self.cfg.printdbg('Rclone command:', " ".join(command))
         try:
