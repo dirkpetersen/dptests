@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.2'
+__version__ = '0.20.3'
 
 def main():
         
@@ -2030,6 +2030,8 @@ class AWSBoto:
     def _ec2_user_space_script(self, instance_id='', bscript='~/bootstrap.sh'):
         # Define script that will be installed by ec2-user 
         emailaddr = self.cfg.read('general','email')
+        if not emailaddr:
+            emailaddr = 'user@domain.edu'
         #short_timezone = datetime.datetime.now().astimezone().tzinfo
         long_timezone = self.cfg.get_time_zone()
         return textwrap.dedent(f'''
