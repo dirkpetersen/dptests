@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.1.0.45'
+__version__ = '0.1.0.46'
 
 def main():
         
@@ -356,7 +356,6 @@ class Builder:
         self.rclone_download_compare = '--checksum'
         self.rclone_upload_compare = '--checksum'
         self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2023a'}
-        #self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore': '11.0', 'foss': '2022a', 'fosscuda': '2021a'}
         self.eb_root = '/opt/eb'
 
     def build_all(self, easyconfigroot, s3_prefix, include, exclude):
@@ -369,6 +368,7 @@ class Builder:
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
+        ebcnt = 0; bldcnt = 0; errcnt = 0; errpkg = []
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" newest easyconfigs... ')
             try:
@@ -385,6 +385,7 @@ class Builder:
                 if not ebpath.endswith('.eb'):
                     continue
                 name, version, tc, dep, cls, instdir = self._read_easyconfig(ebpath)
+                ebcnt+=1
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
                         print(f'  * Easyconfig {name} version {version} too old.', flush=True)
@@ -398,11 +399,11 @@ class Builder:
                 if includes: 
                     if cls not in includes:
                         # we want to may be only build bio packages
-                        print(f'  {name} is not a module class in --include {include} ', flush=True)
+                        print(f'  * {name} is not a module class in --include {include} ', flush=True)
                         continue
                 elif excludes:
                     if cls in excludes:
-                        print(f'  {name} is a module class in --exclude {exclude} ', flush=True)
+                        print(f'  * {name} is a module class in --exclude {exclude} ', flush=True)
                         continue
                 if dep:
                     print(f'  installing OS dependencies: {dep}', flush=True)
@@ -415,10 +416,16 @@ class Builder:
                 print(f" Installing {ebfile} ... ", flush=True)
                 ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath])
                 print(f'*** EASYBUILD RETURNCODE: {ret.returncode}', flush=True)
-                print(f" Tarring up new packages ... ", flush=True)
+                if ret.returncode != 0:
+                    print(f'  * Easybuild {ebfile} failed.', flush=True)
+                    errcnt+=1
+                    errpkg.append(ebfile)
+                    continue
+                bldcnt+=1
+                print(f" Tarring and uploading new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
-                print(f" Uploading new packages ... ", flush=True)
                 self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
+                print(f'  Update {ebcnt} easyconfigs, {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
             except subprocess.CalledProcessError:                
                 print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.", flush=True)
@@ -436,6 +443,10 @@ class Builder:
         except Exception as e:
             print(f"  Builder.build_all(final): An unexpected error occurred when uploading:\n{e}", flush=True)
             pass
+
+        print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
+        print(f'  BUILD FINISHED. Tried {ebcnt} easyconfigs, built {bldcnt} packages and {errcnt} builds failed', flush=True)
+        
 
         return True
     
@@ -2841,8 +2852,8 @@ class ConfigManager:
         self.awscredsfile = os.path.join(self.home_dir, '.aws', 'credentials')
         self.awsconfigfile = os.path.join(self.home_dir, '.aws', 'config')
         self.awsconfigfileshr = os.path.join(self.config_root, 'aws_config')
-        self.bucket = self.read('general','bucket')
-        self.archiveroot = self.read('general','archiveroot')
+        self.bucket = self.read('general','bucket','easybuild-cache-ohsu')
+        self.archiveroot = self.read('general','archiveroot', 'aws')
         self.archivepath = f'{self.bucket}/{self.archiveroot}'
         self.awsprofile = os.getenv('AWS_PROFILE', 'default')
         profs = self.get_aws_profiles()
@@ -3408,16 +3419,16 @@ class ConfigManager:
             else:
                 entry_file.write(value)
 
-    def read(self, section, entry):
+    def read(self, section, entry, default=""):
         entry_path = self._get_entry_path(section, entry)
         if not os.path.exists(entry_path):
-            return ""
+            return default
             #raise FileNotFoundError(f'Config entry "{entry}" in section "{section}" not found.')
         with open(entry_path, 'r') as entry_file:
             try:
                 return json.load(entry_file)                
             except json.JSONDecodeError:
-                pass
+                return default
             except:
                 print('Error in ConfigManager.read()')
         with open(entry_path, 'r') as entry_file:
