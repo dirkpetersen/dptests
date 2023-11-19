@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.3'
+__version__ = '0.20.4'
 
 def main():
         
@@ -355,7 +355,10 @@ class Builder:
         self.cfg = cfg
         self.rclone_download_compare = '--checksum'
         self.rclone_upload_compare = '--checksum'
-        self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2023a'}
+        self.min_toolchains = self.cfg.read('general', 'min_toolchains')
+        if not self.min_toolchains:
+            self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2022a'}
+            self.cfg.write('general', 'min_toolchains', self.min_toolchains)
         self.eb_root = '/opt/eb'
 
     def build_all(self, easyconfigroot, s3_prefix, include, exclude):
@@ -378,14 +381,14 @@ class Builder:
                 ebfile = self._get_latest_easyconfig(root)
                 if not ebfile:
                     continue
-                print(f'  Processing easyconfig "{ebfile}" ... ', flush=True)
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
                     continue 
                 if not ebpath.endswith('.eb'):
                     continue
-                name, version, tc, dep, cls, instdir = self._read_easyconfig(ebpath)
+                print(f'  Processing easyconfig "{ebfile}" ... ', flush=True)                
                 ebcnt+=1
+                name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
                         print(f'  * Easyconfig {name} version {version} too old.', flush=True)
@@ -405,9 +408,9 @@ class Builder:
                     if cls in excludes:
                         print(f'  * {name} is a module class in --exclude {exclude} ', flush=True)
                         continue
-                if dep:
-                    print(f'  installing OS dependencies: {dep}', flush=True)
-                    self._install_packages(dep)
+                if osdep:
+                    print(f'  installing OS dependencies: {osdep}', flush=True)
+                    self._install_packages(osdep)
                 # install easybuild package 
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
@@ -417,10 +420,13 @@ class Builder:
                 print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ", flush=True)
-                ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath])
+                if 'CUDA' in ebfile: # CUDA is a special case, we may not have a GPU installed 
+                    ret = subprocess.run(['eb', '--robot', '--umask=002', '--ignore-test-failure', ebpath])
+                else:
+                    ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath])
                 print(f'*** EASYBUILD RETURNCODE: {ret.returncode}', flush=True)
                 if ret.returncode != 0:
-                    print(f'  * Easybuild {ebfile} failed.', flush=True)
+                    print(f'  FAILED: EasyConfig {ebfile}, trying next one ...', flush=True)
                     errcnt+=1
                     errpkg.append(ebfile)
                     continue
@@ -428,7 +434,7 @@ class Builder:
                 print(f" Tarring and uploading new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
                 self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
-                print(f'  Update {ebcnt} easyconfigs, {bldcnt} packages built, {errcnt} builds failed', flush=True)
+                print(f'  ### UPDATE: {ebcnt} easyconfigs, {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
             except subprocess.CalledProcessError:                
                 print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.", flush=True)
