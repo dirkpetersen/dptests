@@ -234,7 +234,7 @@ def subcmd_launch(args,cfg,bld,aws):
     print('Cheapest:', instance_type)
 
     if not args.build:
-        aws.ec2_deploy(512, instance_type) # 256GB disk for the build instance
+        aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
         return True
 
     # *******************************************
@@ -2091,8 +2091,9 @@ class AWSBoto:
             'Ebs': {
                 'VolumeSize': disk_gib,  # Volume size in GiB (1 TB = 1024 GiB)
                 'DeleteOnTermination': True,  # True if the volume should be deleted after instance is terminated
-                'VolumeType': 'gp2',  # The type of volume to create (gp3 is generally a good default)
-                # Additional parameters like Iops and Throughput can be specified for 'gp3' volume type
+                'VolumeType': 'gp3',  # The type of volume to create (gp3 is generally a good default)
+                'Iops': 10000,  # Provisioned IOPS for the volume
+                'Throughput': 1000,  # Throughput in MB/s
             },
         }]    
              
