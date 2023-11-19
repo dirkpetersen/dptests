@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.6'
+__version__ = '0.20.7'
 
 def main():
         
@@ -2092,7 +2092,7 @@ class AWSBoto:
                 'VolumeSize': disk_gib,  # Volume size in GiB (1 TB = 1024 GiB)
                 'DeleteOnTermination': True,  # True if the volume should be deleted after instance is terminated
                 'VolumeType': 'gp3',  # The type of volume to create (gp3 is generally a good default)
-                'Iops': 10000,  # Provisioned IOPS for the volume
+                'Iops': 3000,  # Provisioned IOPS for the volume
                 'Throughput': 1000,  # Throughput in MB/s
             },
         }]    
