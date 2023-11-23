@@ -21,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.7'
+__version__ = '0.20.10'
 
 def main():
         
@@ -71,15 +71,17 @@ def subcmd_config(args, cfg, aws):
     # arguments are Class instances passed from main
 
     first_time=True
-    
     if not cfg.binfolder:
-        binfolder = '~/.local/bin'
-        cfg.binfolderx = os.path.expanduser(binfolder)
+        cfg.binfolder = '~/.local/bin'
+        cfg.binfolderx = os.path.expanduser(cfg.binfolder)
         if not os.path.exists(cfg.binfolderx):
-            os.makedirs(cfg.binfolderx, mode=0o775)
-        cfg.write('general', 'binfolder', binfolder)
-    else:
+            os.makedirs(cfg.binfolderx, mode=0o775)        
+    else:        
+        if cfg.binfolder.startswith(cfg.home_dir):
+            cfg.binfolder = cfg.binfolder.replace(cfg.home_dir, '~')
+        cfg.binfolderx = os.path.expanduser(cfg.binfolder)
         first_time=False
+    cfg.write('general', 'binfolder', cfg.binfolder)
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     if not cfg.read('general', 'no-rclone-download'):
@@ -320,14 +322,15 @@ def subcmd_ssh(args, cfg, aws):
     if args.terminate:
         aws.ec2_terminate_instance(args.terminate)
         return True        
-    myhost = cfg.read('cloud', 'ec2_last_instance')        
+    if args.sshargs:
+        myhost, remote_path = args.sshargs[0].split(':')
+    else:
+        myhost = cfg.read('cloud', 'ec2_last_instance')   
     if ips and not myhost in ips:
         print(f'{myhost} is no longer running, replacing with {ips[-1]}')
         myhost = ips[-1]
         #cfg.write('cloud', 'ec2_last_instance', myhost)
     if args.subcmd == 'ssh':
-        if args.sshargs:
-            myhost = args.sshargs[0]
         print(f'Connecting to {myhost} ...')
         aws.ssh_execute('ec2-user', myhost)
         return True
@@ -1655,6 +1658,8 @@ class AWSBoto:
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
         print(' but you can already login using "aws-eb ssh"')
 
+        if os.path.exists(os.path.expanduser('~/.bash_history.tmp')):
+            os.remove(os.path.expanduser('~/.bash_history.tmp'))
         os.system(f'echo "touch ~/no-terminate" >> ~/.bash_history.tmp')
         os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
@@ -3482,15 +3487,21 @@ class ConfigManager:
             try:
                 return json.load(entry_file)                
             except json.JSONDecodeError:
-                return default
+                pass
             except:
-                print('Error in ConfigManager.read()')
+                print('Error in ConfigManager.read(), returning default')
+                return default
         with open(entry_path, 'r') as entry_file:
+            try:
                 content = entry_file.read().splitlines()
                 if len(content) == 1:
                     return content[0].strip()
                 else:
                     return content
+            except:
+                print('Error in ConfigManager.read(), returning default')
+                return default
+
 
     def delete(self, section, entry):
         entry_path = self._get_entry_path(section, entry)
