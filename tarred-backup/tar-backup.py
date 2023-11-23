@@ -22,6 +22,8 @@ def tar_and_compress(source_dir, temp_dir, max_size=2**30):  # 1 GiB in bytes
     for dirpath, _, filenames in os.walk(source_dir):
         for filename in filenames:
             file_path = os.path.join(dirpath, filename)
+            print("  tarball_path:", tarball_path)
+            print("  file_path:", file_path)
             file_size = get_file_size(file_path)
             
             # Check if adding the next file would exceed the max size limit
@@ -29,7 +31,7 @@ def tar_and_compress(source_dir, temp_dir, max_size=2**30):  # 1 GiB in bytes
                 # Close the current tar file
                 tar.close()
                 # Copy the tar file to the original directory
-                shutil.copy2(tarball_path, source_dir)
+                shutil.copy2(tarball_path, source_dir)                
                 # Start a new tar file
                 part += 1
                 tarball_path = os.path.join(temp_dir, f"{os.path.basename(source_dir)}_part{part}.tar.gz")
@@ -48,6 +50,7 @@ def process_directory(temp_dir, directory, max_size):
     """
     Processes a single directory to create compressed tar.gz files.
     """
+    print("tar_and_compress:", directory, temp_dir) 
     tar_and_compress(directory, temp_dir, max_size)
 
 def main(input_directory, max_parallel=10, max_size=2**30):  # 1 GiB in bytes
