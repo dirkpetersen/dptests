@@ -12,8 +12,7 @@ import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
-import requests, boto3, botocore, psutil
-#, packaging
+import requests, boto3, botocore, psutil, packaging
 try:
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError    
@@ -22,7 +21,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.10'
+__version__ = '0.20.11'
 
 def main():
         
