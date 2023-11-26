@@ -2631,7 +2631,7 @@ class AWSBoto:
         nowstr = datetime.datetime.now().strftime('%H:%M:%S')
         print(f'aws-eb-monitor ({nowstr}): {public_ip} ({instance_id}, {instance_type}, {ami_id}, {reservation_id}) ... ')
 
-        if self._monitor_is_idle():
+        if self._monitor_is_idle() or self._monitor_has_instance_failed(instance_id):
             # This machine was idle for a long time, destroy it
             print(f'aws-eb-monitor ({nowstr}): Destroying current idling machine {public_ip} ({instance_id}) ...')
             if public_ip:
@@ -2663,6 +2663,31 @@ class AWSBoto:
                 body.append(f"  {instance_t:12}: ${cost:.2f} {unit}")
         body_text = "\n".join(body)
         self.send_email_ses("", "", f'AWS-EB AWS cost report ({instance_id})', body_text)
+
+    def _monitor_has_instance_failed(self, instance_id, profile=None):
+        """
+        Check if the Instance reachability status check has failed for a given EC2 instance.
+        """
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        ec2_client = session.client('ec2')
+
+        # Fetch the status of the instance
+        response = ec2_client.describe_instance_status(InstanceIds=[instance_id])
+
+        # Check if the status check response is available
+        if not response['InstanceStatuses']:
+            print(f"No status information found for instance {instance_id}.")
+            return True
+
+        # Extract the instance status
+        instance_status = response['InstanceStatuses'][0]['InstanceStatus']
+        reachability_status = instance_status['Details'][0]['Status']
+        if reachability_status == 'impaired' or reachability_status == 'failed':
+            print(f"Instance {instance_id} has failed the reachability status check.")
+            return True
+
+        return False
+
 
     def _monitor_users_logged_in(self):
         """Check if any users are logged in."""
