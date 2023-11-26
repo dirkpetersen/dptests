@@ -12,7 +12,8 @@ import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
-import requests, boto3, botocore, psutil, packaging
+import requests, boto3, botocore, psutil
+#, packaging
 try:
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError    
@@ -2098,7 +2099,7 @@ class AWSBoto:
                 'DeleteOnTermination': True,  # True if the volume should be deleted after instance is terminated
                 'VolumeType': 'gp3',  # The type of volume to create (gp3 is generally a good default)
                 'Iops': 3000,  # Provisioned IOPS for the volume
-                'Throughput': 1000,  # Throughput in MB/s
+                'Throughput': 750,  # Throughput in MB/s
             },
         }]    
              
