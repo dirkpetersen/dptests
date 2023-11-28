@@ -507,6 +507,10 @@ class Builder:
                 # Create the tarball name
                 tarball_name = f'{package_dir}-{version_dir}.eb.tar.gz'
                 tarball_path = os.path.join(folder, package_dir, tarball_name)
+
+                if self.args.debug:
+                    self.cfg.printdbg(f'version_dir: {version_dir}, package_dir: {package_dir}, package_root: {package_root}, tarball_name: {tarball_name}, tarball_path: {tarball_path}')   
+
                 all_tars.append(tarball_path)
                 if os.path.isfile(tarball_path):
                     if self.args.debug:
