@@ -12,7 +12,8 @@ import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
-import requests, boto3, botocore, psutil, packaging
+import requests, boto3, botocore, psutil
+from packaging.version import parse, InvalidVersion
 try:
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError    
@@ -21,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.11'
+__version__ = '0.20.12'
 
 def main():
         
@@ -465,7 +466,7 @@ class Builder:
     def _install_os_dependencies(self, easyconfigroot):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
-        self._install_packages(['pigz'], package_skip_set)        
+        self._install_packages(['pigz', 'iftop', 'iotop'], package_skip_set)        
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
@@ -501,6 +502,8 @@ class Builder:
             if 'easybuild' in dirs:
                 # Extract the folder name which should be the version, and the parent folder which should be the package
                 version_dir = os.path.basename(root)
+                if version_dir == 'site_packages':
+                    continue
                 package_dir = os.path.basename(os.path.dirname(root))
                 package_root = os.path.dirname(root)
 
@@ -621,8 +624,7 @@ class Builder:
 
 
     def _get_latest_easyconfig(self,directory):
- 
-        from packaging.version import parse, InvalidVersion
+         
         version_file_dict = {}
         version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-(\w+(?:-\d+(?:\.\d+)*(?:[ab]\d+)?)?))?\.')
 
