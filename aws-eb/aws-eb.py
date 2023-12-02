@@ -324,7 +324,11 @@ def subcmd_ssh(args, cfg, aws):
         aws.ec2_terminate_instance(args.terminate)
         return True        
     if args.sshargs:
-        myhost, remote_path = args.sshargs[0].split(':')
+        if ':' in args.sshargs[0]:
+            myhost, remote_path = args.sshargs[0].split(':')
+        else:
+            myhost = args.sshargs[0]
+            remote_path = ''
     else:
         myhost = cfg.read('cloud', 'ec2_last_instance')   
     if ips and not myhost in ips:
