@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.12'
+__version__ = '0.20.13'
 
 def main():
         
@@ -502,7 +502,7 @@ class Builder:
             if 'easybuild' in dirs:
                 # Extract the folder name which should be the version, and the parent folder which should be the package
                 version_dir = os.path.basename(root)
-                if version_dir == 'site_packages':
+                if version_dir == 'site-packages' or version_dir == 'lib' or version_dir == 'sandbox':
                     continue
                 package_dir = os.path.basename(os.path.dirname(root))
                 package_root = os.path.dirname(root)
@@ -2289,9 +2289,14 @@ class AWSBoto:
         # Extract IP addresses
         for reservation in response['Reservations']:
             for instance in reservation['Instances']:
+                status = '(Running)'
+                if self._monitor_has_instance_failed(instance['InstanceId']):
+                    status = '(Failed)'
                 row = [instance['PublicIpAddress'], 
                        instance['InstanceId'], 
-                       instance['InstanceType']]
+                       instance['InstanceType'],
+                       status
+                       ]
                 ilist.append(row)                
         return ilist
 
@@ -2617,8 +2622,6 @@ class AWSBoto:
             return ""
     
         return response.text
-    
-    import requests
 
     def get_ec2_my_instance_family(self):
         instance_type =self._get_ec2_metadata('instance-type')
