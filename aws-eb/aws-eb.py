@@ -2290,8 +2290,11 @@ class AWSBoto:
         for reservation in response['Reservations']:
             for instance in reservation['Instances']:
                 status = '(Running)'
-                if self._monitor_has_instance_failed(instance['InstanceId']):
-                    status = '(Failed)'
+                if self.args.check:
+                    if self._monitor_has_instance_failed(instance['InstanceId'], False):
+                        status = '(Failed)'
+                    else:
+                        status = '(OK)'
                 row = [instance['PublicIpAddress'], 
                        instance['InstanceId'], 
                        instance['InstanceType'],
@@ -2640,7 +2643,7 @@ class AWSBoto:
         nowstr = datetime.datetime.now().strftime('%H:%M:%S')
         print(f'aws-eb-monitor ({nowstr}): {public_ip} ({instance_id}, {instance_type}, {ami_id}, {reservation_id}) ... ')
 
-        if self._monitor_is_idle() or self._monitor_has_instance_failed(instance_id):
+        if self._monitor_is_idle() or self._monitor_has_instance_failed(instance_id, True):
             # This machine was idle for a long time, destroy it
             print(f'aws-eb-monitor ({nowstr}): Destroying current idling machine {public_ip} ({instance_id}) ...')
             if public_ip:
@@ -2673,7 +2676,7 @@ class AWSBoto:
         body_text = "\n".join(body)
         self.send_email_ses("", "", f'AWS-EB AWS cost report ({instance_id})', body_text)
 
-    def _monitor_has_instance_failed(self, instance_id, profile=None):
+    def _monitor_has_instance_failed(self, instance_id, print_error, profile=None):
         """
         Check if the Instance reachability status check has failed for a given EC2 instance.
         """
@@ -2685,14 +2688,16 @@ class AWSBoto:
 
         # Check if the status check response is available
         if not response['InstanceStatuses']:
-            print(f"No status information found for instance {instance_id}.")
+            if print_error:
+                print(f"No status information found for instance {instance_id}.")
             return True
 
         # Extract the instance status
         instance_status = response['InstanceStatuses'][0]['InstanceStatus']
         reachability_status = instance_status['Details'][0]['Status']
         if reachability_status == 'impaired' or reachability_status == 'failed':
-            print(f"Instance {instance_id} has failed the reachability status check.")
+            if print_error:
+                print(f"Instance {instance_id} has failed the reachability status check.")
             return True
 
         return False
@@ -3727,6 +3732,8 @@ def parse_arguments():
         '''), formatter_class=argparse.RawTextHelpFormatter)
     parser_ssh.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List running AWS-EB EC2 instances")        
+    parser_ssh.add_argument( '--check', '-c', dest='check', action='store_true', default=False,
+        help="check instance status when listing (use with -l)")            
     parser_ssh.add_argument('--terminate', '-t', dest='terminate', action='store', default='', 
         metavar='<hostname>', help='Terminate EC2 instance with this public IP Address.')    
     # parser_ssh.add_argument('--key', '-k', dest='key', action='store', default='', 
