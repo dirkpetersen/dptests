@@ -2944,7 +2944,7 @@ class ConfigManager:
         if not self._set_env_vars(self.awsprofile):
             self.awsprofile = ''
         self.ssh_key_name = 'aws-eb-ec2'
-        self.eb_root = '/opt/eb'
+        self.eb_root = 
         
     def _set_env_vars(self, profile):
         
@@ -2963,7 +2963,7 @@ class ConfigManager:
             return False
         
         # Set TMPDIR to Store failed EB logs 
-        tmpdir = os.path.join(self.eb_root, 'tmp')
+        tmpdir = '/opt/eb/tmp'
         os.environ['TMPDIR'] = tmpdir
         self.envrn['TMPDIR'] = tmpdir
         
