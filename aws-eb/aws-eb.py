@@ -12,7 +12,8 @@ import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
-import requests, boto3, botocore, psutil, packaging
+import requests, boto3, botocore, psutil
+from packaging.version import parse, InvalidVersion
 try:
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError    
@@ -21,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.11'
+__version__ = '0.20.13'
 
 def main():
         
@@ -469,7 +470,7 @@ class Builder:
     def _install_os_dependencies(self, easyconfigroot):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
-        self._install_packages(['pigz'], package_skip_set)        
+        self._install_packages(['pigz', 'iftop', 'iotop'], package_skip_set)        
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
@@ -505,12 +506,18 @@ class Builder:
             if 'easybuild' in dirs:
                 # Extract the folder name which should be the version, and the parent folder which should be the package
                 version_dir = os.path.basename(root)
+                if version_dir == 'site-packages' or version_dir == 'lib' or version_dir == 'sandbox':
+                    continue
                 package_dir = os.path.basename(os.path.dirname(root))
                 package_root = os.path.dirname(root)
 
                 # Create the tarball name
                 tarball_name = f'{package_dir}-{version_dir}.eb.tar.gz'
                 tarball_path = os.path.join(folder, package_dir, tarball_name)
+
+                if self.args.debug:
+                    self.cfg.printdbg(f'version_dir: {version_dir}, package_dir: {package_dir}, package_root: {package_root}, tarball_name: {tarball_name}, tarball_path: {tarball_path}')   
+
                 all_tars.append(tarball_path)
                 if os.path.isfile(tarball_path):
                     if self.args.debug:
@@ -621,8 +628,7 @@ class Builder:
 
 
     def _get_latest_easyconfig(self,directory):
- 
-        from packaging.version import parse, InvalidVersion
+         
         version_file_dict = {}
         version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-(\w+(?:-\d+(?:\.\d+)*(?:[ab]\d+)?)?))?\.')
 
@@ -2287,9 +2293,14 @@ class AWSBoto:
         # Extract IP addresses
         for reservation in response['Reservations']:
             for instance in reservation['Instances']:
+                status = '(Running)'
+                if self._monitor_has_instance_failed(instance['InstanceId']):
+                    status = '(Failed)'
                 row = [instance['PublicIpAddress'], 
                        instance['InstanceId'], 
-                       instance['InstanceType']]
+                       instance['InstanceType'],
+                       status
+                       ]
                 ilist.append(row)                
         return ilist
 
@@ -2615,8 +2626,6 @@ class AWSBoto:
             return ""
     
         return response.text
-    
-    import requests
 
     def get_ec2_my_instance_family(self):
         instance_type =self._get_ec2_metadata('instance-type')
