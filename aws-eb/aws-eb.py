@@ -5,9 +5,9 @@ AWS-EB builds Easybuild packages on AWS EC2 instances
 and uploads them to S3 buckets for later use.
 """
 # internal modules
-import sys, os, argparse, json, configparser, tarfile, concurrent.futures
+import sys, os, argparse, json, configparser, tarfile 
 import urllib3, datetime, tarfile, zipfile, textwrap, platform  
-import hashlib, math, signal, shlex, time, re, inspect, requests
+import hashlib, math, signal, shlex, time, re, inspect
 import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.13'
+__version__ = '0.20.14'
 
 def main():
         
@@ -588,45 +588,6 @@ class Builder:
                         #print(f"Skipping unpacking of {file_path} as 'easybuild' directory already exists in {version_dir_path}.")
         return all_tars, new_tars
 
-
-    # def _untar_eb_software(self, folder):
-    #     def untar_file(file_path, root):
-    #         try:
-    #             # Extract the tar.gz file using tarfile
-    #             with tarfile.open(file_path, "r:gz") as tar:
-    #                 tar.extractall(path=root)
-    #             print(f"Successfully unpacked: {file_path}")
-    #         except Exception as e:
-    #             print(f"An error occurred while unpacking {file_path}: {e}")
-
-    #     all_tars = []
-    #     for root, dirs, files in self._walker(folder):
-    #         # Extract package name from the root directory
-    #         package_name = os.path.basename(root)
-    #         for filename in files:
-    #             if filename.endswith('.eb.tar.gz'):
-    #                 # Strip the '.tar.gz' extension and then extract the version
-    #                 version = filename.replace('.eb.tar.gz', '').replace(package_name + '-', '')
-
-    #                 # Construct the expected path for the version directory
-    #                 version_dir_path = os.path.join(root, version)
-
-    #                 # Check if the 'easybuild' directory exists within the version directory
-    #                 easybuild_path = os.path.join(version_dir_path, 'easybuild')
-    #                 file_path = os.path.join(root, filename)
-    #                 all_tars.append(file_path)
-    #                 if not os.path.exists(easybuild_path):
-    #                     print(f"Unpacking {file_path} into {version_dir_path}...", flush=True)
-
-    #     # Use ThreadPoolExecutor to untar files in parallel
-    #     with concurrent.futures.ThreadPoolExecutor() as executor:
-    #         futures = [executor.submit(untar_file, file_path, root) for file_path in all_tars]
-    #         for future in concurrent.futures.as_completed(futures):
-    #             future.result()  # This will also re-raise any exceptions
-
-    #     return all_tars, []
-
-
     def _get_latest_easyconfig(self,directory):
          
         version_file_dict = {}
@@ -789,6 +750,12 @@ class Builder:
                           f'{target}/{s3_prefix}/logs/',
                           '--include', 'out.easybuild.*' 
                         )
+
+        print ('  Uploading failed logs ... ', flush=True)
+        ret = rclone.copy(os.path.join(source,'tmp'),
+                          f'{target}/{s3_prefix}/logs/failed/'                          
+                        )
+
         self._transfer_status(ret)
         
         # after the first successful upload do a size only compare
@@ -2090,6 +2057,7 @@ class AWSBoto:
         python3 -m pip install boto3 easybuild packaging
         source ~/easybuildrc
         aws-eb.py config --monitor '{emailaddr}'
+        mkdir -p /opt/eb/tmp
         echo "" >> ~/.bash_profile
         ''').strip()
     
@@ -2970,6 +2938,7 @@ class ConfigManager:
         if not self._set_env_vars(self.awsprofile):
             self.awsprofile = ''
         self.ssh_key_name = 'aws-eb-ec2'
+        self.eb_root = '/opt/eb'
         
     def _set_env_vars(self, profile):
         
@@ -2986,6 +2955,11 @@ class ConfigManager:
             if self.args.debug:
                 print (f'~/.aws/credentials has no entry aws_access_key_id in section/profile {profile}')
             return False
+        
+        # Set TMPDIR to Store failed EB logs 
+        tmpdir = os.path.join(self.eb_root, 'tmp')
+        os.environ['TMPDIR'] = tmpdir
+        self.envrn['TMPDIR'] = tmpdir
         
         # Get the AWS access key and secret key from the specified profile
         aws_access_key_id = config.get(profile, 'aws_access_key_id')
