@@ -719,21 +719,24 @@ class Builder:
             print ('  Uploading Bootstrap output ... ', flush=True)
             ret = rclone.copy(os.path.expanduser('~/'),
                             f'{target}/{s3_prefix}/logs/',
-                            '--include', 'out.bootstrap.*' 
+                            '--include', 'out.bootstrap.*',
+                            '--s3-acl', 'authenticated-read' 
                             )
             self._transfer_status(ret)   
 
         print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
-                          '--links', self.rclone_upload_compare
+                          '--links', self.rclone_upload_compare,
+                          '--s3-acl', 'authenticated-read'
                         )
         self._transfer_status(ret)
 
         print ('  Uploading Sources ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'sources'),
                           f'{target}/sources/', 
-                          '--links', self.rclone_upload_compare
+                          '--links', self.rclone_upload_compare,
+                          '--s3-acl', 'authenticated-read'                          
                         )
         self._transfer_status(ret)
 
@@ -741,19 +744,22 @@ class Builder:
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
                           '--links', self.rclone_upload_compare,
-                          '--include', '*.eb.tar.gz' 
+                          '--include', '*.eb.tar.gz',
+                          '--s3-acl', 'authenticated-read' 
                         )
         self._transfer_status(ret)
         
         print ('  Uploading EB output ... ', flush=True)
         ret = rclone.copy(os.path.expanduser('~/'),
                           f'{target}/{s3_prefix}/logs/',
-                          '--include', 'out.easybuild.*' 
+                          '--include', 'out.easybuild.*',
+                          '--s3-acl', 'authenticated-read' 
                         )
 
         print ('  Uploading failed logs ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'tmp'),
-                          f'{target}/{s3_prefix}/logs/failed/'                          
+                          f'{target}/{s3_prefix}/logs/failed/',
+                          '--s3-acl', 'authenticated-read'
                         )
 
         self._transfer_status(ret)
