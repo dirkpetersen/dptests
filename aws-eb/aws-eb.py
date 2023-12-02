@@ -2944,7 +2944,6 @@ class ConfigManager:
         if not self._set_env_vars(self.awsprofile):
             self.awsprofile = ''
         self.ssh_key_name = 'aws-eb-ec2'
-        self.eb_root = 
         
     def _set_env_vars(self, profile):
         
