@@ -245,6 +245,7 @@ def subcmd_launch(args,cfg,bld,aws):
     #  
     if args.firstbucket:
         # create an initial copy of the binaries 
+        print(f'Creating initial copy from {args.firstbucket} to {cfg.bucket} ...', flush=True)
         aws.s3_duplicate_bucket(args.firstbucket, cfg.bucket)
 
     print('s3_prefix:', s3_prefix)
@@ -1592,31 +1593,39 @@ class AWSBoto:
             print(f"Source and destination buckets are the same. Skipping duplicate bucket operation.")
             return False
 
-        # List objects in the source bucket with Requester Pays
-        objects_to_copy = s3_client.list_objects_v2(Bucket=source_bucket, RequestPayer='requester')
+        # Initialize pagination
+        paginator = s3_client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(Bucket=source_bucket, RequestPayer='requester')
 
-        print(f"Copying {len(objects_to_copy['Contents'])} objects from {source_bucket} to {dest_bucket} ... ")
+        # Iterate through each page of objects
+        for page in page_iterator:
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    # Retrieve metadata of the object
+                    object_metadata = s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester')
 
-        # Check if the bucket contains any objects
-        if 'Contents' in objects_to_copy:
-            for obj in objects_to_copy['Contents']:
-                copy_source = {
-                    'Bucket': source_bucket,
-                    'Key': obj['Key']
-                }
+                    # Prepare metadata for copy operation
+                    metadata_directive = 'REPLACE'  # Use REPLACE to copy the metadata explicitly
+                    copy_metadata = object_metadata.get('Metadata', {})
 
-                # Copy each object to the destination bucket with Requester Pays and specified storage class
-                s3_client.copy_object(
-                    CopySource=copy_source, 
-                    Bucket=dest_bucket, 
-                    Key=obj['Key'], 
-                    StorageClass=storage_class, 
-                    RequestPayer='requester'
-                )
-                #print(f"Copied {obj['Key']} from {source_bucket} to {dest_bucket} with storage class {storage_class}")
-            print(f"Successfully copied {len(objects_to_copy['Contents'])} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}")
-        else:
-            print(f"No objects found in {source_bucket}")
+                    copy_source = {
+                        'Bucket': source_bucket,
+                        'Key': obj['Key']
+                    }
+
+                    # Copy each object to the destination bucket with metadata, storage class, and Requester Pays
+                    s3_client.copy_object(
+                        CopySource=copy_source, 
+                        Bucket=dest_bucket, 
+                        Key=obj['Key'], 
+                        StorageClass=storage_class, 
+                        Metadata=copy_metadata,
+                        MetadataDirective=metadata_directive,
+                        RequestPayer='requester'
+                    )
+                    #print(f"Copied {obj['Key']} from {source_bucket} to {dest_bucket} with metadata and storage class {storage_class}")
+                mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                print(f"{mytime}: Copied {len(page['Contents'])} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
 
     def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
