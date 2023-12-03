@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.17'
+__version__ = '0.20.18'
 
 def main():
         
@@ -1353,22 +1353,6 @@ class AWSBoto:
             except:
                 return ['us-west-2','us-west-1', 'us-east-1', '']
 
-    # def check_bucket_access_folders(self, folders, readwrite=False):
-    #     # check all the buckets that have been used for archiving 
-    #     sufficient = True
-    #     myaccess = 'read'
-    #     if readwrite:
-    #         myaccess = 'write'
-    #     buckets = []
-    #     for folder in folders:
-    #         bucket, *_ = self.bld.archive_get_bucket_info(folder)
-    #         buckets.append(bucket)
-    #     buckets = list(set(buckets)) # remove dups
-    #     for bucket in buckets:
-    #         if not self.check_bucket_access(bucket, readwrite):
-    #             print (f' You have no {myaccess} access to bucket "{bucket}" !')
-    #             sufficient = False
-    #     return sufficient
 
     def check_bucket_access(self, bucket_name, readwrite=False, profile=None):
         
@@ -1593,39 +1577,47 @@ class AWSBoto:
             print(f"Source and destination buckets are the same. Skipping duplicate bucket operation.")
             return False
 
-        # Initialize pagination
-        paginator = s3_client.get_paginator('list_objects_v2')
-        page_iterator = paginator.paginate(Bucket=source_bucket, RequestPayer='requester')
+        try:
+            # Initialize pagination
+            paginator = s3_client.get_paginator('list_objects_v2')
+            page_iterator = paginator.paginate(Bucket=source_bucket, RequestPayer='requester')
 
-        # Iterate through each page of objects
-        for page in page_iterator:
-            if 'Contents' in page:
-                for obj in page['Contents']:
-                    # Retrieve metadata of the object
-                    object_metadata = s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester')
+            # Iterate through each page of objects
+            for page in page_iterator:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        # Retrieve metadata of the object
+                        # Skip objects larger than 5 GB
+                        if obj['Size'] > 5 * 1024 * 1024 * 1024:  # 5 GB in bytes
+                            print(f"Skipping {obj['Key']} as it is larger than 5 GB.")
+                            continue  
 
-                    # Prepare metadata for copy operation
-                    metadata_directive = 'REPLACE'  # Use REPLACE to copy the metadata explicitly
-                    copy_metadata = object_metadata.get('Metadata', {})
-
-                    copy_source = {
-                        'Bucket': source_bucket,
-                        'Key': obj['Key']
-                    }
-
-                    # Copy each object to the destination bucket with metadata, storage class, and Requester Pays
-                    s3_client.copy_object(
-                        CopySource=copy_source, 
-                        Bucket=dest_bucket, 
-                        Key=obj['Key'], 
-                        StorageClass=storage_class, 
-                        Metadata=copy_metadata,
-                        MetadataDirective=metadata_directive,
-                        RequestPayer='requester'
-                    )
-                    #print(f"Copied {obj['Key']} from {source_bucket} to {dest_bucket} with metadata and storage class {storage_class}")
-                mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-                print(f"{mytime}: Copied {len(page['Contents'])} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
+                        object_metadata = s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester')
+                        # Prepare metadata for copy operation
+                        metadata_directive = 'REPLACE'  # Use REPLACE to copy the metadata explicitly
+                        copy_metadata = object_metadata.get('Metadata', {})
+                        copy_source = {
+                            'Bucket': source_bucket,
+                            'Key': obj['Key']
+                        }
+                        # Copy each object to the destination bucket with metadata, storage class, and Requester Pays
+                        s3_client.copy_object(
+                            CopySource=copy_source, 
+                            Bucket=dest_bucket, 
+                            Key=obj['Key'], 
+                            StorageClass=storage_class, 
+                            Metadata=copy_metadata,
+                            MetadataDirective=metadata_directive,
+                            RequestPayer='requester'
+                        )
+                        #print(f"Copied {obj['Key']} from {source_bucket} to {dest_bucket} with metadata and storage class {storage_class}")
+                    mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                    print(f"{mytime}: Copied {len(page['Contents'])} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
+                break
+            return True
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return False
 
     def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
