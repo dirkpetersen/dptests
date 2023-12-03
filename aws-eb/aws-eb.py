@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.18'
+__version__ = '0.20.20'
 
 def main():
         
@@ -1591,7 +1591,6 @@ class AWSBoto:
                         if obj['Size'] > 5 * 1024 * 1024 * 1024:  # 5 GB in bytes
                             print(f"Skipping {obj['Key']} as it is larger than 5 GB.")
                             continue  
-
                         object_metadata = s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester')
                         # Prepare metadata for copy operation
                         metadata_directive = 'REPLACE'  # Use REPLACE to copy the metadata explicitly
@@ -1613,7 +1612,6 @@ class AWSBoto:
                         #print(f"Copied {obj['Key']} from {source_bucket} to {dest_bucket} with metadata and storage class {storage_class}")
                     mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
                     print(f"{mytime}: Copied {len(page['Contents'])} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
-                break
             return True
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
@@ -3734,7 +3732,9 @@ def parse_arguments():
     parser_download.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
     parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
-        help="List CPU and GPU types")    
+        help="List CPU and GPU types")
+    parser_download.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
+        help='Number of cores to be allocated for the machine. (default=4)')
     parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
         help="Also download the source packages")    
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
