@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.14'
+__version__ = '0.20.15'
 
 def main():
         
@@ -715,28 +715,27 @@ class Builder:
     
         rclone = Rclone(self.args,self.cfg)
 
+        # optional '--s3-acl', 'authenticated-read' does not seem to be required
+
         if not self.rclone_upload_compare == '--size-only':
             print ('  Uploading Bootstrap output ... ', flush=True)
             ret = rclone.copy(os.path.expanduser('~/'),
                             f'{target}/{s3_prefix}/logs/',
-                            '--include', 'out.bootstrap.*',
-                            '--s3-acl', 'authenticated-read' 
+                            '--include', 'out.bootstrap.*'
                             )
             self._transfer_status(ret)   
 
         print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
-                          '--links', self.rclone_upload_compare,
-                          '--s3-acl', 'authenticated-read'
+                          '--links', self.rclone_upload_compare
                         )
         self._transfer_status(ret)
 
         print ('  Uploading Sources ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'sources'),
                           f'{target}/sources/', 
-                          '--links', self.rclone_upload_compare,
-                          '--s3-acl', 'authenticated-read'                          
+                          '--links', self.rclone_upload_compare                     
                         )
         self._transfer_status(ret)
 
@@ -744,22 +743,19 @@ class Builder:
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
                           '--links', self.rclone_upload_compare,
-                          '--include', '*.eb.tar.gz',
-                          '--s3-acl', 'authenticated-read' 
+                          '--include', '*.eb.tar.gz'
                         )
         self._transfer_status(ret)
         
         print ('  Uploading EB output ... ', flush=True)
         ret = rclone.copy(os.path.expanduser('~/'),
                           f'{target}/{s3_prefix}/logs/',
-                          '--include', 'out.easybuild.*',
-                          '--s3-acl', 'authenticated-read' 
+                          '--include', 'out.easybuild.*'
                         )
 
         print ('  Uploading failed logs ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'tmp'),
-                          f'{target}/{s3_prefix}/logs/failed/',
-                          '--s3-acl', 'authenticated-read'
+                          f'{target}/{s3_prefix}/logs/failed/'
                         )
 
         self._transfer_status(ret)
