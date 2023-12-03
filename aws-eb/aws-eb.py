@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.15'
+__version__ = '0.20.16'
 
 def main():
         
@@ -241,7 +241,12 @@ def subcmd_launch(args,cfg,bld,aws):
         return True
 
     # *******************************************
-    # Start EasyBuild process here 
+    # Start EasyBuild process here
+    #  
+    if args.firstbucket:
+        # create an initial copy of the binaries 
+        aws.s3_duplicate_bucket(args.firstbucket, cfg.bucket)
+
     print('s3_prefix:', s3_prefix)
     ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
     bld.build_all(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
@@ -251,7 +256,6 @@ def subcmd_launch(args,cfg,bld,aws):
         
 def subcmd_download(args,cfg,bld,aws):
 
-    cfg.printdbg ("restore")
     cfg.printdbg(f'default cmdline: aws-eb download')
 
     if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
@@ -992,11 +996,6 @@ class Builder:
         return mountinfo_list
         
 
-    def download_restored_file(self, bucket_name, object_key, local_path):
-        s3 = boto3.resource('s3')
-        s3.Bucket(bucket_name).download_file(object_key, local_path)
-        print(f'Downloaded {object_key} to {local_path}.')
-
     def _upload_file_to_s3(self, filename, bucket, object_name=None, profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         s3 = session.client('s3')
@@ -1013,11 +1012,6 @@ class Builder:
             return False
         return True
 
-    # initiate_restore(bucket_name, object_key, restore_days)    
-    # while not check_restore_status(bucket_name, object_key):
-    #     print('Waiting for restoration to complete...')
-    #     time.sleep(60)  # Wait 60 seconds before checking again
-    # download_restored_file(bucket_name, object_key, local_path)
 
 class Rclone:
     def __init__(self, args, cfg):
@@ -1586,6 +1580,44 @@ class AWSBoto:
     #     total_size_gib = total_size_bytes / (1024 ** 3)  # Convert bytes to GiB
     #     return total_size_gib
 
+
+    def s3_duplicate_bucket(self, source_bucket, dest_bucket, storage_class=None, profile=None):
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()        
+        s3_client = session.client('s3')
+        
+        if not storage_class:
+            storage_class='INTELLIGENT_TIERING'
+
+        if source_bucket == dest_bucket:
+            print(f"Source and destination buckets are the same. Skipping duplicate bucket operation.")
+            return False
+
+        # List objects in the source bucket with Requester Pays
+        objects_to_copy = s3_client.list_objects_v2(Bucket=source_bucket, RequestPayer='requester')
+
+        print(f"Copying {len(objects_to_copy['Contents'])} objects from {source_bucket} to {dest_bucket} ... ")
+
+        # Check if the bucket contains any objects
+        if 'Contents' in objects_to_copy:
+            for obj in objects_to_copy['Contents']:
+                copy_source = {
+                    'Bucket': source_bucket,
+                    'Key': obj['Key']
+                }
+
+                # Copy each object to the destination bucket with Requester Pays and specified storage class
+                s3_client.copy_object(
+                    CopySource=copy_source, 
+                    Bucket=dest_bucket, 
+                    Key=obj['Key'], 
+                    StorageClass=storage_class, 
+                    RequestPayer='requester'
+                )
+                #print(f"Copied {obj['Key']} from {source_bucket} to {dest_bucket} with storage class {storage_class}")
+            print(f"Successfully copied {len(objects_to_copy['Contents'])} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}")
+        else:
+            print(f"No objects found in {source_bucket}")
+
     def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
         if not awsprofile: 
@@ -1648,7 +1680,7 @@ class AWSBoto:
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
 
-        self.send_email_ses('', '', 'AWS-EB restore on EC2', f'this command line was executed on host {ip}:\n{cmdline}')
+        self.send_email_ses('', '', 'AWS-EB build on EC2', f'this command line was executed on host {ip}:\n{cmdline}')
 
     def _ec2_create_or_get_iam_policy(self, pol_name, pol_doc, profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
@@ -2616,6 +2648,7 @@ class AWSBoto:
         
         nowstr = datetime.datetime.now().strftime('%H:%M:%S')
         print(f'aws-eb-monitor ({nowstr}): {public_ip} ({instance_id}, {instance_type}, {ami_id}, {reservation_id}) ... ')
+
 
         if self._monitor_is_idle() or self._monitor_has_instance_failed(instance_id, True):
             # This machine was idle for a long time, destroy it
@@ -3681,6 +3714,8 @@ def parse_arguments():
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
         help="Build the Easybuild packages on current system.")
+    parser_launch.add_argument('--first-bucket', '-f', dest='firstbucket', action='store', default="",
+        help='use this bucket to initially load the pre-built binaries and sources')       
     parser_launch.add_argument( '--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
         help="Do not pre-download sources from build cache, let EB download them.")
     parser_launch.add_argument('--include', '-d', dest='include', action='store', default="",
@@ -3707,7 +3742,7 @@ def parse_arguments():
     # ***
     parser_ssh = subparsers.add_parser('ssh', aliases=['scp'],
         help=textwrap.dedent(f'''
-            Login to an AWS EC2 instance to which data was restored with the --ec2 option
+            Login to an AWS EC2 build instance 
         '''), formatter_class=argparse.RawTextHelpFormatter)
     parser_ssh.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List running AWS-EB EC2 instances")        
