@@ -322,7 +322,7 @@ def subcmd_download(args,cfg,bld,aws):
         
 def subcmd_ssh(args, cfg, aws):
 
-    ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+    ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct', args.check)
     ips = [sublist[0] for sublist in ilist if sublist]
     if args.list:
         if ips:
@@ -2272,7 +2272,7 @@ class AWSBoto:
         
         print(f"EC2 Instance {instance_id} ({ip}) is being terminated !")
 
-    def ec2_list_instances(self, tag_name, tag_value, profile=None):
+    def ec2_list_instances(self, tag_name, tag_value, check=False, profile=None):
         """
         List all IP addresses of running EC2 instances with a specific tag name and value.
         :param tag_name: The name of the tag
@@ -2310,7 +2310,7 @@ class AWSBoto:
         for reservation in response['Reservations']:
             for instance in reservation['Instances']:
                 status = '(Running)'
-                if self.args.check:
+                if check:
                     if self._monitor_has_instance_failed(instance['InstanceId'], False):
                         status = '(Failed)'
                     else:
