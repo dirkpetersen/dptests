@@ -186,12 +186,12 @@ def subcmd_launch(args,cfg,bld,aws):
         print(f'Profile "{args.awsprofile}" not found.')
         return False    
     
-    #ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    #instances = [sublist[1] for sublist in ilist if sublist]
-    # for inst in instances:
-    #     if aws._monitor_has_instance_failed(inst, True):
-    #         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
-    #         aws.ec2_terminate_instance(inst)
+    ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+    instances = [sublist[1] for sublist in ilist if sublist]
+    for inst in instances:
+        if aws._monitor_has_instance_failed(inst, True):
+            print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
+            #aws.ec2_terminate_instance(inst)
 
     if args.list:
         # list all folders in the archive
