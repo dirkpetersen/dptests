@@ -2071,7 +2071,8 @@ class AWSBoto:
         # iam_instance_profile = {}
 
         myprice = self._ec2_ondemand_price(instance_type, self.cfg.aws_region, profile)
-        print(f'On-demand price for {instance_type} in {self.cfg.aws_region}: ${myprice:.4f} per hour.')
+        if myprice:
+            print(f'On-demand price for {instance_type} in {self.cfg.aws_region}: ${myprice:.4f} per hour.')
         
         try:
             # Create EC2 instance
