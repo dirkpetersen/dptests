@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.23'
+__version__ = '0.20.24'
 
 def main():
         
@@ -189,7 +189,7 @@ def subcmd_launch(args,cfg,bld,aws):
     # ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
     # instances = [sublist[1] for sublist in ilist if sublist]
     # for inst in instances:
-    #     if aws._monitor_has_instance_failed(inst, True):
+    #     if aws.monitor_has_instance_failed(inst, True):
     #         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
     #         #aws.ec2_terminate_instance(inst)
 
@@ -400,7 +400,7 @@ class Builder:
                 ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
                 instances = [sublist[1] for sublist in ilist if sublist]
                 for inst in instances:
-                    if self.aws._monitor_has_instance_failed(inst, True):
+                    if self.aws.monitor_has_instance_failed(inst, True):
                         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
                         self.aws.ec2_terminate_instance(inst)
                 # end instance kill 
@@ -1869,6 +1869,37 @@ class AWSBoto:
         else:
             return None        
 
+    def _ec2_ondemand_price(self, instance_type, region, profile=None):
+
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        pricing_client = session.client('pricing', region_name=region)
+    
+        region_map = {
+            'us-east-1': 'US East (N. Virginia)',
+            'us-west-1': 'US West (N. California)',
+            'us-west-2': 'US West (Oregon)',
+            # ... Add other regions as needed
+        }
+        try:
+            response = pricing_client.get_products(
+                ServiceCode='AmazonEC2',
+                Filters=[
+                    {'Type': 'TERM_MATCH', 'Field': 'instanceType', 'Value': instance_type},
+                    {'Type': 'TERM_MATCH', 'Field': 'location', 'Value': region_map.get(region, '')},
+                    {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw', 'Value': 'NA'},
+                    {'Type': 'TERM_MATCH', 'Field': 'operatingSystem', 'Value': 'Linux'},
+                    {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'},
+                    {'Type': 'TERM_MATCH', 'Field': 'capacitystatus', 'Value': 'Used'},
+                ],
+                MaxResults=1
+            )
+            price_list = [json.loads(price_str) for price_str in response['PriceList']]
+            on_demand_price = float(price_list[0]['terms']['OnDemand'][list(price_list[0]['terms']['OnDemand'])[0]]['priceDimensions'][list(price_list[0]['terms']['OnDemand'][list(price_list[0]['terms']['OnDemand'])[0]]['priceDimensions'])[0]]['pricePerUnit']['USD'])
+            return on_demand_price
+        except Exception as e:
+            print(f"Error getting on-demand price: {e}")
+            return None
+        
     def _create_progress_bar(self, max_value):
         def show_progress_bar(iteration):
             percent = ("{0:.1f}").format(100 * (iteration / float(max_value)))
@@ -2000,7 +2031,7 @@ class AWSBoto:
                 'Iops': 3000,  # Provisioned IOPS for the volume
                 'Throughput': 750,  # Throughput in MB/s
             },
-        }]    
+        }]
              
         if self.args.instancetype:
             instance_type = self.args.instancetype 
@@ -2035,9 +2066,12 @@ class AWSBoto:
             iam_instance_profile={
                 'Name': iamprofile  # Use the instance profile name
             }        
-        print(f'IAM Instance profile: {iamprofile}.')    
+        print(f'IAM Instance profile: {iamprofile}.')
 
         # iam_instance_profile = {}
+
+        myprice = self._ec2_ondemand_price(instance_type, self.cfg.aws_region, profile)
+        print(f'On-demand price for {instance_type} in {self.cfg.aws_region}: ${myprice:.4f} per hour.')
         
         try:
             # Create EC2 instance
@@ -2057,6 +2091,8 @@ class AWSBoto:
                     }
                 ]
             )[0]
+
+
         except botocore.exceptions.ClientError as e:
             error_code = e.response['Error']['Code']
             if error_code == 'AccessDenied':
@@ -2185,7 +2221,7 @@ class AWSBoto:
             for instance in reservation['Instances']:
                 status = '(Running)'
                 if check:
-                    if self._monitor_has_instance_failed(instance['InstanceId'], False):
+                    if self.monitor_has_instance_failed(instance['InstanceId'], False):
                         status = '(Failed)'
                     else:
                         status = '(OK)'
@@ -2537,7 +2573,7 @@ class AWSBoto:
         nowstr = datetime.datetime.now().strftime('%H:%M:%S')
         print(f'aws-eb-monitor ({nowstr}): {public_ip} ({instance_id}, {instance_type}, {ami_id}, {reservation_id}) ... ', flush=True)
 
-        if self._monitor_is_idle() or self._monitor_has_instance_failed(instance_id, True):
+        if self._monitor_is_idle() or self.monitor_has_instance_failed(instance_id, True):
             # This machine was idle for a long time, destroy it
             print(f'aws-eb-monitor ({nowstr}): Destroying current idling machine {public_ip} ({instance_id}) ...', flush=True)
             if public_ip:
@@ -2570,7 +2606,7 @@ class AWSBoto:
         body_text = "\n".join(body)
         self.send_email_ses("", "", f'AWS-EB AWS cost report ({instance_id})', body_text)
 
-    def _monitor_has_instance_failed(self, instance_id, print_error, profile=None):
+    def monitor_has_instance_failed(self, instance_id, print_error, profile=None):
         """
         Check if the Instance reachability status check has failed for a given EC2 instance.
         """
@@ -3605,6 +3641,8 @@ def parse_arguments():
         help='use this bucket to initially load the pre-built binaries and sources')       
     parser_launch.add_argument( '--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
         help="Do not pre-download sources from build cache, let EB download them.")
+    parser_launch.add_argument( '--on-demand', '-o', dest='ondemand', action='store_true', default=False,
+        help="Enforce on-demand instance instead of using the default spot instance.")
     parser_launch.add_argument('--include', '-d', dest='include', action='store', default="",
         help='limit builds to certain module classes, e.g "bio" or "bio,ai"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
