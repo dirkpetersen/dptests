@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.21'
+__version__ = '0.20.22'
 
 def main():
         
@@ -186,6 +186,13 @@ def subcmd_launch(args,cfg,bld,aws):
         print(f'Profile "{args.awsprofile}" not found.')
         return False    
     
+    #ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+    #instances = [sublist[1] for sublist in ilist if sublist]
+    # for inst in instances:
+    #     if aws._monitor_has_instance_failed(inst, True):
+    #         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
+    #         aws.ec2_terminate_instance(inst)
+
     if args.list:
         # list all folders in the archive
         print('\nAll available EC2 instance families:')
@@ -392,7 +399,8 @@ class Builder:
                 ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
                 instances = [sublist[1] for sublist in ilist if sublist]
                 for inst in instances:
-                    if self.aws._monitor_has_instance_failed(inst):
+                    if self.aws._monitor_has_instance_failed(inst, True):
+                        print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
                         self.aws.ec2_terminate_instance(inst)
                 # end instance kill 
                 if easyconfigroot==root:
@@ -2039,7 +2047,7 @@ class AWSBoto:
         threads = self.args.vcpus*2
         return textwrap.dedent(f'''        
         test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
-        export MODULEPATH=/opt/eb/modules/all:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/ai:/opt/eb/modules/bio
+        export MODULEPATH=/opt/eb/modules/all:/opt/eb/modules/lib:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         # export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         #
         export EASYBUILD_JOB_CORES={self.args.vcpus}
