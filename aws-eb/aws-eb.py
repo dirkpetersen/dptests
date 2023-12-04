@@ -7,8 +7,8 @@ and uploads them to S3 buckets for later use.
 # internal modules
 import sys, os, argparse, json, configparser, platform 
 import urllib3, datetime, tarfile, zipfile, textwrap  
-import hashlib, math, signal, shlex, time, re, inspect
-import shutil, tempfile, glob, subprocess, socket, traceback
+import math, signal, shlex, time, re, inspect, traceback
+import shutil, tempfile, glob, subprocess, socket
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.22'
+__version__ = '0.20.23'
 
 def main():
         
@@ -40,9 +40,9 @@ def main():
 
     # Instantiate classes required by all functions         
     cfg = ConfigManager(args)
-    bld = Builder(args, cfg)
-    aws = AWSBoto(args, cfg, bld)
-
+    aws = AWSBoto(args, cfg)
+    bld = Builder(args, cfg, aws)
+    
     if args.version:
         args_version(cfg)
 
@@ -186,12 +186,12 @@ def subcmd_launch(args,cfg,bld,aws):
         print(f'Profile "{args.awsprofile}" not found.')
         return False    
     
-    ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    instances = [sublist[1] for sublist in ilist if sublist]
-    for inst in instances:
-        if aws._monitor_has_instance_failed(inst, True):
-            print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
-            #aws.ec2_terminate_instance(inst)
+    # ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+    # instances = [sublist[1] for sublist in ilist if sublist]
+    # for inst in instances:
+    #     if aws._monitor_has_instance_failed(inst, True):
+    #         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
+    #         #aws.ec2_terminate_instance(inst)
 
     if args.list:
         # list all folders in the archive
@@ -370,9 +370,10 @@ def subcmd_ssh(args, cfg, aws):
         print(ret.stdout,ret.stderr)
 
 class Builder:
-    def __init__(self, args, cfg):
+    def __init__(self, args, cfg, aws):
         self.args = args
         self.cfg = cfg
+        self.aws = aws
         self.rclone_download_compare = '--checksum'
         self.rclone_upload_compare = '--checksum'
         self.min_toolchains = self.cfg.read('general', 'min_toolchains')
@@ -828,7 +829,7 @@ class Builder:
 
         ttransfers=rclone_ret['stats']['totalTransfers']
         tbytes=rclone_ret['stats']['totalBytes']
-        total=self.convert_size(tbytes)
+        total=self._convert_size(tbytes)
         if self.args.debug:
             print('\n')
             print('Speed:', rclone_ret['stats']['speed'])
@@ -877,65 +878,8 @@ class Builder:
                 print(f"An unexpected error occurred in {directory}:\n{e}")
                 return False
 
-        
-
-    def _get_file_stats(self,filepath):
-        try:
-            # Use lstat to get stats of symlink itself, not the file it points to
-            stats = os.lstat(filepath)
-            return stats.st_size, stats.st_mtime, stats.st_atime
-        except FileNotFoundError:
-            print(f"{filepath} not found.")
-            return None, None, None
-            
     
-    
-    def md5sumex(self, file_path):
-        try:
-            cmd = f'md5sum {file_path}'
-            ret = subprocess.run(cmd, stdout=subprocess.PIPE, 
-                            stderr=subprocess.PIPE, Shell=True)                    
-            if ret.returncode != 0:
-                print(f'md5sum return code > 0: {cmd} Error:\n{ret.stderr}')
-            return ret.stdout.strip() #, ret.stderr.strip()
-
-        except Exception as e:
-            print (f'md5sum Error: {str(e)}')
-            return None, str(e)
-                             
-    def md5sum(self, file_path):
-        md5_hash = hashlib.md5()
-        with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                md5_hash.update(chunk)
-        return md5_hash.hexdigest()
-
-    
-    def uid2user(self,uid):
-        # try to convert uid to user name
-        try:
-            return pwd.getpwuid(uid)[0]
-        except:
-            self.cfg.printdbg(f'uid2user: Error converting uid {uid}')
-            return uid
-
-    def gid2group(self,gid):
-        # try to convert gid to group name
-        try:
-            return grp.getgrgid(gid)[0]
-        except:
-            self.cfg.printdbg(f'gid2group: Error converting gid {gid}')
-            return gid
-
-    def daysago(self,unixtime):
-        # how many days ago is this epoch time ?
-        if not unixtime: 
-            self.cfg.printdbg('daysago: an integer is required (got type NoneType)')
-            return 0
-        diff=datetime.datetime.now()-datetime.datetime.fromtimestamp(unixtime)
-        return diff.days
-    
-    def convert_size(self, size_bytes):
+    def _convert_size(self, size_bytes):
         if size_bytes == 0:
             return "0B"
         size_name = ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB")
@@ -944,25 +888,6 @@ class Builder:
         s = round(size_bytes/p, 3)
         return f"{s} {size_name[i]}"    
     
-    def _get_newest_file_atime(self, folder_path, folder_atime=None):
-        # Because the folder atime is reset when crawling we need
-        # to lookup the atime of the last accessed file in this folder
-        if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
-            if self.args.debug and not self.args.pwalkcsv:
-                print(f" Invalid folder path: {folder_path}")
-            return folder_atime
-        last_accessed_time = None
-        #last_accessed_file = None
-        for file_name in os.listdir(folder_path):
-            file_path = os.path.join(folder_path, file_name)
-            if os.path.isfile(file_path):
-                accessed_time = os.path.getatime(file_path)
-                if last_accessed_time is None or accessed_time > last_accessed_time:
-                    last_accessed_time = accessed_time
-                    #last_accessed_file = file_path
-        if last_accessed_time == None:
-            last_accessed_time = folder_atime
-        return last_accessed_time
     
 
     def _walker(self, top, skipdirs=['.snapshot', '__archive__']):
@@ -977,57 +902,7 @@ class Builder:
         sys.stderr.write(str(oserr))
         sys.stderr.write('\n')
         return 0
-
-    def _get_last_directory(self, path):
-        # Remove any trailing slashes
-        path = path.rstrip(os.path.sep)
-        # Split the path by the separator
-        path_parts = path.split(os.path.sep)
-        # Return the last directory
-        return path_parts[-1]
- 
-    def _get_mount_info(self,fs_types=None):
-        file_path='/proc/self/mountinfo'
-        if fs_types is None:
-            fs_types = {'nfs', 'nfs4', 'cifs', 'smb', 'afs', 'ncp', 
-                        'ncpfs', 'glusterfs', 'ceph', 'beegfs', 
-                        'lustre', 'orangefs', 'wekafs', 'gpfs'}
-        mountinfo_list = []
-        with open(file_path, 'r') as f:
-            for line in f:
-                fields = line.strip().split(' ')
-                _, _, _, _, mount_point, _ = fields[:6]
-                for field in fields[6:]:
-                    if field == '-':
-                        break
-                fs_type, mount_source, _ = fields[-3:]
-                mount_source_folder = mount_source.split(':')[-1] if ':' in mount_source else ''
-                if fs_type in fs_types:
-                    mountinfo_list.append({
-                        'mount_source_folder': mount_source_folder,
-                        'mount_point': mount_point,
-                        'fs_type': fs_type,
-                        'mount_source': mount_source,
-                    })
-        return mountinfo_list
-        
-
-    def _upload_file_to_s3(self, filename, bucket, object_name=None, profile=None):
-        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-        s3 = session.client('s3')
-        # If S3 object_name was not specified, use the filename
-        if object_name is None:
-            object_name = os.path.basename(filename)
-        try:
-            # Upload the file with Intelligent-Tiering storage class
-            s3.upload_file(filename, bucket, object_name, ExtraArgs={'StorageClass': 'INTELLIGENT_TIERING'})
-            self.cfg.printdbg(f"File {object_name} uploaded to Intelligent-Tiering storage class!")
-            #print(f"File {filename} uploaded successfully to Intelligent-Tiering storage class!")
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            return False
-        return True
-
+         
 
 class Rclone:
     def __init__(self, args, cfg):
@@ -1254,10 +1129,9 @@ class AWSBoto:
     # entries can be strings, lists that are written as 
     # multi-line files and dictionaries which are written to json
 
-    def __init__(self, args, cfg, bld):
+    def __init__(self, args, cfg):
         self.args = args
         self.cfg = cfg
-        self.bld = bld
         self.awsprofile = self.cfg.awsprofile
         self.cpu_types = {
             "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
