@@ -5,8 +5,8 @@ AWS-EB builds Easybuild packages on AWS EC2 instances
 and uploads them to S3 buckets for later use.
 """
 # internal modules
-import sys, os, argparse, json, configparser, tarfile 
-import urllib3, datetime, tarfile, zipfile, textwrap, platform  
+import sys, os, argparse, json, configparser, platform 
+import urllib3, datetime, tarfile, zipfile, textwrap  
 import hashlib, math, signal, shlex, time, re, inspect
 import shutil, tempfile, glob, subprocess, socket, traceback
 if sys.platform.startswith('linux'):
@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.20'
+__version__ = '0.20.21'
 
 def main():
         
@@ -388,6 +388,13 @@ class Builder:
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" newest easyconfigs... ')
             try:
+                ## first kill other non-functional instances
+                ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+                instances = [sublist[1] for sublist in ilist if sublist]
+                for inst in instances:
+                    if self.aws._monitor_has_instance_failed(inst):
+                        self.aws.ec2_terminate_instance(inst)
+                # end instance kill 
                 if easyconfigroot==root:
                     # main directory do something there
                     pass
@@ -2646,12 +2653,11 @@ class AWSBoto:
         reservation_id = self._get_ec2_metadata('reservation-id')
         
         nowstr = datetime.datetime.now().strftime('%H:%M:%S')
-        print(f'aws-eb-monitor ({nowstr}): {public_ip} ({instance_id}, {instance_type}, {ami_id}, {reservation_id}) ... ')
-
+        print(f'aws-eb-monitor ({nowstr}): {public_ip} ({instance_id}, {instance_type}, {ami_id}, {reservation_id}) ... ', flush=True)
 
         if self._monitor_is_idle() or self._monitor_has_instance_failed(instance_id, True):
             # This machine was idle for a long time, destroy it
-            print(f'aws-eb-monitor ({nowstr}): Destroying current idling machine {public_ip} ({instance_id}) ...')
+            print(f'aws-eb-monitor ({nowstr}): Destroying current idling machine {public_ip} ({instance_id}) ...', flush=True)
             if public_ip:
                 body_text = "Instance was detected as idle and terminated"
                 self.send_email_ses("", "", f'Terminating idle instance {public_ip} ({instance_id})', body_text)
