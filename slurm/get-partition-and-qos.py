@@ -9,7 +9,7 @@ def get_shell_output(command):
     return result.stdout.strip()
 
 def parse_tabular_data(data_str, separator="|"):
-    """Parse data presented in a tabular format into a list of dictionaries."""
+    """Parse data (e.g. acctmgr) presented in a tabular format into a list of dictionaries."""
     lines = data_str.strip().splitlines()
     headers = lines[0].split(separator)
     data = []
