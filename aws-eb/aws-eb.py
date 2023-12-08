@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.25'
+__version__ = '0.20.26'
 
 def main():
         
@@ -176,6 +176,11 @@ def subcmd_launch(args,cfg,bld,aws):
 
     cfg.printdbg ("build:", args.awsprofile)
     cfg.printdbg(f'default cmdline: aws-eb build')
+
+    if args.instancetype:
+        price=aws._ec2_ondemand_price(args.instancetype, region='us-east-1')
+        print('Price:', price)
+        return True
 
     if args.monitor:
         # aws inactivity and cost monitoring
@@ -1164,7 +1169,8 @@ class AWSBoto:
             "u30": 'vt1'            
         }
 
-
+        self.awssession = boto3.Session(profile_name=self.awsprofile) 
+        
     def get_ec2_instance_families_from_cputype(self, cpu_type):
         return self.cpu_types.get(cpu_type,[])
 
@@ -1547,7 +1553,7 @@ class AWSBoto:
         if not awsprofile: 
             awsprofile = self.cfg.awsprofile
         prof = self._ec2_create_iam_policy_roles_ec2profile()            
-        iid, ip = self._ec2_create_instance(disk_gib, instance_type, prof, awsprofile)
+        iid, ip = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)
         print(' Waiting for ssh host to become ready ...')
         if not self.cfg.wait_for_ssh_ready(ip):
             return False
@@ -1905,23 +1911,40 @@ class AWSBoto:
         else:
             return None        
 
-    def _ec2_ondemand_price(self, instance_type, region, profile=None):
-
-        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-        pricing_client = session.client('pricing', region_name=region)
-    
-        region_map = {
-            'us-east-1': 'US East (N. Virginia)',
-            'us-west-1': 'US West (N. California)',
-            'us-west-2': 'US West (Oregon)',
-            # ... Add other regions as needed
-        }
+    def _ec2_ondemand_price(self, instance_type, region='us-west-2'):
+        pricing_client = boto3.client('pricing', region_name='us-east-1')
         try:
+            region_map = {
+                'af-south-1': 'Africa (Cape Town)',
+                'ap-east-1': 'Asia Pacific (Hong Kong)',
+                'ap-south-1': 'Asia Pacific (Mumbai)',
+                'ap-northeast-3': 'Asia Pacific (Osaka)',
+                'ap-northeast-2': 'Asia Pacific (Seoul)',
+                'ap-southeast-1': 'Asia Pacific (Singapore)',
+                'ap-southeast-2': 'Asia Pacific (Sydney)',
+                'ap-northeast-1': 'Asia Pacific (Tokyo)',
+                'ca-central-1': 'Canada (Central)',
+                'eu-central-1': 'Europe (Frankfurt)',
+                'eu-west-1': 'Europe (Ireland)',
+                'eu-west-2': 'Europe (London)',
+                'eu-south-1': 'Europe (Milan)',
+                'eu-west-3': 'Europe (Paris)',
+                'eu-north-1': 'Europe (Stockholm)',
+                'me-south-1': 'Middle East (Bahrain)',
+                'sa-east-1': 'South America (São Paulo)',
+                'us-gov-east-1': 'AWS GovCloud (US-East)',
+                'us-gov-west-1': 'AWS GovCloud (US-West)',
+                'us-east-1': 'US East (N. Virginia)',
+                'us-east-2': 'US East (Ohio)',
+                'us-west-1': 'US West (N. California)',
+                'us-west-2': 'US West (Oregon)',
+            }
+
             response = pricing_client.get_products(
                 ServiceCode='AmazonEC2',
                 Filters=[
                     {'Type': 'TERM_MATCH', 'Field': 'instanceType', 'Value': instance_type},
-                    {'Type': 'TERM_MATCH', 'Field': 'location', 'Value': region_map.get(region, '')},
+                    {'Type': 'TERM_MATCH', 'Field': 'location', 'Value': region_map.get(region,'')},
                     {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw', 'Value': 'NA'},
                     {'Type': 'TERM_MATCH', 'Field': 'operatingSystem', 'Value': 'Linux'},
                     {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'},
@@ -1934,6 +1957,25 @@ class AWSBoto:
             return on_demand_price
         except Exception as e:
             print(f"Error getting on-demand price: {e}")
+            return None
+        
+       # self.s3 = self.awssession.client('s3')
+       # self.ec2 = self.awssession.client('ec2')
+
+    def _ec2_current_spot_price(self, instance_type):
+        ec2 = self.awssession.client('ec2')
+        try:
+            now = datetime.datetime.utcnow()
+            prices = ec2.describe_spot_price_history(
+                StartTime=(now - datetime.timedelta(minutes=5)).isoformat(),
+                EndTime=now.isoformat(),
+                InstanceTypes=[instance_type],
+                ProductDescriptions=['Linux/UNIX'],
+                #AvailabilityZone=f'{region}c'  # You can specify a particular AZ or remove this line for all AZs in the region
+            )
+            return prices['SpotPriceHistory'][0]['SpotPrice'] if prices['SpotPriceHistory'] else None
+        except Exception as e:
+            print(f"Error fetching current spot price: {e}")
             return None
         
     def _create_progress_bar(self, max_value):
@@ -2050,7 +2092,7 @@ class AWSBoto:
         echo "" >> ~/.bash_profile
         ''').strip()
     
-    def _ec2_create_instance(self, disk_gib, instance_type, iamprofile=None, profile=None):
+    def _ec2_launch_instance(self, disk_gib, instance_type, iamprofile=None, profile=None):
         
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2 = session.resource('ec2')
@@ -2106,29 +2148,48 @@ class AWSBoto:
 
         # iam_instance_profile = {}
 
-        myprice = self._ec2_ondemand_price(instance_type, self.cfg.aws_region, profile)
-        if myprice:
-            print(f'On-demand price for {instance_type} in {self.cfg.aws_region}: ${myprice:.4f} per hour.')
+        price_ondemand = self._ec2_ondemand_price(instance_type, self.cfg.aws_region, profile)
+        price_spot = self._ec2_current_spot_price(instance_type, self.cfg.aws_region, profile)
+    
+        print(f'{instance_type} costs ${price_ondemand:.4f} on-demand and ${price_spot:.4f} in {self.cfg.aws_region}.')
         
         try:
-            # Create EC2 instance
-            instance = ec2.create_instances(
-                ImageId=imageid,
-                MinCount=1,
-                MaxCount=1,
-                InstanceType=instance_type,
-                KeyName=self.cfg.ssh_key_name,
-                UserData=self._ec2_cloud_init_script(),
-                IamInstanceProfile = iam_instance_profile,
-                BlockDeviceMappings=block_device_mappings,
-                TagSpecifications=[
-                    {
-                        'ResourceType': 'instance',
-                        'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
-                    }
-                ]
-            )[0]
+            if price_ondemand > price_spot*1.1:
+                # Create EC2 instance
+                instance = ec2.create_instances(
+                    ImageId=imageid,
+                    MinCount=1,
+                    MaxCount=1,
+                    InstanceType=instance_type,
+                    KeyName=self.cfg.ssh_key_name,
+                    UserData=self._ec2_cloud_init_script(),
+                    IamInstanceProfile = iam_instance_profile,
+                    BlockDeviceMappings = block_device_mappings,
+                    TagSpecifications=[
+                        {
+                            'ResourceType': 'instance',
+                            'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
+                        }
+                    ]
+                )[0]
+            else:
+                launch_spec = {
+                    'InstanceType': instance_type,
+                    'ImageId': imageid,
+                    'BlockDeviceMappings': block_device_mappings,
+                    'UserData': self._ec2_cloud_init_script(),
+                    'KeyName': self.cfg.ssh_key_name,                    
+                    'IamInstanceProfile': iam_instance_profile,
+                    'BlockDeviceMappings': block_device_mappings,
+                    'TagSpecifications': [
+                        {
+                            'ResourceType': 'instance',
+                            'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
+                        }
+                    ]
 
+                }
+                instance = self._ec2_create_spot_instance(self, launch_spec, price_spot*1.1)
 
         except botocore.exceptions.ClientError as e:
             error_code = e.response['Error']['Code']
@@ -2185,6 +2246,44 @@ class AWSBoto:
         self.cfg.write('cloud', 'ec2_last_instance', instance.public_ip_address)
 
         return instance_id, instance.public_ip_address
+
+    def _ec2_create_spot_instance(self, launch_spec, max_price):
+        ec2 = self.awssession.client('ec2')
+        try:
+            instance = ec2.request_spot_instances(
+                SpotPrice=str(max_price),
+                InstanceCount=1,
+                Type='one-time',
+#                LaunchSpecification={
+#                    'InstanceType': instance_type,
+#                    'ImageId': ami_id,
+#                }
+                LaunchSpecification=launch_spec
+            )[0]
+            return instance
+        except Exception as e:
+            print(f"Error in _ec2_create_spot_instance: {e}")
+            return None
+
+    # def _ec2_attempt_launch(self, instance_type, ami_id, region):
+    #     on_demand_price = self._ec2_ondemand_price(instance_type, region)
+    #     bid_price = on_demand_price / 3
+    #     max_price = on_demand_price * 2 / 3
+
+    #     for attempt in range(5):
+    #         print(f"Trying to launch instance with bid price: {bid_price}")
+    #         response = self._ec2_create_spot_instance(instance_type, ami_id, bid_price, region)
+    #         if response:
+    #             print("Instance launched successfully.")
+    #             return response
+    #         else:
+    #             bid_price += (max_price - bid_price) / 4
+    #             if bid_price > max_price:
+    #                 bid_price = max_price
+    #         time.sleep(10)  # Wait before next attempt
+
+    #     print("Unable to launch instance at desired price. Consider using on-demand.")
+    #     return None
 
     def ec2_terminate_instance(self, ip, profile=None):
         # terminate instance  
@@ -2898,6 +2997,8 @@ class AWSBoto:
 
         return monthly_cost, monthly_unit, daily_costs_by_instance, user_monthly_cost, \
                user_monthly_unit, user_daily_cost, user_daily_unit, user_name
+    
+
     
 class ConfigManager:
     # we write all config entries as files to '~/.config'
