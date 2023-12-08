@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.26'
+__version__ = '0.20.27'
 
 def main():
         
@@ -177,10 +177,10 @@ def subcmd_launch(args,cfg,bld,aws):
     cfg.printdbg ("build:", args.awsprofile)
     cfg.printdbg(f'default cmdline: aws-eb build')
 
-    if args.instancetype:
-        price=aws._ec2_ondemand_price(args.instancetype, region='us-east-1')
-        print('Price:', price)
-        return True
+    # if args.instancetype:
+    #     price=aws._ec2_ondemand_price(args.instancetype, region='us-east-1')
+    #     print('Price:', price)
+    #     return True
 
     if args.monitor:
         # aws inactivity and cost monitoring
@@ -1962,7 +1962,7 @@ class AWSBoto:
        # self.s3 = self.awssession.client('s3')
        # self.ec2 = self.awssession.client('ec2')
 
-    def _ec2_current_spot_price(self, instance_type):
+    def _ec2_current_spot_price(self, instance_type, region='us-west-2'):
         ec2 = self.awssession.client('ec2')
         try:
             now = datetime.datetime.utcnow()
@@ -2148,48 +2148,44 @@ class AWSBoto:
 
         # iam_instance_profile = {}
 
-        price_ondemand = self._ec2_ondemand_price(instance_type, self.cfg.aws_region, profile)
-        price_spot = self._ec2_current_spot_price(instance_type, self.cfg.aws_region, profile)
+        price_ondemand = float(self._ec2_ondemand_price(instance_type, self.cfg.aws_region))
+        price_spot = float(self._ec2_current_spot_price(instance_type, self.cfg.aws_region))
     
-        print(f'{instance_type} costs ${price_ondemand:.4f} on-demand and ${price_spot:.4f} in {self.cfg.aws_region}.')
+        print(f'{instance_type} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot in {self.cfg.aws_region}.')
         
         try:
-            if price_ondemand > price_spot*1.1:
-                # Create EC2 instance
-                instance = ec2.create_instances(
-                    ImageId=imageid,
-                    MinCount=1,
-                    MaxCount=1,
-                    InstanceType=instance_type,
-                    KeyName=self.cfg.ssh_key_name,
-                    UserData=self._ec2_cloud_init_script(),
-                    IamInstanceProfile = iam_instance_profile,
-                    BlockDeviceMappings = block_device_mappings,
-                    TagSpecifications=[
-                        {
-                            'ResourceType': 'instance',
-                            'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
-                        }
-                    ]
-                )[0]
+            if price_ondemand < price_spot*1.05:
+                myinstance = "on-demand instance"
+                marketoptions = {}
             else:
-                launch_spec = {
-                    'InstanceType': instance_type,
-                    'ImageId': imageid,
-                    'BlockDeviceMappings': block_device_mappings,
-                    'UserData': self._ec2_cloud_init_script(),
-                    'KeyName': self.cfg.ssh_key_name,                    
-                    'IamInstanceProfile': iam_instance_profile,
-                    'BlockDeviceMappings': block_device_mappings,
-                    'TagSpecifications': [
-                        {
-                            'ResourceType': 'instance',
-                            'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
-                        }
-                    ]
-
+                myinstance = "spot instance"
+                marketoptions = {
+                    'MarketType': 'spot',
+                    'SpotOptions': {
+                        'MaxPrice': str(price_spot*1.05),
+                        'SpotInstanceType': 'one-time',
+                        'InstanceInterruptionBehavior': 'terminate'
+                    }
                 }
-                instance = self._ec2_create_spot_instance(self, launch_spec, price_spot*1.1)
+                
+            # Create EC2 instance            
+            instance = ec2.create_instances(
+                ImageId=imageid,
+                MinCount=1,
+                MaxCount=1,
+                InstanceType=instance_type,
+                KeyName=self.cfg.ssh_key_name,
+                UserData=self._ec2_cloud_init_script(),
+                IamInstanceProfile = iam_instance_profile,
+                BlockDeviceMappings = block_device_mappings,
+                TagSpecifications=[
+                    {
+                        'ResourceType': 'instance',
+                        'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
+                    }
+                ],
+                InstanceMarketOptions=marketoptions
+            )[0]
 
         except botocore.exceptions.ClientError as e:
             error_code = e.response['Error']['Code']
@@ -2199,7 +2195,7 @@ class AWSBoto:
                 print(f'Client Error: {e}')
             sys.exit(1)
         except Exception as e:
-            print('Other Error: {e}')
+            print(f'Error in _ec2_launch_instance: {e}')
             sys.exit(1)
     
         # Use a waiter to ensure the instance is running before trying to access its properties
@@ -2215,7 +2211,7 @@ class AWSBoto:
         except Exception as e:
             self.cfg.printdbg('Error creating Tags: {e}')
             
-        print(f'Launching instance {instance_id} ... please wait ...')    
+        print(f'Launching {myinstance} {instance_id} ... please wait ...')
         
         max_wait_time = 300  # seconds
         delay_time = 10  # check every 10 seconds, adjust as needed
@@ -2246,44 +2242,6 @@ class AWSBoto:
         self.cfg.write('cloud', 'ec2_last_instance', instance.public_ip_address)
 
         return instance_id, instance.public_ip_address
-
-    def _ec2_create_spot_instance(self, launch_spec, max_price):
-        ec2 = self.awssession.client('ec2')
-        try:
-            instance = ec2.request_spot_instances(
-                SpotPrice=str(max_price),
-                InstanceCount=1,
-                Type='one-time',
-#                LaunchSpecification={
-#                    'InstanceType': instance_type,
-#                    'ImageId': ami_id,
-#                }
-                LaunchSpecification=launch_spec
-            )[0]
-            return instance
-        except Exception as e:
-            print(f"Error in _ec2_create_spot_instance: {e}")
-            return None
-
-    # def _ec2_attempt_launch(self, instance_type, ami_id, region):
-    #     on_demand_price = self._ec2_ondemand_price(instance_type, region)
-    #     bid_price = on_demand_price / 3
-    #     max_price = on_demand_price * 2 / 3
-
-    #     for attempt in range(5):
-    #         print(f"Trying to launch instance with bid price: {bid_price}")
-    #         response = self._ec2_create_spot_instance(instance_type, ami_id, bid_price, region)
-    #         if response:
-    #             print("Instance launched successfully.")
-    #             return response
-    #         else:
-    #             bid_price += (max_price - bid_price) / 4
-    #             if bid_price > max_price:
-    #                 bid_price = max_price
-    #         time.sleep(10)  # Wait before next attempt
-
-    #     print("Unable to launch instance at desired price. Consider using on-demand.")
-    #     return None
 
     def ec2_terminate_instance(self, ip, profile=None):
         # terminate instance  
