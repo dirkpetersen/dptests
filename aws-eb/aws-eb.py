@@ -6,9 +6,9 @@ and uploads them to S3 buckets for later use.
 """
 # internal modules
 import sys, os, argparse, json, configparser, platform 
-import urllib3, datetime, tarfile, zipfile, textwrap  
+import urllib3, datetime, tarfile, zipfile, textwrap, socket
 import math, signal, shlex, time, re, inspect, traceback
-import shutil, tempfile, glob, subprocess, socket
+import shutil, tempfile, glob, subprocess, concurrent.futures
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.27'
+__version__ = '0.20.29'
 
 def main():
         
@@ -1430,69 +1430,109 @@ class AWSBoto:
             sys.exit(1)
         return True
 
-    def s3_duplicate_bucket(self, source_bucket, dest_bucket, storage_class='INTELLIGENT_TIERING', profile=None):
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-        s3_client = session.client('s3')
+    def s3_duplicate_bucket(self, src_bucket, dst_bucket, max_workers=100, tier='INTELLIGENT_TIERING'):
 
-        if source_bucket == dest_bucket:
-            print("Source and destination buckets are the same. Skipping duplicate bucket operation.")
-            return False
+        s3 = self.awssession.client('s3')
 
-        def get_etag(bucket, key):
+        def s3_copy_object(s3, src_bucket, dst_bucket, obj, tier):
             try:
-                return s3_client.head_object(Bucket=bucket, Key=key, RequestPayer='requester')['ETag']
-            except s3_client.exceptions.NoSuchKey:
-                return None
+                # Check if the object exists in the destination bucket
+                dest_obj = s3.head_object(Bucket=dst_bucket, Key=obj['Key'], RequestPayer='requester')
+                # Compare ETags (remove quotation marks from ETags if necessary)
+                if dest_obj['ETag'] == obj['ETag']:
+                    print(f"  Skipping {obj['Key']}, target exists.")
+                    return
+            except botocore.exceptions.ClientError:
+                # Object does not exist in the destination bucket
+                pass
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
+                pass
 
-        def copy_object(copy_source, dest_bucket, obj_key, metadata):
-            source_etag = get_etag(source_bucket, obj_key)
-            dest_etag = get_etag(dest_bucket, obj_key)
-
-            if source_etag != dest_etag:
-                try:
-                    s3_client.copy_object(
-                        CopySource=copy_source,
-                        Bucket=dest_bucket,
-                        Key=obj_key,
-                        StorageClass=storage_class,
-                        Metadata=metadata,
-                        MetadataDirective='REPLACE',
-                        RequestPayer='requester'
-                    )
-                    return f"Copied {obj_key}"
-                except Exception as e:
-                    return f"Error in copying {obj_key}: {e}"
-            else:
-                return f"Skipped {obj_key} as ETag matches"
+            # Copy object with Requester Pays option
+            copy_source = {'Bucket': src_bucket, 'Key': obj['Key']}
+            s3.copy(copy_source, dst_bucket, obj['Key'],
+                ExtraArgs={'RequestPayer': 'requester', 'StorageClass': tier})
+            print(f"Copied {obj['Key']} from {src_bucket} to {dst_bucket}")
 
         try:
-            paginator = s3_client.get_paginator('list_objects_v2')
-            page_iterator = paginator.paginate(Bucket=source_bucket, RequestPayer='requester')
-
-            for page in page_iterator:
-                if 'Contents' in page:
-                    with ThreadPoolExecutor(max_workers=25) as executor:
-                        future_to_copy = {
-                            executor.submit(
-                                copy_object, 
-                                {'Bucket': source_bucket, 'Key': obj['Key']},
-                                dest_bucket, 
-                                obj['Key'], 
-                                s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester').get('Metadata', {})
-                            ): obj for obj in page['Contents'] if obj['Size'] <= 5 * 1024 * 1024 * 1024
-                        }
-
-                        for future in as_completed(future_to_copy):
-                            print(future.result())
-
-                    mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-                    print(f"{mytime}: Processed {len(future_to_copy)} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
-
-            return True
+            paginator = s3.get_paginator('list_objects_v2')
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Iterate over each page in the paginator
+                for page in paginator.paginate(Bucket=src_bucket, RequestPayer='requester'):
+                    if 'Contents' in page:
+                        # Submit each object copy to the thread pool
+                        futures = [executor.submit(s3_copy_object, s3, src_bucket, dst_bucket, obj, tier)
+                                for obj in page['Contents'] if obj['Size'] <= 5 * 1024 * 1024 * 1024]
+                        # Wait for all submitted futures to complete
+                        concurrent.futures.wait(futures)
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print(f"Error in s3_duplicate_bucket(): {e}")
             return False
+
+    # def s3_duplicate_bucket_2(self, source_bucket, dest_bucket, storage_class='INTELLIGENT_TIERING', profile=None):
+    #     from concurrent.futures import ThreadPoolExecutor, as_completed
+    #     session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+    #     s3_client = session.client('s3')
+
+    #     if source_bucket == dest_bucket:
+    #         print("Source and destination buckets are the same. Skipping duplicate bucket operation.")
+    #         return False
+
+    #     def get_etag(bucket, key):
+    #         try:
+    #             return s3_client.head_object(Bucket=bucket, Key=key, RequestPayer='requester')['ETag']
+    #         except s3_client.exceptions.NoSuchKey:
+    #             return None
+
+    #     def copy_object(copy_source, dest_bucket, obj_key, metadata):
+    #         source_etag = get_etag(source_bucket, obj_key)
+    #         dest_etag = get_etag(dest_bucket, obj_key)
+
+    #         if source_etag != dest_etag:
+    #             try:
+    #                 s3_client.copy_object(
+    #                     CopySource=copy_source,
+    #                     Bucket=dest_bucket,
+    #                     Key=obj_key,
+    #                     StorageClass=storage_class,
+    #                     Metadata=metadata,
+    #                     MetadataDirective='REPLACE',
+    #                     RequestPayer='requester'
+    #                 )
+    #                 return f"Copied {obj_key}"
+    #             except Exception as e:
+    #                 return f"Error in copying {obj_key}: {e}"
+    #         else:
+    #             return f"Skipped {obj_key} as ETag matches"
+
+    #     try:
+    #         paginator = s3_client.get_paginator('list_objects_v2')
+    #         page_iterator = paginator.paginate(Bucket=source_bucket, RequestPayer='requester')
+
+    #         for page in page_iterator:
+    #             if 'Contents' in page:
+    #                 with ThreadPoolExecutor(max_workers=25) as executor:
+    #                     future_to_copy = {
+    #                         executor.submit(
+    #                             copy_object, 
+    #                             {'Bucket': source_bucket, 'Key': obj['Key']},
+    #                             dest_bucket, 
+    #                             obj['Key'], 
+    #                             s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester').get('Metadata', {})
+    #                         ): obj for obj in page['Contents'] if obj['Size'] <= 5 * 1024 * 1024 * 1024
+    #                     }
+
+    #                     for future in as_completed(future_to_copy):
+    #                         print(future.result())
+
+    #                 mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    #                 print(f"{mytime}: Processed {len(future_to_copy)} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
+
+    #         return True
+    #     except Exception as e:
+    #         print(f"An unexpected error occurred: {e}")
+    #         return False
 
     # def s3_duplicate_bucket(self, source_bucket, dest_bucket, storage_class=None, profile=None):
     #     session = boto3.Session(profile_name=profile) if profile else boto3.Session()        
