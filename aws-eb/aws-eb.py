@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.29'
+__version__ = '0.20.30'
 
 def main():
         
@@ -1446,14 +1446,18 @@ class AWSBoto:
                 # Object does not exist in the destination bucket
                 pass
             except Exception as e:
-                print(f"An unexpected error occurred: {e}")
+                print(f"Error 1 in s3_copy_object: {e}")
                 pass
 
             # Copy object with Requester Pays option
-            copy_source = {'Bucket': src_bucket, 'Key': obj['Key']}
-            s3.copy(copy_source, dst_bucket, obj['Key'],
-                ExtraArgs={'RequestPayer': 'requester', 'StorageClass': tier})
-            print(f"Copied {obj['Key']} from {src_bucket} to {dst_bucket}")
+            try:
+                copy_source = {'Bucket': src_bucket, 'Key': obj['Key']}
+                s3.copy(copy_source, dst_bucket, obj['Key'],
+                    ExtraArgs={'RequestPayer': 'requester', 'StorageClass': tier})
+                print(f"Copied {obj['Key']} from {src_bucket} to {dst_bucket}")
+            except Exception as e:               
+                print(f"Error 2 in s3_copy_object: {e}")
+                pass
 
         try:
             paginator = s3.get_paginator('list_objects_v2')
@@ -1463,130 +1467,13 @@ class AWSBoto:
                     if 'Contents' in page:
                         # Submit each object copy to the thread pool
                         futures = [executor.submit(s3_copy_object, s3, src_bucket, dst_bucket, obj, tier)
-                                for obj in page['Contents'] if obj['Size'] <= 5 * 1024 * 1024 * 1024]
+                                for obj in page['Contents']] # if obj['Size'] <= 5 * 1024 * 1024 * 1024
                         # Wait for all submitted futures to complete
                         concurrent.futures.wait(futures)
         except Exception as e:
             print(f"Error in s3_duplicate_bucket(): {e}")
             return False
 
-    # def s3_duplicate_bucket_2(self, source_bucket, dest_bucket, storage_class='INTELLIGENT_TIERING', profile=None):
-    #     from concurrent.futures import ThreadPoolExecutor, as_completed
-    #     session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-    #     s3_client = session.client('s3')
-
-    #     if source_bucket == dest_bucket:
-    #         print("Source and destination buckets are the same. Skipping duplicate bucket operation.")
-    #         return False
-
-    #     def get_etag(bucket, key):
-    #         try:
-    #             return s3_client.head_object(Bucket=bucket, Key=key, RequestPayer='requester')['ETag']
-    #         except s3_client.exceptions.NoSuchKey:
-    #             return None
-
-    #     def copy_object(copy_source, dest_bucket, obj_key, metadata):
-    #         source_etag = get_etag(source_bucket, obj_key)
-    #         dest_etag = get_etag(dest_bucket, obj_key)
-
-    #         if source_etag != dest_etag:
-    #             try:
-    #                 s3_client.copy_object(
-    #                     CopySource=copy_source,
-    #                     Bucket=dest_bucket,
-    #                     Key=obj_key,
-    #                     StorageClass=storage_class,
-    #                     Metadata=metadata,
-    #                     MetadataDirective='REPLACE',
-    #                     RequestPayer='requester'
-    #                 )
-    #                 return f"Copied {obj_key}"
-    #             except Exception as e:
-    #                 return f"Error in copying {obj_key}: {e}"
-    #         else:
-    #             return f"Skipped {obj_key} as ETag matches"
-
-    #     try:
-    #         paginator = s3_client.get_paginator('list_objects_v2')
-    #         page_iterator = paginator.paginate(Bucket=source_bucket, RequestPayer='requester')
-
-    #         for page in page_iterator:
-    #             if 'Contents' in page:
-    #                 with ThreadPoolExecutor(max_workers=25) as executor:
-    #                     future_to_copy = {
-    #                         executor.submit(
-    #                             copy_object, 
-    #                             {'Bucket': source_bucket, 'Key': obj['Key']},
-    #                             dest_bucket, 
-    #                             obj['Key'], 
-    #                             s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester').get('Metadata', {})
-    #                         ): obj for obj in page['Contents'] if obj['Size'] <= 5 * 1024 * 1024 * 1024
-    #                     }
-
-    #                     for future in as_completed(future_to_copy):
-    #                         print(future.result())
-
-    #                 mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    #                 print(f"{mytime}: Processed {len(future_to_copy)} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
-
-    #         return True
-    #     except Exception as e:
-    #         print(f"An unexpected error occurred: {e}")
-    #         return False
-
-    # def s3_duplicate_bucket(self, source_bucket, dest_bucket, storage_class=None, profile=None):
-    #     session = boto3.Session(profile_name=profile) if profile else boto3.Session()        
-    #     s3_client = session.client('s3')
-        
-    #     if not storage_class:
-    #         storage_class='INTELLIGENT_TIERING'
-
-    #     if source_bucket == dest_bucket:
-    #         print(f"Source and destination buckets are the same. Skipping duplicate bucket operation.")
-    #         return False
-
-    #     try:
-    #         # Initialize pagination
-    #         paginator = s3_client.get_paginator('list_objects_v2')
-    #         page_iterator = paginator.paginate(Bucket=source_bucket, RequestPayer='requester')
-
-    #         # Iterate through each page of objects
-    #         for page in page_iterator:
-    #             if 'Contents' in page:
-    #                 for obj in page['Contents']:
-    #                     # Retrieve metadata of the object
-    #                     # Skip objects larger than 5 GB
-    #                     if obj['Size'] > 5 * 1024 * 1024 * 1024:  # 5 GB in bytes
-    #                         print(f"Skipping {obj['Key']} as it is larger than 5 GB.")
-    #                         continue  
-    #                     object_metadata = s3_client.head_object(Bucket=source_bucket, Key=obj['Key'], RequestPayer='requester')
-    #                     # Prepare metadata for copy operation
-    #                     metadata_directive = 'REPLACE'  # Use REPLACE to copy the metadata explicitly
-    #                     copy_metadata = object_metadata.get('Metadata', {})
-    #                     copy_source = {
-    #                         'Bucket': source_bucket,
-    #                         'Key': obj['Key']
-    #                     }
-    #                     try:
-    #                         # Copy each object to the destination bucket with metadata, storage class, and Requester Pays
-    #                         s3_client.copy_object(
-    #                             CopySource=copy_source, 
-    #                             Bucket=dest_bucket, 
-    #                             Key=obj['Key'], 
-    #                             StorageClass=storage_class, 
-    #                             Metadata=copy_metadata,
-    #                             MetadataDirective=metadata_directive,
-    #                             RequestPayer='requester'
-    #                         )
-    #                     except Exception as e:
-    #                         print(f"Error in s3_duplicate_bucket: {e}")                            
-    #                     #print(f"Copied {obj['Key']} from {source_bucket} to {dest_bucket} with metadata and storage class {storage_class}")
-    #                 mytime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    #                 print(f"{mytime}: Copied {len(page['Contents'])} objects from {source_bucket} to {dest_bucket} with storage class {storage_class}.", flush=True)
-    #         return True
-    #     except Exception as e:
-    #         print(f"An unexpected error occurred: {e}")
-    #         return False
 
     def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
