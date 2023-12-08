@@ -1957,7 +1957,7 @@ class AWSBoto:
             return on_demand_price
         except Exception as e:
             print(f"Error getting on-demand price: {e}")
-            return None
+            return 100 # return a high price to make sure it is not used
         
        # self.s3 = self.awssession.client('s3')
        # self.ec2 = self.awssession.client('ec2')
@@ -2147,7 +2147,8 @@ class AWSBoto:
         print(f'IAM Instance profile: {iamprofile}.')
 
         # iam_instance_profile = {}
-
+        #print(f'AWS Region: {self.cfg.aws_region}')
+        
         price_ondemand = float(self._ec2_ondemand_price(instance_type, self.cfg.aws_region))
         price_spot = float(self._ec2_current_spot_price(instance_type, self.cfg.aws_region))
     
