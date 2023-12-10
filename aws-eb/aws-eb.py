@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.32'
+__version__ = '0.20.33'
 
 def main():
         
@@ -1205,7 +1205,7 @@ class AWSBoto:
             "epyc-gen-3": ['m6a', 'c6a', 'r6a', 'p5'],
             "epyc-gen-4": ['m7a', 'c7a', 'r7a'],
             "xeon-gen-1": ['m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3'],
-            "xeon-gen-2": ['m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
+            "xeon-gen-2": ['m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1', 'i3en'],
             "xeon-gen-3": ['m6i', 'c6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
             "xeon-gen-4": ['m7i', 'c7i', 'm7i-flex'],
             "core-i7-mac": ['mac1']
@@ -1887,7 +1887,7 @@ class AWSBoto:
 
         return security_group_id
 
-    def _ec2_get_latest_amazon_linux2_ami(self, profile=None):
+    def _ec2_get_latest_amazon_linux_ami(self, profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2_client = session.client('ec2')
 
@@ -1896,17 +1896,15 @@ class AWSBoto:
             myarch = 'arm64'
 
         response = ec2_client.describe_images(
+            Owners=['amazon'],
             Filters=[
-                {'Name': 'name', 'Values': ['al2023-ami-*']},
+                {'Name': 'name', 'Values': ['al202*-ami-*']},
                 {'Name': 'state', 'Values': ['available']},
                 {'Name': 'architecture', 'Values': [myarch]},
                 {'Name': 'virtualization-type', 'Values': ['hvm']}
-            ],
-            Owners=['amazon']
-
+            ]            
             #amzn2-ami-hvm-2.0.*-x86_64-gp2
             #al2023-ami-kernel-default-x86_64
-
         )
 
         # Sort images by creation date to get the latest
@@ -1915,6 +1913,61 @@ class AWSBoto:
             return images[0]['ImageId']
         else:
             return None        
+
+    def _ec2_get_latest_ubuntu_lts_ami(self, profile=None):
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        ec2_client = session.client('ec2')
+
+        myarch = 'x86_64'
+        if self.args.cputype.startswith('graviton'):
+            myarch = 'arm64'
+
+        response = ec2_client.describe_images(
+            Owners=['099720109477'],  # Ubuntu's owner ID
+            Filters=[
+                {'Name': 'name', 'Values': ['ubuntu/images/hvm-ssd/ubuntu-*']},
+                {'Name': 'description', 'Values': ['*LTS*']},
+                {'Name': 'architecture', 'Values': [myarch]},
+                {'Name': 'virtualization-type', 'Values': ['hvm']},
+                {'Name': 'state', 'Values': ['available']}
+            ]
+            #amzn2-ami-hvm-2.0.*-x86_64-gp2
+            #al2023-ami-kernel-default-x86_64
+        )
+
+        # Sort images by creation date / Description to get the latest
+        images = sorted(response['Images'], key=lambda k: k['Description'], reverse=True)
+        if images:
+            return images[0]['ImageId']
+        else:
+            return None        
+
+    def _ec2_get_latest_rocky_linux_ami(self, profile=None):
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        ec2_client = session.client('ec2')
+
+        myarch = 'x86_64'
+        if self.args.cputype.startswith('graviton'):
+            myarch = 'arm64'
+
+        response = ec2_client.describe_images(
+            Owners=['amazon'],
+            Filters=[
+                {'Name': 'name', 'Values': ['rockylinux-*']},
+                {'Name': 'state', 'Values': ['available']},
+                {'Name': 'architecture', 'Values': [myarch]},
+                {'Name': 'virtualization-type', 'Values': ['hvm']}
+            ]            
+            #amzn2-ami-hvm-2.0.*-x86_64-gp2
+            #al2023-ami-kernel-default-x86_64
+        )
+
+        # Sort images by creation date to get the latest
+        images = sorted(response['Images'], key=lambda k: k['CreationDate'], reverse=True)
+        if images:
+            return images[0]['ImageId']
+        else:
+            return None 
 
     def _ec2_ondemand_price(self, instance_type, region='us-west-2'):
         pricing_client = boto3.client('pricing', region_name='us-east-1')
@@ -1997,10 +2050,16 @@ class AWSBoto:
 
     def _ec2_cloud_init_script(self):
         # Define the User Data script
+        if self.args.os in ['rhel', 'amazon']:
+            pkgm = 'dnf'
+        if self.args.os in ['ubuntu', 'debian']:
+            pkgm = 'apt'
+        else:
+            pkgm = 'yum'
         long_timezone = self.cfg.get_time_zone()
         userdata = textwrap.dedent(f'''
         #! /bin/bash
-        dnf install -y gcc mdadm
+        {pkgm} install -y gcc mdadm
         #bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
         bigdisks='/dev/sdm'
         numdisk=$(echo $bigdisks | wc -w)
@@ -2014,16 +2073,17 @@ class AWSBoto:
           mount $bigdisks /opt/eb
         fi
         chown ec2-user /opt/eb
-        dnf check-update
-        dnf update -y                                   
-        dnf install -y at gcc vim wget python3-pip python3-psutil 
+        {pkgm} check-update
+        {pkgm} update -y                                   
+        {pkgm} install -y at gcc vim wget python3-pip python3-psutil 
         hostnamectl set-hostname aws-eb
         timedatectl set-timezone '{long_timezone}'
         loginctl enable-linger ec2-user
         systemctl start atd
-        dnf upgrade
-        dnf install -y mc git docker lua lua-posix lua-devel tcl-devel nodejs-npm
-        dnf group install -y 'Development Tools'
+        {pkgm} upgrade -y
+        {pkgm} install -y mc git docker lua lua-posix lua-devel tcl-devel nodejs-npm
+        {pkgm} install -y build-essential
+        {pkgm} group install -y 'Development Tools'
         cd /tmp
         wget https://sourceforge.net/projects/lmod/files/Lmod-8.7.tar.bz2
         tar -xjf Lmod-8.7.tar.bz2
@@ -2139,8 +2199,14 @@ class AWSBoto:
                 key_file.write(key_pair.key_material)
             os.chmod(key_path, 0o600)  # Set file permission to 600
 
-        imageid = self._ec2_get_latest_amazon_linux2_ami(profile)
-        print(f'Using Image ID: {imageid}')
+        if self.args.os == 'amazon':
+            imageid = self._ec2_get_latest_amazon_linux_ami(profile)
+        elif self.args.os == 'ubuntu':
+            imageid = self._ec2_get_latest_ubuntu_lts_ami(profile)
+        elif self.args.os == 'rhel':
+            imageid = self._ec2_get_latest_rocky_linux_ami(profile)
+
+        print(f'Using {self.args.os} image id: {imageid}')
 
         #print(f'*** userdata-script:\n{self._ec2_user_data_script()}')
 
@@ -3723,12 +3789,14 @@ def parse_arguments():
         help=textwrap.dedent(f'''
             Launch EC2 instance, build new Easybuild packages and upload them to S3
         '''), formatter_class=argparse.RawTextHelpFormatter) 
-    parser_launch.add_argument('--instance-type', '-i', dest='instancetype', action='store', default="",
+    parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="",
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
         help='run --list to see available GPU types')       
     parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
-        help='run --list to see available CPU types')        
+        help='run --list to see available CPU types')
+    parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
+        help='build operating system, default=amazon (aka. optimized fedora), valid: amazon, rhel or ubuntu')
     parser_launch.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List CPU and GPU types")
     parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
@@ -3743,9 +3811,9 @@ def parse_arguments():
         help='use this bucket to initially load the pre-built binaries and sources')       
     parser_launch.add_argument( '--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
         help="Do not pre-download sources from build cache, let EB download them.")
-    parser_launch.add_argument( '--on-demand', '-o', dest='ondemand', action='store_true', default=False,
+    parser_launch.add_argument( '--on-demand', '-d', dest='ondemand', action='store_true', default=False,
         help="Enforce on-demand instance instead of using the default spot instance.")
-    parser_launch.add_argument('--include', '-d', dest='include', action='store', default="",
+    parser_launch.add_argument('--include', '-i', dest='include', action='store', default="",
         help='limit builds to certain module classes, e.g "bio" or "bio,ai"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')            
