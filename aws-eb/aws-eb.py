@@ -7,7 +7,7 @@ and uploads them to S3 buckets for later use.
 # internal modules
 import sys, os, argparse, json, configparser, platform 
 import urllib3, datetime, tarfile, zipfile, textwrap, socket
-import math, signal, shlex, time, re, inspect, traceback
+import math, signal, shlex, time, re, inspect, traceback, json
 import shutil, tempfile, glob, subprocess, concurrent.futures
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
@@ -16,13 +16,24 @@ import requests, boto3, botocore, psutil
 from packaging.version import parse, InvalidVersion
 try:
     from easybuild.framework.easyconfig.parser import EasyConfigParser
+    #from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
     from easybuild.tools.build_log import EasyBuildError    
+
+    #from easybuild.tools.module_generator import ModuleGenerator
+    ## m = ModuleGenerator(ec)
+    ## m.get_module_filepath()
+    #ebfile = '' 
+    #ec = EasyConfigParser(ebfile).get_config_dict()
+    #mns = EasyBuildMNS()
+    #x=mns.det_full_module_name(ec)
+    #print(x) #'TensorFlow/2.9.1-foss-2022a-CUDA-%(cudaver)s'
+
 except:
     pass
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.30'
+__version__ = '0.20.31'
 
 def main():
         
@@ -446,6 +457,10 @@ class Builder:
                     print(f'  installing OS dependencies: {osdep}', flush=True)
                     self._install_packages(osdep)
                 # install easybuild package 
+                themissing = self._eb_missing_modules(self, ebpath, printout=True)
+                if not themissing:
+                    print(f'  * {ebfile} and dependencies are already installed.', flush=True)
+                    continue
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
                 if self.args.skipsources:
@@ -463,6 +478,15 @@ class Builder:
                     print(f'  FAILED: EasyConfig {ebfile}, trying next one ...', flush=True)
                     errcnt+=1
                     errpkg.append(ebfile)
+                    logpath = self._eb_last_log()
+                    logfile = os.path.basename(logpath)
+                    targetlog = os.path.join(self.eb_root, 'tmp', f'{ebfile}-{logfile}')
+                    shutil.copy(logpath, targetlog)                    
+                    themissing2 = self._eb_missing_modules(self, ebpath, printout=False)
+                    if len(themissing2) == len(themissing):
+                        errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
+                        errdict[ebfile] = self._eb_missing_modules(self, ebpath, printout=False)
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                     continue
                 bldcnt+=1
                 print(f" Tarring and uploading new packages ... ", flush=True)
@@ -490,8 +514,37 @@ class Builder:
         print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
         print(f'  BUILD FINISHED. Tried {ebcnt} easyconfigs, built {bldcnt} packages and {errcnt} builds failed', flush=True)
         
-
         return True
+
+    def _eb_last_log(self):
+        command = ['eb', '--last-log']
+        try:
+            return subprocess.check_output(command, text=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error executing command: {e}")
+            return ""
+
+    def _eb_missing_modules(self, eb_file, printout=False):
+        command = ['eb', '--missing-modules', eb_file]
+        try:
+            output = subprocess.check_output(command, text=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error executing command: {e}")
+            return {}
+        # Print raw output if the option is enabled
+        if printout:
+            print("Raw output of 'eb --missing-modules':")
+            print(output)
+        # Pattern to match lines starting with '* ' and capturing the module and easyconfig
+        pattern = re.compile(r'\* (\S+) \((\S+\.eb)\)')
+        # Parse the output
+        modules = {}
+        for line in output.splitlines():
+            match = pattern.match(line)
+            if match:
+                module, easyconfig = match.groups()
+                modules[module] = easyconfig
+        return modules
     
     def _install_os_dependencies(self, easyconfigroot):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
@@ -655,6 +708,8 @@ class Builder:
         try:
             # Initialize EasyConfigParser with the easyconfig file
             ec_dict = EasyConfigParser(ebfile).get_config_dict()
+            module_file = EasyBuildMNS().det_full_module_name(ec)
+            print (module_file)
         except EasyBuildError as e:
             print("An error occurred while parsing the easyconfig file:", e)
 
@@ -1429,6 +1484,25 @@ class AWSBoto:
             print(f"An unexpected Error in _check_s3_credentials with profile {profile}: {e}")
             sys.exit(1)
         return True
+    
+    def s3_get_json(self, o_name):
+        try:
+            s3 = self.awssession.client('s3')        
+            obj = s3.get_object(Bucket=self.cfg.bucket, Key=o_name)
+            return json.loads(obj['Body'].read())
+        except Exception as e:
+            print(f"Error in s3_get_json: {e}")
+            return {}
+        
+    def s3_put_json(self, o_name, json_data):
+        try:
+            s3 = self.awssession.client('s3')        
+            obj = s3.get_object(Bucket=self.cfg.bucket, Key=o_name)
+            self.s3_put_json(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data))
+            return json.loads(obj['Body'].read())
+        except Exception as e:
+            print(f"Error in s3_put_json: {e}")
+            return False
 
     def s3_duplicate_bucket(self, src_bucket, dst_bucket, max_workers=100, tier='INTELLIGENT_TIERING'):
 
