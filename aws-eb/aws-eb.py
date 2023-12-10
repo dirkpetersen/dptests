@@ -457,7 +457,7 @@ class Builder:
                     print(f'  installing OS dependencies: {osdep}', flush=True)
                     self._install_packages(osdep)
                 # install easybuild package 
-                themissing = self._eb_missing_modules(self, ebpath, printout=True)
+                themissing = self._eb_missing_modules(ebpath, printout=True)
                 if not themissing:
                     print(f'  * {ebfile} and dependencies are already installed.', flush=True)
                     continue
@@ -482,10 +482,10 @@ class Builder:
                     logfile = os.path.basename(logpath)
                     targetlog = os.path.join(self.eb_root, 'tmp', f'{ebfile}-{logfile}')
                     shutil.copy(logpath, targetlog)                    
-                    themissing2 = self._eb_missing_modules(self, ebpath, printout=False)
+                    themissing2 = self._eb_missing_modules( ebpath, printout=False)
                     if len(themissing2) == len(themissing):
                         errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
-                        errdict[ebfile] = self._eb_missing_modules(self, ebpath, printout=False)
+                        errdict[ebfile] = themissing2
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                     continue
                 bldcnt+=1
