@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.33'
+__version__ = '0.20.34'
 
 def main():
         
@@ -2234,7 +2234,7 @@ class AWSBoto:
                 marketoptions = {
                     'MarketType': 'spot',
                     'SpotOptions': {
-                        'MaxPrice': str(price_spot*1.05),
+                        'MaxPrice': str(price_spot*1.1),
                         'SpotInstanceType': 'one-time',
                         'InstanceInterruptionBehavior': 'terminate'
                     }
@@ -2263,8 +2263,11 @@ class AWSBoto:
             error_code = e.response['Error']['Code']
             if error_code == 'AccessDenied':
                 print(f'Access denied! Please check your IAM permissions. \n   Error: {e}')
+            elif error_code == 'SpotMaxPriceTooLow':
+                print(f"Client Error: {e.response['Error']['Message']}")
+                print(f"please increase the spot price to at least ${price_spot*1.1:.4f} or use an on-demand instance.")
             else:
-                print(f'Client Error: {e}')
+                print(f'ClientError in _ec2_launch_instance: {e}')
             sys.exit(1)
         except Exception as e:
             print(f'Error in _ec2_launch_instance: {e}')
