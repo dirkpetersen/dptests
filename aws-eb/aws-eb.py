@@ -708,8 +708,8 @@ class Builder:
         try:
             # Initialize EasyConfigParser with the easyconfig file
             ec_dict = EasyConfigParser(ebfile).get_config_dict()
-            module_file = EasyBuildMNS().det_full_module_name(ec)
-            print (module_file)
+            #module_file = EasyBuildMNS().det_full_module_name(ec)
+            #print (module_file)
         except EasyBuildError as e:
             print("An error occurred while parsing the easyconfig file:", e)
 
