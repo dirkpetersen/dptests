@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.31'
+__version__ = '0.20.32'
 
 def main():
         
@@ -408,7 +408,7 @@ class Builder:
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
-        ebcnt = 0; bldcnt = 0; errcnt = 0; errpkg = []
+        ebcnt = 0; ebskipped = 0; bldcnt = 0; errcnt = 0; errpkg = []
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" newest easyconfigs... ')
             try:
@@ -431,8 +431,9 @@ class Builder:
                     continue 
                 if not ebpath.endswith('.eb'):
                     continue
-                print(f'  * ############## Using Easyconfig "{ebfile}" ... ##################', flush=True)
+                print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
                 ebcnt+=1
+                ebskipped+=1    
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
@@ -465,34 +466,37 @@ class Builder:
                 getsource = True
                 if self.args.skipsources:
                     getsource = False
+                ebskipped-=1
                 self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
                 print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ", flush=True)
+                cmdline = "eb --robot --umask=002"
                 if 'CUDA' in ebfile: # CUDA is a special case, we may not have a GPU installed 
-                    ret = subprocess.run(['eb', '--robot', '--umask=002', '--ignore-test-failure', ebpath])
+                    ret = os.system(f'{cmdline} --ignore-test-failure {ebpath}')
                 else:
-                    ret = subprocess.run(['eb', '--robot', '--umask=002', ebpath])
-                print(f'*** EASYBUILD RETURNCODE: {ret.returncode}', flush=True)
-                if ret.returncode != 0:
+                    ret =  os.system(f'{cmdline} {ebpath}')
+                exit_code = ret >> 8
+                themissing2 = self._eb_missing_modules( ebpath, printout=False)
+                print(f'*** EASYBUILD RETURNCODE: {ret} Exitcode: {exit_code}', flush=True)
+                if ret != 0:
                     print(f'  FAILED: EasyConfig {ebfile}, trying next one ...', flush=True)
                     errcnt+=1
                     errpkg.append(ebfile)
                     logpath = self._eb_last_log()
                     logfile = os.path.basename(logpath)
                     targetlog = os.path.join(self.eb_root, 'tmp', f'{ebfile}-{logfile}')
-                    shutil.copy(logpath, targetlog)                    
-                    themissing2 = self._eb_missing_modules( ebpath, printout=False)
-                    if len(themissing2) == len(themissing):
-                        errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
-                        errdict[ebfile] = themissing2
-                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    shutil.copy(logpath, targetlog)                  
+                    #if len(themissing2) == len(themissing):
+                    errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
+                    errdict[ebfile] = themissing2
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                     continue
                 bldcnt+=1
                 print(f" Tarring and uploading new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
                 self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
-                print(f'  ### UPDATE: {ebcnt} easyconfigs, {bldcnt} packages built, {errcnt} builds failed', flush=True)
+                print(f'  ### UPDATE: {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
             except subprocess.CalledProcessError:                
                 print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.", flush=True)
