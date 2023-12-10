@@ -431,7 +431,7 @@ class Builder:
                     continue 
                 if not ebpath.endswith('.eb'):
                     continue
-                print(f'  Processing easyconfig "{ebfile}" ... ', flush=True)                
+                print(f'  * ############## Using Easyconfig "{ebfile}" ... ##################', flush=True)
                 ebcnt+=1
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
@@ -519,9 +519,9 @@ class Builder:
     def _eb_last_log(self):
         command = ['eb', '--last-log']
         try:
-            return subprocess.check_output(command, text=True)
+            return subprocess.check_output(command, text=True).strip()  
         except subprocess.CalledProcessError as e:
-            print(f"Error executing command: {e}")
+            print(f"Error in _eb_last_log: {e}")
             return ""
 
     def _eb_missing_modules(self, eb_file, printout=False):
