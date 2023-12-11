@@ -1,1 +1,2 @@
 AmazonSESFullAccess
+AWSLambda_FullAccess

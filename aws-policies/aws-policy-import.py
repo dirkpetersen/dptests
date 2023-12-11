@@ -5,13 +5,34 @@ from botocore.exceptions import ClientError
 
 def create_policy(policy_name, policy_document):
     try:
-        iam.create_policy(
+        # Try to create the policy
+        response = iam.create_policy(
             PolicyName=policy_name,
             PolicyDocument=json.dumps(policy_document)
         )
+        policy_arn = response['Policy']['Arn']
         print(f"Policy {policy_name} created successfully.")
+        return policy_arn
+    except iam.exceptions.EntityAlreadyExistsException:
+        # If the policy already exists, find its ARN and update it
+        policies = iam.list_policies(Scope='Local')['Policies']
+        policy_arn = next((p['Arn'] for p in policies if p['PolicyName'] == policy_name), None)
+
+        if policy_arn:
+            iam.create_policy_version(
+                PolicyArn=policy_arn,
+                PolicyDocument=json.dumps(policy_document),
+                SetAsDefault=True
+            )
+            print(f"Policy {policy_name} already exists and was overwritten.")
+            return policy_arn
+        else:
+            print(f"Failed to find ARN for existing policy {policy_name}")
+            return None
     except ClientError as error:
-        print(f"Failed to create policy {policy_name}: {error}")
+        print(f"Error in creating/updating policy {policy_name}: {error}")
+        sys.exit(1)
+
 
 def attach_policy_to_user(policy_arn, user_name):
     try:
@@ -40,10 +61,10 @@ for filename in os.listdir(args.folder):
         file_path = os.path.join(args.folder, filename)        
         with open(file_path, 'r') as file:
             policy_document = json.load(file)
-            create_policy(policy_name, policy_document)
+            policy_arn = create_policy(policy_name, policy_document)
 
             # Get the ARN of the newly created policy
-            policy_arn = iam.get_policy(PolicyName=policy_name)['Policy']['Arn']
+            #policy_arn = iam.get_policy(PolicyName=policy_name)['Policy']['Arn']
 
             # Attach the policy to all users
             users = iam.list_users()['Users']
