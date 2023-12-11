@@ -2065,7 +2065,7 @@ class AWSBoto:
         long_timezone = self.cfg.get_time_zone()
         userdata = textwrap.dedent(f'''
         #! /bin/bash
-        {pkgm} install -y gcc mdadm
+        {pkgm} install -y gcc mdadm jq
         bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
         #bigdisks='/dev/sdm'
         numdisk=$(echo $bigdisks | wc -w)
@@ -2276,7 +2276,7 @@ class AWSBoto:
                 print(f'Access denied! Please check your IAM permissions. \n   Error: {e}')
             elif error_code == 'SpotMaxPriceTooLow':
                 print(f"Client Error: {e.response['Error']['Message']}")
-                print(f"please increase the spot price to or use the --on-demand option.")
+                print(f"please increase the spot price or use the --on-demand option.")
             elif error_code == 'OptInRequired':
                 print(f"Client Error: {e.response['Error']['Message']}")
                 print(f"Please go to the url and accept.")
