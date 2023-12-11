@@ -2418,6 +2418,7 @@ class AWSBoto:
                 ami_response = ec2.describe_images(ImageIds=[ami_id])
                 ami_info = ami_response['Images'][0]
                 # Extract OS information from the AMI description or name
+                print(ami_info)
                 os_info = ami_info.get('Description') or ami_info.get('Name')
 
                 row = [instance['PublicIpAddress'],
