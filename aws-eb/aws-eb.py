@@ -2372,6 +2372,7 @@ class AWSBoto:
         :param tag_value: The value of the tag
         :return: List of IP addresses
         """
+        print ('Listing machines ...')
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2 = session.client('ec2')        
         
