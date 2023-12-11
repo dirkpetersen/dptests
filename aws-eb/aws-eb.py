@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.35'
+__version__ = '0.20.36'
 
 def main():
         
@@ -2030,11 +2030,12 @@ class AWSBoto:
         try:
             now = datetime.datetime.utcnow()
             prices = ec2.describe_spot_price_history(
-                StartTime=(now - datetime.timedelta(minutes=5)).isoformat(),
+                StartTime=(now - datetime.timedelta(minutes=1)).isoformat(),
                 EndTime=now.isoformat(),
                 InstanceTypes=[instance_type],
                 ProductDescriptions=['Linux/UNIX'],
-                #AvailabilityZone=f'{region}c'  # You can specify a particular AZ or remove this line for all AZs in the region
+                MaxResults=1,
+                AvailabilityZone=f'{region}c'  # You can specify a particular AZ or remove this line for all AZs in the region
             )
             return prices['SpotPriceHistory'][0]['SpotPrice'] if prices['SpotPriceHistory'] else None
         except Exception as e:
@@ -2065,8 +2066,8 @@ class AWSBoto:
         userdata = textwrap.dedent(f'''
         #! /bin/bash
         {pkgm} install -y gcc mdadm
-        #bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
-        bigdisks='/dev/sdm'
+        bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
+        #bigdisks='/dev/sdm'
         numdisk=$(echo $bigdisks | wc -w)
         mkdir /opt/eb
         if [[ $numdisk -gt 1 ]]; then
@@ -2132,6 +2133,9 @@ class AWSBoto:
         echo '#export AWS_DEFAULT_REGION={self.cfg.aws_region}' >> ~/.bashrc
         echo '#export TZ={long_timezone}' >> ~/.bashrc
         echo '#alias singularity="apptainer"' >> ~/.bashrc        
+        # wait for pip3 to be installed
+        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."    
+        python3 -m pip install --upgrade wheel awscli boto3
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
         aws configure set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
         aws configure set region {self.cfg.aws_region}
@@ -2151,11 +2155,9 @@ class AWSBoto:
         # curl https://raw.githubusercontent.com/dirkpetersen/aws-eb/main/install.sh | bash 
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/aws-eb.py
         chmod +x ~/.local/bin/aws-eb.py
-        # wait for pip3 and lmod to be installed
-        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."  
+        # wait for lmod to be installed
         until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."  
-        python3 -m pip install --upgrade wheel
-        python3 -m pip install boto3 easybuild packaging
+        python3 -m pip install easybuild packaging
         source ~/easybuildrc
         aws-eb.py config --monitor '{emailaddr}'
         mkdir -p /opt/eb/tmp
@@ -2235,7 +2237,7 @@ class AWSBoto:
         print(f'{instance_type} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot in {self.cfg.aws_region}.')
         
         try:
-            if price_ondemand < price_spot*1.05:
+            if price_ondemand < price_spot*1.05 or self.args.ondemand:
                 myinstance = "on-demand instance"
                 marketoptions = {}
             else:
@@ -2274,7 +2276,7 @@ class AWSBoto:
                 print(f'Access denied! Please check your IAM permissions. \n   Error: {e}')
             elif error_code == 'SpotMaxPriceTooLow':
                 print(f"Client Error: {e.response['Error']['Message']}")
-                print(f"please increase the spot price to at least ${price_spot*1.1:.4f} or use an on-demand instance.")
+                print(f"please increase the spot price to or use the --on-demand option.")
             elif error_code == 'OptInRequired':
                 print(f"Client Error: {e.response['Error']['Message']}")
                 print(f"Please go to the url and accept.")
