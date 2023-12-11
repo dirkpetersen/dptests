@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.36'
+__version__ = '0.20.37'
 
 def main():
         
@@ -273,7 +273,7 @@ def subcmd_launch(args,cfg,bld,aws):
 
     print('s3_prefix:', s3_prefix)
     ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
-    bld.build_all(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
+    bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
 
     #if not aws.check_bucket_access_folders(args.folders):
     #    return False
@@ -398,7 +398,7 @@ class Builder:
             self.cfg.write('general', 'min_toolchains', self.min_toolchains)
         self.eb_root = '/opt/eb'
 
-    def build_all(self, easyconfigroot, s3_prefix, include, exclude):
+    def build_all_eb(self, easyconfigroot, s3_prefix, include, exclude):
 
         includes = include.split(',') if include else []
         excludes = exclude.split(',') if exclude else []
@@ -499,12 +499,12 @@ class Builder:
                 print(f'  ### UPDATE: {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
             except subprocess.CalledProcessError:                
-                print(f"  Builder.build_all: A CalledProcessError occurred while building {ebfile}.", flush=True)
+                print(f"  Builder.build_all_eb: A CalledProcessError occurred while building {ebfile}.", flush=True)
                 ## make sure we store the logfile
                 continue
 
             except Exception as e:
-                print(f"  Builder.build_all: An unexpected error occurred:\n{e}", flush=True)
+                print(f"  Builder.build_all_eb: An unexpected error occurred:\n{e}", flush=True)
                 traceback.print_exc()
                 continue
         try:
@@ -512,7 +512,7 @@ class Builder:
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
         except Exception as e:
-            print(f"  Builder.build_all(final): An unexpected error occurred when uploading:\n{e}", flush=True)
+            print(f"  Builder.build_all_eb(final): An unexpected error occurred when uploading:\n{e}", flush=True)
             pass
 
         print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
@@ -2395,25 +2395,38 @@ class AWSBoto:
             if error_code == 'AccessDenied':
                 self.cfg.printdbg(f'Access denied! Please check your IAM permissions. \n   Error: {e}')
             else:
-                print(f'Client Error: {e}')
+                print(f'ec2_list_instances, aws client Error: {e}')
             return []            
+        except Exception as e:
+            print(f'ec2_list_instances, other Error: {e}')
+            return []
         #An error occurred (AuthFailure) when calling the DescribeInstances operation: AWS was not able to validate the provided access credentials
         ilist = []    
         # Extract IP addresses
         for reservation in response['Reservations']:
             for instance in reservation['Instances']:
                 status = '(Running)'
-                if check:
-                    if self.monitor_has_instance_failed(instance['InstanceId'], False):
-                        status = '(Failed)'
-                    else:
-                        status = '(OK)'
-                row = [instance['PublicIpAddress'], 
-                       instance['InstanceId'], 
+                if self.monitor_has_instance_failed(instance['InstanceId'], False):
+                    status = '(Failed)'
+                else:
+                    status = '(OK)'
+
+                # Get the AMI ID used by the instance
+                ami_id = instance['ImageId']
+
+                # Retrieve information about the AMI
+                ami_response = ec2.describe_images(ImageIds=[ami_id])
+                ami_info = ami_response['Images'][0]
+                # Extract OS information from the AMI description or name
+                os_info = ami_info.get('Description') or ami_info.get('Name')
+
+                row = [instance['PublicIpAddress'],
+                       instance['InstanceId'],
                        instance['InstanceType'],
+                       os_info,
                        status
                        ]
-                ilist.append(row)                
+                ilist.append(row)
         return ilist
 
     def ssh_execute(self, user, host, command=None):
