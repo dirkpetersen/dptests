@@ -5,7 +5,7 @@ AWS-EB builds Easybuild packages on AWS EC2 instances
 and uploads them to S3 buckets for later use.
 """
 # internal modules
-import sys, os, argparse, json, configparser, platform 
+import sys, os, argparse, json, configparser, platform
 import urllib3, datetime, tarfile, zipfile, textwrap, socket
 import math, signal, shlex, time, re, inspect, traceback, json
 import shutil, tempfile, glob, subprocess, concurrent.futures
@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.34'
+__version__ = '0.20.35'
 
 def main():
         
@@ -1559,10 +1559,11 @@ class AWSBoto:
             awsprofile = self.cfg.awsprofile
         prof = self._ec2_create_iam_policy_roles_ec2profile()            
         iid, ip = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)
+        if not iid:
+            return False
         print(' Waiting for ssh host to become ready ...')
         if not self.cfg.wait_for_ssh_ready(ip):
             return False
-
         bootstrap_build = self._ec2_user_space_script(iid)        
 
         ### this block may need to be moved to a function
@@ -1912,7 +1913,7 @@ class AWSBoto:
         if images:
             return images[0]['ImageId']
         else:
-            return None        
+            return None       
 
     def _ec2_get_latest_ubuntu_lts_ami(self, profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
@@ -1936,7 +1937,7 @@ class AWSBoto:
         )
 
         # Sort images by creation date / Description to get the latest
-        images = sorted(response['Images'], key=lambda k: k['Description'], reverse=True)
+        images = sorted(response['Images'], key=lambda k: k['Description'], reverse=True)  
         if images:
             return images[0]['ImageId']
         else:
@@ -1951,19 +1952,23 @@ class AWSBoto:
             myarch = 'arm64'
 
         response = ec2_client.describe_images(
-            Owners=['amazon'],
+            #Owners=['679593333241'], # Rocky's owner ID
+            Owners=['309956199498'], # RedHat's owner ID
             Filters=[
-                {'Name': 'name', 'Values': ['rockylinux-*']},
-                {'Name': 'state', 'Values': ['available']},
+                {'Name': 'name', 'Values': ['RHEL-9.*','RHEL-10.*' ]},
                 {'Name': 'architecture', 'Values': [myarch]},
-                {'Name': 'virtualization-type', 'Values': ['hvm']}
+                {'Name': 'virtualization-type', 'Values': ['hvm']},
+                {'Name': 'state', 'Values': ['available']}
             ]            
             #amzn2-ami-hvm-2.0.*-x86_64-gp2
             #al2023-ami-kernel-default-x86_64
         )
 
         # Sort images by creation date to get the latest
-        images = sorted(response['Images'], key=lambda k: k['CreationDate'], reverse=True)
+        images = sorted(response['Images'], key=lambda k: k['DeprecationTime'], reverse=True) 
+           #dateutil.parser.parse() or datetime.datetime.fromisoformat(date_string.rstrip('Z'))
+        #print(images[0])
+        #sys.exit(1)
         if images:
             return images[0]['ImageId']
         else:
@@ -2199,12 +2204,16 @@ class AWSBoto:
                 key_file.write(key_pair.key_material)
             os.chmod(key_path, 0o600)  # Set file permission to 600
 
-        if self.args.os == 'amazon':
+        if self.args.os.lower() == 'amazon':
             imageid = self._ec2_get_latest_amazon_linux_ami(profile)
-        elif self.args.os == 'ubuntu':
+        elif self.args.os.lower() == 'ubuntu':
             imageid = self._ec2_get_latest_ubuntu_lts_ami(profile)
-        elif self.args.os == 'rhel':
+        elif self.args.os.lower() == 'rhel':
             imageid = self._ec2_get_latest_rocky_linux_ami(profile)
+        
+        if not imageid:
+            print(f'No {self.args.os} image found that matches the criteria.')
+            return None, None
 
         print(f'Using {self.args.os} image id: {imageid}')
 
@@ -2266,6 +2275,9 @@ class AWSBoto:
             elif error_code == 'SpotMaxPriceTooLow':
                 print(f"Client Error: {e.response['Error']['Message']}")
                 print(f"please increase the spot price to at least ${price_spot*1.1:.4f} or use an on-demand instance.")
+            elif error_code == 'OptInRequired':
+                print(f"Client Error: {e.response['Error']['Message']}")
+                print(f"Please go to the url and accept.")
             else:
                 print(f'ClientError in _ec2_launch_instance: {e}')
             sys.exit(1)
@@ -2492,7 +2504,7 @@ class AWSBoto:
                     response = ses.verify_email_identity(EmailAddress=check)
                     checked.append(check)
                     print(f'{check} was used for the first time, verification email sent.')
-                    print('Please have {check} check inbox and confirm email from AWS.\n')
+                    print(f'Please have {check} check inbox and confirm email from AWS.\n')
 
         except botocore.exceptions.ClientError as e:
             error_code = e.response['Error']['Code']
@@ -3055,6 +3067,7 @@ class ConfigManager:
         self.archiveroot = self.read('general','archiveroot', 'aws')
         self.archivepath = f'{self.bucket}/{self.archiveroot}'
         self.awsprofile = os.getenv('AWS_PROFILE', 'default')
+        self.defuser = 'ec2-user'
         profs = self.get_aws_profiles()
         if "aws" in profs:
             self.awsprofile = os.getenv('AWS_PROFILE', 'aws')
