@@ -2419,13 +2419,14 @@ class AWSBoto:
                 ami_info = ami_response['Images'][0]
                 # Extract OS information from the AMI description or name
                 print(ami_info)
-                os_info = ami_info.get('Description') or ami_info.get('Name')
+                #os_info = ami_info.get('Description') or ami_info.get('Name')
+                os_info = ami_info.get('Description') + '|' + ami_info.get('Name')
 
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
-                       os_info,
-                       status
+                       status,
+                       os_info
                        ]
                 ilist.append(row)
         return ilist
