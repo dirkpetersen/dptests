@@ -1219,8 +1219,8 @@ class AWSBoto:
             "epyc-gen-2": ['m5a', 'c5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
             "epyc-gen-3": ['m6a', 'c6a', 'r6a', 'p5'],
             "epyc-gen-4": ['m7a', 'c7a', 'r7a'],
-            "xeon-gen-1": ['m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3'],
-            "xeon-gen-2": ['m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1', 'i3en'],
+            "xeon-gen-1": ['m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3', 'i3en'],
+            "xeon-gen-2": ['m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
             "xeon-gen-3": ['m6i', 'c6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
             "xeon-gen-4": ['m7i', 'c7i', 'm7i-flex'],
             "core-i7-mac": ['mac1']
