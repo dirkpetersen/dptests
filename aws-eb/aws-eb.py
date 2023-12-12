@@ -2528,12 +2528,16 @@ class AWSBoto:
                 os_info = ami_info.get('Name')
                 if os_info:
                     os_info = self.cfg.parse_version_string(os_info) #.replace('ubuntu/images/hvm-ssd/','').strip()
+                
+                lt = ''
+                if instance['LaunchTime']:
+                    lt = instance['LaunchTime'].strftime("%Y-%m-%d %H:%M")
 
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
                        os_info.lower(),
-                       instance['LaunchTime'].strftime("%Y-%m-%d %H:%M"),
+                       lt,
                        status
                        ]
                 ilist.append(row)
