@@ -2040,23 +2040,53 @@ class AWSBoto:
        # self.s3 = self.awssession.client('s3')
        # self.ec2 = self.awssession.client('ec2')
 
-    def _ec2_current_spot_price(self, instance_type, region='us-west-2'):
-        ec2 = self.awssession.client('ec2')
-        try:
-            now = datetime.datetime.utcnow()
-            prices = ec2.describe_spot_price_history(
-                StartTime=(now - datetime.timedelta(minutes=1)).isoformat(),
-                EndTime=now.isoformat(),
-                InstanceTypes=[instance_type],
-                ProductDescriptions=['Linux/UNIX'],
-                MaxResults=1,
-                AvailabilityZone=f'{region}c'  # You can specify a particular AZ or remove this line for all AZs in the region
-            )
-            return prices['SpotPriceHistory'][0]['SpotPrice'] if prices['SpotPriceHistory'] else None
-        except Exception as e:
-            print(f"Error fetching current spot price: {e}")
-            return None
+    # def _ec2_current_spot_price(self, instance_type, region='us-west-2'):
+    #     ec2 = self.awssession.client('ec2')
+    #     try:
+    #         now = datetime.datetime.utcnow()
+    #         prices = ec2.describe_spot_price_history(
+    #             StartTime=(now - datetime.timedelta(minutes=1)).isoformat(),
+    #             EndTime=now.isoformat(),
+    #             InstanceTypes=[instance_type],
+    #             ProductDescriptions=['Linux/UNIX'],
+    #             MaxResults=1,
+    #             AvailabilityZone=f'{region}c'  # You can specify a particular AZ or remove this line for all AZs in the region
+    #         )
+    #         return prices['SpotPriceHistory'][0]['SpotPrice'] if prices['SpotPriceHistory'] else None
+    #     except Exception as e:
+    #         print(f"Error fetching current spot price: {e}")
+    #         return None
         
+
+    def _ec2_current_spot_price(self, instance_type, regions=['us-west-2', 'us-west-1', 'us-east-2', 'us-east-1', 'ca-central-1']):
+        PRODUCT = ['Linux/UNIX']
+        lowest_price = float('inf')
+        lowest_az = None
+
+        print(f'Gathering spot prices from {", ".join(regions)} ... ')
+        for region in regions:
+            ec2_client = boto3.client(service_name='ec2', region_name=region)           
+            response = ec2_client.describe_availability_zones()
+
+            for az in response['AvailabilityZones']:
+                spot_response = ec2_client.describe_spot_price_history(
+                    InstanceTypes=[instance_type],
+                    ProductDescriptions=PRODUCT,
+                    MaxResults=1,
+                    AvailabilityZone=az['ZoneName']
+                )
+
+                if spot_response['SpotPriceHistory']:
+                    price = float(spot_response['SpotPriceHistory'][0]['SpotPrice'])
+                    if price < lowest_price:
+                        lowest_price = price
+                        lowest_az = f"{az['ZoneName']}"
+
+        return lowest_price, lowest_az
+
+
+
+
     def _create_progress_bar(self, max_value):
         def show_progress_bar(iteration):
             percent = ("{0:.1f}").format(100 * (iteration / float(max_value)))
@@ -2261,14 +2291,15 @@ class AWSBoto:
         #print(f'AWS Region: {self.cfg.aws_region}')
         
         price_ondemand = float(self._ec2_ondemand_price(instance_type, self.cfg.aws_region))
-        price_spot = float(self._ec2_current_spot_price(instance_type, self.cfg.aws_region))
+        price_spot, az = self._ec2_current_spot_price(instance_type, [self.cfg.aws_region])
     
-        print(f'{instance_type} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot in {self.cfg.aws_region}.')
+        print(f'{instance_type} in {az} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot.')
         
         try:
             if price_ondemand < price_spot*1.05 or self.args.ondemand:
                 myinstance = "on-demand instance"
                 marketoptions = {}
+                placementdict = {}
             else:
                 myinstance = "spot instance"
                 marketoptions = {
@@ -2279,6 +2310,7 @@ class AWSBoto:
                         'InstanceInterruptionBehavior': 'terminate'
                     }
                 }
+                placementdict = {'AvailabilityZone': az}
                 
             # Create EC2 instance            
             instance = ec2.create_instances(
@@ -2296,7 +2328,8 @@ class AWSBoto:
                         'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
                     }
                 ],
-                InstanceMarketOptions=marketoptions
+                InstanceMarketOptions=marketoptions,
+                Placement=placementdict
             )[0]
 
         except botocore.exceptions.ClientError as e:
