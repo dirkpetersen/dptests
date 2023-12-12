@@ -341,10 +341,9 @@ def subcmd_ssh(args, cfg, aws):
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
     ips = [sublist[0] for sublist in ilist if sublist]
     if args.list:
-        if ips:
-            print("Running EC2 Instances:")
-            for row in ilist:
-                print(' | '.join(row))        
+        if ips:                    
+            print ('Listing machines ... ', flush=True, end='')
+            print_aligned_lists(ilist,"Running EC2 Instances:")      
         else:
             print('No running instances detected')
         return True        
@@ -384,6 +383,21 @@ def subcmd_ssh(args, cfg, aws):
             print('The "scp" sub command supports currently 2 arguments')
             return False
         print(ret.stdout,ret.stderr)
+
+def print_aligned_lists(list_of_lists, title):
+    """
+    Print a list of lists with each column aligned. Each inner list is joined into a string.
+    :param list_of_lists: The input list of lists.
+    """
+    # Convert all items to strings and determine the maximum width of each column
+    str_lists = [[str(item) for item in sublist] for sublist in list_of_lists]
+    column_widths = [max(len(item) for item in column) for column in zip(*str_lists)]
+
+    # Print each row with aligned columns
+    print(title)
+    for sublist in str_lists:
+        formatted_row = " | ".join(f"{item:{width}}" for item, width in zip(sublist, column_widths))
+        print(formatted_row)
 
 class Builder:
     def __init__(self, args, cfg, aws):
@@ -2372,7 +2386,6 @@ class AWSBoto:
         :param tag_value: The value of the tag
         :return: List of IP addresses
         """
-        print ('Listing machines ... ', flush=True, end='')
         #session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2 = self.awssession.client('ec2')        
         
