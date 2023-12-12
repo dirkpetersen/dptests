@@ -2544,8 +2544,9 @@ class AWSBoto:
                 ilist.append(row)
             #sorted = ilist.sort(key=lambda x: x[-1])
                     # Sort and return the list
+            print('a',ilist)
             ilist.sort(key=lambda x: x[-1])  # Assuming the last element in each row is the launch time
-            
+            print('b', ilist)
         return ilist
 
     def ssh_execute(self, user, host, command=None):
