@@ -2536,16 +2536,12 @@ class AWSBoto:
                 now = datetime.datetime.now(datetime.timezone.utc) 
                 uptime = now - instance['LaunchTime']  # Calculate uptime
                 # Convert uptime to days and hours
-                uptime_days = uptime.days
                 uptime_hours = uptime.seconds // 3600
-                uptime_minutes = (uptime.seconds % 3600) // 60
-                uptime_formatted = f"{uptime_days:02d}-{uptime_hours:02d}:{uptime_minutes:02d}"
-
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
                        os_info.lower(),
-                       uptime_formatted,
+                       f'{uptime_hours:02d}',
                        status
                        ]
                 ilist.append(row)
