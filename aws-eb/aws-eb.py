@@ -2372,9 +2372,9 @@ class AWSBoto:
         :param tag_value: The value of the tag
         :return: List of IP addresses
         """
-        print ('Listing machines ... ', end='')
-        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-        ec2 = session.client('ec2')        
+        print ('Listing machines ... ', flush=True, end='')
+        #session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        ec2 = self.awssession.client('ec2')        
         
         # Define the filter
         filters = [
@@ -3756,20 +3756,42 @@ class ConfigManager:
         Parse the string to extract everything up to and including the last numeric character
         in the first sequence of numeric characters. Dots are treated as numeric characters.
         """
-        slash_index = thestring.find('/')
-        # If '/' is found, adjust the string to start from the character after '/'
-        if slash_index != -1:
-            thestring = thestring[slash_index + 1:]
+        # slash_index = thestring.find('/')
+        # # If '/' is found, adjust the string to start from the character after '/'
+        # if slash_index != -1:
+        #     thestring = thestring[slash_index + 1:]
+        # numeric_found = False
+        # last_numeric_index = -1
+        # for i, char in enumerate(thestring):
+        #     if char.isdigit() or char == '.':
+        #         numeric_found = True
+        #         last_numeric_index = i
+        #     elif numeric_found:
+        #         # Break as soon as a non-numeric character is found after the first sequence of numeric characters
+        #         break
+        # return thestring[:last_numeric_index + 1] if numeric_found else ""     
+
         numeric_found = False
         last_numeric_index = -1
+        last_slash_before_numeric = -1
+
         for i, char in enumerate(thestring):
             if char.isdigit() or char == '.':
+                if not numeric_found:
+                    # Check for '/' before the first numeric character
+                    last_slash_before_numeric = thestring.rfind('/', 0, i)
                 numeric_found = True
                 last_numeric_index = i
             elif numeric_found:
                 # Break as soon as a non-numeric character is found after the first sequence of numeric characters
                 break
-        return thestring[:last_numeric_index + 1] if numeric_found else ""     
+
+        # Slice the string to start from after the last '/' before the first numeric sequence
+        start_index = last_slash_before_numeric + 1 if last_slash_before_numeric != -1 else 0
+        return thestring[start_index:last_numeric_index + 1] if numeric_found else ""
+
+
+
 
     def copy_compiled_binary_from_github(self,user,repo,compilecmd,binary,targetfolder):
         tarball_url = f"https://github.com/{user}/{repo}/archive/refs/heads/main.tar.gz"
