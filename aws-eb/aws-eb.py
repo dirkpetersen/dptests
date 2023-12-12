@@ -2320,6 +2320,7 @@ class AWSBoto:
                         }
                     }
                     placementdict = {'AvailabilityZone': az}
+                    #placementdict = {}
                     
                 # Create EC2 instance
                 
@@ -2359,6 +2360,10 @@ class AWSBoto:
                     print(f"Client Error: {e.response['Error']['Message']}")
                     print(f"Please go to the url and accept.")
                     sys.exit(1)
+                elif error_code == 'InsufficientInstanceCapacity':
+                    print(f"{e.response['Error']['Message']}")
+                    print(f"Please try again later.")
+                    sys.exit(1) 
                 else:
                     print(f'ClientError in _ec2_launch_instance: {e}')
                     sys.exit(1)
