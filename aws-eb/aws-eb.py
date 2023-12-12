@@ -2533,10 +2533,11 @@ class AWSBoto:
                        instance['InstanceId'],
                        instance['InstanceType'],
                        os_info.lower(),
+                       instance['LaunchTime'].strftime("%Y-%m-%d %H:%M"),
                        status
                        ]
                 ilist.append(row)
-        return ilist
+        return ilist.sort(key=lambda x: x[-1])
 
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
