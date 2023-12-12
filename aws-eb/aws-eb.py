@@ -341,7 +341,7 @@ def subcmd_ssh(args, cfg, aws):
     if args.list:
         print ('Listing machines ... ', flush=True, end='')
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    print('XXXXXXXXXX', ilist)
+    #print('XXXXXXXXXX', ilist)
     ips = [sublist[0] for sublist in ilist if sublist]
     if args.list:
         if ips:                                
@@ -2530,23 +2530,23 @@ class AWSBoto:
                 if os_info:
                     os_info = self.cfg.parse_version_string(os_info) #.replace('ubuntu/images/hvm-ssd/','').strip()
                 
-                lt = ''
-                if instance['LaunchTime']:
-                    lt = instance['LaunchTime'].strftime("%Y-%m-%d %H:%M")
+                # lt = ''
+                # if instance['LaunchTime']:
+                #     lt = instance['LaunchTime'].strftime("%m-%d %H:%M")
 
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
                        os_info.lower(),
-                       lt,
+                       instance['LaunchTime'].strftime("%m-%d %H:%M"),
                        status
                        ]
                 ilist.append(row)
             #sorted = ilist.sort(key=lambda x: x[-1])
                     # Sort and return the list
-            print('a',ilist)
+            #print('a',ilist)
             ilist.sort(key=lambda x: x[-1])  # Assuming the last element in each row is the launch time
-            print('b', ilist)
+            #print('b', ilist)
         return ilist
 
     def ssh_execute(self, user, host, command=None):
