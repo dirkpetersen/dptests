@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.37'
+__version__ = '0.20.38'
 
 def main():
         
@@ -363,9 +363,10 @@ def subcmd_ssh(args, cfg, aws):
         print(f'{myhost} is no longer running, replacing with {ips[-1]}')
         myhost = ips[-1]
         #cfg.write('cloud', 'ec2_last_instance', myhost)
+    sshuser = aws.ec2_get_default_user(myhost, ilist)
     if args.subcmd == 'ssh':
         print(f'Connecting to {myhost} ...')
-        aws.ssh_execute('ec2-user', myhost)
+        aws.ssh_execute(sshuser, myhost)
         return True
     elif args.subcmd == 'scp':
         if len(args.sshargs) != 2:
@@ -375,11 +376,11 @@ def subcmd_ssh(args, cfg, aws):
         if hostloc == 0:
             # the hostname is in the first argument: download
             host, remote_path = args.sshargs[0].split(':')
-            ret=aws.ssh_download('ec2-user', host, remote_path, args.sshargs[1])
+            ret=aws.ssh_download(sshuser, host, remote_path, args.sshargs[1])
         elif hostloc == 1:
             # the hostname is in the second argument: uploaad
             host, remote_path = args.sshargs[1].split(':')
-            ret=aws.ssh_upload('ec2-user', host, args.sshargs[0], remote_path)
+            ret=aws.ssh_upload(sshuser, host, args.sshargs[0], remote_path)
         else:
             print('The "scp" sub command supports currently 2 arguments')
             return False
@@ -1516,9 +1517,7 @@ class AWSBoto:
     def s3_put_json(self, o_name, json_data):
         try:
             s3 = self.awssession.client('s3')        
-            obj = s3.get_object(Bucket=self.cfg.bucket, Key=o_name)
-            self.s3_put_json(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data))
-            return json.loads(obj['Body'].read())
+            return s3.put_object(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data))
         except Exception as e:
             print(f"Error in s3_put_json: {e}")
             return False
@@ -1599,21 +1598,22 @@ class AWSBoto:
         bootstrap_build += '\n' + cmdline + f' > ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         bootstrap_build += f'\n[ ! -f ~/no-terminate ] && aws-eb.py ssh --terminate {iid}'
-        ret = self.ssh_upload('ec2-user', ip,
+        sshuser = self.ec2_get_default_user(ip)
+        ret = self.ssh_upload(sshuser, ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
-        ret = self.ssh_upload('ec2-user', ip,
+        ret = self.ssh_upload(sshuser, ip,
             bootstrap_build, "bootstrap.sh", is_string=True)        
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
-        ret = self.ssh_execute('ec2-user', ip, 
+        ret = self.ssh_execute(sshuser, ip, 
             'mkdir -p ~/.config/aws-eb/general')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)        
-        ret = self.ssh_upload('ec2-user', ip,
+        ret = self.ssh_upload(sshuser, ip,
             "~/.config/aws-eb/general/*", ".config/aws-eb/general/")
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)        
-        ret = self.ssh_execute('ec2-user', ip, 
+        ret = self.ssh_execute(sshuser, ip, 
             f'nohup bash bootstrap.sh < /dev/null > out.bootstrap.{ip}.txt 2>&1 &')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
@@ -1626,7 +1626,7 @@ class AWSBoto:
         os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history.tmp')
-        ret = self.ssh_upload('ec2-user', ip,
+        ret = self.ssh_upload(sshuser, ip,
             "~/.bash_history.tmp", ".bash_history")
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
@@ -2075,13 +2075,20 @@ class AWSBoto:
             pkgm = 'dnf'
         if self.args.os in ['ubuntu', 'debian']:
             pkgm = 'apt'
+            if self.args.os == 'ubuntu':
+                self.cfg.defuser = 'ubuntu'
+            elif self.args.os == 'debian':
+                self.cfg.defuser = 'admin'
         else:
             pkgm = 'yum'
         long_timezone = self.cfg.get_time_zone()
         userdata = textwrap.dedent(f'''
         #! /bin/bash
+        {pkgm} update -y         
+        export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq
-        bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
+        #bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
+        bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null and (.name | tostring | startswith("loop") | not)) | "/dev/" + .name')
         #bigdisks='/dev/sdm'
         numdisk=$(echo $bigdisks | wc -w)
         mkdir /opt/eb
@@ -2093,13 +2100,13 @@ class AWSBoto:
           mkfs -t xfs $bigdisks
           mount $bigdisks /opt/eb
         fi
-        chown ec2-user /opt/eb
+        chown {self.cfg.defuser} /opt/eb
         {pkgm} check-update
         {pkgm} update -y                                   
-        {pkgm} install -y at gcc vim wget python3-pip python3-psutil 
+        {pkgm} install -y at gcc vim wget python3-pip python3-psutil rpm2cpio
         hostnamectl set-hostname aws-eb
         timedatectl set-timezone '{long_timezone}'
-        loginctl enable-linger ec2-user
+        loginctl enable-linger {self.cfg.defuser}
         systemctl start atd
         {pkgm} upgrade -y
         {pkgm} install -y mc git docker lua lua-posix lua-devel tcl-devel nodejs-npm
@@ -2114,6 +2121,8 @@ class AWSBoto:
     
     def _ec2_easybuildrc(self, bscript='~/easybuildrc'):
         threads = self.args.vcpus*2
+        if self.args.os == 'ubuntu':
+            self.cfg.defuser = 'ubuntu'        
         return textwrap.dedent(f'''        
         test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
         export MODULEPATH=/opt/eb/modules/all:/opt/eb/modules/lib:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
@@ -2129,7 +2138,7 @@ class AWSBoto:
         export EASYBUILD_PARALLEL={threads}
         # export EASYBUILD_GITHUB_USER=$USER
         export  EASYBUILD_UPDATE_MODULES_TOOL_CACHE=True
-        export  EASYBUILD_ROBOT_PATHS=/home/ec2-user/.local/easybuild/easyconfigs:/opt/eb/fh/fh_easyconfigs
+        export  EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/.local/easybuild/easyconfigs:/opt/eb/fh/fh_easyconfigs
         ''').strip()
             
     def _ec2_user_space_script(self, instance_id='', bscript='~/bootstrap.sh'):
@@ -2141,6 +2150,11 @@ class AWSBoto:
         long_timezone = self.cfg.get_time_zone()
         return textwrap.dedent(f'''
         #! /bin/bash
+        echo "Bootstrapping AWS-EB on {instance_id} ..."
+        if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+            export PATH=$PATH:~/.local/bin
+            echo 'export PATH="$PATH:~/.local/bin"' >> ~/.bashrc
+        fi
         mkdir -p ~/.config/aws-eb
         echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
         echo 'source ~/easybuildrc' >> ~/.bashrc
@@ -2159,7 +2173,7 @@ class AWSBoto:
         aws configure --profile {self.cfg.awsprofile} set region {self.cfg.aws_region}
         sed -i 's/aws_access_key_id [^ ]*/aws_access_key_id /' {bscript}
         sed -i 's/aws_secret_access_key [^ ]*/aws_secret_access_key /' {bscript}
-        curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
+        # curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
         echo '#! /bin/bash' > ~/.local/bin/get-public-ip
         echo 'ETOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")' >> ~/.local/bin/get-public-ip
         cp -f ~/.local/bin/get-public-ip ~/.local/bin/get-local-ip
@@ -2379,6 +2393,25 @@ class AWSBoto:
         ec2.terminate_instances(InstanceIds=[instance_id])
         
         print(f"EC2 Instance {instance_id} ({ip}) is being terminated !")
+
+    def ec2_get_default_user(self, ip_addr, instance_list=None):
+        # get the default user for the OS, e.g. ubuntu, ec2-user, centos, ...
+        if not instance_list:
+            instance_list = self.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+        for inst in instance_list:
+            if inst[0] == ip_addr:
+                if inst[3].startswith('ubuntu'):
+                    return 'ubuntu'
+                elif inst[3].startswith('rhel'):
+                    return 'ec2-user'
+                elif inst[3].startswith('amzn'):
+                    return 'ec2-user'
+                elif inst[3].startswith('debian'):
+                    return 'admin'
+                elif inst[3].startswith('rocky'):
+                    return 'ec2-user'
+                else:
+                    return 'ec2-user'
 
     def ec2_list_instances(self, tag_name, tag_value):
         """
