@@ -2380,7 +2380,7 @@ class AWSBoto:
         
         print(f"EC2 Instance {instance_id} ({ip}) is being terminated !")
 
-    def ec2_list_instances(self, tag_name, tag_value, profile=None):
+    def ec2_list_instances(self, tag_name, tag_value):
         """
         List all IP addresses of running EC2 instances with a specific tag name and value.
         :param tag_name: The name of the tag
@@ -2821,12 +2821,12 @@ class AWSBoto:
         body_text = "\n".join(body)
         self.send_email_ses("", "", f'AWS-EB AWS cost report ({instance_id})', body_text)
 
-    def monitor_has_instance_failed(self, instance_id, print_error, profile=None):
+    def monitor_has_instance_failed(self, instance_id, print_error):
         """
         Check if the Instance reachability status check has failed for a given EC2 instance.
         """
-        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
-        ec2_client = session.client('ec2')
+        #session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        ec2_client = self.awssession.client('ec2')  
 
         # Fetch the status of the instance
         response = ec2_client.describe_instance_status(InstanceIds=[instance_id])
