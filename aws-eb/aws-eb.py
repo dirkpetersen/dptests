@@ -2372,7 +2372,7 @@ class AWSBoto:
         :param tag_value: The value of the tag
         :return: List of IP addresses
         """
-        print ('Listing machines ...')
+        print ('Listing machines ... ', end='')
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2 = session.client('ec2')        
         
@@ -2421,13 +2421,15 @@ class AWSBoto:
                 # Extract OS information from the AMI description or name
                 #print(ami_info)
                 #os_info = ami_info.get('Description') or ami_info.get('Name')
-                os_info = ami_info.get('Description') + '|' + ami_info.get('Name')
+                os_info = ami_info.get('Name')
+                if os_info:
+                    os_info = self.cfg.parse_version_string(os_info) #.replace('ubuntu/images/hvm-ssd/','').strip()
 
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
-                       status,
-                       os_info
+                       os_info,
+                       status
                        ]
                 ilist.append(row)
         return ilist
@@ -3748,6 +3750,26 @@ class ConfigManager:
                 s.close()
         print("Timeout reached without SSH server being ready.")
         return False
+    
+    def parse_version_string(self, thestring):
+        """
+        Parse the string to extract everything up to and including the last numeric character
+        in the first sequence of numeric characters. Dots are treated as numeric characters.
+        """
+        slash_index = thestring.find('/')
+        # If '/' is found, adjust the string to start from the character after '/'
+        if slash_index != -1:
+            thestring = thestring[slash_index + 1:]
+        numeric_found = False
+        last_numeric_index = -1
+        for i, char in enumerate(thestring):
+            if char.isdigit() or char == '.':
+                numeric_found = True
+                last_numeric_index = i
+            elif numeric_found:
+                # Break as soon as a non-numeric character is found after the first sequence of numeric characters
+                break
+        return thestring[:last_numeric_index + 1] if numeric_found else ""     
 
     def copy_compiled_binary_from_github(self,user,repo,compilecmd,binary,targetfolder):
         tarball_url = f"https://github.com/{user}/{repo}/archive/refs/heads/main.tar.gz"
@@ -3876,9 +3898,7 @@ def parse_arguments():
             Login to an AWS EC2 build instance 
         '''), formatter_class=argparse.RawTextHelpFormatter)
     parser_ssh.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
-        help="List running AWS-EB EC2 instances")        
-    parser_ssh.add_argument( '--check', '-c', dest='check', action='store_true', default=False,
-        help="check instance status when listing (use with -l)")            
+        help="List running AWS-EB EC2 instances")               
     parser_ssh.add_argument('--terminate', '-t', dest='terminate', action='store', default='', 
         metavar='<hostname>', help='Terminate EC2 instance with this public IP Address.')    
     parser_ssh.add_argument('sshargs', action='store', default=[], nargs='*',
