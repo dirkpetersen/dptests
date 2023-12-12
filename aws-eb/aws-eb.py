@@ -338,11 +338,12 @@ def subcmd_download(args,cfg,bld,aws):
         
 def subcmd_ssh(args, cfg, aws):
 
+    if args.list:
+        print ('Listing machines ... ', flush=True, end='')
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
     ips = [sublist[0] for sublist in ilist if sublist]
     if args.list:
-        if ips:                    
-            print ('Listing machines ... ', flush=True, end='')
+        if ips:                                
             print_aligned_lists(ilist,"Running EC2 Instances:")      
         else:
             print('No running instances detected')
