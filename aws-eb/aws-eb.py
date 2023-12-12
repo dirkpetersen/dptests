@@ -2538,7 +2538,8 @@ class AWSBoto:
                 # Convert uptime to days and hours
                 uptime_days = uptime.days
                 uptime_hours = uptime.seconds // 3600
-                uptime_formatted = f"{uptime_days:02d}-{uptime_hours:02d}"                
+                uptime_minutes = (uptime.seconds % 3600) // 60
+                uptime_formatted = f"{uptime_days:02d}-{uptime_hours:02d}:{uptime_minutes:02d}"
 
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
