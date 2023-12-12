@@ -341,6 +341,7 @@ def subcmd_ssh(args, cfg, aws):
     if args.list:
         print ('Listing machines ... ', flush=True, end='')
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+    print(ilist)
     ips = [sublist[0] for sublist in ilist if sublist]
     if args.list:
         if ips:                                
