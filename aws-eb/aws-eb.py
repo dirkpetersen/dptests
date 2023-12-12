@@ -341,7 +341,7 @@ def subcmd_ssh(args, cfg, aws):
     if args.list:
         print ('Listing machines ... ', flush=True, end='')
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    print(ilist)
+    #print(ilist)
     ips = [sublist[0] for sublist in ilist if sublist]
     if args.list:
         if ips:                                
@@ -2542,7 +2542,10 @@ class AWSBoto:
                        status
                        ]
                 ilist.append(row)
-        return ilist.sort(key=lambda x: x[-1])
+        print(ilist)
+        ilist.sort(key=lambda x: x[-1])
+        print(ilist)
+        return 
 
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
