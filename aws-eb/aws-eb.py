@@ -344,7 +344,7 @@ def subcmd_ssh(args, cfg, aws):
         if ips:
             print("Running EC2 Instances:")
             for row in ilist:
-                print(' - '.join(row))        
+                print(' | '.join(row))        
         else:
             print('No running instances detected')
         return True        
@@ -2428,7 +2428,7 @@ class AWSBoto:
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
-                       os_info,
+                       os_info.lower(),
                        status
                        ]
                 ilist.append(row)
@@ -3756,21 +3756,6 @@ class ConfigManager:
         Parse the string to extract everything up to and including the last numeric character
         in the first sequence of numeric characters. Dots are treated as numeric characters.
         """
-        # slash_index = thestring.find('/')
-        # # If '/' is found, adjust the string to start from the character after '/'
-        # if slash_index != -1:
-        #     thestring = thestring[slash_index + 1:]
-        # numeric_found = False
-        # last_numeric_index = -1
-        # for i, char in enumerate(thestring):
-        #     if char.isdigit() or char == '.':
-        #         numeric_found = True
-        #         last_numeric_index = i
-        #     elif numeric_found:
-        #         # Break as soon as a non-numeric character is found after the first sequence of numeric characters
-        #         break
-        # return thestring[:last_numeric_index + 1] if numeric_found else ""     
-
         numeric_found = False
         last_numeric_index = -1
         last_slash_before_numeric = -1
@@ -3789,8 +3774,6 @@ class ConfigManager:
         # Slice the string to start from after the last '/' before the first numeric sequence
         start_index = last_slash_before_numeric + 1 if last_slash_before_numeric != -1 else 0
         return thestring[start_index:last_numeric_index + 1] if numeric_found else ""
-
-
 
 
     def copy_compiled_binary_from_github(self,user,repo,compilecmd,binary,targetfolder):
