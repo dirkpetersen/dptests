@@ -1566,6 +1566,14 @@ class AWSBoto:
             print(f"Error in s3_duplicate_bucket(): {e}")
             return False
 
+    def _extract_last_float(self, input_string):
+        # Finding all occurrences of a floating-point number pattern
+        matches = re.findall(r'\d+\.\d+', input_string)
+        if matches:
+            # Return the last match
+            return float(matches[-1])
+        else:
+            return None
 
     def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
@@ -2295,59 +2303,70 @@ class AWSBoto:
     
         print(f'{instance_type} in {az} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot.')
         
-        try:
-            if price_ondemand < price_spot*1.05 or self.args.ondemand:
-                myinstance = "on-demand instance"
-                marketoptions = {}
-                placementdict = {}
-            else:
-                myinstance = "spot instance"
-                marketoptions = {
-                    'MarketType': 'spot',
-                    'SpotOptions': {
-                        'MaxPrice': str(price_spot*1.1),
-                        'SpotInstanceType': 'one-time',
-                        'InstanceInterruptionBehavior': 'terminate'
+        for i in range(2):
+            try:            
+                if price_ondemand < price_spot*1.1 or self.args.ondemand:
+                    myinstance = "on-demand instance"
+                    marketoptions = {}
+                    placementdict = {}
+                else:
+                    myinstance = "spot instance"
+                    marketoptions = {
+                        'MarketType': 'spot',
+                        'SpotOptions': {
+                            'MaxPrice': str(price_spot*1.1),
+                            'SpotInstanceType': 'one-time',
+                            'InstanceInterruptionBehavior': 'terminate'
+                        }
                     }
-                }
-                placementdict = {'AvailabilityZone': az}
+                    placementdict = {'AvailabilityZone': az}
+                    
+                # Create EC2 instance
                 
-            # Create EC2 instance            
-            instance = ec2.create_instances(
-                ImageId=imageid,
-                MinCount=1,
-                MaxCount=1,
-                InstanceType=instance_type,
-                KeyName=self.cfg.ssh_key_name,
-                UserData=self._ec2_cloud_init_script(),
-                IamInstanceProfile = iam_instance_profile,
-                BlockDeviceMappings = block_device_mappings,
-                TagSpecifications=[
-                    {
-                        'ResourceType': 'instance',
-                        'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
-                    }
-                ],
-                InstanceMarketOptions=marketoptions,
-                Placement=placementdict
-            )[0]
-
-        except botocore.exceptions.ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'AccessDenied':
-                print(f'Access denied! Please check your IAM permissions. \n   Error: {e}')
-            elif error_code == 'SpotMaxPriceTooLow':
-                print(f"Client Error: {e.response['Error']['Message']}")
-                print(f"please increase the spot price or use the --on-demand option.")
-            elif error_code == 'OptInRequired':
-                print(f"Client Error: {e.response['Error']['Message']}")
-                print(f"Please go to the url and accept.")
-            else:
-                print(f'ClientError in _ec2_launch_instance: {e}')
-            sys.exit(1)
-        except Exception as e:
-            print(f'Error in _ec2_launch_instance: {e}')
-            sys.exit(1)
+                instance = ec2.create_instances(
+                    ImageId=imageid,
+                    MinCount=1,
+                    MaxCount=1,
+                    InstanceType=instance_type,
+                    KeyName=self.cfg.ssh_key_name,
+                    UserData=self._ec2_cloud_init_script(),
+                    IamInstanceProfile = iam_instance_profile,
+                    BlockDeviceMappings = block_device_mappings,
+                    TagSpecifications=[
+                        {
+                            'ResourceType': 'instance',
+                            'Tags': [{'Key': 'Name', 'Value': 'AWSEBSelfDestruct'}]
+                        }
+                    ],
+                    InstanceMarketOptions=marketoptions,
+                    Placement=placementdict
+                )[0]
+                break
+            
+            except botocore.exceptions.ClientError as e:
+                error_code = e.response['Error']['Code']
+                if error_code == 'AccessDenied':
+                    print(f'Access denied! Please check your IAM permissions. \n   Error: {e}')
+                    sys.exit(1)
+                elif error_code == 'SpotMaxPriceTooLow':
+                    errmsg = e.response['Error']['Message']
+                    print (f"{errmsg}")
+                    price_spot = self._extract_last_float(errmsg)
+                    print(f'Trying again with new price: {price_spot:.4f}')
+                    #print(f"Client Error: {errmsg}")
+                    #print(f"please increase the spot price or use the --on-demand option.")                
+                elif error_code == 'OptInRequired':
+                    print(f"Client Error: {e.response['Error']['Message']}")
+                    print(f"Please go to the url and accept.")
+                    sys.exit(1)
+                else:
+                    print(f'ClientError in _ec2_launch_instance: {e}')
+                    sys.exit(1)
+                continue
+        
+            except Exception as e:
+                print(f'Error in _ec2_launch_instance: {e}')
+                sys.exit(1)
     
         # Use a waiter to ensure the instance is running before trying to access its properties
         instance_id = instance.id    
