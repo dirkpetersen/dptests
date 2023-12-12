@@ -2542,10 +2542,8 @@ class AWSBoto:
                        status
                        ]
                 ilist.append(row)
-        print(ilist)
-        ilist.sort(key=lambda x: x[-1])
-        print(ilist)
-        return 
+        sorted = ilist.sort(key=lambda x: x[-1])
+        return sorted
 
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
