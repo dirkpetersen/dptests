@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.38'
+__version__ = '0.20.39'
 
 def main():
         
@@ -2191,7 +2191,7 @@ class AWSBoto:
         echo "Bootstrapping AWS-EB on {instance_id} ..."
         if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
             export PATH=$PATH:~/.local/bin
-            echo 'export PATH="$PATH:~/.local/bin"' >> ~/.bashrc
+            echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
         fi
         mkdir -p ~/.config/aws-eb
         echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
@@ -2353,7 +2353,7 @@ class AWSBoto:
                     errmsg = e.response['Error']['Message']
                     print (f"{errmsg}")
                     price_spot = self._extract_last_float(errmsg)
-                    print(f'Trying again with new price: {price_spot:.4f}')
+                    print(f'Trying again with new price: ${price_spot:.4f}')
                     #print(f"Client Error: {errmsg}")
                     #print(f"please increase the spot price or use the --on-demand option.")                
                 elif error_code == 'OptInRequired':
@@ -2362,7 +2362,7 @@ class AWSBoto:
                     sys.exit(1)
                 elif error_code == 'InsufficientInstanceCapacity':
                     print(f"{e.response['Error']['Message']}")
-                    print(f"Please try again later.")
+                    print(f"Please try again later or use the --on-demand option or a different instance type.")
                     sys.exit(1) 
                 else:
                     print(f'ClientError in _ec2_launch_instance: {e}')
