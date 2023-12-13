@@ -2148,8 +2148,9 @@ class AWSBoto:
         loginctl enable-linger {self.cfg.defuser}
         systemctl start atd
         {pkgm} upgrade -y
-        {pkgm} install -y mc git docker lua lua-posix lua-devel tcl-devel nodejs-npm
-        {pkgm} install -y build-essential
+        {pkgm} install -y mc git docker lua lua-posix nodejs-npm
+        {pkgm} install -y lua-devel tcl-devel
+        {pkgm} install -y build-essential tcl-dev tcl lua5.3 lua-bit32:amd64 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
         {pkgm} group install -y 'Development Tools'
         cd /tmp
         wget https://sourceforge.net/projects/lmod/files/Lmod-8.7.tar.bz2
@@ -2541,10 +2542,6 @@ class AWSBoto:
                 uptime_minutes = (uptime.seconds % 3600) // 60
                 uptime_formatted = f"{uptime_days:02d}-{uptime_hours:02d}:{uptime_minutes:02d}"
 
-
-                print(instance['PublicIpAddress'],uptime)
-                # Convert uptime to days and hours
-                uptime_hours = uptime // 3600
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
@@ -2553,11 +2550,7 @@ class AWSBoto:
                        status
                        ]
                 ilist.append(row)
-            #sorted = ilist.sort(key=lambda x: x[-1])
-                    # Sort and return the list
-            #print('a',ilist)
-            ilist.sort(key=lambda x: x[-2],reverse=True)  # Assuming the last element in each row is the launch time
-            #print('b', ilist)
+        ilist.sort(key=lambda x: x[-2],reverse=True)  # Assuming the last element in each row is the launch time
         return ilist
 
     def ssh_execute(self, user, host, command=None):
