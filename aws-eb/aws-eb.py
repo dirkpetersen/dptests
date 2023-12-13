@@ -2470,12 +2470,12 @@ class AWSBoto:
                     return 'ubuntu'
                 elif inst[3].startswith('rhel'):
                     return 'ec2-user'
-                elif inst[3].startswith('amzn'):
+                elif inst[3].startswith('al'):
                     return 'ec2-user'
                 elif inst[3].startswith('debian'):
                     return 'admin'
                 elif inst[3].startswith('rocky'):
-                    return 'ec2-user'
+                    return 'rocky'
                 else:
                     return 'ec2-user'
 
