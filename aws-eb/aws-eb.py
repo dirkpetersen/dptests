@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.39'
+__version__ = '0.20.20'
 
 def main():
         
@@ -2128,7 +2128,10 @@ class AWSBoto:
         {pkgm} install -y gcc mdadm jq
         #bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
         bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null and (.name | tostring | startswith("loop") | not)) | "/dev/" + .name')
-        #bigdisks='/dev/sdm'
+        if [[ "$(echo "$bigdisks" | cut -d ' ' -f2 | uniq | wc -l)" -gt 1 ]]; then
+          # Sizes differ, get only the largest disk
+          bigdisks=$(echo "$bigdisks" | sort -k2 -hr | head -n1 | cut -d ' ' -f1)
+        fi
         numdisk=$(echo $bigdisks | wc -w)
         mkdir /opt/eb
         if [[ $numdisk -gt 1 ]]; then
@@ -2213,7 +2216,7 @@ class AWSBoto:
         aws configure --profile {self.cfg.awsprofile} set region {self.cfg.aws_region}
         sed -i 's/aws_access_key_id [^ ]*/aws_access_key_id /' {bscript}
         sed -i 's/aws_secret_access_key [^ ]*/aws_secret_access_key /' {bscript}
-        # curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
+        curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
         echo '#! /bin/bash' > ~/.local/bin/get-public-ip
         echo 'ETOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")' >> ~/.local/bin/get-public-ip
         cp -f ~/.local/bin/get-public-ip ~/.local/bin/get-local-ip
@@ -2230,7 +2233,6 @@ class AWSBoto:
         source ~/easybuildrc
         aws-eb.py config --monitor '{emailaddr}'
         mkdir -p /opt/eb/tmp
-        echo "" >> ~/.bash_profile
         ''').strip()
     
     def _ec2_launch_instance(self, disk_gib, instance_type, iamprofile=None, profile=None):
