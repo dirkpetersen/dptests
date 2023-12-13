@@ -2124,9 +2124,9 @@ class AWSBoto:
         long_timezone = self.cfg.get_time_zone()
         userdata = textwrap.dedent(f'''
         #! /bin/bash
-        if rpm --quiet -q subscription-manager; then
-          curl https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky9.sh | bash -s -- -r
-        fi
+        # if rpm --quiet -q subscription-manager; then
+        #   curl https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky9.sh | bash -s -- -r
+        # fi
         {pkgm} update -y         
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq
