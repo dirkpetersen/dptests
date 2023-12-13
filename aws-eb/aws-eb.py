@@ -2310,6 +2310,7 @@ class AWSBoto:
         for i in range(2):
             try:            
                 if price_ondemand < price_spot*1.1 or self.args.ondemand:
+                    print('Oops, On-demand pricing lower than Spot.')
                     myinstance = "on-demand instance"
                     marketoptions = {}
                     placementdict = {}
