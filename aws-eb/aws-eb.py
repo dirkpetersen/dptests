@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.41'
+__version__ = '0.20.42'
 
 def main():
         
@@ -1311,7 +1311,28 @@ class AWSBoto:
                 return sorted(regions, reverse=True)
             except:
                 return ['us-west-2','us-west-1', 'us-east-1', '']
+            
+    def get_aws_account_id(self):
+        # Initialize the STS client
+        sts_client = self.awssession.client('sts')
+        # Get the caller identity
+        response = sts_client.get_caller_identity()
+        # Extract and return the account ID
+        return response['Account']
 
+    def get_aws_account_and_user_id(self):
+        # returns aws account_id, user_id, user_name
+        # Initialize the STS client
+        sts_client = self.awssession.client('sts')
+        # Get the caller identity
+        response = sts_client.get_caller_identity()
+        # Extract the account ID
+        account_id = response['Account']
+        user_id = response['UserId']
+        # Extract the ARN and parse the user ID
+        arn = response['Arn']
+        user_name = arn.split(':')[-1].split('/')[-1]
+        return account_id, user_id, user_name
 
     def check_bucket_access(self, bucket_name, readwrite=False, profile=None):
         
@@ -1506,7 +1527,7 @@ class AWSBoto:
     def s3_put_json(self, o_name, json_data):
         try:
             s3 = self.awssession.client('s3')        
-            return s3.put_object(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data))
+            return s3.put_object(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data, indent=4))
         except Exception as e:
             print(f"Error in s3_put_json: {e}")
             return False
@@ -1638,7 +1659,7 @@ class AWSBoto:
         try:
             response = iam.create_policy(
                 PolicyName=pol_name,
-                PolicyDocument=json.dumps(pol_doc)
+                PolicyDocument=json.dumps(pol_doc,indent=4)
             )
             policy_arn = response['Policy']['Arn']
             print(f"Policy created with ARN: {policy_arn}")
@@ -1695,7 +1716,7 @@ class AWSBoto:
         iam.put_user_policy(
             UserName=user_name,
             PolicyName=policy_name,
-            PolicyDocument=json.dumps(policy_document)
+            PolicyDocument=json.dumps(policy_document, indent=4)
         )
 
         print(f"Policy {policy_name} attached successfully to user {user_name}.")
@@ -1758,7 +1779,7 @@ class AWSBoto:
         try:
             iam.create_role(
                 RoleName=role_name,
-                AssumeRolePolicyDocument=json.dumps(trust_policy),
+                AssumeRolePolicyDocument=json.dumps(trust_policy, indent=4),
                 Description='AWS-EB role allows Billing, SES and Terminate'
             )
         except iam.exceptions.EntityAlreadyExistsException:        
@@ -2232,16 +2253,18 @@ class AWSBoto:
             return False
 
         # Create a new EC2 key pair
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
+        _, userid, username = self.get_aws_account_and_user_id()
+        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
         if not os.path.exists(key_path):
+            keyname = f'{self.cfg.ssh_key_name}-{username}'
             try:
-                client.describe_key_pairs(KeyNames=[self.cfg.ssh_key_name])
+                client.describe_key_pairs(KeyNames=[keyname])
                 # If the key pair exists, delete it
-                client.delete_key_pair(KeyName=self.cfg.ssh_key_name)
+                client.delete_key_pair(KeyName=keyname)
             except client.exceptions.ClientError:
                 # Key pair doesn't exist in AWS, no need to delete
                 pass                        
-            key_pair = ec2.create_key_pair(KeyName=self.cfg.ssh_key_name)
+            key_pair = ec2.create_key_pair(KeyName=keyname, KeyType='ed25519')
             os.makedirs(os.path.join(self.cfg.config_root,'cloud'),exist_ok=True)            
             with open(key_path, 'w') as key_file:
                 key_file.write(key_pair.key_material)
@@ -2527,7 +2550,10 @@ class AWSBoto:
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
         SSH_OPTIONS = "-o StrictHostKeyChecking=no"
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
+        _, userid, _  = self.get_aws_account_and_user_id()
+        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
+        if not os.path.exists(key_path):
+            key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
         cmd = f"ssh {SSH_OPTIONS} -i '{key_path}' {user}@{host}"
         if command:
             cmd += f" '{command}'"
@@ -2544,7 +2570,10 @@ class AWSBoto:
     def ssh_upload(self, user, host, local_path, remote_path, is_string=False):
         """Upload a file to the remote server using SCP."""
         SSH_OPTIONS = "-o StrictHostKeyChecking=no"
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
+        _, userid, _  = self.get_aws_account_and_user_id()
+        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
+        if not os.path.exists(key_path):
+            key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
         if is_string:
             # the local_path is actually a string that needs to go into temp file 
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
@@ -2563,7 +2592,10 @@ class AWSBoto:
     def ssh_download(self, user, host, remote_path, local_path):
         """Upload a file to the remote server using SCP."""
         SSH_OPTIONS = "-o StrictHostKeyChecking=no"
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
+        _, userid, _  = self.get_aws_account_and_user_id()
+        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
+        if not os.path.exists(key_path):
+            key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
         try:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -2802,7 +2834,7 @@ class AWSBoto:
         try:
             iam.create_role(
                 RoleName=role_name,
-                AssumeRolePolicyDocument=json.dumps(trust_relationship),
+                AssumeRolePolicyDocument=json.dumps(trust_relationship, indent=4),
                 Description='Allows EC2 instances to call AWS services on your behalf.'
             )
         except iam.exceptions.EntityAlreadyExistsException:
@@ -3742,7 +3774,7 @@ class ConfigManager:
                 for item in value:
                     entry_file.write(f"{item}\n")
             elif isinstance(value, dict):
-                json.dump(value, entry_file)
+                json.dump(value, entry_file, indent=4)
             else:
                 entry_file.write(value)
 
@@ -3846,6 +3878,8 @@ class ConfigManager:
         Parse the string to extract everything up to and including the last numeric character
         in the first sequence of numeric characters. Dots are treated as numeric characters.
         """
+
+        thestring = thestring.replace('-9-EC2-Base-','-')
         numeric_found = False
         last_numeric_index = -1
         last_slash_before_numeric = -1
@@ -3864,7 +3898,6 @@ class ConfigManager:
         # Slice the string to start from after the last '/' before the first numeric sequence
         start_index = last_slash_before_numeric + 1 if last_slash_before_numeric != -1 else 0
         return thestring[start_index:last_numeric_index + 1] if numeric_found else ""
-
 
     def copy_compiled_binary_from_github(self,user,repo,compilecmd,binary,targetfolder):
         tarball_url = f"https://github.com/{user}/{repo}/archive/refs/heads/main.tar.gz"
