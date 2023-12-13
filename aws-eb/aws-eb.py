@@ -2534,7 +2534,14 @@ class AWSBoto:
                 # if instance['LaunchTime']:
                 #     lt = instance['LaunchTime'].strftime("%m-%d %H:%M")
                 now = datetime.datetime.now(datetime.timezone.utc) 
-                uptime = now - instance['LaunchTime']  # Calculate uptime                
+                uptime = now - instance['LaunchTime']  # Calculate uptime       
+                # Convert uptime to days, hours, and minutes
+                uptime_days = uptime.days
+                uptime_hours = uptime.seconds // 3600
+                uptime_minutes = (uptime.seconds % 3600) // 60
+                uptime_formatted = f"{uptime_days:02d}-{uptime_hours:02d}:{uptime_minutes:02d}"
+
+
                 print(instance['PublicIpAddress'],uptime)
                 # Convert uptime to days and hours
                 uptime_hours = uptime // 3600
@@ -2542,14 +2549,14 @@ class AWSBoto:
                        instance['InstanceId'],
                        instance['InstanceType'],
                        os_info.lower(),
-                       f'{uptime_hours:03f}h',
+                       uptime_formatted,
                        status
                        ]
                 ilist.append(row)
             #sorted = ilist.sort(key=lambda x: x[-1])
                     # Sort and return the list
             #print('a',ilist)
-            ilist.sort(key=lambda x: x[-1],reverse=True)  # Assuming the last element in each row is the launch time
+            ilist.sort(key=lambda x: x[-2],reverse=True)  # Assuming the last element in each row is the launch time
             #print('b', ilist)
         return ilist
 
