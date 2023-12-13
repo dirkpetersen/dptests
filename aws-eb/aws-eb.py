@@ -2153,7 +2153,8 @@ class AWSBoto:
         {pkgm} upgrade -y
         {pkgm} install -y mc git docker nodejs-npm
         {pkgm} install -y lua lua-posix lua-devel tcl-devel
-        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl lua5.3 lua-bit32:amd64 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
+        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl 
+        {pkgm} install -y lua5.3 lua-bit32 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
         dnf group install -y 'Development Tools'
         cd /tmp
         wget https://sourceforge.net/projects/lmod/files/Lmod-8.7.tar.bz2
@@ -2206,6 +2207,7 @@ class AWSBoto:
         echo '#export TZ={long_timezone}' >> ~/.bashrc
         echo '#alias singularity="apptainer"' >> ~/.bashrc        
         # wait for pip3 to be installed
+        echo "Waiting for Python3 pip install ..."
         until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."    
         python3 -m pip install --upgrade wheel awscli boto3
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
@@ -2228,6 +2230,7 @@ class AWSBoto:
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/aws-eb.py
         chmod +x ~/.local/bin/aws-eb.py
         # wait for lmod to be installed
+        echo "Waiting for Lmod install ..."
         until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."  
         python3 -m pip install easybuild packaging
         source ~/easybuildrc
