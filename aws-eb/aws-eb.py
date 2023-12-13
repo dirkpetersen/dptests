@@ -2094,9 +2094,6 @@ class AWSBoto:
 
         return lowest_price, lowest_az
 
-
-
-
     def _create_progress_bar(self, max_value):
         def show_progress_bar(iteration):
             percent = ("{0:.1f}").format(100 * (iteration / float(max_value)))
@@ -2113,6 +2110,8 @@ class AWSBoto:
         # Define the User Data script
         if self.args.os in ['rhel', 'amazon']:
             pkgm = 'dnf'
+            if self.args.os == 'rhel':
+                self.cfg.defuser = 'rocky'
         if self.args.os in ['ubuntu', 'debian']:
             pkgm = 'apt'
             if self.args.os == 'ubuntu':
