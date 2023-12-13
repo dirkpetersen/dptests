@@ -1977,9 +1977,10 @@ class AWSBoto:
 
         response = ec2_client.describe_images(
             #Owners=['679593333241'], # Rocky's owner ID
-            Owners=['309956199498'], # RedHat's owner ID
+            Owners=['792107900819'], # Rocky's owner ID            
+            #Owners=['309956199498'], # RedHat's owner ID
             Filters=[
-                {'Name': 'name', 'Values': ['RHEL-9.*','RHEL-10.*' ]},
+                {'Name': 'name', 'Values': ['Rocky-9-EC2-Base*','Rocky-10-EC2-Base*' ]},
                 {'Name': 'architecture', 'Values': [myarch]},
                 {'Name': 'virtualization-type', 'Values': ['hvm']},
                 {'Name': 'state', 'Values': ['available']}
@@ -2123,6 +2124,9 @@ class AWSBoto:
         long_timezone = self.cfg.get_time_zone()
         userdata = textwrap.dedent(f'''
         #! /bin/bash
+        if rpm --quiet -q subscription-manager; then
+          curl https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky9.sh | bash -s -- -r
+        fi
         {pkgm} update -y         
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq
