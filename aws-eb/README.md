@@ -9,7 +9,7 @@ Make sure you have your AWS creds in ~/.aws/credentials and your AWS region is s
 ```
 ./aws-eb.py config
 ./aws-eb.py launch --list
-./aws-eb.py launch --cpu-type epyc-gen-4 --bio-only
+./aws-eb.py launch --cpu-type epyc-gen-4 --include bio,lib
 ```
 
 ## Build Workflow 
@@ -17,7 +17,7 @@ Make sure you have your AWS creds in ~/.aws/credentials and your AWS region is s
 This is happening behind the scenes: 
 
 1. Launch AWS instance 
-1. Attach 1TB EBS volumne to /opt/eb
+1. Attach 750 GB EBS volumne to /opt/eb
 1. Upload and launch bootstrap.sh script and other configs
 1. Install basic software (Python3, Apptainer, etc) 
 1. Launch aws-eb script with `--build` option and same parameters as launched first
