@@ -2123,16 +2123,12 @@ class AWSBoto:
         long_timezone = self.cfg.get_time_zone()
         userdata = textwrap.dedent(f'''
         #! /bin/bash
-        # if rpm --quiet -q subscription-manager; then
-        #   curl https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky9.sh | bash -s -- -r
-        # fi
-        {pkgm} update -y         
+        {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq
-        #bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null) | "/dev/" + .name')
         bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null and (.name | tostring | startswith("loop") | not)) | "/dev/" + .name')
         if [[ "$(echo "$bigdisks" | cut -d ' ' -f2 | uniq | wc -l)" -gt 1 ]]; then
-          # Sizes differ, get only the largest disk
+          # If sizes differ, get only the largest disk to prevent weird RAID0 setups
           bigdisks=$(echo "$bigdisks" | sort -k2 -hr | head -n1 | cut -d ' ' -f1)
         fi
         numdisk=$(echo $bigdisks | wc -w)
