@@ -2537,7 +2537,7 @@ class AWSBoto:
                 uptime = now - instance['LaunchTime']  # Calculate uptime                
                 print(instance['PublicIpAddress'],uptime)
                 # Convert uptime to days and hours
-                uptime_hours = uptime.seconds // 3600
+                uptime_hours = uptime // 3600
                 row = [instance['PublicIpAddress'],
                        instance['InstanceId'],
                        instance['InstanceType'],
