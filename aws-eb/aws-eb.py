@@ -2146,18 +2146,19 @@ class AWSBoto:
           mount $bigdisks /opt/eb
         fi
         chown {self.cfg.defuser} /opt/eb
+        dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} check-update
         {pkgm} update -y                                   
-        {pkgm} install -y at gcc vim wget python3-pip python3-psutil rpm2cpio
+        {pkgm} install -y at gcc vim wget python3-pip python3-psutil
         hostnamectl set-hostname aws-eb
         timedatectl set-timezone '{long_timezone}'
         loginctl enable-linger {self.cfg.defuser}
         systemctl start atd
         {pkgm} upgrade -y
-        {pkgm} install -y mc git docker lua lua-posix nodejs-npm
-        {pkgm} install -y lua-devel tcl-devel
-        {pkgm} install -y build-essential tcl-dev tcl lua5.3 lua-bit32:amd64 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
-        {pkgm} group install -y 'Development Tools'
+        {pkgm} install -y mc git docker nodejs-npm
+        {pkgm} install -y lua lua-posix lua-devel tcl-devel
+        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl lua5.3 lua-bit32:amd64 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
+        dnf group install -y 'Development Tools'
         cd /tmp
         wget https://sourceforge.net/projects/lmod/files/Lmod-8.7.tar.bz2
         tar -xjf Lmod-8.7.tar.bz2
