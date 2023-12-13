@@ -33,7 +33,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.20'
+__version__ = '0.20.41'
 
 def main():
         
@@ -188,11 +188,6 @@ def subcmd_launch(args,cfg,bld,aws):
     cfg.printdbg ("build:", args.awsprofile)
     cfg.printdbg(f'default cmdline: aws-eb build')
 
-    # if args.instancetype:
-    #     price=aws._ec2_ondemand_price(args.instancetype, region='us-east-1')
-    #     print('Price:', price)
-    #     return True
-
     if args.monitor:
         # aws inactivity and cost monitoring
         aws.monitor_ec2()
@@ -202,13 +197,6 @@ def subcmd_launch(args,cfg,bld,aws):
         print(f'Profile "{args.awsprofile}" not found.')
         return False    
     
-    # ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    # instances = [sublist[1] for sublist in ilist if sublist]
-    # for inst in instances:
-    #     if aws.monitor_has_instance_failed(inst, True):
-    #         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
-    #         #aws.ec2_terminate_instance(inst)
-
     if args.list:
         # list all folders in the archive
         print('\nAll available EC2 instance families:')
@@ -2047,27 +2035,6 @@ class AWSBoto:
             print(f"Error getting on-demand price: {e}")
             return 100 # return a high price to make sure it is not used
         
-       # self.s3 = self.awssession.client('s3')
-       # self.ec2 = self.awssession.client('ec2')
-
-    # def _ec2_current_spot_price(self, instance_type, region='us-west-2'):
-    #     ec2 = self.awssession.client('ec2')
-    #     try:
-    #         now = datetime.datetime.utcnow()
-    #         prices = ec2.describe_spot_price_history(
-    #             StartTime=(now - datetime.timedelta(minutes=1)).isoformat(),
-    #             EndTime=now.isoformat(),
-    #             InstanceTypes=[instance_type],
-    #             ProductDescriptions=['Linux/UNIX'],
-    #             MaxResults=1,
-    #             AvailabilityZone=f'{region}c'  # You can specify a particular AZ or remove this line for all AZs in the region
-    #         )
-    #         return prices['SpotPriceHistory'][0]['SpotPrice'] if prices['SpotPriceHistory'] else None
-    #     except Exception as e:
-    #         print(f"Error fetching current spot price: {e}")
-    #         return None
-        
-
     def _ec2_current_spot_price(self, instance_type, regions=['us-west-2', 'us-west-1', 'us-east-2', 'us-east-1', 'ca-central-1']):
         PRODUCT = ['Linux/UNIX']
         lowest_price = float('inf')
@@ -2226,7 +2193,7 @@ class AWSBoto:
         echo 'curl -sH "X-aws-ec2-metadata-token: $ETOKEN" http://169.254.169.254/latest/meta-data/local-ipv4' >> ~/.local/bin/get-local-ip
         chmod +x ~/.local/bin/get-public-ip
         chmod +x ~/.local/bin/get-local-ip
-        # curl https://raw.githubusercontent.com/dirkpetersen/aws-eb/main/install.sh | bash 
+        # curl https://raw.githubusercontent.com/dirkpetersen/scibob/main/install.sh | bash 
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/aws-eb.py
         chmod +x ~/.local/bin/aws-eb.py
         # wait for lmod to be installed
@@ -2361,9 +2328,7 @@ class AWSBoto:
                     errmsg = e.response['Error']['Message']
                     print (f"{errmsg}")
                     price_spot = self._extract_last_float(errmsg)
-                    print(f'Trying again with new price: ${price_spot:.4f}')
-                    #print(f"Client Error: {errmsg}")
-                    #print(f"please increase the spot price or use the --on-demand option.")                
+                    print(f'Trying again with new price: ${price_spot:.4f}')               
                 elif error_code == 'OptInRequired':
                     print(f"Client Error: {e.response['Error']['Message']}")
                     print(f"Please go to the url and accept.")
@@ -3242,10 +3207,10 @@ class ConfigManager:
                 print (f'~/.aws/credentials has no entry aws_access_key_id in section/profile {profile}')
             return False
         
-        # Set TMPDIR to Store failed EB logs 
-        tmpdir = '/opt/eb/tmp'
-        os.environ['TMPDIR'] = tmpdir
-        self.envrn['TMPDIR'] = tmpdir
+        # Set TMPDIR to Store failed EB logs --- too much io and stuff 
+        #tmpdir = '/opt/eb/tmp'
+        #os.environ['TMPDIR'] = tmpdir
+        #self.envrn['TMPDIR'] = tmpdir
         
         # Get the AWS access key and secret key from the specified profile
         aws_access_key_id = config.get(profile, 'aws_access_key_id')
@@ -3312,7 +3277,7 @@ class ConfigManager:
                         os_id = line.strip().split('=')[1].strip('"')
                     elif line.startswith("VERSION_ID="):                    
                         version_id = line.strip().split('=')[1].strip('"')
-            return os_id, version_id
+            return os_id.replace('rocky','rhel'), version_id
         except Exception as e:
             # Return two empty strings in case of an error
             return "", ""
@@ -3935,21 +3900,12 @@ class ConfigManager:
             else:    
                 print(f'Failed copying {binary} to {targetfolder}')
 
-
-# class SubcommandHelpFormatter(argparse.RawDescriptionHelpFormatter):
-#     def _format_action(self, action):
-#         parts = super(argparse.RawDescriptionHelpFormatter, self)._format_action(action)
-#         if action.nargs == argparse.PARSER:
-#             parts = "\n".join(parts.split("\n")[1:])
-#         return parts
-
-
 def parse_arguments():
     """
     Gather command-line arguments.
     """       
     parser = argparse.ArgumentParser(prog='aws-eb ',
-        description='A (mostly) automated build tool for building Sci packages on AWS  ' + \
+        description='A (mostly) automated build tool for building Sci packages in AWS. ' + \
                     'The binary packages are stored in an S3 bucket and can be downloaded by anyone.')
     parser.add_argument( '--debug', '-d', dest='debug', action='store_true', default=False,
         help="verbose output for all commands")
@@ -3984,23 +3940,23 @@ def parse_arguments():
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
         help='build operating system, default=amazon (aka. optimized fedora), valid: amazon, rhel or ubuntu')
     parser_launch.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
-        help="List CPU and GPU types")
+        help="List available CPU and GPU types")
     parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
-        help='Number of cores to be allocated for the machine. (default=4)')    
+        help='Number of vcpus (1 core = 2 vcpus) to be allocated for the machine. (default=4)')    
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=16, 
-        help='GB Memory allocated to instance  (default=8)')    
+        help='GB Memory allocated to instance  (default=8)')
     parser_launch.add_argument( '--monitor', '-n', dest='monitor', action='store_true', default=False,
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
-        help="Build the Easybuild packages on current system.")
+        help="Execute the build on the current system instead of launching a new EC2 instance.")
     parser_launch.add_argument('--first-bucket', '-f', dest='firstbucket', action='store', default="",
-        help='use this bucket to initially load the pre-built binaries and sources')       
+        help='use this bucket (e.g. easybuild-cache) to initially load the already built binaries and sources')       
     parser_launch.add_argument( '--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
         help="Do not pre-download sources from build cache, let EB download them.")
     parser_launch.add_argument( '--on-demand', '-d', dest='ondemand', action='store_true', default=False,
         help="Enforce on-demand instance instead of using the default spot instance.")
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="",
-        help='limit builds to certain module classes, e.g "bio" or "bio,ai"')     
+        help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')            
     
