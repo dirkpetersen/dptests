@@ -2542,7 +2542,7 @@ class AWSBoto:
                        instance['InstanceId'],
                        instance['InstanceType'],
                        os_info.lower(),
-                       f'{uptime_hours:03d}h',
+                       f'{uptime_hours:03f}h',
                        status
                        ]
                 ilist.append(row)
