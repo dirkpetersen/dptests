@@ -17,24 +17,13 @@ import requests, boto3, botocore, psutil
 from packaging.version import parse, InvalidVersion
 try:
     from easybuild.framework.easyconfig.parser import EasyConfigParser
-    #from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
     from easybuild.tools.build_log import EasyBuildError    
-
-    #from easybuild.tools.module_generator import ModuleGenerator
-    ## m = ModuleGenerator(ec)
-    ## m.get_module_filepath()
-    #ebfile = '' 
-    #ec = EasyConfigParser(ebfile).get_config_dict()
-    #mns = EasyBuildMNS()
-    #x=mns.det_full_module_name(ec)
-    #print(x) #'TensorFlow/2.9.1-foss-2022a-CUDA-%(cudaver)s'
-
 except:
     pass
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.45'
+__version__ = '0.20.47'
 
 def main():
         
@@ -132,9 +121,6 @@ def subcmd_config(args, cfg, aws):
     except:
         pass
 
-    # domain-name not needed right now
-    #domain = cfg.prompt('Enter your domain name:',
-    #                    f'{defdom}|general|domain','string')
     emailaddr = cfg.prompt('Enter your email address:',
                             f'{whoami}@{defdom}|general|email','string')
     emailstr = emailaddr.replace('@','-')
@@ -259,18 +245,14 @@ def subcmd_launch(args,cfg,bld,aws):
         # create an initial copy of the binaries 
         print(f'Creating initial copy from {args.firstbucket} to {cfg.bucket} ...', flush=True)
         aws.s3_duplicate_bucket(args.firstbucket, cfg.bucket)
-
     print('s3_prefix:', s3_prefix)
     ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
 
-    #if not aws.check_bucket_access_folders(args.folders):
-    #    return False
         
 def subcmd_download(args,cfg,bld,aws):
 
     cfg.printdbg(f'default cmdline: aws-eb download')
-
     if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
         print(f'Profile "{args.awsprofile}" not found.')
         return False
@@ -351,7 +333,7 @@ def subcmd_ssh(args, cfg, aws):
     if ips and not myhost in ips:
         print(f'{myhost} is no longer running, replacing with {ips[-1]}')
         myhost = ips[-1]
-        #cfg.write('cloud', 'ec2_last_instance', myhost)
+        cfg.write('cloud', 'ec2_last_instance', myhost)
     sshuser = aws.ec2_get_default_user(myhost, ilist)
     # adding anoter public key to host
     if args.addkey:
@@ -664,11 +646,6 @@ class Builder:
                             new_tars.append(file_path)
                         except subprocess.CalledProcessError as e:
                             print(f"An error occurred while unpacking {file_path}: {e}")
-                        # try:
-                        #     # Extract the tar.gz file using tarfile
-                        #     with tarfile.open(file_path, "r:gz") as tar:
-                        #         tar.extractall(path=root)
-                        #     print(f"Successfully unpacked: {file_path}")
                         except Exception as e:
                             print(f"An error occurred while unpacking {file_path}: {e}")
 
@@ -1084,10 +1061,6 @@ class Rclone:
         if not url.endswith('/'): url+'/'
         mountpoint = mountpoint.rstrip(os.path.sep)
         command = [self.rc, 'mount'] + list(args)
-        # might use older rclone, if fuse3 is not installed
-        #if os.path.isfile('/usr/bin/rclone'):
-        #    command = ['/usr/bin/rclone', 'mount'] + list(args)            
-        #command.append('--daemon') # not reliable, just starting background process
         try:
             #os.chmod(mountpoint, 0o2775)
             current_permissions = os.stat(mountpoint).st_mode
@@ -1374,9 +1347,6 @@ class AWSBoto:
             print(f"Error: cannot write to bucket {bucket_name} in profile {self.awsprofile}: {e}")
             return False
         
-        
-####
-
 
     def create_s3_bucket(self, bucket_name, profile=None):   
         if not self._check_s3_credentials(profile, verbose=True):
@@ -1476,9 +1446,6 @@ class AWSBoto:
             if verbose or self.args.debug:
                 pass
                 #print('Done.')                
-        #return True
-        #try:
-        #    pass
         except botocore.exceptions.NoCredentialsError:
             print("No AWS credentials found. Please check your access key and secret key.")
         except botocore.exceptions.EndpointConnectionError:
@@ -2709,41 +2676,8 @@ class AWSBoto:
             return False
         return True
 
-        # The below AIM policy is needed if you do not want to confirm 
-        # each and every email you want to send to. 
-
-        # iam = boto3.client('iam')
-        # policy_document = {
-        #     "Version": "2012-10-17",
-        #     "Statement": [
-        #         {
-        #             "Effect": "Allow",
-        #             "Action": [
-        #                 "ses:SendEmail",
-        #                 "ses:SendRawEmail"
-        #             ],
-        #             "Resource": "*"
-        #         }
-        #     ]
-        # }
-
-        # policy_name = 'SES_SendEmail_Policy'
-
-        # policy_arn = self._ec2_create_or_get_iam_policy(
-        #     policy_name, policy_document, profile)
-
-        # username = 'your_iam_username'  # Change this to the username you wish to attach the policy to
-
-        # response = iam.attach_user_policy(
-        #     UserName=username,
-        #     PolicyArn=policy_arn
-        # )
-
-        # print(f"Policy {policy_arn} attached to user {username}")
-
     def send_ec2_costs(self, instance_id, profile=None):
         pass
-
 
     def _ec2_create_iam_costexplorer_ses(self, instance_id ,profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
