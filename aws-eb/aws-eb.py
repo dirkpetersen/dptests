@@ -467,6 +467,12 @@ class Builder:
                     getsource = False
                 ebskipped-=1
                 self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
+                ### temp hack
+                if s3_prefix == 'rhel-9.3_graviton-3':
+                    self.download(f':s3:{self.cfg.archivepath}', self.eb_root, 'rocky-9.3_graviton-3', getsource)
+                elif s3_prefix == 'rhel-9.3_xeon-gen-1':
+                    self.download(f':s3:{self.cfg.archivepath}', self.eb_root, 'rocky-9.3_xeon-gen-1', getsource)
+                ### end temp hack
                 print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ", flush=True)
@@ -2560,7 +2566,6 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
-        print(key_path)
         if is_string:
             # the local_path is actually a string that needs to go into temp file 
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
