@@ -34,7 +34,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.42'
+__version__ = '0.20.43'
 
 def main():
         
@@ -2190,7 +2190,7 @@ class AWSBoto:
         # wait for pip3 to be installed
         echo "Waiting for Python3 pip install ..."
         until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."    
-        python3 -m pip install --upgrade wheel awscli boto3
+        python3 -m pip install --upgrade wheel awscli
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
         aws configure set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
         aws configure set region {self.cfg.aws_region}
@@ -2213,7 +2213,8 @@ class AWSBoto:
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
         until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."  
-        python3 -m pip install easybuild packaging
+        python3 -m pip install easybuild 
+        python3 -m pip install packaging boto3
         source ~/easybuildrc
         aws-eb.py config --monitor '{emailaddr}'
         mkdir -p /opt/eb/tmp
