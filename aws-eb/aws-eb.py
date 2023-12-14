@@ -2355,7 +2355,7 @@ class AWSBoto:
                     sys.exit(1)
                 elif error_code == 'InsufficientInstanceCapacity':
                     print(f"{e.response['Error']['Message']}")
-                    print(f"Please try again later or use the --on-demand option or a different instance type.")
+                    print(f"Please try again later or use the --az, --on-demand or --instance-type options.")
                     sys.exit(1) 
                 else:
                     print(f'ClientError in _ec2_launch_instance: {e}')
