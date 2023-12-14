@@ -23,7 +23,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.47'
+__version__ = '0.20.48'
 
 def main():
         
@@ -496,15 +496,14 @@ class Builder:
                 traceback.print_exc()
                 continue
         try:
+            print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
+            print(f'  BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)            
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
         except Exception as e:
             print(f"  Builder.build_all_eb(final): An unexpected error occurred when uploading:\n{e}", flush=True)
             pass
-
-        print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
-        print(f'  BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
         
         return True
 
@@ -2328,7 +2327,7 @@ class AWSBoto:
                 elif error_code == 'InsufficientInstanceCapacity':
                     print(f"{e.response['Error']['Message']}")
                     print(f"Please try again later or use the --az, --on-demand or --instance-type options.")
-                    sys.exit(1) 
+                    sys.exit(3) 
                 else:
                     print(f'ClientError in _ec2_launch_instance: {e}')
                     sys.exit(1)
