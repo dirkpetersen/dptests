@@ -2292,6 +2292,8 @@ class AWSBoto:
         
         price_ondemand = float(self._ec2_ondemand_price(instance_type, self.cfg.aws_region))
         price_spot, az = self._ec2_current_spot_price(instance_type, [self.cfg.aws_region])
+        if self.args.az:
+            az = self.args.az
     
         print(f'{instance_type} in {az} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot.')
         
@@ -3989,20 +3991,22 @@ def parse_arguments():
         help=textwrap.dedent(f'''
             Launch EC2 instance, build new Easybuild packages and upload them to S3
         '''), formatter_class=argparse.RawTextHelpFormatter) 
-    parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="",
-        help='The EC2 instance type is auto-selected, but you can pick any other type here')    
-    parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
-        help='run --list to see available GPU types')       
+    parser_launch.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
+        help="List available CPU and GPU types")    
     parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
         help='build operating system, default=amazon (aka. optimized fedora), valid: amazon, rhel or ubuntu')
-    parser_launch.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
-        help="List available CPU and GPU types")
     parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
         help='Number of vcpus (1 core = 2 vcpus) to be allocated for the machine. (default=4)')    
+    parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
+        help='run --list to see available GPU types')       
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=16, 
         help='GB Memory allocated to instance  (default=8)')
+    parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="",
+        help='The EC2 instance type is auto-selected, but you can pick any other type here')    
+    parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
+        help='Enforce the availability zone, e.g. us-west-2a')    
     parser_launch.add_argument( '--monitor', '-n', dest='monitor', action='store_true', default=False,
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
