@@ -34,7 +34,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.44'
+__version__ = '0.20.45'
 
 def main():
         
@@ -436,13 +436,13 @@ class Builder:
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
-                        print(f'  * Easyconfig {name} version {version} too old.', flush=True)
+                        print(f'  * Easyconfig {name} version {version} too old according to min_toolchains.', flush=True)
                         continue
                 if tc['name'] not in self.min_toolchains.keys():
                     print(f'  * Toolchain {tc["name"]} not supported.', flush=True)
                     continue
                 if self.cfg.sversion(tc['version']) < self.cfg.sversion(self.min_toolchains[tc['name']]):
-                    print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old.', flush=True)
+                    print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old according to min_toolchains.', flush=True)
                     continue
                 if includes: 
                     if cls not in includes:
@@ -464,12 +464,10 @@ class Builder:
                 # check if min_toolchains exclude any of the missing modules, if so skip this easyconfig
                 for miss in themissing.keys():
                     nam, ver = miss.split('/')
-                    if nam not in self.min_toolchains.keys():
-                        print(f'  * {ebfile} requires toolchain {nam} which is excluded.', flush=True)
-                        continue
-                    elif self.cfg.sversion(ver) < self.cfg.sversion(self.min_toolchains[nam]):
-                        print(f'  * {ebfile} requires toolchain {miss} which is too old.', flush=True)
-                        continue
+                    if nam in self.min_toolchains.keys():
+                        if self.cfg.sversion(ver) < self.cfg.sversion(self.min_toolchains[nam]):
+                            print(f'  * {ebfile} requires toolchain {miss} which is too old according to min_toolchains.', flush=True)
+                            continue
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
                 if self.args.skipsources:
@@ -2302,8 +2300,12 @@ class AWSBoto:
         
         for i in range(2):
             try:            
-                if price_ondemand < price_spot*1.1 or self.args.ondemand:
+                if price_ondemand < price_spot*1.05:
                     print('Oops, On-demand pricing lower than Spot.')
+                    myinstance = "on-demand instance"
+                    marketoptions = {}
+                    placementdict = {}
+                elif self.args.ondemand:
                     myinstance = "on-demand instance"
                     marketoptions = {}
                     placementdict = {}
@@ -2312,7 +2314,7 @@ class AWSBoto:
                     marketoptions = {
                         'MarketType': 'spot',
                         'SpotOptions': {
-                            'MaxPrice': str(price_spot*1.1),
+                            'MaxPrice': str(price_spot*1.05),
                             'SpotInstanceType': 'one-time',
                             'InstanceInterruptionBehavior': 'terminate'
                         }
