@@ -1,8 +1,9 @@
 #! /usr/bin/env python3
 
 """
-AWS-EB builds Easybuild packages on AWS EC2 instances 
-and uploads them to S3 buckets for later use.
+AWS-EB builds scientific software packages using Easybuild 
+on AWS EC2 instances and syncs the binaries with S3 buckets
+
 """
 # internal modules
 import sys, os, argparse, json, configparser, platform
@@ -329,11 +330,10 @@ def subcmd_ssh(args, cfg, aws):
     if args.list:
         print ('Listing machines ... ', flush=True, end='')
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    #print('XXXXXXXXXX', ilist)
     ips = [sublist[0] for sublist in ilist if sublist]
     if args.list:
         if ips:                                
-            print_aligned_lists(ilist,"Running EC2 Instances:")      
+            aws.print_aligned_lists(ilist,"Running EC2 Instances:")      
         else:
             print('No running instances detected')
         return True        
@@ -353,6 +353,15 @@ def subcmd_ssh(args, cfg, aws):
         myhost = ips[-1]
         #cfg.write('cloud', 'ec2_last_instance', myhost)
     sshuser = aws.ec2_get_default_user(myhost, ilist)
+    # adding anoter public key to host
+    if args.addkey:
+        if not os.path.exists(args.addkey):
+            args.addkey = os.path.join(cfg.config_root, 'cloud', args.addkey)
+            if not os.path.exists(args.addkey):
+                print(f'Private Key File {args.addkey} not found')
+                return False
+        ret = aws.ssh_add_key_to_remote_host(args.addkey, sshuser, myhost)
+        return ret
     if args.subcmd == 'ssh':
         print(f'Connecting to {myhost} ...')
         aws.ssh_execute(sshuser, myhost)
@@ -374,21 +383,6 @@ def subcmd_ssh(args, cfg, aws):
             print('The "scp" sub command supports currently 2 arguments')
             return False
         print(ret.stdout,ret.stderr)
-
-def print_aligned_lists(list_of_lists, title):
-    """
-    Print a list of lists with each column aligned. Each inner list is joined into a string.
-    :param list_of_lists: The input list of lists.
-    """
-    # Convert all items to strings and determine the maximum width of each column
-    str_lists = [[str(item) for item in sublist] for sublist in list_of_lists]
-    column_widths = [max(len(item) for item in column) for column in zip(*str_lists)]
-
-    # Print each row with aligned columns
-    print(title)
-    for sublist in str_lists:
-        formatted_row = " | ".join(f"{item:{width}}" for item, width in zip(sublist, column_widths))
-        print(formatted_row)
 
 class Builder:
     def __init__(self, args, cfg, aws):
@@ -521,7 +515,7 @@ class Builder:
             pass
 
         print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
-        print(f'  BUILD FINISHED. Tried {ebcnt} easyconfigs, built {bldcnt} packages and {errcnt} builds failed', flush=True)
+        print(f'  BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
         
         return True
 
@@ -1312,13 +1306,6 @@ class AWSBoto:
             except:
                 return ['us-west-2','us-west-1', 'us-east-1', '']
             
-    def get_aws_account_id(self):
-        # Initialize the STS client
-        sts_client = self.awssession.client('sts')
-        # Get the caller identity
-        response = sts_client.get_caller_identity()
-        # Extract and return the account ID
-        return response['Account']
 
     def get_aws_account_and_user_id(self):
         # returns aws account_id, user_id, user_name
@@ -2251,12 +2238,13 @@ class AWSBoto:
         if not instance_type:
             print("No suitable instance type found!")
             return False
-
+      
         # Create a new EC2 key pair
-        _, userid, username = self.get_aws_account_and_user_id()
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
+        awsacc, _, username = self.get_aws_account_and_user_id()
+        keyname = f'{self.cfg.ssh_key_name}-{username}'
+        key_path = os.path.join(self.cfg.config_root,'cloud',
+                f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
         if not os.path.exists(key_path):
-            keyname = f'{self.cfg.ssh_key_name}-{username}'
             try:
                 client.describe_key_pairs(KeyNames=[keyname])
                 # If the key pair exists, delete it
@@ -2327,7 +2315,7 @@ class AWSBoto:
                     MinCount=1,
                     MaxCount=1,
                     InstanceType=instance_type,
-                    KeyName=self.cfg.ssh_key_name,
+                    KeyName=keyname,
                     UserData=self._ec2_cloud_init_script(),
                     IamInstanceProfile = iam_instance_profile,
                     BlockDeviceMappings = block_device_mappings,
@@ -2550,10 +2538,9 @@ class AWSBoto:
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
         SSH_OPTIONS = "-o StrictHostKeyChecking=no"
-        _, userid, _  = self.get_aws_account_and_user_id()
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
-        if not os.path.exists(key_path):
-            key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
+        awsacc, _, username = self.get_aws_account_and_user_id()
+        key_path = os.path.join(self.cfg.config_root,'cloud',
+                f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
         cmd = f"ssh {SSH_OPTIONS} -i '{key_path}' {user}@{host}"
         if command:
             cmd += f" '{command}'"
@@ -2570,10 +2557,10 @@ class AWSBoto:
     def ssh_upload(self, user, host, local_path, remote_path, is_string=False):
         """Upload a file to the remote server using SCP."""
         SSH_OPTIONS = "-o StrictHostKeyChecking=no"
-        _, userid, _  = self.get_aws_account_and_user_id()
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
-        if not os.path.exists(key_path):
-            key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
+        awsacc, _, username = self.get_aws_account_and_user_id()
+        key_path = os.path.join(self.cfg.config_root,'cloud',
+                f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
+        print(key_path)
         if is_string:
             # the local_path is actually a string that needs to go into temp file 
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
@@ -2592,10 +2579,10 @@ class AWSBoto:
     def ssh_download(self, user, host, remote_path, local_path):
         """Upload a file to the remote server using SCP."""
         SSH_OPTIONS = "-o StrictHostKeyChecking=no"
-        _, userid, _  = self.get_aws_account_and_user_id()
-        key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}-{userid}.pem')
-        if not os.path.exists(key_path):
-            key_path = os.path.join(self.cfg.config_root,'cloud',f'{self.cfg.ssh_key_name}.pem')
+        awsacc, _, username = self.get_aws_account_and_user_id()
+        key_path = os.path.join(self.cfg.config_root,'cloud',
+                f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
+        print(key_path)
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
         try:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -2603,7 +2590,24 @@ class AWSBoto:
         except:
             print(f'Error executing "{cmd}."')
         return None            
-    
+
+    def ssh_add_key_to_remote_host(self, private_key_path, user, host):
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
+            # Generate the public key from the source private key
+            subprocess.run(['ssh-keygen', '-y', '-f', private_key_path], stdout=temp_file)
+            temp_file.flush()
+            # Read the generated public key
+            with open(temp_file.name, 'r') as pub_key_file:
+                public_key = pub_key_file.read().strip()
+        # SSH command to check if the key exists and append it if not
+        check_and_append_command = (
+            f"grep -q -F '{public_key}' ~/.ssh/authorized_keys || "
+            f"echo '{public_key}' >> ~/.ssh/authorized_keys"
+        )
+        ret = self.ssh_execute(user, host, command=check_and_append_command)
+        print (f'Added public key to {user}@{host}: {public_key}')
+        return ret
+
     def send_email_ses(self, sender, to, subject, body, profile=None):
         # Using AWS ses service to send emails
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
@@ -2882,7 +2886,22 @@ class AWSBoto:
     def get_ec2_my_instance_family(self):
         instance_type =self._get_ec2_metadata('instance-type')
         return instance_type.split('.')[0]
- 
+    
+    def print_aligned_lists(self, list_of_lists, title):
+        """
+        Print a list of lists with each column aligned. Each inner list is joined into a string.
+        :param list_of_lists: The input list of lists.
+        """
+        # Convert all items to strings and determine the maximum width of each column
+        str_lists = [[str(item) for item in sublist] for sublist in list_of_lists]
+        column_widths = [max(len(item) for item in column) for column in zip(*str_lists)]
+
+        # Print each row with aligned columns
+        print(title)
+        for sublist in str_lists:
+            formatted_row = " | ".join(f"{item:{width}}" for item, width in zip(sublist, column_widths))
+            print(formatted_row)
+    
     def monitor_ec2(self):
 
         # if system is idle self-destroy 
@@ -4020,6 +4039,8 @@ def parse_arguments():
         help="List running AWS-EB EC2 instances")               
     parser_ssh.add_argument('--terminate', '-t', dest='terminate', action='store', default='', 
         metavar='<hostname>', help='Terminate EC2 instance with this public IP Address.')    
+    parser_ssh.add_argument('--add-key', '-a', dest='addkey', action='store', default='', 
+        metavar='<private-ssh-key.pem>', help='Generate a pub key and add it to a remote authorized_keys file.') 
     parser_ssh.add_argument('sshargs', action='store', default=[], nargs='*',
         help='multiple arguments to ssh/scp such as hostname or user@hostname oder folder' +
                '')
