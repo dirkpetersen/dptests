@@ -34,7 +34,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.43'
+__version__ = '0.20.44'
 
 def main():
         
@@ -461,28 +461,30 @@ class Builder:
                 if not themissing:
                     print(f'  * {ebfile} and dependencies are already installed.', flush=True)
                     continue
+                # check if min_toolchains exclude any of the missing modules, if so skip this easyconfig
+                for miss in themissing.keys():
+                    nam, ver = miss.split('/')
+                    if nam not in self.min_toolchains.keys():
+                        print(f'  * {ebfile} requires toolchain {nam} which is excluded.', flush=True)
+                        continue
+                    elif self.cfg.sversion(ver) < self.cfg.sversion(self.min_toolchains[nam]):
+                        print(f'  * {ebfile} requires toolchain {miss} which is too old.', flush=True)
+                        continue
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
                 if self.args.skipsources:
                     getsource = False
                 ebskipped-=1
                 self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
-                ### temp hack
-                if s3_prefix == 'rhel-9.3_graviton-3':
-                    self.download(f':s3:{self.cfg.archivepath}', self.eb_root, 'rocky-9.3_graviton-3', getsource)
-                elif s3_prefix == 'rhel-9.3_xeon-gen-1':
-                    self.download(f':s3:{self.cfg.archivepath}', self.eb_root, 'rocky-9.3_xeon-gen-1', getsource)
-                ### end temp hack
                 print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
                 print(f" Installing {ebfile} ... ", flush=True)
                 cmdline = "eb --robot --umask=002"
                 if 'CUDA' in ebfile: # CUDA is a special case, we may not have a GPU installed 
-                    ret = os.system(f'{cmdline} --ignore-test-failure {ebpath}')
+                    ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebpath}', shell=True, text=True)
                 else:
-                    ret =  os.system(f'{cmdline} {ebpath}')
+                    ret = subprocess.run(f'{cmdline} {ebpath}', shell=True, text=True)
                 exit_code = ret >> 8
-                themissing2 = self._eb_missing_modules( ebpath, printout=False)
                 print(f'*** EASYBUILD RETURNCODE: {ret} Exitcode: {exit_code}', flush=True)
                 if ret != 0:
                     print(f'  FAILED: EasyConfig {ebfile}, trying next one ...', flush=True)
@@ -491,7 +493,8 @@ class Builder:
                     logpath = self._eb_last_log()
                     logfile = os.path.basename(logpath)
                     targetlog = os.path.join(self.eb_root, 'tmp', f'{ebfile}-{logfile}')
-                    shutil.copy(logpath, targetlog)                  
+                    shutil.copy(logpath, targetlog) 
+                    themissing2 = self._eb_missing_modules( ebpath, printout=False)                 
                     #if len(themissing2) == len(themissing):
                     errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
                     errdict[ebfile] = themissing2
