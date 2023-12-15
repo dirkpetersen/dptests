@@ -374,7 +374,7 @@ class Builder:
         if self.args.nochecksum:
             self.rclone_download_compare = '--size-only'
             self.rclone_upload_compare = '--size-only'                
-        else
+        else:
             self.rclone_download_compare = '--checksum'
             self.rclone_upload_compare = '--checksum'
         self.min_toolchains = self.cfg.read('general', 'min_toolchains')
