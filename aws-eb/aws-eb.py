@@ -3,7 +3,6 @@
 """
 AWS-EB builds scientific software packages using Easybuild 
 on AWS EC2 instances and syncs the binaries with S3 buckets
-
 """
 # internal modules
 import sys, os, argparse, json, configparser, platform
@@ -23,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.51'
+__version__ = '0.20.52'
 
 def main():
         
@@ -471,6 +470,9 @@ class Builder:
                 if doskip:
                     if errdict.pop(ebfile, None):
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    continue
+                if ebfile in errdict.keys():
+                    print(f'  * skippnig {ebfile} as it failed before. Remove from build-errors.json to try again ...', flush=True)
                     continue
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
@@ -1626,8 +1628,12 @@ class AWSBoto:
 
         if os.path.exists(os.path.expanduser('~/.bash_history.tmp')):
             os.remove(os.path.expanduser('~/.bash_history.tmp'))
-        os.system(f'echo "touch ~/no-terminate" >> ~/.bash_history.tmp')
-        os.system(f'echo "grep -A1 ^ERROR: ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
+        qt = "'"
+        os.system(f'echo "touch ~/no-terminate && pkill -f aws-eb" >> ~/.bash_history.tmp')
+        os.system(f'pkill -f easybuild.main # skip the currently building easyconfig >> ~/.bash_history.tmp')        
+        os.system(f'echo "grep -B1 -A1 {qt}chars) Couldn.t find file{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')        
+        os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history.tmp')
         ret = self.ssh_upload(sshuser, ip,
