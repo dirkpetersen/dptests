@@ -23,7 +23,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.50'
+__version__ = '0.20.51'
 
 def main():
         
@@ -371,8 +371,12 @@ class Builder:
         self.args = args
         self.cfg = cfg
         self.aws = aws
-        self.rclone_download_compare = '--checksum'
-        self.rclone_upload_compare = '--checksum'
+        if self.args.nochecksum:
+            self.rclone_download_compare = '--size-only'
+            self.rclone_upload_compare = '--size-only'                
+        else
+            self.rclone_download_compare = '--checksum'
+            self.rclone_upload_compare = '--checksum'
         self.min_toolchains = self.cfg.read('general', 'min_toolchains')
         if not self.min_toolchains:
             self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2022a'}
@@ -497,17 +501,18 @@ class Builder:
                     #if len(themissing2) == len(themissing):                    
                     errdict[ebfile] = themissing2
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
-                    print(' * Skipped uploading after failed build ...')
-                    continue
-                errdict.pop(ebfile, None)
-                self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
-                bldcnt+=1
+                else:
+                    print(f'  SUCCESS: EasyConfig {ebfile} built successfully.', flush=True)
+                    bldcnt+=1
+                    errdict.pop(ebfile, None)
+                if len(errdict) > 0:
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                 print(f" Tarring and uploading new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
                 self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
                 print(f'  ### UPDATE: {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
-            except subprocess.CalledProcessError:                
+            except subprocess.CalledProcessError:
                 print(f"  Builder.build_all_eb: A CalledProcessError occurred while building {ebfile}.", flush=True)
                 ## make sure we store the logfile
                 continue
@@ -3954,6 +3959,8 @@ def parse_arguments():
         help="verbose output for all commands")
     parser.add_argument('--profile', '-p', dest='awsprofile', action='store', default='', 
         help='which AWS profile in ~/.aws/ should be used. default="aws"')
+    parser.add_argument('--no-checksums', '-u', dest='nochecksums', action='store_true', default=False,
+        help="Use --size-only instead of --checksums when copying from and to s3 using rclone.")    
     parser.add_argument('--version', '-v', dest='version', action='store_true', default=False, 
         help='print AWS-EB and Python version info')
     
@@ -3990,15 +3997,15 @@ def parse_arguments():
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
         help='Enforce the availability zone, e.g. us-west-2a')    
-    parser_launch.add_argument( '--monitor', '-n', dest='monitor', action='store_true', default=False,
+    parser_launch.add_argument('--monitor', '-n', dest='monitor', action='store_true', default=False,
         help="Monitor EC2 server for cost and idle time.")
-    parser_launch.add_argument( '--build', '-b', dest='build', action='store_true', default=False,
+    parser_launch.add_argument('--build', '-b', dest='build', action='store_true', default=False,
         help="Execute the build on the current system instead of launching a new EC2 instance.")
     parser_launch.add_argument('--first-bucket', '-f', dest='firstbucket', action='store', default="",
         help='use this bucket (e.g. easybuild-cache) to initially load the already built binaries and sources')       
-    parser_launch.add_argument( '--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
+    parser_launch.add_argument('--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
         help="Do not pre-download sources from build cache, let EB download them.")
-    parser_launch.add_argument( '--on-demand', '-d', dest='ondemand', action='store_true', default=False,
+    parser_launch.add_argument('--on-demand', '-d', dest='ondemand', action='store_true', default=False,
         help="Enforce on-demand instance instead of using the default spot instance.")
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="",
         help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
