@@ -23,7 +23,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.48'
+__version__ = '0.20.50'
 
 def main():
         
@@ -413,27 +413,38 @@ class Builder:
                 if not ebpath.endswith('.eb'):
                     continue
                 print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
+                errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
                 ebcnt+=1
                 ebskipped+=1    
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
                         print(f'  * Easyconfig {name} version {version} too old according to min_toolchains.', flush=True)
+                        if errdict.pop(ebfile, None):
+                            self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                         continue
                 if tc['name'] not in self.min_toolchains.keys():
                     print(f'  * Toolchain {tc["name"]} not supported.', flush=True)
+                    if errdict.pop(ebfile, None):
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                     continue
                 if self.cfg.sversion(tc['version']) < self.cfg.sversion(self.min_toolchains[tc['name']]):
                     print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old according to min_toolchains.', flush=True)
+                    if errdict.pop(ebfile, None):
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                     continue
                 if includes: 
                     if cls not in includes:
                         # we want to may be only build bio packages
                         print(f'  * {name} is not a module class in --include {include} ', flush=True)
+                        if errdict.pop(ebfile, None):
+                            self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                         continue
                 elif excludes:
                     if cls in excludes:
                         print(f'  * {name} is a module class in --exclude {exclude} ', flush=True)
+                        if errdict.pop(ebfile, None):
+                            self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                         continue
                 if osdep:
                     print(f'  installing OS dependencies: {osdep}', flush=True)
@@ -442,14 +453,21 @@ class Builder:
                 themissing = self._eb_missing_modules(ebpath, printout=True)
                 if not themissing:
                     print(f'  * {ebfile} and dependencies are already installed.', flush=True)
+                    if errdict.pop(ebfile, None):
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                     continue
                 # check if min_toolchains exclude any of the missing modules, if so skip this easyconfig
+                doskip = False
                 for miss in themissing.keys():
                     nam, ver = miss.split('/')
                     if nam in self.min_toolchains.keys():
                         if self.cfg.sversion(ver) < self.cfg.sversion(self.min_toolchains[nam]):
                             print(f'  * {ebfile} requires toolchain {miss} which is too old according to min_toolchains.', flush=True)
-                            continue
+                            doskip = True
+                if doskip:
+                    if errdict.pop(ebfile, None):
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    continue
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
                 if self.args.skipsources:
@@ -464,9 +482,10 @@ class Builder:
                     ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebpath}', shell=True, text=True)
                 else:
                     ret = subprocess.run(f'{cmdline} {ebpath}', shell=True, text=True)
-                exit_code = ret >> 8
-                print(f'*** EASYBUILD RETURNCODE: {ret} Exitcode: {exit_code}', flush=True)
-                if ret != 0:
+                retcode = ret.returncode
+                errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
+                print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
+                if retcode != 0:
                     print(f'  FAILED: EasyConfig {ebfile}, trying next one ...', flush=True)
                     errcnt+=1
                     errpkg.append(ebfile)
@@ -475,11 +494,13 @@ class Builder:
                     targetlog = os.path.join(self.eb_root, 'tmp', f'{ebfile}-{logfile}')
                     shutil.copy(logpath, targetlog) 
                     themissing2 = self._eb_missing_modules( ebpath, printout=False)                 
-                    #if len(themissing2) == len(themissing):
-                    errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
+                    #if len(themissing2) == len(themissing):                    
                     errdict[ebfile] = themissing2
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    print(' * Skipped uploading after failed build ...')
                     continue
+                errdict.pop(ebfile, None)
+                self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                 bldcnt+=1
                 print(f" Tarring and uploading new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
@@ -2074,21 +2095,45 @@ class AWSBoto:
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq
-        bigdisks=$(lsblk --fs --json | jq -r '.blockdevices[] | select(.children == null and .fstype == null and (.name | tostring | startswith("loop") | not)) | "/dev/" + .name')
-        if [[ "$(echo "$bigdisks" | cut -d ' ' -f2 | uniq | wc -l)" -gt 1 ]]; then
-          # If sizes differ, get only the largest disk to prevent weird RAID0 setups
-          bigdisks=$(echo "$bigdisks" | sort -k2 -hr | head -n1 | cut -d ' ' -f1)
-        fi
-        numdisk=$(echo $bigdisks | wc -w)
+        format_largest_unused_block_devices() {{
+            # Get all unformatted block devices with their sizes
+            local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')            
+            # Check if there are any devices to process
+            if [[ -z "$devices" ]]; then
+                echo "No unformatted block devices found."
+                return
+            fi
+            # Group by size and sum the total size for each group, also count the number of devices in each group
+            local grouped_sizes=$(echo "$devices" | jq -s 'group_by(.size) | map({{size: .[0].size, total: (.[0].size * length), count: length, devices: map(.name)}})')
+            # Find the configuration with the largest total size
+            local best_config=$(echo "$grouped_sizes" | jq 'max_by(.total)')
+            # Check if best_config is empty or null
+            if [[ -z "$best_config" || "$best_config" == "null" ]]; then
+                echo "No suitable block devices found."
+                return
+            fi
+            # Extract the count value
+            local count=$(echo "$best_config" | jq '.count')
+            # Check if the best configuration is a single device or multiple devices
+            if [[ "$count" -eq 1 ]]; then
+                # Single largest device
+                local largest_device=$(echo "$best_config" | jq -r '.devices[0]')
+                echo "/dev/$largest_device"
+                mkfs -t xfs "/dev/$largest_device"
+                mount "/dev/$largest_device" /opt/eb                
+            elif [[ "$count" -gt 1 ]]; then
+                # Multiple devices of the same size
+                local devices_list=$(echo "$best_config" | jq -r '.devices[]' | sed 's/^/\/dev\//')
+                echo "Devices with the largest combined size: $devices_list"
+                mdadm --create /dev/md0 --level=0 --raid-devices=$count $devices_list
+                mkfs -t xfs /dev/md0
+                mount /dev/md0 /opt/eb                                
+            else
+                echo "No uniquely largest block device found."
+            fi
+        }}
         mkdir /opt/eb
-        if [[ $numdisk -gt 1 ]]; then
-          mdadm --create /dev/md0 --level=0 --raid-devices=$numdisk $bigdisks
-          mkfs -t xfs /dev/md0
-          mount /dev/md0 /opt/eb
-        elif [[ $numdisk -eq 1 ]]; then
-          mkfs -t xfs $bigdisks
-          mount $bigdisks /opt/eb
-        fi
+        format_largest_unused_block_devices
         chown {self.cfg.defuser} /opt/eb
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} check-update
