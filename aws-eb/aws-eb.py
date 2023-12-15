@@ -371,7 +371,7 @@ class Builder:
         self.args = args
         self.cfg = cfg
         self.aws = aws
-        if self.args.nochecksum:
+        if self.args.nochecksums:
             self.rclone_download_compare = '--size-only'
             self.rclone_upload_compare = '--size-only'                
         else:
@@ -3960,7 +3960,7 @@ def parse_arguments():
     parser.add_argument('--profile', '-p', dest='awsprofile', action='store', default='', 
         help='which AWS profile in ~/.aws/ should be used. default="aws"')
     parser.add_argument('--no-checksums', '-u', dest='nochecksums', action='store_true', default=False,
-        help="Use --size-only instead of --checksums when copying from and to s3 using rclone.")    
+        help="Use --size-only instead of --checksums when copying from and to s3 using rclone.")      
     parser.add_argument('--version', '-v', dest='version', action='store_true', default=False, 
         help='print AWS-EB and Python version info')
     
@@ -4004,7 +4004,7 @@ def parse_arguments():
     parser_launch.add_argument('--first-bucket', '-f', dest='firstbucket', action='store', default="",
         help='use this bucket (e.g. easybuild-cache) to initially load the already built binaries and sources')       
     parser_launch.add_argument('--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
-        help="Do not pre-download sources from build cache, let EB download them.")
+        help="Do not pre-download sources from build cache, let EB download them.")      
     parser_launch.add_argument('--on-demand', '-d', dest='ondemand', action='store_true', default=False,
         help="Enforce on-demand instance instead of using the default spot instance.")
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="",
