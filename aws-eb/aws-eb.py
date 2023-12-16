@@ -1660,7 +1660,7 @@ class AWSBoto:
             os.remove(os.path.expanduser('~/.bash_history.tmp'))
         qt = "'"
         os.system(f'echo "touch ~/no-terminate && pkill -f aws-eb" >> ~/.bash_history.tmp')
-        os.system(f'pkill -f easybuild.main # skip the currently building easyconfig >> ~/.bash_history.tmp')        
+        os.system(f'echo "pkill -f easybuild.main # skip the currently building easyconfig" >> ~/.bash_history.tmp')        
         os.system(f'echo "grep -B1 -A1 {qt}chars): Couldn.t find file{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')        
         os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
