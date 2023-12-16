@@ -415,10 +415,12 @@ class Builder:
                     continue 
                 if not ebpath.endswith('.eb'):
                     continue
-                print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
+                trydate = datetime.datetime.now().astimezone().isoformat()
+                print(f'############## EASYCONFIG: "{ebfile}" ({trydate}) ... ##################', flush=True)
                 errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
-                retcode=-1; ebcnt+=1; ebskipped+=1
+                retcode=-1; ebcnt+=1; ebskipped+=1            
+                print(f'  * Current time {trydate} as it failed before.')
                 if ebfile in statdict.keys():
                     print(f'  * skipping {ebfile}, was run with status {statdict["status"]} at {statdict["trydate"]}.', flush=True)
                     print(f'    Remove from eb-build-status.json to try again ...', flush=True)
@@ -429,7 +431,7 @@ class Builder:
                         "reason": "n/a",
                         "returncode" : -1,
                         "errorcount" : 0,
-                        "trydate" : datetime.datetime.now().astimezone().isoformat(),
+                        "trydate" : trydate,
                         "modules" : None
                     }
                 }   
