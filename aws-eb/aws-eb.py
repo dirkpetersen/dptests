@@ -529,7 +529,7 @@ class Builder:
                     #if len(themissing2) == len(themissing):                    
                     statdict[ebfile]['status'] = 'error'
                     statdict[ebfile]['reason'] = 'easyconfig failed to build'
-                    statdict[ebfile]['modules'][ebfile] = themissing2                    
+                    statdict[ebfile]['modules'] = themissing2                
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 else:
                     print(f'  SUCCESS: EasyConfig {ebfile} built successfully.', flush=True)
@@ -537,7 +537,7 @@ class Builder:
                     statdict[ebfile]['reason'] = 'easyconfig built successfully'
                     statdict[ebfile]['modules'] = None
                     bldcnt+=1
-                statdict[ebfile]['returncode'] = retcode    
+                statdict[ebfile]['returncode'] = int(retcode)
                 self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 print(f" Tarring and uploading new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
