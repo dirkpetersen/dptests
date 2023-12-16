@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.55'
+__version__ = '0.20.57'
 
 def main():
         
@@ -393,17 +393,11 @@ class Builder:
 
         # build all new easyconfigs in a folder tree
         ebcnt = 0; ebskipped = 0; bldcnt = 0; errcnt = 0; errpkg = []
+        errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
+        statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" newest easyconfigs... ')
             try:
-                ## first kill other non-functional instances
-                ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-                instances = [sublist[1] for sublist in ilist if sublist]
-                for inst in instances:
-                    if self.aws.monitor_has_instance_failed(inst, True):
-                        print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
-                        self.aws.ec2_terminate_instance(inst)
-                # end instance kill 
                 if easyconfigroot==root:
                     # main directory do something there
                     pass
@@ -416,15 +410,14 @@ class Builder:
                 if not ebpath.endswith('.eb'):
                     continue
                 print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
-                trydate = datetime.datetime.now().astimezone().isoformat()
-                errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
-                statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
+                trydate = datetime.datetime.now().astimezone().isoformat()                
                 retcode=-1; ebcnt+=1; ebskipped+=1            
                 print(f'  * Current time (trydate): {trydate}')
                 if ebfile in statdict.keys():
                     print(f'  * skipping {ebfile}, was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
                     print(f'    Remove from eb-build-status.json to try again ...', flush=True)
                     continue
+                statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
                 statdict[ebfile] = {
                         "status": "unknown",  # unknown, skipped, success, error
                         "reason": "n/a",
@@ -432,7 +425,7 @@ class Builder:
                         "errorcount" : 0,
                         "trydate" : trydate,
                         "modules" : None
-                    }                   
+                    }                                   
                 if ebfile in errdict.keys():
                     print(f'  * skipping {ebfile} as it failed before. Remove from build-errors.json to try again ...', flush=True)
                     statdict[ebfile]['status'] = 'error'
@@ -442,6 +435,14 @@ class Builder:
                     if errdict.pop(ebfile, None):
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
                     continue
+                ## first kill other non-functional instances
+                ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
+                instances = [sublist[1] for sublist in ilist if sublist]
+                for inst in instances:
+                    if self.aws.monitor_has_instance_failed(inst, True):
+                        print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
+                        self.aws.ec2_terminate_instance(inst)
+                # end instance kill                 
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):

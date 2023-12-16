@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 
 # a simple benchmark that spends fifty/fifty in CPU and file io tasks
+# So far in AWS: 
+# m7a (Epyc): 520, m7i (Xeon): 380, m7g (Graviton3): 340, m4 (Xeon): 153
 
 import time, random, hashlib, os
 
@@ -46,4 +48,3 @@ class BigBadClass:
 # Example usage
 big_bad = BigBadClass()
 big_bad.run_benchmark()
-
