@@ -672,45 +672,98 @@ class Builder:
                     print(f"An error occurred while creating tarball: {e}")
         return all_tars, new_tars
     
+    # def _untar_eb_software(self, folder):
+    #     new_tars = []
+    #     all_tars = []
+    #     for root, dirs, files in self._walker(folder):
+    #         # Extract package name from the root directory
+    #         package_name = os.path.basename(root)
+    #         for filename in files:
+    #             if filename.endswith('.eb.tar.gz'):
+    #                 # Strip the '.tar.gz' extension and then extract the version
+    #                 version = filename.replace('.eb.tar.gz', '').replace(package_name + '-', '')
+
+    #                 # Construct the expected path for the version directory
+    #                 version_dir_path = os.path.join(root, version)
+
+    #                 # Check if the 'easybuild' directory exists within the version directory
+    #                 easybuild_path = os.path.join(version_dir_path, 'easybuild')
+    #                 file_path = os.path.join(root, filename)
+    #                 all_tars.append(file_path)
+    #                 if not os.path.exists(easybuild_path):
+    #                     print(f"Unpacking {file_path} into {version_dir_path}...", flush=True)
+    #                     try:
+    #                         # Decompress with pigz through tar command
+    #                         subprocess.run([
+    #                             "tar",
+    #                             "-I", f"pigz -p {self.args.vcpus}",
+    #                             "-xf", file_path,
+    #                             "-C", root 
+    #                         ], check=True)
+    #                         print(f"Successfully unpacked: {file_path}")
+    #                         new_tars.append(file_path)
+    #                     except subprocess.CalledProcessError as e:
+    #                         print(f"An error occurred while unpacking {file_path}: {e}")
+    #                     except Exception as e:
+    #                         print(f"An error occurred while unpacking {file_path}: {e}")
+
+    #                 else:
+    #                     pass
+    #                     #print(f"Skipping unpacking of {file_path} as 'easybuild' directory already exists in {version_dir_path}.")
+    #     return all_tars, new_tars
+
+
     def _untar_eb_software(self, folder):
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         new_tars = []
         all_tars = []
+
+        def untar_file(file_path, root):
+            print(f"Unpacking {file_path} into {root}...", flush=True)
+            try:
+                # Decompress with pigz through tar command
+                subprocess.run([
+                    "tar",
+                    "-I", f"pigz -p {self.args.vcpus}",
+                    "-xf", file_path,
+                    "-C", root 
+                ], check=True)
+                print(f"Successfully unpacked: {file_path}")
+                return file_path
+            except subprocess.CalledProcessError as e:
+                print(f"An error occurred while unpacking {file_path}: {e}")
+            except Exception as e:
+                print(f"An error occurred while unpacking {file_path}: {e}")
+            return None
+
+        # Create a list of tasks for parallel execution
+        tasks = []
         for root, dirs, files in self._walker(folder):
-            # Extract package name from the root directory
             package_name = os.path.basename(root)
             for filename in files:
                 if filename.endswith('.eb.tar.gz'):
-                    # Strip the '.tar.gz' extension and then extract the version
                     version = filename.replace('.eb.tar.gz', '').replace(package_name + '-', '')
-
-                    # Construct the expected path for the version directory
                     version_dir_path = os.path.join(root, version)
-
-                    # Check if the 'easybuild' directory exists within the version directory
                     easybuild_path = os.path.join(version_dir_path, 'easybuild')
                     file_path = os.path.join(root, filename)
                     all_tars.append(file_path)
                     if not os.path.exists(easybuild_path):
-                        print(f"Unpacking {file_path} into {version_dir_path}...", flush=True)
-                        try:
-                            # Decompress with pigz through tar command
-                            subprocess.run([
-                                "tar",
-                                "-I", f"pigz -p {self.args.vcpus}",
-                                "-xf", file_path,
-                                "-C", root 
-                            ], check=True)
-                            print(f"Successfully unpacked: {file_path}")
-                            new_tars.append(file_path)
-                        except subprocess.CalledProcessError as e:
-                            print(f"An error occurred while unpacking {file_path}: {e}")
-                        except Exception as e:
-                            print(f"An error occurred while unpacking {file_path}: {e}")
+                        tasks.append((file_path, root))
 
-                    else:
-                        pass
-                        #print(f"Skipping unpacking of {file_path} as 'easybuild' directory already exists in {version_dir_path}.")
+        # Execute the tasks in parallel using ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=self.args.vcpus) as executor:
+            future_to_file = {executor.submit(untar_file, file_path, root): file_path for file_path, root in tasks}
+            for future in as_completed(future_to_file):
+                file_path = future_to_file[future]
+                try:
+                    unpacked_file = future.result()
+                    if unpacked_file:
+                        new_tars.append(unpacked_file)
+                except Exception as e:
+                    print(f"An error occurred while executing task for {file_path}: {e}")
+
         return all_tars, new_tars
+
 
     def _get_latest_easyconfig(self,directory):
          
@@ -1620,7 +1673,7 @@ class AWSBoto:
         ### this block may need to be moved to a function
         argl = ['--ec2', '-e']
         cmdlist = [item for item in sys.argv if item not in argl]
-        argl = ['--instance-type', '-i'] # if found remove option and next arg
+        argl = ['--instance-type', '-t'] # if found remove option and next arg
         cmdlist = [x for i, x in enumerate(cmdlist) if x \
                    not in argl and (i == 0 or cmdlist[i-1] not in argl)]
         if not '--profile' in cmdlist and self.args.awsprofile:
