@@ -422,7 +422,7 @@ class Builder:
                 retcode=-1; ebcnt+=1; ebskipped+=1            
                 print(f'  * Current time (trydate): {trydate}')
                 if ebfile in statdict.keys():
-                    print(f'  * skipping {ebfile}, was run with status {statdict["status"]} at {statdict["trydate"]}.', flush=True)
+                    print(f'  * skipping {ebfile}, was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
                     print(f'    Remove from eb-build-status.json to try again ...', flush=True)
                     continue
                 statdict[ebfile] = {
