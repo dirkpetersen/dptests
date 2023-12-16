@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.52'
+__version__ = '0.20.53'
 
 def main():
         
@@ -418,7 +418,10 @@ class Builder:
                 print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
                 errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
                 ebcnt+=1
-                ebskipped+=1    
+                ebskipped+=1
+                if ebfile in errdict.keys():
+                    print(f'  * skipping {ebfile} as it failed before. Remove from build-errors.json to try again ...', flush=True)
+                    continue                    
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
@@ -470,9 +473,6 @@ class Builder:
                 if doskip:
                     if errdict.pop(ebfile, None):
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
-                    continue
-                if ebfile in errdict.keys():
-                    print(f'  * skippnig {ebfile} as it failed before. Remove from build-errors.json to try again ...', flush=True)
                     continue
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
@@ -1631,7 +1631,7 @@ class AWSBoto:
         qt = "'"
         os.system(f'echo "touch ~/no-terminate && pkill -f aws-eb" >> ~/.bash_history.tmp')
         os.system(f'pkill -f easybuild.main # skip the currently building easyconfig >> ~/.bash_history.tmp')        
-        os.system(f'echo "grep -B1 -A1 {qt}chars) Couldn.t find file{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')        
+        os.system(f'echo "grep -B1 -A1 {qt}chars): Couldn.t find file{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')        
         os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
