@@ -537,11 +537,11 @@ class Builder:
                     statdict[ebfile]['reason'] = 'easyconfig built successfully'
                     statdict[ebfile]['modules'] = None
                     bldcnt+=1
+                    print(f" Tarring and uploading new packages ... ", flush=True)
+                    all_tars, new_tars = self._tar_eb_software(softwaredir)
+                    self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
                 statdict[ebfile]['returncode'] = int(retcode)
-                self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
-                print(f" Tarring and uploading new packages ... ", flush=True)
-                all_tars, new_tars = self._tar_eb_software(softwaredir)
-                self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
+                self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)                
                 print(f'  ### UPDATE: {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
             except subprocess.CalledProcessError:
