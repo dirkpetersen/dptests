@@ -2233,7 +2233,6 @@ class AWSBoto:
             export PATH=$PATH:~/.local/bin
             echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
         fi
-        mkdir -p /opt/eb/tmp
         mkdir -p ~/.config/aws-eb
         echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
         echo 'source ~/easybuildrc' >> ~/.bashrc
@@ -2263,10 +2262,14 @@ class AWSBoto:
         chmod +x ~/.local/bin/get-local-ip
         # curl https://raw.githubusercontent.com/dirkpetersen/scibob/main/install.sh | bash 
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/aws-eb.py
+        curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
         chmod +x ~/.local/bin/aws-eb.py
+        chmod +x ~/.local/bin/simple-benchmark.py
+        simple-benchmark.py > ~/out.simple-benchmark.txt &
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
-        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."  
+        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."
+        mkdir -p /opt/eb/tmp  
         python3 -m pip install easybuild 
         python3 -m pip install packaging boto3
         source ~/easybuildrc
