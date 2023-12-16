@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.53'
+__version__ = '0.20.54'
 
 def main():
         
@@ -417,40 +417,65 @@ class Builder:
                     continue
                 print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
                 errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
-                ebcnt+=1
-                ebskipped+=1
+                statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
+                retcode=-1; ebcnt+=1; ebskipped+=1
+                if ebfile in statdict.keys():
+                    print(f'  * skipping {ebfile}, was run with status {statdict["status"]} at {statdict["trydate"]}.', flush=True)
+                    print(f'    Remove from eb-build-status.json to try again ...', flush=True)
+                    continue
+                statdict = {
+                    ebfile : {
+                        "status": "unknown",  # unknown, skipped, success, error
+                        "reason": "n/a",
+                        "returncode" : -1,
+                        "errorcount" : 0,
+                        "trydate" : datetime.datetime.now().astimezone().isoformat(),
+                        "modules" : None
+                    }
+                }   
                 if ebfile in errdict.keys():
                     print(f'  * skipping {ebfile} as it failed before. Remove from build-errors.json to try again ...', flush=True)
-                    continue                    
+                    statdict[ebfile]['status'] = 'error'
+                    statdict[ebfile]['returncode'] = 1,
+                    statdict[ebfile]['modules'] = errdict[ebfile]
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
+                    if errdict.pop(ebfile, None):
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    continue
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
                         print(f'  * Easyconfig {name} version {version} too old according to min_toolchains.', flush=True)
-                        if errdict.pop(ebfile, None):
-                            self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                        statdict[ebfile]['status'] = 'skipped'
+                        statdict[ebfile]['reason'] = f'toolchain version {version} too old'
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         continue
                 if tc['name'] not in self.min_toolchains.keys():
                     print(f'  * Toolchain {tc["name"]} not supported.', flush=True)
-                    if errdict.pop(ebfile, None):
-                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    statdict[ebfile]['status'] = 'skipped'
+                    statdict[ebfile]['reason'] = f'toolchain {tc["name"]} not supported'
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 if self.cfg.sversion(tc['version']) < self.cfg.sversion(self.min_toolchains[tc['name']]):
                     print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old according to min_toolchains.', flush=True)
-                    if errdict.pop(ebfile, None):
-                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    statdict[ebfile]['status'] = 'skipped'
+                    statdict[ebfile]['reason'] = f'Toolchain version {tc["version"]} of {tc["name"]} too old'
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
-                if includes: 
+                if includes:
                     if cls not in includes:
                         # we want to may be only build bio packages
                         print(f'  * {name} is not a module class in --include {include} ', flush=True)
-                        if errdict.pop(ebfile, None):
-                            self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                        statdict[ebfile]['status'] = 'skipped'
+                        statdict[ebfile]['reason'] = f' {name} is not a module class in --include {include}'
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         continue
                 elif excludes:
                     if cls in excludes:
                         print(f'  * {name} is a module class in --exclude {exclude} ', flush=True)
-                        if errdict.pop(ebfile, None):
-                            self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                        statdict[ebfile]['status'] = 'skipped'
+                        statdict[ebfile]['reason'] = f' {name} is not a module class in --exclude {include}'
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         continue
                 if osdep:
                     print(f'  installing OS dependencies: {osdep}', flush=True)
@@ -459,8 +484,9 @@ class Builder:
                 themissing = self._eb_missing_modules(ebpath, printout=True)
                 if not themissing:
                     print(f'  * {ebfile} and dependencies are already installed.', flush=True)
-                    if errdict.pop(ebfile, None):
-                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    statdict[ebfile]['status'] = 'success'
+                    statdict[ebfile]['reason'] = 'modules are already installed'
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 # check if min_toolchains exclude any of the missing modules, if so skip this easyconfig
                 doskip = False
@@ -471,8 +497,9 @@ class Builder:
                             print(f'  * {ebfile} requires toolchain {miss} which is too old according to min_toolchains.', flush=True)
                             doskip = True
                 if doskip:
-                    if errdict.pop(ebfile, None):
-                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    statdict[ebfile]['status'] = 'skipped'
+                    statdict[ebfile]['reason'] = 'dependency requires too old toolchain'
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 print(f" Downloading previous packages ... ", flush=True)
                 getsource = True
@@ -489,7 +516,6 @@ class Builder:
                 else:
                     ret = subprocess.run(f'{cmdline} {ebpath}', shell=True, text=True)
                 retcode = ret.returncode
-                errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
                 print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
                 if retcode != 0:
                     print(f'  FAILED: EasyConfig {ebfile}, trying next one ...', flush=True)
@@ -501,14 +527,18 @@ class Builder:
                     shutil.copy(logpath, targetlog) 
                     themissing2 = self._eb_missing_modules( ebpath, printout=False)                 
                     #if len(themissing2) == len(themissing):                    
-                    errdict[ebfile] = themissing2
-                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                    statdict[ebfile]['status'] = 'error'
+                    statdict[ebfile]['reason'] = 'easyconfig failed to build'
+                    statdict[ebfile]['modules'][ebfile] = themissing2                    
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 else:
                     print(f'  SUCCESS: EasyConfig {ebfile} built successfully.', flush=True)
+                    statdict[ebfile]['status'] = 'success'
+                    statdict[ebfile]['reason'] = 'easyconfig built successfully'
+                    statdict[ebfile]['modules'] = None
                     bldcnt+=1
-                    errdict.pop(ebfile, None)
-                if len(errdict) > 0:
-                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
+                statdict[ebfile]['returncode'] = retcode    
+                self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 print(f" Tarring and uploading new packages ... ", flush=True)
                 all_tars, new_tars = self._tar_eb_software(softwaredir)
                 self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
@@ -2108,7 +2138,7 @@ class AWSBoto:
         {pkgm} install -y gcc mdadm jq
         format_largest_unused_block_devices() {{
             # Get all unformatted block devices with their sizes
-            local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')            
+            local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
             # Check if there are any devices to process
             if [[ -z "$devices" ]]; then
                 echo "No unformatted block devices found."
@@ -2131,21 +2161,21 @@ class AWSBoto:
                 local largest_device=$(echo "$best_config" | jq -r '.devices[0]')
                 echo "/dev/$largest_device"
                 mkfs -t xfs "/dev/$largest_device"
-                mount "/dev/$largest_device" /opt/eb                
+                mount "/dev/$largest_device" /opt
             elif [[ "$count" -gt 1 ]]; then
                 # Multiple devices of the same size
                 local devices_list=$(echo "$best_config" | jq -r '.devices[]' | sed 's/^/\/dev\//')
                 echo "Devices with the largest combined size: $devices_list"
                 mdadm --create /dev/md0 --level=0 --raid-devices=$count $devices_list
                 mkfs -t xfs /dev/md0
-                mount /dev/md0 /opt/eb                                
+                mount /dev/md0 /opt
             else
                 echo "No uniquely largest block device found."
             fi
         }}
-        mkdir /opt/eb
+        chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices
-        chown {self.cfg.defuser} /opt/eb
+        chown {self.cfg.defuser} /opt
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} check-update
         {pkgm} update -y                                   
@@ -2203,6 +2233,7 @@ class AWSBoto:
             export PATH=$PATH:~/.local/bin
             echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
         fi
+        mkdir -p /opt/eb/tmp
         mkdir -p ~/.config/aws-eb
         echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
         echo 'source ~/easybuildrc' >> ~/.bashrc
@@ -2239,8 +2270,7 @@ class AWSBoto:
         python3 -m pip install easybuild 
         python3 -m pip install packaging boto3
         source ~/easybuildrc
-        aws-eb.py config --monitor '{emailaddr}'
-        mkdir -p /opt/eb/tmp
+        aws-eb.py config --monitor '{emailaddr}'        
         ''').strip()
     
     def _ec2_launch_instance(self, disk_gib, instance_type, iamprofile=None, profile=None):
