@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.54'
+__version__ = '0.20.55'
 
 def main():
         
@@ -425,16 +425,14 @@ class Builder:
                     print(f'  * skipping {ebfile}, was run with status {statdict["status"]} at {statdict["trydate"]}.', flush=True)
                     print(f'    Remove from eb-build-status.json to try again ...', flush=True)
                     continue
-                statdict = {
-                    ebfile : {
+                statdict[ebfile] = {
                         "status": "unknown",  # unknown, skipped, success, error
                         "reason": "n/a",
                         "returncode" : -1,
                         "errorcount" : 0,
                         "trydate" : trydate,
                         "modules" : None
-                    }
-                }   
+                    }                   
                 if ebfile in errdict.keys():
                     print(f'  * skipping {ebfile} as it failed before. Remove from build-errors.json to try again ...', flush=True)
                     statdict[ebfile]['status'] = 'error'
