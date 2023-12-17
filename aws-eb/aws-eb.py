@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.57'
+__version__ = '0.20.60'
 
 def main():
         
@@ -556,7 +556,7 @@ class Builder:
                 continue
         try:
             print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
-            print(f'  BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)            
+            print(f'  BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
@@ -672,47 +672,6 @@ class Builder:
                     print(f"An error occurred while creating tarball: {e}")
         return all_tars, new_tars
     
-    # def _untar_eb_software(self, folder):
-    #     new_tars = []
-    #     all_tars = []
-    #     for root, dirs, files in self._walker(folder):
-    #         # Extract package name from the root directory
-    #         package_name = os.path.basename(root)
-    #         for filename in files:
-    #             if filename.endswith('.eb.tar.gz'):
-    #                 # Strip the '.tar.gz' extension and then extract the version
-    #                 version = filename.replace('.eb.tar.gz', '').replace(package_name + '-', '')
-
-    #                 # Construct the expected path for the version directory
-    #                 version_dir_path = os.path.join(root, version)
-
-    #                 # Check if the 'easybuild' directory exists within the version directory
-    #                 easybuild_path = os.path.join(version_dir_path, 'easybuild')
-    #                 file_path = os.path.join(root, filename)
-    #                 all_tars.append(file_path)
-    #                 if not os.path.exists(easybuild_path):
-    #                     print(f"Unpacking {file_path} into {version_dir_path}...", flush=True)
-    #                     try:
-    #                         # Decompress with pigz through tar command
-    #                         subprocess.run([
-    #                             "tar",
-    #                             "-I", f"pigz -p {self.args.vcpus}",
-    #                             "-xf", file_path,
-    #                             "-C", root 
-    #                         ], check=True)
-    #                         print(f"Successfully unpacked: {file_path}")
-    #                         new_tars.append(file_path)
-    #                     except subprocess.CalledProcessError as e:
-    #                         print(f"An error occurred while unpacking {file_path}: {e}")
-    #                     except Exception as e:
-    #                         print(f"An error occurred while unpacking {file_path}: {e}")
-
-    #                 else:
-    #                     pass
-    #                     #print(f"Skipping unpacking of {file_path} as 'easybuild' directory already exists in {version_dir_path}.")
-    #     return all_tars, new_tars
-
-
     def _untar_eb_software(self, folder):
         from concurrent.futures import ThreadPoolExecutor, as_completed
         new_tars = []
@@ -731,9 +690,9 @@ class Builder:
                 print(f"Successfully unpacked: {file_path}")
                 return file_path
             except subprocess.CalledProcessError as e:
-                print(f"An error occurred while unpacking {file_path}: {e}")
+                print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
             except Exception as e:
-                print(f"An error occurred while unpacking {file_path}: {e}")
+                print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
             return None
 
         # Create a list of tasks for parallel execution
@@ -1133,6 +1092,9 @@ class Rclone:
             return None
 
     def copy(self, src, dst, *args):
+        if src.startswith('/') and not os.path.exists(src):
+            print(f'Rclone Info: Source folder {src} does not exist, skipping.')
+            return False
         command = [self.rc, 'copy'] + list(args)
         command.append(src)  #command.append(f'{src}/')
         command.append(dst)
