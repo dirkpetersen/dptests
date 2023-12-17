@@ -2300,7 +2300,9 @@ class AWSBoto:
         python3 -m pip install easybuild 
         python3 -m pip install packaging boto3
         source ~/easybuildrc
-        aws-eb.py config --monitor '{emailaddr}'        
+        aws-eb.py config --monitor '{emailaddr}'
+        head -n $(( $(grep -n "processor" /proc/cpuinfo | head -2 | tail -1 | cut -d: -f1) - 1 )) /proc/cpuinfo
+        printf " CPUs:" && grep -c "processor" /proc/cpuinfo        
         ''').strip()
     
     def _ec2_launch_instance(self, disk_gib, instance_type, iamprofile=None, profile=None):
