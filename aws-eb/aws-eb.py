@@ -1369,16 +1369,20 @@ class AWSBoto:
     def get_aws_account_and_user_id(self):
         # returns aws account_id, user_id, user_name
         # Initialize the STS client
-        sts_client = self.awssession.client('sts')
-        # Get the caller identity
-        response = sts_client.get_caller_identity()
-        # Extract the account ID
-        account_id = response['Account']
-        user_id = response['UserId']
-        # Extract the ARN and parse the user ID
-        arn = response['Arn']
-        user_name = arn.split(':')[-1].split('/')[-1]
-        return account_id, user_id, user_name
+        try:
+            sts_client = self.awssession.client('sts')
+            # Get the caller identity
+            response = sts_client.get_caller_identity()
+            # Extract the account ID
+            account_id = response['Account']
+            user_id = response['UserId']
+            # Extract the ARN and parse the user ID
+            arn = response['Arn']
+            user_name = arn.split(':')[-1].split('/')[-1]
+            return account_id, user_id, user_name
+        except Exception as e:
+            print(f"Error retrieving AWS account ID: {e}")
+            return None, None, None
 
     def check_bucket_access(self, bucket_name, readwrite=False, profile=None):
         
@@ -1686,7 +1690,7 @@ class AWSBoto:
         os.system(f'echo "grep -B1 -A1 {qt}chars): Couldn.t find file{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')        
         os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
-        os.system(f'echo "tail -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "tail -n 100 -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history.tmp')
         ret = self.ssh_upload(sshuser, ip,
             "~/.bash_history.tmp", ".bash_history")
@@ -3385,7 +3389,10 @@ class ConfigManager:
                         os_id = line.strip().split('=')[1].strip('"')
                     elif line.startswith("VERSION_ID="):                    
                         version_id = line.strip().split('=')[1].strip('"')
-            return os_id.replace('rocky','rhel'), version_id
+            os_id = os_id.replace('rocky','rhel')
+            if os_id == 'rhel':
+                version_id = version_id.split('.')[0]
+            return os_id, version_id
         except Exception as e:
             # Return two empty strings in case of an error
             return "", ""
