@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.60'
+__version__ = '0.20.61'
 
 def main():
         
@@ -938,6 +938,8 @@ class Builder:
     def _transfer_status(self, rclone_ret):
         self.cfg.printdbg('*** RCLONE copy ret ***:\n', rclone_ret, '\n')
         #print ('Message:', ret['msg'].replace('\n',';'))
+        if not rclone_ret:
+            return False
         if rclone_ret['stats']['errors'] > 0:
             print('Last Error:', rclone_ret['stats']['lastError'])
             print('Copying was not successful.')
@@ -1094,7 +1096,7 @@ class Rclone:
     def copy(self, src, dst, *args):
         if src.startswith('/') and not os.path.exists(src):
             print(f'Rclone Info: Source folder {src} does not exist, skipping.')
-            return False
+            return []
         command = [self.rc, 'copy'] + list(args)
         command.append(src)  #command.append(f'{src}/')
         command.append(dst)
@@ -4041,7 +4043,8 @@ def parse_arguments():
     parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
-        help='build operating system, default=amazon (aka. optimized fedora), valid: amazon, rhel or ubuntu')
+        help='build operating system, default=amazon (which is an optimized fedora) ' + 
+        +, valid: amazon, rhel or ubuntu')
     parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
         help='Number of vcpus (1 core = 2 vcpus) to be allocated for the machine. (default=4)')    
     parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
