@@ -546,7 +546,8 @@ class Builder:
                     all_tars, new_tars = self._tar_eb_software(softwaredir)
                     self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
                 statdict[ebfile]['returncode'] = int(retcode)
-                self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)                
+                self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
+                statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')                
                 print(f'  ### UPDATE: {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
             except subprocess.CalledProcessError:
@@ -1657,7 +1658,7 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n' + cmdline + f' > ~/out.easybuild.{ip}.txt 2>&1'        
+        bootstrap_build += '\n' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         bootstrap_build += f'\n[ ! -f ~/no-terminate ] && aws-eb.py ssh --terminate {iid}'
         sshuser = self.ec2_get_default_user(ip)
