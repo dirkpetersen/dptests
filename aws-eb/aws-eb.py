@@ -414,9 +414,13 @@ class Builder:
                 retcode=-1; ebcnt+=1; ebskipped+=1            
                 print(f'  * Current time (trydate): {trydate}')
                 if ebfile in statdict.keys():
-                    print(f'  * skipping {ebfile}, was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
-                    print(f'    Remove from eb-build-status.json to try again ...', flush=True)
-                    continue
+                    if statdict[ebfile]['status'] != 'skipped':
+                        print(f'  * skipping {ebfile}, was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
+                        print(f'    Remove from eb-build-status.json to try again ...', flush=True)
+                        if not self.args.checkskipped: # checkskipped = re-run previously checked skipped builds
+                            continue
+                        else:
+                            print(f'  * checkskipped is set, trying {ebfile} again ...', flush=True) 
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
                 statdict[ebfile] = {
                         "status": "unknown",  # unknown, skipped, success, error
@@ -4043,14 +4047,15 @@ def parse_arguments():
     parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
-        help='build operating system, default=amazon (which is an optimized fedora) ' + 
-        +, valid: amazon, rhel or ubuntu')
+        help='build operating system, default=amazon (which is an optimized fedora 37) ' + 
+        'valid choices are: amazon, rhel or ubuntu')
     parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
-        help='Number of vcpus (1 core = 2 vcpus) to be allocated for the machine. (default=4)')    
+        help='Number of vcpus to be allocated for compilations on the target machine. (default=8) ' +
+        'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')
     parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
         help='run --list to see available GPU types')       
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=16, 
-        help='GB Memory allocated to instance  (default=8)')
+        help='GB Memory allocated to instance  (default=16)')
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="",
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
@@ -4068,7 +4073,9 @@ def parse_arguments():
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="",
         help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
-        help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')            
+        help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
+    parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
+        help="Re-check all previously skipped software and build it if possible.")
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
