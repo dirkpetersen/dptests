@@ -393,7 +393,6 @@ class Builder:
 
         # build all new easyconfigs in a folder tree
         ebcnt = 0; ebskipped = 0; bldcnt = 0; errcnt = 0; errpkg = []
-        errdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json')
         statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" newest easyconfigs... ')
@@ -417,6 +416,8 @@ class Builder:
                     if statdict[ebfile]['status'] != 'skipped':
                         print(f'  * skipping {ebfile}, was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
                         print(f'    Remove from eb-build-status.json to try again ...', flush=True)
+                        continue
+                    else:
                         if not self.args.checkskipped: # checkskipped = re-run previously checked skipped builds
                             continue
                         else:
@@ -430,15 +431,6 @@ class Builder:
                         "trydate" : trydate,
                         "modules" : None
                     }                                   
-                if ebfile in errdict.keys():
-                    print(f'  * skipping {ebfile} as it failed before. Remove from build-errors.json to try again ...', flush=True)
-                    statdict[ebfile]['status'] = 'error'
-                    statdict[ebfile]['returncode'] = 1,
-                    statdict[ebfile]['modules'] = errdict[ebfile]
-                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
-                    if errdict.pop(ebfile, None):
-                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/build-errors.json',errdict)
-                    continue
                 ## first kill other non-functional instances
                 ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
                 instances = [sublist[1] for sublist in ilist if sublist]
@@ -1692,7 +1684,7 @@ class AWSBoto:
         os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -n 100 -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
-        os.system(f'echo "tail -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "tail -n 30 -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history.tmp')
         ret = self.ssh_upload(sshuser, ip,
             "~/.bash_history.tmp", ".bash_history")
         if ret.stdout or ret.stderr:
