@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.61'
+__version__ = '0.20.62'
 
 def main():
         
@@ -245,7 +245,8 @@ def subcmd_launch(args,cfg,bld,aws):
         print(f'Creating initial copy from {args.firstbucket} to {cfg.bucket} ...', flush=True)
         aws.s3_duplicate_bucket(args.firstbucket, cfg.bucket)
     print('s3_prefix:', s3_prefix)
-    ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
+    #ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
+    ecfgroot = os.path.join(cfg.home_dir, 'easybuild-easyconfigs', 'easybuild', 'easyconfigs')
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
 
         
@@ -256,37 +257,11 @@ def subcmd_download(args,cfg,bld,aws):
         print(f'Profile "{args.awsprofile}" not found.')
         return False
     
-    if args.list:
-        # list all folders in the archive      
-        print("\nGPU    Instance Families")
-        print("--------------------------")
-        for c, i in aws.gpu_types.items():
-            print(f'{c}: {i}')               
-        print("\nCPU Type    Instance Families")
-        print("--------------------------------")
-        for c, i in aws.cpu_types.items():
-            print(f'{c}: {" ".join(i)}')
-        return True
-
-    if not args.cputype: 
-        fam = aws.get_ec2_my_instance_family()
-        if fam:
-            for k, v in aws.cpu_types.items():
-                if fam in v:
-                    args.cputype = k
-                    break
-                
-    if not args.cputype:
-        print('Please specify a CPU type. Run build --list to see types.')
-        return False
-
     os_id, version_id = cfg.get_os_release_info()
     if not os_id or not version_id:
         print('Could not determine OS release information.')
-        return False        
+        return False
     s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
-    if args.gputype:
-        s3_prefix += f'_{args.gputype}'
 
     ret = bld.test_write(bld.eb_root)
     if ret==13 or ret == 2:       
@@ -414,7 +389,7 @@ class Builder:
                 print(f'  * Current time (trydate): {trydate}')
                 if ebfile in statdict.keys():
                     if statdict[ebfile]['status'] != 'skipped':
-                        print(f'  * skipping {ebfile}, was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
+                        print(f'  * ignoring {ebfile}, it was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
                         print(f'    Remove from eb-build-status.json to try again ...', flush=True)
                         continue
                     else:
@@ -2235,7 +2210,7 @@ class AWSBoto:
         export EASYBUILD_PARALLEL={threads}
         # export EASYBUILD_GITHUB_USER=$USER
         export  EASYBUILD_UPDATE_MODULES_TOOL_CACHE=True
-        export  EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/.local/easybuild/easyconfigs:/opt/eb/fh/fh_easyconfigs
+        export  EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/.local/easybuild/easyconfigs:/home/{self.cfg.defuser}/easybuild-easyconfigs/easybuild/easyconfigs
         ''').strip()
             
     def _ec2_user_space_script(self, instance_id='', bscript='~/bootstrap.sh'):
@@ -2288,7 +2263,8 @@ class AWSBoto:
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
         until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."
-        mkdir -p /opt/eb/tmp  
+        mkdir -p /opt/eb/tmp
+        git clone https://github.com/easybuilders/easybuild-easyconfigs  
         python3 -m pip install easybuild 
         python3 -m pip install packaging boto3
         source ~/easybuildrc
@@ -4083,17 +4059,13 @@ def parse_arguments():
     parser_download = subparsers.add_parser('download', aliases=['dld'],
         help=textwrap.dedent(f'''
             Download built eb packages and lmod modules to /opt/eb
-        '''), formatter_class=argparse.RawTextHelpFormatter) 
-    parser_download.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
-        help='run --list to see available GPU types')       
+        '''), formatter_class=argparse.RawTextHelpFormatter)      
     parser_download.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
     parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List CPU and GPU types")
-    parser_download.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
-        help='Number of cores to be allocated for the machine. (default=4)')
     parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
-        help="Also download the source packages")    
+        help="Also download the source packages")
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
         metavar='<target_folder>', help='Download to other folder than default')    
     
