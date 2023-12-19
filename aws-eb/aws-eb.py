@@ -4088,7 +4088,7 @@ def parse_arguments():
         '''), formatter_class=argparse.RawTextHelpFormatter)      
     parser_download.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
-    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
+    parser_download.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
         help='Number of vcpus to be allocated for compilations on the target machine. (default=8) ' +
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')    
     parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
