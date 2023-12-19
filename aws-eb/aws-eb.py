@@ -291,7 +291,7 @@ def subcmd_download(args,cfg,bld,aws):
         print(f'\nERROR: Folder "{bld.eb_root}" must exist and you need write access to it.')
         return False
     
-    print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} ... ", flush=True)
+    print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
     bld.rclone_download_compare = '--size-only'
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
