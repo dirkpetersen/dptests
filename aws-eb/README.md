@@ -1,18 +1,56 @@
 # AWS-EB (Easybuild in AWS)
 
-This tool builds HPC software using the Easybuild (EB) Framework. It attempts to compile the latest version of all packages and then tar and upload these builds to AWS S3. The EB root (EASYBUILD_PREFIX) is currently set to /opt/eb.
+This tool does 2 things: First, it provides access to an s3 bucket (s3://easybuild-cache) that stores binaries and sources of performance optimized HPC software compiled by the Easybuild (EB) Framework. Second, it allows you to run a fully automated build of all latest EB packages (newest version only) including tar and upload these builds to AWS S3. Previously built packages will be automatically downloaded which allows aws-eb to use the AWS spot market. You can also use aws-eb on-premises but you need an S3 compatible bucket.
+
+The EB root (EASYBUILD_PREFIX) is currently set to /opt/eb.
 
 ## Try it
 
-Make sure you have your AWS creds in ~/.aws/credentials and your AWS region is set. First run the config and then launch --list to see what cpu types are there. 
+Make sure you have your AWS creds in ~/.aws/credentials and your AWS region is set. First run the config where you will be asked for an S3 bucket name, which can be an existing bucket and then launch --list to see what cpu types are there.  
 
 ```
 ./aws-eb.py config
 ./aws-eb.py launch --list
-./aws-eb.py launch --cpu-type epyc-gen-4 --include bio,lib
 ```
 
-## Build Workflow 
+... then download some pre-made binaries, the graviton-3 binaries are the most complete ones.
+
+###  Download and use binaries
+
+```
+ ./aws-eb.py download -c graviton-3
+  Downloading Modules ...
+   Rclone copy: 3984 file(s) with 3.094 MiB transferred.
+  Downloading Software ...
+   Rclone copy: 1991 file(s) with 74.799 GiB transferred.
+ Untarring packages ...
+
+All software was downloaded to: /opt/eb
+
+To use these software modules add this line to .bashrc, e.g.:
+echo "export MODULEPATH=${MODULEPATH}:/opt/eb/modules/all" >> ~/.bashrc
+source ~/.bashrc
+```
+
+now you can use the HPC module system to load and run software
+
+```
+$ ml R
+$ which R
+/opt/eb/software/R/4.3.2-gfbf-2023a/bin/R
+$ R
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+```
+
+## building addional software 
+
+
+
+```
+./aws-eb.py launch --cpu-type epyc-gen-4 --include bio
+```
+
+### Building Workflow 
 
 This is happening behind the scenes: 
 
