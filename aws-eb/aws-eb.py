@@ -281,8 +281,8 @@ def subcmd_download(args,cfg,bld,aws):
     if not args.cputype:
         print('Please specify a CPU type. Use the --list option to see types.')
         return False
-
-
+    
+    bld.eb_root = args.target
 
     s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
 
