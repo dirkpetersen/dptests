@@ -289,9 +289,11 @@ def subcmd_download(args,cfg,bld,aws):
     ret = bld.test_write(bld.eb_root)
     if ret==13 or ret == 2:       
         print(f'\nERROR: Folder "{bld.eb_root}" must exist and you need write access to it.')
-        return False        
+        return False
+    
+    print(f"Downloading packages from {s3_prefix} ... ", flush=True)
 
-    bld.rclone_download_compare = '--size-only'    
+    bld.rclone_download_compare = '--size-only'
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
 
     print(f" Untarring packages ... ", flush=True)
@@ -300,10 +302,13 @@ def subcmd_download(args,cfg,bld,aws):
     print('All software was downloaded to:', bld.eb_root)
 
     print('\nTo use these software modules add this line to .bashrc, e.g.: ')
-    print('echo "export MODULEPATH=${MODULEPATH}:/opt/eb/modules/all" >> ~/.bashrc')    
+    print(f'echo "export MODULEPATH=${{MODULEPATH}}:{bld.eb_root}/modules/all" >> ~/.bashrc')    
     if not os.getenv('LMOD_VERSION'):
         print('\nLmod is not installed. Please ask your sysadmin to install Lmod to use this software stack.')
-        
+    if bld.eb_root != '/opt/eb':
+        print('\nAs you have not downloaded to the standard location, please create a symlink /opt/eb: ')
+        print(f'sudo ln -s {bld.eb_root} /opt/eb')
+
 def subcmd_ssh(args, cfg, aws):
 
     if args.list:
