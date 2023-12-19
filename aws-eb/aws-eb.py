@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.62'
+__version__ = '0.20.64'
 
 def main():
         
@@ -261,6 +261,27 @@ def subcmd_download(args,cfg,bld,aws):
     if not os_id or not version_id:
         print('Could not determine OS release information.')
         return False
+
+    if args.list:
+        # list all folders in the archive
+        print('\nAll available EC2 instance families:')
+        print("--------------------------------------")
+        fams = aws.get_ec2_instance_families()
+        print(' '.join(fams))        
+        print("\nGPU    Instance Families")
+        print("--------------------------")
+        for c, i in aws.gpu_types.items():
+            print(f'{c}: {i}')               
+        print("\nCPU Type    Instance Families")
+        print("--------------------------------")
+        for c, i in aws.cpu_types.items():
+            print(f'{c}: {" ".join(i)}')
+        return True
+    
+    if not args.cputype:
+        print('Please specify a CPU type. Use the --list option to see types.')
+        return False
+
     s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
 
     ret = bld.test_write(bld.eb_root)
@@ -609,6 +630,9 @@ class Builder:
                 version_dir = os.path.basename(root)
                 if version_dir == 'site-packages' or version_dir == 'lib' or version_dir == 'sandbox':
                     continue
+                if not glob.glob(os.path.join(root,'easybuild', "*.log")):
+                    continue
+
                 package_dir = os.path.basename(os.path.dirname(root))
                 package_root = os.path.dirname(root)
 
@@ -4053,7 +4077,7 @@ def parse_arguments():
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
     parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
-        help="Re-check all previously skipped software and build it if possible.")
+        help="Re-check all previously skipped software packages and build them if possible.")
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
