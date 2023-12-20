@@ -5,10 +5,10 @@ AWS-EB builds scientific software packages using Easybuild
 on AWS EC2 instances and syncs the binaries with S3 buckets
 """
 # internal modules
-import sys, os, argparse, json, configparser, platform
-import urllib3, datetime, tarfile, zipfile, textwrap, socket
-import math, signal, shlex, time, re, inspect, traceback, json
-import shutil, tempfile, glob, subprocess, concurrent.futures
+import sys, os, argparse, json, configparser, platform, collections
+import urllib3, datetime, tarfile, zipfile, textwrap, socket, json
+import math, signal, shlex, time, re, inspect, traceback, subprocess
+import shutil, tempfile, glob, concurrent.futures
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.64'
+__version__ = '0.20.66'
 
 def main():
         
@@ -277,7 +277,17 @@ def subcmd_download(args,cfg,bld,aws):
         for c, i in aws.cpu_types.items():
             print(f'{c}: {" ".join(i)}')
         return True
-    
+
+    if args.buildstatus:
+        counts = collections.defaultdict(lambda: collections.defaultdict(int))
+        statdict = aws.s3_get_json(f'{args.buildstatus}/eb-build-status.json')
+        for item in statdict.values():
+            status = item.get('status')
+            reason = item.get('reason')
+            counts[status][reason] += 1
+        print(json.dumps(counts, indent=4))
+        return True
+
     if not args.cputype:
         print('Please specify a CPU type. Use the --list option to see types.')
         return False
@@ -459,7 +469,7 @@ class Builder:
                 if self.cfg.sversion(tc['version']) < self.cfg.sversion(self.min_toolchains[tc['name']]):
                     print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old according to min_toolchains.', flush=True)
                     statdict[ebfile]['status'] = 'skipped'
-                    statdict[ebfile]['reason'] = f'Toolchain version {tc["version"]} of {tc["name"]} too old'
+                    statdict[ebfile]['reason'] = f'toolchain version {tc["name"]}-{tc["version"]} too old'
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 if includes:
@@ -467,14 +477,14 @@ class Builder:
                         # we want to may be only build bio packages
                         print(f'  * {name} is not a module class in --include {include} ', flush=True)
                         statdict[ebfile]['status'] = 'skipped'
-                        statdict[ebfile]['reason'] = f' {name} is not a module class in --include {include}'
+                        statdict[ebfile]['reason'] = f'module class not included via --include option'
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         continue
                 elif excludes:
                     if cls in excludes:
                         print(f'  * {name} is a module class in --exclude {exclude} ', flush=True)
                         statdict[ebfile]['status'] = 'skipped'
-                        statdict[ebfile]['reason'] = f' {name} is not a module class in --exclude {include}'
+                        statdict[ebfile]['reason'] = f'module class excluded via --exclude option'
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         continue
                 if osdep:
@@ -1561,7 +1571,7 @@ class AWSBoto:
     def s3_get_json(self, o_name):
         try:
             s3 = self.awssession.client('s3')        
-            obj = s3.get_object(Bucket=self.cfg.bucket, Key=o_name)
+            obj = s3.get_object(Bucket=self.cfg.bucket, Key=o_name, RequestPayer='requester')
             return json.loads(obj['Body'].read())
         except Exception as e:
             print(f"Error in s3_get_json: {e}")
@@ -1569,8 +1579,8 @@ class AWSBoto:
         
     def s3_put_json(self, o_name, json_data):
         try:
-            s3 = self.awssession.client('s3')        
-            return s3.put_object(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data, indent=4))
+            s3 = self.awssession.client('s3')
+            return s3.put_object(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data, indent=4), RequestPayer='requester')
         except Exception as e:
             print(f"Error in s3_put_json: {e}")
             return False
@@ -3339,7 +3349,9 @@ class ConfigManager:
         self.envrn['AWS_PROFILE'] = profile
         self.envrn['RCLONE_S3_ACCESS_KEY_ID'] = aws_access_key_id
         self.envrn['RCLONE_S3_SECRET_ACCESS_KEY'] = aws_secret_access_key
-
+        os.environ['RCLONE_S3_REQUESTER_PAYS'] = 'true'
+        self.envrn['RCLONE_S3_REQUESTER_PAYS'] = 'true'
+        
         if profile in ['default', 'AWS', 'aws']:
             # Set the environment variables for AWS 
             self.envrn['RCLONE_S3_PROVIDER'] = 'AWS'
@@ -4098,6 +4110,9 @@ def parse_arguments():
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')    
     parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List CPU and GPU types")
+    parser_download.add_argument( '--build-status', '-b', dest='buildstatus', action='store', default='',
+        help="Show stats on eb-build-status.json in this S3 folder: \n" +
+        "e.g. 's3://easybuild-cache/aws//amzn-2023_graviton-3/'")
     parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
         help="Also download the source packages")
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
