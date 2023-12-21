@@ -391,7 +391,7 @@ class Builder:
             self.rclone_upload_compare = '--checksum'
         self.min_toolchains = self.cfg.read('general', 'min_toolchains')
         if not self.min_toolchains:
-            self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2022a'}
+            self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2022a', 'gfbf': '2022a'}
             self.cfg.write('general', 'min_toolchains', self.min_toolchains)
         self.eb_root = '/opt/eb'
 
@@ -461,15 +461,15 @@ class Builder:
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         continue
                 if tc['name'] not in self.min_toolchains.keys():
-                    print(f'  * Toolchain {tc["name"]} not supported.', flush=True)
+                    print(f'  * Toolchain not supported: {tc["name"]}', flush=True)
                     statdict[ebfile]['status'] = 'skipped'
-                    statdict[ebfile]['reason'] = f'toolchain {tc["name"]} not supported'
+                    statdict[ebfile]['reason'] = f'toolchain not supported: {tc["name"]}'
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 if self.cfg.sversion(tc['version']) < self.cfg.sversion(self.min_toolchains[tc['name']]):
                     print(f'  * Toolchain version {tc["version"]} of {tc["name"]} too old according to min_toolchains.', flush=True)
                     statdict[ebfile]['status'] = 'skipped'
-                    statdict[ebfile]['reason'] = f'toolchain version {tc["name"]}-{tc["version"]} too old'
+                    statdict[ebfile]['reason'] = f'toolchain version too old: {tc["name"]}-{tc["version"]}'
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 if includes:
