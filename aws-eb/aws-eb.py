@@ -538,7 +538,7 @@ class Builder:
                     themissing2 = self._eb_missing_modules( ebpath, printout=False)                 
                     #if len(themissing2) == len(themissing):                    
                     statdict[ebfile]['status'] = 'error'
-                    statdict[ebfile]['reason'] = 'easyconfig failed to build'
+                    statdict[ebfile]['reason'] = 'n/a'
                     statdict[ebfile]['modules'] = themissing2                
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 else:
