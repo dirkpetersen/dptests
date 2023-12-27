@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.68'
+__version__ = '0.20.69'
 
 def main():
         
@@ -523,7 +523,7 @@ class Builder:
                 print(f" Installing dependencies for {ebfile} ... ", flush=True)
                 cmdline = "eb --umask=002"
                 depterr = False
-                for mod, ebf in themissing:
+                for ebf in themissing.values():
                     if ebf != ebfile:
                         # ebf is the dependency, install the actual package with --robot in the next step
                         if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
