@@ -2260,8 +2260,8 @@ class AWSBoto:
             rc += textwrap.dedent(f'''
             export EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/easybuild-easyconfigs/easybuild/easyconfigs
             ''').strip()
-        
-            
+        return rc
+    
     def _ec2_user_space_script(self, instance_id='', bscript='~/bootstrap.sh'):
         # Define script that will be installed by ec2-user 
         emailaddr = self.cfg.read('general','email')
