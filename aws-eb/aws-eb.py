@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.67'
+__version__ = '0.20.68'
 
 def main():
         
@@ -520,7 +520,47 @@ class Builder:
                 self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
                 print(f" Unpacking previous packages ... ", flush=True)
                 all_tars, new_tars = self._untar_eb_software(softwaredir)
-                print(f" Installing {ebfile} ... ", flush=True)
+                print(f" Installing dependencies for {ebfile} ... ", flush=True)
+                cmdline = "eb --umask=002"
+                depterr = False
+                for mod, ebf in themissing:
+                    if ebf != ebfile:
+                        # ebf is the dependency, install the actual package with --robot in the next step
+                        if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
+                            ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
+                        else:
+                            ret = subprocess.run(f'{cmdline} {ebf}', shell=True, text=True)
+                        retcode = ret.returncode
+                        print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
+                        statdict[ebf]['returncode'] = int(retcode)
+                        if retcode != 0:
+                            depterr = True
+                            print(f'  FAILED DEPENDENCY: EasyConfig {ebf}, trying next one ...', flush=True)
+                            errcnt+=1
+                            errpkg.append(ebf)
+                            logpath = self._eb_last_log()
+                            logfile = os.path.basename(logpath)
+                            targetlog = os.path.join(self.eb_root, 'tmp', f'{ebf}-{logfile}')
+                            shutil.copy(logpath, targetlog)                      
+                            statdict[ebf]['status'] = 'error'
+                            statdict[ebf]['reason'] = 'n/a'
+                            if 'errorcount' in statdict[ebf]:
+                                statdict[ebf]['errorcount'] += 1
+                            else:
+                                statdict[ebf]['errorcount'] = 1
+                            #self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)  
+                        else:
+                            print(f'  DEPENDENCY SUCCESS: EasyConfig {ebf} built successfully.', flush=True)
+                            statdict[ebf]['status'] = 'success'
+                            statdict[ebf]['reason'] = 'easyconfig built successfully'
+                            statdict[ebf]['modules'] = None
+                            bldcnt+=1
+                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
+                        if depterr:
+                            break
+                if depterr:
+                    continue
+                print(f" Installing {ebpath} ... ", flush=True)
                 cmdline = "eb --robot --umask=002"
                 if 'CUDA' in ebfile: # CUDA is a special case, we may not have a GPU installed 
                     ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebpath}', shell=True, text=True)
@@ -541,7 +581,7 @@ class Builder:
                     statdict[ebfile]['status'] = 'error'
                     statdict[ebfile]['reason'] = 'n/a'
                     statdict[ebfile]['modules'] = themissing2                
-                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
+                    #self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 else:
                     print(f'  SUCCESS: EasyConfig {ebfile} built successfully.', flush=True)
                     statdict[ebfile]['status'] = 'success'
