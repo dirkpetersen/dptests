@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.66'
+__version__ = '0.20.67'
 
 def main():
         
@@ -391,7 +391,8 @@ class Builder:
             self.rclone_upload_compare = '--checksum'
         self.min_toolchains = self.cfg.read('general', 'min_toolchains')
         if not self.min_toolchains:
-            self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 'LLVM' : '12.0', 'foss' : '2022a', 'gfbf': '2022a'}
+            self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 
+                                   'LLVM' : '12.0', 'foss' : '2022a', 'gfbf': '2022a'}
             self.cfg.write('general', 'min_toolchains', self.min_toolchains)
         self.eb_root = '/opt/eb'
 
@@ -743,6 +744,8 @@ class Builder:
         version_pattern = re.compile(r'-(\d+(?:\.\d+)*)(?:-(\w+(?:-\d+(?:\.\d+)*(?:[ab]\d+)?)?))?\.')
 
         for filename in os.listdir(directory):
+            if not filename.endswith('.eb'):
+                continue            
             match = version_pattern.search(filename)
             if match:
                 software_version = match.group(1)
@@ -1268,13 +1271,13 @@ class AWSBoto:
             "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
             "graviton-3": ['m7g', 'c7g', 'c7gn'],
             "epyc-gen-1": ['t3a'],
-            "epyc-gen-2": ['m5a', 'c5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
+            "epyc-gen-2": ['c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
             "epyc-gen-3": ['m6a', 'c6a', 'r6a', 'p5'],
-            "epyc-gen-4": ['m7a', 'c7a', 'r7a'],
+            "epyc-gen-4": ['c7a', 'm7a', 'r7a'],
             "xeon-gen-1": ['m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3', 'i3en'],
             "xeon-gen-2": ['m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
             "xeon-gen-3": ['m6i', 'c6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
-            "xeon-gen-4": ['m7i', 'c7i', 'm7i-flex'],
+            "xeon-gen-4": ['c7i', 'm7i', 'm7i-flex'],
             "core-i7-mac": ['mac1']
         }
         self.gpu_types = {
@@ -2236,7 +2239,7 @@ class AWSBoto:
         threads = self.args.vcpus*2
         if self.args.os == 'ubuntu':
             self.cfg.defuser = 'ubuntu'        
-        return textwrap.dedent(f'''        
+        rc = textwrap.dedent(f'''        
         test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
         export MODULEPATH=/opt/eb/modules/all:/opt/eb/modules/lib:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         # export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
@@ -2253,6 +2256,11 @@ class AWSBoto:
         export  EASYBUILD_UPDATE_MODULES_TOOL_CACHE=True
         export  EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/.local/easybuild/easyconfigs:/home/{self.cfg.defuser}/easybuild-easyconfigs/easybuild/easyconfigs
         ''').strip()
+        if not self.args.ebrelease:
+            rc += textwrap.dedent(f'''
+            export EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/easybuild-easyconfigs/easybuild/easyconfigs
+            ''').strip()
+        
             
     def _ec2_user_space_script(self, instance_id='', bscript='~/bootstrap.sh'):
         # Define script that will be installed by ec2-user 
@@ -4081,6 +4089,8 @@ def parse_arguments():
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
         help='Enforce the availability zone, e.g. us-west-2a')    
+    parser_launch.add_argument('--on-demand', '-d', dest='ondemand', action='store_true', default=False,
+        help="Enforce on-demand instance instead of using the default spot instance.")
     parser_launch.add_argument('--monitor', '-n', dest='monitor', action='store_true', default=False,
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument('--build', '-b', dest='build', action='store_true', default=False,
@@ -4089,14 +4099,16 @@ def parse_arguments():
         help='use this bucket (e.g. easybuild-cache) to initially load the already built binaries and sources')       
     parser_launch.add_argument('--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
         help="Do not pre-download sources from build cache, let EB download them.")      
-    parser_launch.add_argument('--on-demand', '-d', dest='ondemand', action='store_true', default=False,
-        help="Enforce on-demand instance instead of using the default spot instance.")
+    parser_launch.add_argument('--eb-release', '-e', dest='ebrelease', action='store_true', default=False,
+        help="Use official Easybuild release instead of dev repos from Github.")  
+    parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
+        help="Re-check all previously skipped software packages and build them if possible.")    
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="",
         help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
-    parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
-        help="Re-check all previously skipped software packages and build them if possible.")
+    parser_launch.add_argument('--force', '-r', dest='force', action='store', default="",
+        help='list of easyconfigs to force build, e.g "libpng-1.6.37.eb,libjpeg-2.0.6.eb"')    
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
