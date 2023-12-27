@@ -245,11 +245,11 @@ def subcmd_launch(args,cfg,bld,aws):
         print(f'Creating initial copy from {args.firstbucket} to {cfg.bucket} ...', flush=True)
         aws.s3_duplicate_bucket(args.firstbucket, cfg.bucket)
     print('s3_prefix:', s3_prefix)
-    #ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
     ecfgroot = os.path.join(cfg.home_dir, 'easybuild-easyconfigs', 'easybuild', 'easyconfigs')
+    if args.ebrelease:
+        ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
 
-        
 def subcmd_download(args,cfg,bld,aws):
 
     cfg.printdbg(f'default cmdline: aws-eb download')
@@ -416,12 +416,12 @@ class Builder:
                     pass
                 ebfile = self._get_latest_easyconfig(root)
                 if not ebfile:
+                    print(f'  * no valid easyconfig found in {root}', flush=True)
                     continue
                 ebpath = os.path.join(root, ebfile)
                 if not os.path.isfile(ebpath):
+                    print(f'  * Path {ebpath} is not a file', flush=True)                    
                     continue 
-                if not ebpath.endswith('.eb'):
-                    continue
                 print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
                 trydate = datetime.datetime.now().astimezone().isoformat()                
                 retcode=-1; ebcnt+=1; ebskipped+=1            
