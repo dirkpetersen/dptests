@@ -437,14 +437,15 @@ class Builder:
                         else:
                             print(f'  * checkskipped is set, trying {ebfile} again ...', flush=True) 
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
-                statdict[ebfile] = {
-                        "status": "unknown",  # unknown, skipped, success, error
-                        "reason": "n/a",
-                        "returncode" : -1,
-                        "errorcount" : 0,
-                        "trydate" : trydate,
-                        "modules" : None
-                    }                                   
+                if ebfile not in statdict.keys():
+                    statdict[ebfile] = {
+                            "status": "unknown",  # unknown, skipped, success, error
+                            "reason": "n/a",
+                            "returncode" : -1,
+                            "errorcount" : 0,
+                            "trydate" : trydate,
+                            "modules" : None
+                        }                                   
                 ## first kill other non-functional instances
                 ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
                 instances = [sublist[1] for sublist in ilist if sublist]
@@ -524,7 +525,8 @@ class Builder:
                 cmdline = "eb --umask=002"
                 depterr = False
                 for ebf in themissing.values():
-                    if ebf != ebfile:
+                    if ebf != ebfile:                        
+                        print(f"  - Installing dependency {ebf} ... ", flush=True)
                         # ebf is the dependency, install the actual package with --robot in the next step
                         if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
                             ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
@@ -532,7 +534,14 @@ class Builder:
                             ret = subprocess.run(f'{cmdline} {ebf}', shell=True, text=True)
                         retcode = ret.returncode
                         print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
-                        statdict[ebf]['returncode'] = int(retcode)
+                        if ebf not in statdict:
+                            statdict[ebf] = {
+                                    "status": "unknown",  # unknown, skipped, success, error
+                                    "reason": "n/a",
+                                    "returncode" : -1,
+                                    "errorcount" : 0,
+                                    "trydate" : trydate,
+                                }                              
                         if retcode != 0:
                             depterr = True
                             print(f'  FAILED DEPENDENCY: EasyConfig {ebf}, trying next one ...', flush=True)
@@ -544,10 +553,7 @@ class Builder:
                             shutil.copy(logpath, targetlog)                      
                             statdict[ebf]['status'] = 'error'
                             statdict[ebf]['reason'] = 'n/a'
-                            if 'errorcount' in statdict[ebf]:
-                                statdict[ebf]['errorcount'] += 1
-                            else:
-                                statdict[ebf]['errorcount'] = 1
+                            statdict[ebf]['errorcount'] += 1
                             #self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)  
                         else:
                             print(f'  DEPENDENCY SUCCESS: EasyConfig {ebf} built successfully.', flush=True)
@@ -555,6 +561,7 @@ class Builder:
                             statdict[ebf]['reason'] = 'easyconfig built successfully'
                             statdict[ebf]['modules'] = None
                             bldcnt+=1
+                        statdict[ebf]['returncode'] = int(retcode)
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         if depterr:
                             break
