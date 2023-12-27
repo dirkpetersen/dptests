@@ -2254,7 +2254,7 @@ class AWSBoto:
         export EASYBUILD_PARALLEL={threads}
         # export EASYBUILD_GITHUB_USER=$USER
         export EASYBUILD_UPDATE_MODULES_TOOL_CACHE=True
-        export EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/.local/easybuild/easyconfigs:/home/{self.cfg.defuser}/easybuild-easyconfigs/easybuild/easyconfigs
+        export EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/.local/easybuild/easyconfigs
         ''').strip()
         if not self.args.ebrelease:
             rc += '\n' + textwrap.dedent(f'''
