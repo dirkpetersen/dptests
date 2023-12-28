@@ -8,7 +8,7 @@ on AWS EC2 instances and syncs the binaries with S3 buckets
 import sys, os, argparse, json, configparser, platform, collections
 import urllib3, datetime, tarfile, zipfile, textwrap, socket, json
 import math, signal, shlex, time, re, inspect, traceback, subprocess
-import shutil, tempfile, glob, concurrent.futures
+import shutil, tempfile, glob, concurrent.futures, operator
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.71'
+__version__ = '0.20.72'
 
 def main():
         
@@ -230,7 +230,9 @@ def subcmd_launch(args,cfg,bld,aws):
     if args.gputype:
         s3_prefix += f'_{args.gputype}'
 
-    instance_type = aws.get_ec2_cheapest_instance_type(fam, args.vcpus, args.mem*1024)
+    #instance_type = aws.get_ec2_smallest_instance_type(fam, args.vcpus, args.mem*1024)
+    instance_type, _, _= aws._ec2_get_cheapest_spot_instance(args.cputype, args.vcpus, args.mem)
+        
     print('Cheapest:', instance_type)
 
     if not args.build:
@@ -1333,17 +1335,17 @@ class AWSBoto:
         self.cfg = cfg
         self.awsprofile = self.cfg.awsprofile
         self.cpu_types = {
-            "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
-            "graviton-3": ['m7g', 'c7g', 'c7gn'],
-            "epyc-gen-1": ['t3a'],
-            "epyc-gen-2": ['c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
-            "epyc-gen-3": ['m6a', 'c6a', 'r6a', 'p5'],
-            "epyc-gen-4": ['c7a', 'm7a', 'r7a'],
-            "xeon-gen-1": ['m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3', 'i3en'],
-            "xeon-gen-2": ['m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
-            "xeon-gen-3": ['m6i', 'c6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
-            "xeon-gen-4": ['c7i', 'm7i', 'm7i-flex'],
-            "core-i7-mac": ['mac1']
+            "graviton-2": ('m6g','c6g', 'c6gn', 't4g' ,'g5g'),
+            "graviton-3": ('m7g', 'c7g', 'c7gn'),
+            "epyc-gen-1": ('t3a'),
+            "epyc-gen-2": ('c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'),
+            "epyc-gen-3": ('m6a', 'c6a', 'r6a', 'p5'),
+            "epyc-gen-4": ('c7a', 'm7a', 'r7a'),
+            "xeon-gen-1": ('m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3', 'i3en'),
+            "xeon-gen-2": ('m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'),
+            "xeon-gen-3": ('m6i', 'c6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'),
+            "xeon-gen-4": ('c7i', 'm7i', 'm7i-flex'),
+            "core-i7-mac": ('mac1')
         }
         self.gpu_types = {
             "h100": 'p5',
@@ -1397,8 +1399,7 @@ class AWSBoto:
         sorted_families = sorted(list(families))
         return sorted_families
     
-
-    def get_ec2_cheapest_instance_type(self, family, min_vcpu, min_memory, gpu_type=None, profile=None):
+    def get_ec2_smallest_instance_type(self, family, min_vcpu, min_memory, gpu_type=None, profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2 = session.client('ec2')
 
@@ -1775,6 +1776,35 @@ class AWSBoto:
             print(ret.stdout, ret.stderr)
 
         self.send_email_ses('', '', 'AWS-EB build on EC2', f'this command line was executed on host {ip}:\n{cmdline}')
+
+
+    def _ec2_describe_instance_families(self, cpu_type, vcpus=1, memory_gb=1, region=None):
+        # use a filter on ec2.describe_instance_types() to get a list of instance types
+        ec2 = boto3.client('ec2', region_name=region) if region else self.awssession.client('ec2')
+
+        instance_families = self.cpu_types[cpu_type]
+        filtered_instance_families = []
+
+        try:
+            # Retrieve all instance types
+            paginator = ec2.get_paginator('describe_instance_types')
+            page_iterator = paginator.paginate()
+
+            for page in page_iterator:
+                for instance_type in page['InstanceTypes']:
+                    if instance_type['InstanceType'].startswith(instance_families) and \
+                    instance_type['VCpuInfo']['DefaultVCpus'] >= vcpus and \
+                    instance_type['MemoryInfo']['SizeInMiB'] >= memory_gb * 1024:
+                        filtered_instance_families.append(instance_type)
+
+            #instance_ids = [i['InstanceType'] for i in filtered_instance_families]
+            #print('\nfiltered_instance_families:', instance_ids)
+        except Exception as e:
+            print(f"Error retrieving instance types: {e}")
+            return []
+        
+        return filtered_instance_families
+    
 
     def _ec2_create_or_get_iam_policy(self, pol_name, pol_doc, profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
@@ -2207,6 +2237,36 @@ class AWSBoto:
 
         return lowest_price, lowest_az
 
+    def _ec2_get_cheapest_spot_instance(self, cpu_type, vcpus=1, memory_gb=1, region=None):        
+        ec2 = boto3.client('ec2', region_name=region) if region else self.awssession.client('ec2')
+        # Validate CPU type
+        if cpu_type not in self.cpu_types:
+            return "Invalid CPU type.", None, None    
+      
+        try:
+            # Filter instances by vCPUs, memory, and CPU type
+            filtered_instances = self._ec2_describe_instance_families(cpu_type, vcpus, memory_gb, region)
+            if not filtered_instances:
+                return "No instances match the criteria.", None, None   
+
+            # Get current spot prices for filtered instances
+            start_time = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
+            instance_ids = [i['InstanceType'] for i in filtered_instances]
+            #print('\ninstance_ids:', instance_ids)
+            spot_prices = ec2.describe_spot_price_history(
+                StartTime=start_time,
+                InstanceTypes=instance_ids,
+                ProductDescriptions=['Linux/UNIX'],
+                MaxResults=len(instance_ids)
+            )
+            # Find the cheapest instance
+            cheapest_instance = min(spot_prices['SpotPriceHistory'], key=operator.itemgetter('SpotPrice'))
+            return cheapest_instance['InstanceType'], cheapest_instance['AvailabilityZone'], float(cheapest_instance['SpotPrice'])
+    
+        except Exception as e:
+            print(f"Error in _ec2_get_cheapest_spot_instance: {e}")
+            return None, None, None
+
     def _create_progress_bar(self, max_value):
         def show_progress_bar(iteration):
             percent = ("{0:.1f}").format(100 * (iteration / float(max_value)))
@@ -2405,10 +2465,7 @@ class AWSBoto:
                 'Throughput': 750,  # Throughput in MB/s
             },
         }]
-             
-        if self.args.instancetype:
-            instance_type = self.args.instancetype 
-        
+                     
         if not instance_type:
             print("No suitable instance type found!")
             return False
@@ -2457,13 +2514,18 @@ class AWSBoto:
         # iam_instance_profile = {}
         #print(f'AWS Region: {self.cfg.aws_region}')
         
+        instance_type, az, price_spot = self._ec2_get_cheapest_spot_instance(self.args.cputype, self.args.vcpus, self.args.mem)
+        
+        if self.args.instancetype:
+            instance_type = self.args.instancetype             
+            price_spot, az = self._ec2_current_spot_price(instance_type, [self.cfg.aws_region])
         price_ondemand = float(self._ec2_ondemand_price(instance_type, self.cfg.aws_region))
-        price_spot, az = self._ec2_current_spot_price(instance_type, [self.cfg.aws_region])
+
+        print(f'{instance_type} in {az} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot.')
+
         if self.args.az:
             az = self.args.az
     
-        print(f'{instance_type} in {az} costs ${price_ondemand:.4f} as on-demand and ${price_spot:.4f} as spot.')
-        
         for i in range(2):
             try:            
                 if price_ondemand < price_spot*1.05:
@@ -4143,13 +4205,13 @@ def parse_arguments():
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
         help='build operating system, default=amazon (which is an optimized fedora 37) ' + 
         'valid choices are: amazon, rhel or ubuntu')
-    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
-        help='Number of vcpus to be allocated for compilations on the target machine. (default=8) ' +
+    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, 
+        help='Number of vcpus to be allocated for compilations on the target machine. (default=4) ' +
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')
     parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
         help='run --list to see available GPU types')       
-    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=16, 
-        help='GB Memory allocated to instance  (default=16)')
+    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, 
+        help='GB Memory allocated to instance  (default=8)')
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="",
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
