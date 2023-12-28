@@ -537,7 +537,8 @@ class Builder:
                 print(f" Installing dependencies for {ebfile} ... ", flush=True)
                 cmdline = "eb --umask=002"
                 depterr = False
-                for ebf in themissing.values():
+                themissing_no_last = [value for dic in themissing[:-1] for value in dic.values()] # flatten the list, remove last entry
+                for ebf in themissing_no_last:
                     if ebf != ebfile:                        
                         print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
                         # ebf is the dependency, install the actual package with --robot in the next step
@@ -1390,7 +1391,7 @@ class AWSBoto:
                 return cputype
         return ""
 
-    def get_ec2_instance_families(self, profile=None):
+    def get_ec2_instance_families(self, profile=None):        
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         ec2 = session.client('ec2')
         families = set()
@@ -1454,7 +1455,6 @@ class AWSBoto:
             except:
                 return ['us-west-2','us-west-1', 'us-east-1', '']
             
-
     def get_aws_account_and_user_id(self):
         # returns aws account_id, user_id, user_name
         # Initialize the STS client
@@ -2454,6 +2454,7 @@ class AWSBoto:
         aws configure --profile {self.cfg.awsprofile} set region {self.cfg.aws_region}
         sed -i 's/aws_access_key_id [^ ]*/aws_access_key_id /' {bscript}
         sed -i 's/aws_secret_access_key [^ ]*/aws_secret_access_key /' {bscript}
+        sed -i '/^aws configure /s/^/#/' {bscript}
         curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
         echo '#! /bin/bash' > ~/.local/bin/get-public-ip
         echo 'ETOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")' >> ~/.local/bin/get-public-ip
@@ -2477,7 +2478,7 @@ class AWSBoto:
         python3 -m pip install packaging boto3
         source ~/easybuildrc
         aws-eb.py config --monitor '{emailaddr}'
-        head -n $(( $(grep -n "processor" /proc/cpuinfo | head -2 | tail -1 | cut -d: -f1) - 1 )) /proc/cpuinfo
+        lscpu | head -n 20
         printf " CPUs:" && grep -c "processor" /proc/cpuinfo        
         ''').strip()
     
