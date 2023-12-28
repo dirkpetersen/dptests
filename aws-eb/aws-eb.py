@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.69'
+__version__ = '0.20.70'
 
 def main():
         
@@ -424,6 +424,15 @@ class Builder:
                     continue 
                 print(f'############## EASYCONFIG: "{ebfile}" ... ##################', flush=True)
                 trydate = datetime.datetime.now().astimezone().isoformat()                
+                statdict_template = {
+                                    "status": "unknown",  # unknown, skipped, success, error
+                                    "reason": "n/a",
+                                    "returncode" : -1,
+                                    "errorcount" : 0,
+                                    "trydate" : trydate,
+                                    "buildtime" : 0,
+                                    "modules" : None
+                                }                        
                 retcode=-1; ebcnt+=1; ebskipped+=1            
                 print(f'  * Current time (trydate): {trydate}')
                 if ebfile in statdict.keys():
@@ -438,14 +447,7 @@ class Builder:
                             print(f'  * checkskipped is set, trying {ebfile} again ...', flush=True) 
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
                 if ebfile not in statdict.keys():
-                    statdict[ebfile] = {
-                            "status": "unknown",  # unknown, skipped, success, error
-                            "reason": "n/a",
-                            "returncode" : -1,
-                            "errorcount" : 0,
-                            "trydate" : trydate,
-                            "modules" : None
-                        }                                   
+                    statdict[ebfile] = statdict_template                     
                 ## first kill other non-functional instances
                 ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
                 instances = [sublist[1] for sublist in ilist if sublist]
@@ -500,6 +502,13 @@ class Builder:
                     statdict[ebfile]['reason'] = 'modules are already installed'
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
+                errmiss = self._errors_in_missing(themissing, statdict)
+                if errmiss:
+                    print(f'  * {ebfile} has missing dependencies: {", ".join(errmiss)}', flush=True)
+                    statdict[ebfile]['status'] = 'skipped'
+                    statdict[ebfile]['reason'] = 'dependencies have errors'
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
+                    continue
                 # check if min_toolchains exclude any of the missing modules, if so skip this easyconfig
                 doskip = False
                 for miss in themissing.keys():
@@ -526,22 +535,21 @@ class Builder:
                 depterr = False
                 for ebf in themissing.values():
                     if ebf != ebfile:                        
-                        print(f"  - Installing dependency {ebf} ... ", flush=True)
+                        print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
                         # ebf is the dependency, install the actual package with --robot in the next step
+                        now1=int(time.time())
                         if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
                             ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
                         else:
                             ret = subprocess.run(f'{cmdline} {ebf}', shell=True, text=True)
                         retcode = ret.returncode
                         print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
+                        trydate = datetime.datetime.now().astimezone().isoformat()                                        
                         if ebf not in statdict:
-                            statdict[ebf] = {
-                                    "status": "unknown",  # unknown, skipped, success, error
-                                    "reason": "n/a",
-                                    "returncode" : -1,
-                                    "errorcount" : 0,
-                                    "trydate" : trydate,
-                                }                              
+                            statdict[ebf] = statdict_template                   
+                        statdict[ebf]['returncode'] = int(retcode)
+                        statdict[ebf]['trydate'] = trydate
+                        statdict[ebf]['buildtime'] = int(time.time())-now1
                         if retcode != 0:
                             depterr = True
                             print(f'  FAILED DEPENDENCY: EasyConfig {ebf}, trying next one ...', flush=True)
@@ -554,14 +562,12 @@ class Builder:
                             statdict[ebf]['status'] = 'error'
                             statdict[ebf]['reason'] = 'n/a'
                             statdict[ebf]['errorcount'] += 1
-                            #self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)  
                         else:
                             print(f'  DEPENDENCY SUCCESS: EasyConfig {ebf} built successfully.', flush=True)
                             statdict[ebf]['status'] = 'success'
                             statdict[ebf]['reason'] = 'easyconfig built successfully'
                             statdict[ebf]['modules'] = None
-                            bldcnt+=1
-                        statdict[ebf]['returncode'] = int(retcode)
+                            bldcnt+=1                        
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         if depterr:
                             break
@@ -569,11 +575,14 @@ class Builder:
                     continue
                 print(f" Installing {ebpath} ... ", flush=True)
                 cmdline = "eb --robot --umask=002"
+                now2=int(time.time())
                 if 'CUDA' in ebfile: # CUDA is a special case, we may not have a GPU installed 
                     ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebpath}', shell=True, text=True)
                 else:
                     ret = subprocess.run(f'{cmdline} {ebpath}', shell=True, text=True)
                 retcode = ret.returncode
+                statdict[ebfile]['returncode'] = int(retcode)
+                statdict[ebfile]['buildtime'] = int(time.time())-now2                
                 print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
                 if retcode != 0:
                     print(f'  FAILED: EasyConfig {ebfile}, trying next one ...', flush=True)
@@ -597,8 +606,7 @@ class Builder:
                     bldcnt+=1
                     print(f" Tarring and uploading new packages ... ", flush=True)
                     all_tars, new_tars = self._tar_eb_software(softwaredir)
-                    self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
-                statdict[ebfile]['returncode'] = int(retcode)
+                    self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)                
                 self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')                
                 print(f'  ### UPDATE: {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
@@ -653,7 +661,17 @@ class Builder:
                 module, easyconfig = match.groups()
                 modules[module] = easyconfig
         return modules
-    
+
+    def _errors_in_missing(themissing, statdict):
+        #returns a list of easyconfigs that have had build errors
+        #for each easyconfig in themissing, check if it has been built before
+        errlist = [] 
+        for ebf in themissing.values():
+            if ebf in statdict.keys():
+                    if statdict[ebf]['status'] == 'error':
+                        errlist.append(ebf)
+        return errlist
+        
     def _install_os_dependencies(self, easyconfigroot):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
