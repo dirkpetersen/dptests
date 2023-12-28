@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.70'
+__version__ = '0.20.71'
 
 def main():
         
@@ -662,7 +662,7 @@ class Builder:
                 modules[module] = easyconfig
         return modules
 
-    def _errors_in_missing(themissing, statdict):
+    def _errors_in_missing(self, themissing, statdict):
         #returns a list of easyconfigs that have had build errors
         #for each easyconfig in themissing, check if it has been built before
         errlist = [] 
