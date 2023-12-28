@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.73'
+__version__ = '0.20.74'
 
 def main():
         
@@ -465,7 +465,7 @@ class Builder:
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
                         print(f'  * Easyconfig {name} version {version} too old according to min_toolchains.', flush=True)
                         statdict[ebfile]['status'] = 'skipped'
-                        statdict[ebfile]['reason'] = f'toolchain version {version} too old'
+                        statdict[ebfile]['reason'] = f'toolchain version too old: {version}'
                         self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                         continue
                 if tc['name'] not in self.min_toolchains.keys():
@@ -533,11 +533,12 @@ class Builder:
                 ebskipped-=1
                 self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
                 print(f" Unpacking previous packages ... ", flush=True)
-                all_tars, new_tars = self._untar_eb_software(softwaredir)
-                print(f" Installing dependencies for {ebfile} ... ", flush=True)
+                all_tars, new_tars = self._untar_eb_software(softwaredir)                
                 cmdline = "eb --umask=002"
                 depterr = False
                 themissing_no_last = [value for dic in themissing[:-1] for value in dic.values()] # flatten the list, remove last entry
+                if len(themissing_no_last) > 0:
+                    print(f" Installing dependencies for {ebfile} ... ", flush=True)
                 for ebf in themissing_no_last:
                     if ebf != ebfile:                        
                         print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
@@ -578,7 +579,7 @@ class Builder:
                             break
                 if depterr:
                     continue
-                print(f" Installing {ebpath} ... ", flush=True)
+                print(f" Installing {ebfile} ({ebpath})... ", flush=True)
                 cmdline = "eb --robot --umask=002"
                 now2=int(time.time())
                 if 'CUDA' in ebfile: # CUDA is a special case, we may not have a GPU installed 
@@ -2478,6 +2479,7 @@ class AWSBoto:
         python3 -m pip install packaging boto3
         source ~/easybuildrc
         aws-eb.py config --monitor '{emailaddr}'
+        echo -e "\nCPU info:"
         lscpu | head -n 20
         printf " CPUs:" && grep -c "processor" /proc/cpuinfo        
         ''').strip()
