@@ -85,20 +85,22 @@ def subcmd_config(args, cfg, aws):
     cfg.write('general', 'binfolder', cfg.binfolder)
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
     if not cfg.read('general', 'no-rclone-download'):
-        
-        if os.path.exists(os.path.join(cfg.binfolderx,'rclone')):
-            if os.path.exists(os.path.join(cfg.binfolderx,'bak.rclone')):
-                os.remove(os.path.join(cfg.binfolderx,'bak.rclone'))
-            os.rename(os.path.join(cfg.binfolderx,'rclone'),os.path.join(cfg.binfolderx,'bak.rclone'))
-        print(" Installing rclone ... please wait ... ", end='', flush=True)
-        if platform.machine() in ['arm64', 'aarch64']:
-            rclone_url = 'https://downloads.rclone.org/rclone-current-linux-arm64.zip'
-        else:
-            rclone_url = 'https://downloads.rclone.org/rclone-current-linux-amd64.zip'
-        cfg.copy_binary_from_zip_url(rclone_url, 'rclone', 
-                            '/rclone-v*/',cfg.binfolderx)
-        print("Done!",flush=True)
+        rclonepath=os.path.join(cfg.binfolderx,'rclone')
+        if not cfg.was_file_modified_in_last_24h(rclonepath):
+            if os.path.exists(rclonepath):
+                if os.path.exists(os.path.join(cfg.binfolderx,'bak.rclone')):
+                    os.remove(os.path.join(cfg.binfolderx,'bak.rclone'))
+                os.rename(rclonepath,os.path.join(cfg.binfolderx,'bak.rclone'))
+            print(" Installing rclone ... please wait ... ", end='', flush=True)
+            if platform.machine() in ['arm64', 'aarch64']:
+                rclone_url = 'https://downloads.rclone.org/rclone-current-linux-arm64.zip'
+            else:
+                rclone_url = 'https://downloads.rclone.org/rclone-current-linux-amd64.zip'
+            cfg.copy_binary_from_zip_url(rclone_url, 'rclone', 
+                                '/rclone-v*/',cfg.binfolderx)
+            print("Done!",flush=True)
 
     # general setup 
     defdom = cfg.get_domain_name()
@@ -3612,6 +3614,23 @@ class ConfigManager:
         else:
             return os.path.join(self.config_root, entry)
 
+    def was_file_modified_in_last_24h(self, file_path):
+        """
+        Check if the file at the given path was modified in the last 24 hours.        
+        :param file_path: Path to the file to check.
+        :return: True if the file was modified in the last 24 hours, False otherwise.
+        """
+        try:
+            # Get the current time and the last modification time of the file
+            current_time = time.time()
+            last_modified_time = os.path.getmtime(file_path)
+
+            # Check if the file was modified in the last 24 hours (24 hours = 86400 seconds)
+            return (current_time - last_modified_time) < 86400
+        except FileNotFoundError:
+            # If the file does not exist, return False
+            return False
+        
     def replace_symlinks_with_realpaths(self, folders):
         cleaned_folders = []
         for folder in folders:
