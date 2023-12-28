@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.72'
+__version__ = '0.20.73'
 
 def main():
         
@@ -761,10 +761,17 @@ class Builder:
         def untar_file(file_path, root):
             print(f"Unpacking {file_path} into {root}...", flush=True)
             try:
-                # Decompress with pigz through tar command
+                # Check if pigz is available
+                if shutil.which("pigz"):
+                    decompress_command = f"pigz -p {self.args.vcpus}"
+                else:
+                    # Fallback to gzip if pigz is not available
+                    decompress_command = "gzip -d"
+
+                # Decompress and unpack the file
                 subprocess.run([
                     "tar",
-                    "-I", f"pigz -p {self.args.vcpus}",
+                    "-I", decompress_command,
                     "-xf", file_path,
                     "-C", root 
                 ], check=True)
@@ -772,9 +779,11 @@ class Builder:
                 return file_path
             except subprocess.CalledProcessError as e:
                 print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
+                return False
             except Exception as e:
                 print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
-            return None
+                return
+            return True
 
         # Create a list of tasks for parallel execution
         tasks = []
@@ -2163,6 +2172,29 @@ class AWSBoto:
         else:
             return None 
 
+    def _ec2_get_latest_other_linux_ami(self, osname, profile=None):
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        ec2_client = session.client('ec2')
+
+        myarch = 'x86_64'
+        if self.args.cputype.startswith('graviton'):
+            myarch = 'arm64'
+
+        response = ec2_client.describe_images(
+            Filters=[
+                {'Name': 'name', 'Values': [osname]},
+                {'Name': 'architecture', 'Values': [myarch]},
+                {'Name': 'virtualization-type', 'Values': ['hvm']},
+                {'Name': 'state', 'Values': ['available']}
+            ]            
+        )
+        # Sort images by creation date to get the latest
+        images = sorted(response['Images'], key=lambda k: k['DeprecationTime'], reverse=True) 
+        if images:
+            return images[0]['ImageId']
+        else:
+            return None 
+
     def _ec2_ondemand_price(self, instance_type, region='us-west-2'):
         pricing_client = boto3.client('pricing', region_name='us-east-1')
         try:
@@ -2495,6 +2527,8 @@ class AWSBoto:
             imageid = self._ec2_get_latest_ubuntu_lts_ami(profile)
         elif self.args.os.lower() == 'rhel':
             imageid = self._ec2_get_latest_rocky_linux_ami(profile)
+        else:
+            imageid = self._ec2_get_latest_other_linux_ami(self.args.os, profile)
         
         if not imageid:
             print(f'No {self.args.os} image found that matches the criteria.')
@@ -4203,8 +4237,8 @@ def parse_arguments():
     parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
-        help='build operating system, default=amazon (which is an optimized fedora 37) ' + 
-        'valid choices are: amazon, rhel or ubuntu')
+        help='build operating system, default=amazon (which is an optimized fedora) ' + 
+        'valid choices are: amazon, rhel, ubuntu and any AMI name including wilcards *')
     parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, 
         help='Number of vcpus to be allocated for compilations on the target machine. (default=4) ' +
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')
