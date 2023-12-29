@@ -536,10 +536,15 @@ class Builder:
                 all_tars, new_tars = self._untar_eb_software(softwaredir)                
                 cmdline = "eb --umask=002"
                 depterr = False
-                themissing_no_last = [value for dic in themissing[:-1] for value in dic.values()] # flatten the list, remove last entry
-                if len(themissing_no_last) > 0:
-                    print(f" Installing dependencies for {ebfile} ... ", flush=True)
-                for ebf in themissing_no_last:
+                #themissing_no_last = [value for dic in themissing[:-1] for value in dic.values()] # flatten the list, remove last entry
+                #if len(themissing_no_last) > 0:
+                #    print(f" Installing dependencies for {ebfile} ... ", flush=True)
+                # Error:
+                #File "/home/ec2-user/.local/bin/aws-eb.py", line 539, in build_all_eb
+                #    themissing_no_last = [value for dic in themissing[:-1] for value in dic.values()] # flatten the list, remove last entry
+                #TypeError: unhashable type: 'slice'
+                print(f" Installing dependencies for {ebfile} ... ", flush=True)
+                for ebf in themissing.values():
                     if ebf != ebfile:                        
                         print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
                         # ebf is the dependency, install the actual package with --robot in the next step
@@ -615,7 +620,7 @@ class Builder:
                     self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)                
                 self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')                
-                print(f'  ### UPDATE: {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
+                print(f'  ### UPDATE: {ebcnt} newest easyconfigs (plus dependencies) ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
                                                 
             except subprocess.CalledProcessError:
                 print(f"  Builder.build_all_eb: A CalledProcessError occurred while building {ebfile}.", flush=True)
