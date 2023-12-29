@@ -4338,8 +4338,8 @@ def parse_arguments():
     parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
         help="List CPU and GPU types")
     parser_download.add_argument( '--build-status', '-b', dest='buildstatus', action='store', default='',
-        help="Show stats on eb-build-status.json in this S3 folder: \n" +
-        "e.g. 's3://easybuild-cache/aws//amzn-2023_graviton-3/'")
+        help="Show stats on eb-build-status.json in this S3 folder (including prefix): \n" +
+        "e.g. 'aws/amzn-2023_graviton-3'")
     parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
         help="Also download the source packages")
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
