@@ -660,7 +660,7 @@ class Builder:
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
-            msg = 'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped),\n {bldcnt} packages built, {errcnt} builds failed.'
+            msg = f'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
             if errpkg:
                 msg += f'\nFailed easyconfigs: {", ".join(errpkg)}'
             self.aws.send_email_ses('', '', f'AWS-EB build for {s3_prefix} finished.', msg)
