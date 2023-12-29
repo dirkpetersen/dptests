@@ -50,6 +50,13 @@ R version 4.3.2 (2023-10-31) -- "Eye Holes"
 ./aws-eb.py launch --cpu-type epyc-gen-4 --include bio
 ```
 
+or 
+
+```
+aws-eb.py --no-checksums launch --skip-sources --eb-release --cpu-type graviton-3
+```
+
+
 ### Building Workflow 
 
 This is happening behind the scenes: 

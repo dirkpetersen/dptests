@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.74'
+__version__ = '0.20.75'
 
 def main():
         
@@ -283,13 +283,36 @@ def subcmd_download(args,cfg,bld,aws):
         return True
 
     if args.buildstatus:
-        counts = collections.defaultdict(lambda: collections.defaultdict(int))
+        #counts = collections.defaultdict(lambda: collections.defaultdict(int))
         statdict = aws.s3_get_json(f'{args.buildstatus}/eb-build-status.json')
+        summary = {}
         for item in statdict.values():
-            status = item.get('status')
-            reason = item.get('reason')
-            counts[status][reason] += 1
-        print(json.dumps(counts, indent=4))
+            status = item.get('status', 'unknown')
+            reason = item.get('reason', 'unknown')
+            # Initialize status in the summary if not present
+            if status not in summary:
+                summary[status] = {'count': 0, 'reasons': {}}
+            # Increment status count
+            summary[status]['count'] += 1
+            # Count reason occurrences under each status
+            if reason in summary[status]['reasons']:
+                summary[status]['reasons'][reason] += 1
+            else:
+                summary[status]['reasons'][reason] = 1
+        # Sorting reasons by occurrences under each status
+        for status in summary:
+            sorted_reasons = sorted(summary[status]['reasons'].items(), key=lambda x: x[1], reverse=True)
+            summary[status]['reasons'] = sorted_reasons       
+        # Print summary pretty
+        for status, details in summary.items():
+            print(f"Status: '{status}'")
+            print(f"  Total Occurrences: {details['count']}")
+            print("  Reasons:")
+            for reason, count in details['reasons']:
+                if count > 1:
+                    print(f"    - {reason}: {count} occurrences")
+            print()        
+        #print(json.dumps(summary, indent=4))
         return True
 
     if not args.cputype:
@@ -503,7 +526,7 @@ class Builder:
                 if not themissing:
                     print(f'  * {ebfile} and dependencies are already installed.', flush=True)
                     statdict[ebfile]['status'] = 'success'
-                    statdict[ebfile]['reason'] = 'modules are already installed'
+                    statdict[ebfile]['reason'] = 'easyconfig built successfully'
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 errmiss = self._errors_in_missing(themissing, statdict)
@@ -637,6 +660,10 @@ class Builder:
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
+            msg = 'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped),\n {bldcnt} packages built, {errcnt} builds failed.'
+            if errpkg:
+                msg += f'\nFailed easyconfigs: {", ".join(errpkg)}'
+            self.aws.send_email_ses('', '', f'AWS-EB build for {s3_prefix} finished.', msg)
         except Exception as e:
             print(f"  Builder.build_all_eb(final): An unexpected error occurred when uploading:\n{e}", flush=True)
             pass
