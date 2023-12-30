@@ -12,9 +12,9 @@ import shutil, tempfile, glob, concurrent.futures, operator
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
-import requests, boto3, botocore, psutil
-from packaging.version import parse, InvalidVersion
 try:
+    import requests, boto3, botocore, psutil
+    from packaging.version import parse, InvalidVersion    
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError    
 except:
