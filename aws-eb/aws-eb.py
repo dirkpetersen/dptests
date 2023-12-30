@@ -1,4 +1,4 @@
-#! /usr/bin/env python3python3
+#! /usr/bin/env python3
 
 """
 AWS-EB builds scientific software packages using Easybuild 
