@@ -338,18 +338,6 @@ def subcmd_download(args,cfg,bld,aws):
     if not shutil.which('rclone'):
         print('rclone not found, please add "~/.local/bin" to your PATH first.')
         return False
-        
-    # Running download 
-    
-    print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
-
-    bld.rclone_download_compare = '--size-only'
-    bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
-
-    print(f" Untarring packages ... ", flush=True)
-    all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
-
-    print('All software was downloaded to:', bld.eb_root)
 
     # checking for lmod install:
     if not os.getenv('LMOD_VERSION'):
@@ -361,7 +349,17 @@ def subcmd_download(args,cfg,bld,aws):
         else:
             print('Lmod found, but not active, please run this first:')
             print(f'source /usr/share/lmod/lmod/init/bash')
-        return False    
+
+    # Running download
+    print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
+
+    bld.rclone_download_compare = '--size-only'
+    bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
+
+    print(f" Untarring packages ... ", flush=True)
+    all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
+
+    print('All software was downloaded to:', bld.eb_root)
 
     print('\nTo use these software modules, add MODULEPATH to .bashrc, e.g. run: ')
     print(f'echo "export MODULEPATH=${{MODULEPATH}}:{bld.eb_root}/modules/all" >> ~/.bashrc')
