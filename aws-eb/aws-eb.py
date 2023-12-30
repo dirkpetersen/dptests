@@ -342,16 +342,16 @@ def subcmd_download(args,cfg,bld,aws):
     # checking for lmod install:
     if not os.getenv('LMOD_VERSION'):
         if not os.path.exists('/usr/share/lmod/lmod/init'):
-            print('Lmod not found, please install it first:')
+            print('\nLmod not found, please install it first:')
             print(' On Ubuntu/Debian: sudo apt install -y lmod')
             print(' On Amazon/RHEL: sudo dnf install -y Lmod')
             print('  (On RHEL first run: dnf install -y epel-release)')
         else:
-            print('Lmod found, but not active, please run this first:')
+            print('\nLmod found, but not active, please run this first:')
             print(f'source /usr/share/lmod/lmod/init/bash')
 
     # Running download
-    print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
+    print(f"\nDownloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
     bld.rclone_download_compare = '--size-only'
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
