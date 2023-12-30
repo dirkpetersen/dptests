@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.75'
+__version__ = '0.20.76'
 
 def main():
         
@@ -184,18 +184,18 @@ def subcmd_launch(args,cfg,bld,aws):
     
     if args.list:
         # list all folders in the archive
-        print('\nAll available EC2 instance families:')
-        print("--------------------------------------")
-        fams = aws.get_ec2_instance_families()
-        print(' '.join(fams))        
-        print("\nGPU    Instance Families")
-        print("--------------------------")
-        for c, i in aws.gpu_types.items():
-            print(f'{c}: {i}')               
+        # print('\nAll available EC2 instance families:')
+        # print("--------------------------------------")
+        # fams = aws.get_ec2_instance_families()
+        # print(' '.join(fams))        
+        # print("\nGPU    Instance Families")
+        # print("--------------------------")
+        # for c, i in aws.gpu_types.items():
+        #     print(f'{c}: {i}')               
         print("\nCPU Type    Instance Families")
         print("--------------------------------")
         for c, i in aws.cpu_types.items():
-            print(f'{c}: {" ".join(i)}')
+            print(f'{c}: {", ".join(i)}')
         return True
     
     # GPU types trump CPU types 
@@ -338,17 +338,12 @@ def subcmd_download(args,cfg,bld,aws):
     if not shutil.which('rclone'):
         print('rclone not found, please add "~/.local/bin" to your PATH first.')
         return False
-    
-    # checking for lmod install:
-    if not os.getenv('LMOD_VERSION'):
-        print('Lmod not found, please install it first.')
-        return False
-    
+        
     # Running download 
     
     print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
-    bld.rclone_download_compare = '--size-only'
+    bld.rclone_download_compare = '--size-only --fast-list'
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
 
     print(f" Untarring packages ... ", flush=True)
@@ -356,10 +351,20 @@ def subcmd_download(args,cfg,bld,aws):
 
     print('All software was downloaded to:', bld.eb_root)
 
-    print('\nTo use these software modules add this line to .bashrc, e.g.: ')
-    print(f'echo "export MODULEPATH=${{MODULEPATH}}:{bld.eb_root}/modules/all" >> ~/.bashrc')    
+    # checking for lmod install:
     if not os.getenv('LMOD_VERSION'):
-        print('\nLmod is not installed. Please ask your sysadmin to install Lmod to use this software stack.')
+        if not os.path.exists('/usr/share/lmod/lmod/init'):
+            print('Lmod not found, please install it first:')
+            print(' On Ubuntu/Debian: sudo apt install -y lmod')
+            print(' On Amazon/RHEL: sudo dnf install -y Lmod')
+            print('  (On RHEL first run: dnf install -y epel-release)')
+        else:
+            print('Lmod found, but not active, please run this first:')
+            print(f'source /usr/share/lmod/lmod/init/bash')
+        return False    
+
+    print('\nTo use these software modules, add MODULEPATH to .bashrc, e.g. run: ')
+    print(f'echo "export MODULEPATH=${{MODULEPATH}}:{bld.eb_root}/modules/all" >> ~/.bashrc')
     if bld.eb_root != '/opt/eb':
         print('\nAs you have not downloaded to the standard location, please create a symlink /opt/eb: ')
         print(f'sudo ln -s {bld.eb_root} /opt/eb')
@@ -429,17 +434,18 @@ class Builder:
         self.cfg = cfg
         self.aws = aws
         if self.args.nochecksums:
-            self.rclone_download_compare = '--size-only'
-            self.rclone_upload_compare = '--size-only'                
+            self.rclone_download_compare = '--size-only --fast-list'
+            self.rclone_upload_compare = '--size-only --fast-list --s3-no-head'                
         else:
-            self.rclone_download_compare = '--checksum'
-            self.rclone_upload_compare = '--checksum'
+            self.rclone_download_compare = '--checksum --fast-list'
+            self.rclone_upload_compare = '--checksum --fast-list'
         self.min_toolchains = self.cfg.read('general', 'min_toolchains')
         if not self.min_toolchains:
             self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 
                                    'LLVM' : '12.0', 'foss' : '2022a', 'gfbf': '2022a'}
             self.cfg.write('general', 'min_toolchains', self.min_toolchains)
         self.eb_root = '/opt/eb'
+        self.copydelay = 3600 # 1 hour delay between 2 uploads or 2 downloads to save costs
 
     def build_all_eb(self, easyconfigroot, s3_prefix, include, exclude):
 
@@ -451,7 +457,8 @@ class Builder:
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
-        ebcnt = 0; ebskipped = 0; bldcnt = 0; errcnt = 0; errpkg = []
+        ebcnt = 0; ebskipped = 0; bldcnt = 0; errcnt = 0; errpkg = []        
+        uploadtime = 0; downloadtime = 0 # timestamps for last upload/download to avoid too many uploads/downloads
         statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
         for root, dirs, files in self._walker(easyconfigroot):
             print(f'  Processing folder "{root}" newest easyconfigs... ')
@@ -572,20 +579,17 @@ class Builder:
                 if self.args.skipsources:
                     getsource = False
                 ebskipped-=1
-                self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
-                print(f" Unpacking previous packages ... ", flush=True)
-                all_tars, new_tars = self._untar_eb_software(softwaredir)                
+                if time.time()-downloadtime > self.copydelay:
+                    self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
+                    print(f" Unpacking previous packages ... ", flush=True)
+                    all_tars, new_tars = self._untar_eb_software(softwaredir)
+                    downloadtime = time.time()
+                else:
+                    print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)
                 cmdline = "eb --umask=002"
                 depterr = False
-                #themissing_no_last = [value for dic in themissing[:-1] for value in dic.values()] # flatten the list, remove last entry
-                #if len(themissing_no_last) > 0:
-                #    print(f" Installing dependencies for {ebfile} ... ", flush=True)
-                # Error:
-                #File "/home/ec2-user/.local/bin/aws-eb.py", line 539, in build_all_eb
-                #    themissing_no_last = [value for dic in themissing[:-1] for value in dic.values()] # flatten the list, remove last entry
-                #TypeError: unhashable type: 'slice'
                 print(f" Installing dependencies for {ebfile} ... ", flush=True)
-                for ebf in themissing.values():
+                for ebf in list(themissing.values())[:-1]:  # The last one is the original package, not a dependency
                     if ebf != ebfile:                        
                         print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
                         # ebf is the dependency, install the actual package with --robot in the next step
@@ -655,10 +659,13 @@ class Builder:
                     statdict[ebfile]['status'] = 'success'
                     statdict[ebfile]['reason'] = 'easyconfig built successfully'
                     statdict[ebfile]['modules'] = None
-                    bldcnt+=1
                     print(f" Tarring and uploading new packages ... ", flush=True)
                     all_tars, new_tars = self._tar_eb_software(softwaredir)
-                    self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)                
+                    if new_tars:
+                        bldcnt+=1
+                        self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
+                    else:
+                        print(f'  * No new eb.tar.gz files to upload.', flush=True)
                 self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')                
                 print(f'  ### UPDATE: {ebcnt} newest easyconfigs (plus dependencies) ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
@@ -676,7 +683,7 @@ class Builder:
             print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
             print(f'  BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
             print(f" Final upload using checksums ... ", flush=True)
-            self.rclone_upload_compare = '--checksum'
+            self.rclone_upload_compare = '--checksum --fast-list'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
             msg = f'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
             if errpkg:
@@ -1001,13 +1008,20 @@ class Builder:
 
         # optional '--s3-acl', 'authenticated-read' does not seem to be required
 
-        if not self.rclone_upload_compare == '--size-only':
+        if not self.rclone_upload_compare == '--size-only --fast-list --s3-no-head':
             print ('  Uploading Bootstrap output ... ', flush=True)
             ret = rclone.copy(os.path.expanduser('~/'),
                             f'{target}/{s3_prefix}/logs/',
                             '--include', 'out.bootstrap.*'
                             )
             self._transfer_status(ret)   
+
+            print ('  Uploading Sources ... ', flush=True)
+            ret = rclone.copy(os.path.join(source,'sources'),
+                            f'{target}/sources/', 
+                            '--links', self.rclone_upload_compare                     
+                            )
+            self._transfer_status(ret)            
 
         print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
@@ -1016,12 +1030,6 @@ class Builder:
                         )
         self._transfer_status(ret)
 
-        print ('  Uploading Sources ... ', flush=True)
-        ret = rclone.copy(os.path.join(source,'sources'),
-                          f'{target}/sources/', 
-                          '--links', self.rclone_upload_compare                     
-                        )
-        self._transfer_status(ret)
 
         print ('  Uploading Software ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'software'),
@@ -1034,18 +1042,20 @@ class Builder:
         print ('  Uploading EB output ... ', flush=True)
         ret = rclone.copy(os.path.expanduser('~/'),
                           f'{target}/{s3_prefix}/logs/',
+                           self.rclone_upload_compare,
                           '--include', 'out.easybuild.*'
                         )
 
         print ('  Uploading failed logs ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'tmp'),
-                          f'{target}/{s3_prefix}/logs/failed/'
+                          f'{target}/{s3_prefix}/logs/failed/',
+                           self.rclone_upload_compare
                         )
 
         self._transfer_status(ret)
         
         # after the first successful upload do a size only compare
-        self.rclone_upload_compare  = '--size-only'
+        self.rclone_upload_compare  = '--size-only --fast-list --s3-no-head'
                 
     def download(self, source, target, s3_prefix=None, with_source=True):
                
@@ -1077,7 +1087,7 @@ class Builder:
         self._transfer_status(ret)
         
         # for subsequent download comparison size is enough
-        self.rclone_download_compare = '--size-only'
+        self.rclone_download_compare = '--size-only --fast-list'
    
         return -1
     
@@ -2425,7 +2435,7 @@ class AWSBoto:
         format_largest_unused_block_devices
         chown {self.cfg.defuser} /opt
         dnf config-manager --enable crb # enable powertools for RHEL
-        {pkgm} -y install epel-release
+        {pkgm} install -y epel-release
         {pkgm} check-update
         {pkgm} update -y                                   
         {pkgm} install -y at gcc vim wget python3-pip python3-psutil
@@ -4288,7 +4298,7 @@ def parse_arguments():
     parser.add_argument('--profile', '-p', dest='awsprofile', action='store', default='', 
         help='which AWS profile in ~/.aws/ should be used. default="aws"')
     parser.add_argument('--no-checksums', '-u', dest='nochecksums', action='store_true', default=False,
-        help="Use --size-only instead of --checksums when copying from and to s3 using rclone.")      
+        help="Use --size-only --fast-list --s3-no-head instead of --checksum when using rclone with S3.")      
     parser.add_argument('--version', '-v', dest='version', action='store_true', default=False, 
         help='print AWS-EB and Python version info')
     
