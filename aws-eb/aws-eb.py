@@ -2520,7 +2520,7 @@ class AWSBoto:
         aws configure --profile {self.cfg.awsprofile} set region {self.cfg.aws_region}
         sed -i 's/aws_access_key_id [^ ]*/aws_access_key_id /' {bscript}
         sed -i 's/aws_secret_access_key [^ ]*/aws_secret_access_key /' {bscript}
-        sed -i '/^aws configure /s/^/#/' {bscript}
+        sed -i 's/^aws configure /#&/' {bscript}
         curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
         echo '#! /bin/bash' > ~/.local/bin/get-public-ip
         echo 'ETOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")' >> ~/.local/bin/get-public-ip
