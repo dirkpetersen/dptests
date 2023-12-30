@@ -6,14 +6,14 @@ on AWS EC2 instances and syncs the binaries with S3 buckets
 """
 # internal modules
 import sys, os, argparse, json, configparser, platform, collections
-import urllib3, datetime, tarfile, zipfile, textwrap, socket, json
+import datetime, tarfile, zipfile, textwrap, socket, json
 import math, signal, shlex, time, re, inspect, traceback, subprocess
 import shutil, tempfile, glob, concurrent.futures, operator
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
 try:
-    import requests, boto3, botocore, psutil
+    import urllib3, requests, boto3, botocore, psutil
     from packaging.version import parse, InvalidVersion    
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError    
