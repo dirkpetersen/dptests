@@ -134,14 +134,11 @@ def subcmd_config(args, cfg, aws):
     bucket = cfg.prompt('Please confirm/edit S3 bucket name to be created in all used profiles.',
                         f'aws-eb-{emailstr}|general|bucket','string')
     archiveroot = cfg.prompt('Please confirm/edit the root path inside your S3 bucket',
-                                'archive|general|archiveroot','string')
+                                'aws|general|archiveroot','string')
     s3_storage_class =  cfg.prompt('Please confirm/edit the AWS S3 Storage class',
                                 'INTELLIGENT_TIERING|general|s3_storage_class','string')
 
 
-    # if there is a shared ~/.aws/config copy it over
-    if cfg.config_root_local != cfg.config_root:
-        cfg.replicate_ini('ALL',cfg.awsconfigfileshr,cfg.awsconfigfile)
     cfg.create_aws_configs()
 
     aws_region = cfg.get_aws_region('aws')
@@ -268,14 +265,14 @@ def subcmd_download(args,cfg,bld,aws):
 
     if args.list:
         # list all folders in the archive
-        print('\nAll available EC2 instance families:')
-        print("--------------------------------------")
-        fams = aws.get_ec2_instance_families()
-        print(' '.join(fams))        
-        print("\nGPU    Instance Families")
-        print("--------------------------")
-        for c, i in aws.gpu_types.items():
-            print(f'{c}: {i}')               
+        # print('\nAll available EC2 instance families:')
+        # print("--------------------------------------")
+        # fams = aws.get_ec2_instance_families()
+        # print(' '.join(fams))        
+        # print("\nGPU    Instance Families")
+        # print("--------------------------")
+        # for c, i in aws.gpu_types.items():
+        #     print(f'{c}: {i}')               
         print("\nCPU Type    Instance Families")
         print("--------------------------------")
         for c, i in aws.cpu_types.items():
@@ -327,6 +324,27 @@ def subcmd_download(args,cfg,bld,aws):
     if ret==13 or ret == 2:       
         print(f'\nERROR: Folder "{bld.eb_root}" must exist and you need write access to it.')
         return False
+    
+    # checking for rclone install
+    if not shutil.which('rclone'):
+        print(" Installing rclone ... please wait ... ", end='', flush=True)
+        if platform.machine() in ['arm64', 'aarch64']:
+            rclone_url = 'https://downloads.rclone.org/rclone-current-linux-arm64.zip'
+        else:
+            rclone_url = 'https://downloads.rclone.org/rclone-current-linux-amd64.zip'
+        cfg.copy_binary_from_zip_url(rclone_url, 'rclone', 
+                            '/rclone-v*/', os.path.expanduser('~/.local/bin'))
+        print("Done!",flush=True) 
+    if not shutil.which('rclone'):
+        print('rclone not found, please add "~/.local/bin" to your PATH first.')
+        return False
+    
+    # checking for lmod install:
+    if not os.getenv('LMOD_VERSION'):
+        print('Lmod not found, please install it first.')
+        return False
+    
+    # Running download 
     
     print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
@@ -1380,17 +1398,17 @@ class AWSBoto:
         self.cfg = cfg
         self.awsprofile = self.cfg.awsprofile
         self.cpu_types = {
-            "graviton-2": ('m6g','c6g', 'c6gn', 't4g' ,'g5g'),
-            "graviton-3": ('m7g', 'c7g', 'c7gn'),
-            "epyc-gen-1": ('t3a'),
+            "graviton-2": ('c6g', 'c6gd', 'c6gn', 'm6g', 'm6gd', 'r6g', 'r6gd', 't4g' ,'g5g'),
+            "graviton-3": ('c7g', 'c7gd', 'c7gn', 'm7g', 'm7gd', 'r7g', 'r7gd'),
+            "epyc-gen-1": ('t3a',),
             "epyc-gen-2": ('c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'),
             "epyc-gen-3": ('m6a', 'c6a', 'r6a', 'p5'),
             "epyc-gen-4": ('c7a', 'm7a', 'r7a'),
-            "xeon-gen-1": ('m4', 'c4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3', 'i3en'),
-            "xeon-gen-2": ('m5', 'c5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'),
-            "xeon-gen-3": ('m6i', 'c6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'),
-            "xeon-gen-4": ('c7i', 'm7i', 'm7i-flex'),
-            "core-i7-mac": ('mac1')
+            "xeon-gen-1": ('c4', 'm4', 't2', 'r4', 'p3' ,'p2', 'f1', 'g3', 'i3en'),
+            "xeon-gen-2": ('c5', 'c5n', 'm5', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'),
+            "xeon-gen-3": ('c6i', 'c6in', 'm6i', 'm6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'),
+            "xeon-gen-4": ('c7i', 'm7i', 'm7i-flex', 'r7i', 'r7iz'),
+            "core-i7-mac": ('mac1',)
         }
         self.gpu_types = {
             "h100": 'p5',
@@ -2407,6 +2425,7 @@ class AWSBoto:
         format_largest_unused_block_devices
         chown {self.cfg.defuser} /opt
         dnf config-manager --enable crb # enable powertools for RHEL
+        {pkgm} -y install epel-release
         {pkgm} check-update
         {pkgm} update -y                                   
         {pkgm} install -y at gcc vim wget python3-pip python3-psutil
@@ -2415,15 +2434,19 @@ class AWSBoto:
         loginctl enable-linger {self.cfg.defuser}
         systemctl start atd
         {pkgm} upgrade -y
+        {pkgm} install -y Lmod
         {pkgm} install -y mc git docker nodejs-npm
         {pkgm} install -y lua lua-posix lua-devel tcl-devel
-        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl 
+        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl lmod
         {pkgm} install -y lua5.3 lua-bit32 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
         dnf group install -y 'Development Tools'
         cd /tmp
         wget https://sourceforge.net/projects/lmod/files/Lmod-8.7.tar.bz2
         tar -xjf Lmod-8.7.tar.bz2
-        cd Lmod-8.7 && ./configure && make install
+        cd Lmod-8.7 && ./configure && make install        
+        if ! [[ -d /usr/share/lmod ]]; then
+          ln -s /usr/local/lmod /usr/share/lmod
+        fi
         ''').strip()
         return userdata
     
@@ -2432,7 +2455,7 @@ class AWSBoto:
         if self.args.os == 'ubuntu':
             self.cfg.defuser = 'ubuntu'        
         rc = textwrap.dedent(f'''        
-        test -d /usr/local/lmod/lmod/init && source /usr/local/lmod/lmod/init/bash
+        test -d /usr/share/lmod/lmod/init && source /usr/share/lmod/lmod/init/bash
         export MODULEPATH=/opt/eb/modules/all:/opt/eb/modules/lib:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         # export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         #
@@ -2504,7 +2527,7 @@ class AWSBoto:
         simple-benchmark.py > ~/out.simple-benchmark.txt &
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
-        until [ -f /usr/local/lmod/lmod/init/bash ]; do sleep 5; done; echo "lmod exists, please wait ..."
+        until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
         mkdir -p /opt/eb/tmp
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
         python3 -m pip install easybuild 

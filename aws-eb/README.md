@@ -1,29 +1,31 @@
 # AWS-EB (Easybuild in AWS)
 
-This tool does 2 things: First, it provides access to an s3 bucket (s3://easybuild-cache) that stores binaries and sources of performance optimized HPC software compiled by the Easybuild (EB) Framework. Second, it allows you to run a fully automated build of all latest EB packages (newest version only) including tar and upload these builds to AWS S3. Previously built packages will be automatically downloaded which allows aws-eb to use the AWS spot market. You can also use aws-eb on-premises but you need an S3 compatible bucket.
+This tool does 2 things: 
 
+* First, it provides access to an s3 bucket (s3://easybuild-cache) that stores binaries and sources of performance optimized HPC software compiled by the Easybuild (EB) Framework. Use the aws-eb.py download command to load the software onto your machine.
+* Second, it allows you to run a fully automated build of all latest EB packages (newest version only). After a successful build, it will tar and upload these packages to AWS S3 for later use and sharing with others. Previously built packages will be automatically downloaded which allows aws-eb to use the AWS spot market by default. You can also use aws-eb on-premises but you need an S3 compatible bucket (e.g. Ceph)
 The EB root (EASYBUILD_PREFIX) is currently set to /opt/eb.
 
-## Try it
+## Try it - Download and use compiled software
 
-Make sure you have your AWS creds in ~/.aws/credentials and your AWS region is set. First run the config where you will be asked for an S3 bucket name, which can be an existing bucket and then launch --list to see what cpu types are there.  
-
-```
-./aws-eb.py config
-./aws-eb.py launch --list
-```
-
-... then download some pre-made binaries, the graviton-3 binaries are the most complete ones.
-
-###  Download and use binaries
+To download the software, a folder /opt/eb must be writable with about 300 GB free disk space on your machine. Each package is compressed in a eb.tar.gz file which will be automatically untarred after downloading. Each operating system and CPU type will have about 100GB of eb.tar.gz files in S3.
+For now, please use `Amazon Linux 2023` with a modern --cpu-type such as `graviton-3`, `epyc-gen-4` or `xeon-gen-4`. If you prefer using the latest RHEL (aka Rocky) or the latest Ubuntu LTS, please select `xeon-gen-1`. This will be the best choice if you are using the tool on-premises. CPU type `xeon-gen-1` will work on all x86-64 cpus that are offerd on AWS but performance will not be optimized. We will start with `graviton-3`, as this ARM cpu is the most cost effective option with performance similar to Xeon but 1/3 slower than Epyc
 
 ```
- ./aws-eb.py download -c graviton-3
+ec2-user@aws-eb:~$ aws-eb.py download --cpu-type graviton-3
+Downloading packages from s3://easybuild-cache/aws/amzn-2023_graviton-3 to /opt/eb ...
   Downloading Modules ...
-   Rclone copy: 3984 file(s) with 3.094 MiB transferred.
+   Rclone copy: 4198 file(s) with 3.262 MiB transferred.
   Downloading Software ...
-   Rclone copy: 1991 file(s) with 74.799 GiB transferred.
+   Rclone copy: 2097 file(s) with 76.219 GiB transferred.
  Untarring packages ...
+Unpacking /opt/eb/software/Anaconda3/Anaconda3-2023.09-0.eb.tar.gz into /opt/eb/software/Anaconda3...
+Unpacking /opt/eb/software/ASAP/ASAP-2.1-foss-2022a.eb.tar.gz into /opt/eb/software/ASAP...
+Unpacking /opt/eb/software/BEDTools/BEDTools-2.31.0-GCC-12.3.0.eb.tar.gz into /opt/eb/software/BEDTools...
+Successfully unpacked: /opt/eb/software/BEDTools/BEDTools-2.31.0-GCC-12.3.0.eb.tar.gz
+Unpacking /opt/eb/software/Automake/Automake-1.16.4-GCCcore-11.2.0.eb.tar.gz into /opt/eb/software/Automake...
+Unpacking /opt/eb/software/BLAST+/BLAST+-2.2.31.eb.tar.gz into /opt/eb/software/BLAST+...
+Successfully unpacked: /opt/eb/software/Automake/Automake-1.16.5-GCCcore-12.3.0.eb.tar.gz
 
 All software was downloaded to: /opt/eb
 
@@ -31,7 +33,6 @@ To use these software modules add this line to .bashrc, e.g.:
 echo "export MODULEPATH=${MODULEPATH}:/opt/eb/modules/all" >> ~/.bashrc
 source ~/.bashrc
 ```
-
 now you can use the HPC module system to load and run software
 
 ```
@@ -42,9 +43,48 @@ $ R
 R version 4.3.2 (2023-10-31) -- "Eye Holes"
 ```
 
+Note: By using the ` --target /your/folder` option you can download the packages to a different location instead of `/opt/eb`, however you need to create a symlink (`ln -s /your/folder /opt/eb`) so that calls to /opt/eb are redirected to your other folder. 
+
+The aws-eb.py script will use `rclone` in the background to download data in parallel. For troubleshooting and to see what is actually inside the easybuild-cache bucket you can also use the aws CLI with the `--request-payer requester` option
+
+```
+ aws s3 ls s3://easybuild-cache/aws/ --request-payer requester
+                           PRE amzn-2023_epyc-gen-4/
+                           PRE amzn-2023_graviton-3/
+                           PRE amzn-2023_xeon-gen-4/
+                           PRE rhel-9_xeon-gen-1/
+                           PRE sources/
+                           PRE ubuntu-22.04_xeon-gen-1/
+```
+
 ## building addional software 
 
+First, we need to run the configuration 
 
+```
+ec2-user@aws-eb:~$ aws-eb.py config
+ Installing rclone ... please wait ... Done!
+
+*** Asking a few questions ***
+*** For most you can just hit <Enter> to accept the default. ***
+
+*** Enter your email address: ***
+  [Default: ec2-user@us-west-2.compute.internal] myuser@domain.edu
+
+*** Please confirm/edit S3 bucket name to be created in all used profiles.: ***
+  [Default: aws-eb-myuser-domain-edu] my-aws-bucket-name
+*** Please confirm/edit the root path inside your S3 bucket: ***
+  [Default: aws] 
+*** Please confirm/edit the AWS S3 Storage class: ***
+  [Default: INTELLIGENT_TIERING]
+*** Please confirm/edit the AWS S3 region: ***
+  [Default: us-west-2]
+
+  Verify that bucket 'my-aws-bucket-name' is configured ...
+
+Done!
+
+```
 
 ```
 ./aws-eb.py launch --cpu-type epyc-gen-4 --include bio
@@ -94,7 +134,7 @@ This will allow to pick any spot instance that has a certain compatible hardware
 self.cpu_types = {
     "graviton-2": ['m6g','c6g', 'c6gn', 't4g' ,'g5g'],
     "graviton-3": ['m7g', 'c7g', 'c7gn'],
-    "epyc-gen-1": ['t3a'],
+    "epyc-gen-1": ['t3a',],
     "epyc-gen-2": ['c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'],
     "epyc-gen-3": ['c6a', 'm6a', 'r6a', 'p5'],
     "epyc-gen-4": ['c7a', 'm7a', 'r7a'],
@@ -102,26 +142,9 @@ self.cpu_types = {
     "xeon-gen-2": ['c5', 'm5', 'c5n', 'm5n', 'm5zn', 'r5', 't3', 't3n', 'dl1', 'inf1', 'g4dn', 'vt1'],
     "xeon-gen-3": ['c6i', 'm6i', 'm6in', 'c6in', 'r6i', 'r6id', 'r6idn', 'r6in', 'trn1'],
     "xeon-gen-4": ['c7i', 'm7i', 'm7i-flex'],
-    "core-i7-mac": ['mac1']
+    "core-i7-mac": ['mac1',]
 }
-self.gpu_types = {
-    "h100": 'p5',
-    "a100": 'p4',
-    "v100": 'p3',  
-    "k80": 'p2',
-    "gaudi": 'dl1',
-    "trainium": 'trn1',
-    "inferentia2": 'inf2',
-    "inferentia1": 'inf1',
-    "t4g": 'g5g',
-    "a10g": 'g5',
-    "t4": 'g4dn',
-    "v520": 'g4ad',
-    "m60": 'g3',
-    "fpga": 'f1',
-    "u30": 'vt1'            
-}
-```
+
 
 ## build-machine 
 
