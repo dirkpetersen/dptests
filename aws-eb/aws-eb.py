@@ -3503,7 +3503,7 @@ class ConfigManager:
         self.awscredsfile = os.path.join(self.home_dir, '.aws', 'credentials')
         self.awsconfigfile = os.path.join(self.home_dir, '.aws', 'config')
         self.awsconfigfileshr = os.path.join(self.config_root, 'aws_config')
-        self.bucket = self.read('general','bucket','easybuild-cache-ohsu')
+        self.bucket = self.read('general','bucket','easybuild-cache')
         self.archiveroot = self.read('general','archiveroot', 'aws')
         self.archivepath = f'{self.bucket}/{self.archiveroot}'
         self.awsprofile = os.getenv('AWS_PROFILE', 'default')
