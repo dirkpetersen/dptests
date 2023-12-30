@@ -40,7 +40,9 @@ def main():
 
     # Instantiate classes required by all functions         
     cfg = ConfigManager(args)
-    aws = AWSBoto(args, cfg)
+    aws = None
+    if not args.subcmd in ['download', 'dld']:
+        aws = AWSBoto(args, cfg)
     bld = Builder(args, cfg, aws)
     
     if args.version:
@@ -51,8 +53,10 @@ def main():
         subcmd_config(args, cfg, aws)
     elif args.subcmd in ['launch', 'lau']:
         subcmd_launch(args, cfg, bld, aws)
-    elif args.subcmd in ['download', 'bld']:
+    elif args.subcmd in ['download', 'dld']:
         subcmd_download(args, cfg, bld, aws)
+    elif args.subcmd in ['buildstatus', 'sta']:
+        subcmd_buildstatus(args, aws)
     elif args.subcmd in ['ssh', 'scp']: #or args.unmount:
         subcmd_ssh(args, cfg, aws)
 
@@ -70,6 +74,22 @@ def args_version(cfg):
 def subcmd_config(args, cfg, aws):
     # configure user and / or team settings 
     # arguments are Class instances passed from main
+
+    if args.list:
+        # list all folders in the archive
+        # print('\nAll available EC2 instance families:')
+        # print("--------------------------------------")
+        # fams = aws.get_ec2_instance_families()
+        # print(' '.join(fams))        
+        # print("\nGPU    Instance Families")
+        # print("--------------------------")
+        # for c, i in aws.gpu_types.items():
+        #     print(f'{c}: {i}')               
+        print("\nCPU Type    Instance Families")
+        print("--------------------------------")
+        for c, i in aws.cpu_types.items():
+            print(f'{c}: {" ".join(i)}')
+        return True
 
     first_time=True
     if not cfg.binfolder:
@@ -181,30 +201,14 @@ def subcmd_launch(args,cfg,bld,aws):
     if args.awsprofile and args.awsprofile not in cfg.get_aws_profiles():
         print(f'Profile "{args.awsprofile}" not found.')
         return False    
-    
-    if args.list:
-        # list all folders in the archive
-        # print('\nAll available EC2 instance families:')
-        # print("--------------------------------------")
-        # fams = aws.get_ec2_instance_families()
-        # print(' '.join(fams))        
-        # print("\nGPU    Instance Families")
-        # print("--------------------------")
-        # for c, i in aws.gpu_types.items():
-        #     print(f'{c}: {i}')               
-        print("\nCPU Type    Instance Families")
-        print("--------------------------------")
-        for c, i in aws.cpu_types.items():
-            print(f'{c}: {", ".join(i)}')
-        return True
-    
+        
     # GPU types trump CPU types 
     fams_c = []
     fam = ''
     if args.cputype:
         fams_c = aws.get_ec2_instance_families_from_cputype(args.cputype)
         if not fams_c:
-            print(f'CPU type "{args.cputype}" not found. Run build --list to see types.')
+            print(f'CPU type "{args.cputype}" not found. Run config --list to see types.')
             return False
         fam = fams_c[0]
 
@@ -216,7 +220,7 @@ def subcmd_launch(args,cfg,bld,aws):
         args.cputype =  aws.get_ec2_cputype_from_instance_family(fam)
 
     if not args.cputype:
-        print('Please specify a CPU or a GPU type. Run build --list to see types.')
+        print('Please specify a CPU or a GPU type. Run config --list to see types.')
         return False
 
     os_id, version_id = cfg.get_os_release_info()
@@ -263,57 +267,8 @@ def subcmd_download(args,cfg,bld,aws):
         print('Could not determine OS release information.')
         return False
 
-    if args.list:
-        # list all folders in the archive
-        # print('\nAll available EC2 instance families:')
-        # print("--------------------------------------")
-        # fams = aws.get_ec2_instance_families()
-        # print(' '.join(fams))        
-        # print("\nGPU    Instance Families")
-        # print("--------------------------")
-        # for c, i in aws.gpu_types.items():
-        #     print(f'{c}: {i}')               
-        print("\nCPU Type    Instance Families")
-        print("--------------------------------")
-        for c, i in aws.cpu_types.items():
-            print(f'{c}: {" ".join(i)}')
-        return True
-
-    if args.buildstatus:
-        #counts = collections.defaultdict(lambda: collections.defaultdict(int))
-        statdict = aws.s3_get_json(f'{args.buildstatus}/eb-build-status.json')
-        summary = {}
-        for item in statdict.values():
-            status = item.get('status', 'unknown')
-            reason = item.get('reason', 'unknown')
-            # Initialize status in the summary if not present
-            if status not in summary:
-                summary[status] = {'count': 0, 'reasons': {}}
-            # Increment status count
-            summary[status]['count'] += 1
-            # Count reason occurrences under each status
-            if reason in summary[status]['reasons']:
-                summary[status]['reasons'][reason] += 1
-            else:
-                summary[status]['reasons'][reason] = 1
-        # Sorting reasons by occurrences under each status
-        for status in summary:
-            sorted_reasons = sorted(summary[status]['reasons'].items(), key=lambda x: x[1], reverse=True)
-            summary[status]['reasons'] = sorted_reasons       
-        # Print summary pretty
-        for status, details in summary.items():
-            print(f"Status: '{status}'")
-            print(f"  Total Occurrences: {details['count']}")
-            print("  Reasons:")
-            for reason, count in details['reasons']:
-                if count > 1:
-                    print(f"    - {reason}: {count} occurrences")
-            print()        
-        #print(json.dumps(summary, indent=4))
-        return True
-
     if not args.cputype:
-        print('Please specify a CPU type. Use the --list option to see types.')
+        print('Please specify a CPU type. Use the config --list option to see types.')
         return False
     
     bld.eb_root = args.target
@@ -366,6 +321,40 @@ def subcmd_download(args,cfg,bld,aws):
     if bld.eb_root != '/opt/eb':
         print('\nAs you have not downloaded to the standard location, please create a symlink /opt/eb: ')
         print(f'sudo ln -s {bld.eb_root} /opt/eb')
+
+def subcmd_buildstatus(args,aws):
+
+    #counts = collections.defaultdict(lambda: collections.defaultdict(int))
+    statdict = aws.s3_get_json(f'{args.prefix}/eb-build-status.json')
+    summary = {}
+    for item in statdict.values():
+        status = item.get('status', 'unknown')
+        reason = item.get('reason', 'unknown')
+        # Initialize status in the summary if not present
+        if status not in summary:
+            summary[status] = {'count': 0, 'reasons': {}}
+        # Increment status count
+        summary[status]['count'] += 1
+        # Count reason occurrences under each status
+        if reason in summary[status]['reasons']:
+            summary[status]['reasons'][reason] += 1
+        else:
+            summary[status]['reasons'][reason] = 1
+    # Sorting reasons by occurrences under each status
+    for status in summary:
+        sorted_reasons = sorted(summary[status]['reasons'].items(), key=lambda x: x[1], reverse=True)
+        summary[status]['reasons'] = sorted_reasons       
+    # Print summary pretty
+    for status, details in summary.items():
+        print(f"Status: '{status}'")
+        print(f"  Total Occurrences: {details['count']}")
+        print("  Reasons:")
+        for reason, count in details['reasons']:
+            if count > 1:
+                print(f"    - {reason}: {count} occurrences")
+        print()        
+    #print(json.dumps(summary, indent=4))
+    return True
 
 def subcmd_ssh(args, cfg, aws):
 
@@ -4313,6 +4302,8 @@ def parse_arguments():
             Bootstrap the configurtion, install dependencies and setup your environment.
             You will need to answer a few questions about your cloud and hpc setup.
         '''), formatter_class=argparse.RawTextHelpFormatter)
+    parser_config.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
+        help="List available CPU and GPU types")        
     parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',
         metavar='<email@address.org>', help='setup aws-eb as a monitoring cronjob ' +
         'on an ec2 instance and notify an email address')
@@ -4322,8 +4313,6 @@ def parse_arguments():
         help=textwrap.dedent(f'''
             Launch EC2 instance, build new Easybuild packages and upload them to S3
         '''), formatter_class=argparse.RawTextHelpFormatter) 
-    parser_launch.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
-        help="List available CPU and GPU types")    
     parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
         help='run --list to see available CPU types')
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
@@ -4371,16 +4360,20 @@ def parse_arguments():
     parser_download.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
         help='Number of vcpus to be allocated for compilations on the target machine. (default=8) ' +
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')    
-    parser_download.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
-        help="List CPU and GPU types")
-    parser_download.add_argument( '--build-status', '-b', dest='buildstatus', action='store', default='',
-        help="Show stats on eb-build-status.json in this S3 folder (including prefix): \n" +
-        "e.g. 'aws/amzn-2023_graviton-3'")
     parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
         help="Also download the source packages")
     parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
         metavar='<target_folder>', help='Download to other folder than default')    
-    
+
+    # ***
+    parser_buildstatus = subparsers.add_parser('buildstatus', aliases=['sta'],
+        help=textwrap.dedent(f'''
+            Show stats on eb-build-status.json in this S3 folder (including prefix):
+            e.g. 'aws/amzn-2023_graviton-3' or 'aws/amzn-2023_epyc-gen-4' .
+        '''), formatter_class=argparse.RawTextHelpFormatter) 
+    parser_buildstatus.add_argument('prefix', action='store', default='', 
+        metavar='<s3_prefix>', help='your prefix, e.g. aws/amzn-2023_graviton-3')    
+
     # ***
     parser_ssh = subparsers.add_parser('ssh', aliases=['scp'],
         help=textwrap.dedent(f'''
