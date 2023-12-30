@@ -1037,7 +1037,7 @@ class Builder:
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
                           '--links', '--fast-list', '--s3-no-head',
-                            self.rclone_upload_compare
+                            self.rclone_upload_compare, 
                           '--include', '*.eb.tar.gz'
                         )
         self._transfer_status(ret)
@@ -1046,7 +1046,7 @@ class Builder:
         ret = rclone.copy(os.path.expanduser('~/'),
                           f'{target}/{s3_prefix}/logs/',
                            '--fast-list', '--s3-no-head',
-                            self.rclone_upload_compare
+                            self.rclone_upload_compare,
                           '--include', 'out.easybuild.*'
                         )
 
