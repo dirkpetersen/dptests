@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python3python3
 
 """
 AWS-EB builds scientific software packages using Easybuild 
@@ -22,7 +22,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.76'
+__version__ = '0.20.77'
 
 def main():
         
@@ -343,7 +343,7 @@ def subcmd_download(args,cfg,bld,aws):
     
     print(f"Downloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
-    bld.rclone_download_compare = '--size-only --fast-list'
+    bld.rclone_download_compare = '--size-only'
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
 
     print(f" Untarring packages ... ", flush=True)
@@ -434,11 +434,11 @@ class Builder:
         self.cfg = cfg
         self.aws = aws
         if self.args.nochecksums:
-            self.rclone_download_compare = '--size-only --fast-list'
-            self.rclone_upload_compare = '--size-only --fast-list --s3-no-head'                
+            self.rclone_download_compare = '--size-only'
+            self.rclone_upload_compare = '--size-only'                
         else:
-            self.rclone_download_compare = '--checksum --fast-list'
-            self.rclone_upload_compare = '--checksum --fast-list'
+            self.rclone_download_compare = '--checksum'
+            self.rclone_upload_compare = '--checksum'
         self.min_toolchains = self.cfg.read('general', 'min_toolchains')
         if not self.min_toolchains:
             self.min_toolchains = {'system': 'system', 'GCC': '11.0', 'GCCcore' : '11.0', 
@@ -1008,7 +1008,7 @@ class Builder:
 
         # optional '--s3-acl', 'authenticated-read' does not seem to be required
 
-        if not self.rclone_upload_compare == '--size-only --fast-list --s3-no-head':
+        if not self.rclone_upload_compare == '--size-only':
             print ('  Uploading Bootstrap output ... ', flush=True)
             ret = rclone.copy(os.path.expanduser('~/'),
                             f'{target}/{s3_prefix}/logs/',
@@ -1019,14 +1019,16 @@ class Builder:
             print ('  Uploading Sources ... ', flush=True)
             ret = rclone.copy(os.path.join(source,'sources'),
                             f'{target}/sources/', 
-                            '--links', self.rclone_upload_compare                     
+                            '--links', '--fast-list', '--s3-no-head',
+                            self.rclone_upload_compare                     
                             )
-            self._transfer_status(ret)            
+            self._transfer_status(ret)
 
         print ('  Uploading Modules ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'modules'),
                           f'{target}/{s3_prefix}/modules/', 
-                          '--links', self.rclone_upload_compare
+                          '--links', '--fast-list', '--s3-no-head',
+                            self.rclone_upload_compare
                         )
         self._transfer_status(ret)
 
@@ -1034,7 +1036,8 @@ class Builder:
         print ('  Uploading Software ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'software'),
                           f'{target}/{s3_prefix}/software/', 
-                          '--links', self.rclone_upload_compare,
+                          '--links', '--fast-list', '--s3-no-head',
+                            self.rclone_upload_compare
                           '--include', '*.eb.tar.gz'
                         )
         self._transfer_status(ret)
@@ -1042,20 +1045,22 @@ class Builder:
         print ('  Uploading EB output ... ', flush=True)
         ret = rclone.copy(os.path.expanduser('~/'),
                           f'{target}/{s3_prefix}/logs/',
-                           self.rclone_upload_compare,
+                           '--fast-list', '--s3-no-head',
+                            self.rclone_upload_compare
                           '--include', 'out.easybuild.*'
                         )
 
         print ('  Uploading failed logs ... ', flush=True)
         ret = rclone.copy(os.path.join(source,'tmp'),
                           f'{target}/{s3_prefix}/logs/failed/',
-                           self.rclone_upload_compare
+                           '--fast-list', '--s3-no-head',
+                            self.rclone_upload_compare
                         )
 
         self._transfer_status(ret)
         
         # after the first successful upload do a size only compare
-        self.rclone_upload_compare  = '--size-only --fast-list --s3-no-head'
+        self.rclone_upload_compare  = '--size-only'
                 
     def download(self, source, target, s3_prefix=None, with_source=True):
                
@@ -1063,7 +1068,7 @@ class Builder:
             
         print ('  Downloading Modules ... ', flush=True)
         ret = rclone.copy(f'{source}/{s3_prefix}/modules/',
-                          os.path.join(target,'modules'), 
+                          os.path.join(target,'modules'), '--fast-list',
                           '--links', self.rclone_download_compare
                         )
         self._transfer_status(ret)
@@ -1071,7 +1076,7 @@ class Builder:
         if with_source:
             print ('  Downloading Sources ... ', flush=True)
             ret = rclone.copy(f'{source}/sources/',
-                            os.path.join(target,'sources'), 
+                            os.path.join(target,'sources'), '--fast-list',
                             '--links', self.rclone_download_compare
                             )
             self._transfer_status(ret)
@@ -1080,14 +1085,14 @@ class Builder:
 
         print ('  Downloading Software ... ', flush=True)
         ret = rclone.copy(f'{source}/{s3_prefix}/software/',
-                          os.path.join(target,'software'), 
+                          os.path.join(target,'software'), '--fast-list',
                           '--links', self.rclone_download_compare, 
                           '--include', '*.eb.tar.gz' 
                         )
         self._transfer_status(ret)
         
         # for subsequent download comparison size is enough
-        self.rclone_download_compare = '--size-only --fast-list'
+        self.rclone_download_compare = '--size-only'
    
         return -1
     
