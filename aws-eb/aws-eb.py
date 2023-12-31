@@ -13,10 +13,12 @@ if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
 try:
-    import urllib3, requests, boto3, botocore, psutil
+    import boto3, botocore, urllib3
+    import requests
     from packaging.version import parse, InvalidVersion    
     from easybuild.framework.easyconfig.parser import EasyConfigParser
-    from easybuild.tools.build_log import EasyBuildError    
+    from easybuild.tools.build_log import EasyBuildError
+    import psutil
 except:
     pass
     #print('Error: EasyBuild not found. Please install it first.')
