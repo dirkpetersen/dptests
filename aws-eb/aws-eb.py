@@ -1800,9 +1800,9 @@ class AWSBoto:
         bootstrap_build = self._ec2_user_space_script(iid)        
 
         ### this block may need to be moved to a function
-        # argl = ['--instance-type', '-t'] # if found remove option and next arg
-        # cmdlist = [x for i, x in enumerate(cmdlist) if x \
-        #            not in argl and (i == 0 or cmdlist[i-1] not in argl)]
+        awsargs = ['--instance-type', '-t', '--az', '-z', '--on-demand', '-d'] # if found remove option and next arg
+        cmdlist = [x for i, x in enumerate(cmdlist) if x \
+                   not in awsargs and (i == 0 or cmdlist[i-1] not in awsargs)]
         if not '--profile' in cmdlist and self.args.awsprofile:
             cmdlist.insert(1,'--profile')
             cmdlist.insert(2, self.args.awsprofile)
