@@ -325,12 +325,6 @@ def subcmd_download(args,cfg,bld,aws):
 def subcmd_buildstatus(args,aws):
 
     #counts = collections.defaultdict(lambda: collections.defaultdict(int))
-    try:
-        import boto3
-    except:
-        print('Error: boto3 package not found. Install it first, please run:')
-        print('python3 -m pip install --user --upgrade boto3')
-        return False
     statdict = aws.s3_get_json(f'{args.prefix}/eb-build-status.json')
     summary = {}
     for item in statdict.values():
@@ -1436,6 +1430,12 @@ class AWSBoto:
             "u30": 'vt1'            
         }
 
+        try:
+            import boto3
+        except:
+            print('Error: boto3 package not found. Install it first, please run:')
+            print('python3 -m pip install --user --upgrade boto3')
+            sys.exit(1)
         self.awssession = boto3.Session(profile_name=self.awsprofile) 
         
     def get_ec2_instance_families_from_cputype(self, cpu_type):
