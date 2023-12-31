@@ -1779,6 +1779,13 @@ class AWSBoto:
 
     def ec2_deploy(self, disk_gib, instance_type, awsprofile=None):
 
+        try:
+            import boto3
+        except:
+            print('Error: boto3 package not found. Install it first, please run:')
+            print('python3 -m pip install --user --upgrade boto3')
+            sys.exit(1)        
+
         if not awsprofile: 
             awsprofile = self.cfg.awsprofile
         prof = self._ec2_create_iam_policy_roles_ec2profile()            
