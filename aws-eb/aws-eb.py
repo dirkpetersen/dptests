@@ -238,7 +238,7 @@ def subcmd_launch(args,cfg,bld,aws):
     #instance_type = aws.get_ec2_smallest_instance_type(fam, args.vcpus, args.mem*1024)
     instance_type, _, _= aws._ec2_get_cheapest_spot_instance(args.cputype, args.vcpus, args.mem)
         
-    print(f'Cheapest instance with {args.vcpus} vcpus / {args.mem} GB mem:', instance_type)
+    print(f'{instance_type} is the cheapest instance with at least {args.vcpus} vcpus / {args.mem} GB mem')
 
     if not args.build:
         aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
