@@ -1801,6 +1801,7 @@ class AWSBoto:
 
         ### this block may need to be moved to a function
         awsargs = ['--instance-type', '-t', '--az', '-z', '--on-demand', '-d'] # if found remove option and next arg
+        cmdlist = [item for item in sys.argv if item not in awsargs]
         cmdlist = [x for i, x in enumerate(cmdlist) if x \
                    not in awsargs and (i == 0 or cmdlist[i-1] not in awsargs)]
         if not '--profile' in cmdlist and self.args.awsprofile:
