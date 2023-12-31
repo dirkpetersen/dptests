@@ -1803,12 +1803,7 @@ class AWSBoto:
         cmdlist = [item for item in sys.argv]
         awsargs = ['--instance-type', '-t', '--az', '-z', '--on-demand', '-d'] # if found remove option and next arg        
         cmdlist = [x for i, x in enumerate(cmdlist) if x \
-                   not in awsargs and (i == 0 or cmdlist[i-1] not in awsargs)]
-        # argl = ['--ec2', '-e']
-        # cmdlist = [item for item in sys.argv if item not in argl]
-        # argl = ['--instance-type', '-t'] # if found remove option and next arg
-        # cmdlist = [x for i, x in enumerate(cmdlist) if x \
-        #            not in argl and (i == 0 or cmdlist[i-1] not in argl)]        
+                   not in awsargs and (i == 0 or cmdlist[i-1] not in awsargs)]  
         if not '--profile' in cmdlist and self.args.awsprofile:
             cmdlist.insert(1,'--profile')
             cmdlist.insert(2, self.args.awsprofile)
