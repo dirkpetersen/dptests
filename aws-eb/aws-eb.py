@@ -477,14 +477,12 @@ class Builder:
                 retcode=-1; ebcnt+=1; ebskipped+=1            
                 print(f'  * Current time (trydate): {trydate}')
                 if ebfile in statdict.keys():
-                    if statdict[ebfile]['status'] != 'skipped':
+                    if statdict[ebfile]['status'] != 'skipped' or self.args.checkskipped == False:
                         print(f'  * ignoring {ebfile}, it was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
                         print(f'    Remove from eb-build-status.json to try again ...', flush=True)
                         continue
                     else:
-                        if not self.args.checkskipped: # checkskipped = re-run previously checked skipped builds
-                            continue
-                        else:
+                        if self.args.checkskipped: # checkskipped = re-run previously checked skipped builds
                             print(f'  * checkskipped is set, trying {ebfile} again ...', flush=True) 
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
                 if ebfile not in statdict.keys():
