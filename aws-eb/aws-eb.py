@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.77'
+__version__ = '0.20.78'
 
 def main():
         
@@ -1800,15 +1800,15 @@ class AWSBoto:
         bootstrap_build = self._ec2_user_space_script(iid)        
 
         ### this block may need to be moved to a function
-        # cmdlist = [item for item in sys.argv]
-        # awsargs = ['--instance-type', '-t', '--az', '-z', '--on-demand', '-d'] # if found remove option and next arg        
-        # cmdlist = [x for i, x in enumerate(cmdlist) if x \
-        #            not in awsargs and (i == 0 or cmdlist[i-1] not in awsargs)]
-        argl = ['--ec2', '-e']
-        cmdlist = [item for item in sys.argv if item not in argl]
-        argl = ['--instance-type', '-t'] # if found remove option and next arg
+        cmdlist = [item for item in sys.argv]
+        awsargs = ['--instance-type', '-t', '--az', '-z', '--on-demand', '-d'] # if found remove option and next arg        
         cmdlist = [x for i, x in enumerate(cmdlist) if x \
-                   not in argl and (i == 0 or cmdlist[i-1] not in argl)]        
+                   not in awsargs and (i == 0 or cmdlist[i-1] not in awsargs)]
+        # argl = ['--ec2', '-e']
+        # cmdlist = [item for item in sys.argv if item not in argl]
+        # argl = ['--instance-type', '-t'] # if found remove option and next arg
+        # cmdlist = [x for i, x in enumerate(cmdlist) if x \
+        #            not in argl and (i == 0 or cmdlist[i-1] not in argl)]        
         if not '--profile' in cmdlist and self.args.awsprofile:
             cmdlist.insert(1,'--profile')
             cmdlist.insert(2, self.args.awsprofile)
@@ -2588,6 +2588,10 @@ class AWSBoto:
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
         if not os.path.exists(key_path):
+            if not self.args.forcesshkey:
+                print(f'ssh key {key_path} not found.')
+                print('You can use option --force-sshkey to create a new one in AWS')
+                sys.exit(1)
             try:
                 client.describe_key_pairs(KeyNames=[keyname])
                 # If the key pair exists, delete it
@@ -4365,8 +4369,8 @@ def parse_arguments():
         help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
-    parser_launch.add_argument('--force', '-r', dest='force', action='store', default="",
-        help='list of easyconfigs to force build, e.g "libpng-1.6.37.eb,libjpeg-2.0.6.eb (currently inactive)"')    
+    parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store', default="",
+        help='This option will overwrite the ssh key pair in AWS with a new one and download it.')    
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
