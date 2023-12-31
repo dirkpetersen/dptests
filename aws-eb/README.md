@@ -97,6 +97,34 @@ aws-eb.py --no-checksums launch --skip-sources --eb-release --cpu-type graviton-
 ```
 
 
+```
+$ aws-eb.py --no-checksums launch --skip-sources --eb-release --cpu-type graviton-3
+
+c7g.xlarge is the cheapest spot instance with at least 4 vcpus / 8 GB mem
+Using amazon image id: ami-03bd21ae09xxxxxx
+IAM Instance profile: None.
+c7g.xlarge in us-west-2b costs $0.1450 as on-demand and $0.0504 as spot.
+Launching spot instance i-0ec773e13xxxxxx ... please wait ...
+|██████████████████████████████--------------------| 60.0%
+Security Group "sg-0dc530211xxxxxxxxx" attached.
+Instance IP: 35.167.xx.xxx
+ Waiting for ssh host to become ready ...
+ will execute 'aws-eb.py --no-checksums launch --skip-sources --eb-release --cpu-type graviton-3 --build' on 35.167.xx.xxx ...
+ Executed bootstrap and build script ... you may have to wait a while ...
+ but you can already login using "aws-eb ssh"
+Sent email "AWS-EB build on EC2" to peterxxx@xxxx.edu!
+```
+
+```
+$ ~/gh/dptests/aws-eb/aws-eb.py ssh -l
+Listing machines ... Running EC2 Instances:
+34.218.44.30   | i-07e61ae1849fcc1ce | t2.xlarge  | rocky-9.3          | 01-15:29 | (OK)
+35.89.56.16    | i-0c5f8bd047333d0af | t2.xlarge  | ubuntu-jammy-22.04 | 00-15:13 | (OK)
+34.219.173.164 | i-0703fce0a761d7690 | t2.2xlarge | ubuntu-jammy-22.04 | 00-00:02 | (OK)
+54.191.181.2   | i-0b920c11fe09e1818 | t2.2xlarge | rocky-9.3          | 00-00:01 | (OK)
+
+```
+
 ### Building Workflow 
 
 This is happening behind the scenes: 
@@ -151,6 +179,8 @@ self.cpu_types = {
 The most cost efficient instance type is not clear yet. I started with c7a.xlarge with 4 vcpus and 8GB RAM. It may not make sense to use a larger instance type as there are long periods of time where only a single vcpu is running. At the tail end it installs R packages for hours which is limited to a single vcpu. Perhaps run just more instances  
 
 ![image](https://github.com/dirkpetersen/dptests/assets/1427719/973f973d-14f0-41af-8f7e-838d59ad58f4)
+
+
 
 
 
