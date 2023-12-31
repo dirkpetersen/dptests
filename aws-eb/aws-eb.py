@@ -672,7 +672,7 @@ class Builder:
             print(f'  Failed easyconfigs: {", ".join(errpkg)}', flush=True)
             print(f'  BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed', flush=True)
             print(f" Final upload using checksums ... ", flush=True)
-            self.rclone_upload_compare = '--checksum --fast-list'
+            self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
             msg = f'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
             if errpkg:
@@ -4369,7 +4369,7 @@ def parse_arguments():
         help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
-    parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store', default="",
+    parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store_true', default=False,
         help='This option will overwrite the ssh key pair in AWS with a new one and download it.')    
     
     # ***
