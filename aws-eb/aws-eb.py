@@ -1715,7 +1715,7 @@ class AWSBoto:
             obj = s3.get_object(Bucket=self.cfg.bucket, Key=o_name, RequestPayer='requester')
             return json.loads(obj['Body'].read())
         except Exception as e:
-            print(f"Error in s3_get_json: {e}")
+            print(f"Error in s3_get_json accessing bucket '{self.cfg.bucket}': {e}")
             return {}
         
     def s3_put_json(self, o_name, json_data):
@@ -1723,7 +1723,7 @@ class AWSBoto:
             s3 = self.awssession.client('s3')
             return s3.put_object(Bucket=self.cfg.bucket, Key=o_name, Body=json.dumps(json_data, indent=4), RequestPayer='requester')
         except Exception as e:
-            print(f"Error in s3_put_json: {e}")
+            print(f"Error in s3_put_json accessing bucket '{self.cfg.bucket}': {e}")
             return False
 
     def s3_duplicate_bucket(self, src_bucket, dst_bucket, max_workers=100, tier='INTELLIGENT_TIERING'):
