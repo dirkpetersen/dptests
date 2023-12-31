@@ -215,7 +215,7 @@ def subcmd_launch(args,cfg,bld,aws):
     if args.gputype:
         fam = aws.get_ec2_instance_families_from_gputype(args.gputype)
         if not fam:
-            print(f'GPU type "{args.gputype}" not found. Run build --list to see types.')
+            print(f'GPU type "{args.gputype}" not found. Run config --list to see types.')
             return False
         args.cputype =  aws.get_ec2_cputype_from_instance_family(fam)
 
@@ -236,7 +236,7 @@ def subcmd_launch(args,cfg,bld,aws):
     #instance_type = aws.get_ec2_smallest_instance_type(fam, args.vcpus, args.mem*1024)
     instance_type, _, _= aws._ec2_get_cheapest_spot_instance(args.cputype, args.vcpus, args.mem)
         
-    print('Cheapest:', instance_type)
+    print(f'Cheapest instance with {args.vcpus} vcpus / {args.mem} GB mem:', instance_type)
 
     if not args.build:
         aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
@@ -325,6 +325,12 @@ def subcmd_download(args,cfg,bld,aws):
 def subcmd_buildstatus(args,aws):
 
     #counts = collections.defaultdict(lambda: collections.defaultdict(int))
+    try:
+        import boto3
+    except:
+        print('Error: boto3 package not found. Install it first, please run:')
+        print('python3 -m pip install --user --upgrade boto3')
+        return False
     statdict = aws.s3_get_json(f'{args.prefix}/eb-build-status.json')
     summary = {}
     for item in statdict.values():
@@ -1785,16 +1791,14 @@ class AWSBoto:
         bootstrap_build = self._ec2_user_space_script(iid)        
 
         ### this block may need to be moved to a function
-        argl = ['--ec2', '-e']
-        cmdlist = [item for item in sys.argv if item not in argl]
-        argl = ['--instance-type', '-t'] # if found remove option and next arg
-        cmdlist = [x for i, x in enumerate(cmdlist) if x \
-                   not in argl and (i == 0 or cmdlist[i-1] not in argl)]
+        # argl = ['--instance-type', '-t'] # if found remove option and next arg
+        # cmdlist = [x for i, x in enumerate(cmdlist) if x \
+        #            not in argl and (i == 0 or cmdlist[i-1] not in argl)]
         if not '--profile' in cmdlist and self.args.awsprofile:
             cmdlist.insert(1,'--profile')
             cmdlist.insert(2, self.args.awsprofile)
         if not '--build' in cmdlist:
-            cmdlist.append('--build')
+           cmdlist.append('--build')
         cmdline = 'aws-eb.py ' + " ".join(map(shlex.quote, cmdlist[1:])) #original cmdline
         ### end block 
 
@@ -1869,7 +1873,6 @@ class AWSBoto:
         
         return filtered_instance_families
     
-
     def _ec2_create_or_get_iam_policy(self, pol_name, pol_doc, profile=None):
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()
         iam = session.client('iam')
@@ -4281,7 +4284,7 @@ class ConfigManager:
 def parse_arguments():
     """
     Gather command-line arguments.
-    """       
+    """
     parser = argparse.ArgumentParser(prog='aws-eb ',
         description='A (mostly) automated build tool for building Sci packages in AWS. ' + \
                     'The binary packages are stored in an S3 bucket and can be downloaded by anyone.')
@@ -4348,7 +4351,7 @@ def parse_arguments():
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
     parser_launch.add_argument('--force', '-r', dest='force', action='store', default="",
-        help='list of easyconfigs to force build, e.g "libpng-1.6.37.eb,libjpeg-2.0.6.eb"')    
+        help='list of easyconfigs to force build, e.g "libpng-1.6.37.eb,libjpeg-2.0.6.eb (currently inactive)"')    
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
@@ -4362,7 +4365,7 @@ def parse_arguments():
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')    
     parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
         help="Also download the source packages")
-    parser_download.add_argument('--target', '-t', dest='target', action='store', default='/opt/eb', 
+    parser_download.add_argument('target', action='store', nargs='?', default='/opt/eb',
         metavar='<target_folder>', help='Download to other folder than default')    
 
     # ***
