@@ -2450,7 +2450,7 @@ class AWSBoto:
         {pkgm} install -y Lmod
         {pkgm} install -y mc git docker nodejs-npm
         {pkgm} install -y lua lua-posix lua-devel tcl-devel
-        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl lmod
+        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl #lmod #Ubuntu 22.04 only has lmod 6.6 and EB5 requires 7.0
         {pkgm} install -y lua5.3 lua-bit32 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
         dnf group install -y 'Development Tools'
         cd /tmp
