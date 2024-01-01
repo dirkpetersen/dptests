@@ -58,7 +58,7 @@ def main():
     elif args.subcmd in ['download', 'dld']:
         subcmd_download(args, cfg, bld, aws)
     elif args.subcmd in ['buildstatus', 'sta']:
-        subcmd_buildstatus(args, aws)
+        subcmd_buildstatus(args, cfg, aws)
     elif args.subcmd in ['ssh', 'scp']: #or args.unmount:
         subcmd_ssh(args, cfg, aws)
 
@@ -91,6 +91,12 @@ def subcmd_config(args, cfg, aws):
         print("--------------------------------")
         for c, i in aws.cpu_types.items():
             print(f'{c}: {" ".join(i)}')
+
+        print('\nSupported OS, versions and CPU types (s3_prefixes)')
+        print("--------------------------------------------------")
+        prefixes = ['amzn-2023_graviton-3', 'amzn-2023_epyc-gen-4', 'amzn-2023_xeon-gen-4', 'rhel-9_xeon-gen-1', 'ubuntu-22.04_xeon-gen-1']
+        print("\n".join(prefixes))
+    
         return True
 
     first_time=True
@@ -264,18 +270,20 @@ def subcmd_download(args,cfg,bld,aws):
         print(f'Profile "{args.awsprofile}" not found.')
         return False
     
-    os_id, version_id = cfg.get_os_release_info()
-    if not os_id or not version_id:
-        print('Could not determine OS release information.')
-        return False
-
-    if not args.cputype:
-        print('Please specify a CPU type. Use the config --list option to see types.')
+    if not args.cputype and not args.prefix:
+        print('Please specify a CPU type or a prefix. Use the config --list option to see types of cpus and prefixes')
         return False
     
-    bld.eb_root = args.target
+    if args.prefix:
+        s3_prefix = args.prefix
+    else:   
+        os_id, version_id = cfg.get_os_release_info()
+        if not os_id or not version_id:
+            print('Could not determine OS release information.')
+            return False        
+        s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
 
-    s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
+    bld.eb_root = args.target
 
     ret = bld.test_write(bld.eb_root)
     if ret==13 or ret == 2:       
@@ -324,10 +332,10 @@ def subcmd_download(args,cfg,bld,aws):
         print('\nAs you have not downloaded to the standard location, please create a symlink /opt/eb: ')
         print(f'sudo ln -s {bld.eb_root} /opt/eb')
 
-def subcmd_buildstatus(args,aws):
+def subcmd_buildstatus(args,cfg,aws):
 
     #counts = collections.defaultdict(lambda: collections.defaultdict(int))
-    statdict = aws.s3_get_json(f'{args.prefix}/eb-build-status.json')
+    statdict = aws.s3_get_json(f'{cfg.archiveroot}/{args.prefix}/eb-build-status.json')
     summary = {}
     for item in statdict.values():
         status = item.get('status', 'unknown')
@@ -4372,9 +4380,11 @@ def parse_arguments():
             Download built eb packages and lmod modules to /opt/eb
         '''), formatter_class=argparse.RawTextHelpFormatter)      
     parser_download.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
-        help='run --list to see available CPU types')
-    parser_download.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=8, 
-        help='Number of vcpus to be allocated for compilations on the target machine. (default=8) ' +
+        help='run --list to see available CPU types, use --prefix to select OS-version_cpu-type')
+    parser_download.add_argument('--prefix', '-p', dest='prefix', action='store', default='', 
+        metavar='<s3_prefix>', help='your prefix, e.g. amzn-2023_graviton-3, ubuntu-22.04_xeon-gen-1')
+    parser_download.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, 
+        help='Number of vcpus to be allocated for compilations on the target machine. (default=4) ' +
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')    
     parser_download.add_argument( '--with-source', '-s', dest='withsource', action='store_true', default=False,
         help="Also download the source packages")
@@ -4384,11 +4394,12 @@ def parse_arguments():
     # ***
     parser_buildstatus = subparsers.add_parser('buildstatus', aliases=['sta'],
         help=textwrap.dedent(f'''
-            Show stats on eb-build-status.json in this S3 folder (including prefix):
-            e.g. 'aws/amzn-2023_graviton-3' or 'aws/amzn-2023_epyc-gen-4' .
+            Show stats on eb-build-status.json in this S3 folder (including prefix), e.g.
+            'amzn-2023_graviton-3', 'amzn-2023_epyc-gen-4', 'amzn-2023_xeon-gen-4'
+            rhel-9_xeon-gen-1 or ubuntu-22.04_xeon-gen-1.
         '''), formatter_class=argparse.RawTextHelpFormatter) 
     parser_buildstatus.add_argument('prefix', action='store', default='', 
-        metavar='<s3_prefix>', help='your prefix, e.g. aws/amzn-2023_graviton-3')    
+        metavar='<s3_prefix>', help='your prefix, e.g. amzn-2023_graviton-3')    
 
     # ***
     parser_ssh = subparsers.add_parser('ssh', aliases=['scp'],
