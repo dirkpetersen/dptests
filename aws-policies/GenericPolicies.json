@@ -5,6 +5,7 @@
             "Effect": "Allow",
             "Action": [
                 "pricing:GetProducts",
+                "ce:*",
                 "aws-portal:ViewBilling"
             ],
             "Resource": "*"
