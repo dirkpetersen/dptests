@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.78'
+__version__ = '0.20.79'
 
 def main():
         
@@ -91,12 +91,31 @@ def subcmd_config(args, cfg, aws):
         print("--------------------------------")
         for c, i in aws.cpu_types.items():
             print(f'{c}: {" ".join(i)}')
-
         print('\nSupported OS, versions and CPU types (s3_prefixes)')
         print("--------------------------------------------------")
         prefixes = ['amzn-2023_graviton-3', 'amzn-2023_epyc-gen-4', 'amzn-2023_xeon-gen-4', 'rhel-9_xeon-gen-1', 'ubuntu-22.04_xeon-gen-1']
         print("\n".join(prefixes))
+        return True
     
+    if args.software:
+        # list all folders in the archive
+        print('\nAll available software:')
+        print("-----------------------")
+        ecfgroot = os.path.join(cfg.home_dir, 'easybuild-easyconfigs', 'easybuild', 'easyconfigs')
+        if not os.path.exists(ecfgroot):            
+            ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
+            if not os.path.exists(ecfgroot):
+                print('Easyconfigs not found, you must either have a path ./easybuild-easyconfigs or ~/.local/easybuild/easyconfigs')
+                print('Please run "git clone https://github.com/easybuilders/easybuild-easyconfigs" first.')
+                return False
+        print(f'Processing folder "{ecfgroot}" ... \n')
+        slist = []
+        for root, dirs, files in cfg._walker(ecfgroot):            
+            if glob.glob(os.path.join(root, '*.eb')):
+                slist.append(f'{os.path.basename(root).lower()},{os.path.basename(root)}')
+        slist.sort()
+        print('\n'.join(slist))
+        print(f'\nProcessed folder "{ecfgroot}" with {len(slist)} software packages.')
         return True
 
     first_time=True
@@ -326,8 +345,9 @@ def subcmd_download(args,cfg,bld,aws):
 
     print('All software was downloaded to:', bld.eb_root)
 
-    print('\nTo use these software modules, add MODULEPATH to .bashrc, e.g. run: ')
+    print('\nTo use these software modules, source .bashrc after adding MODULEPATH, e.g.: ')
     print(f'echo "export MODULEPATH=${{MODULEPATH}}:{bld.eb_root}/modules/all" >> ~/.bashrc')
+    print(f'source ~/.bashrc')
     if bld.eb_root != '/opt/eb':
         print('\nAs you have not downloaded to the standard location, please create a symlink /opt/eb: ')
         print(f'sudo ln -s {bld.eb_root} /opt/eb')
@@ -335,7 +355,9 @@ def subcmd_download(args,cfg,bld,aws):
 def subcmd_buildstatus(args,cfg,aws):
 
     #counts = collections.defaultdict(lambda: collections.defaultdict(int))
-    statdict = aws.s3_get_json(f'{cfg.archiveroot}/{args.prefix}/eb-build-status.json')
+    jf = f'{cfg.archiveroot}/{args.prefix}/eb-build-status.json'
+    print(f'\nSummarizing s3://{cfg.bucket}/{jf} ...\n')
+    statdict = aws.s3_get_json(jf)
     summary = {}
     for item in statdict.values():
         status = item.get('status', 'unknown')
@@ -457,7 +479,7 @@ class Builder:
         ebcnt = 0; ebskipped = 0; bldcnt = 0; errcnt = 0; errpkg = []        
         uploadtime = 0; downloadtime = 0 # timestamps for last upload/download to avoid too many uploads/downloads
         statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
-        for root, dirs, files in self._walker(easyconfigroot):
+        for root, dirs, files in self.cfg._walker(easyconfigroot):
             print(f'  Processing folder "{root}" newest easyconfigs... ')
             try:
                 if easyconfigroot==root:
@@ -734,7 +756,7 @@ class Builder:
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
         self._install_packages(['pigz', 'iftop', 'iotop'], package_skip_set)        
-        for root, dirs, files in self._walker(easyconfigroot):
+        for root, dirs, files in self.cfg._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
                 if ebfile.endswith('.eb'):
@@ -764,7 +786,7 @@ class Builder:
     def _tar_eb_software(self, folder):
         new_tars = []
         all_tars = []
-        for root, dirs, files in self._walker(folder):
+        for root, dirs, files in self.cfg._walker(folder):
             # Check if 'easybuild' is in the directories
             if 'easybuild' in dirs:
                 # Extract the folder name which should be the version, and the parent folder which should be the package
@@ -843,7 +865,7 @@ class Builder:
 
         # Create a list of tasks for parallel execution
         tasks = []
-        for root, dirs, files in self._walker(folder):
+        for root, dirs, files in self.cfg._walker(folder):
             package_name = os.path.basename(root)
             for filename in files:
                 if filename.endswith('.eb.tar.gz'):
@@ -1123,7 +1145,7 @@ class Builder:
             print(f'   Rclone copy: {ttransfers} file(s) with {total} transferred.')
         
     def _make_files_executable(self, path):
-        for root, dirs, files in self._walker(path):
+        for root, dirs, files in self.cfg._walker(path):
             for file in files:
                 if not file.endswith('.tar.gz'):
                     file_path = os.path.join(root, file)
@@ -1162,22 +1184,7 @@ class Builder:
         p = math.pow(1024, i)
         s = round(size_bytes/p, 3)
         return f"{s} {size_name[i]}"    
-    
-    
-
-    def _walker(self, top, skipdirs=['.snapshot', '__archive__']):
-        """ returns subset of os.walk  """
-        for root, dirs, files in os.walk(top,topdown=True,onerror=self._walkerr): 
-            for skipdir in skipdirs:
-                if skipdir in dirs:
-                    dirs.remove(skipdir)  # don't visit this directory 
-            yield root, dirs, files 
-
-    def _walkerr(self, oserr):    
-        sys.stderr.write(str(oserr))
-        sys.stderr.write('\n')
-        return 0
-         
+             
 
 class Rclone:
     def __init__(self, args, cfg):
@@ -1410,6 +1417,7 @@ class AWSBoto:
         self.cpu_types = {
             "graviton-2": ('c6g', 'c6gd', 'c6gn', 'm6g', 'm6gd', 'r6g', 'r6gd', 't4g' ,'g5g'),
             "graviton-3": ('c7g', 'c7gd', 'c7gn', 'm7g', 'm7gd', 'r7g', 'r7gd'),
+            "graviton-4": ('c8g', 'c8gd', 'c8gn', 'm8g', 'm8gd', 'r8g', 'r8gd'),
             "epyc-gen-1": ('t3a',),
             "epyc-gen-2": ('c5a', 'm5a', 'r5a', 'g4ad', 'p4', 'inf2', 'g5'),
             "epyc-gen-3": ('m6a', 'c6a', 'r6a', 'p5'),
@@ -1849,7 +1857,7 @@ class AWSBoto:
         qt = "'"
         os.system(f'echo "touch ~/no-terminate && pkill -f aws-eb" >> ~/.bash_history.tmp')
         os.system(f'echo "pkill -f easybuild.main # skip the currently building easyconfig" >> ~/.bash_history.tmp')        
-        os.system(f'echo "grep -B1 -A1 {qt}chars): Couldn.t find file{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')        
+        os.system(f'echo "grep -B1 -A1 {qt}chars): Couldn.t find file{qt} ~/out.easybuild.{ip}.txt | grep FAILED:" >> ~/.bash_history.tmp')        
         os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
         os.system(f'echo "tail -n 100 -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
@@ -2387,15 +2395,15 @@ class AWSBoto:
 
     def _ec2_cloud_init_script(self):
         # Define the User Data script
-        if self.args.os in ['rhel', 'amazon']:
+        if self.args.os.lower() in ['rhel', 'amazon']:
             pkgm = 'dnf'
-            if self.args.os == 'rhel':
+            if self.args.os.lower() == 'rhel':
                 self.cfg.defuser = 'rocky'
-        if self.args.os in ['ubuntu', 'debian']:
+        if self.args.os.lower() in ['ubuntu', 'debian']:
             pkgm = 'apt'
-            if self.args.os == 'ubuntu':
+            if self.args.os.lower() == 'ubuntu':
                 self.cfg.defuser = 'ubuntu'
-            elif self.args.os == 'debian':
+            elif self.args.os.lower() == 'debian':
                 self.cfg.defuser = 'admin'
         else:
             pkgm = 'yum'
@@ -4268,6 +4276,19 @@ class ConfigManager:
         start_index = last_slash_before_numeric + 1 if last_slash_before_numeric != -1 else 0
         return thestring[start_index:last_numeric_index + 1] if numeric_found else ""
 
+    def _walker(self, top, skipdirs=['.snapshot', '__archive__']):
+        """ returns subset of os.walk  """
+        for root, dirs, files in os.walk(top,topdown=True,onerror=self._walkerr): 
+            for skipdir in skipdirs:
+                if skipdir in dirs:
+                    dirs.remove(skipdir)  # don't visit this directory 
+            yield root, dirs, files 
+
+    def _walkerr(self, oserr):    
+        sys.stderr.write(str(oserr))
+        sys.stderr.write('\n')
+        return 0
+
     def copy_compiled_binary_from_github(self,user,repo,compilecmd,binary,targetfolder):
         tarball_url = f"https://github.com/{user}/{repo}/archive/refs/heads/main.tar.gz"
         response = requests.get(tarball_url, stream=True, allow_redirects=True)
@@ -4311,10 +4332,10 @@ def parse_arguments():
                     'The binary packages are stored in an S3 bucket and can be downloaded by anyone.')
     parser.add_argument( '--debug', '-d', dest='debug', action='store_true', default=False,
         help="verbose output for all commands")
-    parser.add_argument('--profile', '-p', dest='awsprofile', action='store', default='', 
+    parser.add_argument('--profile', '-p', dest='awsprofile', action='store', default='', metavar='<aws-profile>',
         help='which AWS profile in ~/.aws/ should be used. default="aws"')
     parser.add_argument('--no-checksums', '-u', dest='nochecksums', action='store_true', default=False,
-        help="Use --size-only --fast-list --s3-no-head instead of --checksum when using rclone with S3.")      
+        help="Use --size-only instead of --checksum when using rclone with S3.")      
     parser.add_argument('--version', '-v', dest='version', action='store_true', default=False, 
         help='print AWS-EB and Python version info')
     
@@ -4322,13 +4343,14 @@ def parse_arguments():
 
     # ***
     parser_config = subparsers.add_parser('config', aliases=['cnf'], 
-        help=textwrap.dedent(f'''
-            Bootstrap the configurtion, install dependencies and setup your environment.
-            You will need to answer a few questions about your cloud and hpc setup.
+        help=textwrap.dedent(f'''            
+            You will need to answer just a few questions about your cloud setup.
         '''), formatter_class=argparse.RawTextHelpFormatter)
     parser_config.add_argument( '--list', '-l', dest='list', action='store_true', default=False,
-        help="List available CPU and GPU types")        
-    parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',
+        help="List available CPU/GPU types and supported prefixes (OS/CPU)")        
+    parser_config.add_argument( '--software', '-s', dest='software', action='store_true', default=False,
+        help="List available Software (Names of Easyconfigs)")        
+    parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',                               
         metavar='<email@address.org>', help='setup aws-eb as a monitoring cronjob ' +
         'on an ec2 instance and notify an email address')
 
@@ -4337,19 +4359,19 @@ def parse_arguments():
         help=textwrap.dedent(f'''
             Launch EC2 instance, build new Easybuild packages and upload them to S3
         '''), formatter_class=argparse.RawTextHelpFormatter) 
-    parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="",
-        help='run --list to see available CPU types')
+    parser_launch.add_argument('--cpu-type', '-c', dest='cputype', action='store', default="", 
+        metavar='<cpu-type>', help='run config --list to see available CPU types. (e.g graviton-3)')
     parser_launch.add_argument('--os', '-o', dest='os', action='store', default="amazon",
         help='build operating system, default=amazon (which is an optimized fedora) ' + 
         'valid choices are: amazon, rhel, ubuntu and any AMI name including wilcards *')
-    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, 
+    parser_launch.add_argument('--vcpus', '-v', dest='vcpus', type=int, action='store', default=4, metavar='<number-of-vcpus>',
         help='Number of vcpus to be allocated for compilations on the target machine. (default=4) ' +
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')
-    parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="",
+    parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="", metavar='<gpu-type>',
         help='run --list to see available GPU types')       
-    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, 
+    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size>',
         help='GB Memory allocated to instance  (default=8)')
-    parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="",
+    parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="", metavar='<aws.instance>',
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
         help='Enforce the availability zone, e.g. us-west-2a')    
@@ -4359,7 +4381,7 @@ def parse_arguments():
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument('--build', '-b', dest='build', action='store_true', default=False,
         help="Execute the build on the current system instead of launching a new EC2 instance.")
-    parser_launch.add_argument('--first-bucket', '-f', dest='firstbucket', action='store', default="",
+    parser_launch.add_argument('--first-bucket', '-f', dest='firstbucket', action='store', default="", metavar='<your-s3-bucket>',
         help='use this bucket (e.g. easybuild-cache) to initially load the already built binaries and sources')       
     parser_launch.add_argument('--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
         help="Do not pre-download sources from build cache, let EB download them.")      
