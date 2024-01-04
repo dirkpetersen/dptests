@@ -2412,7 +2412,7 @@ class AWSBoto:
         #! /bin/bash
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
-        {pkgm} install -y gcc mdadm jq
+        {pkgm} install -y gcc mdadm jq git
         format_largest_unused_block_devices() {{
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
@@ -2464,7 +2464,7 @@ class AWSBoto:
         systemctl start atd
         {pkgm} upgrade -y
         {pkgm} install -y Lmod
-        {pkgm} install -y mc git docker nodejs-npm
+        {pkgm} install -y mc docker nodejs-npm
         {pkgm} install -y lua lua-posix lua-devel tcl-devel
         {pkgm} install -y build-essential rpm2cpio tcl-dev tcl #lmod #Ubuntu 22.04 only has lmod 6.6 and EB5 requires 7.0
         {pkgm} install -y lua5.3 lua-bit32 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
