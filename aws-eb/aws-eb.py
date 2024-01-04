@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.80'
+__version__ = '0.20.81'
 
 def main():
         
@@ -155,7 +155,7 @@ def subcmd_config(args, cfg, aws):
 
     if args.monitor:
         # monitoring only setup, do not continue 
-        me = os.path.join(cfg.binfolderx,'aws-eb.py')
+        me = os.path.join(cfg.binfolderx, cfg.scriptname)
         cfg.write('general', 'email', args.monitor)
         cfg.add_systemd_cron_job(f'{me} launch --monitor','30')
         return True
@@ -1414,6 +1414,7 @@ class AWSBoto:
         self.args = args
         self.cfg = cfg
         self.awsprofile = self.cfg.awsprofile
+        self.scriptname = os.path.basename(__file__)
         self.cpu_types = {
             "graviton-2": ('c6g', 'c6gd', 'c6gn', 'm6g', 'm6gd', 'r6g', 'r6gd', 't4g' ,'g5g'),
             "graviton-3": ('c7g', 'c7gd', 'c7gn', 'm7g', 'm7gd', 'r7g', 'r7gd'),
@@ -1823,13 +1824,14 @@ class AWSBoto:
             cmdlist.insert(2, self.args.awsprofile)
         if not '--build' in cmdlist:
            cmdlist.append('--build')
-        cmdline = 'aws-eb.py ' + " ".join(map(shlex.quote, cmdlist[1:])) #original cmdline
+        cmdline = self.scriptname + " " + " ".join(map(shlex.quote, cmdlist[1:])) #original cmdline
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
         bootstrap_build += '\n' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
-        bootstrap_build += f'\n[ ! -f ~/no-terminate ] && aws-eb.py ssh --terminate {iid}'
+        if not self.args.keeprunning:
+            bootstrap_build += f'\n[ ! -f ~/no-terminate ] && {self.scriptname} ssh --terminate {iid}'
         sshuser = self.ec2_get_default_user(ip)
         ret = self.ssh_upload(sshuser, ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
@@ -2548,10 +2550,10 @@ class AWSBoto:
         echo 'curl -sH "X-aws-ec2-metadata-token: $ETOKEN" http://169.254.169.254/latest/meta-data/local-ipv4' >> ~/.local/bin/get-local-ip
         chmod +x ~/.local/bin/get-public-ip
         chmod +x ~/.local/bin/get-local-ip
-        # curl https://raw.githubusercontent.com/dirkpetersen/scibob/main/install.sh | bash 
-        curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/aws-eb.py
+        #curl -Ls https://raw.githubusercontent.com/dirkpetersen/scibob/main/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
+        curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
-        chmod +x ~/.local/bin/aws-eb.py
+        chmod +x ~/.local/bin/{self.scriptname}
         chmod +x ~/.local/bin/simple-benchmark.py
         simple-benchmark.py > ~/out.simple-benchmark.txt &
         # wait for lmod to be installed
@@ -2562,7 +2564,7 @@ class AWSBoto:
         python3 -m pip install easybuild 
         python3 -m pip install packaging boto3
         source ~/easybuildrc
-        aws-eb.py config --monitor '{emailaddr}'
+        {self.scriptname} config --monitor '{emailaddr}'
         echo ""
         echo -e "CPU info:"
         lscpu | head -n 20
@@ -3577,6 +3579,7 @@ class ConfigManager:
         if not self._set_env_vars(self.awsprofile):
             self.awsprofile = ''
         self.ssh_key_name = 'aws-eb-ec2'
+        self.scriptname = os.path.basename(__file__)
         
     def _set_env_vars(self, profile):
         
@@ -4377,6 +4380,8 @@ def parse_arguments():
         help='Enforce the availability zone, e.g. us-west-2a')    
     parser_launch.add_argument('--on-demand', '-d', dest='ondemand', action='store_true', default=False,
         help="Enforce on-demand instance instead of using the default spot instance.")
+    parser_launch.add_argument('--keep-running', '-u', dest='keeprunning', action='store_true', default=False,
+        help="Do not shut down EC2 instance after builds are done, keep it running.")
     parser_launch.add_argument('--monitor', '-n', dest='monitor', action='store_true', default=False,
         help="Monitor EC2 server for cost and idle time.")
     parser_launch.add_argument('--build', '-b', dest='build', action='store_true', default=False,

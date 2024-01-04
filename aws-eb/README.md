@@ -172,9 +172,11 @@ After waiting a while for the copy of easybuild-cache to your bucket to finish y
 $ aws-eb ssh -l 
 
 Listing machines ... Running EC2 Instances:
-35.88.195.44   | i-0c2123d527545469c | m7g.xlarge | al2023 | 00-00:15 | (OK)
-34.219.173.164 | i-0703fce0a761d7690 | r7a.xlarge | al2023 | 00-00:02 | (OK)
-54.191.181.2   | i-0b920c11fe09e1818 | c7i.xlarge | al2023 | 00-00:01 | (OK)
+34.219.79.245 | i-0a3cddbb500ad8d49 | t2.xlarge  | rocky-9.3          | 00-09:38 | (OK)
+35.91.162.238 | i-0253be8d5f8bc9b7e | c7g.xlarge | al2023             | 00-00:06 | (OK)
+35.91.173.71  | i-0f4efc27c775afb8f | r7a.xlarge | al2023             | 00-00:03 | (OK)
+35.86.3.4     | i-01449ec430d189496 | m7i.xlarge | al2023             | 00-00:02 | (OK)
+54.189.94.10  | i-02d658bb39640206c | t2.xlarge  | ubuntu-jammy-22.04 | 00-00:01 | (OK)
 ```
 
 aws-eb chooses the lowest cost instance for a specific cpu type. In the AWS spot market this may be a `m7`, `r7`, or `c7` type instance at any given time. (m7g = ARM graviton-3, r7a = AMD epyc-gen-4, c7i = Intel xeon-gen-4). Let's login to our graviton-3 instance and enter the `history` command, which shows us a number of prepared commands we can run simply by selecting them via `arrow-key-up`.
