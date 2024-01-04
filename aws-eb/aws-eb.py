@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.79'
+__version__ = '0.20.80'
 
 def main():
         
@@ -2412,7 +2412,7 @@ class AWSBoto:
         #! /bin/bash
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
-        {pkgm} install -y gcc mdadm jq git
+        {pkgm} install -y gcc mdadm jq git python3-pip
         format_largest_unused_block_devices() {{
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
@@ -2457,7 +2457,7 @@ class AWSBoto:
         {pkgm} install -y epel-release
         {pkgm} check-update
         {pkgm} update -y                                   
-        {pkgm} install -y at gcc vim wget python3-pip python3-psutil
+        {pkgm} install -y at gcc vim wget python3-psutil
         hostnamectl set-hostname aws-eb
         timedatectl set-timezone '{long_timezone}'
         loginctl enable-linger {self.cfg.defuser}
@@ -2466,7 +2466,7 @@ class AWSBoto:
         {pkgm} install -y Lmod
         {pkgm} install -y mc docker nodejs-npm
         {pkgm} install -y lua lua-posix lua-devel tcl-devel
-        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl #lmod #Ubuntu 22.04 only has lmod 6.6 and EB5 requires 7.0
+        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl #lmod #Ubuntu 22.04 only has lmod 6.6 and EB5 requires 8.0
         {pkgm} install -y lua5.3 lua-bit32 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
         dnf group install -y 'Development Tools'
         cd /tmp
