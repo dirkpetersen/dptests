@@ -2531,10 +2531,10 @@ class AWSBoto:
         echo '#alias singularity="apptainer"' >> ~/.bashrc        
         # wait for pip3 to be installed
         echo "Waiting for Python3 pip install ..."
-        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."
+        until [ -f /usr/bin/pip3 ]; do sleep 3; done; echo "pip3 exists, please wait ..."
         sleep 5
-        python3 -m pip install --upgrade pip
-        python3 -m pip install --upgrade wheel awscli
+        python3 -m pip install --upgrade --user pip
+        python3 -m pip install --upgrade --user wheel awscli
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
         aws configure set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
         aws configure set region {self.cfg.aws_region}
@@ -2563,8 +2563,8 @@ class AWSBoto:
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
         mkdir -p /opt/eb/tmp
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
-        python3 -m pip install easybuild 
-        python3 -m pip install packaging boto3
+        python3 -m pip install --user easybuild 
+        python3 -m pip install --user packaging boto3
         source ~/easybuildrc
         {self.scriptname} config --monitor '{emailaddr}'
         echo ""
