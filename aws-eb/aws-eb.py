@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.81'
+__version__ = '0.20.82'
 
 def main():
         
@@ -2531,7 +2531,9 @@ class AWSBoto:
         echo '#alias singularity="apptainer"' >> ~/.bashrc        
         # wait for pip3 to be installed
         echo "Waiting for Python3 pip install ..."
-        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."    
+        until [ -f /usr/bin/pip3 ]; do sleep 5; done; echo "pip3 exists, please wait ..."
+        sleep 5
+        python3 -m pip install --upgrade pip
         python3 -m pip install --upgrade wheel awscli
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
         aws configure set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
@@ -2953,7 +2955,7 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
-        print(key_path)
+        #print(key_path)
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
         try:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
