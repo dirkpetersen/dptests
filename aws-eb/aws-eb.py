@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.82'
+__version__ = '0.20.83'
 
 def main():
         
@@ -266,7 +266,11 @@ def subcmd_launch(args,cfg,bld,aws):
     print(f'{instance_type} is the cheapest spot instance with at least {args.vcpus} vcpus / {args.mem} GB mem')
 
     if not args.build:
-        aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
+        if os.path.isfile('/usr/bin/redis6-server'): # We will just use JuiceFS
+            print('Redis Server installed locally, will use JuiceFS')
+            aws.ec2_deploy(0, instance_type)
+        else:
+            aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
         return True
 
     # *******************************************
@@ -2415,6 +2419,7 @@ class AWSBoto:
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq git python3-pip
+        {pkgm} install -y redis6
         format_largest_unused_block_devices() {{
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
@@ -2453,8 +2458,13 @@ class AWSBoto:
             fi
         }}
         chown {self.cfg.defuser} /opt
-        format_largest_unused_block_devices
-        chown {self.cfg.defuser} /opt
+        if [[ -f /usr/bin/redis6-server ]]; then
+          systemctl enable redis6
+          systemctl restart redis6
+        else
+          format_largest_unused_block_devices
+          chown {self.cfg.defuser} /opt          
+        fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
@@ -2550,10 +2560,19 @@ class AWSBoto:
         echo '#! /bin/bash' > ~/.local/bin/get-public-ip
         echo 'ETOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")' >> ~/.local/bin/get-public-ip
         cp -f ~/.local/bin/get-public-ip ~/.local/bin/get-local-ip
+        cp -f ~/.local/bin/get-public-ip ~/.local/bin/spot-termination-time
         echo 'curl -sH "X-aws-ec2-metadata-token: $ETOKEN" http://169.254.169.254/latest/meta-data/public-ipv4' >> ~/.local/bin/get-public-ip
         echo 'curl -sH "X-aws-ec2-metadata-token: $ETOKEN" http://169.254.169.254/latest/meta-data/local-ipv4' >> ~/.local/bin/get-local-ip
+        echo 'curl -sH "X-aws-ec2-metadata-token: $ETOKEN" http://169.254.169.254/latest/meta-data/spot/termination-time' >> ~/.local/bin/spot-termination-time
         chmod +x ~/.local/bin/get-public-ip
         chmod +x ~/.local/bin/get-local-ip
+        chmod +x ~/.local/bin/spot-termination-time
+        if [[ -f /usr/bin/redis6-server ]]; then
+          ipid=$(get-public-ip | sed 's/\./x/g')
+          juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 juicefs-{instance_id}
+          sudo juicefs mount -d redis://localhost:6379 /opt
+          #juicefs destroy -y redis://localhost:6379 88ddb9d5-5087-43e1-bead-d91ae5cf7069
+        fi
         #curl -Ls https://raw.githubusercontent.com/dirkpetersen/scibob/main/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
@@ -2582,17 +2601,19 @@ class AWSBoto:
         client = session.client('ec2')
         
         # Define the block device mapping for an EBS volume to be attached to the instance
-        block_device_mappings = [
-        {
-            'DeviceName': '/dev/sdm',  # Ensure that this device name is supported and free in your EC2 instance
-            'Ebs': {
-                'VolumeSize': disk_gib,  # Volume size in GiB (1 TB = 1024 GiB)
-                'DeleteOnTermination': True,  # True if the volume should be deleted after instance is terminated
-                'VolumeType': 'gp3',  # The type of volume to create (gp3 is generally a good default)
-                'Iops': 3000,  # Provisioned IOPS for the volume
-                'Throughput': 750,  # Throughput in MB/s
-            },
-        }]
+        block_device_mappings = []
+        if disk_gib > 0:
+            block_device_mappings = [
+            {
+                'DeviceName': '/dev/sdm',  # Ensure that this device name is supported and free in your EC2 instance
+                'Ebs': {
+                    'VolumeSize': disk_gib,  # Volume size in GiB (1 TB = 1024 GiB)
+                    'DeleteOnTermination': True,  # True if the volume should be deleted after instance is terminated
+                    'VolumeType': 'gp3',  # The type of volume to create (gp3 is generally a good default)
+                    'Iops': 3000,  # Provisioned IOPS for the volume
+                    'Throughput': 750,  # Throughput in MB/s
+                },
+            }]
                      
         if not instance_type:
             print("No suitable instance type found!")
