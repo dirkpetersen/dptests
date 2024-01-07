@@ -13,10 +13,20 @@ def create_policy(policy_name, policy_document):
         policy_arn = response['Policy']['Arn']
         print(f"Policy {policy_name} created successfully.")
         return policy_arn
+    
     except iam.exceptions.EntityAlreadyExistsException:
+
         # If the policy already exists, find its ARN and update it
         policies = iam.list_policies(Scope='Local')['Policies']
         policy_arn = next((p['Arn'] for p in policies if p['PolicyName'] == policy_name), None)
+
+        policy_versions = iam.list_policy_versions(PolicyArn=policy_arn)['Versions']
+        non_default_versions = [v for v in policy_versions if not v['IsDefaultVersion']]
+
+        if non_default_versions:
+            oldest_version = sorted(non_default_versions, key=lambda x: x['CreateDate'])[0]
+            iam.delete_policy_version(PolicyArn=policy_arn, VersionId=oldest_version['VersionId'])
+            print(f"Deleted oldest non-default policy version: {oldest_version['VersionId']}")
 
         if policy_arn:
             iam.create_policy_version(

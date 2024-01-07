@@ -11,7 +11,7 @@ class BigBadClass:
         param_group_family='aurora-postgresql15'
         ssl_param_name = 'force_ssl'
         if dbtype == 'mysql':
-            param_group_family="aurora-mysql5.7"
+            param_group_family="aurora-mysql8.0"
             ssl_param_name = 'require_secure_transport'
         try:
             # List all parameter groups
@@ -33,7 +33,7 @@ class BigBadClass:
                 Parameters=[
                     {
                         'ParameterName': ssl_param_name,
-                        'ParameterValue': '1',
+                        'ParameterValue': 'ON',
                         'ApplyMethod': 'immediate'
                     }
                 ]
@@ -43,7 +43,7 @@ class BigBadClass:
             print(f"Error in parameter group operation: {e}")
 
 
-    def rds_create_serverless_v2_cluster(self, db_cluster_id, param_group, muser, mpass, dbtype='postgres'):
+    def rds_create_serverless_v2_cluster(self, db_cluster_id, param_group, muser, mpass, dbtype='postgresql'):
         engineversion='15.1'
         if dbtype == 'mysql':
             engineversion='5.7.44'
@@ -57,7 +57,7 @@ class BigBadClass:
                 EngineVersion=engineversion,  # '8.0.35' or '5.7.mysql_aurora.2.10.0',
                 MasterUsername=muser,
                 MasterUserPassword=mpass,
-                DBParameterGroupName=param_group,
+                #DBParameterGroupName=param_group,
                 ScalingConfiguration={
                     'AutoPause': True,
                     'MinCapacity': 1,
@@ -100,7 +100,7 @@ def main():
 
     # Create cluster parser
     create_parser = subparsers.add_parser('create', help='Create a new Aurora Serverless cluster')
-    create_parser.add_argument('--dbtype', required=True, default='postgres', help='DB type (postgres or mysql)')
+    create_parser.add_argument('--dbtype', required=False, default='postgresql', help='DB type (postgres or mysql)')
     create_parser.add_argument('--identifier', required=True, help='DB Cluster Identifier')
     create_parser.add_argument('--username', required=True, help='Master Username')
     create_parser.add_argument('--password', required=True, help='Master Password')
@@ -117,10 +117,11 @@ def main():
     db_creator = BigBadClass()
 
     if args.command == 'create':
-        param_group_name = 'aurora-serverless-v2-param-group'        
-        param_group_description = 'Custom parameter group for Aurora Serverless V2 with enforced TLS'
-        db_creator.rds_create_modify_parameter_group(f'{param_group_name}-{args.dbtype}', param_group_description, dbtype=args.dbtype)
-        #print(db_creator.rds_create_serverless_v2_cluster(args.identifier, param_group_name, args.username, args.password, args.dbtype))
+        #param_group_name = 'aurora-serverless-v2-param-group'        
+        #param_group_description = 'Custom parameter group for Aurora Serverless V2 with enforced TLS'
+        #db_creator.rds_create_modify_parameter_group(f'{param_group_name}-{args.dbtype}', param_group_description, dbtype=args.dbtype)
+        param_group_name = None
+        print(db_creator.rds_create_serverless_v2_cluster(args.identifier, param_group_name, args.username, args.password, args.dbtype))
 
     elif args.command == 'delete':
         print(db_creator.delete_aurora_db_cluster(args.identifier))

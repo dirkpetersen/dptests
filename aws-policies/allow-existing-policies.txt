@@ -1,2 +1,6 @@
+AmazonRDSFullAccess
 AmazonSESFullAccess
 AWSLambda_FullAccess
+SecretsManagerReadWrite
+AWSServiceCatalogEndUserFullAccess
+AWSServiceCatalogAdminFullAccess

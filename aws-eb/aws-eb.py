@@ -2528,7 +2528,9 @@ class AWSBoto:
         echo '#export EC2_INSTANCE_ID={instance_id}' >> ~/.bashrc
         echo '#export AWS_DEFAULT_REGION={self.cfg.aws_region}' >> ~/.bashrc
         echo '#export TZ={long_timezone}' >> ~/.bashrc
-        echo '#alias singularity="apptainer"' >> ~/.bashrc        
+        echo '#alias singularity="apptainer"' >> ~/.bashrc
+        # Install JuiceFS
+        curl -sSL https://d.juicefs.com/install | sh -
         # wait for pip3 to be installed
         echo "Waiting for Python3 pip install ..."
         until [ -f /usr/bin/pip3 ]; do sleep 3; done; echo "pip3 exists, please wait ..."
