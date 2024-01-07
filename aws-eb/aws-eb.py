@@ -2522,6 +2522,7 @@ class AWSBoto:
             emailaddr = 'user@domain.edu'
         #short_timezone = datetime.datetime.now().astimezone().tzinfo
         long_timezone = self.cfg.get_time_zone()
+        juiceid = f'juice{instance_id.replace("-","")}'
         return textwrap.dedent(f'''
         #! /bin/bash
         echo "Bootstrapping AWS-EB on {instance_id} ..."
@@ -2564,12 +2565,6 @@ class AWSBoto:
         chmod +x ~/.local/bin/get-public-ip
         chmod +x ~/.local/bin/get-local-ip
         chmod +x ~/.local/bin/spot-termination-time
-        if [[ -f /usr/bin/redis6-server ]]; then
-          ipid=$(get-public-ip | sed 's/\./x/g')
-          juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 juicefs-{instance_id}
-          sudo juicefs mount -d redis://localhost:6379 /opt
-          #juicefs destroy -y redis://localhost:6379 88ddb9d5-5087-43e1-bead-d91ae5cf7069
-        fi
         #curl -Ls https://raw.githubusercontent.com/dirkpetersen/scibob/main/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
@@ -2579,6 +2574,13 @@ class AWSBoto:
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
+        if [[ -f /usr/bin/redis6-server ]]; then
+          ipid=$(get-public-ip | sed 's/\./x/g')
+          juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
+          #juicefs config --access-key=xxx --secret-key=xxx redis://localhost:6379
+          sudo juicefs mount -d redis://localhost:6379 /opt
+          #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
+        fi
         mkdir -p /opt/eb/tmp
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
         python3 -m pip install --user easybuild 
