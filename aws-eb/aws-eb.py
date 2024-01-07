@@ -250,11 +250,11 @@ def subcmd_launch(args,cfg,bld,aws):
         print('Please specify a CPU or a GPU type. Run config --list to see types.')
         return False
 
-    os_id, version_id = cfg.get_os_release_info()
+    # os_id, version_id = cfg.get_os_release_info()
 
-    if not os_id or not version_id:
-        print('Could not determine OS release information.')
-        return False    
+    # if not os_id or not version_id:
+    #     print('Could not determine OS release information.')
+    #     return False    
     
     s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
     if args.gputype:
@@ -266,8 +266,8 @@ def subcmd_launch(args,cfg,bld,aws):
     print(f'{instance_type} is the cheapest spot instance with at least {args.vcpus} vcpus / {args.mem} GB mem')
 
     if not args.build:
-        if os.path.isfile('/usr/bin/redis6-server'): # We will just use JuiceFS
-            print('Redis Server installed locally, will use JuiceFS')
+        if args.os == "amazon": # We will just use JuiceFS
+            print('Amazon Linux will use JuiceFS')
             aws.ec2_deploy(0, instance_type)
         else:
             aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
