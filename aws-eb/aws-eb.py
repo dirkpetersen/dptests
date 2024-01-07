@@ -250,16 +250,6 @@ def subcmd_launch(args,cfg,bld,aws):
         print('Please specify a CPU or a GPU type. Run config --list to see types.')
         return False
 
-    # os_id, version_id = cfg.get_os_release_info()
-
-    # if not os_id or not version_id:
-    #     print('Could not determine OS release information.')
-    #     return False    
-    
-    s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
-    if args.gputype:
-        s3_prefix += f'_{args.gputype}'
-
     #instance_type = aws.get_ec2_smallest_instance_type(fam, args.vcpus, args.mem*1024)
     instance_type, _, _= aws._ec2_get_cheapest_spot_instance(args.cputype, args.vcpus, args.mem)
         
@@ -280,6 +270,13 @@ def subcmd_launch(args,cfg,bld,aws):
         # create an initial copy of the binaries 
         print(f'Creating initial copy from {args.firstbucket} to {cfg.bucket} ...', flush=True)
         aws.s3_duplicate_bucket(args.firstbucket, cfg.bucket)
+    os_id, version_id = cfg.get_os_release_info()
+    if not os_id or not version_id:
+        print('Could not determine OS release information.')
+        return False        
+    s3_prefix = f'{os_id}-{version_id}_{args.cputype}'
+    if args.gputype:
+        s3_prefix += f'_{args.gputype}'        
     print('s3_prefix:', s3_prefix)
     ecfgroot = os.path.join(cfg.home_dir, 'easybuild-easyconfigs', 'easybuild', 'easyconfigs')
     if args.ebrelease:
