@@ -5,10 +5,10 @@ AWS-EB builds scientific software packages using Easybuild
 on AWS EC2 instances and syncs the binaries with S3 buckets
 """
 # internal modules
-import sys, os, argparse, json, configparser, platform, collections
-import datetime, tarfile, zipfile, textwrap, socket, json
-import math, signal, shlex, time, re, inspect, traceback, subprocess
-import shutil, tempfile, glob, concurrent.futures, operator
+import sys, os, argparse, json, configparser, platform, subprocess
+import datetime, tarfile, zipfile, textwrap, socket, json, inspect
+import math, signal, shlex, time, re, traceback, operator, glob 
+import shutil, tempfile, concurrent.futures
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
 # stuff from pypi
@@ -362,7 +362,6 @@ def subcmd_download(args,cfg,bld,aws):
 
 def subcmd_buildstatus(args,cfg,aws):
 
-    #counts = collections.defaultdict(lambda: collections.defaultdict(int))
     jf = f'{cfg.archiveroot}/{args.prefix}/eb-build-status.json'
     print(f'\nSummarizing s3://{cfg.bucket}/{jf} ...\n')
     statdict = aws.s3_get_json(jf)
