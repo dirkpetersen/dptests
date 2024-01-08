@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.83'
+__version__ = '0.20.84'
 
 def main():
         
@@ -391,32 +391,54 @@ def subcmd_buildstatus(args,cfg,aws):
 
 def subcmd_ssh(args, cfg, aws):
 
-    if args.list:
-        print ('Listing machines ... ', flush=True, end='')
+    if args.terminate:
+        aws.ec2_terminate_instance(args.terminate)
+        return True
+
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
     ips = [sublist[0] for sublist in ilist if sublist]
+ 
     if args.list:
+        print ('Listing machines ... ', flush=True, end='')
         if ips:                                
             aws.print_aligned_lists(ilist,"Running EC2 Instances:")      
         else:
             print('No running instances detected')
-        return True        
-    if args.terminate:
-        aws.ec2_terminate_instance(args.terminate)
-        return True        
+        return True 
+           
+    myhost = myhost = cfg.read('cloud', 'ec2_last_instance')
+    remote_path = ''; scpmode = ''
     if args.sshargs:
-        if ':' in args.sshargs[0]:
-            myhost, remote_path = args.sshargs[0].split(':')
-        else:
+        testpath = os.path.expanduser(args.sshargs[0]).replace('*', '')
+        if os.path.exists(testpath) and len(args.sshargs) == 2:
+            myhost = args.sshargs[1]
+            if ':' in args.sshargs[1]:
+                myhost, remote_path = args.sshargs[1].split(':')
+                if args.subcmd == 'scp':
+                    scpmode = 'upload'
+        elif len(args.sshargs) <= 2:
             myhost = args.sshargs[0]
-            remote_path = ''
-    else:
-        myhost = cfg.read('cloud', 'ec2_last_instance')   
+            if ':' in args.sshargs[0]:
+                myhost, remote_path = args.sshargs[0].split(':')
+                if args.subcmd == 'scp':
+                    scpmode = 'download'
+        else:
+            print('The "ssh/scp" sub command supports currently 2 arguments')
+            return False
+        
+    elif not myhost:
+        print('Please specify a host name or IP address')
+        return False
+
     if ips and not myhost in ips:
-        print(f'{myhost} is no longer running, replacing with {ips[-1]}')
-        myhost = ips[-1]
-        cfg.write('cloud', 'ec2_last_instance', myhost)
+        if '/' in myhost:
+            print(f'{myhost} not found')
+        else:    
+            print(f'{myhost} is not running, you could replace it with {ips[-1]}')
+        return False            
+    
     sshuser = aws.ec2_get_default_user(myhost, ilist)
+
     # adding anoter public key to host
     if args.addkey:
         if not os.path.exists(args.addkey):
@@ -426,28 +448,22 @@ def subcmd_ssh(args, cfg, aws):
                 return False
         ret = aws.ssh_add_key_to_remote_host(args.addkey, sshuser, myhost)
         return ret
+
+    if scpmode:
+        if scpmode == 'upload':    
+            ret=aws.ssh_upload(sshuser, myhost, args.sshargs[0], remote_path)
+        elif scpmode == 'download':    
+            ret=aws.ssh_download(sshuser, myhost, remote_path, args.sshargs[1])
+        #print(ret.stdout,ret.stderr)
+        return True
+    
     if args.subcmd == 'ssh':
         print(f'Connecting to {myhost} ...')
         aws.ssh_execute(sshuser, myhost)
         return True
-    elif args.subcmd == 'scp':
-        if len(args.sshargs) != 2:
-            print('The "scp" sub command supports currently 2 arguments')
-            return False
-        hostloc = next((i for i, item in enumerate(args.sshargs) if ":" in item), None)
-        if hostloc == 0:
-            # the hostname is in the first argument: download
-            host, remote_path = args.sshargs[0].split(':')
-            ret=aws.ssh_download(sshuser, host, remote_path, args.sshargs[1])
-        elif hostloc == 1:
-            # the hostname is in the second argument: uploaad
-            host, remote_path = args.sshargs[1].split(':')
-            ret=aws.ssh_upload(sshuser, host, args.sshargs[0], remote_path)
-        else:
-            print('The "scp" sub command supports currently 2 arguments')
-            return False
-        print(ret.stdout,ret.stderr)
-
+    
+    print('This option is not supported.')
+    
 class Builder:
     def __init__(self, args, cfg, aws):
         self.args = args
@@ -850,7 +866,7 @@ class Builder:
                 # Decompress and unpack the file
                 subprocess.run([
                     "tar",
-                    "-I", decompress_command,
+                    #"-I", decompress_command,
                     "-xf", file_path,
                     "-C", root 
                 ], check=True)
@@ -2944,12 +2960,12 @@ class AWSBoto:
         if command:
             cmd += f" '{command}'"
             try:
-                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                result = subprocess.run(cmd, shell=True, text=True) #capture_output=True
                 return result
             except:
                 print(f'Error executing "{cmd}."')
         else:
-            subprocess.run(cmd, shell=True, capture_output=False, text=True)
+            subprocess.run(cmd, shell=True, text=True) #capture_output=False
         self.cfg.printdbg(f'ssh command line: {cmd}')
         return None
                 
@@ -2966,7 +2982,7 @@ class AWSBoto:
                 local_path = temp.name
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {local_path} {user}@{host}:{remote_path}"        
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            result = subprocess.run(cmd, shell=True, text=True) # capture_output=True,
             if is_string:
                 os.remove(local_path)
             return result       
@@ -2983,7 +2999,7 @@ class AWSBoto:
         #print(key_path)
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            result = subprocess.run(cmd, shell=True, text=True) #capture_output=True,
             return result
         except:
             print(f'Error executing "{cmd}."')
