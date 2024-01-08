@@ -895,7 +895,7 @@ class Builder:
                         tasks.append((file_path, root))
 
         # Execute the tasks in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=self.args.vcpus) as executor:
+        with ThreadPoolExecutor(max_workers=self.args.vcpus*10) as executor:
             future_to_file = {executor.submit(untar_file, file_path, root): file_path for file_path, root in tasks}
             for future in as_completed(future_to_file):
                 file_path = future_to_file[future]
