@@ -866,7 +866,7 @@ class Builder:
                 # Decompress and unpack the file
                 subprocess.run([
                     "tar",
-                    #"-I", decompress_command,
+                    "-I", decompress_command,
                     "-xf", file_path,
                     "-C", root 
                 ], check=True)
