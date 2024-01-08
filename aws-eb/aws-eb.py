@@ -2971,6 +2971,7 @@ class AWSBoto:
                 
     def ssh_upload(self, user, host, local_path, remote_path, is_string=False):
         """Upload a file to the remote server using SCP."""
+        cap_output = True
         SSH_OPTIONS = "-o StrictHostKeyChecking=no"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
@@ -2982,7 +2983,7 @@ class AWSBoto:
                 local_path = temp.name
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {local_path} {user}@{host}:{remote_path}"        
         try:
-            result = subprocess.run(cmd, shell=True, text=True) # capture_output=True,
+            result = subprocess.run(cmd, shell=True, text=True, capture_output=cap_output)
             if is_string:
                 os.remove(local_path)
             return result       
