@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.86'
+__version__ = '0.20.87'
 
 def main():
         
@@ -861,23 +861,26 @@ class Builder:
         def untar_file(file_path, root):
             print(f"Unpacking {file_path} into {root}...", flush=True)
             try:
-                # Check if pigz is available
-                if shutil.which("pigz"):
-                    decompress_command = f"pigz -p {self.args.vcpus}"
-                else:
-                    # Fallback to gzip if pigz is not available
-                    decompress_command = "gzip -d"
+                # # Check if pigz is available
+                # if shutil.which("pigz"):
+                #     decompress_command = f"pigz -p {self.args.vcpus}"
+                # else:
+                #     # Fallback to gzip if pigz is not available
+                #     decompress_command = "gzip -d"
 
-                # Decompress and unpack the file
-                subprocess.run([
-                    "tar",
-                #    "-I", decompress_command,
-                    "-xf", file_path,
-                    "-C", root 
-                ], check=True)
+                # # Decompress and unpack the file
+                # subprocess.run([
+                #     "tar",
+                # #    "-I", decompress_command,
+                #     "-xf", file_path,
+                #     "-C", root 
+                # ], check=True)
+                with tarfile.open(file_path, 'r:gz') as tar:
+                    tar.extractall(path=root)
                 print(f"Successfully unpacked: {file_path}")
-                return file_path
-            except subprocess.CalledProcessError as e:
+                return file_path            
+            #except subprocess.CalledProcessError as e:
+            except tarfile.TarError as e:            
                 print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
                 return False
             except Exception as e:
