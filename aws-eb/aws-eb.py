@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.87'
+__version__ = '0.20.88'
 
 def main():
         
@@ -148,6 +148,10 @@ def subcmd_config(args, cfg, aws):
             cfg.copy_binary_from_zip_url(rclone_url, 'rclone', 
                                 '/rclone-v*/',cfg.binfolderx)
             print("Done!",flush=True)
+
+    untar = os.path.join(cfg.binfolderx,'untar')
+    if os.path.exists(f'{untar}.go'):
+        subprocess.run(['go', 'build', '-o', untar, f'{untar}.go']),    
 
     # general setup 
     defdom = cfg.get_domain_name()
@@ -777,7 +781,7 @@ class Builder:
     def _install_os_dependencies(self, easyconfigroot):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
-        self._install_packages(['pigz', 'iftop', 'iotop'], package_skip_set)        
+        self._install_packages(['golang', 'pigz', 'iftop', 'iotop'], package_skip_set)        
         for root, dirs, files in self.cfg._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
@@ -2590,6 +2594,7 @@ class AWSBoto:
         chmod +x ~/.local/bin/spot-termination-time
         #curl -Ls https://raw.githubusercontent.com/dirkpetersen/scibob/main/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
+        curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/untar.go?token=$(date +%s) -o ~/.local/bin/untar.go
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
         chmod +x ~/.local/bin/{self.scriptname}
         chmod +x ~/.local/bin/simple-benchmark.py
