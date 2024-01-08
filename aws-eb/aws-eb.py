@@ -220,6 +220,9 @@ def subcmd_launch(args,cfg,bld,aws):
     cfg.printdbg ("build:", args.awsprofile)
     cfg.printdbg(f'default cmdline: aws-eb build')
 
+    if args.untar:
+        bld._untar_eb_software(args.untar)
+
     if args.monitor:
         # aws inactivity and cost monitoring
         aws.monitor_ec2()
@@ -4445,6 +4448,8 @@ def parse_arguments():
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
     parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store_true', default=False,
         help='This option will overwrite the ssh key pair in AWS with a new one and download it.')    
+    parser_launch.add_argument('--untar', dest='untar', action='store', default='',
+        help='folder to untar the downloaded eb packages')        
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
