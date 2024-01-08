@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.85'
+__version__ = '0.20.86'
 
 def main():
         
@@ -582,6 +582,8 @@ class Builder:
                     self._install_packages(osdep)
                 # install easybuild package 
                 themissing = self._eb_missing_modules(ebpath, printout=True)
+                if 'error' in themissing.keys():
+                    print(f'  * _eb_missing_modules({ebpath}) returned an error', flush=True)
                 if not themissing:
                     print(f'  * {ebfile} and dependencies are already installed.', flush=True)
                     statdict[ebfile]['status'] = 'success'
@@ -743,7 +745,7 @@ class Builder:
             output = subprocess.check_output(command, text=True)
         except subprocess.CalledProcessError as e:
             print(f"Error executing command: {e}")
-            return {}
+            return {'error': 1}
         # Print raw output if the option is enabled
         if printout:
             print("Raw output of 'eb --missing-modules':")
@@ -866,7 +868,7 @@ class Builder:
                 # Decompress and unpack the file
                 subprocess.run([
                     "tar",
-                    "-I", decompress_command,
+                #    "-I", decompress_command,
                     "-xf", file_path,
                     "-C", root 
                 ], check=True)
@@ -895,7 +897,7 @@ class Builder:
                         tasks.append((file_path, root))
 
         # Execute the tasks in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=self.args.vcpus*10) as executor:
+        with ThreadPoolExecutor(max_workers=self.args.vcpus*100) as executor:
             future_to_file = {executor.submit(untar_file, file_path, root): file_path for file_path, root in tasks}
             for future in as_completed(future_to_file):
                 file_path = future_to_file[future]
