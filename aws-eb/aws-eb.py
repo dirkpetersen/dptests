@@ -879,8 +879,7 @@ class Builder:
                 return False
             except Exception as e:
                 print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
-                return
-            return True
+                return False
 
         # Create a list of tasks for parallel execution
         tasks = []
