@@ -39,7 +39,9 @@ func main() {
         go func() {
             defer wg.Done()
             for f := range files {
-                untarFile(f)
+                if err := untarFile(f); err != nil {
+                    fmt.Println("Error untarring file:", err)
+                }
             }
         }()
     }
@@ -53,7 +55,7 @@ func main() {
         if info.IsDir() {
             return nil // Continue walking
         }
-        if strings.HasSuffix(path, ".tar.gz") {
+        if strings.HasSuffix(path, ".eb.tar.gz") {
             files <- path
             return filepath.SkipDir // Skip deeper exploration of this directory
         }
@@ -69,19 +71,17 @@ func main() {
     wg.Wait()
 }
 
-func untarFile(filePath string) {
+func untarFile(filePath string) error {
     fmt.Println("Untarring:", filePath)
     file, err := os.Open(filePath)
     if err != nil {
-        fmt.Println(err)
-        return
+        return err
     }
     defer file.Close()
 
     gzipReader, err := gzip.NewReader(file)
     if err != nil {
-        fmt.Println(err)
-        return
+        return err
     }
     defer gzipReader.Close()
 
@@ -96,8 +96,7 @@ func untarFile(filePath string) {
             break
         }
         if err != nil {
-            fmt.Println(err)
-            return
+            return err
         }
 
         // Construct the full path for the file to be created
@@ -105,21 +104,28 @@ func untarFile(filePath string) {
 
         switch header.Typeflag {
         case tar.TypeDir:
-            // Create directory
-            if err := os.MkdirAll(fullPath, 0755); err != nil {
-                fmt.Println(err)
+            // Check if directory exists
+            if _, err := os.Stat(fullPath); err == nil {
+                // Directory exists, skip the rest of this tarball
+                return nil
+            }
+            // Create directory with permissions from tar header
+            if err := os.MkdirAll(fullPath, os.FileMode(header.Mode)); err != nil {
+                return err
             }
         case tar.TypeReg:
-            // Create file
-            outFile, err := os.Create(fullPath)
+            // Create file with permissions from tar header
+            outFile, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode))
             if err != nil {
-                fmt.Println(err)
-                continue
+                return err
             }
             if _, err := io.Copy(outFile, tarReader); err != nil {
-                fmt.Println(err)
+                outFile.Close()
+                return err
             }
             outFile.Close()
         }
     }
+
+    return nil
 }

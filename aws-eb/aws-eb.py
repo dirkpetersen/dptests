@@ -149,10 +149,6 @@ def subcmd_config(args, cfg, aws):
                                 '/rclone-v*/',cfg.binfolderx)
             print("Done!",flush=True)
 
-    untar = os.path.join(cfg.binfolderx,'untar')
-    if os.path.exists(f'{untar}.go'):
-        subprocess.run(['go', 'build', '-o', untar, f'{untar}.go']),    
-
     # general setup 
     defdom = cfg.get_domain_name()
     whoami = getpass.getuser()
@@ -496,6 +492,9 @@ class Builder:
 
         # install a lot of required junk 
         self._install_os_dependencies(easyconfigroot)
+        untar = os.path.join(self.cfg.binfolderx,'untar')
+        if os.path.exists(f'{untar}.go'):
+            subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'])
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
@@ -860,6 +859,9 @@ class Builder:
         from concurrent.futures import ThreadPoolExecutor, as_completed
         new_tars = []
         all_tars = []
+
+        subprocess.run(['untar', folder, self.args.vcpus*100])
+        return all_tars, new_tars
 
         def untar_file(file_path, root):
             print(f"Unpacking {file_path} into {root}...", flush=True)
