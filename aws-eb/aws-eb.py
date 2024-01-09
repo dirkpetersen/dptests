@@ -221,9 +221,7 @@ def subcmd_launch(args,cfg,bld,aws):
     cfg.printdbg(f'default cmdline: aws-eb build')
 
     if args.untar:
-        ##bld._untar_eb_software(args.untar)
-        #pref = f'{cfg.archiveroot}/{s3_prefix}/software'
-        aws.s3_download_untar(cfg.bucket, args.untar, os.path.join(bld.eb_root, 'software'), max_workers=100)
+        bld._untar_eb_software(args.untar)
         return True
 
     if args.monitor:
@@ -1832,12 +1830,12 @@ class AWSBoto:
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
             try:
                 if obj['Key'].endswith('.eb.tar.gz'):
+                    print(f"   Extracting {obj['Key']} ...")
                     tail = obj['Key'][len(prefix):]
                     dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                     stub_file = os.path.join(dst_root,tail) + '.stub'
                     if not os.path.exists(dst_fld):
-                        os.makedirs(dst_fld)
-                    print(f"   Extracting {obj['Key']} to {dst_fld}")                    
+                        os.makedirs(dst_fld)                    
                     fobj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
                     stream = fobj['Body']                    
                     with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
@@ -4515,7 +4513,7 @@ def parse_arguments():
     parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store_true', default=False,
         help='This option will overwrite the ssh key pair in AWS with a new one and download it.')    
     parser_launch.add_argument('--untar', dest='untar', action='store', default='',
-        help='prefix to the eb.tar.gz files from (e.g. aws/amzn-2023_xeon-gen-4/software)')        
+        help='the name of a folder that contains tarballs to be extracted in place.')       
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
