@@ -1830,7 +1830,7 @@ class AWSBoto:
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
             try:
                 if obj['Key'].endswith('.eb.tar.gz'):
-                    print(f"   Extracting {obj['Key']} ...")
+                    print(f"   Extr. {obj['Key']} ...")
                     tail = obj['Key'][len(prefix):]
                     dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                     stub_file = os.path.join(dst_root,tail) + '.stub'
@@ -1846,7 +1846,6 @@ class AWSBoto:
                     #tar_obj.extractall(path=dst_fld)
                     with open(stub_file, 'w') as fil:
                         pass 
-                    print(f"Extracted {obj['Key']} from {src_bucket} to {dst_fld}")
                 else:
                     print(f"**** Skipping {obj['Key']}, not a tar.gz file.")
 
@@ -2662,7 +2661,7 @@ class AWSBoto:
           ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
-          sudo juicefs mount -d redis://localhost:6379 /opt
+          sudo juicefs mount -d --max-uploads 100 --writeback --cache-partial-only redis://localhost:6379 /opt
           #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
