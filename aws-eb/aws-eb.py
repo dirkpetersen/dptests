@@ -1833,7 +1833,7 @@ class AWSBoto:
             # try:
             key = str(obj['Key'].strip())
             print('Moin1:', key)
-            if key.endswith('.tar.gz'):
+            if not key.endswith('.tar.gz'):
                 tail = key[len(prefix):]
                 dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                 stub_file = os.path.join(dst_root,tail) + '.stub'
