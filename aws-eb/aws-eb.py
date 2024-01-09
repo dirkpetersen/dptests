@@ -494,7 +494,8 @@ class Builder:
         excludes = exclude.split(',') if exclude else []
 
         # install a lot of required junk 
-        self._install_os_dependencies(easyconfigroot)
+        if not self.args.debug:
+            self._install_os_dependencies(easyconfigroot)
         untar = os.path.join(self.cfg.binfolderx,'untar')
         if os.path.exists(f'{untar}.go'):
             subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'])
