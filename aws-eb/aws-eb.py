@@ -1838,9 +1838,14 @@ class AWSBoto:
                 stub_file = os.path.join(dst_root,tail) + '.stub'
                 if not os.path.exists(dst_fld):
                     os.makedirs(dst_fld)
-                obj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
-                tar_obj = tarfile.open(fileobj=io.BytesIO(obj['Body'].read()), mode="r:gz")
-                tar_obj.extractall(path=dst_fld)
+                #obj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
+                stream = obj['Body']
+                with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
+                    for member in tar:
+                        # Extract each member while preserving attributes
+                        tar.extract(member, path=dst_fld)                
+                #tar_obj = tarfile.open(fileobj=io.BytesIO(obj['Body'].read()), mode="r:gz")
+                #tar_obj.extractall(path=dst_fld)
                 with open(stub_file, 'w') as fil:
                     pass 
                 print(f"Extracted {obj['Key']} from {src_bucket} to {dst_fld}")
