@@ -2666,7 +2666,7 @@ class AWSBoto:
           ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
-          sudo juicefs mount -d --max-uploads 100 --cache-partial-only --cache-dir /mnt/scratch/jfsCache redis://localhost:6379 /opt # --writeback
+          sudo juicefs mount -d --cache-dir /mnt/scratch/jfsCache redis://localhost:6379 /opt # --writeback --max-uploads 100 --cache-partial-only
           #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
