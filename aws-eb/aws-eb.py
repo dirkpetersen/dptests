@@ -1840,6 +1840,7 @@ class AWSBoto:
                     os.makedirs(dst_fld)
                 #obj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
                 stream = obj['Body']
+                print(f"Extracting {obj['Key']} from {dst_fld} (Stub: {stub_file})")
                 with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
                     for member in tar:
                         # Extract each member while preserving attributes
