@@ -57,7 +57,6 @@ func main() {
         }
         if strings.HasSuffix(path, ".eb.tar.gz") {
             files <- path
-            return filepath.SkipDir // Skip deeper exploration of this directory
         }
         return nil
     })
@@ -104,16 +103,16 @@ func untarFile(filePath string) error {
 
         switch header.Typeflag {
         case tar.TypeDir:
-            // Check if directory exists
-            if _, err := os.Stat(fullPath); err == nil {
-                // Directory exists, skip the rest of this tarball
-                return nil
-            }
             // Create directory with permissions from tar header
             if err := os.MkdirAll(fullPath, os.FileMode(header.Mode)); err != nil {
                 return err
             }
         case tar.TypeReg:
+            // Check if file exists
+            if _, err := os.Stat(fullPath); err == nil {
+                // File exists, skip this file
+                continue
+            }
             // Create file with permissions from tar header
             outFile, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode))
             if err != nil {
@@ -129,3 +128,4 @@ func untarFile(filePath string) error {
 
     return nil
 }
+
