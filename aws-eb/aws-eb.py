@@ -224,7 +224,7 @@ def subcmd_launch(args,cfg,bld,aws):
         ##bld._untar_eb_software(args.untar)
         #pref = f'{cfg.archiveroot}/{s3_prefix}/software'
         aws.s3_download_untar(cfg.bucket, args.untar, os.path.join(bld.eb_root, 'software'), max_workers=100)
-        pass
+        return True
 
     if args.monitor:
         # aws inactivity and cost monitoring
@@ -1831,7 +1831,7 @@ class AWSBoto:
 
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
             # try:
-            print(obj['Key'])
+            print('Moin:',obj['Key'])
             if obj['Key'].endswith('.tar.gz'):
                 tail = obj['Key'][len(prefix):]
                 dst_fld = os.path.dirname(os.path.join(dst_root,tail))
