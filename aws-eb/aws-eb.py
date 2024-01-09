@@ -498,7 +498,7 @@ class Builder:
             self._install_os_dependencies(easyconfigroot)
         untar = os.path.join(self.cfg.binfolderx,'untar')
         if os.path.exists(f'{untar}.go'):
-            subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'])
+            subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
@@ -1844,12 +1844,12 @@ class AWSBoto:
                         os.makedirs(dst_fld, exist_ok=True)                    
                     fobj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
                     stream = fobj['Body']
-                    # with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
-                    #     for member in tar:
-                    #         # Extract each member while preserving attributes
-                    #         tar.extract(member, path=dst_fld)                
-                    tar_obj = tarfile.open(fileobj=io.BytesIO(stream.read()), mode="r:gz")
-                    tar_obj.extractall(path=dst_fld)
+                    with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
+                        for member in tar:
+                            # Extract each member while preserving attributes
+                            tar.extract(member, path=dst_fld)                
+                    # tar_obj = tarfile.open(fileobj=io.BytesIO(stream.read()), mode="r:gz")
+                    # tar_obj.extractall(path=dst_fld)
                     with open(stub_file, 'w') as fil:
                         pass 
                 else:
@@ -2543,13 +2543,15 @@ class AWSBoto:
             fi
         }}
         chown {self.cfg.defuser} /opt
-        if [[ -f /usr/bin/redis6-server ]]; then
-          systemctl enable redis6
-          systemctl restart redis6
-        fi        
-        mkdir -p /mnt/scratch
-        format_largest_unused_block_devices /mnt/scratch
-        chown {self.cfg.defuser} /mnt/scratch
+        #if [[ -f /usr/bin/redis6-server ]]; then
+        #  systemctl enable redis6
+        #  systemctl restart redis6
+        #fi        
+        #mkdir -p /mnt/scratch
+        #format_largest_unused_block_devices /mnt/scratch
+        #chown {self.cfg.defuser} /mnt/scratch
+        format_largest_unused_block_devices /opt
+        chown {self.cfg.defuser} /opt
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
