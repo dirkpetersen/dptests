@@ -7,7 +7,7 @@ on AWS EC2 instances and syncs the binaries with S3 buckets
 # internal modules
 import sys, os, argparse, json, configparser, platform, subprocess
 import datetime, tarfile, zipfile, textwrap, socket, json, inspect
-import math, signal, shlex, time, re, traceback, operator, glob 
+import math, signal, shlex, time, re, traceback, operator, glob, io 
 import shutil, tempfile, concurrent.futures
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
@@ -221,7 +221,10 @@ def subcmd_launch(args,cfg,bld,aws):
     cfg.printdbg(f'default cmdline: aws-eb build')
 
     if args.untar:
-        bld._untar_eb_software(args.untar)
+        ##bld._untar_eb_software(args.untar)
+        #pref = f'{cfg.archiveroot}/{s3_prefix}/software'
+        aws.s3_download_untar(cfg.bucket, args.untar, os.path.join(bld.eb_root, 'software'), max_workers=100)
+        pass
 
     if args.monitor:
         # aws inactivity and cost monitoring
@@ -344,8 +347,10 @@ def subcmd_download(args,cfg,bld,aws):
     bld.rclone_download_compare = '--size-only'
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
 
-    print(f" Untarring packages ... ", flush=True)
-    all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
+    print(f" Untarring packages ... ", flush=True)    
+    #all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
+    pref = f'{cfg.archiveroot}/{s3_prefix}/software'
+    aws.s3_download_untar(cfg.bucket, pref, os.path.join(bld.eb_root, 'software'), max_workers=100)
 
     print('All software was downloaded to:', bld.eb_root)
 
@@ -621,9 +626,11 @@ class Builder:
                     getsource = False
                 ebskipped-=1
                 if time.time()-downloadtime > self.copydelay:
-                    self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
+                    #self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
                     print(f" Unpacking previous packages ... ", flush=True)
-                    all_tars, new_tars = self._untar_eb_software(softwaredir)
+                    #all_tars, new_tars = self._untar_eb_software(softwaredir)
+                    pref = f'{self.cfg.archiveroot}/{s3_prefix}/software'
+                    self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'), max_workers=100)
                     downloadtime = time.time()
                 else:
                     print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)
@@ -779,7 +786,7 @@ class Builder:
     def _install_os_dependencies(self, easyconfigroot):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
-        self._install_packages(['golang', 'pigz', 'iftop', 'iotop'], package_skip_set)        
+        self._install_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop'], package_skip_set)
         for root, dirs, files in self.cfg._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
@@ -1129,14 +1136,16 @@ class Builder:
             
             self._make_files_executable(os.path.join(target,'sources','generic'))
 
-        print ('  Downloading Software ... ', flush=True)
-        ret = rclone.copy(f'{source}/{s3_prefix}/software/',
-                          os.path.join(target,'software'), '--fast-list',
-                          '--links', self.rclone_download_compare, 
-                          '--include', '*.eb.tar.gz' 
-                        )
-        self._transfer_status(ret)
-        
+        # we are now using s3 native for untar on-the-fly
+        #
+        # print ('  Downloading Software ... ', flush=True)
+        # ret = rclone.copy(f'{source}/{s3_prefix}/software/',
+        #                   os.path.join(target,'software'), '--fast-list',
+        #                   '--links', self.rclone_download_compare, 
+        #                   '--include', '*.eb.tar.gz' 
+        #                 )        
+        # self._transfer_status(ret)
+            
         # for subsequent download comparison size is enough
         self.rclone_download_compare = '--size-only'
    
@@ -1812,6 +1821,46 @@ class AWSBoto:
                         concurrent.futures.wait(futures)
         except Exception as e:
             print(f"Error in s3_duplicate_bucket(): {e}")
+            return False
+
+    def s3_download_untar(self, src_bucket, prefix, dst_root, max_workers=100):
+
+        s3 = self.awssession.client('s3')
+        if not prefix.endswith('/'):
+            prefix += '/'
+
+        def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
+            try:
+                if obj['Key'].endswith('.tar.gz'):
+                    tail = os.path.obj['Key'][len(prefix):]                    
+                    dst_fld = os.path.dirname(os.path.join(dst_root,tail))
+                    stub_file = os.path.join(dst_root,tail) + '.stub'
+                    if not os.path.exists(dst_fld):
+                        os.makedirs(dst_fld)
+                    obj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
+                    tar_obj = tarfile.open(fileobj=io.BytesIO(obj['Body'].read()), mode="r:gz")
+                    tar_obj.extractall(path=dst_fld)
+                    with open(stub_file, 'w') as fil:
+                        pass 
+                    print(f"Extracted {obj['Key']} from {src_bucket} to {dst_fld}")
+
+            except Exception as e:               
+                print(f"Error in s3_untar_object: {e}")
+                pass
+
+        try:
+            paginator = s3.get_paginator('list_objects_v2')
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Iterate over each page in the paginator
+                for page in paginator.paginate(Bucket=src_bucket, Prefix=prefix, RequestPayer='requester'):
+                    if 'Contents' in page:
+                        # Submit each object copy to the thread pool
+                        futures = [executor.submit(s3_untar_object, s3, src_bucket, prefix, obj, dst_root)
+                                for obj in page['Contents']] # if obj['Size'] <= 5 * 1024 * 1024 * 1024
+                        # Wait for all submitted futures to complete
+                        concurrent.futures.wait(futures)
+        except Exception as e:
+            print(f"Error in s3_download_untar: {e}")
             return False
 
     def _extract_last_float(self, input_string):
@@ -4458,7 +4507,7 @@ def parse_arguments():
     parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store_true', default=False,
         help='This option will overwrite the ssh key pair in AWS with a new one and download it.')    
     parser_launch.add_argument('--untar', dest='untar', action='store', default='',
-        help='folder to untar the downloaded eb packages')        
+        help='prefix to the eb.tar.gz files from (e.g. aws/amzn-2023_xeon-gen-4/software)')        
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
