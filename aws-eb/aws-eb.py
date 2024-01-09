@@ -348,7 +348,7 @@ def subcmd_download(args,cfg,bld,aws):
     print(f" Untarring packages ... ", flush=True)    
     #all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
     pref = f'{cfg.archiveroot}/{s3_prefix}/software'
-    aws.s3_download_untar(cfg.bucket, pref, os.path.join(bld.eb_root, 'software'), max_workers=100)
+    aws.s3_download_untar(cfg.bucket, pref, os.path.join(bld.eb_root, 'software'))
 
     print('All software was downloaded to:', bld.eb_root)
 
@@ -629,7 +629,7 @@ class Builder:
                     print(f" Unpacking previous packages ... ", flush=True)
                     #all_tars, new_tars = self._untar_eb_software(softwaredir)
                     pref = f'{self.cfg.archiveroot}/{s3_prefix}/software'
-                    self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'), max_workers=100)
+                    self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'))
                     downloadtime = time.time()
                 else:
                     print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)
@@ -1827,7 +1827,7 @@ class AWSBoto:
             print(f"Error in s3_duplicate_bucket(): {e}")
             return False
 
-    def s3_download_untar(self, src_bucket, prefix, dst_root, max_workers=100):
+    def s3_download_untar(self, src_bucket, prefix, dst_root, max_workers=40):
 
         s3 = self.awssession.client('s3')
         if not prefix.endswith('/'):
@@ -2543,15 +2543,15 @@ class AWSBoto:
             fi
         }}
         chown {self.cfg.defuser} /opt
-        #if [[ -f /usr/bin/redis6-server ]]; then
-        #  systemctl enable redis6
-        #  systemctl restart redis6
-        #fi        
-        #mkdir -p /mnt/scratch
-        #format_largest_unused_block_devices /mnt/scratch
-        #chown {self.cfg.defuser} /mnt/scratch
-        format_largest_unused_block_devices /opt
-        chown {self.cfg.defuser} /opt
+        if [[ -f /usr/bin/redis6-server ]]; then
+          systemctl enable redis6
+          systemctl restart redis6
+        fi        
+        mkdir -p /mnt/scratch
+        format_largest_unused_block_devices /mnt/scratch
+        chown {self.cfg.defuser} /mnt/scratch
+        #format_largest_unused_block_devices /opt
+        #chown {self.cfg.defuser} /opt
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
@@ -2669,7 +2669,7 @@ class AWSBoto:
           ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
-          sudo juicefs mount -d --cache-dir /mnt/scratch/jfsCache redis://localhost:6379 /opt # --writeback --max-uploads 100 --cache-partial-only
+          sudo juicefs mount -d --cache-dir /mnt/scratch/jfsCache --cache-size 102400 redis://localhost:6379 /opt # --writeback --max-uploads 100 --cache-partial-only
           #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
