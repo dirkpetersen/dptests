@@ -1830,33 +1830,33 @@ class AWSBoto:
             prefix += '/'
 
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
-            # try:
-            key = str(obj['Key'].strip())
-            print('Moin1:', key)
-            if not key.endswith('.tar.gz'):
-                tail = key[len(prefix):]
-                dst_fld = os.path.dirname(os.path.join(dst_root,tail))
-                stub_file = os.path.join(dst_root,tail) + '.stub'
-                if not os.path.exists(dst_fld):
-                    os.makedirs(dst_fld)
-                #obj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
-                stream = obj['Body']
-                print(f"Extracting {obj['Key']} from {dst_fld} (Stub: {stub_file})")
-                with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
-                    for member in tar:
-                        # Extract each member while preserving attributes
-                        tar.extract(member, path=dst_fld)                
-                #tar_obj = tarfile.open(fileobj=io.BytesIO(obj['Body'].read()), mode="r:gz")
-                #tar_obj.extractall(path=dst_fld)
-                with open(stub_file, 'w') as fil:
-                    pass 
-                print(f"Extracted {obj['Key']} from {src_bucket} to {dst_fld}")
-            else:
-                print(f"Skipping {key}, not a tar.gz file.")
+            try:
+                key = str(obj['Key'].strip())
+                print('Moin1:', key)
+                if key.endswith('.tar.gz'):
+                    tail = key[len(prefix):]
+                    dst_fld = os.path.dirname(os.path.join(dst_root,tail))
+                    stub_file = os.path.join(dst_root,tail) + '.stub'
+                    if not os.path.exists(dst_fld):
+                        os.makedirs(dst_fld)
+                    #obj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
+                    stream = obj['Body']
+                    print(f"Extracting {obj['Key']} from {dst_fld} (Stub: {stub_file})")
+                    with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
+                        for member in tar:
+                            # Extract each member while preserving attributes
+                            tar.extract(member, path=dst_fld)                
+                    #tar_obj = tarfile.open(fileobj=io.BytesIO(obj['Body'].read()), mode="r:gz")
+                    #tar_obj.extractall(path=dst_fld)
+                    with open(stub_file, 'w') as fil:
+                        pass 
+                    print(f"Extracted {obj['Key']} from {src_bucket} to {dst_fld}")
+                else:
+                    print(f"Skipping {key}, not a tar.gz file.")
 
-            # except Exception as e:               
-            #     print(f"Error in s3_untar_object: {e}")
-            #     pass
+            except Exception as e:               
+                print(f"Error in s3_untar_object: {e}")
+                pass
 
         try:
             paginator = s3.get_paginator('list_objects_v2')
