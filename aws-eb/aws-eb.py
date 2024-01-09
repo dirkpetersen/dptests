@@ -1831,9 +1831,10 @@ class AWSBoto:
 
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
             # try:
-            print('Moin:',obj['Key'])
-            if obj['Key'].endswith('.tar.gz'):
-                tail = obj['Key'][len(prefix):]
+            key = obj['Key'].strip()
+            print('Moin1:', key)
+            if key.endswith('.tar.gz'):
+                tail = key[len(prefix):]
                 dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                 stub_file = os.path.join(dst_root,tail) + '.stub'
                 if not os.path.exists(dst_fld):
