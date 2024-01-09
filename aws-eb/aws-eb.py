@@ -123,7 +123,7 @@ def subcmd_config(args, cfg, aws):
         cfg.binfolder = '~/.local/bin'
         cfg.binfolderx = os.path.expanduser(cfg.binfolder)
         if not os.path.exists(cfg.binfolderx):
-            os.makedirs(cfg.binfolderx, mode=0o775)        
+            os.makedirs(cfg.binfolderx, mode=0o775, exist_ok=True)        
     else:        
         if cfg.binfolder.startswith(cfg.home_dir):
             cfg.binfolder = cfg.binfolder.replace(cfg.home_dir, '~')
@@ -834,6 +834,10 @@ class Builder:
 
                 if self.args.debug:
                     self.cfg.printdbg(f'version_dir: {version_dir}, package_dir: {package_dir}, package_root: {package_root}, tarball_name: {tarball_name}, tarball_path: {tarball_path}')   
+                
+                if os.path.exists(f'{tarball_path}.stub'):
+                    print(f'  {tarball_path} was previously downloaded, skipping ...')
+                    continue
 
                 all_tars.append(tarball_path)
                 if os.path.isfile(tarball_path):
@@ -1835,7 +1839,7 @@ class AWSBoto:
                     dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                     stub_file = os.path.join(dst_root,tail) + '.stub'
                     if not os.path.exists(dst_fld):
-                        os.makedirs(dst_fld)                    
+                        os.makedirs(dst_fld, exist_ok=True)                    
                     fobj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
                     stream = fobj['Body']                    
                     with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
@@ -4131,7 +4135,7 @@ class ConfigManager:
         aws_dir = os.path.join(self.home_dir, ".aws")
 
         if not os.path.exists(aws_dir):
-            os.makedirs(aws_dir)
+            os.makedirs(aws_dir, exist_ok=True)
 
         if not os.path.isfile(self.awsconfigfile):
             if region:
