@@ -43,8 +43,8 @@ def main():
     # Instantiate classes required by all functions         
     cfg = ConfigManager(args)
     aws = None
-    if not args.subcmd in ['download', 'dld']:
-        aws = AWSBoto(args, cfg)
+    #if not args.subcmd in ['download', 'dld']:
+    aws = AWSBoto(args, cfg)
     bld = Builder(args, cfg, aws)
     
     if args.version:
