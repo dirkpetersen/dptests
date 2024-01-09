@@ -1831,16 +1831,15 @@ class AWSBoto:
 
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
             try:
-                key = str(obj['Key'].strip())
-                print('Moin1:', key)
+                print('Moin1:', obj['Key'])
                 if key.endswith('.tar.gz'):
-                    tail = key[len(prefix):]
+                    tail = obj['Key'][len(prefix):]
                     dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                     stub_file = os.path.join(dst_root,tail) + '.stub'
                     if not os.path.exists(dst_fld):
                         os.makedirs(dst_fld)
-                    #obj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
-                    stream = obj['Body']
+                    fobj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
+                    stream = fobj['Body']
                     print(f"Extracting {obj['Key']} from {dst_fld} (Stub: {stub_file})")
                     with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
                         for member in tar:
