@@ -1832,7 +1832,7 @@ class AWSBoto:
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
             try:
                 print('Moin1:', obj['Key'])
-                if key.endswith('.tar.gz'):
+                if obj['Key'].endswith('.tar.gz'):
                     tail = obj['Key'][len(prefix):]
                     dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                     stub_file = os.path.join(dst_root,tail) + '.stub'
@@ -1851,7 +1851,7 @@ class AWSBoto:
                         pass 
                     print(f"Extracted {obj['Key']} from {src_bucket} to {dst_fld}")
                 else:
-                    print(f"Skipping {key}, not a tar.gz file.")
+                    print(f"**** Skipping {obj['Key']}, not a tar.gz file.")
 
             except Exception as e:               
                 print(f"Error in s3_untar_object: {e}")
