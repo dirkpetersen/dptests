@@ -2529,14 +2529,14 @@ class AWSBoto:
                 local largest_device=$(echo "$best_config" | jq -r '.devices[0]')
                 echo "/dev/$largest_device"
                 mkfs -t xfs "/dev/$largest_device"
-                mount "/dev/$largest_device" /opt
+                mount "/dev/$largest_device" $1
             elif [[ "$count" -gt 1 ]]; then
                 # Multiple devices of the same size
                 local devices_list=$(echo "$best_config" | jq -r '.devices[]' | sed 's/^/\/dev\//')
                 echo "Devices with the largest combined size: $devices_list"
                 mdadm --create /dev/md0 --level=0 --raid-devices=$count $devices_list
                 mkfs -t xfs /dev/md0
-                mount /dev/md0 /opt
+                mount /dev/md0 $1
             else
                 echo "No uniquely largest block device found."
             fi
@@ -2545,10 +2545,10 @@ class AWSBoto:
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
           systemctl restart redis6
-        else
-          format_largest_unused_block_devices
-          chown {self.cfg.defuser} /opt          
-        fi
+        fi        
+        mkdir -p /mnt/scratch
+        format_largest_unused_block_devices /mnt/scratch
+        chown {self.cfg.defuser} /mnt/scratch
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
@@ -2666,7 +2666,7 @@ class AWSBoto:
           ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
-          sudo juicefs mount -d --max-uploads 100 --writeback --cache-partial-only redis://localhost:6379 /opt
+          sudo juicefs mount -d --max-uploads 100 --cache-partial-only --cache-dir /mnt/scratch/jfsCache redis://localhost:6379 /opt # --writeback
           #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
