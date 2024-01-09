@@ -24,7 +24,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.90'
+__version__ = '0.20.91'
 
 def main():
         
@@ -731,6 +731,7 @@ class Builder:
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
+            ret=subprocess.run(f'sudo juicefs umount --flush /opt', shell=True, text=True)
             msg = f'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
             if errpkg:
                 msg += f'\nFailed easyconfigs: {", ".join(errpkg)}'
