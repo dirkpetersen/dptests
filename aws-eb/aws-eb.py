@@ -285,7 +285,12 @@ def subcmd_launch(args,cfg,bld,aws):
     ecfgroot = os.path.join(cfg.home_dir, 'easybuild-easyconfigs', 'easybuild', 'easyconfigs')
     if args.ebrelease:
         ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
+
+    rclone = Rclone(args,cfg)
+    # mount sources 
+    #rpid = rclone.mount(archive_folder, local_folder)
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
+    #rclone.unmount(local_folder)
 
 def subcmd_download(args,cfg,bld,aws):
 
@@ -1471,6 +1476,25 @@ class AWSBoto:
             "xeon-gen-4": ('c7i', 'm7i', 'm7i-flex', 'r7i', 'r7iz'),
             "core-i7-mac": ('mac1',)
         }
+
+        # not used yet
+        self.cpu_speed = {
+            "graviton-2": 10,
+            "graviton-3": 10,
+            "graviton-4": 10,
+            "epyc-gen-1": 50,
+            "epyc-gen-2": 66,
+            "epyc-gen-3": 85,
+            "epyc-gen-4": 100,
+            "xeon-gen-1": 10,
+            "xeon-gen-2": 10,
+            "xeon-gen-3": 10,
+            "xeon-gen-4": 10,
+            "core-i7-mac": 21
+        }
+
+
+
         self.gpu_types = {
             "h100": 'p5',
             "a100": 'p4',
@@ -2506,6 +2530,11 @@ class AWSBoto:
         {pkgm} install -y gcc mdadm jq git python3-pip
         {pkgm} install -y redis6
         format_largest_unused_block_devices() {{
+            # format the largest unused block device(s) and mount it to /opt
+            # if there are multiple unused devices of the same size and their combined size 
+            # is larger than the largest unused single block device, they will be combined into 
+            # a single RAID0 device and be mounted to /opt instead of the largest device
+            #
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
             # Check if there are any devices to process
@@ -2543,15 +2572,12 @@ class AWSBoto:
             fi
         }}
         chown {self.cfg.defuser} /opt
+        format_largest_unused_block_devices /opt
+        chown {self.cfg.defuser} /opt
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
-          systemctl restart redis6
-        fi        
-        mkdir -p /mnt/scratch
-        format_largest_unused_block_devices /mnt/scratch
-        chown {self.cfg.defuser} /mnt/scratch
-        #format_largest_unused_block_devices /opt
-        #chown {self.cfg.defuser} /opt
+          #systemctl restart redis6
+        fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
