@@ -286,9 +286,9 @@ def subcmd_launch(args,cfg,bld,aws):
     if args.ebrelease:
         ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
 
-    rclone = Rclone(args,cfg)
+    rclone = RClone(args,cfg)
     # mount sources 
-    #rpid = rclone.mount(archive_folder, local_folder)
+    rpid = rclone.mount(f':s3:{cfg.archivepath}/{s3_prefix}/software, f'{bld.eb_root}/software')    
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
     #rclone.unmount(local_folder)
 
@@ -1355,7 +1355,7 @@ class Rclone:
             pass
         command.append('--allow-non-empty')
         command.append('--default-permissions')
-        command.append('--read-only')
+        #command.append('--read-only')
         command.append('--no-checksum')
         command.append('--quiet')
         command.append(url)
