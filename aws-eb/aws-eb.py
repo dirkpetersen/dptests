@@ -1943,7 +1943,7 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
+        bootstrap_build += '\n $PYBIN ' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         if not self.args.keeprunning:
             bootstrap_build += f'\n[ ! -f ~/no-terminate ] && {self.scriptname} ssh --terminate {iid}'
@@ -2572,11 +2572,8 @@ class AWSBoto:
         }}
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
+        {pkgm} install -y gcc mdadm jq git python3-pip
         {pkgm} install -y python3.11-pip
-        if ! [[ -f /usr/bin/python3.11 ]]; then
-          {pkgm} install -y python3-pip
-        fi
-        {pkgm} install -y gcc mdadm jq git
         {pkgm} install -y redis6
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
@@ -2665,11 +2662,15 @@ class AWSBoto:
         # Install JuiceFS
         curl -sSL https://d.juicefs.com/install | sh -
         # wait for pip3 to be installed
-        echo "Waiting for Python3 pip install ..."
+        echo "Waiting for Python3 pip install ..."        
         until [ -f /usr/bin/pip3 ]; do sleep 3; done; echo "pip3 exists, please wait ..."
         sleep 5
-        python3 -m pip install --upgrade --user pip
-        python3 -m pip install --upgrade --user wheel awscli
+        PYBIN=$(which python3)
+        if [[ -f /usr/bin/python3.11 ]]; then
+            PYBIN=/usr/bin/python3.11
+        fi
+        $PYBIN -m pip install --upgrade --user pip
+        $PYBIN -m pip install --upgrade --user wheel awscli
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
         aws configure set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
         aws configure set region {self.cfg.aws_region}
@@ -2696,7 +2697,7 @@ class AWSBoto:
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
         chmod +x ~/.local/bin/{self.scriptname}
         chmod +x ~/.local/bin/simple-benchmark.py
-        simple-benchmark.py > ~/out.simple-benchmark.txt &
+        $PYBIN simple-benchmark.py > ~/out.simple-benchmark.txt &
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
@@ -2715,8 +2716,8 @@ class AWSBoto:
         mkdir -p /opt/eb/tmp
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
-        python3 -m pip install --user easybuild 
-        python3 -m pip install --user packaging boto3 psutil
+        $PYBIN -m pip install --user easybuild 
+        $PYBIN -m pip install --user packaging boto3 psutil
         source ~/easybuildrc
         {self.scriptname} config --monitor '{emailaddr}'
         echo ""
