@@ -1491,7 +1491,7 @@ class AWSBoto:
             "xeon-gen-4": 10,
             "core-i7-mac": 21
         }
-        
+
         self.gpu_types = {
             "h100": 'p5',
             "a100": 'p4',
@@ -2564,6 +2564,10 @@ class AWSBoto:
                 echo "No uniquely largest block device found."
             fi
         }}
+        {pkgm} update -y
+        export DEBIAN_FRONTEND=noninteractive
+        {pkgm} install -y gcc mdadm jq git python3-pip
+        {pkgm} install -y redis6
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
@@ -2684,7 +2688,7 @@ class AWSBoto:
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
-        if [[ -f /usr/bin/redis6-server ]]; then
+        if systemctl is-active --quiet redis6; then
           ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
