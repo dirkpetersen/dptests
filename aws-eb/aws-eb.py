@@ -1943,7 +1943,7 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n $PYBIN ' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
+        bootstrap_build += '\n$PYBIN ' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         if not self.args.keeprunning:
             bootstrap_build += f'\n[ ! -f ~/no-terminate ] && {self.scriptname} ssh --terminate {iid}'
@@ -2666,9 +2666,9 @@ class AWSBoto:
         until [ -f /usr/bin/pip3 ]; do sleep 3; done; echo "pip3 exists, please wait ..."
         sleep 5
         PYBIN=$(which python3)
-        if [[ -f /usr/bin/python3.11 ]]; then
-            PYBIN=/usr/bin/python3.11
-        fi
+        #if [[ -f /usr/bin/python3.11 ]]; then
+        #  PYBIN=/usr/bin/python3.11
+        #fi
         $PYBIN -m pip install --upgrade --user pip
         $PYBIN -m pip install --upgrade --user wheel awscli
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
