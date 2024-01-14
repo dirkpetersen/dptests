@@ -7,7 +7,7 @@ on AWS EC2 instances and syncs the binaries with S3 buckets
 # internal modules
 import sys, os, argparse, json, configparser, platform, subprocess
 import datetime, tarfile, zipfile, textwrap, socket, json, inspect
-import math, signal, shlex, time, re, traceback, operator, glob, io 
+import math, signal, shlex, time, re, traceback, operator, glob 
 import shutil, tempfile, concurrent.futures
 if sys.platform.startswith('linux'):
     import getpass, pwd, grp
