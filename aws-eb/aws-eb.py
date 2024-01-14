@@ -2668,7 +2668,6 @@ class AWSBoto:
         export PYBIN=$(which python3)
         if [[ -f /usr/bin/python3.11 ]]; then
           export PYBIN=/usr/bin/python3.11
-          ln -s /usr/bin/python3.11 ~/.local/bin/python3
         fi
         $PYBIN -m pip install --upgrade --user pip
         $PYBIN -m pip install --upgrade --user wheel awscli
@@ -2717,7 +2716,8 @@ class AWSBoto:
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
         $PYBIN -m pip install --user easybuild 
-        $PYBIN -m pip install --user packaging boto3 psutil
+        $PYBIN -m pip install --user --upgrade packaging boto3 
+        $PYBIN -m pip install --user psutil
         source ~/easybuildrc
         $PYBIN ~/.local/bin/{self.scriptname} config --monitor '{emailaddr}'
         echo ""
