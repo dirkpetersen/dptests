@@ -622,12 +622,12 @@ class Builder:
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 print(f" Downloading previous packages ... ", flush=True)
-                getsource = True
-                if self.args.skipsources:
-                    getsource = False
+                # getsource = True
+                # if self.args.skipsources:
+                #     getsource = False
                 ebskipped-=1
                 if time.time()-downloadtime > self.copydelay:
-                    #self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix, getsource)
+                    self.download(f':s3:{self.cfg.archivepath}', self.eb_root, s3_prefix) #downloading modules
                     print(f" Unpacking previous packages ... ", flush=True)
                     #all_tars, new_tars = self._untar_eb_software(softwaredir)
                     pref = f'{self.cfg.archiveroot}/{s3_prefix}/software'
@@ -734,7 +734,8 @@ class Builder:
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
-            ret=subprocess.run(f'sudo juicefs umount --flush /opt', shell=True, text=True)
+            if self.cfg.is_systemd_service_running('redis6'):
+                ret=subprocess.run(f'sudo juicefs umount --flush /mnt/share', shell=True, text=True)
             msg = f'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
             if errpkg:
                 msg += f'\nFailed easyconfigs: {", ".join(errpkg)}'
@@ -1121,7 +1122,7 @@ class Builder:
         # after the first successful upload do a size only compare
         self.rclone_upload_compare  = '--size-only'
                 
-    def download(self, source, target, s3_prefix=None, with_source=True):
+    def download(self, source, target, s3_prefix=None):  #, with_source=True
                
         rclone = Rclone(self.args,self.cfg)
             
@@ -1132,15 +1133,17 @@ class Builder:
                         )
         self._transfer_status(ret)
 
-        if with_source:
-            print ('  Downloading Sources ... ', flush=True)
-            ret = rclone.copy(f'{source}/sources/',
-                            os.path.join(target,'sources'), '--fast-list',
-                            '--links', self.rclone_download_compare
-                            )
-            self._transfer_status(ret)
+        # sources are mounted from rclone
+        #
+        # 
+        #     print ('  Downloading Sources ... ', flush=True)
+        #     ret = rclone.copy(f'{source}/sources/',
+        #                     os.path.join(target,'sources'), '--fast-list',
+        #                     '--links', self.rclone_download_compare
+        #                     )
+        #     self._transfer_status(ret)
             
-            self._make_files_executable(os.path.join(target,'sources','generic'))
+        #     self._make_files_executable(os.path.join(target,'sources','generic'))
 
         # we are now using s3 native for untar on-the-fly
         #
@@ -2545,6 +2548,7 @@ class AWSBoto:
             # Extract the count value
             local count=$(echo "$best_config" | jq '.count')
             # Check if the best configuration is a single device or multiple devices
+            mkdir -p $1
             if [[ "$count" -eq 1 ]]; then
                 # Single largest device
                 local largest_device=$(echo "$best_config" | jq -r '.devices[0]')
@@ -2566,8 +2570,9 @@ class AWSBoto:
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq git python3-pip
         {pkgm} install -y redis6
-        chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /opt
+        chown {self.cfg.defuser} /opt
+        format_largest_unused_block_devices /mnt/scratch
         chown {self.cfg.defuser} /opt
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
@@ -2612,6 +2617,7 @@ class AWSBoto:
         export EASYBUILD_CUDA_COMPUTE_CAPABILITIES=7.5,8.0,8.6,9.0
         # export EASYBUILD_BUILDPATH=/dev/shm/$USER # could run out of space
         export EASYBUILD_PREFIX=/opt/eb
+        export EASYBUILD_SOURCEPATH=${{EASYBUILD_PREFIX}}/sources:${{EASYBUILD_PREFIX}}/sources_s3
         export EASYBUILD_JOB_OUTPUT_DIR=$EASYBUILD_PREFIX/batch-output
         export EASYBUILD_DEPRECATED=5.0
         export EASYBUILD_JOB_BACKEND=Slurm
@@ -2690,13 +2696,16 @@ class AWSBoto:
           ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
-          sudo juicefs mount -d --cache-dir /mnt/scratch/jfsCache --cache-size 102400 redis://localhost:6379 /opt # --writeback --max-uploads 100 --cache-partial-only
+          sudo mkdir -p /mnt/share
+          sudo juicefs mount -d --cache-dir /mnt/opt/jfsCache --cache-size 102400 redis://localhost:6379 /mnt/share # --writeback --max-uploads 100 --cache-partial-only
+          sudo chown {self.cfg.defuser} /mnt/share          
           #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
           sed -i 's/^  juicefs config /#&/' {bscript}
         fi
         mkdir -p /opt/eb/tmp
+        mkdir -p /opt/eb/sources_s3 # rclone mount point 
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
         python3 -m pip install --user easybuild 
         python3 -m pip install --user packaging boto3
@@ -3816,6 +3825,22 @@ class ConfigManager:
         except Exception as e:
             # Return two empty strings in case of an error
             return "", ""
+        
+
+    def is_systemd_service_running(self, service_name):
+        if not service_name.endswith('.service'):
+            service_name += '.service'
+        try:
+            # Run the systemctl command to check the service status
+            result = subprocess.run(['systemctl', 'is-active', service_name], stdout=subprocess.PIPE, text=True)            
+            # The output will be 'active' if the service is running
+            if result.stdout.strip() == 'active':
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
 
     def _get_home_paths(self):
         path_dirs = os.environ['PATH'].split(os.pathsep)
@@ -4514,7 +4539,7 @@ def parse_arguments():
         help='run --list to see available GPU types')       
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size-gb>',
         help='GB Memory allocated to instance  (default=8)')
-    parser_launch.add_argument('--disk', '-d', dest='mem', type=int, action='store', default=200, metavar='<disk-size-gb>',
+    parser_launch.add_argument('--disk', '-d', dest='disk', type=int, action='store', default=200, metavar='<disk-size-gb>',
         help='Add an EBS disk to the instance and mount it to /opt (default=200 GGB')
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="", metavar='<aws.instance>',
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
@@ -4530,8 +4555,8 @@ def parse_arguments():
         help="Execute the build on the current system instead of launching a new EC2 instance.")
     parser_launch.add_argument('--first-bucket', '-f', dest='firstbucket', action='store', default="", metavar='<your-s3-bucket>',
         help='use this bucket (e.g. easybuild-cache) to initially load the already built binaries and sources')       
-    parser_launch.add_argument('--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
-        help="Do not pre-download sources from build cache, let EB download them.")      
+    # parser_launch.add_argument('--skip-sources', '-s', dest='skipsources', action='store_true', default=False,
+    #     help="Do not pre-download sources from build cache, let EB download them.")      
     parser_launch.add_argument('--eb-release', '-e', dest='ebrelease', action='store_true', default=False,
         help="Use official Easybuild release instead of dev repos from Github.")  
     parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
