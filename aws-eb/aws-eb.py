@@ -4515,7 +4515,7 @@ def parse_arguments():
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size-gb>',
         help='GB Memory allocated to instance  (default=8)')
     parser_launch.add_argument('--disk', '-d', dest='mem', type=int, action='store', default=200, metavar='<disk-size-gb>',
-        help='GB Memory allocated to instance  (default=8)')    
+        help='Add an EBS disk to the instance and mount it to /opt (default=200 GGB')
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="", metavar='<aws.instance>',
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
