@@ -1491,12 +1491,7 @@ class AWSBoto:
             "xeon-gen-4": 10,
             "core-i7-mac": 21
         }
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
+        
         self.gpu_types = {
             "h100": 'p5',
             "a100": 'p4',
@@ -2532,11 +2527,7 @@ class AWSBoto:
             # if there are multiple unused devices of the same size and their combined size 
             # is larger than the largest unused single block device, they will be combined into 
             # a single RAID0 device and be mounted to /opt instead of the largest device
-<<<<<<< HEAD
-            #        
-=======
             #
->>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
             # Check if there are any devices to process
@@ -2572,32 +2563,14 @@ class AWSBoto:
             else
                 echo "No uniquely largest block device found."
             fi
-<<<<<<< HEAD
-        }}        
-        {pkgm} update -y
-        export DEBIAN_FRONTEND=noninteractive
-        {pkgm} install -y gcc mdadm jq git python3-pip                                   
-        {pkgm} install -y redis6        
-=======
         }}
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
->>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
           #systemctl restart redis6
         fi
-<<<<<<< HEAD
-        chown {self.cfg.defuser} /opt
-        format_largest_unused_block_devices /opt
-        chown {self.cfg.defuser} /opt        
-        mkdir -p /mnt/scratch
-        chown {self.cfg.defuser} /mnt/scratch
-        format_largest_unused_block_devices /mnt/scratch
-        chown {self.cfg.defuser} /mnt/scratch
-=======
->>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
