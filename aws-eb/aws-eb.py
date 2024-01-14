@@ -4547,8 +4547,8 @@ def parse_arguments():
         help='run --list to see available GPU types')       
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size-gb>',
         help='GB Memory allocated to instance  (default=8)')
-    parser_launch.add_argument('--disk', '-d', dest='disk', type=int, action='store', default=250, metavar='<disk-size-gb>',
-        help='Add an EBS disk to the instance and mount it to /opt (default=250 GB')
+    parser_launch.add_argument('--disk', '-d', dest='disk', type=int, action='store', default=350, metavar='<disk-size-gb>',
+        help='Add an EBS disk to the instance and mount it to /opt (default=350 GB')
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="", metavar='<aws.instance>',
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
