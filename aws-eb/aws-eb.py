@@ -2572,7 +2572,11 @@ class AWSBoto:
         }}
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
-        {pkgm} install -y gcc mdadm jq git python3-pip
+        {pkgm} install -y python3.11-pip
+        if ! [[ -f /usr/bin/python3.11 ]]; then
+          {pkgm} install -y python3-pip
+        fi
+        {pkgm} install -y gcc mdadm jq git
         {pkgm} install -y redis6
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
@@ -2712,7 +2716,7 @@ class AWSBoto:
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
         python3 -m pip install --user easybuild 
-        python3 -m pip install --user packaging boto3
+        python3 -m pip install --user packaging boto3 psutil
         source ~/easybuildrc
         {self.scriptname} config --monitor '{emailaddr}'
         echo ""
