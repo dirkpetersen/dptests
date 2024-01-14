@@ -2716,7 +2716,7 @@ class AWSBoto:
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
         $PYBIN -m pip install --user easybuild 
-        $PYBIN -m pip install --user --upgrade packaging boto3 
+        $PYBIN -m pip install --user --upgrade packaging boto3 requests 
         $PYBIN -m pip install --user psutil
         source ~/easybuildrc
         $PYBIN ~/.local/bin/{self.scriptname} config --monitor '{emailaddr}'
