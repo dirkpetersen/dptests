@@ -2572,9 +2572,9 @@ class AWSBoto:
         }}
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
+        {pkgm} install -y redis6 
+        {pkgm} install -y python3.11-pip       
         {pkgm} install -y gcc mdadm jq git python3-pip
-        {pkgm} install -y python3.11-pip
-        {pkgm} install -y redis6
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
@@ -2719,7 +2719,7 @@ class AWSBoto:
         $PYBIN -m pip install --user easybuild 
         $PYBIN -m pip install --user packaging boto3 psutil
         source ~/easybuildrc
-        {self.scriptname} config --monitor '{emailaddr}'
+        $PYBIN {self.scriptname} config --monitor '{emailaddr}'
         echo ""
         echo -e "CPU info:"
         lscpu | head -n 20
