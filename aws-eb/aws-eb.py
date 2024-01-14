@@ -1946,7 +1946,7 @@ class AWSBoto:
         bootstrap_build += '\n$PYBIN ~/.local/bin/' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         if not self.args.keeprunning:
-            bootstrap_build += f'\n[ ! -f ~/no-terminate ] && {self.scriptname} ssh --terminate {iid}'
+            bootstrap_build += f'\n[ ! -f ~/no-terminate ] && $PYBIN ~/.local/bin/{self.scriptname} ssh --terminate {iid}'
         sshuser = self.ec2_get_default_user(ip)
         ret = self.ssh_upload(sshuser, ip,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
