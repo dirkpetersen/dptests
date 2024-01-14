@@ -46,7 +46,7 @@ def main():
     #if not args.subcmd in ['download', 'dld']:
     aws = AWSBoto(args, cfg)
     bld = Builder(args, cfg, aws)
-    
+        
     if args.version:
         args_version(cfg)
 
@@ -285,8 +285,12 @@ def subcmd_launch(args,cfg,bld,aws):
     ecfgroot = os.path.join(cfg.home_dir, 'easybuild-easyconfigs', 'easybuild', 'easyconfigs')
     if args.ebrelease:
         ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
-    bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
 
+    rclone = Rclone(args, cfg)
+    rpid = rclone.mount(f':s3:{cfg.archivepath}/{s3_prefix}/software', f'{bld.eb_root}/software')
+    bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
+    rclone.unmount(f'{bld.eb_root}/software')
+    
 def subcmd_download(args,cfg,bld,aws):
 
     cfg.printdbg(f'default cmdline: aws-eb download')
@@ -1345,12 +1349,12 @@ class Rclone:
             #os.chmod(mountpoint, 0o2775)
             current_permissions = os.stat(mountpoint).st_mode
             new_permissions = (current_permissions & ~0o07) | 0o05
-            os.chmod(mountpoint, new_permissions)            
+            os.chmod(mountpoint, new_permissions) 
         except:
             pass
         command.append('--allow-non-empty')
         command.append('--default-permissions')
-        command.append('--read-only')
+        #command.append('--read-only')
         command.append('--no-checksum')
         command.append('--quiet')
         command.append(url)
