@@ -496,8 +496,9 @@ class Builder:
         excludes = exclude.split(',') if exclude else []
 
         # install a lot of required junk 
-        if not self.args.debug:
-            self._install_os_dependencies(easyconfigroot, minimal=True)
+        #if not self.args.debug:
+            #self._install_os_dependencies(easyconfigroot, minimal=True)
+        self._install_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop', 'fuse3'])
         untar = os.path.join(self.cfg.binfolderx,'untar')
         if os.path.exists(f'{untar}.go'):
             subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
