@@ -260,11 +260,9 @@ def subcmd_launch(args,cfg,bld,aws):
     print(f'{instance_type} is the cheapest spot instance with at least {args.vcpus} vcpus / {args.mem} GB mem')
 
     if not args.build:
-        if args.os == "amazon": # We will just use JuiceFS
-            print('Amazon Linux will use JuiceFS')
-            aws.ec2_deploy(0, instance_type)
-        else:
-            aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
+        #if args.os == "amazon": # We will just use JuiceFS
+        #    print('Amazon Linux will use JuiceFS')
+        aws.ec2_deploy(args.disk, instance_type)
         return True
 
     # *******************************************
@@ -4514,13 +4512,15 @@ def parse_arguments():
         'On x86-64 there are 2 vcpus per core and on Graviton (Arm) there is one core per vcpu')
     parser_launch.add_argument('--gpu-type', '-g', dest='gputype', action='store', default="", metavar='<gpu-type>',
         help='run --list to see available GPU types')       
-    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size>',
+    parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size-gb>',
         help='GB Memory allocated to instance  (default=8)')
+    parser_launch.add_argument('--disk', '-d', dest='mem', type=int, action='store', default=200, metavar='<disk-size-gb>',
+        help='GB Memory allocated to instance  (default=8)')    
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="", metavar='<aws.instance>',
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
         help='Enforce the availability zone, e.g. us-west-2a')    
-    parser_launch.add_argument('--on-demand', '-d', dest='ondemand', action='store_true', default=False,
+    parser_launch.add_argument('--on-demand', '-w', dest='ondemand', action='store_true', default=False,
         help="Enforce on-demand instance instead of using the default spot instance.")
     parser_launch.add_argument('--keep-running', '-u', dest='keeprunning', action='store_true', default=False,
         help="Do not shut down EC2 instance after builds are done, keep it running.")
