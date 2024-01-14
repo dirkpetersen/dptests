@@ -350,7 +350,7 @@ def subcmd_download(args,cfg,bld,aws):
     print(f" Untarring packages ... ", flush=True)    
     #all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
     pref = f'{cfg.archiveroot}/{s3_prefix}/software'
-    aws.s3_download_untar(cfg.bucket, pref, os.path.join(bld.eb_root, 'software'))
+    aws.s3_download_untar(cfg.bucket, pref, os.path.join(bld.eb_root, 'software'),args.vcpus*50)
 
     print('All software was downloaded to:', bld.eb_root)
 
@@ -631,7 +631,7 @@ class Builder:
                     print(f" Unpacking previous packages ... ", flush=True)
                     #all_tars, new_tars = self._untar_eb_software(softwaredir)
                     pref = f'{self.cfg.archiveroot}/{s3_prefix}/software'
-                    self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'))
+                    self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'), self.args.vcpus*50)
                     downloadtime = time.time()
                 else:
                     print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)
