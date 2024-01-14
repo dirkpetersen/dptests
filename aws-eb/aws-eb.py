@@ -1871,7 +1871,7 @@ class AWSBoto:
                     if os.path.exists(stub_file):
                         print(f"   Skiping {obj['Key']} ... elready extracted")
                         return
-                    else
+                    else:
                         print(f"   Extr. {obj['Key']} ...")
                     if not os.path.exists(dst_fld):
                         os.makedirs(dst_fld, exist_ok=True)                    
