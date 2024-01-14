@@ -352,7 +352,7 @@ def subcmd_download(args,cfg,bld,aws):
     print(f" Untarring packages ... ", flush=True)    
     #all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
     pref = f'{cfg.archiveroot}/{s3_prefix}/software'
-    aws.s3_download_untar(cfg.bucket, pref, os.path.join(bld.eb_root, 'software'), max_workers=100)
+    aws.s3_download_untar(cfg.bucket, pref, os.path.join(bld.eb_root, 'software'))
 
     print('All software was downloaded to:', bld.eb_root)
 
@@ -502,7 +502,7 @@ class Builder:
             self._install_os_dependencies(easyconfigroot)
         untar = os.path.join(self.cfg.binfolderx,'untar')
         if os.path.exists(f'{untar}.go'):
-            subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'])
+            subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
@@ -633,7 +633,7 @@ class Builder:
                     print(f" Unpacking previous packages ... ", flush=True)
                     #all_tars, new_tars = self._untar_eb_software(softwaredir)
                     pref = f'{self.cfg.archiveroot}/{s3_prefix}/software'
-                    self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'), max_workers=100)
+                    self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'))
                     downloadtime = time.time()
                 else:
                     print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)
@@ -1492,6 +1492,11 @@ class AWSBoto:
             "core-i7-mac": 21
         }
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
         self.gpu_types = {
             "h100": 'p5',
             "a100": 'p4',
@@ -1848,7 +1853,7 @@ class AWSBoto:
             print(f"Error in s3_duplicate_bucket(): {e}")
             return False
 
-    def s3_download_untar(self, src_bucket, prefix, dst_root, max_workers=100):
+    def s3_download_untar(self, src_bucket, prefix, dst_root, max_workers=40):
 
         s3 = self.awssession.client('s3')
         if not prefix.endswith('/'):
@@ -1865,12 +1870,12 @@ class AWSBoto:
                         os.makedirs(dst_fld, exist_ok=True)                    
                     fobj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
                     stream = fobj['Body']
-                    # with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
-                    #     for member in tar:
-                    #         # Extract each member while preserving attributes
-                    #         tar.extract(member, path=dst_fld)                
-                    tar_obj = tarfile.open(fileobj=io.BytesIO(stream.read()), mode="r:gz")
-                    tar_obj.extractall(path=dst_fld)
+                    with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
+                        for member in tar:
+                            # Extract each member while preserving attributes
+                            tar.extract(member, path=dst_fld)                
+                    # tar_obj = tarfile.open(fileobj=io.BytesIO(stream.read()), mode="r:gz")
+                    # tar_obj.extractall(path=dst_fld)
                     with open(stub_file, 'w') as fil:
                         pass 
                 else:
@@ -2527,7 +2532,11 @@ class AWSBoto:
             # if there are multiple unused devices of the same size and their combined size 
             # is larger than the largest unused single block device, they will be combined into 
             # a single RAID0 device and be mounted to /opt instead of the largest device
+<<<<<<< HEAD
             #        
+=======
+            #
+>>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
             # Check if there are any devices to process
@@ -2563,15 +2572,23 @@ class AWSBoto:
             else
                 echo "No uniquely largest block device found."
             fi
+<<<<<<< HEAD
         }}        
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y gcc mdadm jq git python3-pip                                   
         {pkgm} install -y redis6        
+=======
+        }}
+        chown {self.cfg.defuser} /opt
+        format_largest_unused_block_devices /opt
+        chown {self.cfg.defuser} /opt
+>>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
           #systemctl restart redis6
         fi
+<<<<<<< HEAD
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt        
@@ -2579,6 +2596,8 @@ class AWSBoto:
         chown {self.cfg.defuser} /mnt/scratch
         format_largest_unused_block_devices /mnt/scratch
         chown {self.cfg.defuser} /mnt/scratch
+=======
+>>>>>>> d1b87f6dccaf615fd97f983d257d317c2d33a34b
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
@@ -2696,7 +2715,7 @@ class AWSBoto:
           ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
-          sudo juicefs mount -d --cache-dir /mnt/scratch/jfsCache redis://localhost:6379 /opt # --writeback --max-uploads 100 --cache-partial-only
+          sudo juicefs mount -d --cache-dir /mnt/scratch/jfsCache --cache-size 102400 redis://localhost:6379 /opt # --writeback --max-uploads 100 --cache-partial-only
           #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
