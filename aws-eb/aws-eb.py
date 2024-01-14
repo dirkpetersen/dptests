@@ -497,7 +497,7 @@ class Builder:
 
         # install a lot of required junk 
         if not self.args.debug:
-            self._install_os_dependencies(easyconfigroot)
+            self._install_os_dependencies(easyconfigroot, minimal=True)
         untar = os.path.join(self.cfg.binfolderx,'untar')
         if os.path.exists(f'{untar}.go'):
             subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
@@ -786,10 +786,12 @@ class Builder:
                         errlist.append(ebf)
         return errlist
         
-    def _install_os_dependencies(self, easyconfigroot):
+    def _install_os_dependencies(self, easyconfigroot, minimal=False):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
-        self._install_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop'], package_skip_set)
+        self._install_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop', 'fuse3'], package_skip_set)
+        if minimal:
+            return True
         for root, dirs, files in self.cfg._walker(easyconfigroot):
             print(f'  Processing folder "{root}" for OS depts... ')
             for ebfile in files:
@@ -804,6 +806,7 @@ class Builder:
                                 package_tuple = (package_tuple,)                            
                             for package_name in package_tuple:
                                 package_skip_set.add(package_name)
+        return True
 
     def _tar_folder_old(self, folder):
         # Ensure the directory exists
@@ -1849,7 +1852,7 @@ class AWSBoto:
             print(f"Error in s3_duplicate_bucket(): {e}")
             return False
 
-    def s3_download_untar(self, src_bucket, prefix, dst_root, max_workers=40):
+    def s3_download_untar(self, src_bucket, prefix, dst_root, max_workers=100):
 
         s3 = self.awssession.client('s3')
         if not prefix.endswith('/'):
