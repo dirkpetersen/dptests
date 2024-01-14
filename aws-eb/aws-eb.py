@@ -2649,8 +2649,8 @@ class AWSBoto:
         #! /bin/bash
         echo "Bootstrapping AWS-EB on {instance_id} ..."
         if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-            export PATH=$PATH:~/.local/bin
-            echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
+            export PATH=~/.local/bin:$PATH
+            echo 'export PATH=~/.local/bin:$PATH' >> ~/.bashrc
         fi
         mkdir -p ~/.config/aws-eb
         echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
@@ -2665,10 +2665,11 @@ class AWSBoto:
         echo "Waiting for Python3 pip install ..."        
         until [ -f /usr/bin/pip3 ]; do sleep 3; done; echo "pip3 exists, please wait ..."
         sleep 5
-        PYBIN=$(which python3)
-        #if [[ -f /usr/bin/python3.11 ]]; then
-        #  PYBIN=/usr/bin/python3.11
-        #fi
+        export PYBIN=$(which python3)
+        if [[ -f /usr/bin/python3.11 ]]; then
+          export PYBIN=/usr/bin/python3.11
+          ln -s /usr/bin/python3.11 ~/.local/bin/python3
+        fi
         $PYBIN -m pip install --upgrade --user pip
         $PYBIN -m pip install --upgrade --user wheel awscli
         aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
@@ -2702,7 +2703,6 @@ class AWSBoto:
         echo "Waiting for Lmod install ..."
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
         if systemctl is-active --quiet redis6; then
-          ipid=$(get-public-ip | sed 's/\./x/g')
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
           sudo mkdir -p /mnt/share
