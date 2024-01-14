@@ -4539,8 +4539,8 @@ def parse_arguments():
         help='run --list to see available GPU types')       
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size-gb>',
         help='GB Memory allocated to instance  (default=8)')
-    parser_launch.add_argument('--disk', '-d', dest='disk', type=int, action='store', default=200, metavar='<disk-size-gb>',
-        help='Add an EBS disk to the instance and mount it to /opt (default=200 GGB')
+    parser_launch.add_argument('--disk', '-d', dest='disk', type=int, action='store', default=250, metavar='<disk-size-gb>',
+        help='Add an EBS disk to the instance and mount it to /opt (default=250 GB')
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="", metavar='<aws.instance>',
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
@@ -4561,13 +4561,13 @@ def parse_arguments():
         help="Use official Easybuild release instead of dev repos from Github.")  
     parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
         help="Re-check all previously skipped software packages and build them if possible.")    
-    parser_launch.add_argument('--include', '-i', dest='include', action='store', default="",
+    parser_launch.add_argument('--include', '-i', dest='include', action='store', default="", metavar='<include-list>',
         help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
-    parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="",
+    parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="", metavar='<exclude-list>',
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
     parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store_true', default=False,
         help='This option will overwrite the ssh key pair in AWS with a new one and download it.')    
-    parser_launch.add_argument('--untar', dest='untar', action='store', default='',
+    parser_launch.add_argument('--untar', dest='untar', action='store', default='',  metavar='<untar_folder>',
         help='the name of a folder that contains tarballs to be extracted in place.')       
     
     # ***
