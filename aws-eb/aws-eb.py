@@ -345,7 +345,7 @@ def subcmd_download(args,cfg,bld,aws):
     print(f"\nDownloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
     bld.rclone_download_compare = '--size-only'
-    bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix, with_source=args.withsource)
+    bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix)
 
     print(f" Untarring packages ... ", flush=True)    
     #all_tars, new_tars = bld._untar_eb_software(os.path.join(bld.eb_root, 'software'))
@@ -1865,10 +1865,14 @@ class AWSBoto:
         def s3_untar_object(s3, src_bucket, prefix, obj, dst_root):
             try:
                 if obj['Key'].endswith('.eb.tar.gz'):
-                    print(f"   Extr. {obj['Key']} ...")
                     tail = obj['Key'][len(prefix):]
                     dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                     stub_file = os.path.join(dst_root,tail) + '.stub'
+                    if os.path.exists(stub_file):
+                        print(f"   Skiping {obj['Key']} ... elready extracted")
+                        return
+                    else
+                        print(f"   Extr. {obj['Key']} ...")
                     if not os.path.exists(dst_fld):
                         os.makedirs(dst_fld, exist_ok=True)                    
                     fobj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
@@ -1890,7 +1894,7 @@ class AWSBoto:
 
         try:
             paginator = s3.get_paginator('list_objects_v2')
-            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:            
                 # Iterate over each page in the paginator
                 for page in paginator.paginate(Bucket=src_bucket, Prefix=prefix, RequestPayer='requester'):
                     if 'Contents' in page:
