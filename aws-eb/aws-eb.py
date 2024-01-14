@@ -2501,11 +2501,12 @@ class AWSBoto:
         long_timezone = self.cfg.get_time_zone()
         userdata = textwrap.dedent(f'''
         #! /bin/bash
-        {pkgm} update -y
-        export DEBIAN_FRONTEND=noninteractive
-        {pkgm} install -y gcc mdadm jq git python3-pip
-        {pkgm} install -y redis6
         format_largest_unused_block_devices() {{
+            # format the largest unused block device(s) and mount it to /opt
+            # if there are multiple unused devices of the same size and their combined size 
+            # is larger than the largest unused single block device, they will be combined into 
+            # a single RAID0 device and be mounted to /opt instead of the largest device
+            #        
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
             # Check if there are any devices to process
@@ -2541,13 +2542,20 @@ class AWSBoto:
             else
                 echo "No uniquely largest block device found."
             fi
-        }}
-        chown {self.cfg.defuser} /opt
+        }}        
+        {pkgm} update -y
+        export DEBIAN_FRONTEND=noninteractive
+        {pkgm} install -y gcc mdadm jq git python3-pip                                   
+        {pkgm} install -y redis6        
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
-          systemctl restart redis6
-        fi        
+          #systemctl restart redis6
+        fi
+        chown {self.cfg.defuser} /opt
+        format_largest_unused_block_devices /opt
+        chown {self.cfg.defuser} /opt        
         mkdir -p /mnt/scratch
+        chown {self.cfg.defuser} /mnt/scratch
         format_largest_unused_block_devices /mnt/scratch
         chown {self.cfg.defuser} /mnt/scratch
         dnf config-manager --enable crb # enable powertools for RHEL
