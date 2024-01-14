@@ -612,7 +612,10 @@ class Builder:
                 # check if min_toolchains exclude any of the missing modules, if so skip this easyconfig
                 doskip = False
                 for miss in themissing.keys():
-                    nam, ver = miss.split('/')
+                    if '/' in miss:
+                        nam, ver = miss.split('/')
+                    else:
+                        nam, ver = miss, '0.0'
                     if nam in self.min_toolchains.keys():
                         if self.cfg.sversion(ver) < self.cfg.sversion(self.min_toolchains[nam]):
                             print(f'  * {ebfile} requires toolchain {miss} which is too old according to min_toolchains.', flush=True)
@@ -2653,6 +2656,7 @@ class AWSBoto:
             echo 'export PATH=~/.local/bin:$PATH' >> ~/.bashrc
         fi
         mkdir -p ~/.config/aws-eb
+        mkdir -p ~/.local/bin
         echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
         echo 'source ~/easybuildrc' >> ~/.bashrc
         echo '#export EC2_INSTANCE_ID={instance_id}' >> ~/.bashrc
@@ -2665,9 +2669,10 @@ class AWSBoto:
         echo "Waiting for Python3 pip install ..."        
         until [ -f /usr/bin/pip3 ]; do sleep 3; done; echo "pip3 exists, please wait ..."
         sleep 5
-        export PYBIN=$(which python3)
+        export PYBIN=/usr/bin/python3
         if [[ -f /usr/bin/python3.11 ]]; then
           export PYBIN=/usr/bin/python3.11
+          ln -s /usr/bin/python3.11 ~/.local/bin/python3
         fi
         $PYBIN -m pip install --upgrade --user pip
         $PYBIN -m pip install --upgrade --user wheel awscli
