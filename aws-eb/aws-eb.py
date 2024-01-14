@@ -1471,6 +1471,23 @@ class AWSBoto:
             "xeon-gen-4": ('c7i', 'm7i', 'm7i-flex', 'r7i', 'r7iz'),
             "core-i7-mac": ('mac1',)
         }
+
+        # not used yet
+        self.cpu_speed = {
+            "graviton-2": 10,
+            "graviton-3": 10,
+            "graviton-4": 10,
+            "epyc-gen-1": 50,
+            "epyc-gen-2": 66,
+            "epyc-gen-3": 85,
+            "epyc-gen-4": 100,
+            "xeon-gen-1": 10,
+            "xeon-gen-2": 10,
+            "xeon-gen-3": 10,
+            "xeon-gen-4": 10,
+            "core-i7-mac": 21
+        }
+
         self.gpu_types = {
             "h100": 'p5',
             "a100": 'p4',
