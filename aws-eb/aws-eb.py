@@ -1943,7 +1943,7 @@ class AWSBoto:
         ### end block 
 
         print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n$PYBIN ' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
+        bootstrap_build += '\n$PYBIN ~/.local/bin/' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         if not self.args.keeprunning:
             bootstrap_build += f'\n[ ! -f ~/no-terminate ] && {self.scriptname} ssh --terminate {iid}'
@@ -2698,7 +2698,7 @@ class AWSBoto:
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
         chmod +x ~/.local/bin/{self.scriptname}
         chmod +x ~/.local/bin/simple-benchmark.py
-        $PYBIN simple-benchmark.py > ~/out.simple-benchmark.txt &
+        $PYBIN ~/.local/bin/simple-benchmark.py > ~/out.simple-benchmark.txt &
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
@@ -2719,7 +2719,7 @@ class AWSBoto:
         $PYBIN -m pip install --user easybuild 
         $PYBIN -m pip install --user packaging boto3 psutil
         source ~/easybuildrc
-        $PYBIN {self.scriptname} config --monitor '{emailaddr}'
+        $PYBIN ~/.local/bin/{self.scriptname} config --monitor '{emailaddr}'
         echo ""
         echo -e "CPU info:"
         lscpu | head -n 20
