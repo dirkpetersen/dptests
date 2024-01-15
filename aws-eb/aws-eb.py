@@ -1352,9 +1352,10 @@ class Rclone:
         except:
             pass
         command.append('--allow-non-empty')
-        command.append('--default-permissions')
+        #command.append('--default-permissions')
         #command.append('--read-only')
         command.append('--no-checksum')
+        command.append('--file-perms=0775')
         command.append('--quiet')
         command.append(url)
         command.append(mountpoint)
