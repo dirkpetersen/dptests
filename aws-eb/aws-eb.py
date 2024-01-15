@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.93'
+__version__ = '0.20.94'
 
 def main():
         
@@ -680,10 +680,11 @@ class Builder:
                         print(f'  * Could not parse easyconfig {ebf}: {e}', flush=True)
                     # ebf is the dependency, install the actual package with --robot in the next step
                     now1=int(time.time())
-                    print(f'  * running "{cmdline} {ebf}" ... ', flush=True)
                     if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
+                        print(f'  * running "{cmdline} --ignore-test-failure {ebf}" ... ', flush=True)
                         ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
                     else:
+                        print(f'  * running "{cmdline} {ebf}" ... ', flush=True)
                         ret = subprocess.run(f'{cmdline} {ebf}', shell=True, text=True)
                     retcode = ret.returncode
                     print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
@@ -722,8 +723,10 @@ class Builder:
                 cmdline = "eb --robot --umask=002"
                 now2=int(time.time())
                 if 'CUDA' in ebfile: # CUDA is a special case, we may not have a GPU installed 
+                    print(f'  * running "{cmdline} --ignore-test-failure {ebpath}" ... ', flush=True)
                     ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebpath}', shell=True, text=True)
                 else:
+                    print(f'  * running "{cmdline} {ebpath}" ... ', flush=True)
                     ret = subprocess.run(f'{cmdline} {ebpath}', shell=True, text=True)
                 retcode = ret.returncode
                 statdict[ebfile]['returncode'] = int(retcode)
@@ -2623,11 +2626,11 @@ class AWSBoto:
         chown {self.cfg.defuser} /opt
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
-          #systemctl restart redis6
+          systemctl restart redis6
         fi
         if [[ -f /usr/bin/redis-server ]]; then
           systemctl enable redis
-          #systemctl restart redis
+          systemctl restart redis
         fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
@@ -2749,12 +2752,12 @@ class AWSBoto:
         # wait for lmod to be installed
         echo "Waiting for Lmod install ..."
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
-        if systemctl is-active --quiet redis6; then
+        if systemctl is-active --quiet redis6 || systemctl is-active --quiet redis; then
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
           sudo mkdir -p /mnt/share
-          sudo juicefs mount -d --cache-dir /mnt/opt/jfsCache --cache-size 102400 redis://localhost:6379 /mnt/share # --writeback --max-uploads 100 --cache-partial-only
-          sudo chown {self.cfg.defuser} /mnt/share          
+          sudo juicefs mount -d --cache-dir /mnt/opt/jfsCache --writeback --cache-size 102400 redis://localhost:6379 /mnt/share # --writeback --max-uploads 100 --cache-partial-only
+          sudo chown {self.cfg.defuser} /mnt/share       
           #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
