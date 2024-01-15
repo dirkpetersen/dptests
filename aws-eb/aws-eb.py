@@ -14,11 +14,12 @@ if sys.platform.startswith('linux'):
 # stuff from pypi
 try:
     import boto3, botocore, urllib3
-    import requests
+    import requests    
     from packaging.version import parse, InvalidVersion    
+    # I pulled these from github, likely not the proper way to do it
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError
-    # from EB tutorial 
+    # from EB tutorial, likely the proper way to do it 
     from easybuild.framework.easyconfig.tools import det_easyconfig_paths, parse_easyconfigs
     from easybuild.tools.options import set_up_configuration
     import psutil
@@ -27,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.92'
+__version__ = '0.20.93'
 
 def main():
         
@@ -657,27 +658,29 @@ class Builder:
                     self.aws.s3_download_untar(self.cfg.bucket, pref, os.path.join(self.eb_root, 'software'), self.args.vcpus*50)
                     downloadtime = time.time()
                 else:
-                    print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)
-                cmdline = "eb --umask=002"
+                    print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)                
                                                 
                 ######################### Need to install the dependencies first #############################################
                 depterr = False
                 print(f" Installing dependencies for {ebfile} ... ", flush=True)
+                cmdline = "eb --umask=002"
                 for ebf in list(themissing.values())[:-1]:  # Exclude the last one, it is the original package, not a dependency
-                    print(f'checking dept {ebf}', flush=True)
                     #if ebf != ebfile:
-                    print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
+                    print(f"  ------------ {ebf} (Dependency) ------------------------ ... ", flush=True)
                     # install the os dependencies of the eb dependency
                     try:
                         pth, ec_dict = self._parse_easyconfig(ebf)                        
                         deposdep = ec_dict.get('osdependencies', "")
                         if deposdep:
-                            print(f'  installing OS dependencies: {deposdep} for {ebf}', flush=True)
+                            print(f'  * installing OS dependencies: {deposdep} for {ebf}', flush=True)
                             self.cfg.install_os_packages(deposdep) 
+                        else:
+                            print(f'  * no OS dependencies for {ebf}', flush=True)
                     except Exception as e:
                         print(f'  * Could not parse easyconfig {ebf}: {e}', flush=True)
                     # ebf is the dependency, install the actual package with --robot in the next step
                     now1=int(time.time())
+                    print(f'  *  running "{cmdline} {ebf}" ... ', flush=True)
                     if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
                         ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
                     else:
@@ -1887,6 +1890,14 @@ class AWSBoto:
                             tar.extract(member, path=dst_fld)                
                     # tar_obj = tarfile.open(fileobj=io.BytesIO(stream.read()), mode="r:gz")
                     # tar_obj.extractall(path=dst_fld)
+                    #
+                    # Some extracted files may have wrong permissions, fix them, add rw to owner
+                    for root, dirs, files in self.cfg._walker(dst_fld):
+                        for name in dirs + files:
+                            full_path = os.path.join(root, name)
+                            current_permissions = os.stat(full_path).st_mode
+                            new_permissions = current_permissions | 0o600
+                            os.chmod(full_path, new_permissions)
                     with open(stub_file, 'w') as fil:
                         pass 
                 else:
