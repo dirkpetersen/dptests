@@ -2575,10 +2575,10 @@ class AWSBoto:
         userdata = textwrap.dedent(f'''
         #! /bin/bash
         format_largest_unused_block_devices() {{
-            # format the largest unused block device(s) and mount it to /opt
+            # format the largest unused block device(s) and mount it to /opt or /mnt/scratch
             # if there are multiple unused devices of the same size and their combined size 
             # is larger than the largest unused single block device, they will be combined into 
-            # a single RAID0 device and be mounted to /opt instead of the largest device
+            # a single RAID0 device and be mounted instead of the largest device
             #
             # Get all unformatted block devices with their sizes
             local devices=$(lsblk --json -n -b -o NAME,SIZE,FSTYPE,TYPE | jq -r '.blockdevices[] | select(.children == null and .type=="disk" and .fstype == null and (.name | tostring | startswith("loop") | not) ) | {{name, size}}')
