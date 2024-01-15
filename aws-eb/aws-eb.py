@@ -254,7 +254,6 @@ def subcmd_launch(args,cfg,bld,aws):
         print('Please specify a CPU or a GPU type. Run config --list to see types.')
         return False
 
-    #instance_type = aws.get_ec2_smallest_instance_type(fam, args.vcpus, args.mem*1024)
     instance_type, _, _= aws._ec2_get_cheapest_spot_instance(args.cputype, args.vcpus, args.mem)
         
     print(f'{instance_type} is the cheapest spot instance with at least {args.vcpus} vcpus / {args.mem} GB mem')
@@ -285,9 +284,9 @@ def subcmd_launch(args,cfg,bld,aws):
         ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
 
     rclone = Rclone(args, cfg)
-    rpid = rclone.mount(f':s3:{cfg.archivepath}/{s3_prefix}/software', f'{bld.eb_root}/software')
+    rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
-    rclone.unmount(f'{bld.eb_root}/software')
+    rclone.unmount(f'{bld.eb_root}/sources_s3')
     
 def subcmd_download(args,cfg,bld,aws):
 
@@ -1869,7 +1868,7 @@ class AWSBoto:
                     dst_fld = os.path.dirname(os.path.join(dst_root,tail))
                     stub_file = os.path.join(dst_root,tail) + '.stub'
                     if os.path.exists(stub_file):
-                        print(f"   Skiping {obj['Key']} ... elready extracted")
+                        print(f"   Skiping {obj['Key']} ... already extracted")
                         return
                     else:
                         print(f"   Extr. {obj['Key']} ...")
@@ -1906,6 +1905,23 @@ class AWSBoto:
         except Exception as e:
             print(f"Error in s3_download_untar: {e}")
             return False
+
+    def s3_get_size_gb(self, bucket, prefix):
+        try:
+            s3 = self.awssession.client('s3')
+            if not prefix.endswith('/'):
+                prefix += '/'
+            total_size_bytes = 0
+            paginator = s3.get_paginator('list_objects_v2')
+            for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        total_size_bytes += obj['Size']
+            total_size_gib = total_size_bytes / (2**30)
+            return total_size_gib
+        except Exception as e:
+            print(f"Error in s3_get_size_gb: {e}")
+            return 0
 
     def _extract_last_float(self, input_string):
         # Finding all occurrences of a floating-point number pattern
@@ -4557,8 +4573,8 @@ def parse_arguments():
         help='run --list to see available GPU types')       
     parser_launch.add_argument('--mem', '-m', dest='mem', type=int, action='store', default=8, metavar='<memory-size-gb>',
         help='GB Memory allocated to instance  (default=8)')
-    parser_launch.add_argument('--disk', '-d', dest='disk', type=int, action='store', default=350, metavar='<disk-size-gb>',
-        help='Add an EBS disk to the instance and mount it to /opt (default=350 GB')
+    parser_launch.add_argument('--disk', '-d', dest='disk', type=int, action='store', default=300, metavar='<disk-size-gb>',
+        help='Add an EBS disk to the instance and mount it to /opt (default=300 GB')
     parser_launch.add_argument('--instance-type', '-t', dest='instancetype', action='store', default="", metavar='<aws.instance>',
         help='The EC2 instance type is auto-selected, but you can pick any other type here')    
     parser_launch.add_argument('--az', '-z', dest='az', action='store', default="",
