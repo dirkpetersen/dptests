@@ -513,7 +513,8 @@ class Builder:
         untar = os.path.join(self.cfg.binfolderx,'untar')
         if os.path.exists(f'{untar}.go'):
             subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
-
+        # set up easybuild config 
+        opts, _ = set_up_configuration(args=[], silent=True)
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
@@ -755,7 +756,7 @@ class Builder:
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
-            if self.cfg.is_systemd_service_running('redis6'):
+            if self.cfg.is_systemd_service_running('redis6') or self.cfg.is_systemd_service_running('redis'):
                 ret=subprocess.run(f'sudo juicefs umount --flush /mnt/share', shell=True, text=True)
             msg = f'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
             if errpkg:
@@ -2584,7 +2585,8 @@ class AWSBoto:
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y redis6 
-        {pkgm} install -y python3.11-pip       
+        {pkgm} install -y redis
+        {pkgm} install -y python3.11-pip python3.11-devel      
         {pkgm} install -y gcc mdadm jq git python3-pip
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
@@ -2593,6 +2595,10 @@ class AWSBoto:
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
           #systemctl restart redis6
+        fi
+        if [[ -f /usr/bin/redis-server ]]; then
+          systemctl enable redis
+          #systemctl restart redis
         fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
