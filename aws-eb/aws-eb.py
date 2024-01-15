@@ -659,10 +659,13 @@ class Builder:
                     if ebf != ebfile:                        
                         print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
                         # install the os dependencies of the eb dependency
-                        pth, ec_dict = self._parse_easyconfig(ebf)                        
-                        deposdep = ec_dict.get('osdependencies', "")
-                        print(f'  installing OS dependencies: {deposdep}', flush=True)
-                        self.cfg.install_os_packages(deposdep) 
+                        try:
+                            pth, ec_dict = self._parse_easyconfig(ebf)                        
+                            deposdep = ec_dict.get('osdependencies', "")
+                            print(f'  installing OS dependencies: {deposdep}', flush=True)
+                            self.cfg.install_os_packages(deposdep) 
+                        except Exception as e:
+                            print(f'  * Could not parse easyconfig {ebf}: {e}', flush=True)
                         # ebf is the dependency, install the actual package with --robot in the next step
                         now1=int(time.time())
                         if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
