@@ -566,7 +566,8 @@ class Builder:
                     if self.aws.monitor_has_instance_failed(inst, True):
                         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
                         self.aws.ec2_terminate_instance(inst)
-                # end instance kill                 
+                # end instance kill       
+                                  
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
@@ -607,6 +608,8 @@ class Builder:
                     self.cfg.install_os_packages(osdep)
                 # install easybuild package 
                 themissing = self._eb_missing_modules(ebpath, printout=True)
+                if self.args.debug:
+                    print(f'  * _eb_missing_modules({ebpath}) returned: {themissing}', flush=True)
                 if 'error' in themissing.keys():
                     print(f'  * _eb_missing_modules({ebpath}) returned an error', flush=True)
                 if not themissing:
@@ -656,14 +659,16 @@ class Builder:
                 depterr = False
                 print(f" Installing dependencies for {ebfile} ... ", flush=True)
                 for ebf in list(themissing.values())[:-1]:  # The last one is the original package, not a dependency
-                    if ebf != ebfile:                        
+                    print(f'checking dept {ebf}', flush=True)
+                    if ebf != ebfile:
                         print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
                         # install the os dependencies of the eb dependency
                         try:
                             pth, ec_dict = self._parse_easyconfig(ebf)                        
                             deposdep = ec_dict.get('osdependencies', "")
-                            print(f'  installing OS dependencies: {deposdep}', flush=True)
-                            self.cfg.install_os_packages(deposdep) 
+                            if deposdep:
+                                print(f'  installing OS dependencies: {deposdep} for {ebf}', flush=True)
+                                self.cfg.install_os_packages(deposdep) 
                         except Exception as e:
                             print(f'  * Could not parse easyconfig {ebf}: {e}', flush=True)
                         # ebf is the dependency, install the actual package with --robot in the next step
