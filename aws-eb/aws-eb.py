@@ -1891,17 +1891,19 @@ class AWSBoto:
                         for member in tar:
                             # Extract each member while preserving attributes
                             tar.extract(member, path=dst_fld)                
+                    # Alternative method using BytesIO but consumes much more memory
                     # tar_obj = tarfile.open(fileobj=io.BytesIO(stream.read()), mode="r:gz")
                     # tar_obj.extractall(path=dst_fld)
                     #
                     # Some extracted files may have wrong permissions, fix them, add rw to owner
                     for root, dirs, files in self.cfg._walker(dst_fld):
-                        full_path = os.path.join(root, name)
-                        current_permissions = os.stat(full_path).st_mode
-                        # Preserve the owner's execute bit if it's set, only modify read and write bits
-                        owner_execute = current_permissions & 0o100  # Owner execute bit
-                        new_permissions = (current_permissions & 0o7077) | 0o600 | owner_execute
-                        os.chmod(full_path, new_permissions)
+                        for name in dirs + files:
+                            full_path = os.path.join(root, name)
+                            current_permissions = os.stat(full_path).st_mode
+                            # Preserve the owner's execute bit if it's set, only modify read and write bits
+                            owner_execute = current_permissions & 0o100  # Owner execute bit
+                            new_permissions = (current_permissions & 0o7077) | 0o600 | owner_execute
+                            os.chmod(full_path, new_permissions)
                     with open(stub_file, 'w') as fil:
                         pass 
                 else:
