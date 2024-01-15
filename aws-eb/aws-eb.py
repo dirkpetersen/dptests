@@ -2629,11 +2629,11 @@ class AWSBoto:
         chown {self.cfg.defuser} /mnt/scratch
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
-          # systemctl restart redis6  #disables juicefs
+          systemctl restart redis6  #disables juicefs on Amazon linux
         fi
         if [[ -f /usr/bin/redis-server ]]; then
           systemctl enable redis
-          # systemctl restart redis #disables juicefs
+          # systemctl restart redis #disables juicefs on RHEL/Ubuntu
         fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
@@ -2759,7 +2759,11 @@ class AWSBoto:
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
           juicefs config -y --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
           sudo mkdir -p /mnt/share
-          sudo /usr/local/bin/juicefs mount -d --cache-dir /opt/jfsCache --writeback --cache-size 102400 redis://localhost:6379 /mnt/share # --max-uploads 100 --cache-partial-only
+          cachedir=/opt/jfsCache
+          if [[ -d /mnt/scratch ]]; then
+            cachedir=/mnt/scratch/jfsCache
+          fi
+          sudo /usr/local/bin/juicefs mount -d --cache-dir $cachedir --writeback --cache-size 102400 redis://localhost:6379 /mnt/share # --max-uploads 100 --cache-partial-only
           sudo chown {self.cfg.defuser} /mnt/share       
           #juicefs destroy -y redis://localhost:6379 {juiceid}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
