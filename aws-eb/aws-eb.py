@@ -27,7 +27,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.91'
+__version__ = '0.20.92'
 
 def main():
         
@@ -558,7 +558,8 @@ class Builder:
                             print(f'  * checkskipped is set, trying {ebfile} again ...', flush=True) 
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
                 if ebfile not in statdict.keys():
-                    statdict[ebfile] = statdict_template                     
+                    statdict[ebfile] = statdict_template        
+
                 ## first kill other non-functional instances
                 ilist = self.aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
                 instances = [sublist[1] for sublist in ilist if sublist]
@@ -567,7 +568,8 @@ class Builder:
                         print(f'  * Instance {inst} has failed, terminating it ... ', flush=True)
                         self.aws.ec2_terminate_instance(inst)
                 # end instance kill       
-                                  
+
+                ############# check for supported toolchains, included or excluded classes #############
                 name, version, tc, osdep, cls, instdir = self._read_easyconfig(ebpath)                
                 if name in self.min_toolchains.keys(): # if this is the toolchain package itself    
                     if self.cfg.sversion(version) < self.cfg.sversion(self.min_toolchains[name]):
@@ -606,7 +608,8 @@ class Builder:
                 if osdep:
                     print(f'  installing OS dependencies: {osdep}', flush=True)
                     self.cfg.install_os_packages(osdep)
-                # install easybuild package 
+
+                ########## Checking for missing dependencies: easybuild modules ############################
                 themissing = self._eb_missing_modules(ebpath, printout=True)
                 if self.args.debug:
                     print(f'  * _eb_missing_modules({ebpath}) returned: {themissing}', flush=True)
@@ -620,7 +623,7 @@ class Builder:
                     continue
                 errmiss = self._errors_in_missing(themissing, statdict)
                 if errmiss:
-                    print(f'  * {ebfile} has missing dependencies with errors: {", ".join(errmiss)}', flush=True)
+                    print(f'  ******** {ebfile} has missing dependencies with errors: {", ".join(errmiss)}', flush=True)
                     statdict[ebfile]['status'] = 'skipped'
                     statdict[ebfile]['reason'] = 'dependencies have errors'
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
@@ -656,58 +659,62 @@ class Builder:
                 else:
                     print(f" Skipping download, last download was less than {self.copydelay} seconds ago ... ", flush=True)
                 cmdline = "eb --umask=002"
+                                                
+                ######################### Need to install the dependencies first #############################################
                 depterr = False
                 print(f" Installing dependencies for {ebfile} ... ", flush=True)
-                for ebf in list(themissing.values())[:-1]:  # The last one is the original package, not a dependency
+                for ebf in list(themissing.values())[:-1]:  # Exclude the last one, it is the original package, not a dependency
                     print(f'checking dept {ebf}', flush=True)
-                    if ebf != ebfile:
-                        print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
-                        # install the os dependencies of the eb dependency
-                        try:
-                            pth, ec_dict = self._parse_easyconfig(ebf)                        
-                            deposdep = ec_dict.get('osdependencies', "")
-                            if deposdep:
-                                print(f'  installing OS dependencies: {deposdep} for {ebf}', flush=True)
-                                self.cfg.install_os_packages(deposdep) 
-                        except Exception as e:
-                            print(f'  * Could not parse easyconfig {ebf}: {e}', flush=True)
-                        # ebf is the dependency, install the actual package with --robot in the next step
-                        now1=int(time.time())
-                        if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
-                            ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
-                        else:
-                            ret = subprocess.run(f'{cmdline} {ebf}', shell=True, text=True)
-                        retcode = ret.returncode
-                        print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
-                        trydate = datetime.datetime.now().astimezone().isoformat()                                        
-                        if ebf not in statdict:
-                            statdict[ebf] = statdict_template                   
-                        statdict[ebf]['returncode'] = int(retcode)
-                        statdict[ebf]['trydate'] = trydate
-                        statdict[ebf]['buildtime'] = int(time.time())-now1
-                        if retcode != 0:
-                            depterr = True
-                            print(f'  FAILED DEPENDENCY: EasyConfig {ebf}, trying next one ...', flush=True)
-                            errcnt+=1
-                            errpkg.append(ebf)
-                            logpath = self._eb_last_log()
-                            logfile = os.path.basename(logpath)
-                            targetlog = os.path.join(self.eb_root, 'tmp', f'{ebf}-{logfile}')
-                            shutil.copy(logpath, targetlog)                      
-                            statdict[ebf]['status'] = 'error'
-                            statdict[ebf]['reason'] = 'n/a'
-                            statdict[ebf]['errorcount'] += 1
-                        else:
-                            print(f'  DEPENDENCY SUCCESS: EasyConfig {ebf} built successfully.', flush=True)
-                            statdict[ebf]['status'] = 'success'
-                            statdict[ebf]['reason'] = 'easyconfig built successfully'
-                            statdict[ebf]['modules'] = None
-                            bldcnt+=1                        
-                        self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
-                        if depterr:
-                            break
+                    #if ebf != ebfile:
+                    print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
+                    # install the os dependencies of the eb dependency
+                    try:
+                        pth, ec_dict = self._parse_easyconfig(ebf)                        
+                        deposdep = ec_dict.get('osdependencies', "")
+                        if deposdep:
+                            print(f'  installing OS dependencies: {deposdep} for {ebf}', flush=True)
+                            self.cfg.install_os_packages(deposdep) 
+                    except Exception as e:
+                        print(f'  * Could not parse easyconfig {ebf}: {e}', flush=True)
+                    # ebf is the dependency, install the actual package with --robot in the next step
+                    now1=int(time.time())
+                    if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
+                        ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
+                    else:
+                        ret = subprocess.run(f'{cmdline} {ebf}', shell=True, text=True)
+                    retcode = ret.returncode
+                    print(f'*** EASYBUILD RETURNCODE: {retcode}', flush=True)
+                    trydate = datetime.datetime.now().astimezone().isoformat()                                        
+                    if ebf not in statdict:
+                        statdict[ebf] = statdict_template                   
+                    statdict[ebf]['returncode'] = int(retcode)
+                    statdict[ebf]['trydate'] = trydate
+                    statdict[ebf]['buildtime'] = int(time.time())-now1
+                    if retcode != 0:
+                        depterr = True
+                        print(f'  FAILED DEPENDENCY: EasyConfig {ebf}, trying next one ...', flush=True)
+                        errcnt+=1
+                        errpkg.append(ebf)
+                        logpath = self._eb_last_log()
+                        logfile = os.path.basename(logpath)
+                        targetlog = os.path.join(self.eb_root, 'tmp', f'{ebf}-{logfile}')
+                        shutil.copy(logpath, targetlog)                      
+                        statdict[ebf]['status'] = 'error'
+                        statdict[ebf]['reason'] = 'n/a'
+                        statdict[ebf]['errorcount'] += 1
+                    else:
+                        print(f'  DEPENDENCY SUCCESS: EasyConfig {ebf} built successfully.', flush=True)
+                        statdict[ebf]['status'] = 'success'
+                        statdict[ebf]['reason'] = 'easyconfig built successfully'
+                        statdict[ebf]['modules'] = None
+                        bldcnt+=1                        
+                    self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
+                    if depterr:
+                        break
                 if depterr:
-                    continue
+                    continue # move to next package if ANY dependency failed
+
+                ######################### Now install the actual package, with dependencies in case some were missed ##############
                 print(f" Installing {ebfile} ({ebpath})... ", flush=True)
                 cmdline = "eb --robot --umask=002"
                 now2=int(time.time())
@@ -1871,7 +1878,7 @@ class AWSBoto:
                     else:
                         print(f"   Extr. {obj['Key']} ...")
                     if not os.path.exists(dst_fld):
-                        os.makedirs(dst_fld, exist_ok=True)                    
+                        os.makedirs(dst_fld, exist_ok=True)              
                     fobj = s3.get_object(Bucket=src_bucket, Key=obj['Key'], RequestPayer='requester')
                     stream = fobj['Body']
                     with tarfile.open(mode="r|gz", fileobj=stream._raw_stream) as tar:
@@ -1885,9 +1892,11 @@ class AWSBoto:
                 else:
                     print(f"**** Skipping {obj['Key']}, not a tar.gz file.")
 
-            except Exception as e:               
+            except Exception as e:
                 print(f"Error in s3_untar_object: {e}")
-                pass
+                if "seeking backwards is not allowed" in str(e):
+                    print(f"**** Skipping {obj['Key']}, overwriting not allowed")
+                return False
 
         try:
             paginator = s3.get_paginator('list_objects_v2')
