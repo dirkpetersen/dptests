@@ -2626,14 +2626,14 @@ class AWSBoto:
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
-        chown {self.cfg.defuser} /opt
+        chown {self.cfg.defuser} /mnt/scratch
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
-          systemctl restart redis6
+          # systemctl restart redis6  #disables juicefs
         fi
         if [[ -f /usr/bin/redis-server ]]; then
           systemctl enable redis
-          systemctl restart redis
+          # systemctl restart redis #disables juicefs
         fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
