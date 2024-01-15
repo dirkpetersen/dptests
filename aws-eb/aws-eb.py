@@ -680,7 +680,7 @@ class Builder:
                         print(f'  * Could not parse easyconfig {ebf}: {e}', flush=True)
                     # ebf is the dependency, install the actual package with --robot in the next step
                     now1=int(time.time())
-                    print(f'  *  running "{cmdline} {ebf}" ... ', flush=True)
+                    print(f'  * running "{cmdline} {ebf}" ... ', flush=True)
                     if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
                         ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
                     else:
