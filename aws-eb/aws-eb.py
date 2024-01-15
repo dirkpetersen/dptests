@@ -284,7 +284,9 @@ def subcmd_launch(args,cfg,bld,aws):
         ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
 
     rclone = Rclone(args, cfg)
+    print(f'Mounting rclone ":s3:{cfg.archivepath}/sources" at "{bld.eb_root}/sources_s3" ...')
     rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
+    print(f'rclone mount pid: {rpid}')
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
     rclone.unmount(f'{bld.eb_root}/sources_s3')
     
@@ -343,6 +345,13 @@ def subcmd_download(args,cfg,bld,aws):
     # Running download
     print(f"\nDownloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
+    # mounting sources localtion 
+    rclone = Rclone(args, cfg)
+    print(f'Mounting rclone ":s3:{cfg.archivepath}/sources" at "{bld.eb_root}/sources_s3" ...')
+    rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
+    print(f'rclone mount pid: {rpid}')    
+
+    # download the Modules ()
     bld.rclone_download_compare = '--size-only'
     bld.download(f':s3:{cfg.archivepath}', bld.eb_root, s3_prefix)
 
