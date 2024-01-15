@@ -18,6 +18,9 @@ try:
     from packaging.version import parse, InvalidVersion    
     from easybuild.framework.easyconfig.parser import EasyConfigParser
     from easybuild.tools.build_log import EasyBuildError
+    # from EB tutorial 
+    from easybuild.framework.easyconfig.tools import det_easyconfig_paths, parse_easyconfigs
+    from easybuild.tools.options import set_up_configuration
     import psutil
 except:
     pass
@@ -283,6 +286,7 @@ def subcmd_launch(args,cfg,bld,aws):
     if args.ebrelease:
         ecfgroot = os.path.join(cfg.home_dir, '.local', 'easybuild', 'easyconfigs')
 
+    cfg.install_os_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop', 'fuse3'])
     rclone = Rclone(args, cfg)
     print(f'Mounting rclone ":s3:{cfg.archivepath}/sources" at "{bld.eb_root}/sources_s3" ...')
     rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
@@ -505,11 +509,11 @@ class Builder:
 
         # install a lot of required junk 
         #if not self.args.debug:
-            #self._install_os_dependencies(easyconfigroot, minimal=True)
-        self._install_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop', 'fuse3'])
+            #self._install_os_dependencies(easyconfigroot, minimal=True)        
         untar = os.path.join(self.cfg.binfolderx,'untar')
         if os.path.exists(f'{untar}.go'):
             subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
+
         softwaredir = os.path.join(self.eb_root, 'software')
 
         # build all new easyconfigs in a folder tree
@@ -599,7 +603,7 @@ class Builder:
                         continue
                 if osdep:
                     print(f'  installing OS dependencies: {osdep}', flush=True)
-                    self._install_packages(osdep)
+                    self.cfg.install_os_packages(osdep)
                 # install easybuild package 
                 themissing = self._eb_missing_modules(ebpath, printout=True)
                 if 'error' in themissing.keys():
@@ -653,6 +657,11 @@ class Builder:
                 for ebf in list(themissing.values())[:-1]:  # The last one is the original package, not a dependency
                     if ebf != ebfile:                        
                         print(f"  ------------ {ebf} (Dependency) -------------------- ... ", flush=True)
+                        # install the os dependencies of the eb dependency
+                        pth, ec_dict = self._parse_easyconfig(ebf)                        
+                        deposdep = ec_dict.get('osdependencies', "")
+                        print(f'  installing OS dependencies: {deposdep}', flush=True)
+                        self.cfg.install_os_packages(deposdep) 
                         # ebf is the dependency, install the actual package with --robot in the next step
                         now1=int(time.time())
                         if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
@@ -757,6 +766,20 @@ class Builder:
             pass
         
         return True
+    
+    def _parse_easyconfig(self, ebfile):
+        """
+        Helper function: find and parse easyconfig with specified filename,
+        and return parsed easyconfig file (an EasyConfig instance).
+        """
+        # determine path to easyconfig file
+        ec_path = det_easyconfig_paths([ebfile])[0]
+        # parse easyconfig file;
+        # the 'parse_easyconfigs' function expects a list of tuples,
+        # where the second item indicates whether or not the easyconfig file was automatically generated or not
+        ec_dicts, _ = parse_easyconfigs([(ec_path, False)])
+        # only retain first parsed easyconfig, ignore any others (which are unlikely anyway)
+        return ec_path, ec_dicts[0]['ec']
 
     def _eb_last_log(self):
         command = ['eb', '--last-log']
@@ -801,7 +824,7 @@ class Builder:
     def _install_os_dependencies(self, easyconfigroot, minimal=False):
         # install OS dependencies from all easyconfigs (~ 400 packages)        
         package_skip_set = set() # avoid duplicates
-        self._install_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop', 'fuse3'], package_skip_set)
+        self.cfg.install_os_packages(['golang', 'pigz', 'iftop', 'iotop', 'htop', 'fuse3'], package_skip_set)
         if minimal:
             return True
         for root, dirs, files in self.cfg._walker(easyconfigroot):
@@ -812,7 +835,7 @@ class Builder:
                     _, _, _, dep, _, _ = self._read_easyconfig(ebpath)
                     if dep:
                         print(f'  installing OS dependencies: {dep}')
-                        self._install_packages(dep, package_skip_set)
+                        self.cfg.install_os_packages(dep, package_skip_set)
                         for package_tuple in dep: # avoid duplicates
                             if isinstance(package_tuple, str):
                                 package_tuple = (package_tuple,)                            
@@ -987,12 +1010,12 @@ class Builder:
         latest_version = sorted(version_file_dict.keys(), key=sort_key, reverse=True)[0]
         return version_file_dict[latest_version]
 
-    def _read_easyconfig(self, ebfile):
+    def _read_easyconfig(self, ebpath):
         
         ec_dict = {}
         try:
             # Initialize EasyConfigParser with the easyconfig file
-            ec_dict = EasyConfigParser(ebfile).get_config_dict()
+            ec_dict = EasyConfigParser(ebpath).get_config_dict()
             #module_file = EasyBuildMNS().det_full_module_name(ec)
             #print (module_file)
         except EasyBuildError as e:
@@ -1013,67 +1036,23 @@ class Builder:
 
         return name, version, toolchain, ec_dict.get('osdependencies', ""), ec_dict.get('moduleclass', ""), install_dir
 
-    def _get_os_type(self):
-        os_info = {}
-        if os.path.isfile("/etc/os-release"):
-            with open("/etc/os-release") as f:
-                for line in f:
-                    key, value = line.strip().split("=", 1)
-                    os_info[key] = value.strip('"')
-        # Prioritize ID_LIKE over ID
-        os_type = os_info.get('ID_LIKE', os_info.get('ID', None))
-        # Handle the case where ID_LIKE can contain multiple space-separated strings
-        if os_type and ' ' in os_type:
-            os_type = os_type.split(' ')[0]  # Get the first 'like' identifier
-        return os_type
-
-    def _install_packages(self, os_dependencies, package_skip_set=[]):
-        os_type = self._get_os_type()        
-        # Determine the appropriate package manager for the detected OS type
-        package_manager = None
-        if os_type in ['debian', 'ubuntu']:
-            package_manager = 'apt'
-        elif os_type in ['fedora', 'centos', 'redhat', 'rhel']:
-            package_manager = 'dnf'
-        
-        if not package_manager:
-            print("Unsupported operating system.")
-            return
-        
-        for package_tuple in os_dependencies:
-            if isinstance(package_tuple, str):
-                package_tuple = (package_tuple,)
-            installed = False
-            for package_name in package_tuple:
-                # Check if the package has a known OS-specific suffix
-                if package_name in package_skip_set:
-                    print(f"Skipping {package_name} because it was already installed.")
-                    continue
-                if (package_name.endswith('-dev') and os_type in ['debian', 'ubuntu']) or \
-                (package_name.endswith('-devel') and os_type in ['fedora', 'centos', 'redhat']):
-                    try:
-                        print(f"Installing {package_name} with {package_manager}")                    
-                        subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
-                        installed = True
-                        break
-                    except subprocess.CalledProcessError:
-                        pass
-            
-            # If none of the packages in the tuple had a suffix, we try to install each until one succeeds
-            if not installed:
-                for package_name in package_tuple:
-                    if package_name in package_skip_set:
-                        print(f"Skipping {package_name} because it was already installed.")
-                        continue                    
-                    try:
-                        print(f"Attempting to install {package_name} with {package_manager}")
-                        subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
-                        print(f"Installed {package_name} successfully.")
-                        break  # Stop trying after the first successful install
-                    except subprocess.CalledProcessError:
-                        # If the package installation failed, it might be the wrong package for the OS,
-                        # so continue trying the next packages in the tuple
-                        pass
+    def _parse_easyconfig(self, ebfile):
+        """
+        Helper function: find and parse easyconfig with specified filename,
+        and return parsed easyconfig file (an EasyConfig instance).
+        """
+        try:
+            # determine path to easyconfig file
+            ec_path = det_easyconfig_paths([ebfile])[0]
+            # parse easyconfig file;
+            # the 'parse_easyconfigs' function expects a list of tuples,
+            # where the second item indicates whether or not the easyconfig file was automatically generated or not
+            ec_dicts, _ = parse_easyconfigs([(ec_path, False)])
+            # only retain first parsed easyconfig, ignore any others (which are unlikely anyway)
+            return ec_path, ec_dicts[0]['ec']
+        except EasyBuildError as e:
+            print("Error in _parse_easyconfig:", e)
+            return None, None
 
     def upload(self, source, target, s3_prefix):
 
@@ -3916,6 +3895,69 @@ class ConfigManager:
             return os.path.join(section_path, entry)
         else:
             return os.path.join(self.config_root, entry)
+
+    def _get_os_type(self):
+        os_info = {}
+        if os.path.isfile("/etc/os-release"):
+            with open("/etc/os-release") as f:
+                for line in f:
+                    key, value = line.strip().split("=", 1)
+                    os_info[key] = value.strip('"')
+        # Prioritize ID_LIKE over ID
+        os_type = os_info.get('ID_LIKE', os_info.get('ID', None))
+        # Handle the case where ID_LIKE can contain multiple space-separated strings
+        if os_type and ' ' in os_type:
+            os_type = os_type.split(' ')[0]  # Get the first 'like' identifier
+        return os_type
+
+    def install_os_packages(self, pkg_list, package_skip_set=[]):
+        # pkg_list can be a simple list of strings or a list of tuples 
+        # if a package has a different name on different OSes
+        os_type = self._get_os_type()
+        # Determine the appropriate package manager for the detected OS type
+        package_manager = None
+        if os_type in ['debian', 'ubuntu']:
+            package_manager = 'apt'
+        elif os_type in ['fedora', 'centos', 'redhat', 'rhel']:
+            package_manager = 'dnf'        
+        if not package_manager:
+            print("Unsupported operating system.")
+            return        
+        for package_tuple in pkg_list:
+            if isinstance(package_tuple, str):
+                package_tuple = (package_tuple,)
+            installed = False
+            for package_name in package_tuple:
+                # Check if the package has a known OS-specific suffix
+                if package_name in package_skip_set:
+                    print(f"Skipping {package_name} because it was already installed.")
+                    continue
+                if (package_name.endswith('-dev') and os_type in ['debian', 'ubuntu']) or \
+                (package_name.endswith('-devel') and os_type in ['fedora', 'centos', 'redhat']):
+                    try:
+                        print(f"Installing {package_name} with {package_manager}")                    
+                        subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
+                        installed = True
+                        break
+                    except subprocess.CalledProcessError:
+                        pass            
+            # If none of the packages in the tuple had a suffix, we try to install each until one succeeds
+            if not installed:
+                for package_name in package_tuple:
+                    if package_name in package_skip_set:
+                        print(f"Skipping {package_name} because it was already installed.")
+                        continue                    
+                    try:
+                        print(f"Attempting to install {package_name} with {package_manager}")
+                        subprocess.run(['sudo', package_manager, 'install', '-y', package_name], check=True)
+                        print(f"Installed {package_name} successfully.")
+                        break  # Stop trying after the first successful install
+                    except subprocess.CalledProcessError:
+                        # If the package installation failed, it might be the wrong package for the OS,
+                        # so continue trying the next packages in the tuple
+                        pass
+
+
 
     def was_file_modified_in_last_24h(self, file_path):
         """
