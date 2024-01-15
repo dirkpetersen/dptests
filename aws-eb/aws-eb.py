@@ -2755,11 +2755,11 @@ class AWSBoto:
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
         if systemctl is-active --quiet redis6 || systemctl is-active --quiet redis; then
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
-          juicefs config --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
+          juicefs config -y --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
           sudo mkdir -p /mnt/share
-          sudo juicefs mount -d --cache-dir /mnt/opt/jfsCache --writeback --cache-size 102400 redis://localhost:6379 /mnt/share # --writeback --max-uploads 100 --cache-partial-only
+          sudo /usr/local/bin/juicefs mount -d --cache-dir /mnt/opt/jfsCache --writeback --cache-size 102400 redis://localhost:6379 /mnt/share # --writeback --max-uploads 100 --cache-partial-only
           sudo chown {self.cfg.defuser} /mnt/share       
-          #juicefs destroy -y redis://localhost:6379 juicefs-{instance_id}
+          #juicefs destroy -y redis://localhost:6379 {juiceid}
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
           sed -i 's/^  juicefs config /#&/' {bscript}
