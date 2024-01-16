@@ -20,28 +20,26 @@ def parse_html_and_create_csv(html_file):
     # Regex pattern to match software name and version
     pattern = re.compile(r"(.+?)\(([^)]+)\)")
 
-    # Find all software categories
-    categories = soup.find_all('div', class_='heading')
-
-    for category in categories:
+    # Find all software categories and iterate through them
+    for category in soup.find_all('div', class_='heading'):
         software_category = category.get_text(strip=True)
-        print('cat', software_category)
-        # Find all software under each category
-        for software in category.find_next_siblings('div', class_='subheading'):
-            software_text = software.get_text(strip=True)
-            print('  soft', software_text)
-            match = pattern.search(software_text)
-            if match:
-                software_name, software_version = match.groups()
-            else:
-                software_name = software_text
-                software_version = 'Unknown'
+        print(software_category)
+        current_element = category.next_sibling
 
-            # Create index value which is the lowercase software name
-            index_value = software_name.lower()
+        # Traverse through siblings until the next category or end of siblings
+        while current_element and (current_element.name != 'div' or 'heading' not in current_element.get('class', [])):
+            if current_element.name == 'div' and 'subheading' in current_element.get('class', []):
+                software_text = current_element.get_text(strip=True)
+                match = pattern.search(software_text)
+                if match:
+                    software_name, software_version = match.groups()
+                else:
+                    software_name = software_text
+                    software_version = 'Unknown'
 
-            # Append to CSV data
-            csv_data.append([index_value.strip(), software_name.strip(), software_version.strip(), software_category.strip()])
+                index_value = software_name.lower()
+                csv_data.append([index_value.strip(), software_name.strip(), software_version.strip(), software_category.strip()])
+            current_element = current_element.next_sibling
 
     # Write data to CSV
     with open('software_list.csv', 'w', newline='', encoding='utf-8') as file:
