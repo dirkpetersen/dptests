@@ -471,11 +471,12 @@ def subcmd_ssh(args, cfg, aws):
         return ret
 
     if scpmode:
-        if scpmode == 'upload':    
-            ret=aws.ssh_upload(sshuser, myhost, args.sshargs[0], remote_path)
+        if scpmode == 'upload':                
+            ret=aws.ssh_upload(sshuser, myhost, args.sshargs[0], remote_path, False, False)
+            #print(ret)  #stdout,ret.stderr
         elif scpmode == 'download':    
-            ret=aws.ssh_download(sshuser, myhost, remote_path, args.sshargs[1])
-        #print(ret.stdout,ret.stderr)
+            ret=aws.ssh_download(sshuser, myhost, remote_path, args.sshargs[1], False)
+            #print(ret)  #stdout,ret.stderr
         return True
     
     if args.subcmd == 'ssh':
@@ -2001,16 +2002,16 @@ class AWSBoto:
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
         ret = self.ssh_upload(sshuser, ip,
             bootstrap_build, "bootstrap.sh", is_string=True)        
-        if ret.stdout or ret.stderr:
-            print(ret.stdout, ret.stderr)
+        #if ret.stdout or ret.stderr:
+            #print(ret.stdout, ret.stderr)
         ret = self.ssh_execute(sshuser, ip, 
             'mkdir -p ~/.config/aws-eb/general')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)        
         ret = self.ssh_upload(sshuser, ip,
             "~/.config/aws-eb/general/*", ".config/aws-eb/general/")
-        if ret.stdout or ret.stderr:
-            print(ret.stdout, ret.stderr)        
+        #if ret.stdout or ret.stderr:
+            #print(ret.stdout, ret.stderr)        
         ret = self.ssh_execute(sshuser, ip, 
             f'nohup bash bootstrap.sh < /dev/null > out.bootstrap.{ip}.txt 2>&1 &')
         if ret.stdout or ret.stderr:
@@ -2031,7 +2032,8 @@ class AWSBoto:
         ret = self.ssh_upload(sshuser, ip,
             "~/.bash_history.tmp", ".bash_history")
         if ret.stdout or ret.stderr:
-            print(ret.stdout, ret.stderr)
+            #print(ret.stdout, ret.stderr)
+            pass
 
         self.send_email_ses('', '', 'AWS-EB build on EC2', f'this command line was executed on host {ip}:\n{cmdline}')
 
@@ -3143,10 +3145,9 @@ class AWSBoto:
         self.cfg.printdbg(f'ssh command line: {cmd}')
         return None
                 
-    def ssh_upload(self, user, host, local_path, remote_path, is_string=False):
+    def ssh_upload(self, user, host, local_path, remote_path, is_string=False, cap_output=True):
         """Upload a file to the remote server using SCP."""
-        cap_output = True
-        SSH_OPTIONS = "-o StrictHostKeyChecking=no"
+        SSH_OPTIONS = "-o StrictHostKeyChecking=no -o BatchMode=yes"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
@@ -3155,29 +3156,29 @@ class AWSBoto:
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
                 temp.write(local_path)
                 local_path = temp.name
-        cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {local_path} {user}@{host}:{remote_path}"        
+        cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {local_path} {user}@{host}:{remote_path}"
+        #cmdlist = shlex.split(cmd)        
         try:
             result = subprocess.run(cmd, shell=True, text=True, capture_output=cap_output)
             if is_string:
-                os.remove(local_path)
-            return result       
-        except:
-            print(f'Error executing "{cmd}."')
+                os.remove(local_path)            
+            return result            
+        except Exception as e:
+            print(f'Error executing "{cmd}" in ssh_upload: {e}')
         return None
 
-    def ssh_download(self, user, host, remote_path, local_path):
+    def ssh_download(self, user, host, remote_path, local_path, cap_output=True):
         """Upload a file to the remote server using SCP."""
-        SSH_OPTIONS = "-o StrictHostKeyChecking=no"
+        SSH_OPTIONS = "-o StrictHostKeyChecking=no -o BatchMode=yes"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
-        #print(key_path)
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
         try:
-            result = subprocess.run(cmd, shell=True, text=True) #capture_output=True,
+            result = subprocess.run(cmd, shell=True, text=True, capture_output=cap_output)
             return result
-        except:
-            print(f'Error executing "{cmd}."')
+        except Exception as e:
+            print(f'Error executing "{cmd}" in ssh_download: {e}')
         return None            
 
     def ssh_add_key_to_remote_host(self, private_key_path, user, host):
