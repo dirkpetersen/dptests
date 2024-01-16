@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.20.95'
+__version__ = '0.20.97'
 
 def main():
         
@@ -2603,20 +2603,23 @@ class AWSBoto:
             # Extract the count value
             local count=$(echo "$best_config" | jq '.count')
             # Check if the best configuration is a single device or multiple devices
-            mkdir -p $1
             if [[ "$count" -eq 1 ]]; then
                 # Single largest device
                 local largest_device=$(echo "$best_config" | jq -r '.devices[0]')
                 echo "/dev/$largest_device"
                 mkfs -t xfs "/dev/$largest_device"
+                mkdir -p $1
                 mount "/dev/$largest_device" $1
+                sleep 5
             elif [[ "$count" -gt 1 ]]; then
                 # Multiple devices of the same size
                 local devices_list=$(echo "$best_config" | jq -r '.devices[]' | sed 's/^/\/dev\//')
                 echo "Devices with the largest combined size: $devices_list"
                 mdadm --create /dev/md0 --level=0 --raid-devices=$count $devices_list
                 mkfs -t xfs /dev/md0
+                mkdir -p $1
                 mount /dev/md0 $1
+                sleep 5
             else
                 echo "No uniquely largest block device found."
             fi
@@ -2633,7 +2636,7 @@ class AWSBoto:
         chown {self.cfg.defuser} /mnt/scratch
         if [[ -f /usr/bin/redis6-server ]]; then
           systemctl enable redis6
-          systemctl restart redis6  #disables juicefs on Amazon linux
+          #systemctl restart redis6  #disables juicefs on Amazon linux
         fi
         if [[ -f /usr/bin/redis-server ]]; then
           systemctl enable redis
