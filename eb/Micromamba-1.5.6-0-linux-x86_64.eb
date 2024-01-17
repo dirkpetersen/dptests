@@ -1,0 +1,28 @@
+# author: codepaster
+
+easyblock = 'Binary'
+
+name = 'Micromamba'
+version = '1.5.6-0'
+
+homepage = 'https://mamba.readthedocs.io/'
+description = """Micromamba is a fast, robust, and cross-platform package manager. It runs on Windows, OS X and Linux
+(ARM64 and PPC64LE included) and is fully compatible with conda packages and supports most of conda's commands.
+"""
+
+toolchain = SYSTEM
+
+local_mambabin = 'micromamba-linux-64'
+source_urls = ['https://github.com/mamba-org/micromamba-releases/releases/download/%(version)s']
+sources = [local_mambabin]
+checksums = ['7b93df633b13ebba0926255d487236b3']
+
+install_cmd = 'mv %s %%(installdir)s/%%(namelower)s' % local_mambabin
+install_cmd += ' && chmod +x %(installdir)s/%(namelower)s'
+
+sanity_check_paths = {
+    'files': ['micromamba'],
+    'dirs': [],
+}
+
+moduleclass = 'lang'
