@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.01'
+__version__ = '0.40.02'
 
 def main():
         
@@ -1902,6 +1902,9 @@ class AWSBoto:
                     for root, dirs, files in self.cfg._walker(dst_fld):
                         for name in dirs + files:
                             full_path = os.path.join(root, name)
+                            # Skip if the path is a symlink
+                            if os.path.islink(full_path):
+                                continue                            
                             current_permissions = os.stat(full_path).st_mode
                             # Preserve the owner's execute bit if it's set, only modify read and write bits
                             owner_execute = current_permissions & 0o100  # Owner execute bit
@@ -2628,8 +2631,8 @@ class AWSBoto:
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y redis6 
         {pkgm} install -y redis
-        {pkgm} install -y python3.11-pip python3.11-devel      
-        {pkgm} install -y gcc mdadm jq git python3-pip
+        {pkgm} install -y python3.11-pip python3.11-devel
+        {pkgm} install -y gcc mdadm jq git python3-pip python3-devel
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
@@ -2708,8 +2711,8 @@ class AWSBoto:
         #! /bin/bash
         echo "Bootstrapping AWS-EB on {instance_id} ..."
         if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-            export PATH=~/.local/bin:$PATH
-            echo 'export PATH=~/.local/bin:$PATH' >> ~/.bashrc
+          export PATH=~/.local/bin:$PATH
+          echo 'export PATH=~/.local/bin:$PATH' >> ~/.bashrc
         fi
         mkdir -p ~/.config/aws-eb
         mkdir -p ~/.local/bin

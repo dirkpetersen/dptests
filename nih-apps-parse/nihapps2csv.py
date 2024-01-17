@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 import csv, sys, re
 import requests
 
@@ -12,21 +12,46 @@ def parse_html_and_create_csv(html_file):
         html_content = file.read()
 
     # Parse the HTML content
+    html_content = html_content.replace(
+        '<!-- End content area - do not edit below this line -->', 
+        '<div class="heading"><a name="dummy" id="dummy">Dummy Category</a></div> <a href="/apps/" style="font-size:12px">back to top</a><br /> <p></p>', 1)
     soup = BeautifulSoup(html_content, 'html.parser')
 
     # Prepare CSV data
     csv_data = []
 
-    # Regex pattern to match software name and version
+    # # Regex pattern to match software name and version
+    # pattern = re.compile(r"(.+?)\(([^)]+)\)")
+
+    # categories = soup.find_all('div', class_='heading')
+    # for category in categories:
+    #     software_category = category.get_text(strip=True)
+    #     next_element = category.find_next_sibling()
+    #     print(software_category, next_element)
+
+    #     while next_element and (next_element.name != 'div' or 'heading' not in next_element.get('class', [])):
+    #         if next_element.name == 'div' and 'subheading' in next_element.get('class', []):
+    #             software_text = next_element.get_text(strip=True)
+    #             match = pattern.search(software_text)
+    #             if match:
+    #                 software_name, software_version = match.groups()
+    #             else:
+    #                 software_name = software_text
+    #                 software_version = 'Unknown'
+
+    #             csv_data.append([software_name.lower(), software_name, software_version, software_category])
+
+    #         next_element = next_element.find_next_sibling()
+
     pattern = re.compile(r"(.+?)\(([^)]+)\)")
 
-    # Find all software categories and iterate through them
-    for category in soup.find_all('div', class_='heading'):
+    # Find all software categories
+    categories = soup.find_all('div', class_='heading')
+
+    for category in categories:
         software_category = category.get_text(strip=True)
-        print(software_category)
         current_element = category.next_sibling
 
-        # Traverse through siblings until the next category or end of siblings
         while current_element and (current_element.name != 'div' or 'heading' not in current_element.get('class', [])):
             if current_element.name == 'div' and 'subheading' in current_element.get('class', []):
                 software_text = current_element.get_text(strip=True)
@@ -37,8 +62,8 @@ def parse_html_and_create_csv(html_file):
                     software_name = software_text
                     software_version = 'Unknown'
 
-                index_value = software_name.lower()
-                csv_data.append([index_value.strip(), software_name.strip(), software_version.strip(), software_category.strip()])
+                csv_data.append([software_name.lower().strip(), software_name.strip(), software_version.strip(), software_category.strip()])
+
             current_element = current_element.next_sibling
 
     # Write data to CSV
