@@ -1,0 +1,35 @@
+# Author: codepaster
+
+easyblock = 'Conda'
+
+name = 'Micromamba'
+version = '1.5.6-0'
+
+homepage = 'https://mamba.readthedocs.io/'
+description = """Micromamba is a fast, robust, and cross-platform package manager. It runs on Windows, OS X and Linux
+(ARM64 and PPC64LE included) and is fully compatible with conda packages and supports most of conda's commands.
+"""
+
+source_urls = ['https://raw.githubusercontent.com/mamba-org/mamba/main/dev/']
+
+sources = ['environment-micromamba-static.yml']
+checksums = ['79c250efd2d464b13702f8e210a921e9aa830dd33a0330966129121770a9188c']
+
+toolchain = SYSTEM
+
+builddependencies = [('Mamba', '23.1.0-4')]
+
+environment_file = 'environment-micromamba-static.yml'
+
+install_cmds = [
+'cmake -B build/ -G Ninja ${CMAKE_ARGS} -D CMAKE_BUILD_TYPE="Release" -D BUILD_LIBMAMBA=ON -D BUILD_STATIC=ON -D BUILD_MICROMAMBA=ON',
+'cmake --build build/ --parallel',
+'strip "build/micromamba/micromamba"'                                                                                                                  ]      
+#sanity_check_commands = ['qiime info']
+
+#sanity_check_paths = {
+#    'files': ["bin/qiime"],
+#    'dirs': ["lib", "include"],
+#}
+
+moduleclass = 'lang'
