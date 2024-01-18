@@ -5,7 +5,7 @@
 
 while IFS= read -r line
 do
-    /usr/bin/python3 eb_conda_configs/eb_conda_configs.py module --packages bioconda/"$line"
+    /usr/bin/python3 eb_conda_configs.py module --packages bioconda/"$line"
 done < bioconda-packages.txt
 
 
