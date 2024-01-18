@@ -59,7 +59,7 @@ channels = ['bioconda', 'conda-forge', 'r']
 builddependencies = [('Micromamba', '1.5.6-0')] 
 # or Mamba/23.1.0-4 / Miniconda3/23.9.0-0
 sanity_check_paths = {
-    'files': [''],
+    'files': [],
     'dirs': ['conda-meta']
 }
 moduleclass = 'bio'
