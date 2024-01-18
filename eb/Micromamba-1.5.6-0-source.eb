@@ -11,9 +11,8 @@ description = """Micromamba is a fast, robust, and cross-platform package manage
 """
 
 source_urls = ['https://raw.githubusercontent.com/mamba-org/mamba/main/dev/']
-
 sources = ['environment-micromamba-static.yml']
-checksums = ['79c250efd2d464b13702f8e210a921e9aa830dd33a0330966129121770a9188c']
+checksums = ['2944675594beea57f045a017f57e08e1']
 
 toolchain = SYSTEM
 
@@ -24,12 +23,12 @@ environment_file = 'environment-micromamba-static.yml'
 install_cmds = [
 'cmake -B build/ -G Ninja ${CMAKE_ARGS} -D CMAKE_BUILD_TYPE="Release" -D BUILD_LIBMAMBA=ON -D BUILD_STATIC=ON -D BUILD_MICROMAMBA=ON',
 'cmake --build build/ --parallel',
-'strip "build/micromamba/micromamba"'                                                                                                                  ]      
-#sanity_check_commands = ['qiime info']
-
-#sanity_check_paths = {
-#    'files': ["bin/qiime"],
-#    'dirs': ["lib", "include"],
-#}
-
+'strip "build/micromamba/micromamba"',
+]
 moduleclass = 'lang'
+
+
+#install_cmd = 'mv %s %%(installdir)s/%%(namelower)s' % local_mambabin
+#install_cmd += ' && chmod +x %(installdir)s/%(namelower)s'
+
+
