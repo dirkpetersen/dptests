@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.02'
+__version__ = '0.40.03'
 
 def main():
         
@@ -2724,6 +2724,8 @@ class AWSBoto:
         echo '#alias singularity="apptainer"' >> ~/.bashrc
         # Install JuiceFS
         curl -sSL https://d.juicefs.com/install | sh -
+        # Install Pixi package manager (Conda alternative)
+        export PIXI_HOME=~/.local && curl -fsSL https://pixi.sh/install.sh | bash
         # wait for pip3 to be installed
         echo "Waiting for Python3 pip install ..."        
         until [ -f /usr/bin/pip3 ]; do sleep 3; done; echo "pip3 exists, please wait ..."
