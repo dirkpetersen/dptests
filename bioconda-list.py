@@ -24,4 +24,4 @@ big_bad = BigBadClass()
 result = big_bad.execute_and_parse(cmd)
 for line in result:
     print(line[0])
-print(result)
+#print(result)

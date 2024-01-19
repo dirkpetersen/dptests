@@ -351,11 +351,12 @@ def subcmd_download(args,cfg,bld,aws):
     # Running download
     print(f"\nDownloading packages from s3://{cfg.archivepath}/{s3_prefix} to {bld.eb_root} ... ", flush=True)
 
-    # mounting sources localtion 
-    rclone = Rclone(args, cfg)
-    print(f'Mounting rclone ":s3:{cfg.archivepath}/sources" at "{bld.eb_root}/sources_s3" ...')
-    rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
-    print(f'rclone mount pid: {rpid}')    
+    # mounting sources location
+    if args.target == '/opt/eb': 
+        rclone = Rclone(args, cfg)
+        print(f'Mounting rclone ":s3:{cfg.archivepath}/sources" at "{bld.eb_root}/sources_s3" ...')
+        rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
+        print(f'rclone mount pid: {rpid}')    
 
     # download the Modules ()
     bld.rclone_download_compare = '--size-only'
@@ -1916,9 +1917,10 @@ class AWSBoto:
                     print(f"**** Skipping {obj['Key']}, not a tar.gz file.")
 
             except Exception as e:
-                print(f"Error in s3_untar_object: {e}")
                 if "seeking backwards is not allowed" in str(e):
                     print(f"**** Skipping {obj['Key']}, overwriting not allowed")
+                else:
+                    print(f"Error in s3_untar_object: {e}")
                 return False
 
         try:
