@@ -1,0 +1,83 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Talos: Hyperparameter Optimization for Keras and PyTorch.';</script>
+<div class="title"><b>Talos: Hyperparameter Optimization for Keras and PyTorch.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Talos is a hyperparameter optimization package made for data scientists and data engineers who are tired of mindless parameter hopping and confusing optimization solutions that add complexity instead of reducing it. It works with any Keras, TensorFlow (tf.keras) or PyTorch model, takes minutes to implement, 
+involves no new syntax to learn and adds zero new overhead to your workflow. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Autonomio Talos [Computer software]. (2020). Retrieved from http://github.com/autonomio/talos. <br />
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/autonomio/talos">Talos GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>talos</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>TALOS_HOME</b>&nbsp; installation directory</li>
+    <li><b>TALOS_TEST</b>&nbsp; test script directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b> sinteractive --gres=gpu:k80:1,lscratch=5 </b>
+[user@cn4235 ~]$<b> module load talos   </b>
+[+] Loading singularity  3.8.5-1  on cn4235
+[+] Loading cuDNN/7.6.5/CUDA-10.1 libraries...
+[+] Loading CUDA Toolkit  10.1.105  ...
+[+] Loading talos  1.0
+</pre>
+Copy a test python script, iris.py, to your current foilder:
+<pre class="term">
+[user@cn4235 ~]$<b> cp $TALOS_TEST/* . </b>
+</pre>
+Run the test script:
+<pre class="term">
+[user@cn4235 ~]$<b>python iris.py </b>
+...
+Successfully opened dynamic library libcublas.so.10
+...
+ 11%|##6                     | 1/9 [00:07&lt;01:02,  7.79s/it]
+ 22%|#####3                  | 2/9 [00:12&lt;00:42,  6.10s/it]
+ 33%|########                | 3/9 [00:17&lt;00:33,  5.55s/it]
+ 44%|##########6             | 4/9 [00:21&lt;00:23,  4.79s/it]
+ 56%|#############3          | 5/9 [00:24&lt;00:17,  4.37s/it]
+ 67%|################        | 6/9 [00:28&lt;00:12,  4.13s/it]
+ 78%|##################6     | 7/9 [00:31&lt;00:07,  3.86s/it]
+ 89%|#####################3  | 8/9 [00:35&lt;00:03,  3.68s/it]
+100%|########################| 9/9 [00:38&lt;00:00,  4.27s/it]
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn4235 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

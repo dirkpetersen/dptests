@@ -1,0 +1,182 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Misopy on HPC';</script>
+    <div class="title">Misopy on HPC</div>
+    <table width=25% align=right>
+      <tr> 
+        <td> <div class="toc"> 
+            <div class="tocHeading">Quick Links</div>
+            <div class="tocItem"><A href="#doc">Documentation</a></div>
+            <div class="tocItem"><a href="#notes">Notes</a></div>
+            <div class="tocItem"><a href="#int">Interactive job </a></div>
+            <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+			 <div class="tocItem"><a href="#parallel">Parallel jobs </a></div>
+          </div></td>
+      </tr>
+    </table>
+    <p> MISO (Mixture-of-Isoforms) is a probabilistic framework that quantitates 
+      the expression level of alternatively spliced genes from RNA-Seq data, and 
+      identifies differentially regulated isoforms or exons across samples. By 
+      modeling the generative process by which reads are produced from isoforms 
+      in RNA-Seq, the MISO model uses Bayesian inference to compute the probability 
+      that a read originated from a particular isoform.</p>
+    <h3>References:</h3>
+    <ul>
+      <li>The MISO framework is described in Katz et. al., <a href="http://www.nature.com/nmeth/journal/v7/n12/full/nmeth.1528.html">Analysis 
+        and design of RNA sequencing experiments for identifying isoform regulation</a>. 
+        <em>Nature Methods</em> (2010).</li>
+    </ul>
+    <a Name="doc"></a>
+    <div class="heading">Documentation</div>
+    <ul>
+      <li><a href="http://miso.readthedocs.org/en/fastmiso/">http://miso.readthedocs.org/en/fastmiso/</a></li>
+    </ul>
+    <a href="notes"></a> 
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>misopy</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Multithreaded/parallel</li>
+      <li>miso_setting.txt
+        <div class="container">
+          <div class="main"><br />
+            The default miso setting files can be copied from <em>/usr/local/apps/misopy/miso_settings.txt</em> 
+            and modified. It looks like this: </p> 
+            <pre class="term">[data]
+filter_results = True
+min_event_reads = 20
+
+[cluster]
+cluster_command = sbatch --mem=20g --cpus-per-task=8 --time=99:00:00
+
+[sampler]
+burn_in = 500
+lag = 10
+num_iters = 5000
+num_chains = 6
+num_processors = 8
+</pre>
+  <P> Miso can be run in two modes: multi-threaded mode and parallel mode. Each 
+    mode use/ignore different directives in the miso setting file. 
+  </p>
+  <P>Multi-threaded mode will be used when running miso without '--use-cluster' 
+    flag. <br />
+              The line 'num_processors' will be used and 'cluster_command" will 
+              be ignored. The default threads are 8. </p>          
+            <P>Parallel mode will be used when running miso with both '--use-cluster' 
+              and '--chunk-jobs' flags on biowulf. In this mode, depending on 
+              the number assigned to '--chunk-jobs=#', many jobs will be submitted 
+              to the cluster and each job will use one thread no matter what is 
+              assigned to 'num_processors' line since this line will be ignored. 
+              Events will beatch and each batch will be submitted to a job. The 
+              smaller the # is, the more number of jobs will be created. The default 
+              memory is 20gb and 99 hours of walltime for each job. If more memory 
+              or walltime is needed, copy/modify the setting file, include '--settings-filename=The_Full_Path_to_Settingfile' 
+              flag in miso command, then submit miso job using sbatch. </p>
+  <P>If '--settings-filename=.....' flag is not specified in miso command, the 
+    default miso setting file will be used. </p> </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+<div class="container">
+  <div class="main">
+    <P> <a Name="int"></a></p>
+    <div class="heading">Interactive job</div>
+    <div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> 
+      should be used for debugging, graphics, or applications that cannot be run 
+      as batch jobs.</div>
+    <p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> 
+      and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive  --mem=20g --cpus-per-task=8</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load misopy</strong>
+[user@cn3144 ~]$ <strong></strong><b>miso --run ./indexed ./accepted_hits.bam --output-dir miso_out --read-len 76</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+    <P> <a Name="sbatch"></a></p>
+    <div class="heading">Batch job</div>
+    <div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch 
+      jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+    <pre class="term">
+#!/bin/bash
+set -e
+module load misopy
+cd dir
+miso --run ./indexed ./accepted_hits.bam --output-dir miso_out --read-len 76</pre>
+    <p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> 
+      command.</p>
+    <pre class="term">sbatch --cpus-per-task=8 --mem=20g batch.sh</pre>
+    <a Name="swarm"></a>
+    <div class="heading">Swarm of Jobs </div>
+    <div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is 
+      an easy way to submit a set of independent commands requiring identical 
+      resources.</div>
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+    <pre class="term">
+cd dir1; miso --run ./indexed ./accepted_hits.bam --output-dir miso_out --read-len 76
+cd dir2; miso --run ./indexed ./accepted_hits.bam --output-dir miso_out --read-len 76
+cd dir3; miso --run ./indexed ./accepted_hits.bam --output-dir miso_out --read-len 76
+</pre>
+    <p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+    <pre class="term">swarm -f job.swarm -g 20 -t 8 --module misopy</pre>
+    where 
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process 
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr>
+        <td><tt>-t <i>#</i></tt> </td>
+        <td>Number of threads/CPUs required for each process (1 line in the swarm 
+          command file). </td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+	<p></p>
+	
+	<a Name="parallel"></a>
+    <div class="heading">Submit a Parallel Job</div>
+    <P>Refer to <a href="#Notes">Notes section</a> regarding miso setting file. <p>1. Create a script file similar to the lines below.
+    </p>
+    <pre class="term">#!/bin/bash
+module load misopy
+cd /data/$USER/dir
+miso --run \
+./indexed \
+./accepted_hits.bam \
+--output-dir miso_out_cluster \
+--read-len 76 \
+--use-cluster \
+--chunk-jobs=1000</pre>
+    <p>2. Submit the script on biowulf:</p>
+    <pre class="term">$ sbatch jobscript</pre>
+    
+    <p>In this example, events will be split into multiple chunks, each chunk 
+      contains 1000 events, and each chunk will be submitted as a single job to 
+      the cluster. By default each job will run on 1 core and 20gb or memory. 
+      The default walltime is 99 hours.</p>
+    
+  <p>For more memory or walltime, copy and modify the miso_setting.txt file and 
+    add '--settings-filename=/data/$USER/..../miso_settings_cluster.txt' to the 
+    miso command. </p>
+	  
+	  
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

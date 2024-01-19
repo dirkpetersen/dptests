@@ -1,0 +1,139 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Madeline: pedigree drawing with an emphasis on readability and aesthetics.';</script>
+<div class="title"><b>Madeline: pedigree drawing with an emphasis on readability and aesthetics.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The Madeline 2.0 Pedigree Drawing Engine (PDE) is a
+pedigree drawing program for use in linkage and family-based
+association studies. The program is designed to handle large and
+complex pedigrees with an emphasis on readability and aesthetics.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Edward H. Trager, Ritu Khanna, Adrian Marrs, Lawrence Siden,
+Kari E.H. Branham, Anand Swaroop and Julia E. Richards, <br />
+<i>Madeline 2.0 PDE: a new program for local and web-based pedigree drawing. <br />
+</i><a href="https://academic.oup.com/bioinformatics/article/23/14/1854/189087?login=true"> Bioinformatics</a>, 2007, 
+<b>23</b>(14), pp. 1854–1856. <br />
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/piratical/Madeline_2.0_PDE">Madeline 2.0_PDE Github page</a></li>
+<li><a href="https://madeline.med.umich.edu/madeline/index.php">Madeline 2.0_PDE Home page </a></li>
+</ul>
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Madeline</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>MADELINE_HOME</b>&nbsp; MADELINE installation directory</li>
+    <li><b>MADELINE_BIN </b>&nbsp; &nbsp; &nbsp;  MADELINE executable directory</li>
+    <li><b>MADELINE_SRC </b>&nbsp; &nbsp;  MADELINEsource code directory</li>
+    <li><b>MADELINE_DATA </b>&nbsp; &nbsp; MADELINE sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<an Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn0849 ~]$ <b>module load Madeline </b>
+[+] Loading madeline  2.0  on cn0849
+[+] Loading singularity  3.8.5-1  on cn0849
+[+] Loading ImageMagick  7.0.7  on cn0849
+</pre>
+Copy test data to your current filder:
+<pre class="term">
+[user@cn0849 ~]$ <b>cp -r $MADELINE_DATA/* . </b>
+</pre>
+Run the madeline executable on the test data:
+<pre class="term">
+[user@cn0849 ~]$ <b>madeline -L "IndividualID DOB" ./input/si_001.data</b>
+┌─────────────────────────────┐
+│ Welcome to Madeline 2.0 PDE │
+└─────────────────────────────┘
+--------------------------------------------
+ LABELS                          TOTAL: 2
+--------------------------------------------
+ 1. IndividualID
+ 2. DOB
+--------------------------------------------
+Parser::readFile(): Opening a(n) UTF-8 file ...
+Reading file data in Madeline flat file format ...
+----------------------------------------------------------------
+ ICON COLUMNS                                        TOTAL: 1
+----------------------------------------------------------------
+   1. Affected                         has 2 non-missing levels.
+----------------------------------------------------------------
+Table 1 is a pedigree table.
+  Start of    addPedigreesFromDataTable 
+Warning: Adding virtual father “S00100” who is not present in the input data file.
+Warning: Adding virtual mother “S00101” who is not present in the input data file.
+Siblings are ordered by DOB.
+  End of      addPedigreesFromDataTable 
+  Start of    draw                       
+Pedigree output file is “si_001_pedigree.svg”
+  End of      draw                       
+
+[user@cn0849 ~]$ <b>madeline --color ./input/si_002.data</b>
+┌─────────────────────────────┐
+│ Welcome to Madeline 2.0 PDE │
+└─────────────────────────────┘
+--------------------------------------------
+ LABELS                          TOTAL: 0
+--------------------------------------------
+--------------------------------------------
+Parser::readFile(): Opening a(n) UTF-8 file ...
+Reading file data in Madeline flat file format ...
+----------------------------------------------------------------
+ ICON COLUMNS                                        TOTAL: 1
+----------------------------------------------------------------
+   1. Affected                         has 3 non-missing levels.
+----------------------------------------------------------------
+Table 1 is a pedigree table.
+  Start of    addPedigreesFromDataTable  
+Siblings are ordered by DOB.
+  End of      addPedigreesFromDataTable  
+  Start of    draw                       
+Pedigree output file is “si_002_pedigree.svg”
+  End of      draw                       
+</pre>
+Visualize the results:                        
+<pre class="term">
+[user@cn0849 ~]$ <b>display si_001_pedigree.svg</b>
+</pre>
+<br />
+<img src="madeline/si_001_pedigree.svg" width="350" border="0" alt="">
+<br /><br /><br />
+<pre class="term">
+[user@cn0849 ~]$ <b>display si_002_pedigree.svg</b>
+</pre>
+<img src="madeline/si_002_pedigree.svg" width="800" border="0" alt=""> 
+[user@cn0849 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 28896415
+salloc.exe: Job allocation 28896415 has been revoked.
+[user@biowulf ~]$
+</pre>
+<P>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

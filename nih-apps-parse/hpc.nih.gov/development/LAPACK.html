@@ -1,0 +1,50 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'LAPACK';</script>
+<p>
+<div class="title">LAPACK</div>
+
+    <p><a href="http://www.netlib.org/lapack/">LAPACK</a> provides routines for
+solving systems of simultaneous linear equations, least-squares solutions of
+linear systems of equations, eigenvalue problems, and singular value
+problems.</p>
+
+    <p>LAPACK routines are written so that as much as possible of the
+computation is performed by calls to the Basic Linear Algebra Subprograms (<a
+href="http://www.netlib.org/blas/">BLAS</a>).</p>
+
+    <p>To view the available versions of LAPACK, type:</p>
+    <div class="term">module avail LAPACK</div>
+
+    <p>LAPACK is built with both static and shared libraries.  There are two
+versions of the static library available: one with position-independent code
+(PIC) and one without.  To compile a program with the static library with PIC,
+include the following library at compile time:</p>
+
+    <div class="term">gcc -llapack_pic ...</div>
+
+    <p>Within LAPACK, the BLAS static library is not built with -fPIC.  As a
+result, your code compilation may return an error such as:</p>
+
+    <div class="term">"...libblas.a(symbol) relocation R_X86_64_32 against
+`.rodata' can not be used when making a shared object; recompile with
+-fPIC."</div>
+
+    <p>You can avoid the error above by explicitly specifying the shared
+library instead of at compile time:</p>
+    <div class="term">gcc -l:libblas.so.3 ...</div>
+
+<div class="subheading"><h4>Compiled Libraries</h4></div>
+
+LAPACK installs the following libraries:
+
+<pre>lib/libblas.a           => static blas library 
+lib/libblas.so.3.5.0    => shared library (with PIC)
+
+lib/liblapack.a         => static lapack library
+lib/liblapack_pic.a     => static lapack library (with PIC)
+lib/liblapack.so.3.5.0  => shared lapack library (with PIC)
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

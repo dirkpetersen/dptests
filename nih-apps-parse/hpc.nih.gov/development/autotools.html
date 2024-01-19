@@ -1,0 +1,45 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Development Tools: Autotools';</script>
+<p>
+<div class="title">Development Tools: Autotools</div>
+
+  <p>Autotools is a part of the GNU build system and is a set of tools,
+  including automake, autoconf and libtool, that are used to build packages.
+  These tools are involved in the typical <span class="monospace">configure; make;
+  make install</span> sequence when building applications from source.</p>
+  
+  <p><a
+  href="http://www.gnu.org/software/autoconf/manual/autoconf.html">Autoconf</a>,
+  for example, mostly focuses on producing <span
+  class="monospace">configure</span> scripts.  <a
+  href="http://www.gnu.org/software/automake/manual/automake.html">Automake</a>
+  is used for generating <span class="monospace">Makefile.in</span> files and
+  along with the <span class="monospace">configure</span> script are used to
+  produce <span class="monospace">Makefiles</span>. Other tools include
+  aclocal, autoheader, and autoscan.  Some related tools that are frequently
+  used alongside the Autotools utilities are make, gettext, pkg-config and GCC,
+  which together comprise the GNU toolchain.</p>
+
+  <p>You may need to use Autotools for either generating your own configure
+  script and Makefiles.  Additionally, you may need to use Autotools when
+  building other applications.<p>
+
+  <p>The system defaults of these various tools are installed on the login and
+  compute nodes.  These versions are packaged by the vendor (Red Hat/CentOS)
+  and tend to be out of date.  If your program requires newer versions
+  of these tools, load the <i>automake</i> module:</p>
+
+  <div class="term">module load automake</div>
+
+  <p>Loading the <i>automake</i> module will also load newer versions
+  of autoconf, m4 and libtool since these tools are often used together.
+  Optionally, you may load these tools individually, for example:</p>
+
+  <pre class="term">module load autoconf/2.69
+module load m4/1.4.17
+module load libtool/2.4.6
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

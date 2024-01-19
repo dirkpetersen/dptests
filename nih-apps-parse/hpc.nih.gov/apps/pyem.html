@@ -1,0 +1,69 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'UCSF pyem on Biowulf';</script>
+<div class="title">UCSF pyem on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+UCSF pyem is a collection of Python modules and command-line utilities for electron microscopy of biological samples.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Asarnow, D., Palovcak, E., Cheng, Y.
+    <a href="https://doi.org/10.5281/zenodo.3576630"><b><u>UCSF pyem v0.5.</u></b></a>
+    <em>(Zenodo:2019)</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/asarnow/pyem">UCSF pyem Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>pyem</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+  <li>singlethreaded</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load pyem</b>
+
+[user@cn3144 ~]$ <b>star.py</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

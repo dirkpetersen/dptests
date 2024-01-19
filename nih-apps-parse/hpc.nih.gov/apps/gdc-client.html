@@ -1,0 +1,96 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'gdc-client on Biowulf';</script>
+<div class="title">gdc-client on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>Raw sequence data, stored as BAM files, makes up the bulk of data stored at the <a href="https://gdc-portal.nci.nih.gov/">NCI Genomic Data Commons (GDC)</a>. The size of a single file can vary greatly. Most BAM files stored in the GDC are in the 50 MB - 40 GB size range, with some of the whole genome BAM files reaching sizes of 200-300 GB.
+
+The GDC Data Transfer Tool provides an optimized method of transferring data to and from the GDC, and enables resumption of interrupted transfers.</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li>To see options for gdc-client, type at the prompt:<pre class="term">gdc-client --help</pre></li>
+  <li>GDC Data Transfer Tool: <a href="https://docs.gdc.cancer.gov/Data_Transfer_Tool/Users_Guide/Getting_Started/">https://docs.gdc.cancer.gov/Data_Transfer_Tool/Users_Guide/Getting_Started/</a></li>
+  <li>Genomics Data Commons: <a href="https://gdc.cancer.gov/">https://gdc.cancer.gov/</a></li>
+  <li>Genomics Data Commons Data Portal: <a href="https://portal.gdc.cancer.gov/">https://portal.gdc.cancer.gov/</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>gdc-client</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+  <li>Example files in <tt>$GDC_EXAMPLES</tt></li>
+</ul>
+<P>
+
+<p class="alert">The vast majority of data available from the GDC is access controlled.  Users will need to first register and obtain an <a href="https://gdc-docs.nci.nih.gov/API/Users_Guide/Authentication_and_Authorization/">authentication token</a> to access the controlled data.</p>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive data transfers</a> are best run on Helix, the dedicated interactive data transfer system. </div>
+<p>Helix has a direct connection to the internet, and does not go through one of the HPC proxy servers.  Sample session:</p>
+<pre class="term">
+
+[user@helix ~]$ <b>module load gdc-client</b>
+
+[user@helix ~]$ <b>gdc-client download 22a29915-6712-4f7a-8dba-985ae9a1f005</b>
+100% [##################################################################################] Time: 0:00:02   1.86 MB/s
+100% [##################################################################################] Time: 0:00:00 177.78 kB/s
+Successfully downloaded: 1
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gdc-client.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load gdc-client
+gdc-client download 22a29915-6712-4f7a-8dba-985ae9a1f005
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] gdc-client.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. gdc-client.swarm). For example:</p>
+
+<pre class="term">
+gdc-client download cce8411d-dc96-5597-b198-fb47c5cf691c
+gdc-client download 574b02d5-2de1-5aab-be8d-2c9d251dde9e
+gdc-client download ad22c8a4-7767-5427-9271-5f4b506a124c
+gdc-client download 4b8af859-b9cd-52b1-bc64-9bfa5d816a5d
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f gdc-client.swarm [-g #] [-t #] --module gdc-client --maxrunning 10</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module gdc-client</tt> <td>Loads the gdc-client module for each subjob in the swarm 
+  <tr><td><tt>--maxrunning 10</tt> <td>Only allow 10 simultaneous downloads at a time 
+</table>
+
+<p class="alert">gdc-client pulls data from the GDC Data Portal, which can be overwhelmed by high numbers of simultaneous downloads, causing individual swarm subjobs to fail.  It is best to include <tt>--maxrunning 10</tt> to prevent this overload.</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

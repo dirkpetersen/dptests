@@ -1,0 +1,275 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'cellranger on Biowulf';</script>
+<div class="title">cellranger on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>From the Cell Ranger manual:</p>
+
+<blockquote>
+Cell Ranger is a set of analysis pipelines that processes Chromium single cell
+3’ RNA-seq output to align reads, generate gene-cell matrices and perform
+clustering and gene expression analysis. There are several pipelines:
+
+<ul>
+    <li><em>cellranger mkfastq</em> wraps Illumina's bcl2fastq to correctly
+    demultiplex Chromium-prepared sequencing samples and to convert barcode
+    and read data to FASTQ files.</li>
+
+    <li><em>cellranger count</em> takes FASTQ files from cellranger mkfastq and
+    performs alignment, filtering, and UMI counting. It uses the Chromium
+    cellular barcodes to generate gene-cell matrices and perform clustering
+    and gene expression analysis.</li>
+    <li> <em>cellranger aggr</em> aggregates results from cellranger count.</li>
+    <li> <em>cellranger reanalyze</em> takes feature-barcode matrices produced
+    by cellranger count or aggr and re-runs the dimensionality reduction, clustering,
+      and gene expression algorithms.</li>
+    <li><em>cellranger multi</em> supports the anlysis of cell multiplexed data.</li>
+</ul>
+<p>Note that the command line interface has changed since version 1.1.</p>
+
+
+These pipelines combine Chromium-specific algorithms with the widely used
+RNA-seq aligner STAR. Output is delivered in standard BAM, MEX, CSV, and HTML
+formats that are augmented with cellular information.
+</blockquote>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://support.10xgenomics.com/single-cell/software/pipelines/latest/what-is-cell-ranger">Home page + Manual</a>
+    </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: cellranger (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>cellranger can operate in <span style="background-color: #ffff99">local mode</span> or 
+    <span style="background-color: #ffff99">cluster mode</span>. In both cases, the local part of the job will use
+    multiple CPUs. Users have to specify the number of allocated CPUs and amount of memory
+    with <code style="background-color: #ffff99">--localcores=# --localmem=#</code> to cellranger.</li>
+    <li>Please try local mode first and <em>only</em> use slurm mode if local mode does not produce results in a reasonable
+        time frame. cellranger slurm mode tends to generate too many short jobs for moderate input sizes.</li>
+    <li style="background-color: #ffff99">cellranger may attempt to start more processes or open more files than the default limits
+    on our compute nodes allow. If you encounter errors or strange results, you may have to raise these limits.
+      See below for more deails.</li>
+    <li>If using <code>cellranger multi</code> please allocate disk space on <code>lscratch</code>, assign the <code>TEMP</code> environment variable to <code>lscratch</code> and make sure the output is written to <code>lscratch</code>. Please email <code>staff@hpc.nih.gov</code> if you need help with this.
+    <li>Reference data can be found in  <code>$CELLRANGER_REF</code>. There are also environment variables for versioned subdirectories
+    though their use is deprecated.</li>
+    <li>Test data can be found in  <code>$CELLRANGER_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+
+<p>Copy the bcl format test data and run the demux pipeline</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --mem=35g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load cellranger/5.0.0</b>
+[user@cn3144 ~]$ <b>cp ${CELLRANGER_TEST_DATA:-none}/cellranger-tiny-bcl-1.2.0.tar.gz .</b>
+[user@cn3144 ~]$ <b>cp ${CELLRANGER_TEST_DATA:-none}/cellranger-tiny-bcl-samplesheet-1.2.0.csv .</b>
+[user@cn3144 ~]$ <b>tar -xzf cellranger-tiny-bcl-1.2.0.tar.gz</b>
+[user@cn3144 ~]$ <b>cellranger mkfastq --run=cellranger-tiny-bcl-1.2.0 \
+                     --samplesheet=cellranger-tiny-bcl-samplesheet-1.2.0.csv \
+                     --localcores=$SLURM_CPUS_PER_TASK \
+                     --localmem=34</b>
+cellranger mkfastq (1.2.1)
+Copyright (c) 2016 10x Genomics, Inc.  All rights reserved.
+-------------------------------------------------------------------------------
+
+Martian Runtime - 1.2.1 (2.1.2)
+Running preflight checks (please wait)...
+Checking run folder...
+Checking RunInfo.xml...
+Checking system environment...
+Checking barcode whitelist...
+Checking read specification...
+Checking samplesheet specs...
+2016-12-21 12:27:44 [runtime] (ready)           ID.H35KCBCXY.MAKE_FASTQS_CS.MAKE_FASTQS.PREPARE_SAMPLESHEET
+[...snip...]
+Outputs:
+- Run QC metrics:        /spin1/users/user/test_data/cellranger/H35KCBCXY/outs/qc_summary.json
+- FASTQ output folder:   /spin1/users/user/test_data/cellranger/H35KCBCXY/outs/fastq_path
+- Interop output folder: /spin1/users/user/test_data/cellranger/H35KCBCXY/outs/interop_path
+- Input samplesheet:     /spin1/users/user/test_data/cellranger/H35KCBCXY/outs/input_samplesheet.csv
+
+Pipestance completed successfully!
+
+</pre>
+
+<p style="background-color: #ffff99">Note that it is necessary to specify
+<code>--localcores</code> and <code>--localmem</code>.</p>
+
+<p>Cellranger may start an unreasonable number of processes or open too many
+files. If you encounter errors that include</p>
+
+<pre class="term">
+...
+ self.pid = os.fork()
+OSError: [Errno 11] Resource temporarily unavailable 
+</pre>
+
+<p>or see unexpected results despite specifying <code>--localcores</code> and
+<code>--localmem</code>, you may have to raise the limit on the number of
+processes and/or open files allowed in your batch script:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>ulimit -u 10240 -n 16384</b>
+[user@cn3144 ~]$ <b>cellranger mkfastq --run=cellranger-tiny-bcl-1.2.0 \
+                     --samplesheet=cellranger-tiny-bcl-samplesheet-1.2.0.csv \
+                     --localcores=$SLURM_CPUS_PER_TASK \
+                     --localmem=34</b>
+</pre>
+
+<p>Generate counts per gene per cell</p>
+<pre class="term">
+[user@cn3144 ~]$ <b>cellranger count --id s1 \
+                    --fastqs H35KCBCXY/outs/fastq_path \
+                    --transcriptome=$CELLRANGER_REF/refdata-gex-GRCh38-2020-A \
+                    --localcores=$SLURM_CPUS_PER_TASK \
+                    --chemistry=SC3Pv2 \
+                    --localmem=34</b>
+cellranger count (1.2.1)
+Copyright (c) 2016 10x Genomics, Inc.  All rights reserved.
+-------------------------------------------------------------------------------
+
+Martian Runtime - 1.2.1 (2.1.2)
+Running preflight checks (please wait)...
+Checking sample info...
+Checking FASTQ folder...
+[...snip...]
+Outputs:
+- Run summary HTML:                      /spin1/users/user/test_data/cellranger/s1/outs/web_summary.html
+- Run summary CSV:                       /spin1/users/user/test_data/cellranger/s1/outs/metrics_summary.csv
+- BAM:                                   /spin1/users/user/test_data/cellranger/s1/outs/possorted_genome_bam.bam
+- BAM index:                             /spin1/users/user/test_data/cellranger/s1/outs/possorted_genome_bam.bam.bai
+- Filtered gene-barcode matrices MEX:    /spin1/users/user/test_data/cellranger/s1/outs/filtered_gene_bc_matrices
+- Filtered gene-barcode matrices HDF5:   /spin1/users/user/test_data/cellranger/s1/outs/filtered_gene_bc_matrices_h5.h5
+- Unfiltered gene-barcode matrices MEX:  /spin1/users/user/test_data/cellranger/s1/outs/raw_gene_bc_matrices
+- Unfiltered gene-barcode matrices HDF5: /spin1/users/user/test_data/cellranger/s1/outs/raw_gene_bc_matrices_h5.h5
+- Secondary analysis output CSV:         /spin1/users/user/test_data/cellranger/s1/outs/analysis
+- Per-molecule read information:         /spin1/users/user/test_data/cellranger/s1/outs/molecule_info.h5
+
+Pipestance completed successfully!
+
+Saving pipestance info to s1/s1.mri.tgz
+</pre>
+
+<p>The same job could also be run in cluster mode where pipeline tasks
+are submitted as batch jobs. This can be done by setting jobmode to slurm
+and limiting the max. number of concurrent jobs:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>cellranger count --id s1 \
+                --fastqs H35KCBCXY/outs/fastq_path \
+                --transcriptome=$CELLRANGER_REF/refdata-gex-GRCh38-2020-A \
+                --chemistry=SC3Pv2 \
+                --localcores=$SLURM_CPUS_PER_TASK \
+                --localmem=34 \
+                --jobmode=slurm --maxjobs=10</b>
+</pre>
+
+<p>If running in slurm mode, it may be necessary to add <code>--jobinterval=3000</code> if encountering
+errors mentioning empty batch scripts.</p>
+
+<p>Though in the case of this small example this actually results in
+a longer overall runtime. Even when running in cluster mode, please run
+the main pipeline in an sinteractive session or as a batch job itself.</p>
+
+<p>Don't forget to close the interactive session when done</p>
+<pre class="term">
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<h3>Interesting bits</h3>
+
+<p>As per <a href="https://www.10xgenomics.com/resources/analysis-guides/tutorial-navigating-10x-barcoded-bam-files#:~:text=To%20use%20this%20samtools%20you%20can%20run%20the,file%20and%20the%20time%20required%20to%20sort%20it.">10x genomics</a> the <code>xf</code> auxillary field in the
+output bam file can be used to filter a bam file to include only the representative of a UMI confidently mapped to a feature and/or
+transcriptome. This can be done with versions of samtools that include the <code>-e</code> flag to filter by an expression:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>module load samtools/1.17</b>
+[user@cn3144 ~]$ <b>samtools view -@6 -e '[xf]==25' -o filtered.bam s1/outs/possorted_genome_bam.bam</b>
+</pre>
+
+
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. cellranger.sh), which uses the input file 'cellranger.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+module load cellranger/5.0.0 || exit 1
+## uncomment the following line if encountering 'resource unavailable' errors
+## despite using --localcores and --localmem
+# ulimit -u 4096
+cellranger mkfastq --run=llranger-tiny-bcl-1.2.0 \
+        --samplesheet=cellranger-tiny-bcl-samplesheet-1.2.0.csv \
+        --localcores=$SLURM_CPUS_PER_TASK \
+        --localmem=34
+cellranger count --id s1 \
+        --fastqs H35KCBCXY/outs/fastq_path \
+        --transcriptome=$CELLRANGER_REF/refdata-gex-GRCh38-2020-A \
+        --localcores=$SLURM_CPUS_PER_TASK \
+        --localmem=34 \
+        --chemistry=SC3Pv2 \
+        --jobmode=slurm --maxjobs=20
+</pre>
+<p>Again, please remember to include <code>--localcoes</code> and <code>--localmem</code>.</p>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=12 --mem=35g cellranger.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. cellranger.swarm). For example:</p>
+
+<pre class="term">
+cellranger mkfastq --run=./run1 --localcores=$SLURM_CPUS_PER_TASK --localmem=34
+cellranger mkfastq --run=./run2 --localcores=$SLURM_CPUS_PER_TASK --localmem=34
+cellranger mkfastq --run=./run3 --localcores=$SLURM_CPUS_PER_TASK --localmem=34
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f cellranger.swarm -g 35 -t 12 --module cellranger</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module cellranger <td>Loads the cellranger module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

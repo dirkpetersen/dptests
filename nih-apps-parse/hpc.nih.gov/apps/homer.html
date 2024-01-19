@@ -1,0 +1,145 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'homer on Biowulf';</script>
+<div class="title">homer on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>homer solid tools and methods for interpreting ChIP-Seq and other HTS
+experiments. In addition to UCSC visualization support, peak finding, and
+motif finding of course, homer can help assemble data across multiple
+experiments and look at position-specific relationships between sequencing
+tags, motifs, and other features. You do not need to use the peak finding
+methods in this package to use motif finding. (Use the bed2pos.pl program to
+create peak files from BED files).</p>
+
+
+<h3>References:</h3>
+<ul>
+    <li>S. Heinz, C. Benner, N. Spann, E. Bertolino et al. 
+    <em>Simple Combinations of Lineage-Determining Transcription Factors Prime cis-Regulatory Elements
+        Required for Macrophage and B Cell Identities</em>. Mol Cell 2010(4):576-589.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/20513432">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2898526/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://www.sciencedirect.com/science/article/pii/S1097276510003667?via%3Dihub">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://homer.ucsd.edu/homer">Home</a>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: homer (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$HOMER_TEST_DATA</code></li>
+    <li>Reference data in /fdb/homer/</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load homer</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ # copy some test data (CTCF ChIP-Seq from human Parathyroid adenoma)
+[user@cn3144 ~]$ <b>cp -L $HOMER_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>ls -lh</b>
+-rw-rw-r-- 1 user group 869M Mar 15 10:42 ENCFF374UMR.bam
+[user@cn3144 ~]$ <b>makeTagDirectory ctcf -unique -genome hg38 -checkGC ENCFF374UMR.bam</b>
+        Will parse file: ENCFF374UMR.bam
+
+        Creating directory: ctcf and removing existing *.tags.tsv
+
+        Treating ENCFF374UMR.bam as a bam file
+        Reading alignment file ENCFF374UMR.bam
+
+        Optimizing tag files...
+        Estimated genome size = 3098172877
+        Estimated average read density = 0.017473 per bp
+        Total Tags = 54133547.0
+        Total Positions = 43151510
+        Average tag length = 76.0
+        Median tags per position = 1 (ideal: 1)
+        Average tags per position = 1.254
+        Fragment Length Estimate: 198
+        Peak Width Estimate: 333
+        Autocorrelation quality control metrics:
+                Same strand fold enrichment: 2.0
+                Diff strand fold enrichment: 1.9
+                Same / Diff fold enrichment: 1.0
+        [...snip...]
+[user@cn3144 ~]$ <b>du -sh ctcf</b>
+1021M   ctcf
+[user@cn3144 ~]$ <b>ml ucsc</b>
+[user@cn3144 ~]$ <b>samtools view -H ENCFF374UMR.bam | grep '@SQ' | tr ':' '\t' | cut -f3,5 > chroms</b>
+[user@cn3144 ~]$ <b>makeUCSCfile ctcf -bigWig chroms -fsize 1e20 -o ctcf.bw</b>
+...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. homer.sh), which uses the input file 'homer.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load homer/4.9.1 || exit 1
+findPeaks ctcf_tagdir -style factor -o auto -i control_tags
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=10g homer.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. homer.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/dir1; findMotifs.pl genelist.txt mouse Results -len 10
+cd /data/$USER/dir2; findMotifs.pl genelist.txt mouse Results -len 10
+cd /data/$USER/dir3; findMotifs.pl genelist.txt mouse Results -len 10
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f homer.swarm -g 10 -t 2 --module homer/4.9.1</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module homer <td>Loads the homer module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

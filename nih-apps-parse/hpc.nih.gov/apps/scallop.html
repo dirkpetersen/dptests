@@ -1,0 +1,155 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'scallop on Biowulf';</script>
+<div class="title">scallop on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width: 70%">
+<p>
+From the scallop repository:
+</p>
+<blockquote>
+    Scallop is an accurate reference-based transcript assembler. Scallop features
+    its high accuracy in assembling multi-exon transcripts as well as lowly
+    expressed transcripts. Scallop achieves this improvement through a novel
+    algorithm that can be proved preserving all phasing paths from paired-end
+    reads, while also achieves both transcripts parsimony and coverage deviation
+    minimization.
+</blockquote>
+
+<h3>References:</h3>
+<ul>
+    <li>M. Shao and C. Kingsford. <em>Scallop Enables Accurate Assembly Of Transcripts 
+        Through Phasing-Preserving Graph Decomposition</em>. <a href="http://biorxiv.org/content/early/2017/04/03/123612">bioRxiv</a>
+    </li>
+    <li>M. Shao and C. Kingsford <em>Accurate assembly of transcripts through phase-preserving
+        graph decomposition</em>. Nat. Biotechnology 2017, 35:1167-1169.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/29131147">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5722698/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://www.nature.com/articles/nbt.4020">Journal</a>
+    </li>
+</ul>
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/Kingsford-Group/scallop">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: scallop (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$SCALLOP_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 --mem=7g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load scallop</b>
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ # copy some example data - paired end RNA-Seq (101nt) of human
+      # skin aligned with STAR for about a quarter of chr8 including Myc.
+      # this is stranded RNA-Seq data
+[user@cn3144]$ <b>cp $SCALLOP_TEST_DATA/ENCSR862RGX.bam .</b>
+[user@cn3144]$ <b>ls -lh ENCSR862RGX.bam</b>
+-rw-r--r-- 1 user group 81M Apr 18 07:30 ENCSR862RGX.bam
+
+[user@cn3144]$ # run scallop
+[user@cn3144]$ <b>scallop --library_type second --min_transcript_length 300 \
+             -i ENCSR862RGX.bam -o ENCSR862RGX.gtf</b>
+command line: scallop --library_type second --min_transcript_length 300 -i ENCSR862RGX.bam -o ENCSR862RG X.gtf
+
+
+Bundle 0: tid = 7, #hits = 93, #partial-exons = 22, range = chr8:101915822-102124299, orient = + (93, 0, 0)
+process splice graph gene.0.0 type = 1, vertices = 3, edges = 0
+process splice graph gene.0.1 type = 0, vertices = 5, edges = 4
+process splice graph gene.0.2 type = 1, vertices = 3, edges = 0
+process splice graph gene.0.3 type = 1, vertices = 3, edges = 0
+[...snip...]
+[user@cn3144]$ <b>wc -l ENCSR862RGX.gtf</b>
+5057 ENCSR862RGX.gtf
+[user@cn3144]$ <b>egrep '"gene.1.5"' ENCSR862RGX.gtf | head -3</b>
+chr8    scallop transcript      102204502       102239040       1000    +       .       gene_id "gene.1.5"; transcript_id "gene.1.5.2"; RPKM "22.4072"; cov "1.9556";
+chr8    scallop exon    102204502       102205959       1000    +       .       gene_id "gene.1.5"; transcript_id "gene.1.5.2"; exon "1";
+chr8    scallop exon    102208095       102208285       1000    +       .       gene_id "gene.1.5"; transcript_id "gene.1.5.2"; exon "2";
+
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>Example of scallop assembled transcripts for chr8:103,394,722-103,446,765.
+The scallop transcripts are shown in black. Gencode v24 annotation is shown in blue.</p>
+<div style="width: 85%; margin: 0 auto;">
+    <img src="/images/scallop_example.png" width="100%" alt="scallop example results"/>
+</div>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. scallop.sh), which uses the input file 'scallop.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load scallop/0.10.2 || exit 1
+scallop --verbose 0 --library_type second \
+    -i ENCSR862RGX.bam -o ENCSR862RGX.gtf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=7g scallop.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. scallop.swarm). For example:</p>
+
+<pre class="term">
+scallop --verbose 0 --library_type second -i sample1.bam -o sample1.gtf
+scallop --verbose 0 --library_type second -i sample2.bam -o sample2.gtf
+scallop --verbose 0 --library_type second -i sample3.bam -o sample3.gtf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f scallop.swarm -g 7 -t 2 --module scallop/0.10.2</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module scallop <td>Loads the scallop module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

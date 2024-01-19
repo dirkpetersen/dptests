@@ -1,0 +1,803 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Apptainer (the Linux Foundation variant of Singularity)';</script>
+<link rel="stylesheet" type="text/css" href="/css/asciinema-player.css" />
+<script src="/js/asciinema-player.js"></script>
+
+
+<div class="title">Apptainer (the Linux Foundation variant of Singularity)</div>
+<P>
+<!-- ======================================================================= -->
+<!-- Quick links  -->
+<table border=0 cellpadding=10 align=right width=25%> 
+<tr><td>
+&nbsp; &nbsp;&nbsp; &nbsp;
+<A href="https://apptainer.org/"><img src="/images/apptainer.png" alt="Apptainer logo" align="center" width=130 height=130></a></p>
+<br>
+<div class="tocHeading">Quick Links</div>
+<div class="toc">
+<div class="tocItem"><a href="#doc">Documentation</a></div>
+<div class="tocItem"><a href="#notes">Important Notes</a></div>
+<div class="tocItem"><a href="#int">Interactive Apptainer containers</a></div>
+<div class="tocItem"><a href="#bind">Binding external directories</a>
+<div class="tocItem"><a href="#gpu">Containers on GPUs</a></div>
+<div class="tocItem"><a href="#batch">Containers in batch</a></div>
+<div class="tocItem"><a href="#swarm">Swarms of containers</a></div>
+<div class="tocItem"><a href="#oomkills">Troubleshooting containers</a></div>
+<div class="tocItem"><a href="#create">Creating containers</a></div>
+<div class="tocItem"><a href="#apps">Faking app installations</a></div>
+<div class="tocItem"><a href="#example">Extended example</a></div>
+</table>
+<!-- ======================================================================= -->
+<P>
+
+
+
+<!-- ======================================================================= -->
+<P>
+Apptainer is a tool allowing you to build and run <a href="https://opensource.com/resources/what-are-linux-containers">Linux containers</a>. Linux containers can be thought of as small, lightweight virtual machines encapsulating an entire operating system. Containers let users run applications in a Linux environment of their choosing.
+<P>
+Possible uses for Apptainer on Biowulf:
+<ul>
+<li>Run a containerized application on Biowulf without actually installing anything. Prebuilt containers can be obtained from a variety of locations such as:
+    <ul>
+    <li><a href="https://hub.docker.com/">Docker Hub</a> 
+    <li><a href="https://quay.io/search">Quay.io</a>
+    <li><a href="https://catalog.ngc.nvidia.com/containers">NVIDIA NGC</a>
+    <li><a href="https://cloud.sylabs.io/library">Sylabs Cloud Library</a> 
+    <li><a href="https://biocontainers.pro/registry">BioContainers</a> 
+    </ul>
+<li>Run an application that was built for a different distribution of Linux than the host OS.
+<li>Reproduce an environment to run a workflow created by someone else.
+<li>Run a series of applications (a 'pipeline') that includes applications built on different platforms.
+</ul>
+<P>
+Please note, Apptainer gives you the ability to install and run applications in your own Linux environment with your own customized software stack.  With this ability comes the added responsibility of managing your own Linux environment.  While the NIH HPC staff can provide guidance on how to create and use Apptainer containers, we do not have the resources to manage containers for individual users.  If you decide to use Apptainer, it is your responsibility to manage your own containers.
+<P>
+<!-- ======================================================================= -->
+
+
+<br>
+<br>
+<!-- ======================================================================= -->
+<a Name="doc"></a><div class="heading">Documentation</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<P>
+<div class="subheading"><b>Web sites</b></div>
+<ul>
+  <li><a href="https://apptainer.org/">Apptainer home</a></li>
+  <li><A href="https://apptainer.org/docs">Apptainer Documentation</a>
+  <li><a href="https://github.com/apptainer/apptainer">Apptainer on GitHub</a></li>
+  <li><a href="https://groups.google.com/u/0/a/apptainer.org/g/discuss">Apptainer on Google groups</a></li>
+</ul>
+
+<div class="subheading"><b>Additional Learning Resources</b></div>
+<ul>
+  <li><a href="https://github.com/NIH-HPC/Singularity-Tutorial/tree/2020-03-10">Class taught by NIH HPC staff</a>:
+  <ul>
+      <li><a href="https://youtu.be/3Yg7XI39H4U">Day 1 recording</a> 
+      <li><a href="https://youtu.be/yi82PC--F2U">Day 2 recording</a>
+  </ul>
+  <li><a href="https://singularity-tutorial.github.io/">NIH HPC Singularity Tutorial</a></li>
+  <li><a href="https://www.youtube.com/playlist?list=PL052H4iYGzysewYEelldGPOgKRJkxd5zp">Singularity Basics videos by Sylabs</a></li>
+</ul>
+  
+<div class="subheading"><b>Example definition files</b></div>
+<ul>
+  <li><a href="https://github.com/NIH-HPC/singularity-def-files">Staff maintained definition files</a>: examples of real definition files and associated helper scripts that staff members use to install containerized apps.
+  <li><a href="https://github.com/NIH-HPC/singularity-examples">Legacy example definition files</a>: used to build example containers that can be retrieved from the <a href="https://www.singularity-hub.org/collections/267/">Singularity hub archive</a>.
+</ul>
+<!-- ======================================================================= -->
+
+
+
+<!-- ======================================================================= -->
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<P>
+<ul>
+    <li> Module Name: <tt>apptainer</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li> Apptainer caches containers in your home directory by default. This can quickly fill your home directory, so the NIH HPC staff suggests you configure Apptainer to cache containers in your <tt>data</tt> directory by executing the following or similar command. (If you use Apptainer a lot, you might want to write this command into your <tt>~/.bashrc</tt> file.)
+        <br>
+        <p style="margin-left: 40px"> <tt>export APPTAINER_CACHEDIR=/data/${USER}/.apptainer</tt></p>
+    <li> <tt>$SINGULARITY_*</tt> environment variables are deprecated and will be removed in later releases of Apptainer.  You should change any variables to <tt>$APPTAINER_*</tt> instead. See <a href="https://apptainer.org/docs/user/main/appendix.html#apptainer-s-environment-variables">this list of variables</a> for details.
+    <li> You are encouraged to source the file <tt>/usr/local/current/apptainer/app_conf/sing_binds</tt> to bind all appropriate host system directories in your container at runtime.
+    <li> Beginning in September 2021, bind-mounting the <tt>/scratch</tt> directory will now result in an error because access to  <tt>/scratch</tt> (different from <tt>/lscratch</tt>) is disabled from compute nodes.</b> <br>
+    <li> Some containers have been observed to <b>hang nodes</b> and <b>degrade file system perfmance</b> because of a bug in the squashFS technology used by Apptainer. Please see the <a href="#oomkills">section below</a> to mitigate such behavior if it is observed.
+</ul>
+<!--========================================================================-->
+<p>
+<a Name="int"></a>
+<div class="heading">Interactive Apptainer containers</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+
+<P>
+Like most scientific applications, Apptainer cannot be run on the Biowulf login node. To run an Apptainer container image on Biowulf interactively, you need to allocate an <a href="/docs/userguide.html#int">interactive session</a>, and load the Apptainer module (user input in bold). 
+<P>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c4 --mem=8g --gres=lscratch:10</b>
+salloc: Pending job allocation 35492498
+salloc: job 35492498 queued and waiting for resources
+salloc: job 35492498 has been allocated resources
+salloc: Granted job allocation 35492498
+salloc: Waiting for resource configuration
+salloc: Nodes cn0991 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.35492498.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0991 ~]$ <b>module load apptainer</b>
+[+] Loading apptainer  1.0.1  on cn0991
+
+[user@cn0991 ~]$
+</pre>
+<P>
+You can download containers using the <tt>pull</tt> command. Apptainer containers are saved on disk as image files. In this example, we use the <tt>library://</tt> URI to download containers from the <a href="https://cloud.sylabs.io/library/godlovedc/funny/lolcow">Sylabs cloud library</a>.
+<P>
+<pre class="term">
+[user@cn0991 35492498]$ <b>apptainer pull library://godlovedc/funny/lolcow</b>
+INFO:    Downloading library image
+89.2MiB / 89.2MiB [============================================================================] 100 % 18.3 MiB/s 0s
+WARNING: integrity: signature not found for object group 1
+WARNING: Skipping container verification
+
+[user@cn0991 35492498]$ <b>ls -lh</b>
+total 90M
+-rwxr-xr-x 1 user user 90M Apr  4 12:27 lolcow_latest.sif
+
+[user@cn0991 35492498]$
+</pre>
+<P>
+You can also use the <tt>docker://</tt> URI to get this container from <a href="https://hub.docker.com/r/godlovedc/lolcow">Docker Hub</a>. In this example, we added the <tt>--force</tt> option so that we can overwrite the container we downloaded from the Sylabs cloud library. This also produces a lot of standard output (abbreviated here) as the container is converted to Apptainer format.
+<P>
+<pre class="term">
+[user@cn0991 35492498]$ <b>apptainer pull --force docker://godlovedc/lolcow</b>
+INFO:    Converting OCI blobs to SIF format
+INFO:    Starting build...
+Getting image source signatures
+Copying blob 9fb6c798fa41 done
+Copying blob 3b61febd4aef done
+Copying blob 9d99b9777eb0 done
+Copying blob d010c8cf75d7 done
+Copying blob 7fac07fb303e done
+Copying blob 8e860504ff1e done
+Copying config 73d5b1025f done
+Writing manifest to image destination
+Storing signatures
+2022/04/04 12:35:25  info unpack layer: sha256:9fb6c798fa41e509b58bccc5c29654c3ff4648b608f5daa67c1aab6a7d02c118
+2022/04/04 12:35:25  warn rootless{dev/agpgart} creating empty file in place of device 10:175
+[...snip]
+2022/04/04 12:35:25  warn rootless{dev/zero} creating empty file in place of device 1:5
+2022/04/04 12:35:27  info unpack layer: sha256:3b61febd4aefe982e0cb9c696d415137384d1a01052b50a85aae46439e15e49a
+2022/04/04 12:35:27  info unpack layer: sha256:9d99b9777eb02b8943c0e72d7a7baec5c782f8fd976825c9d3fb48b3101aacc2
+2022/04/04 12:35:27  info unpack layer: sha256:d010c8cf75d7eb5d2504d5ffa0d19696e8d745a457dd8d28ec6dd41d3763617e
+2022/04/04 12:35:27  info unpack layer: sha256:7fac07fb303e0589b9c23e6f49d5dc1ff9d6f3c8c88cabe768b430bdb47f03a9
+2022/04/04 12:35:27  info unpack layer: sha256:8e860504ff1ee5dc7953672d128ce1e4aa4d8e3716eb39fe710b849c64b20945
+INFO:    Creating SIF file...
+
+[user@cn0991 35492498]$ <b>ls -lh</b>
+total 88M
+-rwxr-xr-x 1 user user 88M Apr  4 12:35 lolcow_latest.sif
+
+[user@cn0991 35492498]$
+</pre>
+<P>
+You can "run" your newly downloaded container either using the <tt>run</tt> command, or by treating the container as an executable file and supplying its path.  
+<pre class="term">
+[user@cn0991 35492498]$ <b>apptainer run lolcow_latest.sif</b>
+ ___________________________________
+&lt; You will triumph over your enemy. &gt;
+ -----------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
+[user@cn0991 35492498]$ <b>./lolcow_latest.sif</b>
+ _________________________________________
+/ It is so very hard to be an             \
+| on-your-own-take-care-of-yourself-becau |
+| se-there-is-no-one-else-to-do-it-for-yo |
+\ u grown-up.                             /
+ -----------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
+[user@cn0991 35492498]$
+</pre>
+<P>
+You can start a new shell session within the container you downloaded using the <tt>shell</tt> command.  This is usefull if you want to look around and find things inside the container. Note that the operating system in the container has changed to Ubuntu 16.04 (codenamed "Xenial Xerus"). Also note that you must execute the <tt>exit</tt> command to quit the shell session within the container when you are finished.    
+<pre class="term">
+[user@cn0991 35492498]$ <b>apptainer shell lolcow_latest.sif</b>
+
+Apptainer> <b>which cowsay</b>
+/usr/games/cowsay
+
+Apptainer> <b>cowsay moo</b>
+ _____
+&lt; moo &gt;
+ -----
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
+Apptainer> <b>cat /etc/os-release</b>
+NAME="Ubuntu"
+VERSION="16.04.3 LTS (Xenial Xerus)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 16.04.3 LTS"
+VERSION_ID="16.04"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+VERSION_CODENAME=xenial
+UBUNTU_CODENAME=xenial
+
+Apptainer> <b>exit</b>
+exit
+
+[user@cn0991 35492498]$
+</pre>
+<P>
+The <tt>exec</tt> command is useful to execute a single command inside the container. 
+<pre class="term">
+[user@cn0991 35492498]$ <b>apptainer exec lolcow_latest.sif fortune</b>
+Be security conscious -- National defense is at stake.
+
+[user@cn0991 35492498]$
+</pre>
+<P>
+Good advice.
+<P>
+Finally, you may find it useful to use the <tt>run</tt>, <tt>exec</tt>, or <tt>shell</tt> commands on containers you have not downloaded. In this example we use the <tt>shell</tt> command to start a shell session within the official <a href="https://hub.docker.com/_/alpine">Docker Hub alpine container</a>, thereby switching to the Alpine operating system with a single command.  
+<pre class="term">
+[user@cn0991 35492498]$ <b>apptainer shell docker://alpine</b>
+INFO:    Converting OCI blobs to SIF format
+INFO:    Starting build...
+Getting image source signatures
+Copying blob 40e059520d19 done
+Copying config 90d288e0c9 done
+Writing manifest to image destination
+Storing signatures
+2022/04/04 14:08:58  info unpack layer: sha256:40e059520d199e1a1a259089077f2a0c879951c9a4540490bad3a0d7714c6ae7
+INFO:    Creating SIF file...
+
+Apptainer> <b>cat /etc/os-release</b>
+NAME="Alpine Linux"
+ID=alpine
+VERSION_ID=3.15.3
+PRETTY_NAME="Alpine Linux v3.15"
+HOME_URL="https://alpinelinux.org/"
+BUG_REPORT_URL="https://bugs.alpinelinux.org/"
+
+Apptainer> <b>exit</b>
+
+[user@cn0991 35492498]$
+</pre>
+<P>
+This is a very small sample of Apptainer's vast capabilities.  See the <a href="http://apptainer.org/docs/user/main/index.html">official user documentation</a> for a thorough introduction.  
+<!--========================================================================-->
+
+
+<!--========================================================================-->
+<P>
+<a Name="bind"></a>
+<div class="heading">Binding external directories</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<P>
+Binding a directory to your Apptainer container allows you to read and write files on the host system from within your container.  By default, Apptainer binds your <tt>$HOME</tt> directory (along with a few other directories such as <tt>/tmp</tt> and <tt>/dev</tt>). You can also bind other directories into your container yourself. The process is described in detail in the <a href="https://apptainer.org/docs/user/main/bind_paths_and_mounts.html"> Apptainer documentation</a>.
+
+<P>
+There are several filesystems on the NIH HPC systems that you may want to access from within your container. If you are running a job and have <a href="https://hpc.nih.gov/docs/userguide.html#local">allocated local scratch space</a>, you might like to bind your <tt>/lscratch</tt> into the container as well. You can bind directories into your container at runtime using either the <tt>--bind</tt> option or by setting the <tt>$APPTAINER_BINDPATH</tt> environment variable. 
+<P>
+The following command opens a shell in a container while bind-mounting your <tt>/data</tt> directory, <tt>/fdb</tt>, and <tt>/lscratch</tt> into the container.  If you have access to shared data directories, you could add them to the list as well (for example, <tt>/data/$USER,/data/mygroup1,/data/mygroup2,/fdb,...</tt>).
+
+<pre class="term">
+[user@cn1234 ~]$ <b>apptainer shell --bind /data/$USER,/fdb,/lscratch my-container.sif</b>
+</pre>
+
+or, using the environment variable:
+
+<pre class="term">
+[user@cn1234 ~]$ <b>export APPTAINER_BINDPATH="/data/$USER,/fdb,/lscratch"</b>
+[user@cn1234 ~]$ <b>apptainer shell my-container.sif</b>
+</pre>
+
+<br>
+<P>
+<a Name="staff-bind-recs"></a>
+<div class="subheading"><b>NIH HPC Staff recommendations for binding directories on Biowulf</b></div>
+<P>
+
+The NIH HPC staff maintains a file that will set the <tt>$SINGULARITY_BINDPATH</tt> environment variable appropriately for a wide variety of situations.  It is considered a Biowulf best practice to source this file since it will be updated in the case of additions or deletions to the shared file system.  You can source this file from the command prompt or from within a script like so:
+<P>
+<pre class="term">
+[user@cn1234 ~]$ <b>. /usr/local/current/apptainer/app_conf/sing_binds</b>
+</pre>
+<P>
+Sourcing this file instead of setting bind paths yourself can help to "future-proof" your workflow since it is maintained by NIH HPC staff.  
+<P>
+Remember that you may need to change the directories that you bind into the container if you use your container on a different system or share it with a colleague.  
+
+<!--========================================================================-->
+
+
+
+<!--========================================================================-->
+<p>
+<a Name="gpu"></a>
+<div class="heading">Apptainer containers on GPU nodes</div>
+<div class="nudgeblock">TLDR; Add <tt>--nv</tt> to your Apptainer command.</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<p>
+To leverage the hardware on a GPU node, you must pass the <tt>--nv</tt> option with your Apptainer command. Consider the following example in which a toy deep learning model is trained on a GPU using a tensorflow container:
+<P>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --constraint=gpuk80 -c28 --mem=32g --gres=gpu:k80:1,lscratch:20</b>
+salloc: Pending job allocation 35509918
+salloc: job 35509918 queued and waiting for resources
+salloc: job 35509918 has been allocated resources
+salloc: Granted job allocation 35509918
+salloc: Waiting for resource configuration
+salloc: Nodes cn4194 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.35509918.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn4194 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn4194 35509918]$ <b>cat >hello-tflow.py<<'EOF'
+import tensorflow as tf
+mnist = tf.keras.datasets.mnist
+
+(x_train, y_train),(x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Flatten(input_shape=(28, 28)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
+
+model.compile(optimizer='adam',
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy'])
+
+model.fit(x_train, y_train, epochs=5)
+model.evaluate(x_test, y_test)
+EOF</b>
+
+[user@cn4194 35509918]$ <b>module load apptainer</b>
+[+] Loading apptainer  1.0.1  on cn4194
+
+[user@cn4194 35509918]$ <b>. /usr/local/current/apptainer/app_conf/sing_binds</b>
+
+[user@cn4194 35509918]$ <b>apptainer exec --nv docker://tensorflow/tensorflow:latest-gpu python hello-tflow.py</b>
+INFO:    Using cached SIF image
+2022-04-04 16:39:07.555227: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-04-04 16:39:09.893898: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1525] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 11560 MB memory:  -> device: 0, name: Tesla K80, pci bus id: 0000:84:00.0, compute capability: 3.7
+Epoch 1/5
+1875/1875 [==============================] - 6s 2ms/step - loss: 0.2960 - accuracy: 0.9143
+Epoch 2/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.1387 - accuracy: 0.9583
+Epoch 3/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.1043 - accuracy: 0.9683
+Epoch 4/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.0861 - accuracy: 0.9724
+Epoch 5/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.0752 - accuracy: 0.9763
+313/313 [==============================] - 1s 2ms/step - loss: 0.0735 - accuracy: 0.9766
+
+[user@cn4194 35509918]$
+</pre>
+<P>
+More detailed information about GPU support in Apptainer can be obtained from the <a href="https://apptainer.org/docs/user/main/gpu.html">official docs</a>.
+<!--========================================================================-->
+
+
+
+<!--========================================================================-->
+<p>
+<a Name="batch"></a>
+<div class="heading">Apptainer containers in batch</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<P>
+In this example, we assume that you have the script from the GPU example above saved in your <tt>/data</tt> directory. To do so, execute the following commands:
+<P>
+<pre class="term">
+[user@biowulf ~]$ <b>cd /data/$USER</b>
+
+[user@biowulf user]$ <b>cat >hello-tflow.py<<'EOF'
+import tensorflow as tf
+mnist = tf.keras.datasets.mnist
+
+(x_train, y_train),(x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Flatten(input_shape=(28, 28)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
+
+model.compile(optimizer='adam',
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy'])
+
+model.fit(x_train, y_train, epochs=5)
+model.evaluate(x_test, y_test)
+EOF</b>
+
+[user@biowulf user]$
+</pre>
+
+<P>
+Then write a batch script to run the apptainer command similar to this:
+<pre class="term">
+#!/bin/bash
+# file called myjob.batch
+set -e
+module load apptainer
+cd /data/$USER
+. /usr/local/current/apptainer/app_conf/sing_binds
+apptainer exec --nv docker://tensorflow/tensorflow:latest-gpu \
+    python /data/${USER}/hello-tflow.py
+</pre>
+<P>
+Submit the job like so:
+<P>
+<pre class="term">
+[user@biowulf user]$ <b>sbatch --time=10 --cpus-per-task=28 --partition=gpu --mem=32g --gres=gpu:k80:1 myjob.batch</b>
+35686040
+
+[user@biowulf user]$
+</pre>
+<P>
+After the job finishes executing you should see the following output in the slurm*.out file.
+<P>
+<pre class="term">
+[user@biowulf user]$ <b>cat slurm-35686040.out</b>
+[+] Loading apptainer  1.0.1  on cn4181
+INFO:    Using cached SIF image
+2022-04-06 12:27:30.092624: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-04-06 12:27:37.983259: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1525] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 11560 MB memory:  -> device: 0, name: Tesla K80, pci bus id: 0000:8b:00.0, compute capability: 3.7
+Epoch 1/5
+1875/1875 [==============================] - 12s 2ms/step - loss: 0.3009 - accuracy: 0.9131
+Epoch 2/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.1458 - accuracy: 0.9569
+Epoch 3/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.1093 - accuracy: 0.9670
+Epoch 4/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.0871 - accuracy: 0.9732
+Epoch 5/5
+1875/1875 [==============================] - 3s 2ms/step - loss: 0.0750 - accuracy: 0.9768
+313/313 [==============================] - 1s 2ms/step - loss: 0.0802 - accuracy: 0.9764
+
+[user@biowulf user]$
+</pre>
+<P>
+<!--========================================================================-->
+
+
+
+<!--========================================================================-->
+<p>
+<a Name="swarm"></a>
+<div class="heading">Apptainer containers with swarm</div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<P>
+The example above shows how to run a script within a containerized environment on Biowulf. This example can be easily extended to a swarm file with a series of commands. Let's assume you have a list of python scripts that you want to run in a custom python environment. 
+<P>
+First, source the <tt>sing_binds</tt> file to set the <tt>$APPTAINER_BINDPATH</tt> variable appropriately in your environment. This variable will propagate to your jobs so that your Apptainer container will have access to files on the host system. 
+<P>
+<pre class="term">
+[user@biowulf ~]$ <b>. /usr/local/current/apptainer/app_conf/sing_binds</b>
+
+[user@biowulf ~]$
+</pre>
+<P>
+Create a swarmfile (e.g. apptainer.swarm). For example:
+<P>
+<pre class="term">
+apptainer exec docker://python python /data/${USER}/script1.py
+apptainer exec docker://python python /data/${USER}/script2.py
+apptainer exec docker://python python /data/${USER}/script3.py
+apptainer exec docker://python python /data/${USER}/script4.py
+</pre>
+<P>
+Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.
+<pre class="term">
+[user@biowulf ~]$ <b>swarm -f apptainer.swarm [-g #] [-t #] --module apptainer</b>
+</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module apptainer</tt> <td>Loads the apptainer module for each subjob in the swarm
+</table>
+
+
+<!--========================================================================-->
+
+
+
+<!--========================================================================-->
+<P>
+<a Name="oomkills"></a>
+<div class="heading"><b>Troubleshooting containers that hang when they run out of memory</b></div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<P>
+A few containers have caused issues on Biowulf by triggering a kernel level bug described in detail <a href="https://bugs.centos.org/view.php?id=17584">here</a> and <a href="https://chrisdown.name/2018/04/17/kernel-adventures-the-curious-case-of-squashfs-stalls.html">here</a>. These include <a href="/apps/fmriprep.html">fmriprep</a> and <a href="https://github.com/fanglab/nanodisco">nanodisco</a>. The problems follow a predictable pattern:
+
+<ol>
+    <li>The containerized application uses more memory than has been allocated for the job.
+    <li>The Out Of Memory (OOM) killer is invoked by the kernel to kill the offending process.
+    <li>Other processes that presumably depend on the first process fail to cancel and may enter the D state (awaiting IO).  
+    <li>Node responses become sluggish as it bogged down with D state processes.
+    <li>File system performance may suffer as the container tries repeatedly to communicate with the apptainer starter process. Depending on the number of jobs running, this may produce noticeable degradation of file system performance.  
+</ol>
+
+If one of your containers displays these symptoms, please convert the container format to a sandbox (just a directory full of files) and run it using that version of the container instead of the <tt>*.sif</tt> format. You can perform this conversion on a compute node using the following command:
+
+<pre class="term">
+[user@cn1234 ~]$ <b>apptainer build --sandbox container_name container_name.sif</b>
+</pre>
+
+Please contact <a href="mailto:staff@hpc.nih.gov">staff@hpc.nih.gov</a> with questions.  
+<!--========================================================================-->
+
+
+
+<!--========================================================================-->
+<a Name="create"></a>
+<div class="heading">Creating Apptainer containers</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<P>
+  To use Apptainer on Biowulf, you either need to use a pre-built container created by someone else, or build your own container. Building a container from a definition file requires elevated privileges, so containers can't be built on the NIH HPC systems. You have several options to build Apptainer containers: 
+<ul>
+<li>You can build small and medium sized containers on Helix or Biowulf compute nodes using the <a href="https://sylabs.io/guides/3.4/user-guide/endpoint.html#remote-endpoints"><tt>--remote</tt> option</a>. In a nutshell, you must log in and generate a token on the <a href="https://cloud.sylabs.io/auth">Singularity Container Services</a> and use the command line to copy that token into your environment (using the command <tt>apptainer remote login SylabsCloud</tt>).  Once you've done that, the <tt>--remote</tt> option will allow you to build containers using the Sylabs remote builder. 
+<li>If you have a Linux system to which you have root (admin) access, you can install Apptainer and build your container there. 
+<li>If you have a very recent Linux system (like Ubuntu >=18) you can build Apptainer containers without root access using the <a href="https://sylabs.io/guides/3.4/user-guide/fakeroot.html#build"><tt>--fakeroot</tt> option</a>. 
+<li>If you don't have a Linux system you could easily install one in a virtual machine using software like <a href="https://www.virtualbox.org/">VirtualBox</a>, <a href="https://www.vagrantup.com/">Vagrant</a>, <a href="http://www.vmware.com/">VMware</a>, or <a href="http://www.parallels.com/">Parallels</a>.  (If you use a virtual machine be sure to allocate at least 2GB of memory or some of your builds may fail with out of memory errors.)
+<li>You can allocate a cloud instance, to which you will have root access. Install Apptainer and build your container there.
+</ul>
+<p>
+You can find information about installing Apptainer on Linux <a href="http://apptainer.org/docs/user/main/quick_start.html#quick-installation-steps">here</a>.
+<p>
+In addition to your own Linux environment, you will also need a definition file to build an Apptainer container from scratch.  You can find some simple definition files for a variety of Linux distributions in the <tt>/example</tt> directory of the source code.  You can also find links to definition files containing popular applications in the <a href="#doc">Documentation</a> section above.
+</pre>
+Detailed documentation about building Apptainer container images is available at the <A href="http://apptainer.org/docs/user/main/index.html">Apptainer website</a>.
+<!--========================================================================-->
+
+
+
+<!--========================================================================-->
+<P>
+<a Name="apps"></a>
+<div class="heading"><b>Apptainer as an Installation Medium: faking a native installation</b></div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+<p>
+
+One can use Apptainer to "install" software and use it transparently as though it were installed directly on the host system. In fact, NIH HPC staff members use Apptainer to install a large number of scientific applications. This method can make it easier to install software and renders the final product portable.  For example, if you wanted to use the default Debian package manager (<a href="https://en.wikipedia.org/wiki/APT_(software)">APT</a>) to "install" software on Biowulf you could do something like this.  Here we install <tt>samtools</tt> and <tt>bcftools</tt>, with the following definition file:
+
+<pre class="term">
+Bootstrap: docker
+From: debian:9-slim
+
+%post
+    # install the desired software
+    apt-get update
+    apt-get install -y samtools bcftools
+    apt-get clean
+</pre>
+
+This defines a container based on the space-efficient "slim" Debian images from Docker Hub and installs the <tt>samtools</tt> and <tt>bcftools</tt> packages via APT.
+
+<p>
+After finalizing the definition file, you can proceed to build the container (of course, on a system where you have sudo or root access): 
+
+<pre class="term">
+[user@some_build_host ~]$ <b>sudo apptainer build hts.sif hts.def</b>
+</pre>
+
+<p>
+You can then set up your installation prefix (here, it's <tt>$HOME/opt/hts</tt>) as follows, making use of symbolic links and a wrapper script:
+
+<pre class="term">
+$HOME/opt
+└── hts
+    ├── bin
+    │   ├── samtools -> ../libexec/wrap
+    │   └── bcftools -> ../libexec/wrap
+    └── libexec
+        ├── wrap
+        └── hts.simg
+</pre>
+
+where the wrapper script <tt>wrap</tt> looks like:
+
+<pre class="term">
+#!/bin/bash
+
+. /usr/local/current/apptainer/app_conf/sing_binds</b>
+selfdir="$(dirname $(readlink -f ${BASH_SOURCE[0]}))"
+cmd="$(basename $0)"
+apptainer exec "${selfdir}/hts.simg" "$cmd" "$@"
+</pre>
+
+<tt>wrap</tt> checks to see how it was called, then passes that same command to the container after appropriately setting <tt>APPTAINER_BINDPATH</tt> by calling the staff maintained <tt>sing_binds</tt> script.
+
+<p>
+So if you have added the installation prefix <tt>$HOME/opt/hts/bin</tt> to your <tt>PATH</tt>, then calling <tt>samtools</tt> or <tt>bcftools</tt> will run those programs from within your container.
+And because we have arranged to bind mount all the necessary filesystems into the container, the path names you provide for input and output into the programs will be available to the container in the same way.
+
+<!--========================================================================-->
+<p>
+<a Name="example"></a>
+<div class="heading">An extended practical example</div>
+<a href="apptainer.html" style="font-size:12px">back to top</a><br/>
+
+<p>
+In this example, we will create an Apptainer container image starting from the <a href="https://hub.docker.com/r/continuumio/miniconda">official continuumio miniconda container on Docker Hub</a>.  Then we'll install a number of RNASeq tools. This would allow us to write a pipeline with, for example, Snakemake and distribute it along with the image to create an easily shared, reproducible workflow. This definition file also installs a runscript enabling us to treat our container like an executable.   
+
+<pre class="term">
+BootStrap: docker
+From: continuumio/miniconda:latest
+IncludeCmd: yes
+
+%post
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# this will install all necessary packages and prepare the container
+    apt-get -y update --allow-releaseinfo-change
+    apt-get -y install make gcc zlib1g-dev libncurses5-dev
+    wget https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2 \
+        && tar -xjf samtools-1.3.1.tar.bz2 \
+        && cd samtools-1.3.1 \
+        && make \
+        && make prefix=/usr/local install
+    export PATH=/opt/conda/bin:$PATH
+    conda install --yes -c bioconda \
+        star \
+        sailfish \
+        fastqc \
+        kallisto \
+        subread
+    conda clean --index-cache --tarballs --packages --yes
+    mkdir /data /resources
+
+%runscript
+#!/bin/bash
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# this text code will run whenever the container
+# is called as an executable or with `apptainer run`
+function usage() {
+    cat &lt;&lt;EOF
+NAME
+    rnaseq - rnaseq pipeline tools 0.1
+SYNOPSIS
+    rnaseq tool [tool options]
+    rnaseq list
+    rnaseq help
+DESCRIPTION
+    Apptainer container with tools to build rnaseq pipeline. 
+EOF
+}
+
+function tools() {
+    echo "conda: $(which conda)"
+    echo "---------------------------------------------------------------"
+    conda list
+    echo "---------------------------------------------------------------"
+    echo "samtools: $(samtools --version | head -n1)"
+}
+
+arg="${1:-none}"
+
+case "$arg" in
+    none) usage; exit 1;;
+    help) usage; exit 0;;
+    list) tools; exit 0;;
+    # just try to execute it then
+    *)    $@;;
+esac
+
+%environment
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# This sets global environment variables for anything run within the container
+export PATH="/opt/conda/bin:/usr/local/bin:/usr/bin:/bin:"
+unset CONDA_DEFAULT_ENV
+export ANACONDA_HOME=/opt/conda
+</pre>
+
+<p>
+Assuming this file is called <tt>rnaseq.def</tt>, we can create an Apptainer container called <tt>rnaseq</tt> on our build system with the following commands:
+
+<pre class="term">
+[user@some_build_system ~]$ <b>sudo apptainer build rnaseq rnaseq.def</b>
+</pre>
+
+<p>This image contains miniconda and our rnaseq tools and can be called directly as an executable like so: <pre class="term">
+[user@some_build_system ~]$ <b>./rnaseq help</b>
+NAME
+    rnaseq - rnaseq pipeline tools 0.1
+SYNOPSIS
+    rnaseq snakemake [snakemake options]
+    rnaseq list
+    rnaseq help
+DESCRIPTION
+    Apptainer container with tools to build rnaseq pipeline. 
+
+[user@some_build_system ~]$ <b>./rnaseq list</b>
+conda: /opt/conda/bin/conda
+---------------------------------------------------------------
+# packages in environment at /opt/conda:
+#
+fastqc                    0.11.5                        1    bioconda
+java-jdk                  8.0.92                        1    bioconda
+kallisto                  0.43.0                        1    bioconda
+sailfish                  0.10.1              boost1.60_1    bioconda
+[...snip...]
+
+[user@some_build_system ~]$ <b>./rnaseq samtools --version</b>
+samtools 1.3.1
+Using htslib 1.3.1
+Copyright (C) 2016 Genome Research Ltd.
+</pre>
+
+<p>After copying the image to the NIH HPC systems, allocate an sinteractive
+session and test it there</p>
+<pre class="term">
+[user@cn1234 ~]$ <b>module load apptainer</b>
+[user@cn1234 ~]$ <b>./rnaseq list</b>
+conda: /opt/conda/bin/conda
+---------------------------------------------------------------
+# packages in environment at /opt/conda:
+#
+fastqc                    0.11.5                        1    bioconda
+java-jdk                  8.0.92                        1    bioconda
+kallisto                  0.43.0                        1    bioconda
+sailfish                  0.10.1              boost1.60_1    bioconda
+[...snip...]
+</pre>
+
+<p>This could be used with a <a href="snakemake.html">Snakemake</a> file like this</p>
+<pre class="term">
+rule fastqc:
+    input: "{sample}.fq.gz"
+    output: "{sample}.fastqc.html"
+    shell: 
+        """
+        module load apptainer 
+        ./rnaseq fastqc ... {input}
+        """
+
+rule align:
+    input: "{sample}.fq.gz"
+    output: "{sample}.bam"
+    shell: 
+        """
+        module load apptainer
+        ./rnaseq STAR ....
+        """
+</pre>
+<!--========================================================================-->
+
+
+
+<!--========================================================================-->
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

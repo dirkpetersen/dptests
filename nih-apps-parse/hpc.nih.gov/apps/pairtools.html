@@ -1,0 +1,90 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pairtools: a command-line framework to process sequencing data from a Hi-C experimen ';</script>
+<div class="title"><b>pairtools: a command-line framework to process sequencing data from a Hi-C experimen  </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Pairtools is a simple and fast command-line framework to process sequencing data 
+from a Hi-C experiment. Pairtools perform various operations on Hi-C pairs and occupy the middle position in a typical Hi-C data processing pipeline. Pairtools aim to be an all-in-one tool for processing Hi-C pairs.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Fan Song, Jie Xu, Jesse Dixon and Feng Yue <br />
+<a href="https://link.springer.com/protocol/10.1007/978-1-0716-1390-0_7"><i>Analysis of Hi-C Data for Discovery of Structural Variations in Cancer.</i></a> Hi-C Data Analysis. Methods and Protocols (2022). pp 143-161</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/open2c/pairtools">pairtools Github page</a></li>
+<li><a href="https://pairtools.readthedocs.io/en/latest/index.html">pairtools Documentatiom</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Funannotate</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PT_HOME</b>&nbsp; installation directory</li>
+    <li><b>PT_BIN</b>&nbsp; &nbsp; executables directory</li>
+    <li><b>PT_DATA</b>&nbsp; &nbsp; sample data directory</li>
+    <li><b>PT_TESTS</b>&nbsp; &nbsp; test scripts directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 --mem=30g -c4</b>
+[user@cn0861 ~]$ <b>module load pairtools </b>
+[+] Loading singularity  3.8.5-1  on cn4207
+[+] Loading pairtools  0.3.0
+</pre>
+<pre class="term">
+[user@biowulf]$ <b>python $PT_TESTS/test_dedup.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_filterbycov.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_flip.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_headerops.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_markasdup.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_merge.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_parse.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_select.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_sort.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_split.py </b>
+
+[user@biowulf]$ <b>python $PT_TESTS/test_stats.py </b>
+</pre>
+etc.
+
+<pre class="term">
+[user@cn0861 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

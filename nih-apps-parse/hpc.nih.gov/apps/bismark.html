@@ -1,0 +1,179 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bismark on Biowulf';</script>
+<div class="title">bismark on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+<p>Bismark is a program to map bisulfite treated sequencing reads to a genome of interest and perform methylation calls in a single step. The output can be easily imported into a genome viewer, such as SeqMonk, and enables a researcher to analyse the methylation levels of their samples straight away. It's main features are:
+
+<ul>
+<li>Bisulfite mapping and methylation calling in one single step                 </li> 
+<li>Supports single-end and paired-end read alignments                           </li> 
+<li>Supports ungapped and gapped alignments                                      </li> 
+<li>Alignment seed length, number of mismatches etc. are adjustable              </li> 
+<li>Output discriminates between cytosine methylation in CpG, CHG and CHH context</li>
+</ul>
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="http://bioinformatics.oxfordjournals.org/content/27/11/1571.short">Krueger, Felix, and Simon R. Andrews. "Bismark: a flexible aligner and methylation caller for Bisulfite-Seq applications." <i>Bioinformatics</i> 27.11 (2011): 1571-1572.</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+Bismark is extensively documented.  To read the help doc, type <tt>bismark --help</tt>.  See also:
+<ul>
+<li><a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/">Home page at Babraham Bioinformatics</a></li>
+<li><a href="https://github.com/FelixKrueger/Bismark">GitHub repository</a></li>
+<li><a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/Bismark_User_Guide.pdf">Bismark User Guide</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>bismark</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>BISMARK_HOME</tt></li>
+  </ul>
+<li>Example file: <tt>$BISMARK_HOME/test_data.fastq</tt>
+<li>Reference data in <tt>/fdb/bismark/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+ The first step in using Bismark is to prepare a genome using the bismark_genome_preparation command. This creates a subdirectory in the fasta file directory called Bisulfite_Genome. To prevent unnecessary data duplication, the human genome (hg19 and hg38) has been processed for use with the bowtie2 aligner. It resides under /fdb/bismark. If you would like other genomes to be prepared please contact staff@hpc.nih.gov.
+
+A fastq file with test data is provided by the authors. In this example a user copies this testfile along with X and Y chromosome data from the human genome to thier local space and runs though the basic analysis steps. (User input in bold)
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=6g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+
+[user@cn3144 ~]$ <b>bismark --help</b>
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+...
+</pre>
+<a href="/apps/bismark/bismark_help.html">Full output from the help command </a> <br>
+<P>
+<pre class="term">
+[user@cn3144 ~]$ <b>mkdir -p /data/$USER/bismark_test/XandY</b>
+[user@cn3144 ~]$ <b>cd /data/$USER/bismark_test</b>
+[user@cn3144 bismark_test]$ <b>cp /fdb/genome/human-feb2009/chrX.fa ./XandY</b>
+[user@cn3144 bismark_test]$ <b>cp /fdb/genome/human-feb2009/chrY.fa ./XandY</b>
+[user@cn3144 bismark_test]$ <b>cp $BISMARK_HOME/test_data.fastq .</b>
+[user@cn3144 bismark_test]$ <b>bismark_genome_preparation XandY</b>
+Writing bisulfite genomes out into a single MFA (multi FastA) file
+Bisulfite Genome Indexer version v0.16.0 (last modified 25 August 2015)
+Step I - Prepare genome folders - completed
+Total number of conversions performed:
+[....]
+</pre>
+<a href="/apps/bismark/bismark_prep_output.html">Full output from the prep command </a> <br>
+<P>
+<pre class="term">
+[user@cn3144 ~]$ <b>bismark XandY test_data.fastq</b>
+Path to Bowtie 2 specified as: bowtie2
+Output format is BAM (default)
+Alignments will be written out in BAM format. Samtools found here: '/usr/local/apps/samtools/1.3.1/bin/samtools'
+Reference genome folder provided is XandY/	(absolute path is '/spin1/users/user/bismark_test/XandY/)'
+FastQ format assumed (by default)
+Files to be analysed:
+test_data.fastq
+Library is assumed to be strand-specific (directional), alignments to strands complementary to the original top or bottom strands will be ignored (i.e. not performed!)
+...
+</pre>
+<a href="/apps/bismark/bismark_run_output.html">Full output from the run command </a> <br>
+<P>
+<pre class="term">
+[user@cn3144 bismark_test]$ <b>bismark_methylation_extractor test_data_bismark_bt2.bam</b>
+
+ *** Bismark methylation extractor version v0.16.0 ***
+
+Trying to determine the type of mapping from the SAM header line of file test_data_bismark_bt2.bam
+Treating file(s) as single-end data (as extracted from @PG line)
+
+Setting core usage to single-threaded (default). Consider using --multicore &ltint&gt to speed up the extraction process.
+
+Summarising Bismark methylation extractor parameters:
+===============================================================
+
+...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a href="/apps/bismark/bismark_extract_output.html">Full output from the extract command </a> <br>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bismark.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+# this file is called bismark.sh
+set -e
+
+module load bismark
+cd /data/$USER/bismark_test
+bismark_genome_preparation XandY
+bismark XandY test_data.fastq
+bismark_methylation_extractor test_data_bismark_bt2.bam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch bismark.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+One strategy for running a swarm of bismark jobs would be to set up multiple directories containing gene sequences.  Once you have done that, you can set up a swarm command file containing one line for each of your bismark runs. 
+<p>Sample swarm command file</p>
+<div class="term"><pre>
+# --------file myjobs.swarm----------
+bismark directory1 test_data.fastq
+bismark directory2 test_data.fastq
+bismark directory3 test_data.fastq
+....
+bismark directoryN test_data.fastq
+# -----------------------------------
+</pre></div>
+<p>Submit this set of runs to the batch system by typing</p>
+<div class="term"><pre>
+[user@biowulf ~]$ <b>swarm --module bismark -f myjobs.swarm</b>
+</pre></div>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

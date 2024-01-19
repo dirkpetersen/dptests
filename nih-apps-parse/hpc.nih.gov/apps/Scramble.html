@@ -1,0 +1,222 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Scramble: a tool for mobile element insertion detection';</script>
+<div class="title"><b>Scramble: a tool for mobile element insertion detection</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Scramble is a mobile element insertion (MEI) detection tool. It identifies clusters of soft clipped reads
+in a BAM file, builds consensus sequences, aligns to representative L1Ta, AluYa5, and SVA-E sequences, and
+outputs MEI calls.        
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Rebecca I. Torene, Kevin Galens, Shuxi Liu, Kevin Arvai, Carlos Borroto, Julie Scuffins, 
+Zhancheng Zhang, Bethany Friedman, Hana Sroka, Jennifer Heeley, Erin Beaver, Lorne Clarke, 
+Sarah Neil, Jagdeep Walia, Danna Hull, Jane Juusola, and Kyle Retterer.<br />
+<i>Mobile element insertion detection in 89,874 clinical exomes</i> <br />
+<a href="https://www.nature.com/articles/s41436-020-0749-x">Genetics in Medicine</a> (2020).
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/GeneDx/scramble">Scramble GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Scramble</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set 
+  <ul>
+    <li><b>SCRAMBLE_HOME</b>&nbsp; Scramble installation directory</li>
+    <li><b>SCRAMBLE_BIN</b>&nbsp; &nbsp; &nbsp; Scramble executable directory</li>
+    <li><b>SCRAMBLE_DATA</b>&nbsp; Scramble sample data directory</li>
+    <li>If you are using your own reference file make sure you generate <b>*.nhr</b>, <b>*.nin</b>, and <b>*.nsq</b> files using <b>makeblastd</b> as follows:<br> 
+        <i>module load load ncbi-toolkit<br>
+        makeblastdb -in file.fasta -input_type fasta -dbtype nucl</i></li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --mem=4g</b>
+salloc.exe: Pending job allocation 56730292
+salloc.exe: job 56730292 queued and waiting for resources
+salloc.exe: job 56730292 has been allocated resources
+salloc.exe: Granted job allocation 56730292
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3148 are ready for job
+[user@cn3148 ~]$ <b>module load Scramble </b>
+[+] Loading singularity  3.5.3  on cn3148
+[+] Loading Scramble 0.0.20190211.82c78b9  ...
+</pre>
+Copy sample data into your current directory:
+<pre class="term">
+[user@cn3148 ~]$ <b>cp $SCRAMBLE_DATA/* .</b>
+</pre>                    
+You can run Scramble in two different ways. <br /> <br />                                                  
+1) When you execute the <b>scramble </b>command without arguments, a new shell will be opened for you
+within a Singularity container:
+<pre class="term">
+[user@cn3148 ~]$ <b>scramble</b>
+Singularity&gt;
+</pre>
+Your environment will change and you will have access
+to a different set of commands and executables. For example, you can run the command:
+<pre class="term">
+Singularity&gt;  <b>Rscript --vanilla /app/cluster_analysis/bin/SCRAMble.R \
+                        --out-name ${PWD}/sample.mei.txt \
+                        --cluster-file ${PWD}/sample_cluster.txt \
+                        --install-dir /app/cluster_analysis/bin \
+                        --mei-refs /app/cluster_analysis/resources/MEI_consensus_seqs.fa \
+                        --ref /app/validation/test.fa \
+                        --eval-dels \
+                        --eval-meis \
+                        --no-vcf</b>
+
+Running sample: /gpfs/gsfs8/users/apptest2/SCRAMBLE_TEST/sample_cluster.txt 
+Running scramble with options:
+blastRef : /app/validation/test.fa 
+clusterFile : /gpfs/gsfs8/users/apptest2/SCRAMBLE_TEST/sample_cluster.txt 
+deletions : TRUE 
+indelScore : 80 
+INSTALL.DIR : /app/cluster_analysis/bin 
+mei.refs : /app/cluster_analysis/resources/MEI_consensus_seqs.fa 
+meis : TRUE 
+meiScore : 50 
+minDelLen : 50 
+nCluster : 5 
+no.vcf : TRUE 
+outFilePrefix : /gpfs/gsfs8/users/apptest2/SCRAMBLE_TEST/sample.mei.txt 
+pctAlign : 90 
+polyAdist : 100 
+polyAFrac : 0.75 
+Useful Functions Loaded
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which, which.max, which.min
+
+Loading required package: S4Vectors
+Loading required package: stats4
+
+Attaching package: ‘S4Vectors’
+
+The following object is masked from ‘package:base’:
+
+    expand.grid
+
+Loading required package: IRanges
+Loading required package: XVector
+
+Attaching package: ‘Biostrings’
+
+The following object is masked from ‘package:base’:
+
+    strsplit
+
+Done analyzing l1 
+Done analyzing sva 
+Done analyzing alu 
+Done analyzing l1 
+Done analyzing sva 
+Done analyzing alu 
+Sample had 0 MEI(s)
+Done analyzing MEIs
+532 clusters out of 927 were removed due to simple sequence
+Number of alignments meeting thresholds: 395 
+Number of best alignments: 0 
+[1] "Two-End-Deletions: Working on contig 1"
+[1] "Two-End-Deletions: Working on contig 10"
+[1] "Two-End-Deletions: Working on contig 11"
+[1] "Two-End-Deletions: Working on contig 12"
+[1] "Two-End-Deletions: Working on contig 13"
+[1] "Two-End-Deletions: Working on contig 14"
+[1] "Two-End-Deletions: Working on contig 15"
+[1] "Two-End-Deletions: Working on contig 16"
+[1] "Two-End-Deletions: Working on contig 17"
+[1] "Two-End-Deletions: Working on contig 18"
+[1] "Two-End-Deletions: Working on contig 19"
+[1] "Two-End-Deletions: Working on contig 2"
+[1] "Two-End-Deletions: Working on contig 20"
+[1] "Two-End-Deletions: Working on contig 22"
+[1] "Two-End-Deletions: Working on contig 3"
+[1] "Two-End-Deletions: Working on contig 4"
+[1] "Two-End-Deletions: Working on contig 5"
+[1] "Two-End-Deletions: Working on contig 6"
+[1] "Two-End-Deletions: Working on contig 7"
+[1] "Two-End-Deletions: Working on contig 8"
+[1] "Two-End-Deletions: Working on contig GL000220.1"
+[1] "Two-End-Deletions: Working on contig hs37d5"
+[1] "Two-End-Deletions: Working on contig X"
+[1] "finished one end dels"
+Sample had 0 deletions
+Done analyzing deletions
+Warning message:
+In predict.BLAST(bl, seq, BLAST_args = "-dust no") :
+  BLAST did not return a match!
+</pre>
+Please remember to exit this new shell when you are finished with your session. 
+<pre class="term">
+Singularity&gt; exit
+exit
+[user@cn3148]$
+</pre>
+<br />
+2) Alternatively, you can run the <b>Rscript</b> or other command(s) directly from the Linux shell, but in this case the command(s) must be preceded by <b>scramble</b>. For example:
+<pre class="term">
+[user@cn3148 ~]$ <b>scramble Rscript --vanilla /app/cluster_analysis/bin/SCRAMble.R \
+                        --out-name ${PWD}/sample.mei.txt \
+                        --cluster-file ${PWD}/sample_cluster.txt \
+                        --install-dir /app/cluster_analysis/bin \
+                        --mei-refs /app/cluster_analysis/resources/MEI_consensus_seqs.fa \
+                        --ref /app/validation/test.fa \
+                        --eval-dels \
+                        --eval-meis \
+                        --no-vcf</b>
+</pre>
+Exit the interactive shell:
+<pre class="term">
+[user@cn3148 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 49998864
+[user@biowulf ~]$ 
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

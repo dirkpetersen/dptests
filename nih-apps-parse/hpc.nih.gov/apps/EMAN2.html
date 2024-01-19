@@ -1,0 +1,204 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'EMAN2 on Biowulf';</script>
+<div class="title">EMAN2 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+EMAN2 is the successor to EMAN1. It is a broadly based greyscale scientific image processing suite with a primary focus on processing data from transmission electron microscopes. EMAN's original purpose was performing single particle reconstructions (3-D volumetric models from 2-D cryo-EM images) at the highest possible resolution, but the suite now also offers support for single particle cryo-ET, and tools useful in many other subdisciplines such as helical reconstruction, 2-D crystallography and whole-cell tomography. Image processing in a suite like EMAN differs from consumer image processing packages like Photoshop in that pixels in images are represented as floating-point numbers rather than small (8-16 bit) integers. In addition, image compression is avoided entirely, and there is a focus on quantitative analysis rather than qualitative image display.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+<li>
+G. Tang, L. Peng, P.R. Baldwin, D.S. Mann, W. Jiang, I. Rees & S.J. Ludtke.
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/16859925"><u><b>EMAN2: an extensible image processing suite for electron microscopy.</b></u></a>
+<em>J Struct Biol. 157, 38-46 (2007).</em>
+</li>
+
+<li>
+J.M. Bell, M. Chen, P.R. Baldwin & S.J. Ludtke. 
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/26931650"><u><b>High Resolution Single Particle Refinement in EMAN2.1.</b></u></a>
+<em>Methods. 100, 25-34 (2016).</em>
+</li>
+
+<li>
+Ludtke, S. J.
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/27572727"><u><b>Single-Particle Refinement and Variability Analysis in EMAN2.1.</b></u></a>
+<em>Methods Enzymol 579159-189 (Elsevier, United States, 2016).</em>
+</li>
+
+<li>
+J.G. Galaz-Montoya, C.W. Hecksel, P.R. Baldwin, E. Wang, S.C. Weaver, M.F. Schmid, S.J. Ludtke & W. Chiu.
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/27016284"><u><b>Alignment algorithms and per-particle CTF correction for single particle cryo-electron tomography.</b></u></a>
+<em>J Struct Biol. 194, 383-394 (2016).</em>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://blake.bcm.edu/emanwiki/EMAN2">EMAN2 main page</a></li>
+  <li><a href="http://blake.bcm.edu/emanwiki/EMAN2/Parallel">Parallel Processing in EMAN2</a></li>
+  <li><a href="http://blake.bcm.edu/emanwiki/EMAN2/Tutorials">Tutorials</a></li>
+  <li><a href="http://sparx-em.org/sparxwiki/SparxWiki">Sparx Wiki</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>EMAN2</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/Singlethreaded/MPI
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>EMAN2_HOME</tt></li>
+    <li><tt>EMAN2_EXAMPLES</tt></li>
+    <li><tt>LD_LIBRARY_PATH</tt></li>
+    <li><tt>LIBGL_ALWAYS_INDIRECT</tt></li>
+  </ul>
+<li>Example files in <tt>$EMAN2_EXAMPLES, /fdb/app_data/cryoem/EMAN2</tt>
+</ul>
+<P>
+
+<p class="alert">This application requires an <a href="/docs/connect.html">X-Windows connection</a>.  It is known that XQuartz (v2.7.x) is incompatible with EMAN2.  Users are encouraged to use <a href="https://hpc.nih.gov/docs/nx.html">NX or FastX</a> as their X11 servers.</p>
+
+<div class="subheading">Running on GPUs</div>
+<p>EMAN2 can utilize GPUs to accelerate certain tasks.</p>  
+<pre class="term">[user@biowulf]$ sinteractive --gres=gpu:p100:1 ...
+...
+[user@node]$ module load EMAN2</pre>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[node]$ module load EMAN2
+[node]$ e2projectmanager.py</pre>
+
+<div><center><img src="EMAN2/EMAN2_top.png" border=1 alt="project manager GUI" /></div>
+
+<pre class="term">[node]$ e2display.py my_image.hdf</pre>
+
+<div><center><img src="EMAN2/EMAN2_particle.png" border=1 alt="particle" /></div>
+
+<pre class="term">[node]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. EMAN2.sh). For example:</p>
+
+<pre class="term">#!/bin/bash
+# set the environment properly
+module load EMAN2
+
+# always a good practice
+export TMPDIR=/lscratch/${SLURM_JOB_ID}
+
+# Run refinement.  Make sure to replace the input, output, and reference files,
+# as well as any options needed.  This command is designed to run on 32 cpus
+# threads each and storing temporary files in /lscratch/$SLURM_JOBID.
+
+e2refine.py \
+  --parallel=thread:<b>${SLURM_CPUS_PER_TASK:=1}:/lscratch/${SLURM_JOB_ID}</b> \
+  --input=bdb:sets#set2-allgood_phase_flipped-hp \
+  --mass=1200.0 \
+  --apix=2.9 \
+  --automask3d=0.7,24,9,9,24 \
+  --iter=1 \
+  --sym=c1 \
+  --model=bdb:refine_02#threed_filt_05 \
+  --path=refine_sge \
+  --orientgen=eman:delta=3:inc_mirror=0 \
+  --projector=standard \
+  --simcmp=frc:snrweight=1:zeromask=1 \
+  --simalign=rotate_translate_flip \
+  --simaligncmp=ccc \
+  --simralign=refine \
+  --simraligncmp=frc:snrweight=1 \
+  --twostage=2 \
+  --classcmp=frc:snrweight=1:zeromask=1 \
+  --classalign=rotate_translate_flip \
+  --classaligncmp=ccc \
+  --classralign=refine \
+  --classraligncmp=frc:snrweight=1 \
+  --classiter=1 \
+  --classkeep=1.5 \
+  --classnormproc=normalize.edgemean \
+  --classaverager=ctf.auto \
+  --sep=5 \
+  --m3diter=2 \
+  --m3dkeep=0.9 \
+  --recon=fourier \
+  --m3dpreprocess=normalize.edgemean \
+  --m3dpostprocess=filter.lowpass.gauss:cutoff_freq=.1 \
+  --pad=256 \
+  --lowmem \
+  --classkeepsig \
+  --classrefsf \
+  --m3dsetsf -v 2
+
+e2bdb.py -cF
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] EMAN2.sh</pre>
+
+<p class="alert">EMAN2 can be run in parallel using MPI instead of multithreading.  This is inherently <b><em>less efficient</em></b> than running multithreaded.  However, it can increase the performance of EMAN2 if run on multiple nodes, especially if you have a ridiculously huge number of images or particles (&gt; 500K).</p>
+
+<p>Here is an example of an MPI job (e.g. <b>EMAN2.sh</b>):</p>
+<pre class="term">
+module load EMAN2
+
+# always a good practice
+export TMPDIR=/lscratch/${SLURM_JOB_ID}
+
+# Here is the command
+e2refine_easy.py --input=starting.lst \
+  --model=starting_models/model.hdf \
+  --targetres=8.0 --speed=5 --sym=c1 \
+  --tophat=local --mass=500.0 --apix=0.86 \
+  --classkeep=0.5 --classautomask --prethreshold --m3dkeep=0.7 \
+  --parallel=mpi:<b>${SLURM_NTASKS:=1}:/lscratch/${SLURM_JOB_ID}</b> \
+  --threads <b>${SLURM_CPUS_PER_TASK:=1}</b> \
+  --automaskexpand=-1 --ampcorrect=auto
+
+e2bdb.py -cF
+</pre>
+
+<ul>
+  <li>The number of MPI tasks is automatically set to the value of <b><tt>$SLURM_NTASKS</tt></b>, with a default value of 1.</li>
+  <li>The number of threads is automatically set to the value of <b><tt>$SLURM_CPUS_PER_TASK</tt></b>, with a default value of 1.</li>
+</ul>
+
+<p>Then submit, using the proper partition and allocating matching resources:</p>
+
+<pre class="term">$ sbatch --partition=multinode --cpus-per-task=<b>1</b> --ntasks=<b>512</b> --gres=<b>lscratch</b>:100 --mem-per-cpu=4g --time=1-00:00:00 <b>EMAN2.sh</b></pre>
+
+<p class="alert">MPI parallelization in EMAN2 is limited to no more than <b>1024 MPI tasks</b>.</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

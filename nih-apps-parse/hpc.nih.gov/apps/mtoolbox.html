@@ -1,0 +1,111 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MToolBox on Biowulf';</script>
+<div class="title">MToolBox on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MToolBox is a highly automated bioinformatics pipeline to reconstruct and analyze human mitochondrial DNA from high throughput sequencing data. It includes an updated computational strategy to assemble mitochondrial genomes from whole exome and/or genome sequencing and an improved fragment-classify tool for haplogroup assignment, functional and prioritization analysis of mitochondrial variants. It also provides pathogenicity scores, profiles of genome variability and disease-associations for mitochondrial variants and a Variant Call Format file featuring allele-specific heteroplasmy.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Calabrese C, Simone D, Diroma MA, Santorsola M, Gutt C, Gasparre G, Picardi E, Pesole G, Attimonelli M. MToolBox: a highly automated pipeline for heteroplasmy annotation and prioritization analysis of human mitochondrial variants in high-throughput sequencing. Bioinformatics. 2014 Jul 14. PMID: 25028726</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/mitoNGS/MToolBox">MToolBox Web Site</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>mtoolbox</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<!--
+<li>Multithreaded/singlethreaded/MPI...
+<li>Environment variables set <!--for ones users should be aware of --
+  <ul>
+    <li><tt>TEMPLATE_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>???</tt>
+<li>Reference data in <tt>/fdb/TEMPLATE/</tt>
+-->
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load mtoolbox</b>
+[user@cn3144 ~]$ <b>cd /path/to/mtoolbox/input/dir</b>
+[user@cn3144 ~]$ <b>MToolbox.sh -i <i>input file</i> </b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mtoolbox.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load mtoolbox
+cd <i>MToolbox/input/files/dir</i>
+MToolBox.sh -i fastq -I -M -r RCRS
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] mtoolbox.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mtoolbox.swarm). For example:</p>
+
+<pre class="term">
+cd /MToolbox/input/dir1 && MToolbox.sh -i &lt;input_format&gt; -r &lt;reference_sequence&gt; -m "&lt;mapExome_options&gt;" -a "&lt;assembleMTgenome_options&gt;" -c "&lt;mt-classifier_options&gt;"
+cd /MToolbox/input/dir2 && Mtoolbox.sh -i &lt;input_format&gt; -r &lt;reference_sequence&gt; -m "&lt;mapExome_options&gt;" -a "&lt;assembleMTgenome_options&gt;" -c "&lt;mt-classifier_options&gt;"
+cd /MToolbox/input/dir3 && MToolbox.sh -i &lt;input_format&gt; -r &lt;reference_sequence&gt; -m "&lt;mapExome_options&gt;" -a "&lt;assembleMTgenome_options&gt;" -c "&lt;mt-classifier_options&gt;"
+cd /MToolbox/input/dir4 && MToolbox.sh -i &lt;input_format&gt; -r &lt;reference_sequence&gt; -m "&lt;mapExome_options&gt;" -a "&lt;assembleMTgenome_options&gt;" -c "&lt;mt-classifier_options&gt;"
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mtoolbox.swarm [-g #] [-t #] --module mtoolbox</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module mtoolbox</tt> <td>Loads the MToolBox module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

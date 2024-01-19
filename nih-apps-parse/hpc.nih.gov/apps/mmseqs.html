@@ -1,0 +1,191 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mmseqs on Biowulf';</script>
+<div class="title">mmseqs on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+From the Documentation:
+</p>
+<blockquote>
+    MMseqs2 (Many-against-Many sequence searching) is a software suite to search and cluster huge protein and nucleotide sequence sets. MMseqs2 is open source GPL-licensed software implemented in C++ for Linux, MacOS, and (as beta version, via cygwin) Windows. The software is designed to run on multiple cores and servers and exhibits very good scalability. MMseqs2 can run 10000 times faster than BLAST. At 100 times its speed it achieves almost the same sensitivity. It can perform profile searches with the same sensitivity as PSI-BLAST at over 400 times its speed.</blockquote>
+
+
+<h3>References:</h3>
+<ul>
+    <li>Steinegger M and Soeding J. <em>MMseqs2 enables sensitive protein sequence searching for the analysis of massive data sets.</em> Nature Biotechnology 2017, doi: 10.1038/nbt.3988. <a href="https://pubmed.ncbi.nlm.nih.gov/29035372/">PubMed</a>&nbsp;|&nbsp;<a href="https://www.nature.com/articles/nbt.3988">Journal</a></li>
+    <li>Steinegger M and Soeding J. <em>Clustering huge protein sequence sets in linear time.</em> Nature Communications 2018, doi: 10.1038/s41467-018-04964-5. <a href="https://pubmed.ncbi.nlm.nih.gov/29959318/">PubMed</a>&nbsp;|&nbsp;<a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6026198/">PMC</a>&nbsp;|&nbsp;<a href="https://www.nature.com/articles/s41467-018-04964-5">Journal</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/soedinglab/MMseqs2">mmseqs on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: mmseqs (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>mmseqs is multithreaded. Please match the number of threads with the number of allocated CPUs</li>
+    <li>Example files in <code>$MMSEQS_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> to follow the mmseqs metagenomic pathogen
+detection tutorial. Note that for larger databases you would want more memory.</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 -c2 --mem=6g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load mmseqs</b>
+[user@cn3144]$ <b>cp ${MMSEQS_TEST_DATA:-none}/* .</b>
+</pre>
+<p> Create a taxonomically annotated sequence database from a subset of uniprot</p>
+
+<pre class="term">
+[user@cn3144]$ <b>gunzip uniprot_sprot_2018_03_mapping.tsv.gz</b>
+[user@cn3144]$ <b>mmseqs createdb uniprot_sprot_2018_03.fasta.gz uniprot_sprot</b>
+createdb uniprot_sprot_2018_03.fasta.gz uniprot_sprot
+
+MMseqs Version:         aabc78c298f35cbc7a4136206c1a83adaa68695f
+Database type           0
+Shuffle input database  true
+Createdb mode           0
+Write lookup file       1
+Offset of numeric ids   0
+Compressed              0
+Verbosity               3
+
+Converting sequences
+[556915] 2s 838ms
+Time for merging to uniprot_sprot_h: 0h 0m 0s 174ms
+Time for merging to uniprot_sprot: 0h 0m 0s 358ms
+Database type: Aminoacid
+Time for processing: 0h 0m 4s 278ms
+
+[user@cn3144]$ <b>mmseqs createtaxdb uniprot_sprot tmp --tax-mapping-file uniprot_sprot_2018_03_mapping.tsv</b>
+Create directory tmp
+createtaxdb uniprot_sprot tmp --tax-mapping-file uniprot_sprot_2018_03_mapping.tsv
+
+MMseqs Version:         aabc78c298f35cbc7a4136206c1a83adaa68695f
+NCBI tax dump directory
+Taxonomy mapping file   uniprot_sprot_2018_03_mapping.tsv
+Taxonomy mapping mode   0
+Taxonomy db mode        1
+Threads                 72
+Verbosity               3
+
+Download taxdump.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 56.1M  100 56.1M    0     0   128M      0 --:--:-- --:--:-- --:--:--  129M
+Loading nodes file ... Done, got 2442778 nodes
+Loading merged file ... Done, added 68544 merged nodes.
+Loading names file ... Done
+Init RMQ ...Done
+
+</pre>
+
+<p>Similarity search to transfer taxonomic information to the unknown reads</p>
+<pre class="term">
+[user@cn3144]$ <b>mmseqs createdb mystery_reads.fasta reads</b>
+createdb mystery_reads.fasta reads
+
+MMseqs Version:         aabc78c298f35cbc7a4136206c1a83adaa68695f
+Database type           0
+Shuffle input database  true
+Createdb mode           0
+Write lookup file       1
+Offset of numeric ids   0
+Compressed              0
+Verbosity               3
+
+Converting sequences
+[410667] 0s 417ms
+Time for merging to reads_h: 0h 0m 0s 57ms
+Time for merging to reads: 0h 0m 0s 114ms
+Database type: Nucleotide
+Time for processing: 0h 0m 1s 111ms
+
+[user@cn3144]$ <b>mmseqs taxonomy reads uniprot_sprot lca_result tmp -s 2</b>
+taxonomy reads uniprot_sprot lca_result tmp -s 2
+
+MMseqs Version:                         aabc78c298f35cbc7a4136206c1a83adaa68695f
+ORF filter                              1
+ORF filter e-value                      100
+ORF filter sensitivity                  2
+LCA mode                                3
+[...snip...]
+[user@cn3144]$ <b>mmseqs createtsv reads lca_result lca.tsv</b> # convert results to readable .tsv file
+[user@cn3144]$ <b>mmseqs taxonomyreport uniprot_sprot lca_result report.txt</b> # create a summary report
+[user@cn3144]$ <b>head report.txt</b>
+1.7143  278     278     no rank 0       unclassified
+98.2857 15939   8       no rank 1       root
+88.6909 14383   254     no rank 131567    cellular organisms
+79.9346 12963   335     superkingdom    2           Bacteria
+73.8793 11981   607     phylum  1224          Proteobacteria
+49.3741 8007    208     class   28216           Betaproteobacteria
+46.7287 7578    452     order   80840             Burkholderiales
+40.6857 6598    593     family  119060              Burkholderiaceae
+31.4916 5107    893     genus   48736                 Ralstonia
+16.0449 2602    1       species 305                     Ralstonia solanacearum
+
+[user@cn3144]$ <b>mmseqs taxonomyreport uniprot_sprot lca_result report.html --report-mode 1</b> # krona plot
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mmseqs.sh), which uses the input file 'mmseqs.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load mmseqs/2-13-45111-219-gaabc78c
+cd /lscratch/$SLURM_JOB_ID
+module load mmseqs
+cp ${MMSEQS_TEST_DATA:-none}/* .
+gunzip uniprot_sprot_2018_03_mapping.tsv.gz
+mmseqs createdb uniprot_sprot_2018_03.fasta.gz uniprot_sprot
+mmseqs createtaxdb uniprot_sprot tmp --tax-mapping-file uniprot_sprot_2018_03_mapping.tsv
+mmseqs createdb mystery_reads.fasta reads
+mmseqs taxonomy reads uniprot_sprot lca_result tmp -s 2
+mmseqs createtsv reads lca_result lca.tsv
+mmseqs taxonomyreport uniprot_sprot lca_result report.txt
+mmseqs taxonomyreport uniprot_sprot lca_result report.html --report-mode 1
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=6g mmseqs.sh</pre>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

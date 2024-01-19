@@ -1,0 +1,122 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'angsd on Biowulf';</script>
+<div class="title">angsd on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+ ANGSD is a software for analyzing next generation sequencing data. The software can handle a number of different input types from mapped reads to imputed genotype probabilities. Most methods take genotype uncertainty into account instead of basing the analysis on called genotypes. This is especially useful for low and medium depth data. The software is written in C++ and has been used on large sample sizes. </p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.popgen.dk/angsd/index.php/ANGSD">angsd Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>angsd</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded app
+<li>$ANGSD_TESTDATA enviornment variable for example files
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>mkdir angsd && cd angsd</b>
+
+[user@cn3144 ~]$ <b>module load angsd</b>
+
+[user@cn3144 ~]$ <b>cp $ANGSD_TESTDATA/* .</b>
+
+[user@cn3144 ~]$ <b>tar xf bams.tar.gz </b>
+
+[user@cn3144 ~]$ <b>for i in bams/*.bam;do samtools index $i;done</b>
+
+[user@cn3144 ~]$ <b>ls bams/*.bam > bam.filelist</b>
+
+[user@cn3144 ~]$ <b>angsd -b bam.filelist -GL 1 -doMajorMinor 1 -doMaf 2 -P 5</b>
+  -> angsd version: 0.929 (htslib: 1.9-118-g2da4c7d-dirty) build(Feb 22 2019 11:59:23)
+  -> No '-out' argument given, output files will be called 'angsdput'
+[bammer_main] 10 samples in 10 input files
+  -> Parsing 10 number of samples 
+  -> Printing at chr: 20 pos:14078459 chunknumber 3400 contains 584 sites
+  -> Done reading data waiting for calculations to finish
+  -> Done waiting for threads
+  -> Output filenames:
+    ->"angsdput.arg"
+    ->"angsdput.mafs.gz"
+  -> Fri Feb 22 13:19:44 2019
+  -> Arguments and parameters for all analysis are located in .arg file
+  -> Total number of sites analyzed: 1702624
+  -> Number of sites retained after filtering: 1702593 
+  [ALL done] cpu-time used =  163.22 sec
+  [ALL done] walltime used =  56.00 sec
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. angsd.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load angsd
+angsd -b bam.filelist -GL 1 -doMajorMinor 1 -doMaf 2 -P 5
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=10g angsd.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. angsd.swarm). For example:</p>
+
+<pre class="term">
+angsd -b bam.filelist1 -out out1 -GL 1 -doMajorMinor 1 -doMaf 2 -P 5
+angsd -b bam.filelist2 -out out2 -GL 1 -doMajorMinor 1 -doMaf 2 -P 5
+angsd -b bam.filelist3 -out out3 -GL 1 -doMajorMinor 1 -doMaf 2 -P 5
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f angsd.swarm -g 10 --module angsd</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module angsd</tt> <td>Loads the angsd module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

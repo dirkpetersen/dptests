@@ -1,0 +1,177 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Phylip on Biowulf';</script>
+<div class="title">Phylip on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+PHYLIP (PHYlogeny Inference Package) is a package of programs for inferring phylogenies (evolutionary trees). Methods that are available in the package include parsimony, distance matrix, and likelihood methods, including bootstrapping and consensus trees. Data types that can be handled include molecular sequences, gene frequencies, restriction sites and fragments, distance matrices, and discrete characters.</p>
+
+<p>
+PHYLIP is a single-threaded program, and is intended to be used interactively on helix. The PHYLIP package consists of a large number of individual programs. They are installed in /usr/local/phylip/exe. <a href="http://evolution.genetics.washington.edu/phylip/programs.html">List of PHYLIP programs.</a>
+</p>
+
+
+<h3>References:</h3>
+<ul>
+<li><a href="http://koti.mbnet.fi/tuimala/oppaat/phylip2.pdf">A primer to phylogenetic analysis using PHYLIP</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://evolution.genetics.washington.edu/phylip.html">Phylip Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>phylip</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded (Interactive)
+<li>Example files in <tt>/usr/local/apps/phylip/example</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>cp -r /usr/local/apps/phylip/example .</b>
+
+[user@cn3144 ~]$ <b>cd example</b>
+
+[user@cn3144 ~]$ <b>module load phylip</b>
+
+[user@cn3144 ~]$ <b>dnapars</b>
+dnapars: can't find input file "infile"
+Please enter a new file name> seq
+
+DNA parsimony algorithm, version 3.65
+
+Setting for this run:
+  U                 Search for best tree?  Yes
+  S                        Search option?  More thorough search
+  V              Number of trees to save?  10000
+  J   Randomize input order of sequences?  No. Use input order
+  O                        Outgroup root?  No, use as outgroup species  1
+  T              Use Threshold parsimony?  No, use ordinary parsimony
+  N           Use Transversion parsimony?  No, count all steps
+  W                       Sites weighted?  No
+  M           Analyze multiple data sets?  No
+  I          Input sequences interleaved?  Yes
+  0   Terminal type (IBM PC, ANSI, none)?  ANSI
+  1    Print out the data at start of run  No
+  2  Print indications of progress of run  Yes
+  3                        Print out tree  Yes
+  4          Print out steps in each site  No
+  5  Print sequences at all nodes of tree  No
+  6       Write out trees onto tree file?  Yes
+
+  Y to accept these or type the letter for one to change
+Y
+Adding species:
+   1. Archaeopt 
+   2. Hesperorni
+   3. Baluchithe
+   4. B. virgini
+   5. Brontosaur
+   6. B.subtilis
+
+Doing global rearrangements on all trees tied for best
+  !-----------!
+   ...........
+   ...........
+
+Collapsing best trees
+Output written to file "outfile"
+Tree also written onto file "outtree"
+Done.
+
+[user@cn3144 ~]$ <b>cat outfile</b>
+
+
+DNA parsimony algorithm, version 3.65
+
+One most parsimonious tree found:
+
+                +---------------B.subtilis
+  +-------------4  
+  |             +----------Brontosaur
+  |  
+  |                      +-B. virgini
+  |        +-------------3  
+  1--------2             +------Baluchithe
+  |        |  
+  |        +-----------Hesperorni
+  |  
+  +-----------Archaeopt 
+
+requires a total of     21.000
+
+  between      and       length
+  -------      ---       ------
+     1           4       0.230769
+     4      B.subtilis   0.269231
+     4      Brontosaur   0.192308
+     1           2       0.153846
+     2           3       0.230769
+     3      B. virgini   0.038462
+     3      Baluchithe   0.115385
+     2      Hesperorni   0.192308
+     1      Archaeopt    0.192308
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. phylip.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+cd /data/$USER/somedir
+
+module load phylip/3.696
+
+dnaml << EOF
+sequences.dat
+Y
+EOF
+</pre>
+
+<P>
+Basically, you need to provide Phylip with the same input that it would expect if you ran the program interactively. You can include the parameters directly in the batch script, as in the example above. Or you can  put these parameters 
+into a file (e.g. 'phylip_input') and include:
+<pre class="term">
+dnaml &lt; phylip_input &gt; output
+</pre>
+in your batch script. 
+</P>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] phylip.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

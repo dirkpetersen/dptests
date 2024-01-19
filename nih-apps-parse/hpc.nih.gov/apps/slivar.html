@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "slivar";</script>
+
+<div class="title">slivar on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+    slivar is a set of command-line tools that enables rapid querying and filtering of VCF files. It facilitates operations on trios and groups and allows arbitrary expressions using simple javascript.
+</p>
+
+<p>
+    use cases for slivar:
+    <ul>
+	<li>annotate variants with gnomad allele frequencies from combined exomes + whole genomes at > 30K variants/second using only a 1.5GB compressed annotation file.</li>
+	<li>call denovo variants with a simple expression that uses mom, dad, kid labels that is applied to each trio in a cohort (as inferred from a pedigree file). <tt>kid.het && mom.hom_ref && dad.hom_ref && kid.DP > 10 && mom.DP > 10 && dad.DP > 10</tt></li>
+	<li>define and filter on arbitrary groups with labels. For example, 7 sets of samples each with 1 normal and 3 tumor time-points: <tt>normal.AD[0] = 0 && tumor1.AB  < tumor2.AB && tumor2.AB < tumor3.AB</tt></li>
+	<li>filter variants with simple expressions: <tt>variant.call_rate > 0.9 && variant.FILTER == "PASS" && INFO.AC < 22 && variant.num_hom_alt == 0</tt></li>
+	<li>see <a href="https://github.com/brentp/slivar/wiki/rare-disease">using slivar for rare disease research</a></li>
+    </ul>
+</p>
+
+<h3>References:</h3>
+<ul>
+
+    <li>
+	Pedersen, B.S., Brown, J.M., Dashnow, H. et al.
+	<a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>Effective variant filtering and expected candidate variant yield in studies of rare human disease.</u></b></a>
+	<em> npj Genom. Med. 6, 60 (2021).</em>
+	<a href="https://doi.org/10.1038/s41525-021-00227-3">doi:10.1038/s41525-021-00227-3</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/brentp/slivar/wiki">slivar wiki</a></li>
+    <li><a href="https://github.com/brentp/slivar">slivar on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>slivar</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>For multithreaded application of the <tt>expr</tt> subcommand only, use <a href="https://github.com/brentp/slivar/wiki/parallel-slivar"><tt>pslivar</tt></a>.
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>SLIVAR_HOME</tt></li>
+  </ul>
+  <li>Developer's provided javascript expressions in <tt>$SLIVAR_HOME/js</tt></li>
+  <li>Example files in <tt>$SLIVAR_HOME/tests</tt></li>
+<li>Reference data (pregenerated gnotation files) in <tt>/fdb/slivar/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load slivar</b>
+
+[user@cn3144 ~]$ <b>slivar expr \
+    --js $SLIVAR_HOME/js/slivar-functions.js \
+    -g /fdb/slivar/gnomad.hg38.genomes.v3.fix.zip \
+    --vcf $SLIVAR_HOME/tests/ashk-trio.vcf.gz \
+    --ped $SLIVAR_HOME/tests/ashk-trio.ped \
+    --info "INFO.gnomad_popmax_af < 0.01 && variant.FILTER == 'PASS'" \
+    --trio "example_denovo:denovo(kid, dad, mom)" \
+    --family-expr "denovo:fam.every(segregating_denovo)" \
+    --trio "custom:kid.het && mom.het && dad.het && kid.GQ > 20 && mom.GQ > 20 && dad.GQ > 20"  \
+    --pass-only \
+    -o ashk-trio.slivar.vcf</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. slivar.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load slivar
+slivar expr \
+  --js $SLIVAR_HOME/js/slivar-functions.js \
+  -g /fdb/slivar/gnomad.hg38.genomes.v3.fix.zip \
+  --vcf $SLIVAR_HOME/tests/ashk-trio.vcf.gz \
+  --ped $SLIVAR_HOME/tests/ashk-trio.ped \
+  --info "INFO.gnomad_popmax_af < 0.01 && variant.FILTER == 'PASS'" \
+  --trio "example_denovo:denovo(kid, dad, mom)" \
+  --family-expr "denovo:fam.every(segregating_denovo)" \
+  --trio "custom:kid.het && mom.het && dad.het && kid.GQ > 20 && mom.GQ > 20 && dad.GQ > 20"  \
+  --pass-only \
+  -o ashk-trio.slivar.vcf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] slivar.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. slivar.swarm). For example:</p>
+
+<pre class="term">
+slivar expr --js $SLIVAR_HOME/js/slivar-functions.js -g /fdb/slivar/gnomad.hg38.genomes.v3.fix.zip --vcf sample1.vcf --ped sample1.ped -o sample1.slivar.vcf ...
+slivar expr --js $SLIVAR_HOME/js/slivar-functions.js -g /fdb/slivar/gnomad.hg38.genomes.v3.fix.zip --vcf sample2.vcf --ped sample2.ped -o sample2.slivar.vcf ...
+slivar expr --js $SLIVAR_HOME/js/slivar-functions.js -g /fdb/slivar/gnomad.hg38.genomes.v3.fix.zip --vcf sample3.vcf --ped sample3.ped -o sample3.slivar.vcf ...
+slivar expr --js $SLIVAR_HOME/js/slivar-functions.js -g /fdb/slivar/gnomad.hg38.genomes.v3.fix.zip --vcf sample4.vcf --ped sample4.ped -o sample4.slivar.vcf ...
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f slivar.swarm [-g #] [-t #] --module slivar</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module slivar</tt> <td>Loads the slivar module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,106 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'alleleCount on Biowulf';</script>
+<div class="title">alleleCount on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+AlleleCount provides support code for NGS copy number algorithms. It exists primarily to prevent code duplication between some other projects, specifically AscatNGS and Battenburg.
+The project contains 2 equivalent implementations of allele counting code in perl and C for BAM/CRAM processing.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/cancerit/alleleCount">alleleCount website</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>alleleCount</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Singletheaded</li>
+<li>Environment variable set, <tt>$ALLELECOUNT_TEST_DATA</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load alleleCount</b>
+
+[user@cn3144 ~]$ <b>cp $ALLELECOUNT_TEST_DATA/loci_22.txt .</b>
+
+[user@cn3144 ~]$ <b>cp $ALLELECOUNT_TEST_DATA/test.bam* .</b>
+
+[user@cn3144 ~]$ <b>alleleCounter -l loci_22.txt -b test.bam -o test.out</b>
+Reading locis
+Done reading locis
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. alleleCount.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+cd /data/$USER/mydir
+module load alleleCount
+alleleCounter -l loci.txt -b input.bam -o output.txt
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--mem=#] alleleCount.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. alleleCount.swarm). For example:</p>
+
+<pre class="term">
+alleleCounter -l loci1.txt -b input.bam -o output1.txt
+alleleCounter -l loci2.txt -b input.bam -o output2.txt
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f alleleCount.swarm [-g #] --module alleleCount</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module alleleCount</tt> <td>Loads the alleleCount module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

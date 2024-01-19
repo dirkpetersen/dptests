@@ -1,0 +1,313 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Blat on Biowulf';</script>
+<div class="title">Blat on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+	<div class="tocItem"><a href="#easyblat">Easyblat</a></div>
+	<div class="tocItem"><a href="#webblat">Replicating webblat</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+BLAT is a DNA/Protein Sequence Analysis program written by Jim Kent at UCSC.
+It is designed to quickly find sequences of 95% and greater similarity of
+length 40 bases or more. It may miss more divergent or shorter sequence
+alignments. It will find perfect sequence matches of 33 bases, and sometimes
+find them down to 22 bases. BLAT on proteins finds sequences of 80% and greater
+similarity of length 20 amino acids or more. In practice DNA BLAT works well on
+primates, and protein blat on land vertebrates.
+</p>
+
+<a Name="doc"></a><div class="heading">References & Documentation</div>
+<ul>
+<li><a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC187518/">the BLAT paper</a></li>
+<li><a href="http://www.cse.ucsc.edu/~kent/">Jim Kent's website</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>blat</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Blat is singlethreaded. 
+<li>Several genomes are available in /fdb/igenomes, and additional fasta-format databases available in /fdb/fastadb. 
+See <a href="/refdb">here for a list</a>.
+</ul>
+<P>
+<a class="navbar-safe-anchor" Name="easyblat"></a><div class="heading">Easyblat on Biowulf</div>
+<P>
+<div class="nudgeblock"><a href="/docs/userguide.html#easyblat">Easyblat</a> is a convenient command-line interface for running Blat on a large number of query sequences.</div>
+
+Put all
+your query sequences into a directory, and then type 'easyblat' at the Biowulf
+prompt. You will be prompted for all required parameters.
+<P>
+In the example below, blat parameters are set to display only perfect matches (minIdentity=100) . User input in bold.
+<div class="term"><pre>
+[user@biowulf]$ <b>easyblat</b>
+
+EasyBlat: BLAT wrapper for large numbers of sequences on Biowulf
+Enter the directory containing your input sequences > <b>/data/$USER/project/myseqs</b>
+Enter the directory where you want your blat output to go > <b>/data/$USER/project/out</b>
+
+The following genomes are available:
+0  -  Bos_taurus
+1  -  Caenorhabditis_elegans
+2  -  Canis_familiaris
+3  -  Danio_rerio
+4  -  Drosophila_melanogaster
+5  -  Gallus_gallus
+6  -  Homo_sapiens
+7  -  Mus_musculus
+8  -  Pan_troglodytes
+9  -  Rattus_norvegicus
+10  -  Saccharomyces_cerevisiae
+11  -  Sus_scrofa
+Enter number  from above (e.g. 7) or full path to custom db (e.g /data/$USER/mygenome.fas)
+Database to run against > <b>6</b>
+Versions available for Homo_sapiens:
+hg18
+hg19
+hg38
+Enter version of Homo_sapiens genome from above:
+Homo_sapiens version:  > <b>hg38</b>
+Additional blat parameters (e.g. -q type -stepSize=# -minMatch=#) > <b>-minIdentity=100</b>
+
+By default, easyblat will allocate 100GB of memory on each node.
+Some jobs may require additional memory.
+Enter a memory allocation in GB, or leave blank to accept the default >
+
+Local disk scratch space allocation default allocation is 380 GB.
+Some jobs may require additional scratch space.
+Enter a scratch space allocation in GB, or leave blank to accept the default >
+
+
+Date                : 26 Feb 2020 17:05:04
+Blat version        : 3.5
+Query directory     : /data/$USER/project/myseqs
+Fasta files         : 10
+Output directory    : /data/$USER/project/out
+blat db             : /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa
+blat db size        : 3.0GiB
+blat options        :  -minIdentity=100
+memory allocation   : 100GiB
+lscratch allocation : 380GiB
+# jobs              : 1
+fasta files per job : 11
+
+---------------------- Easyblat - normal mode --------------------------
+/usr/local/bin/swarm  --logdir=/data/$USER/project/out/swarm_logs --silent -f /data/$USER/project/out/scripts/swarmfile -t 32 -g 50 --time=8:00:00 --job-name Eblat-26Feb2020-1704 --gres=lscratch:380
+Job 49812161 has been submitted.</pre></div>
+<P>
+<div class="subheading"><b><u>One-line Easyblat</u></b></div>
+<P>
+Easyblat options can also be provided on the command-line. Note that all options must be provided, else easyblat will prompt for the missing options.
+<pre class="term">
+[user@biowulf ]$ <b>easyblat -q /data/$USER/100n -o /data/$USER/out \
+      -d /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa \
+      --blatopts="-minIdentity=100"  -m 80 -l 300</b>
+
+EasyBlat: BLAT wrapper for large numbers of sequences on Biowulf
+
+Date                : 27 Feb 2020 11:29:19
+Blat version        : 3.5
+Query directory     : /data/$USER/100n
+Fasta files         : 100
+Output directory    : /data/$USER/out
+blat db             : /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa
+blat db size        : 2.9GiB
+blat options        :  -minIdentity=100
+memory allocation   : 80GiB
+lscratch allocation : 300GiB
+# jobs              : 1
+fasta files per job : 101
+
+---------------------- Easyblat - normal mode --------------------------
+/usr/local/bin/swarm  --logdir=/data/$USER/out/swarm_logs --silent -f /data/$USER/out/scripts/swarmfile -t 32 -g 80 --time=8:00:00 --job-name Eblat-27Feb2020-1129 --gres=lscratch:300
+Job 49859927 has been submitted.
+</pre>
+
+
+<div class="subheading"><b><u>Running against your own database</u></b>
+<p>You can run against your own database (any fasta format file) by selecting
+'other databases', and then entering the full pathname of the database you want
+to search. For example:</p>
+<div class="term">
+<pre>
+The following genomes are available:
+0  -  Bos_taurus
+1  -  Caenorhabditis_elegans
+2  -  Canis_familiaris
+3  -  Danio_rerio
+4  -  Drosophila_melanogaster
+5  -  Gallus_gallus
+6  -  Homo_sapiens
+7  -  Mus_musculus
+8  -  Pan_troglodytes
+9  -  Rattus_norvegicus
+10  -  Saccharomyces_cerevisiae
+11  -  Sus_scrofa
+Enter number  from above (e.g. 7) or full path to custom db (e.g /data/$USER/mygenome.fas)  <b>/data/$USER/mygenome/genome.fas</b>
+
+</pre></div>
+<P>
+<a Name="easyblat_options"></a><div class="subheading"><b><u>Easyblat options</u></b></div>
+
+Options can be seen with ''easyblat -h'. 
+
+<pre>
+NAME
+    easyblat - user-friendly script to run BLAT on many large sequences
+
+SYNOPSIS
+    easyblat [options]
+
+OPTIONS
+    --help, -h
+        Show help message
+
+    -q, --querydir=QUERYDIR
+        Directory containing fasta files to be used as queries
+
+    -o, --outdir=OUTDIR
+        Directory to be used for output and scripts
+
+    -d, --blatdb=blat_DATABASE
+        blat database to use
+
+    -m,--mem=memory
+        memory to allocate in GB. (100 GB default, typically works well for a
+        3 GB genome database)
+
+    -l,--lscratch=lscratch
+        local disk to allocate in GB. (380 GB default)
+
+    --blatopts="blat_OPTIONS"
+        additional blat options. For example --blatopts="-minIdentity=100"
+
+    -e, --email=EMAIL_ADDRESS
+        send mail to EMAIL_ADDRESS at the end of the job
+
+    -n, --dryrun
+        Generate all input files and print swarm command, but don't submit.
+        Overrides --hold.
+
+    -x, --hold
+        Generate all input files, print swarm command, and submit in a held
+        state. (Release a hold with 'scontrol release jobid)
+
+DESCRIPTION
+    easyblat will submit a swarm of blat jobs that copy the blat database to
+    lscratch and allocate an appropriate amount of memory and lscratch.
+
+    It will set up jobs to process sequences from ~100 fasta files in the
+    input directory in each job.
+
+    Most options can either be provided on the command line or are prompted
+    interactively.
+</pre>
+<P>
+<a Name="webblat"></a><div class="heading">Replicating webblat</div>
+<P>
+Users may want to use the same parameter set that the <a href="https://genome.ucsc.edu/cgi-bin/hgBlat">UCSC web-based blat server</a> uses. As per the 
+<a href="https://genome.ucsc.edu/FAQ/FAQblat.html#blat5">blat documentation</a>, the recommended parameter values are: 
+<pre class="term">
+blat -stepSize=5 -repMatch=2253 -minScore=20 -minIdentity=0 database.2bit query.fa output.psl 
+</pre>
+<P>
+For example, to run a large group of sequences against hg19 on Biowulf, use:
+<pre class="term">
+blat  -stepSize=5  -repMatch=2253  -minScore=20  -minIdentity=0 \
+     /fdb/igenomes/Homo_sapiens/UCSC/hg19/hg19.fa    \
+     query.fa  query.psl
+</pre>
+<P>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load blat</b>
+
+[user@cn3144 ~]$ <b>faToNib gi_22507416.fasta gi_22507416.nib</b>
+
+[user@cn3144 ~]$ <b>blat /fdb/fastadb/hs_genome.rna.fas gi_22507416.nib out.psl</b>
+    Loaded 108585020 letters in 42753 sequences
+    Searched 1238 bases in 1 sequences 
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. Blat.sh). Since Blat runs spend significant time reading in the database, it is most efficient to 
+<ul>
+<li>allocate as much memory as the size of the database, so that once read, it can be maintained in memory cache
+<li>run a series of blat runs in the same batch job
+</ul>
+For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+
+module load blat
+blat    /fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa   gi_22507416.nib   out1.psl 
+blat    /fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa   gi_22507417.nib   out2.psl 
+blat    /fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa   gi_22507418.nib   out3.psl 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command. To determine the best memory allocation, 
+check the size of the fasta-format database. e.g.
+<pre class="term">
+biowulf% ls -lh /fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa
+-rwxrwxr-x 1 helixapp helixapp 2.6G Jun 16  2015 genome.fa
+</pre>
+Therefore, an appropriate memory allocation for this Blat run would be 8 GB.
+
+<pre class="term">sbatch --mem=8g Blat.sh</pre>
+<P>
+Note that easyblat, described above, will automatically select the appropriate memory allocation for your jobs. 
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. Blat.swarm). For example:</p>
+
+<pre class="term">
+blat    /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa   gi_22507416.nib   out1.psl 
+blat    /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa   gi_22507417.nib   out2.psl 
+blat    /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa   gi_22507418.nib   out3.psl 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f Blat.swarm -g 8  --module blat</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module blat</tt> <td>Loads the blat module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

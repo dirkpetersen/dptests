@@ -1,0 +1,142 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'xTea: comprehensive transposable element analyzer';</script>
+<div class="title"><b>xTea: comprehensive transposable element analyzer</b></div> 
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+xTea (x-Transposable element analyzer), is a tool for identifying TE insertions
+in whole-genome sequencing data. Whereas existing methods are mostly designed for shortread
+data, xTea can be applied to both short-read and long-read data. xTea outperforms other short read-based methods 
+for both germline and somatic TE insertion discovery. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Chong Chu, Rebeca Borges-Monroy, Vinayak V. Viswanadham, Soohyun Lee, Heng Li,
+Eunjung Alice Lee and Peter J. Park, <br /> 
+<i>Comprehensive identification of transposable element insertions using multiple sequencing technologies</i> <br />
+<a href="https://www.nature.com/articles/s41467-021-24041-8">Nature Communications</a> <b>12</b>, Article number: 3836 (2021).
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/parklab/xTea">xTea Github page</a></li>
+<li><a href="https://github.com/parklab/xTea/blob/master/Demo/demo_readme.md">xTea Demo page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>xTea</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>XTEA_HOME</b>&nbsp; installation directory</li>
+    <li><b>XTEA_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>XTEA_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g -c8 --gres=lscratch:10</b>
+[user@cig 3335 ~]$ <b>module load xTea</b>
+[+] Loading singularity  3.10.5  on cn3335
+[+] Loading xTea  1.0.0 
+[user@cn3335 ~]$ <b>xtea -h</b>
+Usage: xtea [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -D, --decompress      Decompress the rep lib and reference file
+  -M, --mosaic          Calling mosaic events from high coverage data
+  -C, --case_control    Run in case control mode
+  --denovo              Run in de novo mode
+  -U, --user            Use user specific parameters instead of automatically
+                        calculated ones
+  --force               Force to start from the very beginning
+  --hard                This is hard-cut for fitering out coverage abnormal
+                        candidates
+  --tumor               Working on tumor samples
+  --purity=PURITY       Tumor purity
+  --lsf                 Indiates submit to LSF system
+  --slurm               Indiates submit to slurm system
+  --resume              Resume the running, which will skip the step if output
+                        file already exists!
+  -V, --version         Print xTea version
+  -i FILE, --id=FILE    sample id list file
+  -a FILE, --par=FILE   parameter file
+  -l FILE, --lib=FILE   TE lib config file
+  -b FILE, --bam=FILE   Input bam file
+  -x FILE, --x10=FILE   Input 10X bam file12878
+  -n CORES, --cores=CORES
+                        number of cores
+  -m MEMORY, --memory=MEMORY
+                        Memory limit in GB
+  -q PARTITION, --partition=PARTITION
+                        Which queue to run the job
+  -t TIME, --time=TIME  Time limit
+  -p WFOLDER, --path=WFOLDER
+                        Working folder
+  -r REF, --ref=REF     reference genome
+  -g GENE, --gene=GENE  Gene annotation file
+  --xtea=XTEA           xTEA folder
+  -f FLAG, --flag=FLAG  Flag indicates which step to run (1-clip, 2-disc,
+                        4-barcode, 8-xfilter, 16-filter, 32-asm)
+  -y REP_TYPE, --reptype=REP_TYPE
+                        Type of repeats working on: 1-L1, 2-Alu, 4-SVA,
+                        8-HERV, 16-Mitochondrial
+  --flklen=FLKLEN       flank region file
+  --nclip=NCLIP         cutoff of minimum # of clipped reads
+  --cr=CLIPREP          cutoff of minimum # of clipped reads whose mates map
+                        in repetitive regions
+  --nd=NDISC            cutoff of minimum # of discordant pair
+  --nfclip=NFILTERCLIP  cutoff of minimum # of clipped reads in filtering step
+  --nfdisc=NFILTERDISC  cutoff of minimum # of discordant pair of each sample
+                        in filtering step
+  --teilen=TEILEN       minimum length of the insertion for future analysis
+  -o FILE, --output=FILE
+                        The output file
+  --blacklist=FILE      Reference panel database for filtering, or a blacklist
+                        region
+[user@cn3335 ~]$ <b>ls $XTEA_BIN</b>
+python  shell  xtea  xtea_hg19  xtea_long
+</pre>
+Prepare the sample data data to be used:
+<pre class="term">
+[user@cn3335 ~]$ <b>ln -s $XTEA_DATA/NA12878_S1.bam</b>
+[user@cn3335 ~]$ <b>samtools index NA12878_S1.bam</b>
+
+[user@cn3335 ~]$ <b>ln -s $XTEA_DATA/gencode.v33.chr_patch_hapl_scaff.basic.annotation.gff3</b>
+[user@cn3335 ~]$ <b>ln -s /fdb/igenomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa </b>
+[user@cn3335 ~]$ <b>ln -s /fdb/igenomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa.index </b>
+[user@cn3335 ~]$ <b>ln -s /fdb/igenomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa.fai </b>
+[user@cn3335 ~]$ <b>cp $XTEA_DEMO/* .</b>
+</pre>
+Create a script to be submitted to the cluster:
+<pre class="term">
+[user@cn3335 ~]$ <b>sh run_gnrt_pipeline.sh</b>
+</pre>
+Submit the script: 
+<pre class="term">
+[user@cn3335 ~]$ <b>source submit_jobs.sh</b>
+59538871
+59538874
+59538877
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

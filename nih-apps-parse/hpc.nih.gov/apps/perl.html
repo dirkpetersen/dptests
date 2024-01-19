@@ -1,0 +1,986 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Perl on Biowulf';</script>
+<link type="text/css" rel="stylesheet" href="../css/datatables.min.css" />
+<script type="text/javascript" language="javascript" src="../js/datatables.min.js"></script>
+<script type="text/javascript" language="javascript" src="../js/jquery.dataTables.min.js"></script>
+<style>
+    .hl { background-color: #ffff99; }
+    code {padding: 1px; background-color: #eeeeee; border: 1px solid #bbbbbb;}
+    dt {font-weight: bold; margin-top: 5px;}
+    dd {padding-left: 2px; border-left: 1px solid #bbbbbb;}
+    .btt {border: 1px solid silver;
+          background-color: white;
+          padding: 5px;
+          position: relative;
+          margin: 5px 0px 10px 10px;
+          float: right;
+          top: -25px;
+          left: 10px;
+          }
+</style>
+
+<div class="title"><a name="top"></a>Perl on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><a href="#modules">Installed modules</a></div>
+                <div class="tocItem"><a href="#personal">Personal installation</a></div>
+                <div class="tocItem"><a href="#docs">Documentation</a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style='width: 70%'>
+<p>
+Perl is available by default on the biowulf cluster.  More recent versions are also
+available via the <a href="https://hpc.nih.gov/apps/modules.html">modules</a> system.
+There are a <a href="#modules">large number of perl modules available</a> for these
+versions.
+</p>
+
+<p>In addition, users can install modules into their own /home directory as well.
+</p>
+
+</div>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<ul>
+    <li><a href="https://www.perl.org/">Perl home</a></li>
+    <li><a href="https://perldoc.perl.org/perl">Perl documentation</a></li>
+    <li><a href="https://metacpan.org/dist/App-cpanminus/view/bin/cpanm">cpanm</a></li>
+</ul>
+
+<!-- 
+$(document).ready(function() { $('#perl-modules-CENTOS7').DataTable({
+    columnDefs: [
+        // Left align the header content of column 1
+       { className: "dt-left", targets: [ '_all' ] }
+    ]
+}); });
+-->
+<script> 
+$(document).ready(function() { $('#perl-modules-ROCKY8').DataTable({
+    columnDefs: [
+        // Left align the header content of column 1
+       { className: "dt-left", targets: [ '_all' ] }
+    ]
+}); });
+</script>
+
+<a Name="modules"></a><div class="heading">Installed modules</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>The following modules are available for perl:</p>
+
+<!-- INSERT PERL MODULES ROCKY8: BEGIN -->
+<div style='width: 80%; margin: 0 auto;'>
+<table id='perl-modules-ROCKY8' class='stripe compact'>
+  <thead><tr><th>Module</th><th>default</th><th>5.18</th><th>5.34</th><th>5.36</th><th>5.38</th></tr></thead>
+  <tbody>
+  <tr><td>Acme::Comment</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td></tr>
+  <tr><td>Acme::Damn</td><td>n/a</td><td>0.08</td><td>n/a</td><td>0.08</td><td>n/a</td></tr>
+  <tr><td>Algorithm::Combinatorics</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td></tr>
+  <tr><td>Algorithm::Diff</td><td>1.201</td><td>1.201</td><td>1.201</td><td>1.201</td><td>1.201</td></tr>
+  <tr><td>Algorithm::Diff::XS</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td></tr>
+  <tr><td>Algorithm::Munkres</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>aliased</td><td>0.34</td><td>0.34</td><td>0.34</td><td>0.34</td><td>0.34</td></tr>
+  <tr><td>Alien::Build</td><td>2.48</td><td>2.80</td><td>2.74</td><td>2.80</td><td>2.80</td></tr>
+  <tr><td>Alien::Build::Plugin::Download::GitLab</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td></tr>
+  <tr><td>Alien::Libxml2</td><td>0.17</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td></tr>
+  <tr><td>Any::URI::Escape</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td></tr>
+  <tr><td>Apache::LogFormat::Compiler</td><td>0.36</td><td>0.36</td><td>0.36</td><td>0.36</td><td>0.36</td></tr>
+  <tr><td>Apache::Session</td><td>1.94</td><td>1.94</td><td>1.94</td><td>1.94</td><td>1.94</td></tr>
+  <tr><td>AppConfig</td><td>1.71</td><td>1.71</td><td>1.71</td><td>1.71</td><td>1.71</td></tr>
+  <tr><td>App::cpanminus</td><td>1.7046</td><td>1.7047</td><td>1.7046</td><td>1.7046</td><td>1.7046</td></tr>
+  <tr><td>Archive::Any::Lite</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>Archive::Extract</td><td>0.88</td><td>0.88</td><td>0.88</td><td>0.88</td><td>0.88</td></tr>
+  <tr><td>Archive::Peek</td><td>0.37</td><td>0.37</td><td>0.37</td><td>0.37</td><td>0.37</td></tr>
+  <tr><td>Archive::Tar</td><td>2.40</td><td>3.02</td><td>2.40</td><td>3.02</td><td>3.02</td></tr>
+  <tr><td>Archive::Zip</td><td>1.68</td><td>1.68</td><td>1.68</td><td>1.68</td><td>1.68</td></tr>
+  <tr><td>Array::Compare</td><td>3.0.8</td><td>3.0.8</td><td>3.0.8</td><td>3.0.8</td><td>3.0.8</td></tr>
+  <tr><td>Array::Diff</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Array::Unique</td><td>0.08</td><td>0.09</td><td>0.08</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Array::Utils</td><td>0.5</td><td>0.5</td><td>0.5</td><td>0.5</td><td>0.5</td></tr>
+  <tr><td>Authen::SASL</td><td>2.16</td><td>2.1700</td><td>2.16</td><td>2.16</td><td>2.16</td></tr>
+  <tr><td>Authen::Simple</td><td>0.5</td><td>0.5</td><td>0.5</td><td>0.5</td><td>0.5</td></tr>
+  <tr><td>Authen::Simple::Passwd</td><td>0.6</td><td>0.6</td><td>0.6</td><td>0.6</td><td>0.6</td></tr>
+  <tr><td>autodie</td><td>2.36</td><td>2.36</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>bareword::filehandles</td><td>0.007</td><td>0.007</td><td>0.007</td><td>0.007</td><td>0.007</td></tr>
+  <tr><td>B::COW</td><td>0.004</td><td>0.007</td><td>0.007</td><td>0.007</td><td>0.007</td></tr>
+  <tr><td>B::Debug</td><td>n/a</td><td>n/a</td><td>1.26</td><td>1.26</td><td>1.26</td></tr>
+  <tr><td>Beam::Emitter</td><td>n/a</td><td>1.007</td><td>n/a</td><td>1.007</td><td>1.007</td></tr>
+  <tr><td>Beam::Service</td><td>n/a</td><td>0.001</td><td>n/a</td><td>0.001</td><td>0.001</td></tr>
+  <tr><td>Beam::Wire</td><td>n/a</td><td>1.025</td><td>n/a</td><td>1.025</td><td>1.025</td></tr>
+  <tr><td>B::Hooks::AtRuntime</td><td>n/a</td><td>n/a</td><td>n/a</td><td>8</td><td>8</td></tr>
+  <tr><td>B::Hooks::EndOfScope</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td></tr>
+  <tr><td>B::Hooks::OP::Annotation</td><td>n/a</td><td>n/a</td><td>n/a</td><td>0.44</td><td>0.44</td></tr>
+  <tr><td>B::Hooks::OP::Check</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td></tr>
+  <tr><td>bignum</td><td>0.65</td><td>0.66</td><td>0.66</td><td>0.66</td><td>n/a</td></tr>
+  <tr><td>Bio</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Bio::Align::Graphics</td><td>undef</td><td>undef</td><td>n/a</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Bio::AlignIO::stockholm</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Bio::ASN1::EntrezGene</td><td>1.73</td><td>1.73</td><td>1.73</td><td>1.73</td><td>1.73</td></tr>
+  <tr><td>Bio::Cluster</td><td>1.7.3</td><td>1.7.3</td><td>1.7.3</td><td>1.7.3</td><td>1.7.3</td></tr>
+  <tr><td>Bio::LITE::Taxonomy</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Bio::LITE::Taxonomy::NCBI</td><td>0.1</td><td>0.1</td><td>0.1</td><td>0.1</td><td>0.1</td></tr>
+  <tr><td>Bio::NeXMLIO</td><td>n/a</td><td>n/a</td><td>undef</td><td>undef</td><td>n/a</td></tr>
+  <tr><td>BioPerl</td><td>1.7.8</td><td>1.7.8</td><td>1.7.8</td><td>1.7.8</td><td>1.7.8</td></tr>
+  <tr><td>Bio::Phylo</td><td>v2.0.1</td><td>v2.0.1</td><td>v2.0.1</td><td>v2.0.1</td><td>v2.0.1</td></tr>
+  <tr><td>Bio::SamTools</td><td>n/a</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Bio::SearchIO::blastxml</td><td>1.70</td><td>1.70</td><td>1.70</td><td>1.70</td><td>1.70</td></tr>
+  <tr><td>Bio::Variation</td><td>1.7.5</td><td>1.7.5</td><td>1.7.5</td><td>1.7.5</td><td>1.7.5</td></tr>
+  <tr><td>Bit::Manip</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td></tr>
+  <tr><td>Bit::Vector</td><td>7.4</td><td>7.4</td><td>7.4</td><td>7.4</td><td>7.4</td></tr>
+  <tr><td>boolean</td><td>0.46</td><td>0.46</td><td>0.46</td><td>0.46</td><td>0.46</td></tr>
+  <tr><td>BSD::Resource</td><td>1.2911</td><td>n/a</td><td>1.2911</td><td>1.2911</td><td>n/a</td></tr>
+  <tr><td>B::Utils</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td></tr>
+  <tr><td>Cache::Cache</td><td>1.08</td><td>1.08</td><td>1.08</td><td>1.08</td><td>1.08</td></tr>
+  <tr><td>Cache::LRU</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td></tr>
+  <tr><td>Cache::Simple::TimedExpiry</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td></tr>
+  <tr><td>Canary::Stability</td><td>2013</td><td>2013</td><td>2013</td><td>2013</td><td>2013</td></tr>
+  <tr><td>Capture::Tiny</td><td>0.48</td><td>0.48</td><td>0.48</td><td>0.48</td><td>0.48</td></tr>
+  <tr><td>Carp</td><td>1.50</td><td>1.50</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Carp::Assert</td><td>0.21</td><td>0.22</td><td>0.21</td><td>0.22</td><td>0.22</td></tr>
+  <tr><td>Carp::Clan</td><td>6.08</td><td>6.08</td><td>6.08</td><td>6.08</td><td>6.08</td></tr>
+  <tr><td>CGI</td><td>4.54</td><td>4.57</td><td>4.54</td><td>4.57</td><td>4.57</td></tr>
+  <tr><td>CGI::Emulate::PSGI</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td></tr>
+  <tr><td>CGI::PSGI</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Chart::Gnuplot</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td></tr>
+  <tr><td>Chart::Gnuplot::Pie</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td></tr>
+  <tr><td>Class::Accessor</td><td>0.51</td><td>0.51</td><td>0.51</td><td>0.51</td><td>0.51</td></tr>
+  <tr><td>Class::Accessor::Chained</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td></tr>
+  <tr><td>Class::Accessor::Lite</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Class::Container</td><td>0.13</td><td>0.13</td><td>0.13</td><td>0.13</td><td>0.13</td></tr>
+  <tr><td>Class::Data::Inheritable</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Class::Inspector</td><td>1.36</td><td>1.36</td><td>1.36</td><td>1.36</td><td>1.36</td></tr>
+  <tr><td>Class::Load</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td></tr>
+  <tr><td>Class::Load::XS</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td></tr>
+  <tr><td>Class::Measure</td><td>0.09</td><td>0.10</td><td>0.09</td><td>0.10</td><td>0.10</td></tr>
+  <tr><td>Class::MethodMaker</td><td>2.24</td><td>2.24</td><td>2.24</td><td>2.24</td><td>2.24</td></tr>
+  <tr><td>Class::Method::Modifiers</td><td>2.13</td><td>2.15</td><td>2.13</td><td>2.15</td><td>2.15</td></tr>
+  <tr><td>Class::Mix</td><td>0.006</td><td>0.006</td><td>0.006</td><td>0.006</td><td>0.006</td></tr>
+  <tr><td>Class::ReturnValue</td><td>0.55</td><td>0.55</td><td>0.55</td><td>0.55</td><td>0.55</td></tr>
+  <tr><td>Class::Singleton</td><td>1.6</td><td>1.6</td><td>1.6</td><td>1.6</td><td>1.6</td></tr>
+  <tr><td>Class::Std</td><td>0.013</td><td>0.013</td><td>0.013</td><td>0.013</td><td>0.013</td></tr>
+  <tr><td>Class::Std::Fast</td><td>0.0.8</td><td>0.0.8</td><td>0.0.8</td><td>0.0.8</td><td>0.0.8</td></tr>
+  <tr><td>Class::Tiny</td><td>1.008</td><td>1.008</td><td>1.008</td><td>1.008</td><td>1.008</td></tr>
+  <tr><td>Class::XSAccessor</td><td>1.19</td><td>1.19</td><td>1.19</td><td>1.19</td><td>1.19</td></tr>
+  <tr><td>Clone</td><td>0.45</td><td>0.46</td><td>0.46</td><td>0.46</td><td>0.46</td></tr>
+  <tr><td>Clone::Choose</td><td>0.010</td><td>0.010</td><td>0.010</td><td>0.010</td><td>0.010</td></tr>
+  <tr><td>common::sense</td><td>3.75</td><td>3.75</td><td>3.75</td><td>3.75</td><td>3.75</td></tr>
+  <tr><td>Compress::Raw::Bzip2</td><td>2.206</td><td>2.206</td><td>2.201</td><td>2.206</td><td>2.206</td></tr>
+  <tr><td>Compress::Raw::Lzma</td><td>2.103</td><td>2.206</td><td>2.201</td><td>2.204</td><td>2.206</td></tr>
+  <tr><td>Compress::Raw::Zlib</td><td>2.206</td><td>2.206</td><td>2.202</td><td>2.206</td><td>2.206</td></tr>
+  <tr><td>Config::Any</td><td>n/a</td><td>0.33</td><td>n/a</td><td>0.33</td><td>0.33</td></tr>
+  <tr><td>Config::General</td><td>2.65</td><td>2.65</td><td>2.65</td><td>2.65</td><td>2.65</td></tr>
+  <tr><td>Config::Identity</td><td>0.0019</td><td>0.0019</td><td>0.0019</td><td>0.0019</td><td>0.0019</td></tr>
+  <tr><td>Config::IniFiles</td><td>3.000003</td><td>3.000003</td><td>3.000003</td><td>3.000003</td><td>3.000003</td></tr>
+  <tr><td>Config::Simple</td><td>4.58</td><td>4.58</td><td>4.58</td><td>4.58</td><td>4.58</td></tr>
+  <tr><td>Const::Fast</td><td>0.014</td><td>0.014</td><td>0.014</td><td>0.014</td><td>0.014</td></tr>
+  <tr><td>Convert::ASN1</td><td>0.33</td><td>0.34</td><td>0.33</td><td>0.33</td><td>0.33</td></tr>
+  <tr><td>Convert::Binary::C</td><td>0.84</td><td>0.84</td><td>0.84</td><td>0.84</td><td>0.84</td></tr>
+  <tr><td>Convert::BinHex</td><td>1.125</td><td>1.125</td><td>1.125</td><td>1.125</td><td>1.125</td></tr>
+  <tr><td>Convert::Color</td><td>0.11</td><td>0.17</td><td>0.13</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>Cookie::Baker</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>CPAN</td><td>2.34</td><td>2.36</td><td>2.34</td><td>2.36</td><td>2.36</td></tr>
+  <tr><td>CPAN::DistnameInfo</td><td>n/a</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>Cpanel::JSON::XS</td><td>4.27</td><td>4.37</td><td>4.32</td><td>4.36</td><td>4.37</td></tr>
+  <tr><td>CPAN::FindDependencies</td><td>3.13</td><td>3.13</td><td>3.13</td><td>3.13</td><td>3.13</td></tr>
+  <tr><td>CPAN::Meta</td><td>n/a</td><td>2.150010</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>CPAN::Meta::Check</td><td>n/a</td><td>0.018</td><td>0.014</td><td>0.017</td><td>0.018</td></tr>
+  <tr><td>CPAN::Meta::Requirements</td><td>n/a</td><td>2.143</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>CPAN::Meta::YAML</td><td>n/a</td><td>0.018</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>CPANPLUS</td><td>0.9914</td><td>0.9914</td><td>0.9914</td><td>0.9914</td><td>0.9914</td></tr>
+  <tr><td>CPAN::SQLite</td><td>0.220</td><td>0.220</td><td>0.220</td><td>0.220</td><td>0.220</td></tr>
+  <tr><td>Crypt::Eksblowfish</td><td>0.009</td><td>0.009</td><td>0.009</td><td>0.009</td><td>0.009</td></tr>
+  <tr><td>Crypt::OpenSSL::Bignum</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Crypt::OpenSSL::Guess</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Crypt::OpenSSL::Random</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Crypt::OpenSSL::RSA</td><td>0.32</td><td>0.33</td><td>0.33</td><td>0.33</td><td>0.33</td></tr>
+  <tr><td>Crypt::OpenSSL::X509</td><td>1.913</td><td>1.915</td><td>1.914</td><td>1.914</td><td>1.915</td></tr>
+  <tr><td>Crypt::PasswdMD5</td><td>1.41</td><td>1.42</td><td>1.42</td><td>1.42</td><td>1.42</td></tr>
+  <tr><td>Crypt::RC4</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td></tr>
+  <tr><td>CryptX</td><td>0.076</td><td>0.078</td><td>0.077</td><td>0.078</td><td>0.078</td></tr>
+  <tr><td>Crypt::X509</td><td>0.54</td><td>0.55</td><td>0.54</td><td>0.55</td><td>0.55</td></tr>
+  <tr><td>CSS::Squish</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td></tr>
+  <tr><td>Cwd</td><td>3.75</td><td>3.75</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Cwd::Guard</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Data</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Data::Binary</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td></tr>
+  <tr><td>Data::Compare</td><td>1.27</td><td>1.29</td><td>1.27</td><td>1.29</td><td>1.29</td></tr>
+  <tr><td>Data::DPath</td><td>n/a</td><td>0.59</td><td>n/a</td><td>0.58</td><td>0.59</td></tr>
+  <tr><td>Data::Dump</td><td>1.25</td><td>1.25</td><td>1.25</td><td>1.25</td><td>1.25</td></tr>
+  <tr><td>Data::Dumper</td><td>n/a</td><td>2.183</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Data::Dump::Streamer</td><td>2.40</td><td>2.42</td><td>2.40</td><td>2.42</td><td>2.42</td></tr>
+  <tr><td>Data::GUID</td><td>0.050</td><td>0.051</td><td>0.050</td><td>0.051</td><td>0.051</td></tr>
+  <tr><td>Data::ICal</td><td>0.24</td><td>0.24</td><td>0.24</td><td>0.24</td><td>0.24</td></tr>
+  <tr><td>Data::OptList</td><td>0.113</td><td>0.114</td><td>0.112</td><td>0.114</td><td>0.114</td></tr>
+  <tr><td>Data::Perl</td><td>0.002011</td><td>0.002011</td><td>0.002011</td><td>0.002011</td><td>0.002011</td></tr>
+  <tr><td>Data::Printer</td><td>n/a</td><td>n/a</td><td>n/a</td><td>1.001000</td><td>1.001001</td></tr>
+  <tr><td>Data::Record</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>Data::Section</td><td>n/a</td><td>0.200008</td><td>0.200007</td><td>0.200008</td><td>0.200008</td></tr>
+  <tr><td>Data::Section::Simple</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Data::TemporaryBag</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Data::UUID</td><td>1.226</td><td>1.226</td><td>1.226</td><td>1.226</td><td>1.226</td></tr>
+  <tr><td>Data::Visitor</td><td>0.31</td><td>0.32</td><td>0.31</td><td>0.32</td><td>0.32</td></tr>
+  <tr><td>Date::Calc</td><td>6.4</td><td>6.4</td><td>6.4</td><td>6.4</td><td>6.4</td></tr>
+  <tr><td>Date::Calc::XS</td><td>6.4</td><td>6.4</td><td>6.4</td><td>6.4</td><td>6.4</td></tr>
+  <tr><td>Date::Extract</td><td>0.06</td><td>0.07</td><td>0.06</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Date::Manip</td><td>6.86</td><td>6.92</td><td>6.90</td><td>6.92</td><td>6.92</td></tr>
+  <tr><td>Date::Parse</td><td>2.33</td><td>2.33</td><td>2.33</td><td>2.33</td><td>2.33</td></tr>
+  <tr><td>Date::Simple</td><td>3.03</td><td>3.03</td><td>3.03</td><td>3.03</td><td>3.03</td></tr>
+  <tr><td>DateTime</td><td>1.58</td><td>1.59</td><td>1.59</td><td>1.59</td><td>1.59</td></tr>
+  <tr><td>DateTime::Format::DateParse</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>DateTime::Format::Mail</td><td>0.403</td><td>0.403</td><td>0.403</td><td>0.403</td><td>0.403</td></tr>
+  <tr><td>DateTime::Format::Natural</td><td>1.13</td><td>1.17</td><td>1.13</td><td>1.16</td><td>1.17</td></tr>
+  <tr><td>DateTime::Format::Strptime</td><td>1.79</td><td>1.79</td><td>1.79</td><td>1.79</td><td>1.79</td></tr>
+  <tr><td>DateTime::Format::W3CDTF</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>DateTime::HiRes</td><td>n/a</td><td>0.04</td><td>n/a</td><td>0.04</td><td>0.04</td></tr>
+  <tr><td>DateTime::Locale</td><td>1.35</td><td>1.39</td><td>1.37</td><td>1.39</td><td>1.39</td></tr>
+  <tr><td>DateTime::TimeZone</td><td>2.52</td><td>2.60</td><td>2.53</td><td>2.53</td><td>2.53</td></tr>
+  <tr><td>DBD::mysql</td><td>4.050</td><td>4.050</td><td>4.050</td><td>4.050</td><td>4.050</td></tr>
+  <tr><td>DBD::Pg</td><td>3.16.0</td><td>3.17.0</td><td>3.16.0</td><td>3.16.3</td><td>3.16.3</td></tr>
+  <tr><td>DBD::SQLite</td><td>1.70</td><td>1.72</td><td>1.72</td><td>1.72</td><td>1.72</td></tr>
+  <tr><td>DBI</td><td>1.643</td><td>1.643</td><td>1.643</td><td>1.643</td><td>1.643</td></tr>
+  <tr><td>DBIx::Connector</td><td>0.57</td><td>0.59</td><td>0.58</td><td>0.58</td><td>0.59</td></tr>
+  <tr><td>DBIx::DBSchema</td><td>0.45</td><td>0.47</td><td>0.47</td><td>0.47</td><td>0.47</td></tr>
+  <tr><td>DBIx::SearchBuilder</td><td>1.71</td><td>1.78</td><td>1.74</td><td>1.76</td><td>1.78</td></tr>
+  <tr><td>Devel::CallChecker</td><td>0.008</td><td>0.009</td><td>0.008</td><td>0.009</td><td>0.009</td></tr>
+  <tr><td>Devel::Caller</td><td>2.06</td><td>2.07</td><td>2.06</td><td>2.07</td><td>2.07</td></tr>
+  <tr><td>Devel::CheckCompiler</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Devel::CheckLib</td><td>1.14</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.16</td></tr>
+  <tr><td>Devel::CheckOS</td><td>1.93</td><td>1.96</td><td>1.95</td><td>1.96</td><td>1.96</td></tr>
+  <tr><td>Devel::Cycle</td><td>1.12</td><td>1.12</td><td>1.12</td><td>1.12</td><td>1.12</td></tr>
+  <tr><td>Devel::GlobalDestruction</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>Devel::Hide</td><td>0.0015</td><td>0.0015</td><td>0.0015</td><td>0.0015</td><td>0.0015</td></tr>
+  <tr><td>Devel::LexAlias</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Devel::OverloadInfo</td><td>0.007</td><td>0.007</td><td>0.007</td><td>0.007</td><td>0.007</td></tr>
+  <tr><td>Devel::PPPort</td><td>3.68</td><td>3.68</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Devel::ptkdb</td><td>1.1091</td><td>n/a</td><td>1.1091</td><td>1.1091</td><td>n/a</td></tr>
+  <tr><td>Devel::Required</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>Devel::Size</td><td>n/a</td><td>0.83</td><td>0.83</td><td>0.83</td><td>0.83</td></tr>
+  <tr><td>Devel::StackTrace</td><td>2.04</td><td>2.04</td><td>2.04</td><td>2.04</td><td>2.04</td></tr>
+  <tr><td>Devel::StackTrace::AsHTML</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Devel::Symdump</td><td>2.18</td><td>2.18</td><td>2.18</td><td>2.18</td><td>2.18</td></tr>
+  <tr><td>Devel::Trace</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>Digest::BubbleBabble</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>Digest::GOST</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>Digest::HMAC</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td></tr>
+  <tr><td>Digest::MD5</td><td>n/a</td><td>2.58</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Digest::Perl::MD5</td><td>1.9</td><td>1.9</td><td>1.9</td><td>1.9</td><td>1.9</td></tr>
+  <tr><td>Digest::SHA</td><td>6.04</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Digest::SHA1</td><td>2.13</td><td>2.13</td><td>2.13</td><td>2.13</td><td>2.13</td></tr>
+  <tr><td>DIME::Tools</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Dist::CheckConflicts</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>DynaLoader::Functions</td><td>0.003</td><td>0.004</td><td>0.003</td><td>0.004</td><td>0.004</td></tr>
+  <tr><td>Email::Abstract</td><td>3.009</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Email::Address</td><td>1.912</td><td>1.913</td><td>1.912</td><td>1.913</td><td>1.913</td></tr>
+  <tr><td>Email::Address::List</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>Email::Address::XS</td><td>1.04</td><td>1.05</td><td>1.05</td><td>1.05</td><td>1.05</td></tr>
+  <tr><td>Email::Date::Format</td><td>1.005</td><td>1.008</td><td>1.006</td><td>1.008</td><td>1.008</td></tr>
+  <tr><td>Email::MessageID</td><td>1.406</td><td>1.408</td><td>1.407</td><td>1.408</td><td>1.408</td></tr>
+  <tr><td>Email::MIME</td><td>1.952</td><td>1.953</td><td>1.952</td><td>1.953</td><td>1.953</td></tr>
+  <tr><td>Email::MIME::ContentType</td><td>1.026</td><td>1.028</td><td>1.027</td><td>1.028</td><td>1.028</td></tr>
+  <tr><td>Email::MIME::Encodings</td><td>1.315</td><td>1.317</td><td>1.316</td><td>1.317</td><td>1.317</td></tr>
+  <tr><td>Email::Sender</td><td>2.600</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Email::Simple</td><td>2.216</td><td>2.218</td><td>2.216</td><td>2.218</td><td>2.218</td></tr>
+  <tr><td>Encode</td><td>3.17</td><td>3.19</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Encode::Locale</td><td>1.05</td><td>1.05</td><td>1.05</td><td>1.05</td><td>1.05</td></tr>
+  <tr><td>Env::Path</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td></tr>
+  <tr><td>Error</td><td>n/a</td><td>0.17029</td><td>0.17029</td><td>0.17029</td><td>0.17029</td></tr>
+  <tr><td>Eval::Closure</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>Excel::Writer::XLSX</td><td>1.09</td><td>1.11</td><td>1.09</td><td>1.11</td><td>1.11</td></tr>
+  <tr><td>Exception::Class</td><td>1.45</td><td>1.45</td><td>1.45</td><td>1.45</td><td>1.45</td></tr>
+  <tr><td>experimental</td><td>n/a</td><td>0.031</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Exporter::Lite</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Exporter::Tiny</td><td>1.002002</td><td>1.006002</td><td>1.006000</td><td>1.006002</td><td>1.006002</td></tr>
+  <tr><td>ExtUtils::CBuilder</td><td>0.280236</td><td>0.280236</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>ExtUtils::CChecker</td><td>n/a</td><td>0.11</td><td>n/a</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>ExtUtils::Config</td><td>0.008</td><td>0.008</td><td>0.008</td><td>0.008</td><td>0.008</td></tr>
+  <tr><td>ExtUtils::Constant</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td></tr>
+  <tr><td>ExtUtils::CppGuess</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td></tr>
+  <tr><td>ExtUtils::Depends</td><td>0.8001</td><td>0.8001</td><td>0.8001</td><td>0.8001</td><td>0.8001</td></tr>
+  <tr><td>ExtUtils::Helpers</td><td>0.026</td><td>0.026</td><td>0.026</td><td>0.026</td><td>0.026</td></tr>
+  <tr><td>ExtUtils::InstallPaths</td><td>0.012</td><td>0.012</td><td>0.012</td><td>0.012</td><td>0.012</td></tr>
+  <tr><td>ExtUtils::MakeMaker</td><td>7.64</td><td>7.70</td><td>7.64</td><td>7.70</td><td>7.70</td></tr>
+  <tr><td>ExtUtils::MakeMaker::CPANfile</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>ExtUtils::Manifest</td><td>1.75</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>ExtUtils::ParseXS</td><td>3.44</td><td>3.44</td><td>3.44</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>ExtUtils::PkgConfig</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.16</td></tr>
+  <tr><td>FCGI</td><td>0.82</td><td>0.82</td><td>0.82</td><td>0.82</td><td>0.82</td></tr>
+  <tr><td>FCGI::Client</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>FCGI::ProcManager</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td></tr>
+  <tr><td>FFI::CheckLib</td><td>0.28</td><td>0.31</td><td>0.31</td><td>0.31</td><td>0.31</td></tr>
+  <tr><td>File::chdir</td><td>0.1010</td><td>0.1011</td><td>0.1011</td><td>0.1011</td><td>0.1011</td></tr>
+  <tr><td>File::Copy::Link</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>File::Copy::Recursive</td><td>0.45</td><td>0.45</td><td>0.45</td><td>0.45</td><td>0.45</td></tr>
+  <tr><td>File::Copy::Recursive::Reduced</td><td>0.006</td><td>0.006</td><td>0.006</td><td>0.006</td><td>0.006</td></tr>
+  <tr><td>File::Find::Object</td><td>0.3.6</td><td>0.3.8</td><td>0.3.6</td><td>0.3.7</td><td>0.3.8</td></tr>
+  <tr><td>File::Find::Rule</td><td>0.34</td><td>0.34</td><td>0.34</td><td>0.34</td><td>0.34</td></tr>
+  <tr><td>File::Find::Rule::DirectoryEmpty</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td></tr>
+  <tr><td>FileHandle::Unget</td><td>0.1634</td><td>0.1634</td><td>0.1634</td><td>0.1634</td><td>0.1634</td></tr>
+  <tr><td>File::HomeDir</td><td>n/a</td><td>1.006</td><td>1.006</td><td>1.006</td><td>1.006</td></tr>
+  <tr><td>File::Listing</td><td>6.15</td><td>6.16</td><td>6.15</td><td>6.15</td><td>6.16</td></tr>
+  <tr><td>File::Path</td><td>2.18</td><td>2.18</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>File::pushd</td><td>n/a</td><td>1.016</td><td>1.016</td><td>1.016</td><td>1.016</td></tr>
+  <tr><td>File::Remove</td><td>1.60</td><td>1.61</td><td>1.61</td><td>1.61</td><td>1.61</td></tr>
+  <tr><td>File::ShareDir</td><td>1.118</td><td>1.118</td><td>1.118</td><td>1.118</td><td>1.118</td></tr>
+  <tr><td>File::ShareDir::Install</td><td>0.13</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>File::Slurp</td><td>9999.32</td><td>9999.32</td><td>9999.32</td><td>9999.32</td><td>9999.32</td></tr>
+  <tr><td>File::Slurper</td><td>0.013</td><td>0.014</td><td>0.013</td><td>0.014</td><td>0.014</td></tr>
+  <tr><td>File::Slurp::Tiny</td><td>0.004</td><td>0.004</td><td>0.004</td><td>0.004</td><td>0.004</td></tr>
+  <tr><td>File::Sort</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td></tr>
+  <tr><td>File::Sync</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>Filesys::Notify::Simple</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>File::Tail</td><td>1.3</td><td>1.3</td><td>1.3</td><td>1.3</td><td>1.3</td></tr>
+  <tr><td>File::Tee</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>File::Temp</td><td>0.2311</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>File::Touch</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>File::TreeCreate</td><td>0.0.1</td><td>0.0.1</td><td>0.0.1</td><td>0.0.1</td><td>0.0.1</td></tr>
+  <tr><td>File::Type</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td></tr>
+  <tr><td>File::Which</td><td>n/a</td><td>1.27</td><td>1.27</td><td>1.27</td><td>1.27</td></tr>
+  <tr><td>Font::AFM</td><td>1.20</td><td>1.20</td><td>1.20</td><td>1.20</td><td>1.20</td></tr>
+  <tr><td>Font::TTF</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td></tr>
+  <tr><td>forks</td><td>n/a</td><td>0.36</td><td>n/a</td><td>0.36</td><td>n/a</td></tr>
+  <tr><td>Function::Parameters</td><td>n/a</td><td>n/a</td><td>n/a</td><td>2.002003</td><td>2.002004</td></tr>
+  <tr><td>GD</td><td>2.76</td><td>2.78</td><td>2.76</td><td>2.77</td><td>2.78</td></tr>
+  <tr><td>GD::Graph</td><td>1.54</td><td>1.56</td><td>1.54</td><td>1.56</td><td>1.56</td></tr>
+  <tr><td>GD::Graph::histogram</td><td>1.1</td><td>1.1</td><td>1.1</td><td>1.1</td><td>1.1</td></tr>
+  <tr><td>GD::Text</td><td>0.86</td><td>0.86</td><td>0.86</td><td>0.86</td><td>0.86</td></tr>
+  <tr><td>Geo::Distance</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td></tr>
+  <tr><td>Getopt::Long</td><td>n/a</td><td>2.54</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Getopt::Long::Descriptive</td><td>0.110</td><td>0.111</td><td>0.110</td><td>0.111</td><td>0.111</td></tr>
+  <tr><td>Getopt::Simple</td><td>1.52</td><td>1.52</td><td>1.52</td><td>1.52</td><td>1.52</td></tr>
+  <tr><td>GIS::Distance</td><td>0.19</td><td>0.20</td><td>0.19</td><td>0.20</td><td>0.20</td></tr>
+  <tr><td>GIS::Distance::Fast</td><td>0.15</td><td>0.16</td><td>0.15</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>GnuPG::Interface</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td></tr>
+  <tr><td>GO</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Graph</td><td>0.9725</td><td>0.9704</td><td>0.9704</td><td>0.9704</td><td>0.9704</td></tr>
+  <tr><td>Graphics::ColorUtils</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>GraphViz</td><td>2.24</td><td>2.26</td><td>2.25</td><td>2.26</td><td>2.26</td></tr>
+  <tr><td>GSSAPI</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td></tr>
+  <tr><td>Hash::FieldHash</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Hash::Merge</td><td>0.302</td><td>n/a</td><td>0.302</td><td>0.302</td><td>0.302</td></tr>
+  <tr><td>Hash::MultiValue</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>Heap</td><td>0.80</td><td>0.80</td><td>0.80</td><td>0.80</td><td>0.80</td></tr>
+  <tr><td>Hijk</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td></tr>
+  <tr><td>Hook::LexWrap</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td></tr>
+  <tr><td>HTML::Formatter</td><td>2.16</td><td>2.16</td><td>2.16</td><td>2.16</td><td>2.16</td></tr>
+  <tr><td>HTML::FormatText::WithLinks</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>HTML::FormatText::WithLinks::AndTables</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>HTML::Mason</td><td>1.59</td><td>1.60</td><td>1.59</td><td>1.60</td><td>1.60</td></tr>
+  <tr><td>HTML::Mason::PSGIHandler</td><td>0.53</td><td>0.53</td><td>0.53</td><td>0.53</td><td>0.53</td></tr>
+  <tr><td>HTML::Parser</td><td>3.78</td><td>3.81</td><td>3.80</td><td>3.81</td><td>3.81</td></tr>
+  <tr><td>HTML::Quoted</td><td>0.04</td><td>0.05</td><td>0.04</td><td>0.04</td><td>0.05</td></tr>
+  <tr><td>HTML::RewriteAttributes</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>HTML::Scrubber</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td></tr>
+  <tr><td>HTML::Table</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>HTML-TableExtract</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>HTML::Tagset</td><td>3.20</td><td>3.20</td><td>3.20</td><td>3.20</td><td>3.20</td></tr>
+  <tr><td>HTML::Template</td><td>2.97</td><td>2.97</td><td>2.97</td><td>2.97</td><td>2.97</td></tr>
+  <tr><td>HTML::Tree</td><td>5.07</td><td>5.07</td><td>5.07</td><td>5.07</td><td>5.07</td></tr>
+  <tr><td>HTTP::CookieJar</td><td>0.012</td><td>0.014</td><td>0.014</td><td>0.014</td><td>0.014</td></tr>
+  <tr><td>HTTP::Cookies</td><td>6.10</td><td>6.10</td><td>6.10</td><td>6.10</td><td>6.10</td></tr>
+  <tr><td>HTTP::Daemon</td><td>6.14</td><td>6.16</td><td>6.14</td><td>6.16</td><td>6.16</td></tr>
+  <tr><td>HTTP::Date</td><td>6.05</td><td>6.06</td><td>6.05</td><td>6.05</td><td>6.06</td></tr>
+  <tr><td>HTTP::Entity::Parser</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td></tr>
+  <tr><td>HTTP::Headers::Fast</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td></tr>
+  <tr><td>HTTP::Message</td><td>6.36</td><td>6.44</td><td>6.44</td><td>6.44</td><td>6.44</td></tr>
+  <tr><td>HTTP::MultiPartParser</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>HTTP::Negotiate</td><td>6.01</td><td>6.01</td><td>6.01</td><td>6.01</td><td>6.01</td></tr>
+  <tr><td>HTTP::Request::AsCGI</td><td>1.2</td><td>1.2</td><td>1.2</td><td>1.2</td><td>1.2</td></tr>
+  <tr><td>HTTP::Server::Simple</td><td>0.52</td><td>0.52</td><td>0.52</td><td>0.52</td><td>0.52</td></tr>
+  <tr><td>HTTP::Server::Simple::PSGI</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>HTTP::Tiny</td><td>0.080</td><td>0.088</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Image::Size</td><td>3.300</td><td>3.300</td><td>3.300</td><td>3.300</td><td>3.300</td></tr>
+  <tr><td>Importer</td><td>0.026</td><td>0.026</td><td>0.026</td><td>0.026</td><td>0.026</td></tr>
+  <tr><td>Import::Into</td><td>n/a</td><td>n/a</td><td>n/a</td><td>1.002005</td><td>1.002005</td></tr>
+  <tr><td>indirect</td><td>0.39</td><td>0.39</td><td>0.39</td><td>0.39</td><td>0.39</td></tr>
+  <tr><td>Inline</td><td>0.86</td><td>0.86</td><td>0.86</td><td>0.86</td><td>0.86</td></tr>
+  <tr><td>Inline::C</td><td>0.82</td><td>0.82</td><td>0.82</td><td>0.82</td><td>0.82</td></tr>
+  <tr><td>install</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td></tr>
+  <tr><td>Interpolation</td><td>0.74</td><td>0.74</td><td>0.74</td><td>0.74</td><td>0.74</td></tr>
+  <tr><td>IO::Capture</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>IO::CaptureOutput</td><td>1.1105</td><td>1.1105</td><td>1.1105</td><td>1.1105</td><td>1.1105</td></tr>
+  <tr><td>IO::Compress</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>IO::Compress::Lzma</td><td>2.103</td><td>2.206</td><td>2.201</td><td>2.204</td><td>2.206</td></tr>
+  <tr><td>IO::HTML</td><td>1.004</td><td>1.004</td><td>1.004</td><td>1.004</td><td>1.004</td></tr>
+  <tr><td>IO::SessionData</td><td>1.03</td><td>1.03</td><td>1.03</td><td>1.03</td><td>1.03</td></tr>
+  <tr><td>IO::Socket::INET6</td><td>2.73</td><td>2.73</td><td>2.73</td><td>2.73</td><td>2.73</td></tr>
+  <tr><td>IO::Socket::IP</td><td>n/a</td><td>0.42</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>IO::Socket::SSL</td><td>n/a</td><td>2.083</td><td>2.078</td><td>2.083</td><td>2.083</td></tr>
+  <tr><td>IO::Socket::Timeout</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td></tr>
+  <tr><td>IO::String</td><td>1.08</td><td>1.08</td><td>1.08</td><td>1.08</td><td>1.08</td></tr>
+  <tr><td>IO::Stringy</td><td>2.113</td><td>2.113</td><td>2.113</td><td>2.113</td><td>2.113</td></tr>
+  <tr><td>IO::Tty</td><td>1.16</td><td>1.17</td><td>1.17</td><td>1.17</td><td>1.17</td></tr>
+  <tr><td>IO::Zlib</td><td>1.14</td><td>n/a</td><td>n/a</td><td>1.14</td><td>n/a</td></tr>
+  <tr><td>IPC::Run</td><td>20200505.0</td><td>20220807.0</td><td>20220807.0</td><td>20220807.0</td><td>20220807.0</td></tr>
+  <tr><td>IPC::Run3</td><td>0.048</td><td>0.048</td><td>0.048</td><td>0.048</td><td>0.048</td></tr>
+  <tr><td>IPC::Signal</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+  <tr><td>IPC::System::Simple</td><td>n/a</td><td>1.30</td><td>1.30</td><td>1.30</td><td>1.30</td></tr>
+  <tr><td>IRI</td><td>0.011</td><td>0.011</td><td>0.011</td><td>0.011</td><td>0.011</td></tr>
+  <tr><td>Iterator</td><td>n/a</td><td>0.03</td><td>n/a</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>Iterator::Util</td><td>n/a</td><td>0.02</td><td>n/a</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>JSON</td><td>4.05</td><td>4.10</td><td>4.10</td><td>4.10</td><td>4.10</td></tr>
+  <tr><td>JSON::Any</td><td>1.39</td><td>1.39</td><td>1.39</td><td>1.39</td><td>1.39</td></tr>
+  <tr><td>JSON::MaybeXS</td><td>1.004003</td><td>1.004005</td><td>1.004004</td><td>1.004005</td><td>1.004005</td></tr>
+  <tr><td>JSON::PP</td><td>4.16</td><td>4.16</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>JSON::XS</td><td>4.03</td><td>4.03</td><td>4.03</td><td>4.03</td><td>4.03</td></tr>
+  <tr><td>Lexical::SealRequireHints</td><td>0.011</td><td>0.012</td><td>0.011</td><td>0.012</td><td>0.012</td></tr>
+  <tr><td>libintl-perl</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>libwww::perl</td><td>undef</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>libxml-enno</td><td>n/a</td><td>n/a</td><td>undef</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>libxml-perl</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Lingua::EN::Inflect</td><td>1.905</td><td>1.905</td><td>1.905</td><td>1.905</td><td>1.905</td></tr>
+  <tr><td>Lingua::EN::Sentence</td><td>0.31</td><td>0.34</td><td>0.33</td><td>0.33</td><td>0.34</td></tr>
+  <tr><td>Lingua::Sentence</td><td>1.100</td><td>1.100</td><td>1.100</td><td>1.100</td><td>1.100</td></tr>
+  <tr><td>Linux::ACL</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Linux::Inotify2</td><td>2.3</td><td>2.3</td><td>2.3</td><td>2.3</td><td>2.3</td></tr>
+  <tr><td>List::Compare</td><td>0.55</td><td>0.55</td><td>0.55</td><td>0.55</td><td>0.55</td></tr>
+  <tr><td>List::MoreUtils</td><td>0.430</td><td>0.430</td><td>0.430</td><td>0.430</td><td>0.430</td></tr>
+  <tr><td>List::MoreUtils::XS</td><td>0.430</td><td>0.430</td><td>0.430</td><td>0.430</td><td>0.430</td></tr>
+  <tr><td>List::Util</td><td>1.62</td><td>1.63</td><td>1.63</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>List::UtilsBy</td><td>0.11</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>load</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td></tr>
+  <tr><td>Locale::Codes</td><td>3.70</td><td>n/a</td><td>3.72</td><td>3.74</td><td>3.74</td></tr>
+  <tr><td>Locale::Maketext::Fuzzy</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>Locale::Maketext::Lexicon</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+  <tr><td>Log::Any</td><td>1.710</td><td>1.717</td><td>1.713</td><td>1.715</td><td>1.716</td></tr>
+  <tr><td>Log::Any::Adapter::Callback</td><td>0.101</td><td>0.101</td><td>0.101</td><td>0.101</td><td>0.101</td></tr>
+  <tr><td>Log::Dispatch</td><td>2.70</td><td>2.71</td><td>2.70</td><td>2.71</td><td>2.71</td></tr>
+  <tr><td>Log::Dispatch::Array</td><td>1.003</td><td>1.005</td><td>1.003</td><td>1.005</td><td>1.005</td></tr>
+  <tr><td>Logger::Simple</td><td>2.0</td><td>2.0</td><td>2.0</td><td>2.0</td><td>2.0</td></tr>
+  <tr><td>Log::Log4perl</td><td>1.54</td><td>1.57</td><td>1.57</td><td>1.57</td><td>1.57</td></tr>
+  <tr><td>Log::Message</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Log::Message::Simple</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td></tr>
+  <tr><td>Log::Report</td><td>1.33</td><td>1.34</td><td>1.34</td><td>1.34</td><td>1.34</td></tr>
+  <tr><td>Log::Report::Optional</td><td>1.07</td><td>1.07</td><td>1.07</td><td>1.07</td><td>1.07</td></tr>
+  <tr><td>LWP</td><td>6.71</td><td>6.72</td><td>6.71</td><td>6.71</td><td>6.72</td></tr>
+  <tr><td>LWP::MediaTypes</td><td>6.04</td><td>6.04</td><td>6.04</td><td>6.04</td><td>6.04</td></tr>
+  <tr><td>LWP::Protocol::http10</td><td>6.03</td><td>6.03</td><td>6.03</td><td>6.03</td><td>6.03</td></tr>
+  <tr><td>LWP::Protocol::https</td><td>6.10</td><td>6.11</td><td>6.10</td><td>6.10</td><td>6.11</td></tr>
+  <tr><td>Mail::Mbox::MessageParser</td><td>1.5111</td><td>1.5111</td><td>1.5111</td><td>1.5111</td><td>1.5111</td></tr>
+  <tr><td>MailTools</td><td>2.21</td><td>2.21</td><td>2.21</td><td>2.21</td><td>2.21</td></tr>
+  <tr><td>Math::Bezier</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td><td>0.01</td></tr>
+  <tr><td>Math::Big</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.16</td></tr>
+  <tr><td>Math::BigInt</td><td>1.999830</td><td>1.999839</td><td>1.999837</td><td>1.999842</td><td>1.999842</td></tr>
+  <tr><td>Math::BigRat</td><td>0.2622</td><td>0.2624</td><td>0.2624</td><td>0.2624</td><td>n/a</td></tr>
+  <tr><td>Math::CDF</td><td>0.1</td><td>0.1</td><td>0.1</td><td>0.1</td><td>0.1</td></tr>
+  <tr><td>Math::Derivative</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td></tr>
+  <tr><td>Math::Random</td><td>0.72</td><td>0.72</td><td>0.72</td><td>0.72</td><td>0.72</td></tr>
+  <tr><td>Math::Random::MT::Auto</td><td>6.23</td><td>6.23</td><td>6.23</td><td>6.23</td><td>6.23</td></tr>
+  <tr><td>Math::Round</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Math::Spline</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>Math::Utils</td><td>1.14</td><td>1.14</td><td>1.14</td><td>1.14</td><td>1.14</td></tr>
+  <tr><td>Math::VecStat</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>MCE</td><td>1.878</td><td>1.888</td><td>1.882</td><td>1.887</td><td>1.888</td></tr>
+  <tr><td>Memoize</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td><td>1.03</td></tr>
+  <tr><td>Memory::Usage</td><td>0.201</td><td>0.201</td><td>0.201</td><td>0.201</td><td>0.201</td></tr>
+  <tr><td>MIME::Charset</td><td>1.012.2</td><td>1.013.1</td><td>1.013.1</td><td>1.013.1</td><td>1.013.1</td></tr>
+  <tr><td>MIME::Lite</td><td>3.033</td><td>3.033</td><td>3.033</td><td>3.033</td><td>3.033</td></tr>
+  <tr><td>MIME::Lite::TT::HTML</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td><td>0.04</td></tr>
+  <tr><td>MIME::Tools</td><td>5.509</td><td>5.510</td><td>5.510</td><td>5.510</td><td>5.510</td></tr>
+  <tr><td>MIME::Types</td><td>2.22</td><td>2.24</td><td>2.22</td><td>2.24</td><td>2.24</td></tr>
+  <tr><td>Mixin::Linewise</td><td>0.110</td><td>0.111</td><td>0.110</td><td>0.111</td><td>0.111</td></tr>
+  <tr><td>Mock::Config</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>Module::Build</td><td>0.4231</td><td>0.4234</td><td>0.4232</td><td>0.4234</td><td>0.4234</td></tr>
+  <tr><td>Module::Build::Tiny</td><td>0.039</td><td>0.046</td><td>0.039</td><td>0.046</td><td>0.046</td></tr>
+  <tr><td>Module::Build::XSUtil</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td></tr>
+  <tr><td>Module::CoreList</td><td>5.20221120</td><td>5.20230820</td><td>5.20180120</td><td>5.20230423</td><td>5.20230720</td></tr>
+  <tr><td>Module::CPANfile</td><td>1.1004</td><td>1.1004</td><td>1.1004</td><td>1.1004</td><td>1.1004</td></tr>
+  <tr><td>Module::CPANTS::Analyse</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td></tr>
+  <tr><td>Module::ExtractUse</td><td>0.344</td><td>0.345</td><td>0.344</td><td>0.345</td><td>0.345</td></tr>
+  <tr><td>Module::Find</td><td>0.15</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>Module::Implementation</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Module::Install</td><td>1.19</td><td>1.21</td><td>1.19</td><td>1.21</td><td>1.21</td></tr>
+  <tr><td>Module::Install::CPANfile</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>Module::Load</td><td>0.36</td><td>0.36</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Module::Load::Conditional</td><td>n/a</td><td>0.74</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Module::Metadata</td><td>n/a</td><td>1.000038</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Module::Pluggable</td><td>5.2</td><td>5.2</td><td>5.2</td><td>5.2</td><td>5.2</td></tr>
+  <tr><td>Module::Refresh</td><td>0.17</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td></tr>
+  <tr><td>Module::Runtime</td><td>0.016</td><td>0.016</td><td>0.016</td><td>0.016</td><td>0.016</td></tr>
+  <tr><td>Module::Runtime::Conflicts</td><td>0.003</td><td>0.003</td><td>0.003</td><td>0.003</td><td>0.003</td></tr>
+  <tr><td>Module::ScanDeps</td><td>1.31</td><td>1.33</td><td>1.31</td><td>1.31</td><td>1.32</td></tr>
+  <tr><td>Module::Signature</td><td>0.88</td><td>0.88</td><td>0.88</td><td>0.88</td><td>0.88</td></tr>
+  <tr><td>Module::Util</td><td>1.09</td><td>1.09</td><td>1.09</td><td>1.09</td><td>1.09</td></tr>
+  <tr><td>Module-Versions-Report</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td></tr>
+  <tr><td>Mojo::IOLoop::Delay</td><td>8.76</td><td>n/a</td><td>undef</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Mojolicious</td><td>9.24</td><td>9.33</td><td>7.94</td><td>9.32</td><td>9.33</td></tr>
+  <tr><td>Moo</td><td>2.004004</td><td>2.004004</td><td>2.004004</td><td>2.004004</td><td>2.004004</td></tr>
+  <tr><td>Moose</td><td>2.2201</td><td>2.2206</td><td>2.2201</td><td>2.2203</td><td>2.2206</td></tr>
+  <tr><td>MooseX::ArrayRef</td><td>0.005</td><td>0.005</td><td>0.005</td><td>0.005</td><td>0.005</td></tr>
+  <tr><td>MooseX::Extended</td><td>n/a</td><td>n/a</td><td>n/a</td><td>0.35</td><td>0.35</td></tr>
+  <tr><td>MooseX::Role::Parameterized</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td></tr>
+  <tr><td>MooseX::Role::WarnOnConflict</td><td>n/a</td><td>n/a</td><td>n/a</td><td>0.01</td><td>0.01</td></tr>
+  <tr><td>MooseX::Role::WithOverloading</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>MooseX::StrictConstructor</td><td>n/a</td><td>n/a</td><td>n/a</td><td>0.21</td><td>0.21</td></tr>
+  <tr><td>MooseX::Types</td><td>0.50</td><td>0.50</td><td>0.50</td><td>0.50</td><td>0.50</td></tr>
+  <tr><td>MooseX::Types::Path::Class</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>MooX::HandlesVia</td><td>0.001009</td><td>0.001009</td><td>0.001009</td><td>0.001009</td><td>0.001009</td></tr>
+  <tr><td>MooX::late</td><td>0.100</td><td>0.100</td><td>0.100</td><td>0.100</td><td>0.100</td></tr>
+  <tr><td>MooX::Locale::Passthrough</td><td>0.001</td><td>0.001</td><td>0.001</td><td>0.001</td><td>0.001</td></tr>
+  <tr><td>MooX::Options</td><td>4.103</td><td>4.103</td><td>4.103</td><td>4.103</td><td>4.103</td></tr>
+  <tr><td>MooX::ProtectedAttributes</td><td>n/a</td><td>0.03</td><td>n/a</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>MooX::Types::MooseLike</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td></tr>
+  <tr><td>MooX::TypeTiny</td><td>0.002003</td><td>0.002003</td><td>0.002003</td><td>0.002003</td><td>0.002003</td></tr>
+  <tr><td>Mouse</td><td>v2.5.10</td><td>v2.5.10</td><td>v2.5.10</td><td>v2.5.10</td><td>v2.5.10</td></tr>
+  <tr><td>Mozilla::CA</td><td>20211001</td><td>20230821</td><td>20221114</td><td>20221114</td><td>20221114</td></tr>
+  <tr><td>Mozilla::PublicSuffix</td><td>v1.0.6</td><td>v1.0.6</td><td>v1.0.6</td><td>v1.0.6</td><td>v1.0.6</td></tr>
+  <tr><td>MRO::Compat</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>multidimensional</td><td>0.014</td><td>0.014</td><td>0.014</td><td>0.014</td><td>0.014</td></tr>
+  <tr><td>MySQL::Config</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td></tr>
+  <tr><td>namespace::autoclean</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td></tr>
+  <tr><td>namespace::clean</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td></tr>
+  <tr><td>Net</td><td>undef</td><td>undef</td><td>undef</td><td>undef</td><td>n/a</td></tr>
+  <tr><td>Net::CIDR</td><td>0.21</td><td>0.21</td><td>0.21</td><td>0.21</td><td>0.21</td></tr>
+  <tr><td>Net::Curl</td><td>0.50</td><td>0.54</td><td>0.52</td><td>0.53</td><td>0.54</td></tr>
+  <tr><td>Net::DNS</td><td>1.33</td><td>1.20</td><td>1.20</td><td>1.20</td><td>1.20</td></tr>
+  <tr><td>Net::HTTP</td><td>6.22</td><td>6.23</td><td>6.22</td><td>6.22</td><td>6.23</td></tr>
+  <tr><td>Net::IP</td><td>1.26</td><td>1.26</td><td>1.26</td><td>1.26</td><td>1.26</td></tr>
+  <tr><td>Net::LDAP</td><td>0.68</td><td>0.68</td><td>0.68</td><td>0.68</td><td>0.68</td></tr>
+  <tr><td>Net::OAuth</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td><td>0.28</td></tr>
+  <tr><td>Net::Ping</td><td>2.75</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Net::Server</td><td>2.010</td><td>2.014</td><td>2.013</td><td>2.014</td><td>2.014</td></tr>
+  <tr><td>Net::SMTP::TLS</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>Net::SSLeay</td><td>n/a</td><td>1.92</td><td>1.92</td><td>1.92</td><td>1.92</td></tr>
+  <tr><td>Net::Twitter</td><td>4.01043</td><td>4.01043</td><td>4.01043</td><td>4.01043</td><td>4.01043</td></tr>
+  <tr><td>Number::Compare</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>Number::Format</td><td>1.75</td><td>1.76</td><td>1.75</td><td>1.76</td><td>1.76</td></tr>
+  <tr><td>Number::Range</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>Object::Accessor</td><td>0.48</td><td>0.48</td><td>0.48</td><td>0.48</td><td>0.48</td></tr>
+  <tr><td>Object::InsideOut</td><td>4.05</td><td>4.05</td><td>4.05</td><td>4.05</td><td>4.05</td></tr>
+  <tr><td>Object::Pad</td><td>n/a</td><td>n/a</td><td>n/a</td><td>0.79</td><td>0.79</td></tr>
+  <tr><td>OLE::Storage_Lite</td><td>0.20</td><td>0.22</td><td>0.20</td><td>0.22</td><td>0.22</td></tr>
+  <tr><td>Package::Constants</td><td>0.06</td><td>n/a</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>Package::DeprecationManager</td><td>0.17</td><td>0.18</td><td>0.17</td><td>0.18</td><td>0.18</td></tr>
+  <tr><td>Package::Stash</td><td>0.40</td><td>0.40</td><td>0.40</td><td>0.40</td><td>0.40</td></tr>
+  <tr><td>Package::Stash::XS</td><td>0.29</td><td>0.30</td><td>0.30</td><td>0.30</td><td>0.30</td></tr>
+  <tr><td>PadWalker</td><td>2.5</td><td>2.5</td><td>2.5</td><td>2.5</td><td>2.5</td></tr>
+  <tr><td>Parallel::ForkManager</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td></tr>
+  <tr><td>Parallel::Prefork</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td></tr>
+  <tr><td>Params::Classify</td><td>0.015</td><td>0.015</td><td>0.015</td><td>0.015</td><td>0.015</td></tr>
+  <tr><td>Params::Util</td><td>1.102</td><td>1.102</td><td>1.102</td><td>1.102</td><td>1.102</td></tr>
+  <tr><td>Params::Validate</td><td>1.30</td><td>1.31</td><td>1.31</td><td>1.31</td><td>1.31</td></tr>
+  <tr><td>Params::ValidationCompiler</td><td>0.30</td><td>0.31</td><td>0.30</td><td>0.31</td><td>0.31</td></tr>
+  <tr><td>PAR::Dist</td><td>0.51</td><td>0.52</td><td>0.51</td><td>0.52</td><td>0.52</td></tr>
+  <tr><td>Parse::CPAN::Packages</td><td>2.40</td><td>2.40</td><td>2.40</td><td>2.40</td><td>2.40</td></tr>
+  <tr><td>Parse::Distname</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Parse::LocalDistribution</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td></tr>
+  <tr><td>Parse::PMFile</td><td>n/a</td><td>0.44</td><td>0.43</td><td>0.44</td><td>0.44</td></tr>
+  <tr><td>Parse::RecDescent</td><td>1.967015</td><td>1.967015</td><td>1.967015</td><td>1.967015</td><td>1.967015</td></tr>
+  <tr><td>Parse::Yapp</td><td>1.21</td><td>1.21</td><td>1.21</td><td>1.21</td><td>1.21</td></tr>
+  <tr><td>Path::Class</td><td>0.37</td><td>0.37</td><td>0.37</td><td>0.37</td><td>0.37</td></tr>
+  <tr><td>Path::Tiny</td><td>0.122</td><td>0.144</td><td>0.144</td><td>0.144</td><td>0.144</td></tr>
+  <tr><td>PAUSE::Permissions</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>PAUSE::Permissions::MetaCPAN</td><td>0.001</td><td>0.100</td><td>0.001</td><td>0.100</td><td>0.100</td></tr>
+  <tr><td>PDF::API2</td><td>2.043</td><td>2.044</td><td>2.044</td><td>2.044</td><td>2.044</td></tr>
+  <tr><td>Pegex</td><td>0.75</td><td>0.75</td><td>0.75</td><td>0.75</td><td>0.75</td></tr>
+  <tr><td>Perl</td><td>5.26.3</td><td>5.18.4</td><td>5.34.1</td><td>5.36.1</td><td>5.38.0</td></tr>
+  <tr><td>PerlIO::eol</td><td>0.17</td><td>0.19</td><td>0.17</td><td>0.18</td><td>0.19</td></tr>
+  <tr><td>PerlIO::gzip</td><td>0.20</td><td>0.20</td><td>0.20</td><td>0.20</td><td>0.20</td></tr>
+  <tr><td>PerlIO::utf8_strict</td><td>0.009</td><td>0.010</td><td>0.010</td><td>0.010</td><td>0.010</td></tr>
+  <tr><td>PerlIO::via::Timeout</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td></tr>
+  <tr><td>Perl::PrereqScanner::NotQuiteLite</td><td>0.9916</td><td>0.9917</td><td>0.9916</td><td>0.9917</td><td>0.9917</td></tr>
+  <tr><td>Perl::Tidy</td><td>20220217</td><td>20230701</td><td>20221112</td><td>20230309</td><td>20230701</td></tr>
+  <tr><td>Perl::Unsafe::Signals</td><td>n/a</td><td>n/a</td><td>n/a</td><td>0.03</td><td>n/a</td></tr>
+  <tr><td>Plack</td><td>1.0048</td><td>1.0050</td><td>1.0050</td><td>1.0050</td><td>1.0050</td></tr>
+  <tr><td>Pod::Coverage</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td></tr>
+  <tr><td>Pod::Coverage::TrustPod</td><td>0.100005</td><td>0.100006</td><td>0.100005</td><td>0.100006</td><td>0.100006</td></tr>
+  <tr><td>Pod::Escapes</td><td>n/a</td><td>1.07</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Pod::Eventual</td><td>0.094002</td><td>0.094003</td><td>0.094002</td><td>0.094003</td><td>0.094003</td></tr>
+  <tr><td>Pod::LaTeX</td><td>0.61</td><td>n/a</td><td>0.61</td><td>0.61</td><td>0.61</td></tr>
+  <tr><td>Pod::Parser</td><td>n/a</td><td>1.66</td><td>1.65</td><td>1.66</td><td>1.66</td></tr>
+  <tr><td>Pod::Perldoc</td><td>n/a</td><td>3.28</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Pod::Simple</td><td>3.43</td><td>3.45</td><td>3.43</td><td>3.45</td><td>3.45</td></tr>
+  <tr><td>Pod::Spell</td><td>1.20</td><td>1.26</td><td>1.25</td><td>1.26</td><td>1.26</td></tr>
+  <tr><td>Pod::Spell::CommonMistakes</td><td>1.002</td><td>1.002</td><td>1.002</td><td>1.002</td><td>1.002</td></tr>
+  <tr><td>Pod::Strip</td><td>1.100</td><td>1.100</td><td>1.100</td><td>1.100</td><td>1.100</td></tr>
+  <tr><td>POSIX::strftime::Compiler</td><td>0.44</td><td>0.44</td><td>0.44</td><td>0.44</td><td>0.44</td></tr>
+  <tr><td>PostScript::Metrics</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>PPI</td><td>1.273</td><td>1.276</td><td>1.276</td><td>1.276</td><td>1.276</td></tr>
+  <tr><td>Proc::Background</td><td>1.30</td><td>1.32</td><td>1.30</td><td>1.32</td><td>1.32</td></tr>
+  <tr><td>Proc::ProcessTable</td><td>0.634</td><td>0.636</td><td>0.634</td><td>0.635</td><td>0.636</td></tr>
+  <tr><td>Proc::Wait3</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Readonly</td><td>2.05</td><td>2.05</td><td>2.05</td><td>2.05</td><td>2.05</td></tr>
+  <tr><td>Redis</td><td>1.999</td><td>2.000</td><td>1.999</td><td>2.000</td><td>2.000</td></tr>
+  <tr><td>Ref::Util</td><td>0.204</td><td>0.204</td><td>0.204</td><td>0.204</td><td>0.204</td></tr>
+  <tr><td>Ref::Util::XS</td><td>0.117</td><td>0.117</td><td>0.117</td><td>0.117</td><td>0.117</td></tr>
+  <tr><td>Regexp::Common</td><td>2017060201</td><td>2017060201</td><td>2017060201</td><td>2017060201</td><td>2017060201</td></tr>
+  <tr><td>Regexp::Common::net::CIDR</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>Regexp::IPv6</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>Regexp::Trie</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>Regexp::Util</td><td>0.005</td><td>0.005</td><td>0.005</td><td>0.005</td><td>0.005</td></tr>
+  <tr><td>RL</td><td>n/a</td><td>0.09</td><td>n/a</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Role::Basic</td><td>0.13</td><td>0.13</td><td>0.13</td><td>0.13</td><td>0.13</td></tr>
+  <tr><td>Role::Hooks</td><td>n/a</td><td>0.008</td><td>0.008</td><td>0.008</td><td>0.008</td></tr>
+  <tr><td>Role::Tiny</td><td>2.002004</td><td>2.002004</td><td>2.002004</td><td>2.002004</td><td>2.002004</td></tr>
+  <tr><td>RTF::Writer</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td></tr>
+  <tr><td>Scope::Guard</td><td>0.21</td><td>0.21</td><td>0.21</td><td>0.21</td><td>0.21</td></tr>
+  <tr><td>Search::Elasticsearch</td><td>6.81</td><td>6.81</td><td>6.81</td><td>6.81</td><td>6.81</td></tr>
+  <tr><td>Search::Elasticsearch::Client::6_0</td><td>n/a</td><td>6.81</td><td>6.81</td><td>6.81</td><td>6.81</td></tr>
+  <tr><td>Search::Elasticsearch::Client::7_0</td><td>n/a</td><td>7.713</td><td>n/a</td><td>7.713</td><td>7.713</td></tr>
+  <tr><td>Sereal::Decoder</td><td>4.023</td><td>5.004</td><td>5.001</td><td>5.004</td><td>5.004</td></tr>
+  <tr><td>Sereal::Encoder</td><td>4.023</td><td>5.004</td><td>5.001</td><td>5.004</td><td>5.004</td></tr>
+  <tr><td>Server::Starter</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td></tr>
+  <tr><td>Set::IntervalTree</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td><td>0.12</td></tr>
+  <tr><td>Set::IntSpan</td><td>1.19</td><td>1.19</td><td>1.19</td><td>1.19</td><td>1.19</td></tr>
+  <tr><td>Set::Object</td><td>1.42</td><td>1.42</td><td>1.42</td><td>1.42</td><td>1.42</td></tr>
+  <tr><td>Set::Scalar</td><td>1.29</td><td>1.29</td><td>1.29</td><td>1.29</td><td>1.29</td></tr>
+  <tr><td>Signal::Mask</td><td>0.008</td><td>0.008</td><td>0.008</td><td>0.008</td><td>0.008</td></tr>
+  <tr><td>Smart::Comments</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td></tr>
+  <tr><td>SOAP::Lite</td><td>1.27</td><td>1.27</td><td>1.27</td><td>1.27</td><td>1.27</td></tr>
+  <tr><td>SOAP::WSDL</td><td>n/a</td><td>n/a</td><td>3.004</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Socket</td><td>n/a</td><td>2.037</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Socket6</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td></tr>
+  <tr><td>Software::License</td><td>n/a</td><td>0.104004</td><td>0.104002</td><td>0.104004</td><td>0.104004</td></tr>
+  <tr><td>Software::License::CCpack</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td><td>1.11</td></tr>
+  <tr><td>Sort::ArrayOfArrays</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+  <tr><td>Sort::Key</td><td>1.33</td><td>1.33</td><td>1.33</td><td>1.33</td><td>1.33</td></tr>
+  <tr><td>Sort::Naturally</td><td>1.03</td><td>1.03</td><td>1.03</td><td>1.03</td><td>1.03</td></tr>
+  <tr><td>Sort::Versions</td><td>1.62</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Specio</td><td>0.47</td><td>0.48</td><td>0.48</td><td>0.48</td><td>0.48</td></tr>
+  <tr><td>Spiffy</td><td>0.46</td><td>0.46</td><td>0.46</td><td>0.46</td><td>0.46</td></tr>
+  <tr><td>Spreadsheet::ParseExcel</td><td>0.65</td><td>0.65</td><td>0.65</td><td>0.65</td><td>0.65</td></tr>
+  <tr><td>Spreadsheet::ParseXLSX</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td><td>0.27</td></tr>
+  <tr><td>Spreadsheet::WriteExcel</td><td>2.40</td><td>2.40</td><td>2.40</td><td>2.40</td><td>2.40</td></tr>
+  <tr><td>Spreadsheet::XLSX</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>Starlet</td><td>0.31</td><td>0.31</td><td>0.31</td><td>0.31</td><td>0.31</td></tr>
+  <tr><td>Statistics::Basic</td><td>1.6611</td><td>1.6611</td><td>1.6611</td><td>1.6611</td><td>1.6611</td></tr>
+  <tr><td>Statistics::Descriptive</td><td>3.0800</td><td>3.0801</td><td>3.0800</td><td>3.0800</td><td>3.0801</td></tr>
+  <tr><td>Statistics::Distributions</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td></tr>
+  <tr><td>Statistics::Lite</td><td>3.62</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Statistics::R</td><td>0.34</td><td>0.34</td><td>0.34</td><td>0.34</td><td>0.34</td></tr>
+  <tr><td>Statistics::TTest</td><td>1.1</td><td>1.1</td><td>1.1</td><td>1.1</td><td>1.1</td></tr>
+  <tr><td>Storable</td><td>n/a</td><td>3.25</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Stream::Buffered</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>strictures</td><td>2.000006</td><td>2.000006</td><td>2.000006</td><td>2.000006</td><td>2.000006</td></tr>
+  <tr><td>String::Approx</td><td>3.28</td><td>3.28</td><td>3.28</td><td>3.28</td><td>3.28</td></tr>
+  <tr><td>String::HexConvert</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>String::Print</td><td>0.94</td><td>0.94</td><td>0.94</td><td>0.94</td><td>0.94</td></tr>
+  <tr><td>String::Random</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td></tr>
+  <tr><td>String::ShellQuote</td><td>n/a</td><td>1.04</td><td>1.04</td><td>1.04</td><td>1.04</td></tr>
+  <tr><td>Sub::Exporter</td><td>0.989</td><td>0.990</td><td>0.988</td><td>0.989</td><td>0.990</td></tr>
+  <tr><td>Sub::Exporter::ForMethods</td><td>0.100054</td><td>0.100055</td><td>0.100054</td><td>0.100055</td><td>0.100055</td></tr>
+  <tr><td>Sub::Exporter::Progressive</td><td>0.001013</td><td>0.001013</td><td>0.001013</td><td>0.001013</td><td>0.001013</td></tr>
+  <tr><td>Sub::HandlesVia</td><td>0.016</td><td>0.050000</td><td>0.045</td><td>0.050000</td><td>0.050000</td></tr>
+  <tr><td>Sub::Identify</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>Sub::Info</td><td>0.002</td><td>0.002</td><td>0.002</td><td>0.002</td><td>0.002</td></tr>
+  <tr><td>Sub::Install</td><td>0.929</td><td>0.929</td><td>0.928</td><td>0.929</td><td>0.929</td></tr>
+  <tr><td>Sub::Name</td><td>0.26</td><td>0.27</td><td>0.26</td><td>0.27</td><td>0.27</td></tr>
+  <tr><td>Sub::Quote</td><td>2.006006</td><td>2.006008</td><td>2.006006</td><td>2.006008</td><td>2.006008</td></tr>
+  <tr><td>Sub::Uplevel</td><td>0.2800</td><td>0.2800</td><td>0.2800</td><td>0.2800</td><td>0.2800</td></tr>
+  <tr><td>SUPER</td><td>1.20190531</td><td>1.20190531</td><td>1.20190531</td><td>1.20190531</td><td>1.20190531</td></tr>
+  <tr><td>SVG</td><td>2.86</td><td>2.87</td><td>2.87</td><td>2.87</td><td>2.87</td></tr>
+  <tr><td>SVG::Graph</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>SWF::File</td><td>0.033</td><td>0.033</td><td>0.033</td><td>0.033</td><td>0.033</td></tr>
+  <tr><td>Switch</td><td>2.17</td><td>2.17</td><td>2.17</td><td>2.17</td><td>2.17</td></tr>
+  <tr><td>Switch::Plain</td><td>0.0501</td><td>0.0501</td><td>0.0501</td><td>0.0501</td><td>0.0501</td></tr>
+  <tr><td>Symbol::Global::Name</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Sys::Info</td><td>0.7811</td><td>0.7811</td><td>0.7811</td><td>0.7811</td><td>0.7811</td></tr>
+  <tr><td>Sys::Info::Base</td><td>0.7807</td><td>0.7807</td><td>0.7807</td><td>0.7807</td><td>0.7807</td></tr>
+  <tr><td>Sys::Info::Driver::Linux</td><td>0.7905</td><td>0.7905</td><td>0.7905</td><td>0.7905</td><td>0.7905</td></tr>
+  <tr><td>Sys::RunAlone</td><td>0.13</td><td>0.13</td><td>0.13</td><td>0.13</td><td>0.13</td></tr>
+  <tr><td>Sys::SigAction</td><td>n/a</td><td>0.23</td><td>n/a</td><td>0.23</td><td>n/a</td></tr>
+  <tr><td>System::Timeout</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Task::Weaken</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td></tr>
+  <tr><td>Template</td><td>3.010</td><td>3.101</td><td>3.101</td><td>3.101</td><td>3.101</td></tr>
+  <tr><td>Template::Plugin::CGI</td><td>n/a</td><td>3.101</td><td>3.101</td><td>3.101</td><td>3.101</td></tr>
+  <tr><td>Term::ProgressBar</td><td>2.22</td><td>2.23</td><td>2.23</td><td>2.23</td><td>2.23</td></tr>
+  <tr><td>Term::ReadKey</td><td>2.38</td><td>2.38</td><td>2.38</td><td>2.38</td><td>2.38</td></tr>
+  <tr><td>Term::ReadLine</td><td>1.17</td><td>1.12</td><td>1.17</td><td>1.17</td><td>1.17</td></tr>
+  <tr><td>Term::Size::Any</td><td>0.002</td><td>0.002</td><td>0.002</td><td>0.002</td><td>0.002</td></tr>
+  <tr><td>Term::Size::Perl</td><td>0.031</td><td>0.031</td><td>0.031</td><td>0.031</td><td>0.031</td></tr>
+  <tr><td>Term::Table</td><td>0.016</td><td>0.016</td><td>0.016</td><td>0.016</td><td>0.016</td></tr>
+  <tr><td>Term::UI</td><td>0.50</td><td>0.50</td><td>0.50</td><td>0.50</td><td>0.50</td></tr>
+  <tr><td>Test2::Plugin::NoWarnings</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Test2::Suite</td><td>0.000145</td><td>0.000155</td><td>0.000145</td><td>0.000155</td><td>0.000155</td></tr>
+  <tr><td>Test2::Tools::Explain</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>Test::API</td><td>n/a</td><td>0.010</td><td>n/a</td><td>0.010</td><td>0.010</td></tr>
+  <tr><td>Test::Base</td><td>0.89</td><td>0.89</td><td>0.89</td><td>0.89</td><td>0.89</td></tr>
+  <tr><td>Test::CheckDeps</td><td>0.010</td><td>0.010</td><td>0.010</td><td>0.010</td><td>0.010</td></tr>
+  <tr><td>Test::Class</td><td>0.52</td><td>0.52</td><td>0.52</td><td>0.52</td><td>0.52</td></tr>
+  <tr><td>Test::CleanNamespaces</td><td>0.24</td><td>0.24</td><td>0.24</td><td>0.24</td><td>0.24</td></tr>
+  <tr><td>Test::Compile</td><td>v3.0.1</td><td>v3.3.1</td><td>v3.1.0</td><td>v3.2.2</td><td>v3.3.1</td></tr>
+  <tr><td>Test::CPAN::Meta</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td><td>0.25</td></tr>
+  <tr><td>Test::CPAN::Meta::JSON</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>Test::Deep</td><td>1.130</td><td>1.204</td><td>1.130</td><td>1.204</td><td>1.204</td></tr>
+  <tr><td>Test::Differences</td><td>0.69</td><td>0.70</td><td>0.69</td><td>0.69</td><td>0.70</td></tr>
+  <tr><td>Test::EOL</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td></tr>
+  <tr><td>Test::Exception</td><td>0.43</td><td>0.43</td><td>0.43</td><td>0.43</td><td>0.43</td></tr>
+  <tr><td>Test::Exports</td><td>n/a</td><td>n/a</td><td>n/a</td><td>1</td><td>1</td></tr>
+  <tr><td>Test::FailWarnings</td><td>0.008</td><td>0.008</td><td>0.008</td><td>0.008</td><td>0.008</td></tr>
+  <tr><td>Test::Fatal</td><td>0.016</td><td>0.017</td><td>0.016</td><td>0.017</td><td>0.017</td></tr>
+  <tr><td>Test::File</td><td>1.992</td><td>1.993</td><td>1.992</td><td>1.993</td><td>1.993</td></tr>
+  <tr><td>Test::File::ShareDir</td><td>1.001002</td><td>1.001002</td><td>1.001002</td><td>1.001002</td><td>1.001002</td></tr>
+  <tr><td>Test::Fork</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>Test::Harness</td><td>n/a</td><td>3.47</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Test::InDistDir</td><td>1.112071</td><td>1.112071</td><td>1.112071</td><td>1.112071</td><td>1.112071</td></tr>
+  <tr><td>Test::Inter</td><td>1.09</td><td>1.10</td><td>1.09</td><td>1.10</td><td>1.10</td></tr>
+  <tr><td>Test::JSON</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>Test::Kwalitee</td><td>1.28</td><td>1.28</td><td>1.28</td><td>1.28</td><td>1.28</td></tr>
+  <tr><td>Test::LeakTrace</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>Test::Lib</td><td>n/a</td><td>0.003</td><td>n/a</td><td>0.003</td><td>0.003</td></tr>
+  <tr><td>Test::LongString</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>Test::Memory::Cycle</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td></tr>
+  <tr><td>Test::MockModule</td><td>0.177.0</td><td>0.177.0</td><td>0.177.0</td><td>0.177.0</td><td>0.177.0</td></tr>
+  <tr><td>Test::MockObject</td><td>1.20200122</td><td>1.20200122</td><td>1.20200122</td><td>1.20200122</td><td>1.20200122</td></tr>
+  <tr><td>Test::MockRandom</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td></tr>
+  <tr><td>Test::MockTime</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>Test::MockTime::HiRes</td><td>n/a</td><td>0.08</td><td>n/a</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Test::More::UTF8</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Test::Most</td><td>0.37</td><td>0.38</td><td>0.38</td><td>0.38</td><td>0.38</td></tr>
+  <tr><td>Test::Needs</td><td>0.002009</td><td>0.002010</td><td>0.002009</td><td>0.002010</td><td>0.002010</td></tr>
+  <tr><td>Test::NoTabs</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td></tr>
+  <tr><td>Test::NoWarnings</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td></tr>
+  <tr><td>Test::Number::Delta</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td></tr>
+  <tr><td>Test::Object</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Test::Output</td><td>1.033</td><td>1.034</td><td>1.033</td><td>1.033</td><td>1.034</td></tr>
+  <tr><td>Test::PAUSE::Permissions</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Test::Pod</td><td>1.52</td><td>1.52</td><td>1.52</td><td>1.52</td><td>1.52</td></tr>
+  <tr><td>Test::Pod::Content</td><td>0.0.6</td><td>0.0.6</td><td>0.0.6</td><td>0.0.6</td><td>0.0.6</td></tr>
+  <tr><td>Test::Pod::Coverage</td><td>1.10</td><td>1.10</td><td>1.10</td><td>1.10</td><td>1.10</td></tr>
+  <tr><td>Test::Regexp</td><td>2017040101</td><td>2017040101</td><td>2017040101</td><td>2017040101</td><td>2017040101</td></tr>
+  <tr><td>Test::Reporter</td><td>1.62</td><td>1.62</td><td>1.62</td><td>1.62</td><td>1.62</td></tr>
+  <tr><td>Test::Reporter::Transport::Legacy</td><td>1.59</td><td>1.59</td><td>1.59</td><td>1.59</td><td>1.59</td></tr>
+  <tr><td>Test::Requires</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>Test::RequiresInternet</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td><td>0.05</td></tr>
+  <tr><td>Test::SharedFork</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td></tr>
+  <tr><td>Test::Simple</td><td>1.302190</td><td>1.302195</td><td>1.302191</td><td>1.302195</td><td>1.302195</td></tr>
+  <tr><td>Test::SubCalls</td><td>1.10</td><td>1.10</td><td>1.10</td><td>1.10</td><td>1.10</td></tr>
+  <tr><td>Test::Sys::Info</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td><td>0.23</td></tr>
+  <tr><td>Test::TCP</td><td>2.22</td><td>2.22</td><td>2.22</td><td>2.22</td><td>2.22</td></tr>
+  <tr><td>Test::Time</td><td>0.08</td><td>0.092</td><td>0.092</td><td>0.092</td><td>0.092</td></tr>
+  <tr><td>Test::Trap</td><td>0.3.4</td><td>0.3.5</td><td>0.3.5</td><td>0.3.5</td><td>0.3.5</td></tr>
+  <tr><td>Test::UseAllModules</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td><td>0.17</td></tr>
+  <tr><td>Test::utf8</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td></tr>
+  <tr><td>Test::Warn</td><td>0.36</td><td>0.37</td><td>0.37</td><td>0.37</td><td>0.37</td></tr>
+  <tr><td>Test::Warnings</td><td>0.031</td><td>0.031</td><td>0.031</td><td>0.031</td><td>0.031</td></tr>
+  <tr><td>Test::Weaken</td><td>3.022000</td><td>3.022000</td><td>3.022000</td><td>3.022000</td><td>3.022000</td></tr>
+  <tr><td>Test::Without::Module</td><td>0.20</td><td>0.21</td><td>0.21</td><td>0.21</td><td>0.21</td></tr>
+  <tr><td>Test::XML</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Test::YAML</td><td>1.07</td><td>1.07</td><td>1.07</td><td>1.07</td><td>1.07</td></tr>
+  <tr><td>Text::Aligner</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>Text::ASCIITable</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td><td>0.22</td></tr>
+  <tr><td>Text::Autoformat</td><td>1.75</td><td>1.75</td><td>1.75</td><td>1.75</td><td>1.75</td></tr>
+  <tr><td>Text::CSV</td><td>2.01</td><td>2.03</td><td>2.02</td><td>2.02</td><td>2.02</td></tr>
+  <tr><td>Text::CSV_XS</td><td>1.47</td><td>1.51</td><td>1.48</td><td>1.50</td><td>1.50</td></tr>
+  <tr><td>Text::Diff</td><td>n/a</td><td>1.45</td><td>1.45</td><td>1.45</td><td>1.45</td></tr>
+  <tr><td>Text::Format</td><td>0.62</td><td>0.62</td><td>0.62</td><td>0.62</td><td>0.62</td></tr>
+  <tr><td>Text::FormatTable</td><td>1.03</td><td>1.03</td><td>1.03</td><td>1.03</td><td>1.03</td></tr>
+  <tr><td>Text::Glob</td><td>n/a</td><td>0.11</td><td>0.11</td><td>0.11</td><td>0.11</td></tr>
+  <tr><td>Text::Haml</td><td>0.990118</td><td>0.990118</td><td>0.990118</td><td>0.990118</td><td>0.990118</td></tr>
+  <tr><td>Text::Levenshtein</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Text::LevenshteinXS</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>Text::Password::Pronounceable</td><td>0.30</td><td>0.30</td><td>0.30</td><td>0.30</td><td>0.30</td></tr>
+  <tr><td>Text::Quoted</td><td>2.10</td><td>2.10</td><td>2.10</td><td>2.10</td><td>2.10</td></tr>
+  <tr><td>Text::Reform</td><td>1.20</td><td>1.20</td><td>1.20</td><td>1.20</td><td>1.20</td></tr>
+  <tr><td>Text::SimpleTable</td><td>2.07</td><td>2.07</td><td>2.07</td><td>2.07</td><td>2.07</td></tr>
+  <tr><td>Text::Soundex</td><td>3.05</td><td>3.05</td><td>3.05</td><td>3.05</td><td>3.05</td></tr>
+  <tr><td>Text::Table</td><td>1.134</td><td>1.135</td><td>1.135</td><td>1.135</td><td>1.135</td></tr>
+  <tr><td>Text::Template</td><td>n/a</td><td>1.61</td><td>1.61</td><td>1.61</td><td>1.61</td></tr>
+  <tr><td>Text::Template::Simple</td><td>0.91</td><td>0.91</td><td>0.91</td><td>0.91</td><td>0.91</td></tr>
+  <tr><td>Text::Unidecode</td><td>1.30</td><td>1.30</td><td>1.30</td><td>1.30</td><td>1.30</td></tr>
+  <tr><td>Text::vFile::asData</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Text::WikiFormat</td><td>0.81</td><td>0.81</td><td>0.81</td><td>0.81</td><td>0.81</td></tr>
+  <tr><td>Text::Wrapper</td><td>1.05</td><td>1.05</td><td>1.05</td><td>1.05</td><td>1.05</td></tr>
+  <tr><td>Thread::Bless</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Thread::Cancel</td><td>1.13</td><td>1.13</td><td>1.13</td><td>1.13</td><td>1.13</td></tr>
+  <tr><td>Thread::Cleanup</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td><td>0.07</td></tr>
+  <tr><td>Thread::Conveyor</td><td>0.20</td><td>0.20</td><td>0.20</td><td>0.20</td><td>0.20</td></tr>
+  <tr><td>Thread::Conveyor::Monitored</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Thread::Exit</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.10</td></tr>
+  <tr><td>Thread::Pool</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td></tr>
+  <tr><td>Thread::Queue::Any</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.16</td><td>1.16</td></tr>
+  <tr><td>Thread::Rand</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Thread::Running</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td><td>0.08</td></tr>
+  <tr><td>Thread::Serialize</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td></tr>
+  <tr><td>Thread::SigMask</td><td>0.004</td><td>0.004</td><td>0.004</td><td>0.004</td><td>0.004</td></tr>
+  <tr><td>threads::shared</td><td>n/a</td><td>1.59</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Thread::Stack</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+  <tr><td>Thread::State</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.09</td></tr>
+  <tr><td>Thread::Tie</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td><td>0.15</td></tr>
+  <tr><td>Thread::Use</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>Throwable</td><td>1.001</td><td>1.001</td><td>n/a</td><td>1.001</td><td>1.001</td></tr>
+  <tr><td>Tie::IxHash</td><td>1.23</td><td>1.23</td><td>1.23</td><td>1.23</td><td>1.23</td></tr>
+  <tr><td>Tie::ToObject</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td><td>0.03</td></tr>
+  <tr><td>Time::Duration</td><td>1.21</td><td>1.21</td><td>1.21</td><td>1.21</td><td>1.21</td></tr>
+  <tr><td>Time::Duration::Parse</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td><td>0.16</td></tr>
+  <tr><td>Time::HiRes</td><td>1.9764</td><td>1.9764</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Time::Local</td><td>n/a</td><td>1.35</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Time::NT</td><td>0.007</td><td>0.007</td><td>0.007</td><td>0.007</td><td>0.007</td></tr>
+  <tr><td>Time::ParseDate</td><td>2015.103</td><td>2015.103</td><td>2015.103</td><td>2015.103</td><td>2015.103</td></tr>
+  <tr><td>Time::Piece</td><td>1.3401</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Tk</td><td>804.036</td><td>804.036</td><td>804.036</td><td>804.036</td><td>804.036</td></tr>
+  <tr><td>Tree::DAG_Node</td><td>1.32</td><td>1.32</td><td>1.32</td><td>1.32</td><td>1.32</td></tr>
+  <tr><td>Tree::Simple</td><td>1.34</td><td>1.34</td><td>1.34</td><td>1.34</td><td>1.34</td></tr>
+  <tr><td>true</td><td>n/a</td><td>n/a</td><td>n/a</td><td>v1.0.2</td><td>v1.0.2</td></tr>
+  <tr><td>Try::Tiny</td><td>0.31</td><td>0.31</td><td>0.31</td><td>0.31</td><td>0.31</td></tr>
+  <tr><td>Type::API</td><td>n/a</td><td>1.001</td><td>1.001</td><td>1.001</td><td>1.001</td></tr>
+  <tr><td>Types::Path::Tiny</td><td>0.006</td><td>0.006</td><td>0.006</td><td>0.006</td><td>0.006</td></tr>
+  <tr><td>Types::Serialiser</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td></tr>
+  <tr><td>Type::Tie</td><td>0.015</td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Type::Tiny</td><td>1.012004</td><td>2.004000</td><td>1.016010</td><td>2.004000</td><td>2.004000</td></tr>
+  <tr><td>Type::Tiny::XS</td><td>0.022</td><td>0.025</td><td>0.025</td><td>0.025</td><td>0.025</td></tr>
+  <tr><td>Unicode::Collate</td><td>n/a</td><td>1.31</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>Unicode::LineBreak</td><td>2019.001</td><td>2019.001</td><td>2019.001</td><td>2019.001</td><td>2019.001</td></tr>
+  <tr><td>Unicode::UTF8</td><td>0.62</td><td>0.62</td><td>0.62</td><td>0.62</td><td>0.62</td></tr>
+  <tr><td>UNIVERSAL::can</td><td>1.20140328</td><td>1.20140328</td><td>1.20140328</td><td>1.20140328</td><td>1.20140328</td></tr>
+  <tr><td>UNIVERSAL::isa</td><td>1.20171012</td><td>1.20171012</td><td>1.20171012</td><td>1.20171012</td><td>1.20171012</td></tr>
+  <tr><td>UNIVERSAL::ref</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>UNIVERSAL::require</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td><td>0.19</td></tr>
+  <tr><td>Unix::Processors</td><td>2.046</td><td>2.046</td><td>2.046</td><td>2.046</td><td>2.046</td></tr>
+  <tr><td>URI</td><td>5.10</td><td>5.21</td><td>5.17</td><td>5.19</td><td>5.19</td></tr>
+  <tr><td>URI::Escape::XS</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>Variable::Magic</td><td>0.62</td><td>0.63</td><td>0.63</td><td>0.63</td><td>0.63</td></tr>
+  <tr><td>version</td><td>0.9929</td><td>0.9929</td><td>0.9929</td><td>0.9929</td><td>0.9929</td></tr>
+  <tr><td>Want</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td><td>0.29</td></tr>
+  <tr><td>WWW::Curl</td><td>4.17</td><td>4.17</td><td>4.17</td><td>4.17</td><td>4.17</td></tr>
+  <tr><td>WWW::Form::UrlEncoded</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td><td>0.26</td></tr>
+  <tr><td>WWW::RobotRules</td><td>6.02</td><td>6.02</td><td>6.02</td><td>6.02</td><td>6.02</td></tr>
+  <tr><td>XML::CommonNS</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>XML::Compile</td><td>1.63</td><td>1.63</td><td>1.63</td><td>1.63</td><td>1.63</td></tr>
+  <tr><td>XML::Compile::C14N</td><td>0.95</td><td>0.95</td><td>0.95</td><td>0.95</td><td>0.95</td></tr>
+  <tr><td>XML::Compile::Cache</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td><td>1.06</td></tr>
+  <tr><td>XML::Compile::Dumper</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>XML::Compile::SOAP</td><td>3.27</td><td>3.28</td><td>3.28</td><td>3.28</td><td>3.28</td></tr>
+  <tr><td>XML::Compile::SOAP::Daemon</td><td>3.14</td><td>3.15</td><td>3.14</td><td>3.15</td><td>3.15</td></tr>
+  <tr><td>XML::Compile::Tester</td><td>0.91</td><td>0.91</td><td>0.91</td><td>0.91</td><td>0.91</td></tr>
+  <tr><td>XML::Compile::WSA</td><td>0.95</td><td>0.95</td><td>0.95</td><td>0.95</td><td>0.95</td></tr>
+  <tr><td>XML::Compile::WSDL11</td><td>3.08</td><td>3.08</td><td>3.08</td><td>3.08</td><td>3.08</td></tr>
+  <tr><td>XML::Compile::WSS</td><td>1.14</td><td>1.14</td><td>1.14</td><td>1.14</td><td>1.14</td></tr>
+  <tr><td>XML::Compile::WSS::Signature</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td><td>2.02</td></tr>
+  <tr><td>XML::DOM</td><td>1.46</td><td>1.46</td><td>1.46</td><td>1.46</td><td>1.46</td></tr>
+  <tr><td>XML::DOM::XPath</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>XML::Filter::BufferText</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td></tr>
+  <tr><td>XML::LibXML</td><td>2.0207</td><td>2.0209</td><td>2.0208</td><td>2.0208</td><td>2.0209</td></tr>
+  <tr><td>XML::LibXML::Simple</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td><td>1.01</td></tr>
+  <tr><td>XML::Namespace</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td><td>0.02</td></tr>
+  <tr><td>XML::NamespaceFactory</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td></tr>
+  <tr><td>XML::NamespaceSupport</td><td>1.12</td><td>1.12</td><td>1.12</td><td>1.12</td><td>1.12</td></tr>
+  <tr><td>XML::Parser</td><td>2.36</td><td>2.36</td><td>2.36</td><td>2.36</td><td>2.36</td></tr>
+  <tr><td>XML::Parser::Lite</td><td>0.722</td><td>0.722</td><td>0.722</td><td>0.722</td><td>0.722</td></tr>
+  <tr><td>XML::RegExp</td><td>0.04</td><td>0.04</td><td>undef</td><td>0.04</td><td>0.04</td></tr>
+  <tr><td>XML::RSS</td><td>1.62</td><td>1.62</td><td>1.62</td><td>1.62</td><td>1.62</td></tr>
+  <tr><td>XML::SAX</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td><td>1.02</td></tr>
+  <tr><td>XML::SAX::Base</td><td>1.09</td><td>1.09</td><td>1.09</td><td>1.09</td><td>1.09</td></tr>
+  <tr><td>XML::SAX::Expat</td><td>0.51</td><td>0.51</td><td>0.51</td><td>0.51</td><td>0.51</td></tr>
+  <tr><td>XML::SAX::Writer</td><td>0.57</td><td>0.57</td><td>0.57</td><td>0.57</td><td>0.57</td></tr>
+  <tr><td>XML::SemanticDiff</td><td>1.0007</td><td>1.0007</td><td>1.0007</td><td>1.0007</td><td>1.0007</td></tr>
+  <tr><td>XML::Simple</td><td>2.25</td><td>2.25</td><td>2.25</td><td>2.25</td><td>2.25</td></tr>
+  <tr><td>XML::Twig</td><td>3.52</td><td>3.52</td><td>3.52</td><td>3.52</td><td>3.52</td></tr>
+  <tr><td>XML::Writer</td><td>0.900</td><td>0.900</td><td>0.900</td><td>0.900</td><td>0.900</td></tr>
+  <tr><td>XML::XML2JSON</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td><td>0.06</td></tr>
+  <tr><td>XML::XPath</td><td>1.44</td><td>1.48</td><td>1.48</td><td>1.48</td><td>1.48</td></tr>
+  <tr><td>XML::XPathEngine</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td><td>0.14</td></tr>
+  <tr><td>XSLoader</td><td>0.24</td><td>0.24</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+  <tr><td>XS::Parse::Keyword</td><td>n/a</td><td>0.38</td><td>n/a</td><td>0.33</td><td>0.36</td></tr>
+  <tr><td>XS::Parse::Sublike</td><td>n/a</td><td>0.18</td><td>n/a</td><td>0.17</td><td>0.18</td></tr>
+  <tr><td>XString</td><td>0.005</td><td>0.005</td><td>0.005</td><td>0.005</td><td>0.005</td></tr>
+  <tr><td>XXX</td><td>0.38</td><td>0.38</td><td>0.38</td><td>0.38</td><td>0.38</td></tr>
+  <tr><td>YAML</td><td>n/a</td><td>1.30</td><td>1.30</td><td>1.30</td><td>1.30</td></tr>
+  <tr><td>YAML::LibYAML</td><td>0.83</td><td>0.88</td><td>0.85</td><td>0.88</td><td>0.88</td></tr>
+  <tr><td>YAML::PP</td><td>0.032</td><td>0.036</td><td>0.035</td><td>0.036</td><td>0.036</td></tr>
+  <tr><td>YAML::Syck</td><td>1.34</td><td>1.34</td><td>1.34</td><td>1.34</td><td>1.34</td></tr>
+  <tr><td>YAML::Tiny</td><td>1.73</td><td>1.74</td><td>1.73</td><td>1.74</td><td>1.74</td></tr>
+  </tbody>
+</table>
+</div> <!-- end of module table -->
+<!-- INSERT PERL MODULES ROCKY8: END -->
+
+<a Name="personal"></a><div class="heading">Personal installation using cpanm</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>Perl modules can be installed locally in your /home directory easily using
+<a href="https://metacpan.org/dist/App-cpanminus/view/bin/cpanm">cpanm</a>.</p>
+
+<ul>
+
+  <li>First, allocate an interactive session with plenty of memory:
+    <pre class="term"><em>user</em>@biowulf:~$ sinteractive --mem=20g</pre>
+  </li>
+
+  <li>Choose a location.  Most likely ~/perl will work just fine.</li>
+
+  <li>Append the following lines to your ~/.bashrc file, using the following heredoc:
+    <pre class="term"><em>user</em>@<em>node</em>:~$ cat << EOF >> ~/.bashrc
+
+#------------------------------------------------------------------------------
+# For local perl
+#------------------------------------------------------------------------------
+export LOCALPERL=~/perl
+export PERL5LIB=$LOCALPERL:$LOCALPERL/lib/perl5
+export PERL_CPANM_HOME=$LOCALPERL/cpanm
+export PERL_CPANM_OPT="-l $LOCALPERL"
+export PATH=$LOCALPERL/bin:$PATH
+export PERLDOC_PAGER="less -isR"
+EOF</pre>
+  </li>
+
+  <li>Source your ~/.bashrc file:
+    <pre class="term"><em>user</em>@biowulf:~$ source ~/.bashrc</pre>
+  </li>
+
+  <li>Create local directories:
+    <pre class="term"><em>user</em>@biowulf:~$ mkdir -p $LOCALPERL
+<em>user</em>@biowulf:~$ mkdir -p $PERL_CPANM_HOME</pre>
+  </li>
+
+  <li>Install a module:
+    <pre class="term"><em>user</em>@biowulf:~$ cpanm TableData</pre>
+  </li>
+
+  <li>Read about the module:
+    <pre class="term"><em>user</em>@biowulf:~$ perldoc TableData</pre>
+  </li>
+
+
+  <li>See where it lives:
+    <pre class="term"><em>user</em>@biowulf:~$ perldoc -l TableData
+~/perl/lib/perl5/TableData.pm</pre>
+  </li>
+
+  <li>More detail:
+    <pre class="term"><em>user</em>@biowulf:~$ tree -L 3 ~/perl
+~/perl
+├── bin
+├── cpanm
+│   ├── build.log -> ~/perl/cpanm/work/1686253267.119612/build.log
+│   ├── latest-build -> ~/perl/cpanm/work/1686253267.119612
+│   └── work
+│       └── 1686253267.119612
+├── lib
+│   └── perl5
+│       ├── 5.26.3
+│       ├── Role
+│       ├── RoleBundle
+│       ├── TableData
+│       ├── TableData.pm
+│       ├── TableDataRole
+│       └── x86_64-linux-thread-multi
+└── man
+    └── man3
+        ├── RoleBundle::TinyCommons::Iterator.3pm
+        ├── Role::TinyCommons::Iterator::Basic.3pm
+        ├── Role::TinyCommons::Iterator::Bidirectional.3pm
+        ├── Role::TinyCommons::Iterator::Circular.3pm
+        ├── Role::TinyCommons::Iterator::Resettable.3pm
+        ├── TableData.3pm
+        ├── TableDataRole::Spec::Basic.3pm
+        └── TableData::Test::Spec::Basic.3pm</pre>
+  </li>
+</ul>
+
+<p>Some modules may require specific libraries or executables.  Other
+modules may have trouble compiling.  If you have difficulties, please  send an
+email to staff@hpc.nih.gov.</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

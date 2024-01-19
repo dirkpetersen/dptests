@@ -1,0 +1,657 @@
+@charset "utf-8";
+/* CSS Document */
+ 
+/* Page (Common) CSS elements */
+a:link {
+	text-decoration: none;
+	/*color: #0066CC;*/
+	color: #0000d5;
+	background-color: transparent;
+} 
+a:visited {
+	/*color: #006699;*/
+	color: #0000d5;
+	background-color: transparent;
+} 
+a:hover {
+	text-decoration: underline;
+}
+/* ============================================ */
+/* For toggling content -- David H., 2016-11-29 */
+.toggle-content {
+	display: none;
+}
+.toggle-tag {
+	color: #0000d5;
+	font-weight: bold;
+	font-size: 16px;
+	text-decoration: none;
+	padding-left: 2px;
+}
+
+div.toggle-tag {
+	padding-top: 10px;
+	padding-bottom: 8px;
+}
+
+.toggle-tag:hover {
+	text-decoration: underline;
+	cursor: pointer;
+}
+/* ============================================ */
+.title {
+	font-size: 26px;
+	font-weight: 590;
+	border-bottom: 1px solid #000000;
+} 
+.subtitle {
+	font-size: 16px;
+	padding-bottom: 3px;
+}
+.heading {
+	font-size: 20px;
+	font-weight: 550;
+	border-bottom: 2px solid silver;
+	padding-top: 15px;
+	padding-bottom: 1px;-
+}
+.heading2 {
+	font-size: 26px;
+	font-weight: bold;
+}
+.subheading {
+	font-size: 16px;
+	font-weight: bold;
+	padding-top: 15px;
+	padding-bottom: 1px;-
+}
+.u_subheading {
+	font-size: 18px;
+	font-weight: bold;
+	border-bottom: 1px solid silver;
+}
+.term {
+	font-size: 12px;
+	font-family: monospace;
+	margin-left: 1em;
+	margin-right: 1em;
+	padding: 5px;
+	border: 1px solid #C0C0C0;
+	#background-color: #DBDFDB;
+	background-color: #e8e8ee;
+}
+.fullterm {
+	font-size: 12px;
+	font-family: monospace;
+	/*margin-left: 1em;*/
+	/*margin-right: 1em;*/
+        margin:0px;
+	padding: 5px;
+	/*border: 1px solid #C0C0C0;*/
+	background-color: #DBDFDB;
+	/* background-color: #e8e8ee;*/
+}
+/* These styles create a little box with different colored background, appropriate for p elements */
+.alert {
+        border: 1px solid #000000 ;
+	background-color: #FFCC66 ;
+        padding: 5px;
+        margin-bottom: 1em;
+        margin-left: 60px;
+        margin-right: 70px;
+}
+.didyouknow {
+	border: 1px solid #000000;
+	background-color: #BFDAE0 ;
+        padding: 5px;
+        margin-bottom: 1em;
+        margin-left: 60px;
+        margin-right: 70px;
+}
+.NXblock {
+	border: 1px solid #000000;
+	//background-color: #00FF08;
+	background-color: #BFDAE0 ;
+        //color: white;
+	//font-weight: bold;
+        text-align: center;
+        padding: 5px;
+        margin-bottom: 1em;
+        margin-left: 200px;
+        margin-right: 210px;
+}
+/*
+.NXblock:active a {
+        color: white;
+}
+.NXblock:link a {
+        color: white;
+}
+.NXblock:visited a {
+        color: white;
+}
+.NXblock:hover {
+	background-color: #000000;
+        color: white;
+}
+.NXblock:hover a {
+        color: white;
+}
+*/
+/* This creates a small blue box shifted up and to the right, should be used under div class=heading */
+.nudgeblock {
+	border: 1px solid #000000;
+	background-color: #BFDAE0 ;
+        padding: 5px;
+        position: relative;
+        margin: 0px 1em 0px 1em;
+        float: right;
+        top: -15px;
+        left: 10px;
+        width: 40%;
+}
+.safe { 
+	color: #4daf4a;
+	font-weight: bold;
+}
+.warning { 
+	color: #ff7f00;
+	font-weight: bold;
+}
+.danger { 
+	color: #e41a1c;
+	font-weight: bold;
+}
+
+.termBlank {
+	font-size: 12px;
+	font-family: monospace;
+	margin-left: 2em;
+	margin-right: 2em;
+	padding: 5px;
+}
+.appDesc {
+  padding-left: 2em;
+}
+.softBottom {
+	border-bottom: 1px solid silver;
+}
+.softRight {
+        border-right: 1px solid silver;
+}     
+.softBottomRight {
+        border-bottom: 1px solid silver;
+	border-right: 1px solid silver;
+}
+.monospace {
+	font-family: monospace, courier;
+	font-size: 14px;#
+}
+.monosmall {
+	font-family: monospace, courier;
+	font-size: 10px;
+}
+.horztable {
+	background-color: White;
+	padding: 3px;
+	border: 1px solid gray;
+}
+.toc {
+	#border: 1px solid #C1C2D2;
+	border-right: 1px solid #C0DAE0;
+	border-left: 1px solid #C0DAE0;
+	border-bottom: 1px solid #C0DAE0;
+	border-top: 1px solid #C0DAE0;
+	#margin-right: 8px;
+	#margin-top: 4px;
+	padding: 2px;
+	background-color: white;
+}
+.tocHeading {
+        #background-image:url(../images/blue_sectionheading.png);
+        #background-image:url(../images/sectionheading.png);
+	#background-image:url(../images/sectionheading_gold.png);
+	background-image:url(../images/sectionheading_silver_gradient.png);
+	background-position:top	;
+	background-repeat:repeat-x;
+	padding: 3px;
+        text-align: center;
+	#border-top: 1px solid #C1C2D2;
+	#border-bottom: 1px solid #C1C2D2;
+        #border-left: 1px solid #C1C2D2;
+        #border-right: 1px solid #C1C2D2;
+	border-top: 1px solid #C0DAE0;
+	#border-bottom: 1px solid #C0DAE0;
+        border-left: 1px solid #C0DAE0;
+        border-right: 1px solid #C0DAE0;
+	font-weight: 500;
+	font-size: 18px;
+}
+.tocItem {
+	padding: 2px;
+	font-size: 12px;
+}
+.redtocHeading {
+    background-color:#cd6155 ;
+    padding: 3px;
+    text-align: center;
+    border-top: 1px solid #8B0E04;
+    border-left: 1px solid #8B0E04;
+    border-right: 1px solid #8B0E04;
+    font-weight: 500;
+    font-size: 18px;
+}
+/* End page (Common) CSS elements */
+
+
+/* Template CSS elements: */
+BODY {
+	padding: 0px;
+	margin: 0px;
+	#background-color: #5a5b71;
+	#background-color: #485A48;
+	#background-color: #550000;
+	#background-color: #Ad6D00;
+	#background-color: #5D2f31;
+	#background-image: url("../images/red_tile.jpg"); background-repeat: repeat;
+	background-color:  #005D97;
+	font-family: Arial, Helvetica, sans-serif;
+	#font-family: Lucida;
+	font-size: 14px;
+	color: black;
+}
+.container {
+	width: 900px;
+	display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.head_area {
+/*	background-image: url(/images/biowulf-blue-lights.jpg); */
+/*	background-image: url(/images/biowulf-core-cables1.jpg); */
+/*	background-image: url(/images/biowulf-core-cables2.jpg); */
+/*	background-image: url(/images/biowulf-phase2.jpg); */
+	background-image: url(/images/BIOWULF_WEBIMG); 
+/*	background-image: url(/images/biowulf-phase4.jpg); */
+/*	background-image: url(/images/biowulf-storage.jpg); */
+	height: 100px;
+	background-repeat: no-repeat;
+	background-position: left bottom;
+	background-size: cover;
+	/* background-color: #F4F4F4; */
+	background-color: #FFFFFF;
+}
+.head_area_top {
+	background-image: url(/images/BIOWULF_WEBIMG); 
+	height: 225px;
+	background-repeat: no-repeat;
+	background-position: left bottom;
+	background-size: cover;
+	/* background-color: #F4F4F4; */
+	background-color: #FFFFFF;
+}
+.titleLocation {
+	text-align: left;
+	position: relative;
+	#left: 75 px;
+	padding-left: 15px;
+	padding-bottom: 15px;
+}
+.siteTitle {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 40px;
+	text-decoration: none;
+	color: #000000;
+	}
+.siteTitle2 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 20px;
+	text-decoration: none;
+	color: #000000;
+	display: inline;
+	position: relative;
+	top: -7px;
+}
+.siteSubTitle {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 18px;
+	#color: #404940;
+	color: black;
+}
+a.siteTitle:link {
+	color: black;
+}
+a.siteTitle:visited {
+	color: black;
+}
+a.siteTitle2:link {
+	color: black;
+}
+a.siteSubTitle:link {
+	color: black;
+}
+.menu_links {
+	font-size: 13px;
+	color: #000000;
+	text-align: left;
+	#background-color: #E8E8E8;
+	background-image:url(/images/sectionheading.png);
+	width: 900px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	border-top: 1px solid #000000;
+	border-bottom: 1px solid #000000;
+}
+.menu_link {
+	color: #000000;
+	font-weight: 550;
+	text-decoration: none;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 10px;
+	padding-right: 10px;
+}
+a.menu_link:link {
+	color: black;
+}
+a.menu_link:visited {
+	color: black;
+}
+.menu_link:hover {
+	text-decoration: none;
+	font-weight: 500;
+	color: #000000;
+}
+.searchCell {
+	/* change top from -5px to 0, add padding in form below */
+	position: relative;
+	right: 12px;
+	top: 0;
+	text-align: right;
+	vertical-align: top;
+}
+.searchCell form {
+	/* 5px padding all around search form, 0 left and right */
+	padding: 5px 0;
+}
+.formfield {
+	border: 1px solid #729A8F;
+	font-size: 12px;
+	background-color: White;
+	color: Black
+}
+.button {
+	background-color: #FFFFFF;
+	border: 1px solid #729A8F;
+	font-size: 12px;
+	color: Black;
+}
+.main {
+	background-color: #FFFFFF;
+	padding: 15px;
+}
+.footarea {
+	#background-color: #6C7B6C;
+	#background-color: #A9797B;
+	#background-color: #005c6f;
+	#background-color: #007d96;
+	background-color:  #004E7F;
+	padding: 6px;
+	text-align: center;
+	border-top: 1px solid black;
+}
+.footer {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	color: #FFFFFF;
+	position: relative;
+	top: 4px;
+}
+.footer2 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	color: #FFFFFF;
+	padding-top: 5px;
+	padding-bottom: 8px;
+	position: relative;
+	top: 4px;
+}
+.footlink {
+	color: #FFFFFF;
+}
+a.footlink:link {
+	color: #FFFFFF;
+}
+a.footlink:visited {
+	color: #FFFFFF;
+}
+.lastmod {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	font-style: italic;
+	padding-right: 2px;
+	color: gray;
+	background-color: #FFFFFF;
+	padding-right: 3px;
+}
+.home_background {
+	background-image: url(/images/biowulf-core-cables1.jpg);
+/* 	background-image: url(/images/gold_and_silver_helix.jpg); */
+	background-repeat: no-repeat;
+	background-position: left top;
+	background-color: #F4F4F4;
+}
+.incidental {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: normal;
+}
+.cstat {
+	padding-left: 12px;
+	font-size: 12px;
+}
+.boxed {
+    border: 3px solid green ;
+} 
+pre {
+/* this keeps long lines in pre within the window boundary */
+      white-space: pre-wrap; /* css-3 */
+      white-space: -moz-pre-wrap !important; /* Mozilla, since 1999 */
+      white-space: -pre-wrap; /* Opera 4-6 */
+      white-space: -o-pre-wrap; /* Opera 7 */
+      word-wrap: break-word; /* Internet Explorer 5.5+ */
+}
+
+textarea {
+  width: 835px;
+  height: 120px;
+  border: 3px solid var(--term_border);
+  padding: 5px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+table, caption { font-size: inherit; font-weight: inherit; font-style: inherit; font-variant: inherit; }
+
+table.ctable {
+    width:100%;
+}
+table.ctable, .ctable th, .ctable td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+table.ctable, .ctable th, .ctable td {
+    padding: 5px;
+    text-align: left;
+}
+table.ctable#t01, .ctable tr:nth-child(even) {
+    background-color: #ddd;
+    color: black;
+}
+table.ctable#t01, .ctable tr:nth-child(odd) {
+    background-color:#fff;
+    color: black;
+}
+table.ctable#t01, .ctable th {
+    background-color: black;
+    color: white;
+}
+
+li.roomy {
+  padding-bottom: 5px;
+}
+
+/* End Template CSS elements: */
+
+
+
+/* START - tabbed view CSS */
+.tabs-container {
+    width: 800px;
+    margin: 0 auto;
+}
+ul.tabs{
+    margin: 0px;
+    padding: 0px;
+    list-style: none;
+}
+ul.tabs li{
+    /*background: #ededed;*/
+    background: #BFDAE0;
+    color: #222;
+    display: inline-block;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-left: 1px solid #444;
+    border-top: 1px solid #444;
+    border-right: 1px solid #444;
+}
+
+ul.tabs li:hover {
+    font-weight: bold;
+}
+
+ul.tabs li.current{
+    /*color: #ededed;
+    background: #444;*/
+    color: white;
+    background: #004755;
+    
+}
+
+.tab-content{
+    display: none;
+    /*background: #ededed;*/
+    padding: 15px;
+}
+
+.tab-content.current{
+    display: inherit;
+    border: 1px solid #444
+}
+/* END - tabbed view CSS */
+
+#luxcal { width:95%; height:480px; margin:0px; border-style:solid; border-width:1px; border-color:grey; }
+.nicetable {
+#	width: 100%;
+	padding: 10px;
+	border-collapse: collapse;
+	border-style: outset;
+	border: 1px solid gray;
+	text-align: center;
+}
+.nicetable th {
+  background-color: #f2f2f2;
+  border-color: #B3B3B3;
+  padding: 10px;
+}
+.nicetable td {
+	border-width: 1px;
+	padding: 8px;
+	border-style: inset;
+	border-color: #C0C0C0;
+	-moz-border-radius: ;
+	}
+
+/* Susan's cleantable class, 2022-11-28 */
+
+.cleantable {
+    #width: 100%;
+    padding: 4px;
+    border-collapse: collapse;
+    border-style: outset;
+    border: 1px solid gray;
+    text-align: center;
+}
+.cleantable th {
+  background-color: #e8e8e8;
+  border-color: #B3B3B3;
+  padding: 6px;
+  border: 1px solid gray;
+}
+.cleantable tbody tr:nth-child(odd){
+  background-color: #F8F8F8;
+}
+.cleantable td {
+    border-width: 1px;
+    padding: 8px;
+    border-style: inset;
+    border-color: #C0C0C0;
+    -moz-border-radius: ;
+    text-align: left;
+}
+.cleantable td div.center {
+    border-width: 1px;
+    padding: 8px;
+    border-style: inset;
+    border-color: #C0C0C0;
+    -moz-border-rads: ;
+    text-align:center;
+}
+
+/* For hpcpartek */
+
+.container_pf {
+  position: relative;
+  width: 50%;
+}
+
+.image_pf {
+  opacity: 1;
+  display: block;
+  width: 80%;
+  margin: 2em;
+  height: auto;
+  transition: .5s ease;
+  backface-visibility: hidden;
+}
+
+.middle_pf {
+  transition: .5s ease;
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.container_pf:hover .image_pf {
+  opacity: 0.3;
+}
+
+.container_pf:hover .middle_pf {
+  opacity: 1;
+}
+
+.text_pf {
+  background-color: #DBDFDB;
+  font-size: 16px;
+  padding: 16px 32px;
+}
+
+.text_pf:hover a {
+  color: white;
+}

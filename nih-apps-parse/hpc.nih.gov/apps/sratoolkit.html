@@ -1,0 +1,437 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' SRA-Toolkit';</script>
+<div class="title"> SRA-Toolkit</div>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><A href="#source">SRA Source Repositories</a></div>
+<div class="tocItem"><A href="#space">Estimating space requirements</a></div>
+<div class="tocItem"><a href="#ncbi">Downloading from NCBI</a></div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Using Swarm</a></div>
+<div class="tocItem"><a href="#int">Interactive jobs</a></div>
+<div class="tocItem"><a href="#dbgap">dbGaP downloads</a></div>
+<div class="tocItem"><a href="#exec">Executables</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+<div class="tocItem"><a href="#config">Configuring SRA-Toolkit</a></div>
+<div class="tocItem"><a href="#trouble">Troubleshooting</a></div>
+</div></table>
+
+<p>The <a href="http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=std">NCBI SRA SDK</a> generates loading and dumping tools with their
+respective libraries for building new and accessing existing runs.  </p>
+
+<P>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.ncbi.nlm.nih.gov/books/NBK242621/">NCBI SRA Download Guide</a>
+<li><A href="http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc">SRA Toolkit documentation</a></li>
+<li><a href="ftp://ftp.era.ebi.ac.uk/meta/doc/sra_1_1/SRA_File_Formats_Guide.pdf">SRA File Formats Guide</a></li>
+<li><b>Command line help:</b> Type the command followed by '-h'</li>
+<li><A href="https://github.com/ncbi/sra-tools/wiki/HowTo:-fasterq-dump">fasterq-dump guide</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>sratoolkit</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>fastq-dump is being deprecated. Use <tt>fasterq-dump</tt> instead -- it is <i>much</i> faster and more efficient.</li>
+<li>fasterq-dump uses temporary space while downloading, so you must make sure you have enough space</li>
+<li>Do not run more than the default 6 threads on Helix.</li>
+<li>To run trimgalore/cutadapt/trinity on these files, the quality header needs to be changed, e.g.
+<pre class="term">
+sed -r 's/(^[\@\+]SRR\S+)/\1\/1/' SRR10724344_1.filter.fastq
+sed -r 's/(^[\@\+]SRR\S+)/\1\/2/' SRR10724344_2.filter.fastq 
+</pre>
+<li>fasterq-dump requires tmp space during the download. This temporary directory will use approximately the size of the final output file. On Biowulf, the SRAtoolkit module is set up
+to use local disk as the temporary directory. Therefore, if running SRAtoolkit on Biowulf, you must allocate local disk as in the examples below.
+</ul>
+<P>
+<a Name="source"></a>
+<div class="heading">SRA Source Repositories</div>
+<P>
+ SRA Data currently reside in 3 NIH repositories:
+
+<ul>
+    <li>NCBI - Bethesda and Sterling</li>
+    <li>Amazon Web Services (= 'Amazon cloud' = AWS)
+    <li>Google Cloud Platform (GCP)
+</ul>
+<P>
+Two versions of the data exist: the original (raw) submission, and a normalized (extract, transform, load [ETL]) version. NCBI maintains only ETL data online, while AWS and GCP have both ETL and original submission format. Users who want access to the original bams can only get them from AWS or GCP today.
+<P>
+In the case of ETL data, Sratoolkit tools on Biowulf will always pull from NCBI, because it is obviously nearer and there are no fees.
+Most sratoolkit tools such as <tt>fasterq-dump</tt> will pull ETL data from NCBI. 
+<p>
+NCBI is moving the source bam files to cold cloud storage, so to reliably pull down the source files, users should use the Cloud Data Deliver Service (CDDS) as described at <a href="https://ncbiinsights.ncbi.nlm.nih.gov/2021/09/23/sra-cloud-bucket/">https://ncbiinsights.ncbi.nlm.nih.gov/2021/09/23/sra-cloud-bucket/</a>
+<P>
+ If requesting "original submission" files in bam or cram or some other format, they can ONLY be obtained from AWS or GCP and will require that the user provide a cloud-billing account to pay for egress charges. See <A href="https://github.com/ncbi/sra-tools/wiki/03.-Quick-Toolkit-Configuration">https://github.com/ncbi/sra-tools/wiki/03.-Quick-Toolkit-Configuration</a> and <A href="https://github.com/ncbi/sra-tools/wiki/04.-Cloud-Credentials">https://github.com/ncbi/sra-tools/wiki/04.-Cloud-Credentials</a>. The user needs to establish account information, register it with the toolkit, and authorize the toolkit to pass this information to AWS or GCP to pay for egress charges.
+<P>
+If you attempt to download non-ETL SRA data from AWS or GCP without the account information, you will see an error message along these lines:
+<pre>
+Bucket is requester pays bucket but no user project provided.
+</pre>
+<P>
+<div class="heading">Errors during  downloads</div>
+<P>
+It is not unusual for users to get errors while downloading SRA data with prefetch, fasterq-dump, or hisat2, because many people are constantly downloading data and the servers can get overwhelmed. Please see the  NCBI SRA page 
+<A href="https://github.com/ncbi/sra-tools/wiki/06.-Connection-Timeouts">Connection Timeouts</a>
+
+<P>
+<div class="heading">Estimating space requirements</div>
+<P>
+fasterq-dump takes significantly more space than the old fastq-dump, as it requires temporary space in addition to the final output. As a rule of thumb, the <a href="https://github.com/ncbi/sra-tools/wiki/HowTo:-fasterq-dump">
+fasterq-dump guide</a> suggests getting the size of the accession using 'vdb-dump', then estimating 7x for the output and 6x for the temp files. For example: 
+<pre class="term">
+helix% <b>vdb-dump --info SRR2048331</b>
+acc    : SRR2048331
+path   : https://sra-downloadb.be-md.ncbi.nlm.nih.gov/sos1/sra-pub-run-5/SRR2048331/SRR2048331.2
+<b>size   : 657,343,309</b>
+type   : Table
+platf  : SRA_PLATFORM_ILLUMINA
+SEQ    : 16,600,251
+SCHEMA : NCBI:SRA:Illumina:tbl:q1:v2#1.1
+TIME   : 0x0000000056644e79 (12/06/2015 10:04)
+FMT    : Fastq
+FMTVER : 2.5.4
+LDR    : fastq-load.2.5.4
+LDRVER : 2.5.4
+LDRDATE: Sep 16 2015 (9/16/2015 0:0)
+</pre>
+Based on the third line, you should have 650 MB * 7 = 4550 MB =~ 4.5 GB for the tmp files, and 4 GB for the output file(s). It is also recommended that the output file and temporary files be on different filesystems, as in the examples below. 
+<P>
+<A Name="ncbi"></a>
+<div class="heading">Downloading data from SRA</div>
+<P>
+You can download SRA fastq files using the <tt>fasterq-dump</tt> tool, which will download the fastq file into your current working directory by default. 
+(Note: the old fastq-dump is being deprecated). During the download, a temporary directory will be created in the location specified by the -t flag (in the example below, in /scratch/$USER) 
+that will get deleted after the download is complete.
+<P>
+For example, on Helix, the interactive data transfer system, you can download as in the example below. To download on Biowulf, <b>don't run on the Biowulf login node</b>; use a batch job or interactive job instead.
+
+<P>
+<pre class="term">
+[USER@helix]$ <b>mkdir /data/$USER/sra</b>     
+
+[USER@helix]$  <b>module load sratoolkit</b>
+
+# Note: don't download to /data/$USER, use a subdirectory like /data/$USER/sra instead
+[USER@helix]$ <b>fasterq-dump  -p   -t /scratch/$USER  -O /data/$USER/sra  SRR2048331</b>    
+join   :|-------------------------------------------------- 100.00%
+concat :|-------------------------------------------------- 100.00%
+spots read      : 16,600,251
+reads read      : 16,600,251
+reads written   : 16,600,251
+</pre>
+/scratch is not accessible from the Biowulf compute nodes. On a Biowulf interactive session, you should allocate local disk and use that instead of /scratch as in the <a href="#int">example below</a>.
+<P>
+
+<a Name="batch"></a><div class="heading">Submitting a single batch job</div>
+    
+<p>1. Create a script file similar to the one below.
+
+ 
+<pre class="term">#!/bin/bash 
+
+mkdir -p  /data/$USER/sra
+module load sratoolkit
+fasterq-dump  -t /lscratch/$SLURM_JOBID  -O /data/$USER/sra SRR2048331
+sam-dump SRR2048331 > SRR2048331.sam
+....
+....</pre>
+
+  <p>2. Submit the script on biowulf:   
+      
+  <pre class="term">[biowulf]$ sbatch --gres=lscratch:30  --cpus-per-task=6  myscript</pre>
+
+Note: this job allocates 30 GB of local disk (--gres=lscratch:30) and then uses the flag <tt>-t /lscratch/$SLURM_JOBID</tt> to write temporary files to local disk. 
+If you do not allocate local disk and use the -t flag, the temporary files will be written to the current working directory. It is more efficient for your job and for the
+system as a whole if you use local disk. See below: 
+<P>
+<table border=1 cellpadding=5>
+<tr><td><b>Command <td><b>TMPDIR <td><b>Output Directory <td><b>Time
+<tr><td>time fasterq-dump -t /lscratch/$SLURM_JOBID SRR2048331	  <td>local disk on Biowulf node  <td>/data/$USER/sra <td>49 seconds
+<tr><td>time fasterq-dump  SRR2048331		                                           <td>/data/$USER/sra <td>/data/$USER/sra   <td>68 seconds
+
+</table>
+
+<!--- swarm -->
+
+<a Name="swarm"></a><div class="heading">Using Swarm</div>
+<P>
+
+<p class="alert"><b>NOTE</b>: The SRA Toolkit executables use random access to read input files.  Because of this, users with data located on
+GPFS filesystems will see significant slowdowns in their jobs.  For SRA data (including dbGaP data) it is best to first copy the input files to a local
+/lscratch/$SLURM_JOBID directory, work on the data in that directory, and copy the results back at the end of the job, as in the example below. See
+the section on <a href="https://hpc.nih.gov/docs/userguide.html#local">using local disk</a> in the Biowulf User Guide.
+<P>
+</p>
+
+<P>
+  <p>Using the 'swarm' utility, one can submit many jobs to the cluster to run concurrently. </p>
+
+  <p>Set up a swarm command file (eg /data/username/cmdfile). Here is a sample file that downloads SRA data using fasterq-dump</p>
+
+  <pre class="term"># run fasterq-dump to download the data, then process further, then copy results back to /data
+
+fasterq-dump --aligned --table PRIMARY_ALIGNMENT -O /lscratch/$SLURM_JOBID SRR1234 ; some_command ; \
+  cp -R /lscratch/$SLURM_JOBID/some_files  /data/$USER/myoutputdir/
+fasterq-dump --aligned --table PRIMARY_ALIGNMENT -O /lscratch/$SLURM_JOBID SRR3456 ; some_command; \
+  cp -R /lscratch/$SLURM_JOBID/some_files  /data/$USER/myoutputdir/
+</pre>
+<P>
+If you have previously downloaded SRA data into your own directory, you can copy those files to local scratch on the node, process them there, then copy the output back to your /data area. Sample swarm command file:
+<pre class="term">
+# copy files from /data, run fasterq-dump and other commands, then copy output back to /data
+cp /data/user/path/to/SRR1234.sra /lscratch/$SLURM_JOBID; \
+  fasterq-dump --aligned --table PRIMARY_ALIGNMENT -O /lscratch/$SLURM_JOBID /lscratch/$SLURM_JOBID/SRR1234.sra ; \
+  some_other_command ; \
+  cp -R /lscratch/$SLURM_JOBID/some_files /data/$USER/myoutputdir/
+cp /data/user/path/to/SRR56789.sra /lscratch/$SLURM_JOBID; \
+  fasterq-dump --aligned --table PRIMARY_ALIGNMENT -O /lscratch/$SLURM_JOBID /lscratch/$SLURM_JOBID/SRR56789.sra ; \
+  some_other_command ; \
+  cp -R /lscratch/$SLURM_JOBID/some_files /data/$USER/myoutputdir/
+
+[....]</pre>
+
+  <p>The <b>--gres=lscratch:<i>N</i></b> must be included
+in the swarm commands to allocate local disk on the node. 
+For example, to allocate 100GB of scratch space and 4GB of memory:</p>
+  <pre class="term">$ swarm -f cmdfile --module sratoolkit --gres=lscratch:100 -g 4  -t 6</pre>
+
+<p>For more information regarding running swarm, see <a href="swarm.html">swarm.html</a></p>
+
+<a Name="int"></a><div class="heading">Running an interactive job</div>
+
+<P>
+Allocate an interactive session  and run the interactive job there.</p>
+<pre class="term">[biowulf]$ <b>sinteractive  --gres=lscratch:20  --cpus-per-task=6</b>
+salloc.exe: Granted job allocation 789523
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0135 are ready for job
+
+[cn0135]$ <b>mkdir -p /data/$USER/sra</b>
+
+[cn0135]$ <b>module load sratoolkit</b>
+
+[cn0135]$ <b>fasterq-dump -t /lscratch/$SLURM_JOBID SRR2048331 -O /data/$USER/sra </b> 
+
+[cn0135]$ <b>exit</b>
+salloc.exe: Job allocation 789523 has been revoked.
+[biowulf]$</pre>
+
+</p>
+
+<a Name="dbgap"></a>
+<div class="heading">dbGaP download</div>
+<P>
+NCBI's database of Genotypes and Phenotypes (dbGaP) was developed to archive and distribute the data and results from studies 
+that have investigated the interaction of genotype and phenotype in Humans. Most dbGaP data is controlled-access. 
+<A href="https://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=dbgap_use">Documentation for downloading dbGap data</a>.
+<P>
+<b>IMPORTANT:</b> as of v3.0.0, dbGaP downloads do not work via the proxy servers, and therefore can only
+be run on Helix which has a direct connection to the internet. (This will be fixed in the next release) This has two implications: 
+<ul>
+<li>Helix is a single shared system, and each user is limited to 4-6 CPUs at any time.  Therefore you cannot run a swarm of download commands on Helix. 
+If you have several dbGap accessions to download, they should be done serially as in the example script below.
+<li>There is no /lscratch on Helix. Instead you can use /scratch.
+</ul>
+<P>
+If you are having problems with dbGaP downloads, please try this test download. It accesses a copy of public 1000 Genomes data at NCBI. This is to confirm whether it is a general problem, or specific to your configuration, or specific to the accessions you are trying to download.
+<P>
+<pre class="term">
+helix% <b>module load sratoolkit</b>
+
+helix% <b>prefetch   --ngc /usr/local/apps/sratoolkit/prj_phs710EA_test.ngc  \
+                  -O /data/$USER/test-dbgap   SRR1219902</b>
+</pre>
+
+<!--
+<P>
+On a Biowulf node: 
+<pre class="term">
+biowulf% <b>sinteractive --gres=lscratch:30 --cpus-per-task=6</b>
+
+cn2355% <b>module load sratoolkit</b>
+
+cn2355% <b>fasterq-dump   --ngc /usr/local/apps/sratoolkit/prj_phs710EA_test.ngc  \
+		  -t /lscratch/$SLURM_JOBID \
+                  -O /data/$USER/test-dbgap   SRR1219902</b>
+</pre>
+<P>
+-->
+
+You should see two files called SRR1219902_dbGaP-0.sra and SRR1219902_dbGaP-0.sra.vdbcache appear in /data/$USER/test-dbgap/
+<P>
+To download several dbGap accessions on Helix, set up a script along the following lines:
+<pre class="term">
+#!/bin/bash
+
+module load sratoolkit
+prefetch   --ngc my_ngc_file   -O /data/$USER/mydir  SRR111111
+prefetch   --ngc my_ngc_file   -O /data/$USER/mydir  SRR111112
+etc.
+</pre>
+or 
+<pre class="term">
+#!/bin/bash
+
+module load sratoolkit
+fasterq-dump --ngc my_ngc_file -t /scratch/$USER -O /data/$USER/mydir SRR111111
+fasterq-dump --ngc my_ngc_file -t /scratch/$USER -O /data/$USER/mydir SRR111112
+etc
+</pre>
+Run this script on Helix via
+<pre class="term">
+helix% <b>bash  my_download_script</b>
+</pre>
+<P>
+<a Name="exec"></a><div class="heading">Executables</div>
+<P>
+As of v 3.0.0, the SRAToolkit contains the following executables:
+<pre>
+abi-dump          fastq-dump       prefetch       sra-search     vdb-config
+abi-load          fastq-load       rcexplain      sra-sort       vdb-copy
+align-info        helicos-load     remote-fuser   sra-sort-cg    vdb-decrypt
+bam-load          illumina-dump    sam-dump       sra-stat       vdb-dump
+blastn_vdb        illumina-load    sff-dump                      vdb-encrypt
+cache-mgr         kar              sff-load       sratools       vdb-lock
+cg-load           kdbmeta          sra-blastn     srf-load       vdb-passwd
+dump-ref-fasta    latf-load        srapath                       vdb-unlock
+fasterq-dump      pacbio-load      sra-pileup     test-sra       vdb-validate
+</pre>
+<P>
+
+<a Name="config"></a><div class="heading">Configuring SRA-Toolkit On Helix/Biowulf</div>
+<P>
+By default, the SRA Toolkit installed on Biowulf is set up to use the central Biowulf configuration file, which is set up to NOT maintain a local cache of SRA data. After discussion with NCBI SRA
+developers, it was decided that this was the most appropriate setup for most users on Biowulf.  The <a href="/apps/hisat.html">hisat</a> program can automatically download
+SRA data as needed.
+<P>
+In some cases, users may want to download SRA data and retain a copy. To download using NCBI's 'prefetch' tool,  you would need to set up your own configuration file for the NCBI SRA toolkit. Use the command <tt>
+vdb-config</tt> to set up a directory for downloading. In the following example, the <tt>vdb-config</tt> utility is used to set up <tt>/data/$USER/sra-data</tt> as the local
+repository for downloading SRA data. Remember that /home/$USER is limited to a quota of 16 GB, so it is best to direct your downloaded SRA data to /data/$USER. 
+<P>
+Sample session: user input in bold.
+
+<pre class="term">[user@biowulf ~]$ <b>vdb-config --interactive --interactive-mode textual</b>
+     vdb-config interactive
+
+  data source
+
+   NCBI SRA: enabled (recommended) (1)
+
+   site    : enabled (recommended) (2)
+
+
+  local workspaces
+
+  Open Access Data
+not cached (not recommended) (3)
+location: '' (4)
+
+
+To cancel and exit      : Press <Enter>
+To update and continue  : Enter corresponding symbol and Press <Enter>
+
+Your choice > <b>4</b>
+
+Path to Public Repository:
+
+Enter the new path and Press <Enter>
+Press <Enter> to accept the path
+> <b>/data/user/sra-data</b>
+
+Changing root path to 'Public' repository to '/data/user/sra-data'
+
+     vdb-config interactive
+
+  data source
+
+   NCBI SRA: enabled (recommended) (1)
+
+   site    : enabled (recommended) (2)
+
+
+  local workspaces
+
+  Open Access Data
+not cached (not recommended) (3)
+location: '/data/user/sra-data' (4)
+
+
+To cancel and exit      : Press <Enter>
+To save changes and exit: Enter Y and Press <Enter>
+To update and continue  : Enter corresponding symbol and Press <Enter>
+
+Your choice > <b>3</b>
+
+Enabling user repository caching...
+
+     vdb-config interactive
+
+  data source
+
+   NCBI SRA: enabled (recommended) (1)
+
+   site    : enabled (recommended) (2)
+
+
+  local workspaces
+
+  Open Access Data
+cached (recommended) (3)
+location: '/data/user/sra-data' (4)
+
+To cancel and exit      : Press <Enter>
+To save changes and exit: Enter Y and Press <Enter>
+To update and continue  : Enter corresponding symbol and Press <Enter>
+
+Your choice > <b>y</b>
+Saving...
+Exiting...
+
+[biowulf]$ </pre>
+
+<p>For more information about encrypted data, please see
+<a href="http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=dbgap_use">
+Protected Data Usage Guide</a> at NCBI.</p>
+
+
+<a Name="trouble"></a>
+<div class="heading">Troubleshooting</div>
+<P>
+<ul>
+<li>For dbGaP downloads, try the test download on Helix first: 
+<pre class="term">
+helix% module load sratoolkit
+helix% prefetch --ngc /usr/local/apps/sratoolkit/prj_phs710EA_test.ngc -O /data/$USER SRR1219902
+</pre>
+If you get an error, try renaming your ~/.ncbi configuration directory.
+<pre class="term">
+helix% mv ~/.ncbi ~/.ncbi.OLD
+</pre>
+If you still get an error downloading dbGaP data on helix, let us know by sending email to staff@hpc.nih.gov.
+<P>
+
+<li> If you are getting this error while using fastq-dump and fasterq-dump: 
+<pre>
+Failed to call external services
+</pre>
+try this:
+<pre class="term">
+% <b>mv ~/.ncbi ~/.ncbi.OLD</b>
+</pre>
+This will move your existing SRA toolkit configuration out of the way, to test whether some setting in your configuration is causing the problem.
+<P>
+<li>If you get the error
+<pre class='term'>
+fasterq-dump was killed (signal 9 SIGKILL)
+</pre>
+you are likely running fasterq-dump on a compute node and have not allocated enough memory. Try increasing the memory
+allocation by 10-20 GB and rerun. Or run your download on Helix.
+</ul>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

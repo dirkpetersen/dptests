@@ -1,0 +1,137 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'verifybamid on Biowulf';</script>
+<div class="title">verifybamid on Biowulf</div>
+<p></p>
+<table width=25% align=right> <tr><td>
+    <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><a href="#int">Interactive job on Biowulf</a></div>
+        <div class="tocItem"><a href="#serial">Batch job on Biowulf</a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+    </div>
+</table>
+
+<!-- ======================================================================= -->
+<div class="heading">Description</div>
+
+<p> verifyBamID verifies whether the reads in particular bam file match
+previously known genotypes for an individual (or a group of individuals). It
+also checks for sample swaps and cross-contaimination between samples.</p>
+
+<p>There may be multiple versions of verifybamid available. An easy way of selecting the
+version is to use <a href="/apps/modules.html">modules</a>.  To see the modules
+available, type</p>
+<pre class="term">
+module avail verifybamid 
+</pre>
+
+<p>To select a module use</p>
+<pre class="term">
+module load verifybamid/[version]
+</pre>
+<p>where <code>[version]</code> is the version of choice.</p>
+
+<!-- comment out where applicable -->
+<p class="alert">verifybamid is a multithreaded application. Make sure to match the
+number of cpus requested with the number of threads.</p>
+
+<h3>Environment variables set</h3>
+<ul>
+<li> <code>$PATH</code></li>
+</ul>
+
+<h3>References</h3>
+<ul>
+    <li>G. Jun, M. Flickinger, K. N. Hetrick, Kurt, J. M. Romm, K. F. Doheny, G. Abecasis, M. Boehnke,and H. M. Kang. <em>Detecting and Estimating Contamination of Human DNA Samples in Sequencing and Array-Based Genotype Data</em>. American Journal of Human Genetics 2012, 91:839-848.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/23103226">PubMed</a> &nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3487130/">PMC</a> &nbsp;|&nbsp;
+    <a href="http://www.sciencedirect.com/science/article/pii/S0002929712004788">Journal</a>
+    </li>
+</ul>
+
+<h3>Documentation</h3>
+<ul>
+    <li> <a href="http://genome.sph.umich.edu/wiki/VerifyBamID">Manual</a> </li>
+    <li><a href="https://github.com/statgen/verifyBamID">GitHub</a></li>
+</ul>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="int"></a>
+<div class="heading">Interactive job on Biowulf</div>
+
+
+<p>Allocate an interactive session with <a href="/docs/userguide.html#int">sinteractive</a>
+and use as follows</p>
+<pre class="term">
+biowulf$ <b>sinteractive </b>
+node$ <b>module load verifybamid</b>
+verifyBamID 1.1.3 -- verify identity and purity of sequence data
+(c) 2010-2014 Hyun Min Kang, Goo Jun, and Goncalo Abecasis
+
+
+Available Options
+                             Input Files : --vcf [], --bam [], --bai [],
+                                           --subset [], --smID []
+                    VCF analysis options : --genoError [1.0e-03],
+                                           --minAF [0.01],
+                                           --minCallRate [0.50]
+   Individuals to compare with chip data : --site, --self, --best
+          Chip-free optimization options : --free-none, --free-mix [ON],
+                                           --free-refBias, --free-full
+          With-chip optimization options : --chip-none, --chip-mix [ON],
+                                           --chip-refBias, --chip-full
+                    BAM analysis options : --ignoreRG, --ignoreOverlapPair,
+                                           --noEOF, --precise, --minMapQ [10],
+                                           --maxDepth [20], --minQ [13],
+                                           --maxQ [40], --grid [0.05]
+                 Modeling Reference Bias : --refRef [1.00], --refHet [0.50],
+                                           --refAlt [0.00]
+                          Output options : --out [], --verbose
+                               PhoneHome : --noPhoneHome,
+                                           --phoneHomeThinning [50]
+
+node$ <b>verifyBamID --vcf input1.vcf --bam input1.bam --out output1 --verbose --ignoreRG</b>
+node$ <b>exit</b>
+biowulf$
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="serial"></a>
+<div class="heading">Batch job on Biowulf</div>
+
+<p>Create a batch script similar to the following example:</p>
+<pre class="term">
+#! /bin/bash
+# this file is verifybamid.sh
+
+module load verifybamid || exit 1
+verifyBamID --vcf input1.vcf --bam input1.bam --out output1 \
+    --verbose --ignoreRG --noPhoneHome
+</pre>
+
+<p>Submit to the queue with <a href="/docs/userguide.html">sbatch</a>:</p>
+<pre class="term">
+biowulf$ <b>sbatch verifybamid.sh</b>
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="swarm"></a>
+<div class="heading">Swarm of jobs on Biowulf</div>
+
+<p>Create a swarm command file similar to the following example:</p>
+<pre class="term">
+# this file is verifybamid.swarm
+verifyBamID --vcf input1.vcf --bam input1.bam --out output1 --verbose --ignoreRG --noPhoneHome
+verifyBamID --vcf input2.vcf --bam input2.bam --out output2 --verbose --ignoreRG --noPhoneHome
+verifyBamID --vcf input3.vcf --bam input3.bam --out output3 --verbose --ignoreRG --noPhoneHome
+</pre>
+
+<p>And submit to the queue with <a href="/apps/swarm.html">swarm</a></p>
+<pre class="term">
+biowulf$ <b>swarm -f verifybamid.swarm</b>
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

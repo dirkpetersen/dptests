@@ -1,0 +1,116 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ZDOCK on Biowulf';</script>
+<div class="title">ZDOCK on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+zDOCK performs a full rigid-body search of docking orientations between two proteins. This includes performance optimization and a novel pairwise statistical energy potential.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Chen R, Li L, Weng Z
+    <a href="https://pubmed.ncbi.nlm.nih.gov/12784371/"><b><u>ZDOCK: an initial-stage protein-docking algorithm.</u></b></a>
+    <em>Proteins (2003) Jul 1;52(1):80-7.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://zlab.umassmed.edu/zdock/">ZDOCK Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>zdock</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li><b>zdock/3.0.2</b>: single-threaded
+  <li><b>zdock/3.0.2_mpi</b>: MPI
+  <li>Environment variables set <!--for ones users should be aware of -->
+    <ul>
+      <li><tt>ZDOCK_HOME</tt></li>
+      <li><tt>OMPI_MCA_btl</tt></li>
+    </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load zdock</b>
+
+[user@cn3144 ~]$ <b>zgrep ^ATOM /pdb/pdb/cg/pdb1cgi.ent.gz | grep ' E ' > 1cgi_r.pdb </b>
+[user@cn3144 ~]$ <b>zgrep ^ATOM /pdb/pdb/cg/pdb1cgi.ent.gz | grep ' I ' > 1cgi_l.pdb </b>
+[user@cn3144 ~]$ <b>cp $ZDOCK_HOME/uniCHARMM . </b>
+[user@cn3144 ~]$ <b>mark_sur 1cgi_r.pdb 1cgi_r_m.pdb </b>
+[user@cn3144 ~]$ <b>mark_sur 1cgi_l.pdb 1cgi_l_m.pdb </b>
+[user@cn3144 ~]$ <b>zdock -R 1cgi_r_m.pdb -L 1cgi_l_m.pdb -o zdock.out </b>
+[user@cn3144 ~]$ <b>cp $ZDOCK_HOME/create_lig . </b>
+[user@cn3144 ~]$ <b>create.pl zdock.out </b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. zdock.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load zdock/3.0.2_mpi
+cp $ZDOCK_HOME/uniCHARMM .
+mark_sur receptor.pdb receptor_m.pdb
+mark_sur ligand.pdb ligand_m.pdb
+srun --mpi=pmix zdock -R receptor_m.pdb -L ligand_m.pdb -o zdock.out
+cp $ZDOCK_HOME/create_lig .
+create.pl zdock.out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --ntasks=16 zdock.sh</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

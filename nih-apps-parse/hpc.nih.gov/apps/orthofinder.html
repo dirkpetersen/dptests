@@ -1,0 +1,226 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'OrthoFinder: phylogenetic orthology inference for comparative genomics ';</script>
+<div class="title"><b>OrthoFinder: phylogenetic orthology inference for comparative genomics </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+OrthoFinder is an accurate and comprehensive platform for comparative genomics.
+It finds orthogroups and orthologs, infers rooted gene trees for all orthogroups
+and identifies all of the gene duplication events in those gene trees.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/BrooksLabUCSC/flair">FLAIR GitHub page</a></li>
+<li><a href="https://flair.readthedocs.io/en/latest/">FLAIR Manual</a></li>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>David M. Emms &amp; Steven Kelly <br />
+<i> OrthoFinder: phylogenetic orthology inference for comparative genomics </i><br />
+<a href="https://link.springer.com/article/10.1186/s13059-019-1832-y">Genome Biology volume 20, Article number: 238 (2019) </a> <br/>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>OrthoFinder</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+ <ul>
+    <li><b>ORTHOFINDER_HOME</b>&nbsp; installation directory</li>
+    <li><b>ORTHOFINDER_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>ORTHOFINDER_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>ORTHOFINDER_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=4g --gres=lscratch:10</b>
+[user@cn3200 ~]$ <b>module load orthofinder</b>
+[+] Loading singularity  3.8.5-1  on cn0883
+[+] Loading orthofinder  2.5.4
+[user@cn3200 ~]$ <b>orthofinder -h</b>
+
+OrthoFinder version 2.5.4 Copyright (C) 2014 David Emms
+
+SIMPLE USAGE:
+Run full OrthoFinder analysis on FASTA format proteomes in &lt;dir&gt;
+  orthofinder [options] -f &lt;dir&gt;
+
+Add new species in &lt;dir1&gt; to previous run in &lt;dir2&gt; and run new analysis
+  orthofinder [options] -f &lt;dir1&gt; -b &lt;dir2&gt;
+
+OPTIONS:
+ -t &lt;int&gt;        Number of parallel sequence search threads [Default = 72]
+ -a &lt;int&gt;        Number of parallel analysis threads
+ -d              Input is DNA sequences
+ -M &lt;txt&gt;        Method for gene tree inference. Options 'dendroblast' & 'msa'
+                 [Default = dendroblast]
+ -S &lt;txt&gt;        Sequence search program [Default = diamond]
+                 Options: blast, diamond, diamond_ultra_sens, blast_gz, mmseqs, blast_nucl
+ -A &lt;txt&gt;        MSA program, requires '-M msa' [Default = mafft]
+                 Options: mafft, muscle
+ -T &lt;txt&gt;        Tree inference method, requires '-M msa' [Default = fasttree]
+                 Options: fasttree, raxml, raxml-ng, iqtree
+ -s &lt;file&gt;       User-specified rooted species tree
+ -I &lt;int&gt;        MCL inflation parameter [Default = 1.5]
+ -x &lt;file&gt;       Info for outputting results in OrthoXML format
+ -p &lt;dir&gt;        Write the temporary pickle files to &lt;dir&gt;
+ -1              Only perform one-way sequence search
+ -X              Don't add species names to sequence IDs
+ -y              Split paralogous clades below root of a HOG into separate HOGs
+ -z              Don't trim MSAs (columns&gt;=90% gap, min. alignment length 500)
+ -n &lt;txt&gt;        Name to append to the results directory
+ -o &lt;txt&gt;        Non-default results directory
+ -h              Print this help text
+
+WORKFLOW STOPPING OPTIONS:
+ -op             Stop after preparing input files for BLAST
+ -og             Stop after inferring orthogroups
+ -os             Stop after writing sequence files for orthogroups
+                 (requires '-M msa')
+ -oa             Stop after inferring alignments for orthogroups
+                 (requires '-M msa')
+ -ot             Stop after inferring gene trees for orthogroups
+
+WORKFLOW RESTART COMMANDS:
+ -b  &lt;dir&gt;         Start OrthoFinder from pre-computed BLAST results in &lt;dir&gt;
+ -fg &lt;dir&gt;         Start OrthoFinder from pre-computed orthogroups in &lt;dir&gt;
+ -ft &lt;dir&gt;         Start OrthoFinder from pre-computed gene trees in &lt;dir&gt;
+
+LICENSE:
+ Distributed under the GNU General Public License (GPLv3). See License.md
+
+CITATION:
+ When publishing work that uses OrthoFinder please cite:
+ Emms D.M. &amp; Kelly S. (2019), Genome Biology 20:238
+
+ If you use the species tree in your work then please also cite:
+ Emms D.M. &amp; Kelly S. (2017), MBE 34(12): 3267-3278
+ Emms D.M. &amp; Kelly S. (2018), bioRxiv https://doi.org/10.1101/267914
+[user@cn3200 ~]$ <b>git clone https://github.com/davidemms/OrthoFinder</b>
+[user@cn3200 ~]$ <b>orthofinder -f ./OrthoFinder/ExampleData/ </b>
+
+OrthoFinder version 2.5.4 Copyright (C) 2014 David Emms
+
+2022-08-08 16:27:10 : Starting OrthoFinder 2.5.4
+56 thread(s) for highly parallel tasks (BLAST searches etc.)
+7 thread(s) for OrthoFinder algorithm
+
+Checking required programs are installed
+----------------------------------------
+Test can run "mcl -h" - ok
+Test can run "fastme -i /gpfs/gsfs7/users/user/OrthoFinder-2.5.4/ExampleData/OrthoFinder/Results_Aug08_8/WorkingDirectory/SimpleTest.phy -o /gpfs/gsfs7/users/user/OrthoFinder-2.5.4/ExampleData/OrthoFinder/Results_Aug08_8/WorkingDirectory/SimpleTest.tre" - ok
+
+Dividing up work for BLAST for parallel processing
+--------------------------------------------------
+2022-08-08 16:27:11 : Creating diamond database 1 of 4
+2022-08-08 16:27:11 : Creating diamond database 2 of 4
+2022-08-08 16:27:11 : Creating diamond database 3 of 4
+2022-08-08 16:27:11 : Creating diamond database 4 of 4
+
+Running diamond all-versus-all
+------------------------------
+Using 56 thread(s)
+2022-08-08 16:27:11 : This may take some time....
+2022-08-08 16:27:18 : Done all-versus-all sequence search
+
+Running OrthoFinder algorithm
+-----------------------------
+2022-08-08 16:27:18 : Initial processing of each species
+2022-08-08 16:27:18 : Initial processing of species 2 complete
+2022-08-08 16:27:18 : Initial processing of species 3 complete
+2022-08-08 16:27:18 : Initial processing of species 0 complete
+2022-08-08 16:27:18 : Initial processing of species 1 complete
+2022-08-08 16:27:20 : Connected putative homologues
+2022-08-08 16:27:20 : Written final scores for species 2 to graph file
+2022-08-08 16:27:20 : Written final scores for species 1 to graph file
+2022-08-08 16:27:20 : Written final scores for species 0 to graph file
+2022-08-08 16:27:20 : Written final scores for species 3 to graph file
+2022-08-08 16:27:21 : Ran MCL
+
+Writing orthogroups to file
+---------------------------
+OrthoFinder assigned 2218 genes (81.2% of total) to 606 orthogroups. Fifty percent of all genes were in orthogroups with 4 or more genes (G50 was 4) and were contained in the largest 279 orthogroups (O50 was 279). There were 268 orthogroups with all species present and 245 of these consisted entirely of single-copy genes.
+
+2022-08-08 16:27:22 : Done orthogroups
+
+Analysing Orthogroups
+=====================
+
+Calculating gene distances
+--------------------------
+2022-08-08 16:27:25 : Done
+
+Inferring gene and species trees
+--------------------------------
+2022-08-08 16:27:26 : Done 0 of 325
+2022-08-08 16:27:26 : Done 100 of 325
+2022-08-08 16:27:27 : Done 200 of 325
+
+268 trees had all species present and will be used by STAG to infer the species tree
+
+Best outgroup(s) for species tree
+---------------------------------
+2022-08-08 16:27:32 : Starting STRIDE
+2022-08-08 16:27:32 : Done STRIDE
+Observed 2 well-supported, non-terminal duplications. 2 support the best roots and 0 contradict them.
+Best outgroups for species tree:
+  Mycoplasma_hyopneumoniae
+  Mycoplasma_genitalium, Mycoplasma_gallisepticum
+  Mycoplasma_agalactiae
+
+WARNING: Multiple potential species tree roots were identified, only one will be analyed.
+
+Reconciling gene trees and species tree
+---------------------------------------
+Outgroup: Mycoplasma_hyopneumoniae
+2022-08-08 16:27:32 : Starting Recon and orthologues
+2022-08-08 16:27:32 : Starting OF Orthologues
+2022-08-08 16:27:33 : Done 0 of 325
+2022-08-08 16:27:33 : Done 100 of 325
+2022-08-08 16:27:33 : Done 200 of 325
+2022-08-08 16:27:33 : Done 300 of 325
+2022-08-08 16:27:34 : Done OF Orthologues
+
+Writing results files
+=====================
+2022-08-08 16:27:35 : Done orthologues
+
+Results:
+    /data/user/OrthoFinder-2.5.4/ExampleData/OrthoFinder/Results_Aug08_8/
+
+CITATION:
+ When publishing work that uses OrthoFinder please cite:
+ Emms D.M. &iamp; Kelly S. (2019), Genome Biology 20:238
+
+ If you use the species tree in your work then please also cite:
+ Emms D.M. &iamp; Kelly S. (2017), MBE 34(12): 3267-3278
+ Emms D.M. &iamp; Kelly S. (2018), bioRxiv https://doi.org/10.1101/267914
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

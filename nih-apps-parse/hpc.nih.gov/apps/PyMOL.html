@@ -1,0 +1,100 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PyMOL on Biowulf';</script>
+<div class="title">PyMOL on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#posefilter">PoseFilter</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+       </div>
+</table>
+
+<p>
+Description
+<p>PyMOL is a powerful and comprehensive molecular visualization product for rendering and animating 3D molecular structures. Pymol is a user-sponsored molecular visualization system on an open-source foundation.
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>PyMOL Main Site: <a href="https://sourceforge.net/projects/pymol">PyMOL on Sourceforge</a></li>
+</ul>
+
+<a name="notes"></a><div class="heading">Important Notes</div>
+<p class="NXblock">This application requires a <a href="/docs/connect.html#nx">graphical connection using NX</a></p>
+<ul>
+  <li>Module Name: pymol (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Must have NX software installed: <a href="/docs/nx.html">NX</a>
+  <li>Must use an interactive node
+  <li>To open pdb files or fetch from pdb, turn shaders off:
+  <ul>
+    <li>Start pymol
+    <li>Type: set use_shaders, 0
+    <li>Type: fetch xxxx 
+  </ul>
+  <li>The shaders setting can be made permanent by editing ~/.pymolrc:<br>
+    <pre class="term">$ echo 'set use_shaders, 0' &gt;&gt; ~/.pymolrc</pre>
+  </li>
+</ul>
+
+<p class="alert">PyMOL will <b>crash</b> unless shaders are turned off.</p>
+
+<P>
+
+<a name="posefilter"></a><div class="heading">PoseFilter</div>
+
+<p>There is a special install of PyMOL that includes the <a href="https://github.com/skalyaanamoorthy/PoseFilter">PoseFilter plugin</a>.  It can be used by loading the <tt>posefilter</tt> module.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-tasks=8 --mem=#g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load pymol</b>
+[user@cn3144 ~]$ <b>pymol&</b>
+[user@cn3144 ~]$ libGL error: unable to load driver: swrast_dri.so
+libGL error: failed to load driver: swrast
+ PyMOL(TM) Molecular Graphics System, Version 1.8.6.0.
+ Copyright (c) Schrodinger, LLC.
+ All Rights Reserved.
+ 
+    Created by Warren L. DeLano, Ph.D. 
+ 
+    PyMOL is user-supported open-source software.  Although some versions
+    are freely available, PyMOL is not in the public domain.
+ 
+    If PyMOL is helpful in your work or study, then please volunteer 
+    support for our ongoing efforts to create open and affordable scientific
+    software by purchasing a PyMOL Maintenance and/or Support subscription.
+
+    More information can be found at "http://www.pymol.org".
+ 
+    Enter "help" for a list of commands.
+    Enter "help <command-name>" for information on a specific command.
+
+ Hit ESC anytime to toggle between text and graphics.
+
+ Detected OpenGL version prior to 2.0. Shaders and volumes unavailable.
+ OpenGL graphics engine:
+  GL_VENDOR:   Mesa Project
+  GL_RENDERER: Software Rasterizer
+  GL_VERSION:  1.4 (2.1 Mesa 10.0.1)
+ Detected 8 CPU cores.  Enabled multithreaded rendering.
+</pre>
+
+<p>You should see the PyMOL GUI windows appear on your screen.
+<p><img width=100% height=auto src="PyMOL.png" alt="Pymol display">
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

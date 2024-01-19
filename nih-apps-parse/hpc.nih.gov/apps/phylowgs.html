@@ -1,0 +1,115 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Phylowgs on Biowulf';</script>
+<div class="title">Phylowgs on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A new method, PhyloWGS, can be applied to whole-genome sequencing data from one or more tumor samples to reconstruct complete genotypes of these subpopulations based on variant allele frequencies (VAFs) of point mutations and population frequencies of structural variations. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Amit G Deshwar, Shankar Vembu, Christina K Yung, Gun Ho Jang, Lincoln Stein and Quaid Morris. PhyloWGS: Reconstructing subclonal composition and evolution from whole-genome sequencing of tumors. Genome Biology 2015 16:35 </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/morrislab/phylowgs">Phylowgs Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>phylowgs</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded app
+<li>Phylowgs results can be viewed in local browser using <a href="https://hpc.nih.gov/docs/tunneling/">SSH Tunneling</a> 
+<li>Example files in <tt>/usr/local/apps/phylowgs/TEST_DATA</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:20 </b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ mkdir -p /data/$USER/phylowgs && cd /data/$USER/phylowgs
+
+[user@cn3144 ~]$ module load phylowgs
+
+[user@cn3144 ~]$ cp /usr/local/apps/phylowgs/TEST_DATA/* .
+
+[user@cn3144 ~]$ evolve.py ssm_data.txt cnv_data.txt -t /lscratch/$SLURM_JOBID
+[2018-02-16 09:19:38.999007] Starting MCMC run...
+[2018-02-16 09:19:39.004639] -1000
+[2018-02-16 09:19:39.301332] Shrinking MH proposals. Now 200.000000
+[2018-02-16 09:19:39.311407] -999
+[2018-02-16 09:19:39.646055] Shrinking MH proposals. Now 400.000000
+[2018-02-16 09:19:39.652818] -998
+...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. phylowgs.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load phylowgs
+evolve.py ssm_data.txt cnv_data.txt -t /lscratch/$SLURM_JOBID
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --gres=lscratch:20 phylowgs.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. phylowgs.swarm). For example:</p>
+
+<pre class="term">
+evolve.py dir1/ssm_data1.txt dir1/cnv_data1.txt -t /lscratch/$SLURM_JOBID
+evolve.py dir2/ssm_data2.txt dir2/cnv_data2.txt -t /lscratch/$SLURM_JOBID
+evolve.py dir3/ssm_data3.txt dir3/cnv_data3.txt -t /lscratch/$SLURM_JOBID
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f phylowgs.swarm --gres=lscratch:20 -g 5 -t 2 --module phylowgs</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module phylowgs</tt> <td>Loads the phylowgs module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,148 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'cufflinks on Biowulf';</script>
+<div class="title">cufflinks on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+<P>Cufflinks assembles transcripts, estimates their abundances, and tests for differential expression and regulation
+in RNA-Seq samples. It accepts aligned RNA-Seq reads and assembles the alignments into a parsimonious set of transcripts.
+Cufflinks then estimates the relative abundances of these transcripts based on how many reads support each one.
+<p>Cufflinks is a collaborative effort between the <a href="http://bio.math.berkeley.edu/"> Laboratory for Mathematical and Computational Biology</a>, led by Lior Pachter at UC Berkeley, Steven Salzberg's group
+  at the University of Maryland <a href="http://cbcb.umd.edu/">Center for Bioinformatics and Computational Biology</a>,
+  and <a href="http://woldlab.caltech.edu/">Barbara Wold's lab</a> at Caltech.</p>
+<p>Cufflinks is provided under the OSI-approved <a href="http://en.wikipedia.org/wiki/Boost_Software_License"> Boost License</a></p>
+<p>Illumina has provided the RNA-Seq user community with a set of genome sequence indexes (including Bowtie, Bowtie2, and BWA indexes) as
+  well as GTF transcript annotation files called iGenomes. These files can be used with TopHat and Cufflinks to quickly
+  perform expression analysis and gene discovery. The annotation files are augmented with the tss_id and p_id GTF
+  attributes that Cufflinks needs to perform differential splicing, CDS output, and promoter user analysis.</p>
+</p>
+
+<p class="alert">
+Please note that Cufflinks has entered a low maintenance, low support stage as it is now largely superseded by <a href="stringtie.html">StringTie</a> which provides the same core functionality (i.e. transcript assembly and quantification), in a much more efficient way.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+<li><b>Cufflinks:</b>
+Cole Trapnell, Brian Williams, Geo Pertea, Ali Mortazavi, Gordon Kwan, Jeltje van Baren, Steven Salzberg, Barbara Wold, Lior Pachter.
+<b><a href="">Transcript assembly and quantification by RNA-Seq reveals unannotated transcripts and isoform switching during cell differentiation</a></b>
+<em>Nature Biotechnology, 2010</em>
+</li>
+
+<li><b>Cufflinks -b:</b>
+Adam Roberts, Cole Trapnell, Julie Donaghey, John L. Rinn, Lior Pachter.
+<b><a href="">Improving RNA-Seq expression estimates by correcting for fragment bias</a></b>
+<em>Genome Biology, 2011</em>
+</li>
+
+<li><b>Cufflinks [RABT mode]:</b>
+Adam Roberts, Harold Pimentel, Cole Trapnell, Lior Pachter.
+<b><a href="">Identification of novel transcripts in annotated genomes using RNA-Seq</a></b>
+<em>Bioinformatics, 2011</em>
+</li>
+
+<li><b>Cuffdiff:</b>
+Cole Trapnell, David Hendrickson, Martin Sauvageau, Loyal Goff, John L. Rinn, Lior Pachter
+<b><a href="">Differential analysis of gene regulation at transcript resolution with RNA-seq</a></b>
+<em>Nature Biotechnology, 2012</em>
+</li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://cole-trapnell-lab.github.io/cufflinks/tools/">http://cole-trapnell-lab.github.io/cufflinks/tools/</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>cufflinks</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+  <li>Reference data in <tt>/fdb/igenomes/</tt>, downloaded from <a href="http://ccb.jhu.edu/software/tophat/igenomes.shtml">iGenomes</a></li>
+</ul>
+<p class="alert">There is a patched version of cufflinks available:</p>
+
+<pre class="term">module load cufflinks/2.2.1_patched</pre>
+
+<p class="alert">The patch significantly
+<a href="https://groups.google.com/forum/#!topic/tuxedo-tools-users/UzLCJhj3lUE">
+accelerates progress at positions where thousands of mate pairs have the same location
+</a>.  The patched version seems to help when working with the Ensembl human annotation.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load cufflinks</b>
+[user@cn3144 ~]$ <b>cufflinks file.sam</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. cufflinks.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+cd /data/$USER/mydir
+module load cufflinks
+cufflinks -p $SLURM_CPUS_PER_TASK inputFile
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] cufflinks.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. cufflinks.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/mydir1; cufflinks -p $SLURM_CPUS_PER_TASK inputFile
+cd /data/$USER/mydir2; cufflinks -p $SLURM_CPUS_PER_TASK inputFile
+cd /data/$USER/mydir3; cufflinks -p $SLURM_CPUS_PER_TASK inputFile
+[...]   
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f cufflinks.swarm [-g #] [-t #] --module cufflinks</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module cufflinks</tt> <td>Loads the cufflinks module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

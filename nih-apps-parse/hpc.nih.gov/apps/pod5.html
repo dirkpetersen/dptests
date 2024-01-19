@@ -1,0 +1,131 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "pod5";</script>
+
+<div class="title">pod5 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+From the documentation
+</p>
+<blockquote>
+    POD5 is a file format for storing nanopore dna data in an easily accessible way. The format is able to be written in a streaming manner which allows a sequencing instrument to directly write the format.
+    Data in POD5 is stored using Apache Arrow, allowing users to consume data in many languages using standard tools.
+</blockquote>
+
+
+<!-- <h3>References:</h3>
+<ul>
+
+  <li>
+    Blow J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A really amazing research paper.</u></b></a>
+    <em>J Mol Biol. 2012 Jan 13;415(2):406-18.</em>
+  </li>
+  <li>
+    Blow J., Doe J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A retread of another amazing research paper.</u></b></a>
+    <em>J Struct Biol. 2012 Dec;180(3):519-30.</em>
+  </li>
+
+</ul>
+-->
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>pod5 repo on <a href="https://github.com/nanoporetech/pod5-file-format">GitHub</a></li>
+<li>pod5 <a href="https://pod5-file-format.readthedocs.io/en/latest/">Manual</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+
+<ul>
+    <li>Module Name: <tt>pod5</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>This tool is multithreaded. Please match threads to allocated CPUs</li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$POD5_TEST_DATA</tt></li>
+  </ul>
+<li>Example files in <tt>$POD5_TEST_DATA</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --mem=12g --gres=lscratch:150</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load pod5</b>
+
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>cp -rL ${POD5_TEST_DATA:-none} input</b>
+[user@cn3144 ~]$ <b>pod5 convert fast5 --threads $SLURM_CPUS_PER_TASK --output output.pod5 --recursive input</b>
+[user@cn3144 ~]$ <b>du -sh input</b>
+46G     input
+[user@cn3144 ~]$ <b>ls -lh output.pod5</b>
+-rw-r--r-- 1 user group  38G Jun  2 14:29 output.pod5
+[user@cn3144 ~]$ <b>pod5 view --output summary.tsv output.pod5</b>
+[user@cn3144 ~]$ <b>head summary.tsv</b>
+[user@cn3144 ~]$ <b>pod5 inspect read output.pod5 0001297c-4c07-438e-a29b-6da3b0ad1260</b>
+read_id: 0001297c-4c07-438e-a29b-6da3b0ad1260
+read_number:    11392
+start_sample:   180540114
+median_before:  220.86135864257812
+channel data:
+        channel: 284
+        well: 1
+        pore_type: not_set
+end reason:
+        name: unknown
+        forced: False
+...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>Note that <code>pod5 convert fast5</code> requires multi-fast5 input files</p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pod5.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load pod5
+
+cd /lscratch/$SLURM_JOB_ID
+mkdir output
+cp -rL ${POD5_TEST_DATA:-none} input
+pod5 convert fast5 --threads $SLURM_CPUS_PER_TASK --output output input/* 
+cp 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=10g --gres=lscratch:150 pod5.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

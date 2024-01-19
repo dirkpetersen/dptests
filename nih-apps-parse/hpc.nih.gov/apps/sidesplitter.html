@@ -1,0 +1,129 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SIDESPLITTER on Biowulf';</script>
+<div class="title">SIDESPLITTER on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+Sidesplitter reduces over-fitting in both idealised and experimental settings, while maintaining
+independence between the two sides of a split refinement.  It can improve the final resolution in refinements of structures prone to severe over-fitting, such as membrane proteins in detergent micelles.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/StructuralBiology-ICLMedicine/SIDESPLITTER">SIDESPLITTER Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>sidesplitter</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Multithreaded (<b>NOTE:</b> sidesplitter will attempt to use all cpus on a node by default unless constrained by <tt><b>OMP_NUM_THREADS</b></tt>)
+</ul>
+<P>
+
+<p>Sidesplitter can also be used in tandom with <a href="/apps/RELION">RELION</a> v3.1:</p>
+
+<pre class="term">
+# Usage:
+#     sidesplitter_wrapper.sh path/to/relion_external_reconstruct_star_file.star
+#
+# To use from RELION 3.1, set the RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE environment variable to point to this script,
+# set SIDESPLITTER to point to the sidesplitter binary (or make sure sidesplitter can be found via PATH), and run
+# relion_refine with the --external_reconstruct argument. For example:
+#
+#     export RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE=/path/to/sidesplitter_wrapper.sh
+#     export SIDESPLITTER=/path/to/sidesplitter
+#
+# then run RELION auto-refine from the GUI and put "--external_reconstruct" in the additional arguments box. To run on
+# a cluster, depending on your configuration you might need to put the environment variable definitions into your
+# submission script.
+
+# Troubleshooting
+#
+# If you have problems running SIDESPLITTER using this script, the first thing to check is that external reconstruction
+# from RELION is working correctly. Try running a normal refinement job, using the "--external_reconstruct" argument
+# but without setting the RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE environment variable. If this fails, the problem is
+# likely to be with your RELION installation - perhaps it is the wrong version, or different installations are
+# conflicting with each other. If normal external reconstruction is successful, the problem is likely to be with the
+# SIDESPLITTER installation, or a bug in this script.
+
+# How this script works:
+#
+# If the target file name contains "_half", this script assumes two copies of itself will be running (for the two half
+# data sets). The two copies will coordinate with each other by creating, checking for and deleting a directory called
+# "sidesplitter_running". Both scripts will run relion_external_reconstruct for their given half data set. The first
+# script will wait for both reconstructions to finish, then call SIDESPLITTER to process both half maps. The second
+# script will wait for the first to finish running SIDESPLITTER and then exit (because if either of the scripts exits
+# before the processing is finished, RELION moves on and tries to continue its own processing before the filtered
+# volumes are ready).
+#
+# If the target file name does not contain "_half", this script assumes there is only a single copy of itself running.
+# In this case it call relion_external_reconstruct, waits for the reconstruction to finish and then exits.
+# This handles the final iteration when the two half sets are combined, at which point RELION calls the external
+# reconstruction program just once to reconstruct the final combined volume.
+#
+# Note that this script is not particularly robust. If one of the commands fails, it's possible you might need to
+# manually tidy up the job directory and remove the "sidesplitter_running" directory to avoid problems in the next run.
+</pre>
+
+<p>For use with the GUI as detailed above, before launching the GUI</p>
+
+<pre class="term">module load RELION sidesplitter
+...
+export RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE=sidesplitter_wrapper.sh
+relion</pre>
+
+<p>Then within the Running tab for a refinement run:</p>
+
+  <div><center><img src="sidesplitter_RELION.png" border=1 alt="Additional arguments" width="400px"/></div>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load sidesplitter</b>
+
+[user@cn3144 ~]$ <b>OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE sidesplitter --v1 half_map1.mrc --v2 half_map2.mrc --mask mask.mrc</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. sidesplitter.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load sidesplitter
+OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE sidesplitter --v1 half_map1.mrc --v2 half_map2.mrc --mask mask.mrc
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] sidesplitter.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

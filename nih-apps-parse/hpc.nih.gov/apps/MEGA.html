@@ -1,0 +1,131 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MEGA on Biowulf';</script>
+<div class="title">MEGA on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MEGA, or Molecular Evolutionary Genetic Analysis, is a suite of tools that help explore and analyze DNA and protein sequences for evolutionary and population genetics. These include methods for multiple sequence alignment, tree inference, time trees, models of evolution, diversity metrics, selection metrics, ancestral state reconstruction, and evolutionary rates.
+</p>
+<p>
+The application can be run both as a GUI (command <tt>mega</tt>) or a command line interface (command <tt>megacc</tt>). To run the GUI, we recommend connecting to Biowulf using <a href="docs/nx.html">NoMachine</a>. The GUI can be used to run analyses and additionally create analysis options files (<tt>.mao</tt> files) that can be passed to the command-line application. This can be helpful for running large analyses with sbatch or swarm.
+</p>
+
+<h3>Reference:</h3>
+<ul> 
+  <li>
+    Koichiro Tamura, Glen Stecher, and Sudhir Kumar
+    <a href="https://doi.org/10.1093/molbev/msab120"><b><u>MEGA11: Molecular Evolutionary Genetics Analysis version 11</u></b></a> <em>Molecular Biology and Evolution 38:3022-3027 (2021)</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.megasoftware.net/">MEGA Main Site</a></li>
+<li><a href="https://www.megasoftware.net/web_help_11/index.htm">MEGA Online Manual</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application requires a <a href="/docs/connect.html#nx">graphical connection using NX</a> to run the GUI version</p>
+
+<ul>
+  <li>Module Name: <tt>MEGA</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+	<li>Singlthreaded. Multithreaded for ML phylogeny method.</li>
+  <li>Run <tt>mega</tt> command to start the graphical user interface; <tt>megacc</tt> for the CLI</li>
+  <li>Example files in <tt>$MEGA_EXAMPLES</tt>. When you start the GUI, example files will automatically copied to <tt>"/home/$USER/MEGA X"</tt></li>
+  <li>When running the GUI, you can safely ignore the following message: <br>
+    <tt>libGL error: MESA-LOADER: failed to open swrast: /usr/lib64/dri/swrast_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib64/dri)
+    libGL error: failed to load driver: swrast</tt>
+  </li>
+</ul>
+
+<p class="alert">The Blast and Genbank features in MEGA GUI will not work on Biowulf since compute nodes are behind a firewall and MEGA is not able to use proxies. We recommend installing the GUI on your desktop to access these features. You can save a MEGA data session file and transfer it Biowulf to reopen in MEGA in an sinteractive session</p>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load MEGA</b>
+
+[user@cn3144 ~]$ <b>mega</b>
+<center><img alt="MEGA GUI" src="/images/mega-gui.png" border="1" style="width:75%;height:75%;"/></center>
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. MEGA.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load MEGA
+megacc -a analysis.mao -d data.meg
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] MEGA.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. MEGA.swarm). For example:</p>
+
+<pre class="term">
+megacc -a analysis1.mao -d data1.meg
+megacc -a analysis2.mao -d data1.meg
+megacc -a analysis1.mao -d data2.meg
+megacc -a analysis2.mao -d data2.meg
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f MEGA.swarm [-g #] [-t #] --module MEGA</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module MEGA</tt> <td>Loads the MEGA module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

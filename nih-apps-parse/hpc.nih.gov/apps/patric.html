@@ -1,0 +1,137 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' PATRIC';</script>
+<div class="title"> PATRIC</div>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><A href="#notes">Important notes</a></div>
+<div class="tocItem"><A href="#errors">Download errors</a></div>
+<div class="tocItem"><A href="#patric">Downloading data from PATRIC</a></div>
+<div class="tocItem"><A href="#sbatch">Batch jobs</a></div>
+<div class="tocItem"><A href="#swarm">Swarm jobs</a></div>
+</div></table>
+
+<p>The <a href="https://docs.patricbrc.org/cli_tutorial/index.html">PATRIC CLI</a> allows programmatic access to the Pathosystems Resource Integration Center online database.  </p>
+
+<P>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://patricbrc.org/">PATRIC BRC Web Database</a>
+<li><A href="https://docs.patricbrc.org/cli_tutorial/index.html">PATRIC CLI Tutorial</a></li>
+<li><a href="https://docs.patricbrc.org/cli_tutorial/command_list/index.html">CLI Command Reference</a></li>
+<li><b>Command line help:</b> Type the command followed by '-h'</li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>patric</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>PATRIC commands are prefixed with <tt>p3-</tt></li>
+</ul>
+<P>
+<A Name="patric"></a>
+<div class="heading">Downloading data from PATRIC</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<P>
+The primary use of PATRIC CLI tools is downloading and querying data from the PATRIC database. For instance, to query and download a specific baterial genome.:
+<pre class="term">
+[USER@biowulf]$ <b>sinteractive --gres=lscratch:40</b>
+salloc: Pending job allocation 43361600
+salloc: job 43361600 queued and waiting for resources
+salloc: job 43361600 has been allocated resources
+salloc: Granted job allocation 43361600
+salloc: Waiting for resource configuration
+salloc: Nodes cn2296 are ready for job
+
+[USER@cn2296]$ <b>mkdir /data/$USER/patric_genomes</b>
+
+[USER@cn2296]$ <b>cd !$</b>
+
+[USER@cn2296]$ <b>module load patric</b>
+
+[USER@cn2296]$ <b>p3-all-genomes --eq genus,Paenibacillus -a genome_name | head</b>
+genome.genome_id        genome.genome_name
+1333861.3       Paenibacillus forsythiae T98
+1619309.3       Paenibacillus herberti strain R33
+697284.3        Paenibacillus larvae subsp. larvae DSM 25430
+697284.9        Paenibacillus larvae subsp. larvae DSM 25430 strain DSM 25430; ERIC_II
+697286.3        Paenibacillus larvae subsp. larvae DSM 25719
+147375.10       Paenibacillus larvae subsp. larvae strain Eric_V
+1330551.3       Paenibacillus lemnae strain L7-75
+1619311.3       Paenibacillus physcomitrellae strain XB
+1414587.3       Paenibacillus polymyxa A18
+
+[USER@cn2296]$ <b>p3-genome-fasta 1414587.3 > Paenibacillus_polymyxa_A18.fasta</b>
+
+[USER@cn2296]$ <b>grep ">" Paenibacillus_polymyxa_A18.fasta</b>
+>JWJJ01000003 scaffold
+>JWJJ01000001 scaffold
+>JWJJ01000005 scaffold
+>JWJJ01000004 scaffold
+>JWJJ01000022 scaffold
+>JWJJ01000006 scaffold
+>JWJJ01000026 scaffold
+>JWJJ01000021 scaffold
+>JWJJ01000024 scaffold
+>JWJJ01000019 scaffold
+>JWJJ01000014 scaffold
+>JWJJ01000025 scaffold
+>JWJJ01000012 scaffold
+>JWJJ01000018 scaffold
+>JWJJ01000016 scaffold
+>JWJJ01000023 scaffold
+>JWJJ01000017 scaffold
+>JWJJ01000013 scaffold
+>JWJJ01000011 scaffold
+>JWJJ01000027 scaffold
+>JWJJ01000008 scaffold
+>JWJJ01000010 scaffold
+>JWJJ01000002 scaffold
+>JWJJ01000009 scaffold
+>JWJJ01000007 scaffold
+>JWJJ01000015 scaffold
+>JWJJ01000029 scaffold
+>JWJJ01000020 scaffold
+>JWJJ01000028 scaffold
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. patric.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load patric
+p3-genome-fasta 1414587.3 > 1414587.3.fasta
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=1 --mem=2g patric.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. patric.swarm). For example:</p>
+
+<pre class="term">
+cd fasta_dir; p3-genome-fasta 1414587.3 > 1414587.3.fa
+cd fasta_dir; p3-genome-fasta 697284.3 > 697284.3
+cd fasta_dir; p3-genome-fasta 697286.3 > 697286.3
+cd fasta_dir; p3-genome-fasta 1333861.3 > 1333861.3
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f patric.swarm [-g #] [-t #] --module patric</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module patric</tt> <td>Loads the patric module for each subjob in the swarm
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

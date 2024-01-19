@@ -1,0 +1,106 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SURVIVOR on Biowulf';</script>
+<div class="title">SURVIVOR on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+SURVIVOR is a tool set for simulating/evaluating SVs, merging and comparing SVs within and among samples, and includes various methods to reformat or summarize SVs.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Transient structural variations have strong effects on quantitative traits and reproductive isolation in fission yeast.
+Jeffares, Daniel C; Jolly, Clemency; Hoti, Mimoza; Speed, Doug; Shaw, Liam; Rallis, Charalampos; Balloux, Francois; Dessimoz, Christophe; Bähler, Jürg; Sedlazeck, Fritz J.
+Nature communications, Vol. 8, 14061, 24.01.2017, p. 1-11. DOI:<a href="https://doi.org/10.1038/NCOMMS14061">10.1038/NCOMMS14061</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/fritzsedlazeck/SURVIVOR">SURVIVOR Main Site</a></li>
+<li><a href="https://github.com/fritzsedlazeck/SURVIVOR/wiki">SURVIVOR wiki</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>survivor</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load survivor</b>
+
+[user@cn3144 ~]$ <b>ls *vcf > sample-files</b>
+[user@cn3144 ~]$ <b>SURVIVOR merge sample-files 1000 2 1 1 0 30 sample-merged.vcf</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. survivor.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+set -e
+module load survivor
+SURVIVOR bincov lowMQ.cov 10 2 > lowMQ.bed
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] survivor.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. survivor.swarm). For example:</p>
+
+<pre class="term">
+SURVIVOR merge sample1-files 1000 2 1 1 0 30 sample1-merged.vcf
+SURVIVOR merge sample2-files 1000 2 1 1 0 30 sample2-merged.vcf
+SURVIVOR merge sample3-files 1000 2 1 1 0 30 sample3-merged.vcf
+SURVIVOR merge sample4-files 1000 2 1 1 0 30 sample4-merged.vcf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f survivor.swarm [-g #] [-t #] --module survivor</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module survivor</tt> <td>Loads the SURVIVOR module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

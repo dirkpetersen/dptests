@@ -1,0 +1,207 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'medusa on Biowulf';</script>
+<div class="title">medusa on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A draft genome scaffolder that uses multiple reference genomes in a graph-based approach.
+</p>
+<p>
+Features
+<ul>
+  <li>MEDUSA (Multi-Draft based Scaffolder), an algorithm for genome scaffolding. MEDUSA exploits information obtained from a set of (draft or closed) genomes from related organisms to determine the correct order and orientation of the contigs. MEDUSA formalizes the scaffolding problem by means of a combinatorial optimization formulation on graphs and implements an efficient constant factor approximation algorithm to solve it. In contrast to currently used scaffolders, it does not require either prior knowledge on the microrganisms dataset under analysis (e.g. their phylogenetic relationships) or the availability of paired end read libraries.
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Bosi E, Donati B, Galardini M, Brunetti S, Sagot MF, Lió P, Crescenzi P, Fani R, Fondi M. <em>MeDuSa: a multi-draft based scaffolder.</em> Bioinformatics. 2015 Aug 1;31(15):2443-51. doi: 10.1093/bioinformatics/btv171. Epub 2015 Mar 25. PMID: 25810435.
+   <a href="https://pubmed.ncbi.nlm.nih.gov/25810435/">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/article/31/15/2443/188083">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>medusa Main Site:<a href="https://github.com/combogenomics/medusa">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>medusa</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Current medusa command lines could be run as
+	<pre class="term">
+	medusa --help</pre>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$MEDUSAPATH</tt></li>
+  </ul>
+<li>Example files in $MEDUSA_TEST_DATA<tt></tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load medusa</b>
+[user@cn3144 ~]$ <b>cp -r $MEDUSA_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>medusa --help</b>
+medusa --help
+Medusa version 1.6
+usage: java -jar medusa.jar -i inputfile -v
+available options:
+ -d                                    OPTIONAL PARAMETER;The option *-d*
+                                       allows for the estimation of the
+                                       distance between pairs of contigs
+                                       based on the reference genome(s):
+                                       in this case the scaffolded contigs
+                                       will be separated by a number of N
+                                       characters equal to this estimate.
+                                       The estimated distances are also
+                                       saved in the
+                                       <targetGenome>_distanceTable file.
+                                       By default the scaffolded contigs
+                                       are separated by 100 Ns
+ -f <<draftsFolder>>                   OPTIONAL PARAMETER; The option *-f*
+                                       is optional and indicates the path
+                                       to the comparison drafts folder
+ -gexf                                 OPTIONAL PARAMETER;Conting network
+                                       and path cover are given in gexf
+                                       format.
+ -h                                    Print this help and exist.
+ -i <<targetGenome>>                   REQUIRED PARAMETER;The option *-i*
+                                       indicates the name of the target
+                                       genome file.
+ -n50 <<fastaFile>>                    OPTIONAL PARAMETER; The option
+                                       *-n50* allows the calculation of
+                                       the N50 statistic on a FASTA file.
+                                       In this case the usage is the
+                                       following: java -jar medusa.jar
+                                       -n50 <name_of_the_fasta>. All the
+                                       other options will be ignored.
+ -o <<outputName>>                     OPTIONAL PARAMETER; The option *-o*
+                                       indicates the name of output fasta
+                                       file.
+ -random <<numberOfRounds>>            OPTIONAL PARAMETER;The option
+                                       *-random* is available (not
+                                       required). This option allows the
+                                       user to run a given number of
+                                       cleaning rounds and keep the best
+                                       solution. Since the variability is
+                                       small 5 rounds are usually
+                                       sufficient to find the best score.
+ -scriptPath <<medusaScriptsFolder>>   OPTIONAL PARAMETER; The folder
+                                       containing the medusa scripts.
+                                       Default value: medusa_scripts
+ -v                                    RECOMMENDED PARAMETER; The option
+                                       *-v* (recommended) print on console
+                                       the information given by the
+                                       package MUMmer. This option is
+                                       strongly suggested to understand if
+                                       MUMmer is not running properly.
+ -w2                                   OPTIONAL PARAMETER;The option *-w2*
+                                       is optional and allows for a
+                                       sequence similarity based weighting
+                                       scheme. Using a different weighting
+                                       scheme may lead to better results.
+
+[user@cn3144 ~]$ <b>medusa -f reference_genomes/ -i Rhodobacter_target.fna -v </b>
+INPUT FILE:Rhodobacter_target.fna
+------------------------------------------------------------------------------------------------------------------------
+Running MUMmer...done.
+------------------------------------------------------------------------------------------------------------------------
+Building the network...done.
+------------------------------------------------------------------------------------------------------------------------
+Cleaning the network...done.
+------------------------------------------------------------------------------------------------------------------------
+Scaffolds File saved: Rhodobacter_target.fnaScaffold.fasta
+------------------------------------------------------------------------------------------------------------------------
+Number of scaffolds: 78 (singletons = 32, multi-contig scaffold = 46)
+from 564 initial fragments.
+Total length of the jointed fragments: 4224838
+Computing N50 on 78 sequences.
+N50: 143991.0
+----------------------
+Summary File saved: Rhodobacter_target.fna_SUMMARY
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. medusa.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load medusa
+medusa -f reference_genomes/ -i Rhodobacter_target.fna -v</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=2g medusa.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. medusa.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;medusa -f reference_genomes/ -i 1_target.fna -v
+cd dir2;medusa -f reference_genomes/ -i 2_target.fna -v 
+cd dir3;medusa -f reference_genomes/ -i 3_target.fna -v
+cd dir4;medusa -f reference_genomes/ -i 4_target.fna -v
+
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f medusa.swarm [-g #] [-t #] --module medusa</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module medusa</tt> <td>Loads the medusa module for each subjob in the swarm
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

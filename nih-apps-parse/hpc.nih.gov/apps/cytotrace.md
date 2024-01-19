@@ -1,0 +1,278 @@
+
+
+document.querySelector('title').textContent = 'funannotate: a pipeline for genome annotation ';
+**CytoTRACE: predicting differentiation state of cells from single-cell RNA-sequencing data.** 
+
+
+|  |
+| --- |
+| 
+Quick Links
+[Documentation](#doc)
+[Notes](#notes)
+[Interactive job](#int) 
+[Batch job](#sbatch) 
+[Swarm of jobs](#swarm) 
+ |
+
+
+
+CytoTRACE (Cellular (Cyto) Trajectory Reconstruction Analysis using gene Counts and Expression) is a computational method 
+that predicts the differentiation state of cells from single-cell RNA-sequencing data. 
+CytoTRACE leverages a simple, yet robust, determinant of developmental potential—the number of detectably expressed genes per cell, or gene counts. We have validated CytoTRACE on ~150K single-cell transcriptomes spanning 315 cell phenotypes, 52 lineages, 14 tissue types, 9 scRNA-seq platforms, and 5 species.
+
+
+
+### References:
+
+
+* Gunsagar S. Gulati, Shaheen S. Sikandar, Daniel J. Wesche, Anoop Manjunath, Anjan Bharadwaj,
+Mark J. Berger, Francisco Ilagan, Angera H. Kuo, Robert W. Hsieh, Shang Cai, Maider Zabala,
+Ferenc A. Scheeren, Neethan A. Lobo, Dalong Qian, Feiqiao B. Yu, Frederick M. Dirbas,
+Michael F. Clarke, Aaron M. Newman   
+
+*Single-cell transcriptional diversity is a hallmark of developmental potential.*   
+
+[Science 367, 405–411 (2020)](https://www.science.org/doi/full/10.1126/science.aax0249)
+
+
+Documentation
+* [CttoTRACE Home pagee](https://cytotrace.stanford.edu/)
+
+
+Important Notes
+* Module Name: citotrace (see [the modules page](https://hpc.nih.gov/apps/modules.html) for more information)
+* Unusual environment variables set
+	+ **CT\_HOME**  installation directory
+	+ **CT\_BIN**    executables directory
+	+ **CT\_SRC**    source code directory
+	+ **CT\_DATA**    sample input data directory
+
+
+
+Interactive job
+[Interactive jobs](/docs/userguide.html#int) should be used for debugging, graphics, or applications that cannot be run as batch jobs.
+  
+
+
+```
+
+[user@biowulf]$ **sinteractive --mem=20g --gres=lscratch:20 -c4** 
+[user@cn0861 ~]$ **module load cytotrace** 
+[+] Loading singularity  3.10.5  on cn2372
+[+] Loading cytotrace  0.3.3
+[user@cn0861 ~]$ **mkdir -p /data/$USER/CytoTrace && cd /data/$USER/CytoTrace** 
+
+```
+
+Download sample data:
+
+```
+
+[user@cn0861 ~]$ **wget https://cytotrace.stanford.edu/dataset\_marrow10x.txt** 
+[user@cn0861 ~]$ **wget wget https://cytotrace.stanford.edu/dataset\_marrowplate.txt**
+
+```
+
+Run CytoTRACE on these data:
+
+```
+
+[user@cn0861 ~]$ **R** 
+> **library(CytoTRACE)** 
+> **CytoTRACE(read.table("dataset\_marrow10x.txt"))** 
+The number of cells in your dataset exceeds 3,000. CytoTRACE will now be run in fast mode (see documentation). You can multi-thread this run using the 'ncores' flag. To disable fast mode, please indicate 'enableFast = FALSE'.
+CytoTRACE will be run on 3 sub-sample(s) of approximately 1142 cells each using 1 / 1 core(s)
+Pre-processing data and generating similarity matrix...
+Calculating gene counts signature...
+...
+Gm106                            0.0000000                  0.0000000
+Rpl7                             2.8272534                  2.2531575
+Rdh10                            0.0000000                  0.0000000
+                X10X_P7_3_TTTGTCAAGCGCTCCA X10X_P7_3_TTTGTCAAGGCAGTCA
+Mrpl15                           0.2984039                  0.0000000
+Lypla1                           0.2984039                  0.0000000
+Tcea1                            0.0000000                  0.0000000
+Atp6v1h                          0.0000000                  0.0000000
+Rb1cc1                           0.5455397                  0.1230472
+Pcmtd1                           0.0000000                  0.0000000
+Rrs1                             0.5455397                  0.0000000
+Adhfe1                           0.0000000                  0.0000000
+Mybl1                            0.0000000                  0.0000000
+Vcpip1                           0.2984039                  0.0000000
+X1700034P13Rik                   0.0000000                  0.0000000
+Sgk3                             0.0000000                  0.0000000
+X6030422M02Rik                   0.0000000                  0.0000000
+Snhg6                            0.2984039                  0.0000000
+Ppp1r42                          0.0000000                  0.0000000
+Cops5                            0.5455397                  0.0000000
+Cspp1                            0.0000000                  0.0000000
+Arfgef1                          0.0000000                  0.0000000
+Cpa6                             0.0000000                  0.0000000
+Slco5a1                          0.0000000                  0.0000000
+Ncoa2                            0.0000000                  0.0000000
+Tram1                            0.2984039                  0.0000000
+Lactb2                           0.0000000                  0.0000000
+Gm5523                           0.0000000                  0.0000000
+Eya1                             0.0000000                  0.0000000
+Terf1                            0.0000000                  0.0000000
+Gm106                            0.0000000                  0.0000000
+Rpl7                             3.5606912                  0.0000000
+Rdh10                            0.2984039                  0.0000000
+                X10X_P7_3_TTTGTCAAGTGTTTGC X10X_P7_3_TTTGTCATCCGCATAA
+Mrpl15                           0.3584525                  0.0000000
+Lypla1                           0.5090116                  0.0000000
+Tcea1                            0.3584525                  0.7914248
+Atp6v1h                          0.0000000                  0.0000000
+Rb1cc1                           0.0000000                  0.0000000
+Pcmtd1                           0.0000000                  0.3145159
+Rrs1                             0.0000000                  0.0000000
+Adhfe1                           0.1903304                  0.0000000
+Mybl1                            0.0000000                  0.0000000
+Vcpip1                           0.0000000                  0.0000000
+X1700034P13Rik                   0.0000000                  0.0000000
+Sgk3                             0.5090116                  0.9813977
+X6030422M02Rik                   0.0000000                  0.0000000
+Snhg6                            0.0000000                  0.0000000
+Ppp1r42                          0.3584525                  0.0000000
+Cops5                            0.0000000                  0.0000000
+Cspp1                            0.0000000                  0.0000000
+Arfgef1                          0.3584525                  0.0000000
+Cpa6                             0.0000000                  0.0000000
+Slco5a1                          0.0000000                  0.0000000
+Ncoa2                            0.0000000                  0.0000000
+Tram1                            0.6453326                  0.5725877
+Lactb2                           0.0000000                  0.0000000
+Gm5523                           0.0000000                  0.0000000
+Eya1                             0.0000000                  0.0000000
+Terf1                            0.0000000                  0.0000000
+Gm106                            0.0000000                  0.0000000
+Rpl7                             1.8794997                  1.8795245
+Rdh10                            0.0000000                  0.0000000
+                X10X_P7_3_TTTGTCATCTGGGCCA
+Mrpl15                           1.5499125
+Lypla1                           0.0000000
+Tcea1                            0.7160379
+Atp6v1h                          0.0000000
+Rb1cc1                           0.5675439
+Pcmtd1                           0.2149531
+Rrs1                             0.5675439
+Adhfe1                           0.0000000
+Mybl1                            0.0000000
+Vcpip1                           0.0000000
+X1700034P13Rik                   0.0000000
+Sgk3                             0.2149531
+X6030422M02Rik                   0.0000000
+Snhg6                            0.8506640
+Ppp1r42                          0.0000000
+Cops5                            0.4019933
+Cspp1                            0.2149531
+Arfgef1                          0.2149531
+Cpa6                             0.0000000
+Slco5a1                          0.0000000
+Ncoa2                            0.0000000
+Tram1                            0.2149531
+Lactb2                           0.2149531
+Gm5523                           0.0000000
+Eya1                             0.0000000
+Terf1                            0.0000000
+Gm106                            0.0000000
+Rpl7                             3.9047688
+Rdh10                            0.0000000
+ [ reached getOption("max.print") -- omitted 13488 rows ]
+
+Warning message:
+In CytoTRACE(read.table("dataset_marrow10x.txt")) :
+  9 genes have zero expression in the matrix and were filtered
+>  **iCytoTRACE(list(read.table("dataset\_marrow10x.txt"), read.table("dataset\_marrowplate.txt")))**
+Found 13453 genes among all datasets
+[[0.         0.65976072]
+ [0.         0.        ]]
+Processing datasets (0, 1)
+Found 13453 genes among all datasets
+[[0.         0.65976072]
+ [0.         0.        ]]
+Processing datasets (0, 1)
+The number of cells in your integrated dataset is less than 10,000. Fast mode has been disabled.
+CytoTRACE will be run on 1 sub-sample(s) of approximately 7869 cells each using 1 / 1 core(s)
+Calculating genes associated with iCytoTRACE...
+$exprMatrix
+...
+X10X_P7_2_GATGAAACACATTCGA -2.893816e-03
+X10X_P7_2_GATGAAAGTGACAAAT  3.646599e-03
+X10X_P7_2_GATGAAAGTGCACTTA -3.304935e-03
+X10X_P7_2_GATGAAAGTTACGTCA  5.292558e-03
+X10X_P7_2_GATGAGGAGCACCGCT  4.832055e-03
+X10X_P7_2_GATGAGGAGGTGCACA  5.018071e-03
+X10X_P7_2_GATGAGGCAGTCGATT -2.733117e-04
+X10X_P7_2_GATGAGGCATGGTTGT  4.190494e-03
+X10X_P7_2_GATGAGGGTTGATTGC -1.724375e-02
+X10X_P7_2_GATGAGGTCAACACCA  5.849512e-03
+X10X_P7_2_GATGAGGTCCTCCTAG -5.341377e-03
+X10X_P7_2_GATGCTAAGTCACGCC -4.335768e-03
+X10X_P7_2_GATGCTACATGGGAAC  8.643952e-03
+X10X_P7_2_GATGCTAGTACCTACA  3.564311e-03
+X10X_P7_2_GATTCAGTCACTCCTG  1.188439e-02
+X10X_P7_2_GCAAACTAGATGAGAG -2.990178e-03
+X10X_P7_2_GCAAACTAGCCTTGAT  1.439598e-02
+X10X_P7_2_GCAAACTGTTCTGTTT -1.817505e-02
+X10X_P7_2_GCAAACTTCGACAGCC -5.349718e-03
+X10X_P7_2_GCAATCACAGTCGTGC  7.415567e-03
+X10X_P7_2_GCAATCATCGGAGCAA -2.271764e-02
+X10X_P7_2_GCAATCATCTAACCGA -1.381307e-02
+X10X_P7_2_GCACATACATGGATGG -1.717161e-02
+X10X_P7_2_GCACATATCTGAGGGA  9.387268e-05
+X10X_P7_2_GCACTCTAGTGCCAGA  5.458449e-03
+X10X_P7_2_GCACTCTCAATGGATA -2.407448e-03
+X10X_P7_2_GCACTCTGTACTTGAC  4.371174e-03
+X10X_P7_2_GCAGCCAAGGCAAAGA -1.165523e-03
+X10X_P7_2_GCAGCCACAAGTCATC -8.224130e-03
+X10X_P7_2_GCAGCCACATGATCCA -1.164582e-02
+X10X_P7_2_GCAGCCAGTAGATTAG -3.261392e-04
+X10X_P7_2_GCAGCCATCGGAGCAA -2.124615e-03
+X10X_P7_2_GCAGCCATCGGCTACG  1.063609e-02
+X10X_P7_2_GCAGTTAAGGAGTACC -6.749588e-03
+X10X_P7_2_GCAGTTACAATAACGA  4.061926e-03
+X10X_P7_2_GCAGTTATCTCAACTT -5.714046e-03
+X10X_P7_2_GCATACACATGGGACA  4.263237e-03
+X10X_P7_2_GCATACAGTGACTACT -1.923917e-02
+X10X_P7_2_GCATACATCGTGACAT  5.930570e-03
+X10X_P7_2_GCATGATAGAGACTTA  2.220203e-02
+X10X_P7_2_GCATGATCAGTTAACC -3.296641e-03
+X10X_P7_2_GCATGATTCCGCGTTT -1.341521e-02
+X10X_P7_2_GCATGATTCTGAGGGA  8.092239e-03
+X10X_P7_2_GCATGCGAGAAACCAT  1.087689e-02
+X10X_P7_2_GCATGCGAGGTTCCTA  3.337084e-02
+X10X_P7_2_GCATGCGCACGAGAGT -4.072700e-02
+X10X_P7_2_GCATGCGCATGAAGTA -5.383050e-03
+X10X_P7_2_GCATGTAAGGTGACCA -8.580112e-03
+X10X_P7_2_GCATGTACAAAGGCGT -7.766561e-03
+X10X_P7_2_GCATGTACAGTCTTCC -3.473503e-03
+X10X_P7_2_GCATGTAGTCCAGTAT -1.260405e-02
+X10X_P7_2_GCATGTATCACTTATC  2.053231e-02
+X10X_P7_2_GCCAAATAGATCGGGT  5.880604e-03
+X10X_P7_2_GCCTCTACACTCAGGC -2.391912e-03
+X10X_P7_2_GCCTCTACATAAGACA  1.152437e-02
+X10X_P7_2_GCGAGAATCTTCCTTC -1.009419e-03
+X10X_P7_2_GCGCAACGTAAAGGAG -5.744237e-03
+X10X_P7_2_GCGCAACGTATAAACG -6.318104e-03
+X10X_P7_2_GCGCAACGTGTGGTTT  3.011639e-03
+X10X_P7_2_GCGCAGTAGGCTACGA  5.207578e-03
+X10X_P7_2_GCGCAGTAGTCATCCA  1.798909e-02
+X10X_P7_2_GCGCAGTTCCCTAATT  3.193344e-03
+X10X_P7_2_GCGCCAACAGCCAATT  2.698768e-02
+X10X_P7_2_GCGCCAACAGGTCTCG -1.462139e-02
+X10X_P7_2_GCGCCAACATCACAAC  1.835279e-04
+ [ reached getOption("max.print") -- omitted 6870 rows ]
+
+$filteredCells
+character(0)
+[user@cn0861 ~]$ **exit**
+salloc.exe: Relinquishing job allocation 46116226
+
+```
+
+
+
+
+

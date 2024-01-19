@@ -1,0 +1,261 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'TORTOISE on Biowulf';</script>
+<div class="title">TORTOISE on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#s1">Single subject</a></div>
+	<div class="tocItem"><a href="#smany">Many subjects</a></div>
+      </div>
+</table>
+
+<p>
+TORTOISE (Tolerably Obsessive Registration and Tensor Optimization Indolent Software Ensemble) is for processing diffusion MRI data, and it contains three main modules:
+
+<ul>
+    <li>DIFF_PREP</li> - software for image resampling, motion, eddy current distortion, and EPI distortion correction using a structural image as target, and for re-orientation of data to a common space
+    <li>DIFF_CALC</li> - software for tensor fitting, error analysis, directionally encoded color map visualization and ROI analysis
+    <li>DR_BUDDI</li>- software for EPI distortion correction using pairs of diffusion data sets acquired with opposite phase encoding (blip-up blip-down acquisitions). 
+    </ul>
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>C. Pierpaoli, L. Walker, M. O. Irfanoglu, A. Barnett, P. Basser, L-C. Chang, C. Koay, S. Pajevic, G. Rohde, J. Sarlls, and M. Wu, 2010,<em<A href="http://archive.ismrm.org/2010/1597.html">TORTOISE: an integrated software package for processing of diffusion MRI data</a></em>, ISMRM 18th annual meeting, Stockholm, Sweden, #1597
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://tortoise.nibib.nih.gov/">TORTOISE website</a>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: TORTOISE(see <a href="/apps/modules.html">the modules page</a> for more information)
+<P><P>
+<li><b>IDL:</b> Part of the DIFFCALC module requires IDL. Specifically, if you want to do "RESTORE tensor fitting", you will need to load the IDL module as
+well as the TORTOISE module. There are 20 IDL licenses on Biowulf/Helix. Each IDL run requires 6 licenses. Thus, it is only possible to run 3 total instances of IDL on Biowulf. (multiple Tortoise/IDL processes on a single node count as a single IDL run for licensing purposes). You can check the current IDL license status by typing 'licenses' on the Biowulf command line, or by checking the 
+<a href="/status">licenses webpage</a>. 
+<P>
+<li>DIFF_PREP and DR_BUDDI are fully implemented in C++ and do not require IDL. 
+<P>
+<li>The DR_BUDDI GUI on Biowulf has been replaced with the DR_BUDDI_withoutGUI executable. This does not require OpenGL, and is therefore more suitable
+for batch jobs on Biowulf. If you want to use the GUI version of DR_BUDDI, please download a copy to your local desktop system.
+<P>
+<li>The ComputeGlyphMaps executable also relies on OpenGL. It is only for quality control purposes and should not be run in a batch mode in Biowulf. The user shold run this JUST ONCE locally  and make sure everything is okay. After that for batch processing on 
+Biowulf, there is no need to run this at all.
+<P>
+<li><B>Multi-threading</b>: DIFF_PREP and DR_BUDDI will use every allocated CPU by default. If 'jobload' indicates that the job is over-
+or under-utilizing allocated CPUs, you can also set the following two variables in your batch script:
+<pre class="term">
+OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$SLURM_CPUS_PER_TASK
+</pre>
+</ul>
+<P>
+<a Name="s1"></a><div class="heading">Process a single subject with TORTOISE</div>
+<P>
+The following example shows one method of processing several subjects. The example below is courtesy of M. Okan Irfanoglu (NIBIB).  
+<P>
+The data in this example is from the Human Connectome Project. A copy
+of this data is maintained on Biowulf: to get access, please contact Adam Thomas, NIMH. (adamt@nih.gov)
+<P>
+The read-only Connectome data needs to be copied to the user's data directory, gunzipped, and processed with Tortoise. In the example commands below,
+the following variables are assumed to be set: 
+<pre class="term">
+dir=/data/$USER/TORTOISE    (top level directory for data)
+subject=######              (subject, e.g. 100206)
+</pre>
+<P>
+Copy the data and gunzip it: 
+<pre class="term">
+cp /data/HCP/HCP_900/s3/hcp/${subject}/unprocessed/3T/Diffusion/${subject}_3T_DWI_dir95_LR.nii.gz ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/${subject}/unprocessed/3T/Diffusion/${subject}_3T_DWI_dir95_LR.bvec  ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/${subject}/unprocessed/3T/Diffusion/${subject}_3T_DWI_dir95_LR.bval  ${dir}/${subject}/
+gunzip ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.nii.gz
+cp /data/HCP/HCP_900/s3/hcp/${subject}/unprocessed/3T/Diffusion/${subject}_3T_DWI_dir95_RL.nii.gz ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/${subject}/unprocessed/3T/Diffusion/${subject}_3T_DWI_dir95_RL.bvec  ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/${subject}/unprocessed/3T/Diffusion/${subject}_3T_DWI_dir95_RL.bval  ${dir}/${subject}/
+gunzip ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.nii.gz
+</pre>
+Import the data: 
+<pre class="term">
+ImportNIFTI -i ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.nii -p horizontal \ 
+       --bvals  ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bval \
+      --bvecs ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bvec  --small_delta 10.6 --big_delta 43.1
+ImportNIFTI -i ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.nii -p horizontal \
+       --bvals  ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bval \
+       --bvecs ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bvec  --small_delta 10.6 --big_delta 43.1
+       </pre>
+<P>
+Remove temp files:
+<pre class="term">
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.nii
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bval
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bvec
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.nii
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bval
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bvec
+</pre>
+<P>
+Run DIFF_PREP:
+<pre class="term">
+DIFFPREP -i ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc/${subject}_3T_DWI_dir95_RL.list  \
+       -s  ${dir}/${subject}/${subject}_T2W_structural.nii.gz  --will_be_drbuddied 1 --do_QC 0
+DIFFPREP -i ${dir}/${subject}/${subject}_3T_DWI_dir95_LR_proc/${subject}_3T_DWI_dir95_LR.list  \
+      -s  ${dir}/${subject}/${subject}_T2W_structural.nii.gz  --will_be_drbuddied 1 --do_QC 0
+      </pre>
+<P>
+Run DR_BUDDI:
+<pre class="term">
+DR_BUDDI_withoutGUI \
+      --up_data ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc/${subject}_3T_DWI_dir95_RL_proc.list \
+      --down_data  ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc/${subject}_3T_DWI_dir95_LR_proc.list \
+      ${dir}/${subject}/${subject}_T2W_structural.nii.gz -g 1
+</pre>
+<P>
+Run DIFF_CALC
+<pre class="term">
+EstimateTensorWLLS \
+      -i ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final.list
+ComputeFAMap \
+      ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final_L0_DT.nii
+ComputeTRMap \ 
+      ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final_L0_DT.nii
+ComputeDECMap \
+      ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final_L0_DT.nii
+</pre>
+<P>
+All these commands can be put into a single script that will run sequentially. A more efficient way to utilize the Biowulf 
+resources is to parallelize the independent commands so that they can run simultaneously. In additional, all the subjects
+can be processed simultaneously in separate pipeline runs, as in the next example. 
+
+<a Name="smany"></a><div class="heading">Process several subjects with TORTOISE</div>
+<P>
+The following  script  takes the subject as an input argument, sets up all
+the dependent subjobs and submits them. This script can be used to process a large number of subjects. 
+Example below:
+<p class="toggle-tag" title="click to toggle visibility"><i class="fa fa-caret-right"></i> TORTOISE pipeline script</p>
+    <div class="toggle-content">
+<pre class="term">
+#!/bin/bash
+
+dir=/data/$USER/TORTOISE
+cd $dir
+
+if [ $# -ne 1 ]; then
+     echo "*** ERROR *** No subject provided"
+     echo "Usage: process.sh subject  (e.g. process.sh 100206)"
+     exit 1;
+fi
+
+subject=$1
+echo "Processing subject ${subject}"
+mkdir ${dir}/${subject}
+module load TORTOISE
+
+#------------- copy the data -----------------------------
+echo "Copying data...
+cp /data/HCP/HCP_900/s3/hcp/100206/unprocessed/3T/Diffusion/100206_3T_DWI_dir95_LR.nii.gz ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/100206/unprocessed/3T/Diffusion/100206_3T_DWI_dir95_LR.bvec  ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/100206/unprocessed/3T/Diffusion/100206_3T_DWI_dir95_LR.bval  ${dir}/${subject}/
+gunzip ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.nii.gz
+cp /data/HCP/HCP_900/s3/hcp/100206/unprocessed/3T/Diffusion/100206_3T_DWI_dir95_RL.nii.gz ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/100206/unprocessed/3T/Diffusion/100206_3T_DWI_dir95_RL.bvec  ${dir}/${subject}/
+cp /data/HCP/HCP_900/s3/hcp/100206/unprocessed/3T/Diffusion/100206_3T_DWI_dir95_RL.bval  ${dir}/${subject}/
+gunzip ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.nii.gz
+      
+#------------- import the data -----------------------------
+echo "Importing...."
+# import
+ImportNIFTI -i ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.nii -p horizontal \ 
+       --bvals  ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bval \
+      --bvecs ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bvec  --small_delta 10.6 --big_delta 43.1
+ImportNIFTI -i ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.nii -p horizontal \
+       --bvals  ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bval \
+       --bvecs ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bvec  --small_delta 10.6 --big_delta 43.1
+
+#------------- remove temp files -----------------------------
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.nii
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bval
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_LR.bvec
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.nii
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bval
+rm ${dir}/${subject}/${subject}_3T_DWI_dir95_RL.bvec
+
+#------------- create and submit a DIFF_PREP swarm file -----------------------------
+cat > diffprep_$subject.swarm &lt;&lt; EOF
+DIFFPREP -i ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc/${subject}_3T_DWI_dir95_RL.list  \
+       -s  ${dir}/${subject}/${subject}_T2W_structural.nii.gz  --will_be_drbuddied 1 --do_QC 0
+DIFFPREP -i ${dir}/${subject}/${subject}_3T_DWI_dir95_LR_proc/${subject}_3T_DWI_dir95_LR.list  \
+      -s  ${dir}/${subject}/${subject}_T2W_structural.nii.gz  --will_be_drbuddied 1 --do_QC 0
+EOF
+
+# submit the diffprep job and capture its jobid. Each DIFF_PREP subjob can multithread to use 32 CPUs, 
+#   so the swarm is submitted with '-t 32'
+diffprep_jobid=$( swarm -f diffprep_$subject.swarm -t 32 -g 20 --time=24:00:00 )
+echo "Submitted swarm of DIFFPREP jobs: $diffprep_jobid"
+
+#------------- create and submit the dependent DR_BUDDI job -----------------------------
+#create a DR_BUDDI job script 
+cat > drbuddi_${subject}.sh &lt;&lt; EOF
+#!/bin/bash
+
+cd $dir
+module load TORTOISE
+DR_BUDDI_withoutGUI \
+      --up_data ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc/${subject}_3T_DWI_dir95_RL_proc.list \
+      --down_data  ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc/${subject}_3T_DWI_dir95_LR_proc.list \
+      ${dir}/${subject}/${subject}_T2W_structural.nii.gz -g 1
+EOF
+
+# submit the DR_BUDDI job to run after the diffprep jobs complete. DR_BUDDI requires lots of memory
+drbuddi_jobid=$( sbatch --depend=afterany:${diffprep_jobid} --exclusive --cpus-per-task=32 --mem=128g --time=18:00:00 drbuddi_${subject}.sh )
+echo "Submitted drbuddi job: $drbuddi_jobid"
+
+#------------- create and submit the dependent DIFF_CALC job -----------------------------
+#set up a diffcalc job
+cat > diffcalc_${subject}.sh &lt;&lt;EOF
+#!/bin/bash
+
+cd $dir
+module load TORTOISE
+EstimateTensorWLLS \
+      -i ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final.list
+ComputeFAMap \
+      ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final_L0_DT.nii
+ComputeTRMap \ 
+      ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final_L0_DT.nii
+ComputeDECMap \
+      ${dir}/${subject}/${subject}_3T_DWI_dir95_RL_proc_DRBUDDI_proc/${subject}_RL_proc_DRBUDDI_final_L0_DT.nii
+EOF
+
+#submit the diffcalc job to run after the DR_BUDDI jobs complete
+diffcalc_jobid=$( sbatch --depend=afterany:${drbuddi_jobid} --exclusive --cpus-per-task=32 --mem=20g --time=12:00:00 diffcalc_${subject}.sh
+</pre>
+</div>
+<P>
+Next, a swarm command file is set up with one line for each subject: 
+<pre class="term">
+# this file is called tortoise.swarm
+cd /data/$USER/TORTOISE; ./process.sh 100206
+cd /data/$USER/TORTOISE; ./process.sh 162228
+cd /data/$USER/TORTOISE; ./process.sh 175540
+[...]
+</pre>
+This swarm of independent jobs is submitted with
+<pre class="term">
+swarm -f tortoise.swarm 
+</pre>
+The swarm submitted in this command will only import the data and set up the DIFFPREP, DR_BUDDI and DIFF_CALC jobs, so the default 2 CPUs and memory are sufficient for this swarm. The DIFF_CALC, DR_BUDDI and
+DIFF_PREP jobs require more CPU and memory resources, and these are requested appropriately by the sbatch and swarm commands in the 'TORTOISE pipeline script'  above.
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

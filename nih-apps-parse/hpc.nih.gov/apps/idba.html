@@ -1,0 +1,114 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'IDBA on Biowulf';</script>
+<div class="title">IDBA on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+IDBA is the basic iterative de Bruijn graph assembler for second-generation sequencing reads. IDBA-UD, an extension of IDBA, is designed to utilize paired-end reads to assemble low-depth regions and use progressive depth on contigs to reduce errors in high-depth regions. It is a generic purpose assembler and especially good for single-cell and metagenomic sequencing data. IDBA-Hybrid is another update version of IDBA-UD, which can make use of a similar reference genome to improve assembly result. IDBA-Tran is an iterative de Bruijn graph assembler for RNA-Seq data.
+
+<p>
+The basic IDBA is included only for comparison.
+<ul>
+<li>If you are assembling genomic data without reference, please use IDBA-UD.
+<li>If you are assembling genomic data with a similar reference genome, please use IDBA-Hybrid.
+<li>If you are assembling transcriptome data, please use IDBA-Tran.
+</ul>
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>
+Peng, Y., et al. (2010) IDBA- A Practical Iterative de Bruijn Graph De Novo Assembler. RECOMB. Lisbon. doi: <a href="https://doi.org/10.1007/978-3-642-12683-3_28">10.1007/978-3-642-12683-3_28</a>
+<li>
+Peng, Y., et al. (2012) IDBA-UD: a de novo assembler for single-cell and metagenomic sequencing data with highly uneven depth, Bioinformatics, 28, 1420-1428.Paper, doi: <a href="https://doi.org/10.1093/bioinformatics/bts174">10.1093/bioinformatics/bts174</a>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/loneknightpy/idba">IDBA suite on GitHub</a>
+<li><a href="http://i.cs.hku.hk/~alse/hkubrg/projects/idba/index.html">IDBA</a>
+<li><a href="http://i.cs.hku.hk/~alse/hkubrg/projects/idba_ud/index.html">IDBA-UD</a>
+<li><a href="http://i.cs.hku.hk/~alse/hkubrg/projects/idba_hybrid/index.html">IDBA-Hybrid</a>
+<li><a href="http://i.cs.hku.hk/~alse/hkubrg/projects/idba_tran/index.html">IDBA-Tran</a>
+</li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>idba</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load idba</b>
+[user@cn3144 ~]$ <b>idba_ud  -r reads.fa -o output</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. TEMPLATE.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load idba
+idba_ud  -r read.fa -o output
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] TEMPLATE.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. idba.swarm). For example:</p>
+
+<pre class="term">
+idba_ud  -r sample1-reads.fa -o sample1
+idba_ud  -r sample2-reads.fa -o sample2
+idba_ud  -r sample3-reads.fa -o sample3
+idba_ud  -r sample4-reads.fa -o sample4
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f idba.swarm [-g #] [-t #] --module idba</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module idba</tt> <td>Loads the IDBA module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

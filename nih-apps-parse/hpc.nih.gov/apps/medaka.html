@@ -1,0 +1,136 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'medaka on Biowulf';</script>
+<div class="title">medaka on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p> medaka is a tool to create a consensus sequence from nanopore sequencing
+data. This task is performed using neural networks applied from a pileup of
+individual sequencing reads against a draft assembly. </p>
+
+<!--
+<h3>References:</h3>
+<ul>
+<li>Paper</li>
+</ul>
+-->
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>medaka on <a href="https://github.com/nanoporetech/medaka">GitHub</a></li>
+<li>medaka <a href="https://nanoporetech.github.io/medaka/">Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: medaka (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>medaka on biowulf can be run on CPU or GPU</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program.</p>
+
+<p>For this example we will use a P100 GPU.</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=32g -c12 --gres=lscratch:200,gpu:p100:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+</pre>
+
+<p>As a first step, a draft assembly is created with pomoxis which includes a convenience
+wrapper arount miniasm.</p>
+<pre class="term">
+[user@cn3144]$ <b>module load pomoxis</b>
+[user@cn3144]$ <b>cp -rL ${POMOXIS_TEST_DATA:-none} data</b>
+[user@cn3144]$ <b>mini_assemble -m 1 -i data/R9_Ecoli_K12_MG1655_lambda_MinKNOW_0.51.1.62.all.fasta \
+                   -o draft_asm -p asm -t $SLURM_CPUS_PER_TASK</b>
+Copying FASTX input to workspace: data/R9_Ecoli_K12_MG1655_lambda_MinKNOW_0.51.1.62.all.fasta &gt; draft_asm/asm.fa.gz
+Skipped adapter trimming.
+Skipped pre-assembly correction.
+Overlapping reads...
+[M::mm_idx_gen::26.495*2.10] collected minimizers
+...etc...
+Waiting for cleanup.
+rm: cannot remove ‘shuffled*’: No such file or directory
+rm: cannot remove ‘*paf*’: No such file or directory
+Final assembly written to draft_asm/asm_final.fa. Have a nice day.
+
+[user@cn3144]$ <b>ls -lh draft_asm</b>
+total 4.5M
+-rw-r--r-- 1 user group 4.5M Sep 16 13:43 asm_final.fa
+[user@cn3144]$ <b></b>
+</pre>
+
+<p>Polish the draft consensus with medaka. Note that a batch size (<code>-b</code>) of
+150 works with our 16GB GPUs.</p>
+<p>Note that there can be conflicts between pomoxis and medaka - they both include
+their own mini_align script - so pomoxis should be unloaded before running medaka.</p>
+<pre class="term">
+[user@cn3144]$ <b>module load medaka/1.9.1</b>
+[user@cn3144]$ <b>module unload pomoxis</b>
+[user@cn3144]$ <b>medaka_consensus -i data/R9_Ecoli_K12_MG1655_lambda_MinKNOW_0.51.1.62.all.fasta \
+                      -d draft_asm/asm_final.fa -o consensus -t $SLURM_CPUS_PER_TASK -b 150</b>
+This is medaka 1.5.0
+Program    Version    Required   Pass
+bcftools   1.14       1.11       True
+bgzip      1.14       1.11       True
+minimap2   2.17       2.11       True
+samtools   1.14       1.11       True
+tabix      1.14       1.11       True
+Aligning basecalls to draft
+...etc...
+Running medaka stitch
+[14:19:10 - DataIndex] Loaded sample-index from 1/1 (100.00%) of feature files.
+[14:19:10 - Stitch] Processing utg000001l.
+[14:19:17 - Stitch] Processing utg000002l.
+[14:19:17 - Stitch] Processing utg000003l.
+[14:19:17 - Stitch] Processing utg000004c.
+Polished assembly written to consensus/consensus.fasta, have a nice day.
+
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. medaka.sh), which uses the input file 'medaka.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load medaka/1.9.1 || exit 1
+medaka_consensus -i basecalls.fq -d draft_assembly.fa -o consensus -t $SLURM_CPUS_PER_TASK -b 150
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=12 --mem=24g medaka.sh</pre>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

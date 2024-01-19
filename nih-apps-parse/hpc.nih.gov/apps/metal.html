@@ -1,0 +1,63 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Metal on HPC';</script>
+    <div class="title">Metal on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>
+
+    <p> The METAL software is designed to facilitate meta-analysis of large datasets 
+      (such as several whole genome scans) in a convenient, rapid and memory efficient 
+      manner. </p>
+
+    <h3>&nbsp;</h3>
+<a Name="doc"></a><div class="heading">Documentation</div>
+    <ul>
+      <li><a href="https://github.com/statgen/METAL">https://github.com/statgen/METAL</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>metal</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Example files in <tt>/usr/local/apps/metal/examples/</tt> </li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load metal</b>
+[user@cn3144 ~]$ <b>cd /data/$USER/metal/examples/GlucoseExample</b>
+[user@cn3144 ~]$ <strong>metal << EOT</strong> <br />MARKER SNP<br />WEIGHT N<br />ALLELE EFFECT_ALLELE NON_EFFECT_ALLELE<br />FREQ EFFECT_ALLELE_FREQ<br />EFFECT BETA<br />STDERR SE<br />PVAL P_VAL
+<p>PROCESS DGI_three_regions.txt</p><p>MARKER SNP<br />     ALLELE EFFECT_ALLELE NON_EFFECT_ALLELE<br />      FREQ FREQ_EFFECT<br />      WEIGHT N<br />      EFFECT BETA<br />      STDERR SE<br />      PVAL PVALUE</p><p>PROCESS MAGIC_FUSION_Results.txt</p><p>MARKER SNP<br />      DEFAULT 4108<br />      ALLELE AL1 AL2<br />      FREQ FREQ1<br />      EFFECT EFFECT<br />      STDERR SE<br />     PVAL PVALUE</p><p>PROCESS magic_SARDINIA.tbl</p><p>ANALYZE</p><p>Press Ctrl-D to submit these commands. Two output files will be created.
+[...etc...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+    <P> 
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

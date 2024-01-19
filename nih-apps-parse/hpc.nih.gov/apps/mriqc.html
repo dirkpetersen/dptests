@@ -1,0 +1,131 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MRIQC on Biowulf';</script>
+<div class="title">MRIQC on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MRIQC (MRI quality control) is an application that automatically extracts image quality metrics from MRI scans and generates individual reports. MRIQC can fit a classifier to categorize datasets into "accept" or "exclude" categories.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ.
+  <a href="https://pubmed.ncbi.nlm.nih.gov/28945803/">
+  <em>MRIQC: Advancing the automatic prediction of image quality in MRI from unseen sites.</em></a> 
+  PLoS One. 2017 Sep 25;12(9):e0184661.</li>
+</ul>
+
+<br>
+<p class="alert"><B>IMPORTANT: (October 2021) The memory and cpu limit flags in mriqc do not work as intended.</b> <br>
+The flags that are used to select an upper bound for mriqc memory processes and CPUs do not work as intended. If an mriqc job exceeds its memory allocation, the job will hang and D processes will be generated in the compute node where the job is running. We recommend carefully profiling memory consumption for a given type of dataset by running small-scale jobs, then gradually increasing the number of jobs when specific memory requirements have been established. Regarding the CPU flag not working, please use the <code>--exclusive</code> flag if using <code>sbatch</code> or <code>-t auto</code> if using swarm. Please get in touch with HPC staff if you need help with profiling memory requirements or allocating CPUs.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://mriqc.readthedocs.io">MRIQC Documentation</a></li>
+    <li><a href="https://github.com/poldracklab/mriqc">Github page</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>mriqc</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li><tt>mriqc</tt> is a scientific pipeline with the potential to overload Biowulf's central filesystem. To avoid filesystem issues we recommend the following:
+<ol>
+<li>Limit I/O with central Biowulf directories (e.g., /data, /home) by making use of local disk (/lscratch).  You can make use of lscratch to store temporary working directories by directly assigning the temporary work directory of <tt>mriqc</tt> (-w option) to /lscratch/$SLURM_JOB_ID (remember to allocate enough space in /lscratch).
+<li>Estimate memory usage. Determine how much memory your jobs will need by benchmarking (see point 5 below). Something important to remember regarding memory allocation is to try to allocate some extra memory for your jobs as described in the resources described in point 5 below. 
+<li>Allocate all CPUs in a node. The flag that limits the number of CPUs in MRIQC do not work so please use the <code>--exclusive</code> flag if using <code>sbatch</code> or <code>-t auto</code> if using swarm.
+<li>Opt out of uploading <tt>mriqc</tt> metrics to <tt>mriqc</tt> website. You can disable the submission with the --no-sub flag.
+<li>Profile/benchmark <tt>mriqc</tt> jobs: We recommend making sure a given <tt>mriqc</tt> job can scale before launching a large number of jobs. You can do this by profiling/benchmarking small jobs (e.g., a swarm of 3 <tt>mriqc</tt> commands), then monitoring the jobs by using either the <a href="https://hpc.nih.gov/dashboard/">user dashboard</a> or the commands jobhist, sjobs, squeue, and jobload (see <a href="https://hpc.nih.gov/docs/biowulf_tools.html">biowulf utilities</a>). There are resources prepared by the HPC staff that go over how to monitor your jobs for benchmarking and profiling (<a href="https://youtu.be/fLMJ8-t5bm4">video</a> and <a href="https://hpc.nih.gov/training/handouts/Effective_batch_system.pdf">slides</a>). Once you have profiled a swarm with a few jobs and you have refined the memory, CPU and walltime requirements, it is probably safe to (gradually) increase the number of <tt>mriqc</tt> jobs. For many analysis pipelines one has no way of knowing in advance how much memory will be actually required in an HPC environment. This is why it is very important to profile/benchmark.
+</ol>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load mriqc</b>
+
+[user@cn3144 ~]$ <b>mriqc -h</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mriqc.sh). For example (using example data):</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=mriqc
+#SBATCH --gres=lscratch:20
+#SBATCH --exclusive
+#SBATCH --mem=16g
+#SBATCH --time=72:00:00
+
+module load mriqc/0.16.1
+
+tar -C /lscratch/${SLURM_JOB_ID} -xf /usr/local/apps/mriqc/TEST_DATA/ds001.tar.gz
+
+mriqc /lscratch/${SLURM_JOB_ID}/ds001 /lscratch/${SLURM_JOB_ID}/mriqc.out.ds001 \
+      participant --participant_label sub-01 -w /lscratch/${SLURM_JOB_ID} \
+      --no-sub 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch mriqc.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mriqc.swarm). For example:</p>
+
+<pre class="term">
+mriqc /data/${USER}/BIDS-dataset/ds001/ /data/$USER/BIDS-dataset/mriqc.out.ds001 \
+      participant --participant_label sub-01 -w /lscratch/${SLURM_JOB_ID} --no-sub \
+mriqc /data/${USER}/BIDS-dataset/ds002/ /data/$USER/BIDS-dataset/mriqc.out.ds002 \
+      participant --participant_label sub-02 -w /lscratch/${SLURM_JOB_ID} --no-sub \
+mriqc /data/${USER}/BIDS-dataset/ds003/ /data/$USER/BIDS-dataset/mriqc.out.ds003 \
+      participant --participant_label sub-03 -w /lscratch/${SLURM_JOB_ID} --no-sub \
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mriqc.swarm [--gres=lscratch:#] [-g #] -t auto --module mriqc</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-gres=lscratch:<i>#</i> </tt><td>Number of Gigabytes of local disk space allocated per process (1 line in the swarm command file)
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file). We set this to <code>auto</code> to allocate all CPUs in each node.
+  <tr><td><tt>--module mriqc</tt> <td>Loads the mriqc module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

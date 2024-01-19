@@ -1,0 +1,130 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'fragpipe on Biowulf';</script>
+<div class="title">fragpipe on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+FragPipe is a Java Graphical User Interface (GUI) and CLI workflow tool for a suite of computational tools enabling comprehensive analysis of mass spectrometry-based proteomics data. It is powered by MSFragger - an ultrafast proteomic search engine suitable for both conventional and “open” (wide precursor mass tolerance) peptide identification. 
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://fragpipe.nesvilab.org/">fragpipe Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">GUI use of this application requires a <a href="https://hpc.nih.gov/docs/nx.html">graphical connection using NX</a></p>
+
+<ul>
+    <li>Beginning with version 18.0, fragpipe may be run in headless mode. See the <a href="#sbatch">Batch Job</a> section for more details.
+    <li>Module Name: <tt>fragpipe</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>Environment variables set <!--for ones users should be aware of -->
+      <ul>
+        <li><tt>FRAGPIPE_HOME</tt></li>
+        <li><tt>FRAGPIPE_TAR</tt></li>
+      </ul>
+    <li>fragpipe saves configuration and session information in the same directory where it is installed. If you want your data to persist across sessions, you need to copy this program to your own space. See below.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock">The fragpipe GUI must be run in an <a href="/docs/userguide.html#int">Interactive job</a>. The underlying programs that it uses like <a href="msfragger.html">msfragger</a> and <a href="philosopher.html">philosopher</a> can be run as batch or swarm jobs.</div>
+<p>First, start a <a href="https://hpc.nih.gov/docs/nx.html">nomachine desktop session</a> on the Biowulf login node.  Within your nx session, allocate an <a href="/docs/userguide.html#int">interactive session</a> and run fragpipe. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fragpipe</b>
+
+[user@cn3144 ~]$ <b>fragpipe</b>
+</pre>
+
+<P>
+You should now see the Java Graphical User Interface (GUI).
+<P>
+<p> <center><img src="/images/fragpipe.PNG" alt="fragpipe image" width=95%></center></p>
+<P>
+If you run fragpipe from this central location, you will be unable to save data (like newly created pipelines) and recover them in a new session. You can copy fragpipe to your own space using the following commands or similar:
+
+<pre class="term">
+[user@cn3144]$ <b>module load fragpipe</b>
+
+[user@cn3144]$ <b>export INSTALL_DIR=/data/${USER}/fragpipe</b>
+
+[user@cn3144]$ <b>mkdir -p $INSTALL_DIR && cd $INSTALL_DIR</b>
+
+[user@cn3144]$ <b>tar xvf $FRAGPIPE_TAR</b>
+</pre>
+
+<P>
+These steps need only be carried out once. In future sessions fragpipe will already be installed in your space.  You can now run it using the full path (where <tt>&lt;ver&gt;</tt> is the version of fragpipe that you copied).
+<P>
+
+<pre class="term">
+[user@cn3144]$ <b>/data/${USER}/fragpipe/&lt;ver&gt;/bin/fragpipe</b>
+</pre>
+
+<P>
+Or you can add the directory to your path to open more easily:
+<P>
+
+<pre class="term">
+[user@cn3144]$ <b>export PATH=/data/${USER}/fragpipe/&lt;ver&gt;/bin:$PATH</b>
+
+[user@cn3144]$ <b>fragpipe</b>
+</pre>
+
+In either case, your saved data will now persist across sessions.  
+When running fragpipe from your own space, it's still a good idea to load the fragpipe module first to properly prepare your environment.  
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>FragPipe versions 18.0+ may now be run in <a href="https://fragpipe.nesvilab.org/docs/tutorial_headless.html">headless mode</a> to submit as part of an interactive or batch job.</p>
+<p>Workflow and manifest files should be created using the GUI either in an interactive session or on your own computer.</p>
+
+<p> <center><img src="/images/fragpipe-headless.jpg" alt="fragpipe headless config" width=95%></center></p>
+
+<p>Create a batch input file (e.g. msfragger.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load fragpipe/18.0
+cd /path/to/data/and/conf
+
+fragpipe --headless \
+  --workflow &lt;path to workflow file&gt; \
+  --manifest &lt;path to manifest file&gt; \
+  --workdir &lt;path to result directory&gt;
+</pre>
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

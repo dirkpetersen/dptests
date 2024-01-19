@@ -1,0 +1,142 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'VCF-kit: assorted utilities for the variant call format ';</script>
+<div class="title"><b>VCF-kit: assorted utilities for the variant call format </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+VCF-kit is a collection of utility tools for processing and analyzing the VCF 
+(variant call format) files, including primer generation for variant 
+validation, dendrogram production,genotype imputation from sequence data 
+in linkage studies, and additional tools to be used by statistical and 
+population geneticists. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Daniel E. Cook and Erik C. Andersen <br />
+<i>VCF-kit: assorted utilities for the variant
+call format </i><br />
+<a href="https://academic.oup.com/bioinformatics/article/33/10/1581/2908861">Bioinformatics </a> 2017, <b>33</b>(10), 1581–1582. doi: 10.1093/bioinformatics/btx011
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://vcf-kit.readthedocs.io/en/latest/">VCF-kit home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>VCF-kit</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>VK_HOME</b>&nbsp; VCF-kit installation directory</li>
+    <li><b>VK_BIN </b>&nbsp; &nbsp; &nbsp; VCF-kit executable directory</li>
+    <li><b>VK_DOC </b>&nbsp; &nbsp; &nbsp; VCF-kit documentation directory</li>
+    <li><b>VK_DATA</b>&nbsp; &nbsp; VCF-kit test data directory</li>
+    <li><b>VK_SRC</b>&nbsp; &nbsp; VCF-kit source code directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g </b>
+[user@cn3316 ~]$<b>module load VCF-kit</b>
++] Loading singularity  3.8.5-1  on cn4213
+[+] Loading VCF-kit 0.2.9  ...
+[user@cn3316 ~]$<b>vk -h</b>
+usage:
+  vk <command> [<args>...]
+  vk setup
+  vk -h | --help
+  vk --version
+
+commands:
+  calc
+  call
+  filter
+  geno
+  genome
+  hmm
+  phylo
+  primer
+  rename
+  tajima
+  vcf2tsv
+[user@cn3316 ~]$<b>vk calc -h</b>
+usage:
+  vk calc sample_hom_gt <vcf>
+  vk calc genotypes [--frequency] <vcf>
+  vk calc spectrum <vcf>
+
+Example
+
+options:
+  -h --help                   Show this screen.
+  --version                   Show version.
+[user@cn3316 ~]$<b>cp $VK_DATA/* . </b>
+[user@cn3316 ~]$<b>vk calc genotypes test.vcf.gz </b>
+n       ref     het     alt     mis
+937     14      0       0       0
+327     13      0       0       1
+243     13      0       1       0
+168     12      0       0       2
+101     11      0       0       3
+93      12      0       1       1
+90      12      0       2       0
+73      10      0       0       4
+63      11      0       3       0
+47      10      0       4       0
+37      11      0       1       2
+36      9       0       0       5
+36      8       0       0       6
+32      11      0       2       1
+31      10      0       1       3
+28      10      0       3       1
+28      9       0       4       1
+25      10      0       2       2
+23      13      1       0       0
+21      9       0       5       0
+20      7       0       0       7
+19      9       0       1       4
+19      8       0       1       5
+17      8       0       6       0
+15      11      1       0       2
+15      6       0       0       8
+13      9       0       2       3
+13      9       0       3       2
+...
+1       7       5       2       0
+1       3       3       1       7
+1       8       4       2       0
+1       0       0       12      2
+[user@cn3316 ~]$<b>vk calc genotypes QX1211.indels.vcf.gz </b>
+n       ref     het     alt     mis
+74493   0       0       1       0
+8567    0       1       0       0
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cnR3316 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

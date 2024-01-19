@@ -1,0 +1,167 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mash on Biowulf';</script>
+<div class="title">mash on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Mash uses MinHash hashing to reduce large sequences to a representative sketch.
+Distances between sketches of sequences can be calculated very rapidly and
+can provide an estimate of average nucleotide identity. Sketches of all the
+genomes in RefSeq 70 are only ~90MB (at a kmer size of 16 using 400 hashes).
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Brian D. Ondov <em>et al.</em> <em>Fast genome 
+    and metagenome distance estimation using MinHash</em>. bioRxiv 2015:
+    http://dx.doi.org/10.1101/029827
+    <a href="http://biorxiv.org/content/early/2015/10/26/029827.article-info">bioRxiv</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li> <a href="https://github.com/marbl/Mash">GitHub</a> </li>
+    <li><a href="http://mash.readthedocs.org/en/latest/index.html">Docs</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: mash (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in can be found in <code>$MASH_TEST_DATA</code></li>
+    <li>Some mash tools can be run with multiple threads.</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load mash</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+</pre>
+
+<p>Some example data is included in the <code>TEST_DATA</code> directory
+inside the application directory.</p>
+<pre class="term">
+[user@cn3144 ~]$ <b>ls $MASH_TEST_DATA</b>
+BA000007.2.fna  CP009273.1.fna  NC_000913.2.fna  RefSeqGenomes_V70.msh  SRR292770_1.fastq.gz
+[user@cn3144 ~]$ <b>cp $MASH_TEST_DATA/* .</b>
+</pre>
+
+<p>Estimate the distance between two <em>E. coli</em> genomes</p>
+<pre class="term">
+[user@cn3144 ~]$ <b>mash dist BA000007.2.fna NC_000913.2.fna</b>
+/usr/local/apps/mash/TEST_DATA/BA000007.2.fna   /usr/local/apps/mash/TEST_DATA/NC_000913.2.fna
+0.0222766      0       456/1000
+</pre>
+
+<p>The result shows the reference sequence, the query sequence, the distance
+estimate, the p value, and the number of matching hashes.</p>
+
+<p>Instead of calculating sketches each time they can be precalculated. For example,
+we can sketch the two genomes from above</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>mash sketch -o 2coli.msh BA000007.2.fna NC_000913.2.fna</b>
+Sketching /usr/local/apps/mash/TEST_DATA/BA000007.2.fna...
+Sketching /usr/local/apps/mash/TEST_DATA/NC_000913.2.fna...
+Writing to 2coli.msh...
+[user@cn3144 ~]$ <b>ls -lh 2coli.msh</b>
+-rw-r--r-- 1 user group  16K Dec  4 09:56 2coli.msh
+[user@cn3144 ~]$ <b>mash info 2coli.msh</b>
+Header:
+  Hash function (seed):          MurmurHash3_x64_128 (42)
+  K-mer size:                    21 (64-bit hashes)
+  Alphabet:                      ACGT (canonical)
+  Target min-hashes per sketch:  1000
+  Sketches:                      2
+
+Sketches:
+  [Hashes]  [Length]  [ID]             [Comment]
+  1000      5498450   BA000007.2.fna   -
+  1000      4639675   NC_000913.2.fna  -
+
+</pre>
+
+<p>So the sketch for the 10MB genomes takes up 16kB. Now we can compare our 
+query against the sketches with</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>mash dist 2coli.msh CP009273.1.fna</b>
+BA000007.2.fna   CP009273.1.fna   0.0222766      0       456/1000
+NC_000913.2.fna  CP009273.1.fna   0              0      1000/1000
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mash.sh), which uses the input file 'mash.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+function fail {
+  echo "$@" &gt;&amp;2
+  exit 1
+}
+
+module load mash/2.0 || fail "could not load mash module"
+mash sketch -i -k 21 -s 1000 -o coli.msh -l list_of_ecoli_genomes
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] mash.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mash.swarm). For example:</p>
+
+<pre class="term">
+mash sketch -o NC_000913.2.msh /usr/local/apps/mash/TEST_DATA/NC_000913.2.fna
+mash sketch -o BA000007.2.msh /usr/local/apps/mash/TEST_DATA/BA000007.2.fna
+mash sketch -o CP009273.1.msh /usr/local/apps/mash/TEST_DATA/CP009273.1.fna
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mash.swarm [-g #] [-t #] --module mash</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module mash <td>Loads the mash module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,187 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Nirvana: clinical-grade annotation of genomic variants';</script>
+<div class="title">Nirvana: clinical-grade annotation of genomic variants</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Nirvana provides clinical-grade annotation of genomic variants (SNVs, MNVs, insertions, deletions, indels, and SVs (including CNVs). It can be run as a stand-alone package or integrated into larger software tools that require variant annotation.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Michael Stromberg, Rajat Roy, Julien Lajugie, Yu Jiang, Haochen Li, Elliott Margulies <br />
+<i>Nirvana: Clinical Grade Variant Annotator </i> <br />
+<a href="https://dl.acm.org/doi/abs/10.1145/3107411.3108204">Proc. of the 8th ACM Intern. Conf. on Bioinformatics, Computational Biology,and Health Informatics, August</a> 2017 p.596, doi: https://doi.org/10.1145/3107411.3108204.
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Illumina/Nirvana">Nirvana Github page</a></li>
+<li><a href="https://illumina.github.io/NirvanaDocumentation/">Nirvana Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>nirvana</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>singlethreaded app
+<li>Example files in <tt>/usr/local/apps/nirvana/TEST_DATA</tt>
+<li>Reference data in <tt>/fdb/nirvana/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g</b>
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load nirvana </b>
+[+] Loading nirvana  2.16.1 on cn3144
+[user@cn3144 ~]$ <b>nirvana -h</b>
+---------------------------------------------------------------------------
+Nirvana                                             (c) 2021 Illumina, Inc.
+Stromberg, Roy, Lajugie, Jiang, Li, and Kang                         3.16.1
+---------------------------------------------------------------------------
+
+USAGE: dotnet Nirvana.dll -i &lt;vcf path&gt; -c &lt;cache prefix&gt; --sd &lt;sa dir&gt; -r &lt;ref path&gt; -o &lt;base output filenam&gt;e
+Annotates a set of variants
+
+OPTIONS:
+      --cache, -c &lt;prefix&gt;   input cache prefix
+      --in, -i &lt;t;path&gt;        input VCF path
+      --out, -o &lt;file path&gt;  output file path
+      --ref, -r &lt;path&gt;       input compressed reference sequence path
+      --sd &lt;directory&gt;       input supplementary annotation directory
+      --force-mt             forces to annotate mitochondrial variants
+      --disable-recomposition
+                             don't recompose function relevant variants
+      --legacy-vids          enables support for legacy VIDs
+      --enable-dq            report DQ from VCF samples field
+      --str &lt;VALUE&gt;          user provided STR annotation TSV file
+      --help, -h             displays the help menu
+      --version, -v          displays the version 
+</pre>
+Download a sample VCF file:
+<pre class="term">
+[user@cn3144 ~]$ <b> curl -O https://illumina.github.io/NirvanaDocumentation/files/HiSeq.10000.vcf.gz </b>
+</pre>
+Run Nirvana on the sample file:
+<pre class="term">
+[user@cn3144 ~]$ <b>nirvana \
+                 -c $NIRVANA_DATA/Cache/GRCh37/Both \
+                 --sd $NIRVANA_DATA/SupplementaryAnnotation/GRCh37 \
+                 -r $NIRVANA_DATA/References/Homo_sapiens.GRCh37.Nirvana.dat \
+                 -i HiSeq.10000.vcf.gz \
+                 -o HiSeq.10000 </b>
+---------------------------------------------------------------------------
+Nirvana                                             (c) 2021 Illumina, Inc.
+Stromberg, Roy, Lajugie, Jiang, Li, and Kang                         3.16.1
+---------------------------------------------------------------------------
+
+Initialization                                         Time     Positions/s
+---------------------------------------------------------------------------
+Cache                                               00:00:02.2
+SA Position Scan                                    00:00:00.1       61,441
+
+Reference                                Preload    Annotation   Variants/s
+---------------------------------------------------------------------------
+chr1                                    00:00:00.7  00:00:03.4        2,904
+
+Summary                                                Time         Percent
+---------------------------------------------------------------------------
+Initialization                                      00:00:02.4       21.4 %
+Preload                                             00:00:00.7        6.6 %
+Annotation                                          00:00:03.4       30.2 %
+
+Peak memory usage: 1.322 GB
+Time: 00:00:10.8
+
+[user@cn3144 ~]$ <b>nirvana \
+                 -c $NIRVANA_DATA/Cache/GRCh38/Both \
+                 --sd $NIRVANA_DATA/SupplementaryAnnotation/GRCh38 \
+                 -r $NIRVANA_DATA/References/Homo_sapiens.GRCh38.Nirvana.dat \
+                 -i HiSeq.10000.vcf.gz \
+                 -o HiSeq.10000 </b>
+---------------------------------------------------------------------------
+Nirvana                                             (c) 2021 Illumina, Inc.
+Stromberg, Roy, Lajugie, Jiang, Li, and Kang                         3.16.1
+---------------------------------------------------------------------------
+
+Initialization                                         Time     Positions/s
+---------------------------------------------------------------------------
+Cache                                               00:00:02.1
+SA Position Scan                                    00:00:00.1       66,470
+
+Reference                                Preload    Annotation   Variants/s
+---------------------------------------------------------------------------
+chr1                                    00:00:01.3  00:00:02.9        3,325
+
+Summary                                                Time         Percent
+---------------------------------------------------------------------------
+Initialization                                      00:00:02.3       19.0 %
+Preload                                             00:00:01.3       11.3 %
+Annotation                                          00:00:02.9       24.6 %
+
+Peak memory usage: 1.346 GB
+Time: 00:00:11.4
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. nirvana.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load nirvana
+nirvana -c $NIRVANA_DATA/Cache/GRCh37/Both \
+		--sd $NIRVANA_DATA/SupplementaryAnnotation/GRCh37 \
+		-r $NIRVANA_DATA/References/Homo_sapiens.GRCh37.Nirvana.dat \ 
+		-i HiSeq.10000.vcf \
+		-o Hiseq_result_anno
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch nirvana.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. nirvana.swarm). For example:</p>
+
+<pre class="term">
+nirvana -i vfc1.vcf -o vcf1 [... rest of the options]
+nirvana -i vfc2.vcf -o vcf2 [... rest of the options]
+nirvana -i vfc3.vcf -o vcf3 [... rest of the options]
+nirvana -i vfc4.vcf -o vcf4 [... rest of the options]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f nirvana.swarm --module nirvana</pre>
+where
+<table border=0>
+  <tr><td><tt>--module nirvana</tt> <td>Loads the nirvana module for each subjob in the swarm 
+</table>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

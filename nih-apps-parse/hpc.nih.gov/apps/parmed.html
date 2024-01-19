@@ -1,0 +1,131 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Parmed on Biowulf';</script>
+<div class="title">Parmed on Biowulf</div>
+
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+ParmEd is a package designed to facilitate creating and easily manipulating molecular systems that are fully described by a common classical force field. Supported force fields include Amber, CHARMM, AMOEBA, and several others that share a similar functional form (e.g., GROMOS).
+<P>
+ParmEd is capable of reading and writing to a wide array of different file formats, like the Amber topology and coordinate files, CHARMM PSF, parameter, topology, and coordinate files, Tinker parameter, topology, and coordinate files, and many others. The expressive central data structure (the Structure class) makes it easy to quickly and safely manipulate a chemical system, its underlying topology, and force field parameters describing its potential energy function.
+<P>
+There are two parts of ParmEd---a documented API that you can incorporate into your own Python scripts and programs, and a GUI/CLI pair of programs that provide a means to quickly perform various modifications to chemical systems for rapid prototyping.
+<P>
+The API also provides bindings to the OpenMM library, permitting you to carry out full molecular dynamics investigations using ParmEd on high-performant hardware, like AMD and NVidia GPUs.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+ <li><A href="https://github.com/ParmEd/ParmEd">ParmEd site</a> on github
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application requires a <a href="/docs/connect.html#nx">graphical connection using NX</a></p>
+
+<ul>
+    <li>Module Name: <tt>parmed</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load parmed</b>
+
+[user@cn3144 ~]$ <b> parmed --help</b>
+parmed --help
+usage: parmed [-h] [-v] [-i FILE] [-p &lt;prmtop&gt;] [-c &lt;inpcrd&gt;] [-O] [-l FILE] [--prompt PROMPT] [-n] [-e] [-s] [-r]
+              [&lt;prmtop&gt;] [&lt;script&gt;]
+
+positional arguments:
+  &lt;prmtop&gt;              Topology file to analyze.
+  &lt;script&gt;              File with a series of ParmEd commands to execute.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+
+Input Files:
+  -i FILE, --input FILE
+                        Script with ParmEd commands to execute. Default reads from stdin. Can be specified multiple times to process
+                        multiple input files.
+  -p &lt;prmtop&gt;, --parm &lt;prmtop&gt;
+                        List of topology files to load into ParmEd. Can be specified multiple times to process multiple topologies.
+  -c &lt;inpcrd&gt;, --inpcrd &lt;inpcrd&gt;
+                        List of inpcrd files to load into ParmEd. They are paired with the topology files in the same order that each
+                        set of files is specified on the command-line.
+
+Output Files:
+  -O, --overwrite       Allow ParmEd to overwrite existing files.
+  -l FILE, --logfile FILE
+                        Log file with every command executed during an interactive ParmEd session. Default is parmed.log
+
+Interpreter Options:
+  These options affect how the ParmEd interpreter behaves in certain cases.
+
+  --prompt PROMPT       String to use as a command prompt.
+  -n, --no-splash       Prevent printing the greeting logo.
+  -e, --enable-interpreter
+                        Allow arbitrary single Python commands or blocks of Python code to be run. By default Python commands will not
+                        be run as a safeguard for your system. Make sure you trust the source of the ParmEd command before turning this
+                        option on.
+
+Error Handling:
+  These options control how ParmEd handles various errors and warnings that appear occur during the course of Action execution
+
+  -s, --strict          Prevent scripts from running past unrecognized input and actions that end with an error. In interactive mode,
+                        actions with unrecognized inputs and failed actions prevent any changes from being made to the topology, but
+                        does not quit the interpreter. This is the default behavior.
+  -r, --relaxed         Scripts ignore unrecognized input and simply skip over failed actions, executing the rest of the script.
+                        Unrecognized input in the interactive interpreter emits a non-fatal warning.
+[user@cn4272 ~]$
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. parmed.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load parmed
+parmed .....
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] parmed.sh</pre>
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

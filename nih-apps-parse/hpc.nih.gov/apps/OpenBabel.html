@@ -1,0 +1,156 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Open Babel on Biowulf';</script>
+  <div class="title">Open Babel on Biowulf</div>
+  <img align=left style="margin:2em;" src="OpenBabel.png" alt="Open Babel Logo">
+  <table width=25% align=right><tr><td>
+    <div class="toc">
+      <div class="tocHeading">Quick Links</div>
+      <div class="tocItem"><A href="#doc">Documentation</a></div>
+      <div class="tocItem"><a href="#notes">Notes</a></div>
+      <div class="tocItem"><a href="#int">Interactive job </a></div>
+      <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+    </div>
+  </table>
+
+  <p>Open Babel is a chemical toolbox designed to speak the many languages of chemical data. It's an open, collaborative project allowing anyone to search, convert, analyze, or store data from molecular modeling, chemistry, solid-state materials, biochemistry, or related areas. </p>
+
+  <h3>References:</h3>
+  <ul>
+    <li>
+      Noel M O'Boyle, Michael Banck, Craig A James, Chris Morley, Tim Vandermeersch and Geoffrey R Hutchison
+      <a href="https://jcheminf.springeropen.com/articles/10.1186/1758-2946-3-33"><b><u>Open Babel: An open chemical toolbox</u></b></a>
+      <em>Journal of Cheminformatics (2011) 3:33</em>
+    </li>
+  </ul>
+
+  <a Name="doc"></a><div class="heading">Documentation</div>
+  <ul>
+    <li><a href="http://openbabel.org">Open Babel Wiki Site</a></li>
+  </ul>
+
+  <a Name="notes"></a><div class="heading">Important Notes</div>
+  <ul>
+  <li>Module Name: <tt>OpenBabel</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Singlethreaded
+  <li>Environment variables set <!--for ones users should be aware of -->
+    <ul>
+      <li><tt>OPENBABEL_HOME</tt></li>
+      <li><tt>OPENBABEL_EXAMPLES</tt></li>
+    </ul>
+  <li>Example files in <tt>$OPENBABEL_EXAMPLES</tt>
+  </ul>
+
+  <p class='alert'>The executables are version dependent:</p>
+
+  <div class="tabs-container">
+    <ul class="tabs">
+        <li class="current" data-tab="tab-1">2.4.1</li>
+        <li data-tab="tab-2">3.0.0</li>
+    </ul>
+    <div id="tab-1" class="tab-content current">
+
+      <h3>Executables</h3>
+      <ul>
+        <li><b><a href="http://openbabel.org/wiki/Babel" target="_babel">babel</a></b> - a converter for chemistry and molecular modeling data files</li>
+        <li><b><a href="https://openbabel.org/docs/dev/Command-line_tools/babel.html" target="_babel">obabel</a></b> - a converter for chemistry and molecular modeling data files</li>
+        <li><b><a href="http://openbabel.org/wiki/Obchiral" target="_babel">obchiral</a></b> - print molecular chirality information</li>
+        <li><b><a href="http://openbabel.org/wiki/Obconformer" target="_babel">obconformer</a></b> - generate low-energy conformers</li>
+        <li><b><a href="http://openbabel.org/wiki/Obenergy" target="_babel">obenergy</a></b> - calculate the energy for a molecule</li>
+        <li><b><a href="http://openbabel.org/wiki/Obfit" target="_babel">obfit</a></b> - superimpose two molecules based on a SMARTS pattern</li>
+        <li><b><a href="http://openbabel.org/wiki/Obgen" target="_babel">obgen</a></b> - generate 3D coordinates for a molecule</li>
+        <li><b><a href="http://openbabel.org/wiki/Obgrep" target="_babel">obgrep</a></b> - an advanced molecular grep program using SMARTS</li>
+        <li><b><a href="http://openbabel.org/wiki/Obminimize" target="_babel">obminimize</a></b> - optimize the geometry, minimize the energy for a molecule</li>
+        <li><b><a href="http://openbabel.org/wiki/Obprobe" target="_babel">obprobe</a></b> - create electrostatic probe grid</li>
+        <li><b><a href="http://openbabel.org/wiki/Obprop" target="_babel">obprop</a></b> - print standard molecular properties</li>
+        <li><b><a href="http://openbabel.org/wiki/Obrotamer" target="_babel">obrotamer</a></b> - generate conformer/rotamer coordinates</li>
+        <li><b><a href="http://openbabel.org/wiki/Obrotate" target="_babel">obrotate</a></b> - batch-rotate dihedral angles matching SMARTS patterns</li>
+        <li><b><a href="http://openbabel.org/docs/current/Fingerprints/spectrophore.html" target="_babel">obspectrophore</a></b> - calculate a Spectrophore, a one-dimensional descriptor generated from the property field surrounding the molecule</li>
+      </ul>
+
+    </div> <!-- end of tab-1 -->
+    <div id="tab-2" class="tab-content">
+
+
+      <h3>Executables</h3>
+      <ul>
+        <li><b><a href="https://openbabel.org/docs/dev/Command-line_tools/babel.html" target="_babel">obabel</a></b> - a converter for chemistry and molecular modeling data files</li>
+        <li><b><a href="http://openbabel.org/wiki/Obconformer" target="_babel">obconformer</a></b> - generate low-energy conformers</li>
+        <li><b><a href="http://openbabel.org/wiki/Obenergy" target="_babel">obenergy</a></b> - calculate the energy for a molecule</li>
+        <li><b><a href="http://openbabel.org/wiki/Obfit" target="_babel">obfit</a></b> - superimpose two molecules based on a SMARTS pattern</li>
+
+        <li><b>obfitall</b> - ???</li>
+
+        <li><b><a href="http://openbabel.org/wiki/Obgen" target="_babel">obgen</a></b> - generate 3D coordinates for a molecule</li>
+        <li><b><a href="http://openbabel.org/wiki/Obgrep" target="_babel">obgrep</a></b> - an advanced molecular grep program using SMARTS</li>
+        <li><b><a href="http://openbabel.org/wiki/Obminimize" target="_babel">obminimize</a></b> - optimize the geometry, minimize the energy for a molecule</li>
+
+        <li><b>obmm</b> - OpenBabel molecular mechanics program</li>
+
+        <li><b><a href="http://openbabel.org/wiki/Obprobe" target="_babel">obprobe</a></b> - create electrostatic probe grid</li>
+        <li><b><a href="http://openbabel.org/wiki/Obprop" target="_babel">obprop</a></b> - print standard molecular properties</li>
+        <li><b><a href="http://openbabel.org/wiki/Obrotamer" target="_babel">obrotamer</a></b> - generate conformer/rotamer coordinates</li>
+        <li><b><a href="http://openbabel.org/wiki/Obrotate" target="_babel">obrotate</a></b> - batch-rotate dihedral angles matching SMARTS patterns</li>
+        <li><b><a href="http://openbabel.org/docs/current/Fingerprints/spectrophore.html" target="_babel">obspectrophore</a></b> - calculate a Spectrophore, a one-dimensional descriptor generated from the property field surrounding the molecule</li>
+      </ul>
+
+    </div> <!-- end of tab-2 -->
+  </div>
+
+  <a Name="int"></a><div class="heading">Interactive job</div>
+  <div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+  <p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+  <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load OpenBabel</b>
+[user@cn3144 ~]$ <b>obabel -ixyz benzene.xyz -O benzene.pdb</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+  <P>
+  <a Name="sbatch"></a><div class="heading">Batch job</div>
+  <div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+  <p>Create a batch input file (e.g. OpenBabel.sh). For example:</p>
+    
+  <pre class="term">
+#!/bin/bash
+module load OpenBabel
+obabel -ipdb benzene.pdb -O benzene.xyz
+</pre>
+  <p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+  <pre class="term">sbatch [--cpus-per-task=#] [--mem=#] OpenBabel.sh</pre>
+
+  <a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+  <div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+  <p>Create a swarmfile (e.g. OpenBabel.swarm). For example:</p>
+
+  <pre class="term">
+obabel mymols.sdf -f 1 -l 10 -Ooutputfile1.sdf
+obabel mymols.sdf -f 11 -l 20 -O outputfile2.sdf
+obabel mymols.sdf -f 21 -l 30 -O outputfile3.sdf
+obabel mymols.sdf -f 31 -l 40 -O outputfile4.sdf
+</pre>
+
+  <p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+  <pre class="term">swarm -f OpenBabel.swarm --module OpenBabel</pre>
+  where
+  <table border=0>
+    <tr><td><tt>--module OpenBabel</tt> <td>Loads the OpenBabel module for each subjob in the swarm 
+  </table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

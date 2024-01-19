@@ -1,0 +1,144 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mrtrix3tissue on Biowulf';</script>
+<div class="title">mrtrix3tissue on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MRtrix3Tissue is an application for 3-Tissue CSD modelling and analysis (based on mrtrix).
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://3tissue.github.io/">MRtrix3tissue user documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>mrtrix3tissue</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Note that the GUI options have not been installed. 
+<li>Multithreaded
+<li><b>mrtrix3tissue configuration</b>: Users can set up a file <tt>/home/$USER/.mrtrix.conf</tt> containing mrtrix configuration options with default options that they desire.
+The list of possible settings for the mrtrix config file is <a href="http://mrtrix.readthedocs.io/en/latest/reference/config_file_options.html">detailed here</a>.
+A sample config file is available in <tt>/usr/local/apps/mrtrix/mrtrix.conf</tt>. 
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load mrtrix3tissue</b>
+[+] Loading mrtrix3tissue  5.2.9  on cn3144
+
+[user@cn3144 ~]$ <b>ss3t_csd_beta1 -help</b>
+Version 3Tissue_v5.2.9           ss3t_csd_beta1
+using MRtrix3 3Tissue_v5.2.9
+
+     ss3t_csd_beta1: external MRtrix3 project
+
+SYNOPSIS
+
+     SS3T-CSD: beta 1 implementation
+
+USAGE
+
+     ss3t_csd_beta1 [ options ] in_dMRI_data in_SFWM_resp out_WM_FOD in_GM_resp
+     out_GM in_CSF_resp out_CSF
+
+        in_dMRI_data Input dMRI dataset
+
+        in_SFWM_resp Input single-fibre WM response function text file
+
+        out_WM_FOD   Output WM FOD image
+
+        in_GM_resp   Input GM response function text file
+
+        out_GM       Output GM image
+
+        in_CSF_resp  Input CSF response function text file
+
+        out_CSF      Output CSF image
+
+DESCRIPTION
+
+     This is an implementation of SS3T-CSD for beta testing and distribution.
+     Use with caution and check all results carefully.
+
+     For more information on how to use SS3T-CSD, please visit
+     https://3Tissue.github.io/doc/ss3t-csd.html
+
+OPTIONS
+[...]
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mrtrix3tissue.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load mrtrix3tissue
+
+cd /data/${USER}
+
+dwi2response dhollander dwi-prep.mif response_wm.txt response_gm.txt response_csf.txt
+ss3t_csd_beta1 dwi-prep.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif -mask mask.mif
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] mrtrix3tissue.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mrtrix3tissue.swarm). For example:</p>
+
+<pre class="term">
+cd /data/${USER}/dataset01;\ 
+   ss3t_csd_beta1 dwi-prep.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif -mask mask.mif
+cd /data/${USER}/dataset02;\
+   ss3t_csd_beta1 dwi-prep.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif -mask mask.mif
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mrtrix3tissue.swarm [-g #] [-t #] --module mrtrix3tissue</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module mrtrix3tissue</tt> <td>Loads the mrtrix3tissue module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

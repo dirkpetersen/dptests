@@ -1,0 +1,109 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Development Tools and Libraries';</script><div class="title">Development Tools and Libraries</div><!-- Start content - do not edit above this line  -->
+
+<table width=100% cellpadding=5>
+  <tr>
+    <td width=25%>
+      <div class="toc">
+      <div class="tocHeading">Development Tools</div>
+        <div class="tocItem"><a href="#compiler_tools" >Compiler Tools</a></div>
+<div class="tocItem"><a href="#compilers" >Compilers</a></div>
+<div class="tocItem"><a href="#debugging" >Debugging</a></div>
+<div class="tocItem"><a href="#languages" >Languages</a></div>
+<div class="tocItem"><a href="#libraries" >Libraries</a></div>
+<div class="tocItem"><a href="#mpi" >MPI</a></div>
+      </div>
+    </td>
+    <td>
+
+      <p>
+Biowulf is intended to run code programmed by our users as well as commercial and open-source codes that may need to be built for our platform(s) if they do not come in a useable binary format. Accordingly, we host a number of compilers and build environments to suit the needs of developers and individuals that need to build projects from source. 
+      </p>
+
+      <p>
+This page provides information specific to the Biowulf development environment as well as a rough overview of the various compilers, libraries and programs used on our system. The linked documentation on specific packages and programs will usually need to be consulted for any useful understanding of them. 
+      </p>
+
+
+    </td>
+  </tr>
+</table>
+
+<div class="heading"><a name="compiler_tools" id="compiler_tools">Compiler Tools</a></div>
+<a href="/apps/" style="font-size:12px">back to top</a><br />
+<p></p>
+<div class="subheading"><a href="autotools.html">automake</a> (1.16.5) </div><p class="appDesc">Automake is a tool for automatically generating Makefile.in files compliant with the GNU Coding Standards.</p>
+<div class="subheading"><a href="https://cmake.org/cmake/help/v3.16/">cmake</a> (3.16.4) </div><p class="appDesc">CMake is a family of tools designed to build, test and package software. </p>
+<div class="subheading"><a href="https://github.com/open-mpi/hwloc">hwloc</a> (1.11.13) </div><p class="appDesc">The Hardware Locality (hwloc) software project aims at easing the process of discovering hardware resources in parallel architectures. It offers command-line tools and a C API for consulting these resources, their locality, attributes, and interconnection.</p>
+<div class="subheading"><a href="https://www.gnu.org/software/libtool/manual/html_node/index.html">libtool</a> (2.4.7) </div><p class="appDesc">GNU libtool is a generic library support script. Libtool hides the complexity of using shared libraries behind a consistent, portable interface. </p>
+<div class="subheading"><a href="autotools.html">m4</a> (1.4.19) </div><p class="appDesc">GNU M4 is an implementation of the traditional Unix macro processor.</p>
+<div class="subheading">Maven (3.6.3) </div><p class="appDesc">Apache Maven is a software project management and comprehension tool. Based on the concept of a project object model (POM), Maven can manage a project's build, reporting and documentation from a central piece of information.</p>
+<div class="heading"><a name="compilers" id="compilers">Compilers</a></div>
+<a href="/apps/" style="font-size:12px">back to top</a><br />
+<p></p>
+<div class="subheading"><a href="compilers.html">GCC</a> (10.2.0) </div><p class="appDesc">The GNU Compiler Collection includes front ends for C, C++, Objective-C, Fortran, and Go, as well as libraries for these languages (libstdc++, libgfortran,...)</p>
+<div class="subheading"><a href="compilers.html">Intel Compiler Suite</a> (2019.4.243) </div><p class="appDesc">Intel Compiler Suite for Linux.  Includes C/C++ and Fortran compilers.  Also includes the Math Kernel Library, Integrated Performance Primitives and Thread Building Blocks.</p>
+<div class="heading"><a name="debugging" id="debugging">Debugging</a></div>
+<a href="/apps/" style="font-size:12px">back to top</a><br />
+<p></p>
+<div class="subheading"><a href="https://github.com/koalaman/shellcheck">shellcheck</a> (0.9.0) </div><p class="appDesc">A shell script static analysis tool</p>
+<div class="heading"><a name="languages" id="languages">Languages</a></div>
+<a href="/apps/" style="font-size:12px">back to top</a><br />
+<p></p>
+<div class="subheading"><a href="https://golang.org/doc/">golang</a> (1.21.1) </div><p class="appDesc">The Go programming language</p>
+<div class="subheading"><a href="java.html">Java</a> (18.0.1.1) </div><p class="appDesc">Java is a high-level language and software-only platform. The two main components of the Java platform are the Java Application Programming Interface (API), which is a library of Java command lines and the Java Virtual Machine (JVM) that interprets Java code into machine language.  </p>
+<div class="subheading"><a href="https://hpc.nih.gov/apps/julia.html">Julia</a> (1.9.3) </div><p class="appDesc">high level, dynamic language for technical computing</p>
+<div class="subheading">Mathematica (13.3.0) </div><p class="appDesc">Mathematica is an interactive system for doing mathematical computation. It performs numerical, symbolic and graphical computations, and incorporates a high-level programming language.</p>
+<div class="subheading">Matlab (2023a) </div><p class="appDesc">MATLAB is an interactive software package for scientific and engineering numeric computation. MATLAB integrates numerical analysis, matrix computation, signal processing, and graphics in an environment where problems and solutions are expressed just as they are written mathematically.</p>
+<div class="subheading"><a href="https://nodejs.org/en/docs/">nodejs</a> (18.17.0) </div><p class="appDesc">Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine.
+
+module name: nodejs</p>
+<div class="subheading"><a href="https://hpc.nih.gov/apps/perl.html">Perl</a> (5.38) </div><p class="appDesc">Perl is a highly capable, feature-rich programming language with over 30 years of development.</p>
+<div class="subheading">PyPy (3.8-7.3.9) </div><p class="appDesc">PyPy is a fast, compliant alternative implementation of the Python language.</p>
+<div class="subheading">Python (3.9) </div><p class="appDesc">Python is a programming language that lets you work more quickly and integrate your systems more effectively.</p>
+<div class="subheading">R (4.3.0) </div><p class="appDesc">R (the R Project) is a language and environment for statistical computing and graphics. R is similar to S, and provides a wide variety of statistical and graphical techniques (linear and nonlinear modelling, statistical tests, time series analysis, classification, clustering, ...).</p>
+<div class="subheading"><a href="http://ruby-doc.org/">Ruby</a> (3.1.2) </div><p class="appDesc">A dynamic, open source programming language with a focus on simplicity and productivity</p>
+<div class="subheading"><a href="https://www.rust-lang.org/">rust</a> (1.72.0) </div><p class="appDesc">A language empowering everyone to build reliable and efficient software.</p>
+<div class="subheading">SAS (9.4M7) </div><p class="appDesc">Base SAS provides a scalable, integrated software environment specially designed for data access, transformation and reporting.</p>
+<div class="heading"><a name="libraries" id="libraries">Libraries</a></div>
+<a href="/apps/" style="font-size:12px">back to top</a><br />
+<p></p>
+<div class="subheading"><a href="http://www.boost.org/">boost</a> (1.83) </div><p class="appDesc">Boost provides free peer-reviewed portable C++ source libraries.  Boost libraries are intended to be widely useful, and usable across a broad spectrum of applications.</p>
+<div class="subheading"><a href="http://docs.nvidia.com/cuda/#axzz48uw2JZ5V">CUDA</a> (11.3.0) </div><p class="appDesc">CUDA is a parallel computing platform and programming model invented by NVIDIA. It enables dramatic increases in computing performance by harnessing the power of the graphics processing unit (GPU). Run 'module load CUDA' to access tools in CUDA.</p>
+<div class="subheading"><a href="https://hpc.nih.gov/development/cuDNN.html">cuDNN</a> (8.0.3) </div><p class="appDesc">The NVIDIA CUDA Deep Neural Network library (cuDNN) is a GPU-accelerated library of primitives for deep neural networks. cuDNN provides highly tuned implementations for standard routines such as forward and backward convolution, pooling, normalization, and activation layers.</p>
+<div class="subheading"><a href="http://eigen.tuxfamily.org/dox/index.html">Eigen</a> (3.3.9) </div><p class="appDesc">Eigen is a C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.</p>
+<div class="subheading"><a href="https://ffmpeg.org/documentation.html">FFmpeg</a> (5.0.1) </div><p class="appDesc">A complete, cross-platform solution to record, convert and stream audio and video.</p>
+<div class="subheading"><a href="http://www.fftw.org/doc/">FFTW</a> (3.3.7) </div><p class="appDesc">FFTW is a C subroutine library for computing the discrete Fourier transform (DFT) in one or more dimensions, of arbitrary input size, and of both real and complex data (as well as of even/odd data, i.e. the discrete cosine/sine transforms or DCT/DST).</p>
+<div class="subheading">freeglut (3.2.2) </div><p class="appDesc">FreeGLUT is a free-software/open-source alternative to the OpenGL Utility Toolkit (GLUT) library. </p>
+<div class="subheading"><a href="https://gflags.github.io/gflags/">gflags</a> (2.2.1) </div><p class="appDesc">The gflags package contains a library that implements commandline flags processing. It includes built-in support for C++ types like string and the ability to define flags in the source file in which they're used.</p>
+<div class="subheading"><a href="https://github.com/nigels-com/glew">glew</a> (2.2.0) </div><p class="appDesc">The OpenGL Extension Wrangler Library (GLEW) is a cross-platform open-source C/C++ extension loading library. GLEW provides efficient run-time mechanisms for determining which OpenGL extensions are supported on the target platform. </p>
+<div class="subheading"><a href="glog.html">glog</a> (0.6.0) </div><p class="appDesc">The glog library implements application-level logging. This library provides logging APIs based on C++-style streams and various helper macros. </p>
+<div class="subheading">glpk (5.0) </div><p class="appDesc">The GLPK (GNU Linear Programming Kit) package is intended for solving large-scale linear programming (LP), mixed integer programming (MIP), and other related problems. It is a set of routines written in ANSI C and organized in the form of a callable library.</p>
+<div class="subheading"><a href="https://www.gnu.org/software/gsl/doc/html/index.html">GSL</a> (2.7) </div><p class="appDesc">The GNU Scientific Library (GSL) is a numerical library for C and C++ programmers. The library provides a wide range of mathematical routines such as random number generators, special functions and least-squares fitting. There are over 1000 functions in total with an extensive test suite.</p>
+<div class="subheading"><a href="LAPACK.html">LAPACK</a> (3.7.1) </div><p class="appDesc">LAPACK is written in Fortran 90 and provides routines for solving systems of simultaneous linear equations, least-squares solutions of linear systems of equations, eigenvalue problems, and singular value problems.</p>
+<div class="subheading"><a href="https://rawgit.com/google/leveldb/master/doc/index.html">leveldb</a> (1.23) </div><p class="appDesc">LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.</p>
+<div class="subheading">libevent (2.1.8) </div><p class="appDesc">The libevent API provides a mechanism to execute a callback function when a specific event occurs on a file descriptor or after a timeout has been reached. Furthermore, libevent also support callbacks due to signals or regular timeouts.</p>
+<div class="subheading"><a href="https://freetype.org/index.html">libfreetype</a> (2.13.1) </div><p class="appDesc">FreeType is a freely available software library to render fonts.</p>
+<div class="subheading"><a href="https://libjpeg-turbo.org/Documentation/Documentation">libjpeg-turbo</a> (2.0.6) </div><p class="appDesc">libjpeg-turbo is a JPEG image codec that uses SIMD instructions (MMX, SSE2, NEON) to accelerate baseline JPEG compression and decompression on x86, x86-64, and ARM systems.</p>
+<div class="subheading">libpng (1.6.37) </div><p class="appDesc">libpng is the official PNG reference library. It supports almost all PNG features, is extensible, and has been extensively tested for over 20 years. </p>
+<div class="subheading">niftilib (3.0.0) </div><p class="appDesc"><a href="http://niftilib.sourceforge.net/">Niftilib</a> is a set of i/o libraries for reading and writing files in the nifti-1 data format. nifti-1 is a binary file format for storing medical image data, e.g. magnetic resonance image (MRI) and functional MRI (fMRI) brain images.
+</p>
+<div class="subheading"><a href="https://www.openblas.net/">openblas</a> (0.3.20) </div><p class="appDesc">OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version.</p>
+<div class="subheading">OpenCV (4.6.0) </div><p class="appDesc">OpenCV (Open Source Computer Vision Library) is an open source computer vision and machine learning software library. OpenCV was built to provide a common infrastructure for computer vision applications and to accelerate the use of machine perception in the commercial products.</p>
+<div class="subheading"><a href="https://hpc.nih.gov/development/pymc.html">pymc</a> (5) </div><p class="appDesc">PyMC is a probabilistic programming library for Python that allows users to build Bayesian models with a simple Python API and fit them using Markov chain Monte Carlo (MCMC) methods.</p>
+<div class="subheading"><a href="https://www.qt.io/">Qt</a> (5.14.0) </div><p class="appDesc">Qt is a cross-platform application framework that is used for developing application software that can be run on various software and hardware platforms with little or no change in the underlying codebase, while still being a native application with native capabilities and speed.</p>
+<div class="subheading">seqan (2.4.0) </div><p class="appDesc"> SeqAn is an open source C++ library of efficient algorithms and data structures for the analysis of sequences with the focus on biological data. It applies a unique generic design that guarantees high performance, generality, extensibility, and integration with other libraries. This package also contains a suite of apps, including Fiona, Gustaf, Mason, RazerS 3, Yara, SeqAn T-Coffee, Stellar, and searchjoin.</p>
+<div class="subheading"><a href="http://google.github.io/snappy/">snappy</a> (1.1.7) </div><p class="appDesc">Snappy is a compression/decompression library. It does not aim for maximum compression, or compatibility with any other compression library; instead, it aims for very high speeds and reasonable compression.</p>
+<div class="subheading"><a href="https://vcfpy.readthedocs.io/en/stable/">vcfpy</a> (0.13.6) </div><p class="appDesc">Python library for handling the variant call format. Differs from pyvcf in that it has the ability to modify per-sample genotype information.</p>
+<div class="heading"><a name="mpi" id="mpi">MPI</a></div>
+<a href="/apps/" style="font-size:12px">back to top</a><br />
+<p></p>
+<div class="subheading"><a href="MPI.html">mpich</a> (4.1.2) </div><p class="appDesc">MPICH is a high-performance and widely portable implementation of the Message Passing Interface (MPI) standard (both MPI-1 and MPI-2). </p>
+<div class="subheading"><a href="MPI.html">MVAPICH2</a> (2.3.7) </div><p class="appDesc">MPI implementation for Infiniband</p>
+<div class="subheading"><a href="MPI.html">OpenMPI</a> (4.1.6) </div><p class="appDesc">OpenMPI is a popular implementation of Ethernet MPI with very active support and development. </p>
+
+<!-- End content area - do not edit below this line -->
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

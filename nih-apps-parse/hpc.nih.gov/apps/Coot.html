@@ -1,0 +1,61 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Coot on Biowulf';</script>
+<div class="title">Coot on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>Coot is for macromolecular model building, model completion and validation, particularly suitable for protein modelling using X-ray data.</p>
+
+<p>Coot displays maps and models and allows model manipulations such as idealization, real space refinement, manual rotation/translation, rigid-body fitting, ligand search, solvation, mutations, rotamers, Ramachandran plots, skeletonization, non-crystallographic symmetry and more.</p>
+
+<h3>References:</h3>
+<ul>
+  <li><a href="https://www.ncbi.nlm.nih.gov/pubmed/?term=20383002">Emsley P, Lohkamp B, Scott WG, Cowtan K. <u>Features and development of Coot.</u> <em>Acta Crystallogr D Biol Crystallogr. 2010 Apr </em>66(Pt 4):486-501.  </a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/web/docs/coot.html">Coot documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>Coot</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Singlethreaded
+</ul>
+
+<p class="alert">This application requires an <a href="/docs/connect.html">X-Windows connection</a>.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load Coot</b>
+[user@cn3144 ~]$ <b>coot</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

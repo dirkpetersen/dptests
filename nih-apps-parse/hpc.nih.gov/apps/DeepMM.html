@@ -1,0 +1,176 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DeepMM: full-length protein structure determination  from cryo-EM maps using deep learning.';</script>
+<div class="title">DeepMM: full-length protein structure determination <br /> from cryo-EM maps using deep learning.</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+DeepMM implements fully automated de novo structure modeling method, MAINMAST, 
+which builds three-dimensional models of a protein from a near-atomic resolution EM map. 
+The method directly traces the protein’s main-chain and identifies C&alpha;
+positions as tree-graph structures in the EM map.
+</p>
+
+DeepMM uses MAINMAST to trace the main chain paths on main chain probability maps. 
+
+<h3>References:</h3>
+<ul>
+<li>Terashi, Genki, and Daisuke Kihara <br />
+<i> De novo main-chain modeling for EM maps using MAINMAST.</i><br />
+<a href="https://www.nature.com/articles/s41467-018-04053-7">Nature communications </a> (2018), <b>9</b>(1), 1618. 
+<li>Terashi, Genki, and Daisuke Kihara<br />
+<i> De novo main-chain modeling with MAINMAST in 2015/2016 EM Model Challenge. </i><br />
+<a href="https://www.sciencedirect.com/science/article/pii/S1047847718301710">Journal of Structural Biology </a> (2018), <b>204</b>(2), 351-359. 
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/JiahuaHe/DeepMM">DeepMM Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>DeepMM</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>DEEPMM_HOME</b>&nbsp; installation directory</li>
+    <li><b>DEEPMM_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>DEEPMM_SRC </b>&nbsp; &nbsp; a folder containing the source code</li>
+    <li><b>DEEPMM_DATA</b>&nbsp; &nbsp; a folder containing sample data</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p class="alert">Before running an interactive session, install Jackal software locally in your account: <br />
+1) following the link: <br /> https://honiglab.c2b2.columbia.edu/software/cgi-bin/software.pl?input=Jackal <br />
+   manually download the file jackal_64bit.tar.gz to your local computer <br />
+2) sftp/transfer the file to Biowulf <br />
+3) ungzip/untar it: <br />
+   tar -zxf jackal_64bit.tar.gz <br /> 
+   and <br />
+4) move the resulting folder jackal_64bit <br /> to the directory: /data/$USER  </p> 
+  
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g  --gres=gpu:k80:1,lscratch:10 -c4 </b>
+[user@cn4213 ~]$ <b>module load DeepMM </b>
+[+] Loading CUDA Toolkit  10.2.89  ...
+[+] Loading cuDNN/7.6.5/CUDA-10.2 libraries...
+[+] Loading blast 2.11.0+  ...
+[+] Loading DeepMM  20210722
+</pre>
+Set the environment variables:
+<pre class="term">
+[user@cn4213 ~]$ <b> export JACKALDIR=/data/$USER/jackal_64bit</b>
+[user@cn4213 ~]$ <b> PATH=/data/$USER/jackal_64bit/bin:$PATH </b>
+[user@cn4213 ~]$ <b> git clone https://github.com/JiahuaHe/DeepMM </b>
+</pre>
+Run DeepMM on the sample data:
+<pre class="term">
+[user@cn4213 ~]$<b> cd DeepMM/5185</b>
+[user@cn4213 ~]$<b> preprocess.py -m 5185_zoned.mrc -n map.npz -t 3.21 </b> 
+[INFO] 10733 voxels with density value greater than 3.21000 are retained.
+[INFO] 10733 voxels are saved to map.npz
+
+[user@cn4213 ~]$<b> pred_MCCA.py -n map.npz -m predMC.mrc -c predCA.mrc </b>
+LOAD] loading data...
+[PREDICT] predicting...
+100%|████████████████████████████████████████████████████████████████████████████████████████████████| 84/84 [00:04&lt;00:00, 17.43it/s]
+
+[user@cn4213 ~]$ <b> mrc2situs.py -m 5185_zoned.mrc -s map.situs </b>
+[user@cn4213 ~]$ <b> mrc2situs.py -m predMC.mrc -s predMC.situs  </b>  
+[user@cn4213 ~]$ <b> mrc2situs.py -m predCA.mrc -s predCA.situs  </b>  
+
+[user@cn4213 ~]$ <b> getldp predMC.situs predCA.situs &gt; LDP.pdb  </b>  
+
+[user@cn4213 ~]$ <b> getvox map.situs LDP.pdb &gt; LDP.mcv </b>
+
+[user@cn4213 ~]$ <b> pred_AASS.py -m LDP.mcv -l LDP.pdb &gt; LDP_AASS.pdb </b>
+100%|█████████████████████████████████████████████████████████████████████| 7/7 [00:03&lt;00:00,  2.18it/s]
+
+[user@cn4213 ~]$ <b> trace LDP_AASS.pdb -nrd 100 &gt; paths.pdb </b>
+
+[user@cn4213 ~]$ <b> align paths.pdb seq.fasta.spd3 </b>
+# ALIGN.F
+ # Align sequence to main-chain paths
+ # Parameter setting:
+ # wca =   1.600000
+ # whelix =   1.000000
+ # wsheet =  0.7000000
+ # wcoil =  0.8000000
+ # waa =   1.000000
+ # wss =  0.5000000
+ # rmsd =   5.000000
+ # nout =          10
+ # prefix = model
+ # Reading LDP paths from file paths.pdb
+ # Path            1  consists of          565  LDPs.
+ # Path            2  consists of          560  LDPs.
+ # Path            3  consists of          534  LDPs.
+ # Path            4  consists of          538  LDPs.
+ # Path            5  consists of          511  LDPs.
+ # Path            6  consists of          520  LDPs.
+ # Path            7  consists of          543  LDPs.
+ # Path            8  consists of          484  LDPs.
+ # Path            9  consists of          551  LDPs.
+ # Path           10  consists of          475  LDPs.
+ # Number of paths:           10
+ # Reading SS prediction from file seq.fasta.spd3
+ # Reading predicted SS from .SPD3 file seq.fasta.spd3
+ # Number of residues:          155
+ # Start alignment!
+ # Model    1   62.156
+ # Model    2   57.567
+ # Model    3   78.881
+ # Model    4   76.093
+ # Model    5   78.612
+ # Model    6   90.198
+ # Model    7   87.193
+ # Model    8   73.144
+ # Model    9   71.957
+ # Model   10  100.461
+ # Model   11  112.469
+ # Model   12  108.363
+ # Model   13  139.715
+ # Model   14  130.736
+ # Model   15  123.928
+ # Model   16  116.492
+ # Model   17   34.216
+ # Model   18   35.854
+ # Model   19   27.489
+ # Model   20   44.658
+ # Model   21   45.993
+ # Model   22   52.989
+ # Model   23   42.962
+ # Model   24   34.723
+ # Model   25  110.321
+... 
+ # Model  158   59.206
+ # Model  159   40.211
+ # Model  160   27.201
+ # write models into one .pdb file
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn4213 ~]$ <b>exit</b>
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

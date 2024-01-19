@@ -1,0 +1,80 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MaxQuant on Biowulf';</script>
+<div class="title">MaxQuant on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+MaxQuant is a quantitative proteomics software package designed for analyzing large mass-spectrometric data sets. It is specifically aimed at high-resolution MS data. Several labeling techniques as well as label-free quantification are supported.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Cox J, Mann M.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/19029910">
+      MaxQuant enables high peptide identification rates, individualized p.p.b.-range mass accuracies and proteome-wide protein quantification.
+    </a>
+    <em>Nat Biotechnol. 2008 Dec;26(12):1367-72.</em>
+  
+  
+  <li>
+    Tyanova S, Temu T, Cox J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/27809316">
+      The MaxQuant computational platform for mass spectrometry-based shotgun proteomics.
+    </a>
+    <em>Nat Protoc. 2016 Dec;11(12):2301-2319.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.maxquant.org/">MaxQuant Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>maxquant</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Multithreaded
+  <li>This application produces HTML reports. You can use <a href="/docs/hpcdrive.html">hpcdrive</a> to view these reports on your local workstation.</li>
+</ul>
+
+<p class="alert">This application requires an <a href="/docs/connect.html">X-Windows connection</a>. Users are encouraged to use <a href="https://hpc.nih.gov/docs/nx.html">NX</a> as their X11 servers.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load maxquant</b>
+[user@cn3144 ~]$ <b>MaxQuantGui.exe</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>An interactive window will pop up:</p>
+
+<img src="maxquant.PNG" alt="MaxQuant window" width="850px" />
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

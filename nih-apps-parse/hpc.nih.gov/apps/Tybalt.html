@@ -1,0 +1,381 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Tybalt: extracting a biologically relevant latent space from cancer transcriptomes ';</script>
+<div class="title"><b>Tybalt: extracting a biologically relevant latent space from cancer transcriptomes
+ </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Tybalt employs Keras deep learning framework to implement 
+a variational autoencoder (VAE), capable of generating meaningful latent spaces
+for image and text data. Tybalt has been trained 
+on The Cancer Genome Atlas (TCGA) pan-cancer RNA-seq data 
+and used to identify specific patterns in the VAE encoded features.  <br /> <br />
+This application is being used as a biological example in class #3 of the course
+"Deep Learning by Example on Biowulf".
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Gregory P. Way, USACasey S. Greene <br />
+<i>Extracting a biologically relevant latent space from cancer transcriptomes with variational autoencoders</i><br />
+<a href="https://www.worldscientific.com/doi/abs/10.1142/9789813235533_0008">Pacific Simposium on Biocomputing </a> 2014, <b>23:</b> 80–91 <br/>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/greenelab/tybalt">Tybalt github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Tybalt</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>TYBALT_HOME</b>&nbsp; installation directory</li>
+    <li><b>TYBALT_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>TYBALT_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=36g --gres=gpu:v100,lscratch:10</b>
+[user@cn3200 ~]$<b>module load Tybalt  </b>
+[+] Loading libarchive  3.3.2 
+[+] Loading singularity  on cn4470 
+[+] Loading python 3.6  ... 
+[+] Loading cuDNN 7.0  libraries... 
+[+] Loading CUDA Toolkit  9.0.176  ... 
+[+] Loading gcc  7.2.0  ... 
+[+] Loading GSL 2.4 for GCC 7.2.0 ... 
+[+] Loading openmpi 3.0.0  for GCC 7.2.0 
+[+] Loading R 3.5.0_build2 
+[+] Loading Tybalt 0.1.3  ... 
+</pre>
+The Tybalt code implemented in Biowulf currently includes the folloeing executables: <br />
+- shell script <b>download_data.sh</b> downloads raw data, including the Glioblastoma NF1 data, UCSC Xena Data Browser Copy Number data and Clinical data files from JHU;<br />
+- python script <b>preprocess_data.py</b> performs pre-processing of the raw data;<br />
+- python script <b>train.py</b> performs training of either variational autoencoder (VAE) or denoising autoencoder (ADAGE) on the pre-processed data, <br />  
+- python script <b>predict.py</b> that computes the latent features by encoding the input data and then computes the tSNE (t-distributed Stochastic Neighbor Embedding) features required for plotting the results, and <br/> 
+- R script <b>visualize.R</b> performs visualization of the resulting clusters. <br /> <br />
+To see the entire list of source files and copy it to your current folder, type:
+<pre class="term">
+[user@cn3200]$ <b>ls $TYBALT_SRC </b>
+download_data.sh  options.py             preprocess_data.py    predict.py 
+models.py         parse_hpo_results.py   train.py              visualize.R
+[user@cn3200]$ <b>cp -r $TYBALT_SRC/* . </b>
+</pre>
+To download (raw) data, run the command
+<pre class="term">
+[user@cn3200]$ <b>download_data.sh</b>
+</pre>
+that will create a subfolder tree <b>data/raw</b> in the current folder: 
+<pre class="term">
+[user@cn3200]$ <b>tree data</b>
+data
+└── raw
+    ├── Gistic2_CopyNumber_Gistic2_all_thresholded.by_genes
+    ├── HiSeqV2
+    ├── PANCAN_clinicalMatrix
+    ├── PANCAN_mutation
+    └── samples.tsv
+</pre>
+The data pre-processing command:
+<pre class="term">
+[user@cn3200]$ <b> preprocess_data.py</b>
+</pre> 
+will produce a number of other files in the subfolder <b>data</b>:
+<pre class="term">
+[user@cn3200]$ <b>tree data </b>
+data
+├── clinical_data.tsv
+├── copy_number_gain.tsv.gz
+├── copy_number_loss.tsv.gz
+├── oncokb_genetypes.tsv
+├── pancan_mutation_burden.tsv
+├── pancan_mutation.tsv.gz
+├── pancan_scaled_rnaseq.tsv.gz
+├── pancan_scaled_zeroone_rnaseq.tsv.gz
+├── raw
+│   ├── Gistic2_CopyNumber_Gistic2_all_thresholded.by_genes
+│   ├── HiSeqV2
+│   ├── PANCAN_clinicalMatrix
+│   ├── PANCAN_mutation
+│   └── samples.tsv
+└── status_matrix.tsv.gz
+</pre>
+Since this command will take a while to complete, alternatively you can download the
+already pre-processed data from a system foder:
+<pre class="term">
+[user@cn3200]$ <b>cp -r $TYBALT_DATA/* . </b>
+</pre>
+To train an autoencoder on the pre-processed data, use the script <b>train.py</b>:
+<pre class="term">
+[user@cn3200]$ <b>train.py -h </b>
+...
+usage: train.py [-h] [-d depth] [-e num_epochs] [-E executions_per_trial]
+                [-F hyperband_factor] [--hidden_dim hidden_dim]
+                [-I hyperband_iterations] [-k kappa] [-l learning_rate]
+                [-m model_name] [-N noise] [-o optimizer] [-p prefix]
+                [-s sparsity] [-T num_trials] [-v] [--val_split val_split]
+                [-W wall_time] [-z latent_dim] [-b batch_size]
+                [-f output_filename] [--hpo hpo_method]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d depth, --depth depth
+                        Number of layers between input and latent layer;
+                        default=1
+  -e num_epochs, --num_epochs num_epochs
+                        # of epochsl default=100
+  -E executions_per_trial, --executions_per_trial executions_per_trial
+                        # of executions per HPO trial; default=3
+  -F hyperband_factor, --hb_factor hyperband_factor
+                        division factor used by the hyperband HPO algorithm;
+                        default=2
+  --hidden_dim hidden_dim
+                        Dimensionality of the first hidden layer
+  -I hyperband_iterations, --hb_iters hyperband_iterations
+                        # of hyperband iterations; default=100
+  -k kappa, --kappa kappa
+                        How fast to linearly ramp up KL loss
+  -l learning_rate, --lr learning_rate
+                        learning rate; default=1.e-5
+  -N noise, --noise noise
+                        How much Gaussian noise to add during training
+  -o optimizer, --optimizer optimizer
+                        optimizer: adam | rmsprop
+  -p prefix, --checkpoint_prefix prefix
+                        prefix of the output checkpoint file
+                        <prefix>.<model_name>.h5
+  -s sparsity, --sparsity sparsity
+                        How much L1 regularization penalty to apply
+  -T num_trials, --max_trials num_trials
+                        max # of trials in hp optimization; default=50
+  -v, --verbose         increase the verbosity level of output
+  --val_split val_split
+                        increase the verbosity level of output
+  -W wall_time, --wall_time wall_time
+                        Wall time for HPO with CANDLE; default="24:00:00"
+  -z latent_dim, --latent_dim latent_dim
+                        Dimensionality of the latent space
+  -b batch_size, --bs batch_size
+                        batch size; default=50
+  -f output_filename, --output_filename output_filename
+                        The name of the file to store results
+  --hpo hpo_method      hpo method: random | bayesian | hyperband,
+                        default=None
+
+required arguments:
+  -m model_name, --model_name model_name
+                        model name: vae | adage
+</pre>
+The script will use as input a pre-defined file from the folder <b>data</b>. It requires specification of the network model to be used: 'vae' for the variational autoencoder and 'adage' for denoising autoencoder. <br /><br />
+
+Here are examples of the training command:
+<pre class="term">
+[user@cn3200]$ <b>train.py -m vae </b>
+...
+Train on 9413 samples, validate on 1046 samples
+Epoch 1/50
+9413/9413 [==============================] - 3s 322us/step - loss: 2918.8174 - val_loss: 2815.0830
+Epoch 2/50
+9413/9413 [==============================] - 2s 202us/step - loss: 2786.0095 - val_loss: 2780.5930
+...
+[user@cn3200]$ <b>train.py -m adage </b>
+...
+</pre>
+Hyperparameter optimization is performed by train.py with --hpo option. The code supports optimization of any of the following six hyperparameters: <br />
+- depth <br />
+- hidden_dim <br />
+- kappa <br />
+- batch_size <br />
+- num_epochs <br /> 
+- learning_rate <br />
+User can to specify the proposed ranges of variation of one or more of these hyperparameters through command line options, as comma-separated strings, without spaces.For example:
+<pre class="term">
+[user@cn3200]$ <b>./train.py -m vae --hpo random -d 1,2 --hidden_dim=100,300 -k 0.1,1. -b 50,100,200 -e 50,100 -l 0.0005,0.001  </b>
+</pre>
+If ranges of variation are specified for only a subset of these hyperparameters, then for the rest of the hyperparameters their default values will be used. This command will produce a folder of results named <b> ktuner_vae_random.</b> To extract the results sorted by objective score, run the command:
+<pre class="term">
+[user@cn3200]$ <b>parse_hpo_results.py ktuner_vae_random</b>
+score= 0.879 depth= 1 hidden_dim=300 kappa=0.100 batch_size=200 num_epochs=  50 learning_rate=0.0025
+score= 0.879 depth= 2 hidden_dim=300 kappa=1.000 batch_size=200 num_epochs=  10 learning_rate=0.001
+score=  0.88 depth= 2 hidden_dim=300 kappa=0.100 batch_size=100 num_epochs=  50 learning_rate=0.0005
+score=  0.88 depth= 2 hidden_dim=100 kappa=1.000 batch_size=200 num_epochs= 100 learning_rate=0.0025
+score=  0.88 depth= 1 hidden_dim=300 kappa=0.100 batch_size=200 num_epochs=  10 learning_rate=0.001
+score= 0.882 depth= 1 hidden_dim=100 kappa=0.010 batch_size= 50 num_epochs=  25 learning_rate=0.0025
+score= 0.882 depth= 1 hidden_dim=300 kappa=0.010 batch_size= 50 num_epochs=  10 learning_rate=0.002
+score= 0.882 depth= 1 hidden_dim=100 kappa=0.050 batch_size= 50 num_epochs=  10 learning_rate=0.001
+...
+</pre>
+In a similar way, hyperparameter optimization can be peforrmed with other types of tuners or with alternative "adage" model. For example:
+<pre class="term">
+[user@cn3200]$ <b>train.py  -m vae --hpo hyperband  -d 2,3,4,5,6,7,8,9,10 --hidden_dim 300,500,700,1000,3000 </b>
+...
+[user@cn3200]$ <b>./parse_hpo_results.py ktuner_vae_hyperband</b>
+score= 0.882 depth= 3 hidden_dim=1000 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.882 depth= 2 hidden_dim=1000 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.882 depth= 3 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.883 depth= 3 hidden_dim=700 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.883 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.883 depth= 2 hidden_dim=300 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.883 depth= 3 hidden_dim=300 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.885 depth= 2 hidden_dim=700 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.889 depth= 4 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.891 depth= 8 hidden_dim=300 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 6 hidden_dim=700 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 7 hidden_dim=300 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 9 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 7 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 5 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 5 hidden_dim=700 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 8 hidden_dim=700 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.894 depth= 6 hidden_dim=300 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.896 depth= 5 hidden_dim=300 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score= 0.917 depth= 6 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  1.02 depth=10 hidden_dim=3000 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+...
+[user@cn3200]$ <b>./train.py  -m adage --hpo bayesian  -d 2,3,4 --hidden_dim 500,700,1000 -b 50,100 </b> 
+...  
+[user@cn3200]$ <b>parse_hpo_results.py ktuner_adage_bayesian </b>
+score=  2.77 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=   2.8 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  2.86 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  2.89 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  2.89 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=   2.9 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  2.98 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.02 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.02 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.03 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.06 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.15 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.17 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.22 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.24 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.24 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.26 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=  3.27 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+score=   3.3 depth= 2 hidden_dim=500 kappa=1.000 batch_size= 50 num_epochs= 100 learning_rate=0.0005
+...
+...
+</pre>
+Prediction of the latent variables is performed by <b>predict.py</b>:
+<pre class="term">
+[user@cn3200]$ <b>predict.py -h</b>
+Using TensorFlow backend.
+usage: predict.py [-h] [-c FIRST_LAYER] [-d DEPTH] [-m model_name]
+                  [-N NOISE] [-o test_results] [-p in_prefix]
+                  [-s SPARSITY]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c FIRST_LAYER, --first_layer FIRST_LAYER
+                        Dimensionality of the first hidden layer
+  -d DEPTH, --depth DEPTH
+                        Number of layers between input and latent layer;
+                        default=1
+  -N NOISE, --noise NOISE
+                        How much Gaussian noise to add during training
+  -o test_results, --output test_results
+                        output file with test results;
+                        default='test_results.h5'
+  -p in_prefix, --checkpoint_prefix in_prefix
+                        prefix of the input checkpoint file
+                        <prefix>.<model_name>.h5
+
+required arguments:
+  -m model_name, --model_name model_name
+                        model name: vae | adage
+[user@cn3200]$ <b>predict.py -m vae</b>
+...
+[user@cn3200]$ <b>predict.py -m adage</b>
+...
+[user@cn3200]$ <b>predict.py -m rnaseq</b>
+...
+</pre>
+The latter command will use as input the preprocessed RNAseq data (of dimention 5000), rather than the data
+from the latent space, encoded by either VAE or ADAGE encoder (of dimension 100).
+<br />
+Before running the executable visualize.R, <br />
+1) <p class="alert"> Make sure you set up a
+<a href="https://hpc.nih.gov/docs/connect.html">graphical X11 connection</a>. 
+Both NX and MobaXterm work well for Windows users, while XQuartz works well for Mac users.</p>
+2) Make sure you performed the data downloading, preprocessing, training and prediction steps 
+described above. These steps produce the input data for visualizations. 
+Alternatively, you can simply download the already processed data:
+<pre class="term">
+[user@cn3200]$ <b>cp -r $TYBALT_DATA/* .</b>
+</pre>
+3) load R module and create an output folder <b>figures</b>:
+<pre class="term">
+[user@cn3200]$ <b>module load R/4.0.0 </b>
+[user@cn3200]$ <b>mkdir -p figures </b>
+</pre>
+
+Now you should be able to run the script <b>visualize.R</b> 
+with appropriate command line option. <br />
+For example, the following command visualizes a plot indicating that encoding 82 stratifies patient sex:
+<pre class="term">
+[user@cn3200]$ <b>visualize.R -g</b>
+</pre>
+<img src="tybalt/gender_encodings.png" width="600" border="0" alt="" class="center">
+<style>
+img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+The resulting image file will be stored in the output folder <b>figures</b>. <br />
+Next command produces a plot indicating that encodings 53 and 66 together separate melanoma tumors.
+<pre class="term">
+[user@cn3200]$ <b>visualize.R -t</b>
+</pre>
+<img src="tybalt/sample_type_encodings.png" width="600" border="0" alt="">
+<br />
+With option -v, the script will visualize the results of tSNE applied to the data encoded by VAE, i.e. the input data shape is (10459, 100):
+<pre class="term">
+[user@cn3200]$ <b>visualize.R -v</b>
+</pre>
+<img src="tybalt/tsne_vae.png" width="600" border="0" alt="">
+<br />
+The following command will visualize similar results produced by tSNE applied to the original, unencoded RNAseq data, with shape (10459, 5000):
+<pre class="term">
+[user@cn3200]$ <b>visualize.R -r</b>
+</pre>
+<img src="tybalt/tsne_rnaseq.png" width="600" border="0" alt="">
+Likewise, with option -a the script will visualize the tSNE results using as input the data encoded by denoising autoencoder with <b>adage</b> model, with input data shape = (10459, 100)):  
+<pre class="term">
+[user@cn3200]$ <b>visualize.R -a</b>
+</pre>
+<img src="tybalt/tsne_adage.png" width="600" border="0" alt="">
+<br />
+
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,290 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'juicer on Biowulf';</script>
+<div class="title">juicer on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style='width: 70%;'>
+<p>Juicer is a system for analyzing loop-resolution Hi-C experiments. It was
+developed in the Aiden lab at Baylor College of Medicine/Rice University. [<A
+href="http://aidenlab.org/juicer/docs.html"> Juicer website</a>]</p>
+
+<p>The juicer pipeline submits jobs to the cluster and then exits. It should
+therefore be run on the login node. Individual tools can be run as batch jobs
+or interactively.</p>
+
+<p>Juicer depends on reference files (bwa index plus chromosome sizes file) and
+restriction enzyme files that are part of the central install. You can build
+additional references yourself or ask staff to generate them centrally. See
+<code>$JUICER/references</code> and <code>$JUICER/restriction_sites</code> for
+available reference data.</p>
+
+<p>In addition to juicer, juicebox for visualizinig juicer contact maps
+is also available as a separate module. Note, however, that juicebox
+might be better run on your local desktop.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Neva C. Durand, Muhammad S. Shamim, Ido Machol, Suhas S. P. Rao, 
+    Miriam H. Huntley, Eric S. Lander, and Erez Lieberman Aiden. 
+    <em>Juicer provides a one-click system for analyzing loop-resolution
+        Hi-C experiments.</em>. Cell Systems 3, 2016.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/27467249">PubMed</a> &nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5846465/">PMC</a>&nbsp;|&nbsp; 
+    <a href="https://www.sciencedirect.com/science/article/pii/S2405471216302198?via%3Dihub">Journal</a>
+    </li>
+</ul>
+
+</div> <!-- 70% div -->
+
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li>Juicer <a href="https://github.com/theaidenlab/juicer">GitHub repo</a></li>
+    <li>Juicer <a href="https://github.com/theaidenlab/juicer/wiki">wiki</a></li>
+    <li>Juicer <a href="http://aidenlab.org/documentation.html">Home</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Names: juicer and juicebox (see 
+    <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Unusual environment variables set: <code>$JUICER</code></li>
+    <li>Reference data in <code>$JUICER/references</code> and 
+    <code>$JUICER/restriction_sites</code>.</li>
+    <li>Example data in <code>$JUICER_TEST_DATA</code></li>
+</ul>
+<P>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>The juicer pipeline works by creating a series of batch jobs and submitting
+them all at once using job dependencies. The main script is very light weight
+and has to be run on the login node.</p>
+
+<p>First create a directory for your Juicer run. A subdirectory called 'fastq'
+within there should contain the fastq files. For example:</p>
+
+<pre class="term">
+/data/user/juicer_test
++-- fastq
+|   +-- reads_R1.fastq.gz
+|   +-- reads_R2.fastq.gz
+</pre>
+
+<p>The fastq files must be called <code>filename_R1.fastq[.gz]</code> and
+<code>filename_R2.fastq[.gz]</code>, as those names are built into the script. If
+your fastq files have different names, you can rename them or create symlinks.
+</p>
+
+<p>For your first run we recommend using the test data, which can be copied
+from <code>$JUICER_TEST_DATA</code> and uncompressed:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>cd /data/user/juicer_test</b>
+[user@biowulf]$ <b>cp -r $JUICER_TEST_DATA/fastq .</b>
+[user@biowulf]$ <b>ls -lh</b>
+total 1.2G
+-rw-r--r-- 1 user group 157M May  9 10:08 HIC003_S2_L001_R1_001.fastq.gz
+-rw-r--r-- 1 user group 167M May  9 10:08 HIC003_S2_L001_R2_001.fastq.gz
+</pre>
+
+<p> Juicer will create subdirectories <tt>aligned</tt>, <tt>HIC_tmp</tt>,
+<tt>debug</tt>, <tt>splits</tt>.  The <tt>HIC_tmp</tt> subdirectory will get
+deleted at the end of the run.</p>
+
+<p>By default, running <code>juicer.sh</code> with no options will use the hg19
+reference file, and the DpnII restriction site map:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>module load juicer</b>
+[user@biowulf]$ <b>juicer.sh</b>
+Running juicer version 1.5.6                                                                                          
+(-: Looking for fastq files...fastq files exist:                                 
+-rw-r--r-- 1 user group 157M Feb 10  2017 /data/user/juicer_test/fastq/HIC003_S2_L001_R1_001.fastq.gz
+-rw-r--r-- 1 user group 167M Feb 10  2017 /data/user/juicer_test/fastq/HIC003_S2_L001_R2_001.fastq.gz
+(-: Aligning files matching /data/user/juicer_test/fastq/*_R*.fastq*
+ in queue norm to genome hg19 with site file /usr/local/apps/juicer/juicer-1.5.6/restriction_sites/hg19_DpnII.txt
+(-: Created /data/user/test_data/juicer/test_pipeline/splits and /data/user/test_data/juicer/test_pipeline/aligned
+.                                                                                                                 
+(-: Starting job to launch other jobs once splitting is complete
+Submitted ligation counting job a1525867074HIC003_S2_L001_001.fastq_Count_Ligation
+Submitted align1 job a1525867074_align1_HIC003_S2_L001_001.fastq.gz
+Submitted align2 job a1525867074_align2_HIC003_S2_L001_001.fastq.gz
+Submitted merge job a1525867074_merge_HIC003_S2_L001_001.fastq.gz
+Submitted check job a1525867074_check
+Submitted fragmerge job a1525867074_fragmerge
+Submitted dedup_guard job in held state a1525867074_dedup_guard
+Submitted dedup job a1525867074_dedup
+Submitted post_dedup job a1525867074_post_dedup
+Submitted dupcheck job a1525867074_dupcheck
+Submitted stats job a1525867074_stats
+Submitted hic job a1525867074_hic
+Submitted hic job a1525867074_hic30
+Submitted hiccups_wrap job a1525867074_hiccups_wrap
+Submitted arrowhead job a1525867074_arrowhead_wrap
+Submitted fincln job a1525867074_prep_done
+(-: Finished adding all jobs... Now is a good time to get that cup of coffee..
+</pre>
+
+
+<p> After the juicer.sh script exits, you should see a set of jobs in running
+and queued state, with dependencies:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>squeue -u user</b>
+ JOBID PARTITION     NAME   USER ST    TIME  NODES NODELIST(REASON)
+466500      norm a1525867   user PD    0:00      1 (None)
+466501      norm a1525867   user PD    0:00      1 (None)
+466502      norm a1525867   user PD    0:00      1 (Dependency)
+466504      norm a1525867   user PD    0:00      1 (Dependency)
+466498      norm a1525867   user PD    0:00      1 (None)
+466499      norm a1525867   user PD    0:00      1 (None)
+466506      norm a1525867   user PD    0:00      1 (Dependency)
+466507      norm a1525867   user PD    0:00      1 (Dependency)
+466508      norm a1525867   user PD    0:00      1 (Dependency)
+466509      norm a1525867   user PD    0:00      1 (Dependency)
+466510      norm a1525867   user PD    0:00      1 (Dependency)
+466511      norm a1525867   user PD    0:00      1 (Dependency)
+466512      norm a1525867   user PD    0:00      1 (Dependency)
+466513      norm a1525867   user PD    0:00      1 (Dependency)
+466514      norm a1525867   user PD    0:00      1 (Dependency)
+466503      norm a1525867   user PD    0:00      1 (Dependency)
+466505      norm a1525867   user PD    0:00      1 (JobHeldUser)
+</pre>
+
+<p>You can follow the progress of the job by watching the jobs proceed, and by
+examining the files in the <tt>debug</tt> subdirectory.</p>
+
+<p>In addition to running the whole pipeline, individual batch jobs can also be run
+as usual. For example, to use the <code>juicer_tools pre</code> command to
+create a <code>.hic</code> format file from your own processed data create
+a batch script similar to the following (juicertools.sh):</p>
+
+<pre class="term">
+#! /bin/bash
+module load juicer/1.6
+juicer_tools pre $JUICER_TEST_DATA/input.txt.gz test.hic hg19
+</pre>
+
+<p>We have modified juicer_tools to accept java options starting with -X. This
+allows users to run with larger memory - for example <code>juicer_tools -Xmx48g ...</code></p>
+
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=18g juicertools.sh</pre>
+
+
+<p>Some of the juicer_tools require GPUs and therefore have to be submitted
+to the gpu partition. For example (hiccups.sh):</p>
+
+<Pre class="term">
+#!/bin/bash
+
+module load juicer
+module load CUDA/8.0
+juicer_tools  hiccups -m 500 -r 5000 -k KR -f 0.1 -p 4 \
+    -i 10 -t 0.01,1.5,1.75,2 --ignore_sparsity test.hic output
+
+# use juicer_tools48g if more memory is required
+</pre>
+
+<p> Submit this job to a GPU node with:</p>
+<pre class="term">
+[user@biowulf]$ sbatch  -p gpu --mem=18g  --gres=gpu:k80:1 hiccups.sh
+</pre>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>The juicer pipeline is not suitable for an interactive job. However,
+individual tools can be run interactively.  For this, allocate an <a
+href="/docs/userguide.html#int">interactive session</a> and run the program.
+Sample session:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=18g --gres=gpu:k80:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load juicer</b>
+[user@cn3144]$ <b>module load CUDA/8.0</b>
+[user@cn3144]$ <b>juicer_tools hiccups -m 500 -r 5000 -k KR -f 0.1 -p 4 \
+                    -i 10 -t 0.01,1.5,1.75,2 test.hic test_output</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>In addition, an interactive session can also be used to run juicebox,
+the visualization tool for HiC data. Note that X11 forwarding has to
+be set up for this to work which will be the case if the sinteractive 
+session is started from an NX session.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=6g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load juicebox</b>
+[user@cn3144]$ <b>juicebox</b>
+</pre>
+
+<p>Should open the juicebox graphical user interface.</p>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>The juicer pipeline isn't suitable for swarm. However, individual tools
+can be run as a swarm. For this, create a swarmfile (e.g. juicer.swarm). For example:</p>
+
+<pre class="term">
+juicer_tools pre sample1.txt.gz sample1.hic hg19
+juicer_tools pre sample2.txt.gz sample2.hic hg19
+juicer_tools pre sample3.txt.gz sample3.hic hg19
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f juicer.swarm -g 18 -t 1 --module juicer/1.5.6</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module juicer <td>Loads the juicer module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

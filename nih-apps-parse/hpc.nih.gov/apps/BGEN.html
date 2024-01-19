@@ -1,0 +1,155 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'conifer: finding copy number variants and genotyping the copy-number of duplicated genes.';</script>
+<div class="title">BGEN: a library to support binary file format for imputed genotype and haplotype data.</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The BGEN library contains a reference implementation of the BGEN format, written in C++. The library can be used as the basis for BGEN support in other software.
+<br />
+<br />
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Gavin Band, Jonathan Marchini  <br />
+<i>BGEN: a binary file format for imputed genotype and haplotype data </i> <br />
+<a href="https://www.biorxiv.org/content/10.1101/308296v2.full">bioArxiv 308296; doi: https://doi.org/10.1101/308296 </a>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://enkre.net/cgi-bin/code/bgen/dir?ci=trunk">BGEN Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>BGEN</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<br />
+<li>Unusual environment variables set
+  <ul>
+    <li><b>BGEN_HOME</b>&nbsp; installation directory</li>
+    <li><b>BGEN_SRC</b>&nbsp; source code directory</li>
+    <li><b>BGEN_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn3144 ~]$ <b>module load BGEN</b>
+[+] Loading BGEN 20230420 
+[user@cn3144 ~]$ <b>bgenix -help</b>
+
+Welcome to bgenix
+(version: 1.1.7, revision )
+
+(C) 2009-2017 University of Oxford
+
+Usage: bgenix &lt;options&gt;
+
+OPTIONS:
+Input / output file options:
+                  -g &lt;a&gt;: Path of bgen file to operate on.  (An optional form where "-g" is omitted and the filename is
+                          specified as the first argument, i.e. bgenix &lt;filename&gt;, can also be used).
+                  -i &lt;a&gt;: Path of index file to use. If not specified, bgenix will look for an index file of the form '&lt;f-
+                          ilename&gt;.bgen.bgi'  where '&lt;filename&gt;.bgen' is the bgen file name specified by the -g option.
+              -table &lt;a&gt;: Specify the table (or view) that bgenix should read the file index from. This only affects rea-
+                          ding the index file.  The named table or view should have the same schema as the Variant table
+                          written by bgenix on index creation.  Defaults to "Variant".
+
+Indexing options:
+                -clobber: Specify that bgenix should overwrite existing index file if it exists.
+                  -index: Specify that bgenix should build an index for the BGEN file specified by the -g option.
+             -with-rowid: Create an index file that does not use the 'WITHOUT ROWID' feature. These are suitable for use
+                          with sqlite versions &lt; 3.8.2, but may be less efficient.
+
+Variant selection options:
+  -excl-range &lt;a&gt; &lt;b&gt;...: Exclude variants in the specified genomic interval from the output. See the description of -in-
+                          cl-range for details.If this is specified multiple times, variants in any of the specified ran-
+                          ges will be excluded.
+  -excl-rsids &lt;a&gt; &lt;b&gt;...: Exclude variants with the specified rsid(s) from the output. See the description of -incl-rang-
+                          e for details.If this is specified multiple times, variants with any of the specified ids will
+                          be excluded.
+  -incl-range &lt;a&gt; &lt;b&gt;...: Include variants in the specified genomic interval in the output. (If the argument is the name
+                          of a valid readable file, the file will be opened and whitespace-separated rsids read from it
+                          instead.) Each interval must be of the form &lt;chr&gt;:&lt;pos1&gt;-&lt;pos2&gt; where &lt;chr&gt; is a chromosome id-
+                          entifier  and pos1 and pos2 are positions with pos2 &gt;= pos1.  One of pos1 and pos2 can also be
+                          omitted, in which case the range extends to the start or end of the chromosome as appropriate.
+                          Position ranges are treated as closed (i.e. &lt;pos1&gt; and &lt;pos2&gt; are included in the range).If th-
+                          is is specified multiple times, variants in any of the specified ranges will be included.
+  -incl-rsids &lt;a&gt; &lt;b&gt;...: Include variants with the specified rsid(s) in the output. If the argument is the name of a va-
+                          lid readable file, the file will be opened and whitespace-separated rsids read from it instead.I-
+                          f this is specified multiple times, variants with any of the specified ids will be included.
+
+Output options:
+  -compression-level &lt;a&gt;: Zlib compression level to use when transcoding to BGEN v1.1 format.  Defaults to "9".
+                   -list: Suppress BGEN output; instead output a list of variants.
+                    -v11: Transcode to BGEN v1.1 format.  (Currently, this is only supported if the input is in BGEN v1.2
+                          format with 8 bits per probability, all samples are diploid, and all variants biallelic).
+                    -vcf: Transcode to VCF format.  VCFs will have GP field (or 'HP' field for phased data), and a GT fi-
+                          eld inferred from the probabilities by threshholding.
+[user@cn3144 ~]$ <b>cat-bgen -help</b>
+
+Welcome to cat-bgen
+
+(C) 2009-2017 University of Oxford
+
+Usage: cat-bgen &lt;options&gt;
+
+OPTIONS:
+Input / output file options:
+                       -clobber: Specify that cat-bgen should overwrite existing output file if it exists.
+                  -g &lt;a&gt; &lt;b&gt;...: Path of bgen file(s) to concatenate. These must all be bgen files containing the same s-
+                                 et of samples (in the same order). They must all be the same bgen version and be stored
+                                 with the same flags.
+                        -og &lt;a&gt;: Path of bgen file to output.
+  -omit-sample-identifier-block: Specify that cat-bgen should omit the sample identifier block in the output, even if on-
+                                 e is present in the first file specified to -og.
+             -set-free-data &lt;a&gt;: Specify that cat-bgen should set free data in the resulting file to the given string va-
+                                 lue.
+[user@cn3144 ~]$ <b>edit-bgen -help</b>
+
+Welcome to edit-bgen
+
+(C) 2009-2017 University of Oxford
+
+Usage: edit-bgen &lt;options&gt;
+
+OPTIONS:
+Input / output file options:
+               -g &lt;a&gt; &lt;b&gt;...: Path of bgen file(s) to edit.
+
+Actions:
+                     -really: Really make changes (without this option a dry run is performed with no changes to files.)
+  -remove-sample-identifiers: Remove sample identifiers from the file.  This zeroes out the sample ID block, if present.
+          -set-free-data &lt;a&gt;: Set new 'free data' field. The argument must be a string with length exactly equal to the
+                              length of the existing free data field in each edited file.
+</pre>
+<br />
+End the interactive session:
+<pre class="term">
+[user@cn3111 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

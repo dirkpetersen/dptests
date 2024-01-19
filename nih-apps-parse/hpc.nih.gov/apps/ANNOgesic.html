@@ -1,0 +1,204 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ANNOgesic: Accurate RNA-Seq-based annotation of bacterial and archaeal genomes';</script>
+<div class="title"><b>ANNOgesic: Accurate RNA-Seq-based annotation of bacterial and archaeal genomes</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Processing and integrating RNA-Seq data in order to
+generate high-resolution annotations is challenging, time consuming and requires
+numerous different steps. ANNOgesic is a powerful and modular
+pipeline that provides the required analyses and simplifies
+RNA-Seq-based bacterial and archaeal genome annotation. It predicts and
+annotates numerous features, including small non-coding RNAs, with high
+precision.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Sung-Huan Yu, Jörg Vogel and Konrad U.Förstner, 2018.<br />
+<i>ANNOgesic: a Swiss army knife for the RNA-seq based
+annotation of bacterial/archaeal genomes.</i> <br />
+<a href="https://academic.oup.com/gigascience/article/7/9/giy096/5087959">GigaScience, DOI:10.1093/gigascience/giy096, PMID:30169674.</a>
+<li>Sung-Huan Yu, Jörg Vogel and Konrad Ulrich Förstner, <br />
+<i>ANNOgesic: A Pipeline To Translate Bacterial/Archaeal RNA-Seq Data Into High-Resolution Genome Annotations. </i><br /><a href="https://www.biorxiv.org/content/early/2017/05/29/143081">bioRxiv preprint </a>first posted online May. 27, 2017; doi: http://dx.doi.org/10.1101/143081i.
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://annogesic.readthedocs.io/en/latest/">ANNOgesic documentation</a></li>
+<li><a href="https://pypi.org/project/ANNOgesic/">ANNOgesic project page</a></li>
+<li><a href="https://github.com/Sung-Huan/ANNOgesic">ANNOgesic Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>ANNOgesic</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Implemented as a Singularity container
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>AG_HOME</b>&nbsp; ANNOgesic installation directory</li>
+    <li><b>AG_BIN </b>&nbsp; &nbsp; &nbsp; ANNOgesic executable directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@cn3316 ~]$ <b>module load ANNOgesic</b>
+[+] Loading singularity  on cn3316 
+[+] Loading ANNOgesic 1.0.2  ...
+</pre>
+At this point, user has two options:
+<br/> 1) typing the command
+<pre class="term">
+[user@cn3316 user]$ <b>ag </b>
+</pre>
+(without arguments) will bring the user into the singularity container shell environment
+<pre class="term">
+Singularity ANNOgesic.sqsh:~>
+</pre>
+from which one can run any script or command accessible within the container on any data accessible from inside the container.  For example, the following commands will run built-in tests:
+<pre class="term">
+Singularity ANNOgesic.sqsh:~> <b>python /ANNOgesic/tests/test_operon.py </b>
+Detecting operons of test
+Warning: No proper file - test.gff
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.009s
+<br />
+Singularity ANNOgesic.sqsh:~> <b>python3 /ANNOgesic/tests/test_plot_PPI.py </b>
+.......Plotting nusB
+..
+----------------------------------------------------------------------
+Ran 9 tests in 1.567s
+
+OK
+</pre>
+To exit from the container shell environment, type:
+<pre class="term">Singularity ANNOgesic.sqsh:~> <b>exit</b>
+</pre>
+<br />
+2) typing the same command followed by another supported command as an additional aggument will result in performiing the second command without explicitly entering the container shell. For example:
+<pre class="term">
+[user@cn3316 ~]$ <b>ag python /ANNOgesic/tests/test_gen_svg.py </b>
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.004s
+
+OK
+[user@cn3316 ~]$ <b>ag python3 /ANNOgesic/tests/test_converter.py </b>
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 0.018s
+
+OK
+</pre>
+In particular, the following command will display ANNOgesic help message:
+<pre class="term">
+[user@cn3316 ~]$ <b>ag annogesic --help </b>
+
+       ___    _   ___   ______                  _     
+      /   |  / | / / | / / __ \____ ____  _____(_)____ \
+  __ / /| | /  |/ /  |/ / / / / __ `/ _ \/ ___/ / ___/__\
+ |  / ___ |/ /|  / /|  / /_/ / /_/ /  __(__  ) / /__    /
+ | /_/  |_/_/ |_/_/ |_/\____/\__, /\___/____/_/\___/   /
+ |                          /____/ 
+ |__________________
+ |_____________________
+ |________________________________________________
+ |                                                \
+ |________________________________________________/
+
+usage: annogesic [-h] [--version]
+                 {create,get_input_files,update_genome_fasta,annotation_transfer,tss_ps,optimize_tss_ps,terminator,transcript,utr,srna,sorf,promoter,operon,circrna,go_term,srna_target,snp,ppi_network,localization,riboswitch_thermometer,crispr,merge_features,screenshot,colorize_screenshot_tracks}
+                 ...
+
+positional arguments:
+  {create,get_input_files,update_genome_fasta,annotation_transfer,tss_ps,optimize_tss_ps,terminator,transcript,utr,srna,sorf,promoter,operon,circrna,go_term,srna_target,snp,ppi_network,localization,riboswitch_thermometer,crispr,merge_features,screenshot,colorize_screenshot_tracks}
+                        commands
+    create              Create a project
+    get_input_files     Get required files. (i.e. annotation files, fasta
+                        files)
+    update_genome_fasta
+                        Get fasta files of reference genomes if the reference
+                        sequences do not exist.
+    annotation_transfer
+                        Transfer the annotations from a closely related
+                        species genome to a target genome.
+    tss_ps              Detect TSSs or processing sites.
+    optimize_tss_ps     Optimize TSSs or processing sites based on manual
+                        detected ones.
+    terminator          Detect rho-independent terminators.
+    transcript          Detect transcripts based on coverage file.
+    utr                 Detect 5'UTRs and 3'UTRs.
+    srna                Detect intergenic, antisense and UTR-derived sRNAs.
+    sorf                Detect expressed sORFs.
+    promoter            Discover promoter motifs.
+    operon              Detect operons and sub-operons.
+    circrna             Detect circular RNAs.
+    go_term             Extract GO terms from Uniprot.
+    srna_target         Detect sRNA-mRNA interactions.
+    snp                 Detect SNP/mutation and generate fasta file if
+                        mutations were found.
+    ppi_network         Detect protein-protein interactions suported by
+                        literature.
+    localization        Predict subcellular localization of proteins.
+    riboswitch_thermometer
+                        Predict riboswitches and RNA thermometers.
+    crispr              Predict CRISPR related RNAs.
+    merge_features      Merge all features to one gff file.
+    screenshot          Generate screenshots for selected features using IGV.
+    colorize_screenshot_tracks
+                        Add color information to screenshots (e.g. useful for
+                        dRNA-Seq based TSS and PS detection. It only works
+                        after running "screenshot" (after running batch
+                        script).
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version, -v         show version
+
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. ANNOgesic.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load ANNOgesic
+ag python  /ANNOgesic/tests/mock_gff3.py
+ag python  /ANNOgesic/tests/mock_helper.py
+ag python  /ANNOgesic/tests/test_blast_class.py
+ag python  /ANNOgesic/tests/test_change_db_format.py
+ag python  /ANNOgesic/tests/test_check_orphan.py
+ag python3 /ANNOgesic/tests/test_circRNA.py
+ag python  /ANNOgesic/tests/test_circrna.py
+ag python  /ANNOgesic/tests/test_color_png.py
+ag python  /ANNOgesic/tests/test_combine_frag_tex.py
+ag python3 /ANNOgesic/tests/test_combine_gff.py
+ag python  /ANNOgesic/tests/test_compare_sRNA_sORF.py
+ag python3 /ANNOgesic/tests/test_converter.py
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] ANNOgesic.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

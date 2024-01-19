@@ -1,0 +1,94 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FEBio: Finite Elements for Biomechanics';</script>
+<div class="title">FEBio: Finite Elements for Biomechanics</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+FEBio software suite implement a nonlinear implicit finite element (FE) framework, 
+designed specifically for analysis in computational solid biomechanics. 
+FEBio offers modeling scenarios, constitutive models, and boundary conditions, 
+which are relevant to numerous applications in biomechanics. 
+The open-source FEBio software is written in C++, 
+with particular attention to scalar and parallel performance on modern computer architectures. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Steve A. Maas, Benjamin J. Ellis, Gerard A. Ateshian and Jeffrey A. Weiss <br />
+<i>FEBio: Finite Elements for Biomechanics </i> <br />
+<a href="https://asmedigitalcollection.asme.org/biomechanical/article/134/1/011005/455684/FEBio-Finite-Elements-for-Biomechanics">Journal of Biomechanical Engineering, Vol.134 (2012) </a> 
+
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://mrl.sci.utah.edu/software/febio">FEBio home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>FEBio</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set
+  <ul>
+    <li><b>FEBIO_HOME</b>&nbsp; installation directory</li>
+    <li><b>FEBIO_BIN</b>&nbsp; executable   directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 6 --mem 15g --gres=lscratch:20</b>
+[user@cn3144 ~]$ <b>module load FEBio</b>
+[+] Loading FEBio  v4.0
+[user@cn3144 ~]$ <b> febio4 </b>
+===========================================================================
+         ________    _________   _______       __     _________
+        |        |\ |        |\ |       \\    |  |\  /         \\
+        |    ____|| |    ____|| |    __  ||   |__|| |    ___    ||
+        |   |\___\| |   |\___\| |   |\_| ||    \_\| |   //  \   ||
+        |   ||__    |   ||__    |   ||_| ||   |  |\ |  ||    |  ||
+        |       |\  |       |\  |         \\  |  || |  ||    |  ||
+        |    ___||  |    ___||  |    ___   || |  || |  ||    |  ||
+        |   |\__\|  |   |\__\|  |   |\__|  || |  || |  ||    |  ||
+        |   ||      |   ||___   |   ||__|  || |  || |   \\__/   ||
+        |   ||      |        |\ |          || |  || |           ||
+        |___||      |________|| |_________//  |__||  \_________//
+
+      F I N I T E   E L E M E N T S   F O R   B I O M E C H A N I C S
+
+  version 4.0.0
+  FEBio is a registered trademark.
+  copyright (c) 2006-2022 - All rights reserved
+
+===========================================================================
+
+Default linear solver: skyline
+
+febio&gt;
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,186 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'jvarkit on Biowulf';</script>
+<div class="title">jvarkit on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style='width: 70%'>
+    <p> Java tools for bioinformatics. Tools are not described in detail here see
+    the author's <a href="http://lindenb.github.io/jvarkit/">documentation</a>.
+    Note that all tools are compiled though some of them are pretty lab specific
+    or deprecated.</p>
+
+    <h3>References:</h3>
+    <ul>
+        <li>Lindenbaum, Pierre. <em>JVarkit: java-based utilities for Bioinformatics.</em>. 
+        <a href="http://dx.doi.org/10.6084/m9.figshare.1425030">
+            http://dx.doi.org/10.6084/m9.figshare.1425030</a></li>
+    </ul>
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>jvarkit on <a href="https://github.com/lindenb/jvarkit">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: jvarkit (see <a href="/apps/modules.html">the modules page</a> 
+    for more information)</li>
+    <li>This is a collection of jar files all located in <code>$JVARKIT_JARPATH</code></li>
+    <li>Example files in <code>$JVARKIT_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=6g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load jvarkit</b>
+[user@cn3144]$ <b>cp -L ${JVARKIT_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>java -jar $JVARKIT_JARPATH/backlocate.jar --help</b>
+Usage: backlocate [options] Files
+  Options:
+  * -g, --gtf
+      A GTF (General Transfer Format) file. See
+      https://www.ensembl.org/info/website/upload/gff.html . Please note that
+      CDS are only detected if a start and stop codons are defined.
+    -h, --help
+      print help and exit
+    --helpFormat
+      What kind of help. One of [usage,markdown,xml].
+    -o, --out
+      Output file. Optional . Default: stdout
+    -p, --printSeq
+      print mRNA & protein sequences
+      Default: false
+  * -R, --reference
+      Indexed fasta Reference file. This file must be indexed with samtools
+      faidx and with picard CreateSequenceDictionary
+    --version
+      print version and exit
+
+
+[user@cn3144]$ <b>gc=/fdb/GENCODE/Gencode_human/release_35</b>
+[user@cn3144]$ <b>gtf=$gc/gencode.v35.primary_assembly.annotation.gtf </b>
+[user@cn3144]$ <b>genome=$gc/GRCh38.primary_assembly.genome.fa</b>
+
+[user@cn3144]$ <b>echo -e "NOTCH2\tPro1090M\tInteresting" \
+                    | java -jar $JVARKIT_JARPATH/backlocate.jar \
+                        --gtf $gtf -R $genome \
+                    | grep -v "##" \
+                    | java -jar $JVARKIT_JARPATH/prettytable.jar </b>
++------------+-----+--------------+-----+-----------------+-------------------+-------------------+---------------+---------------+------------+----------------------+-------------+------------+-------------------+--------------------------+----------+-----------------+
+| #User.Gene | AA1 | petide.pos.1 | AA2 | transcript.name | transcript.id     | transcript.strand | transcript.AA | index0.in.rna | wild.codon | potential.var.codons | base.in.rna | chromosome | index0.in.genomic | exon                     | messages | extra.user.data |
++------------+-----+--------------+-----+-----------------+-------------------+-------------------+---------------+---------------+------------+----------------------+-------------+------------+-------------------+--------------------------+----------+-----------------+
+| NOTCH2     | Pro | 1090         | Met | NOTCH2          | ENST00000256646.7 | -                 | P             | 3267          | CCA        | .                    | C           | chr1       | 119937925         | ENST00000256646.7.Exon20 | .        | Interesting     |
+| NOTCH2     | Pro | 1090         | Met | NOTCH2          | ENST00000256646.7 | -                 | P             | 3268          | CCA        | .                    | C           | chr1       | 119937924         | ENST00000256646.7.Exon20 | .        | Interesting     |
+| NOTCH2     | Pro | 1090         | Met | NOTCH2          | ENST00000256646.7 | -                 | P             | 3269          | CCA        | .                    | A           | chr1       | 119937923         | ENST00000256646.7.Exon20 | .        | Interesting     |
++------------+-----+--------------+-----+-----------------+-------------------+-------------------+---------------+---------------+------------+----------------------+-------------+------------+-------------------+--------------------------+----------+-----------------+
+
+[user@cn3144]$ <b>paste &lt;(gunzip -c r1.fastq.gz | paste - - - -) &lt;(gunzip -c r2.fastq.gz | paste - - - -)\
+                    | tr "\t" "\n" \
+                    | java -jar $JVARKIT_JARPATH/fastqjs.jar \
+                        -i -e 'pair.get(0).getReadString().contains("GTTTAAAC") &amp;&amp; pair.get(1).getReadString().contains("GTTTAAAC") ' \ 
+                    &gt; example.fastq </b>
+[user@cn3144]$ <b>cat &lt;&lt;__EOF__ > filter.js</b>
+// prints a VARIATION if two samples at least have a DP<200 
+function myfilterFunction()
+    {
+    var samples=header.genotypeSamples;
+    var countOkDp=0;
+
+
+    for(var i=0; i< samples.size();++i)
+        {
+        var sampleName=samples.get(i);
+        if(! variant.hasGenotype(sampleName)) continue;
+        var genotype = variant.genotypes.get(sampleName);
+        if( ! genotype.hasDP()) continue;
+        var dp= genotype.getDP();
+        if(dp < 200 ) countOkDp++;
+        }
+    return (countOkDp>2)
+    }
+myfilterFunction();
+<b>__EOF__</b>   
+[user@cn3144]$ <b>java -jar $JVARKIT_JARPATH/vcffilterjs.jar -f filter.js gatk.vcf</b>
+...
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  BLANK   NA12878 NA12891 NA12892 NA19238  NA19239 NA19240
+chr22   42526449        .       T       A       151.47  .       AC=1;AF=0.071;AN=14;BaseQRankSum=2.662;DP=1226;DS;Dels=0.00;FS=0.000;HRun=0;HaplotypeScore=41.2083;MQ=240.47;MQ0=0;MQRankSum=0.578;QD=4.89;ReadPosRankSum=3.611   GT:AD:DP:GQ:PL  0/1:23,8:31:99:190,0,694        0/0:188,0:190:99:0,478,5376     0/0:187,0:187:99:0,493,5322      0/0:247,0:249:99:0,634,6728     0/0:185,0:185:99:0,487,5515     0/0:202,0:202:99:0,520,5857      0/0:181,1:182:99:0,440,5362
+chr22   42526634        .       T       C       32.60   .       AC=1;AF=0.071;AN=14;BaseQRankSum=1.147;DP=1225;DS;Dels=0.00;FS=0.000;HRun=0;HaplotypeScore=50.0151;MQ=240.65;MQ0=0;MQRankSum=1.151;QD=1.30;ReadPosRankSum=1.276   GT:AD:DP:GQ:PL  0/1:21,4:25:71:71,0,702 0/0:187,2:189:99:0,481,6080     0/0:233,0:233:99:0,667,7351      0/0:230,0:230:99:0,667,7394     0/0:174,1:175:99:0,446,5469     0/0:194,2:196:99:0,498,6239      0/0:174,0:175:99:0,511,5894
+chr22   42527793        rs1080989       C       T       3454.66 .       AC=2;AF=0.167;AN=12;BaseQRankSum=-3.007;DB;DP=1074;DS;Dels=0.01;FS=0.000;HRun=1;HaplotypeScore=75.7865;MQ=209.00;MQ0=0;MQRankSum=3.014;QD=9.36;ReadPosRankSum=0.618       GT:AD:DP:GQ:PL  ./.     0/1:72,90:162:99:1699,0,1767    0/1:103,96:202:99:1756,0,2532    0/0:188,0:188:99:0,526,5889     0/0:160,0:160:99:0,457,4983     0/0:197,0:198:99:0,544,6100      0/0:156,0:156:99:0,439,5041
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. jvarkit.sh), which uses the input file 'jvarkit.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load jvarkit/20200713
+paste &lt;(gunzip -c r1.fastq.gz | paste - - - -) &lt;(gunzip -c r2.fastq.gz | paste - - - -) \
+    | tr "\t" "\n" \
+    | java -jar $JVARKIT_JARPATH/fastqjs.jar \
+        -i -e 'pair.get(0).getReadString().contains("GTTTAAAC") &amp;&amp; pair.get(1).getReadString().contains("GTTTAAAC") ' \ 
+    &gt; example.fastq
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=2g jvarkit.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. jvarkit.swarm). For example:</p>
+
+<pre class="term">
+echo -e "NOTCH2\tP1090M\tInteresting" | java -jar $JVARKIT_JARPATH/backlocate.jar --gtf hg19.gtf -R hg19.fa &gt; notch_P1090M
+echo -e "NOTCH2\tP1090I\tInteresting" | java -jar $JVARKIT_JARPATH/backlocate.jar --gtf hg19.gtf -R hg19.fa &gt; notch_P1090I
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f jvarkit.swarm -g 2 --module jvarkit/20200713</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module jvarkit <td>Loads the jvarkit module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

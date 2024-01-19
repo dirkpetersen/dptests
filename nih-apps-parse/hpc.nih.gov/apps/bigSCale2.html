@@ -1,0 +1,108 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bigSCale2: Framework for clustering, phenotyping, pseudotiming and inferring gene regulatory networks from single cell data';</script>
+<div class="title"><b>bigSCale2: Framework for clustering, phenotyping, pseudotiming and inferring gene regulatory networks from single cell data</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+bigSCale is a complete framework for the analysis and visualization of single cell data. It allows to cluster, phenotype, perform pseudotime analysis, infer gene regulatory networks and reduce large datasets in smaller datasets with higher quality.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Giovanni Iacono, Elisabetta Mereu, Amy Guillaumet-Adkins, Roser Corominas, Ivon Cuscó, Gustavo Rodríguez-Esteban, Marta Gut, Luis Alberto Pérez-Jurado, Ivo Gut and Holger Heyn<br />
+<i>bigSCale: an analytical framework for big-scale single-cell data</i> <br />
+<a href="https://genome.cshlp.org/content/28/6/878.full">Genome Research</a>     <b>28</b>:878–890.
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/dfajar2/bigSCale">bigSCale GitHub page</a></li>
+<li><a href="https://github.com/iaconogi/bigSCale2">bigSCale2 GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>When you execute the bigSCale2 command, a new shell is opened for you within a Singularity container. Your environment will change and you will have access to a different set of commands and executables. Please remember to exit this new shell when you are finished with your session.
+<li>Module Name: <tt>bigSCale2</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set 
+  <ul>
+    <li><b>BIGSCALE2_HOME</b>&nbsp; bigSCale2 installation directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --mem=4g</b>
+salloc.exe: Pending job allocation 49998864
+salloc.exe: job 49998864 queued and waiting for resources
+salloc.exe: job 49998864 has been allocated resources
+salloc.exe: Granted job allocation 49998864
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0868 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn0868 ~]$ <b>module load bigSCale2</b>
+[+] Loading singularity  3.5.3  on cn0868
+[+] Loading bigSCale2 20191119  ...
+
+[user@cn0868 ~]$ <b>bigSCale2</b>
+
+INFO: You are now opening a new shell within a Singularity container. Your
+INFO: environment will change and you will have access to a different set of
+INFO: commands and executables. Please remember to exit this shell when you are
+INFO: finished with your session.
+
+WARNING: Bind mount '/home/user => /home/user' overlaps container CWD /home/user, may not be available
+Singularity> <b>R</b>
+
+R version 3.6.1 (2019-07-05) -- "Action of the Toes"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+&gt; <b>library(bigSCale)</b>
+
+[snip...]
+
+&gt; <b>quit()</b>
+Save workspace image? [y/n/c]: <b>n</b>
+Singularity&gt;  exit
+exit
+
+[user@cn0868 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 49998864
+
+[user@biowulf ~]$ 
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

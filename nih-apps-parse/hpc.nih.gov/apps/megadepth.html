@@ -1,0 +1,82 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MEGADEPTH: efficient coverage quantification for BigWigs and BAMs.';</script>
+<div class="title"><b>MEGADEPTH: efficient coverage quantification for BigWigs and BAMs.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Megadepth is a fast tool for quantifying alignments and coverage for BigWig and BAM/CRAM input files, using substantially less memory than the next-fastest competitor. Megadepth can summarize coverage within all disjoint intervals of the Gencode V35 gene annotation for more than 19 000 GTExV8 BigWig files in approximately 1 h using 32 threads. Megadepth is available both as a command-line tool and as an R/Bioconductor package providing much faster quantification compared to the rtracklayer package.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Wilks, C, Ahmed, O, Baker, DN, Zhang, D, Collado-Torres, L, Langmead, B (2021). <br />
+<i> Megadepth: efficient coverage quantification for BigWigs and BAMs. </i> <br />
+<a href="https://academic.oup.com/bioinformatics/article/37/18/3014/6162880">Bioinformatics, </a> 
+
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/ChristopherWilks/megadepth">MEGADEPTH Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>megadepth</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=20g -n 14</b>
+[user@cn3316 ~]$ <b>module load megadepth</b>
+[+] Loading megadepth  1.2.0
+[user@cn3316 ~]$ <b>megadepth</b>
+megadepth 1.2.0
+
+BAM and BigWig utility.
+
+Usage:
+  megadepth <bam|bw|-> [options]
+
+Options:
+  -h --help                Show this screen.
+  --version                Show version.
+  --threads                # of threads to do: BAM decompression OR compute sums over multiple BigWigs in parallel
+                            if the 2nd is intended then a TXT file listing the paths to the BigWigs to process in parallel
+                            should be passed in as the main input file instead of a single BigWig file (EXPERIMENTAL).
+  --prefix                 String to use to prefix all output files.
+  --no-auc-stdout          Force all AUC(s) to be written to <prefix>.auc.tsv rather than STDOUT
+  --no-annotation-stdout   Force summarized annotation regions to be written to <prefix>.annotation.tsv rather than STDOUT
+  --no-coverage-stdout     Force covered regions to be written to <prefix>.coverage.tsv rather than STDOUT
+  --keep-order             Output annotation coverage in the order chromosomes appear in the BAM/BigWig file
+                           The default is to output annotation coverage in the order chromosomes appear in the annotation BED file.
+                           This is only applicable if --annotation is used for either BAM or BigWig input.
+
+
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3316 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

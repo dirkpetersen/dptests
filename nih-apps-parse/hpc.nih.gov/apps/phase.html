@@ -1,0 +1,167 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'phase on Biowulf';</script>
+<div class="title">phase on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+
+<p>
+<code>PHASE</code> reconstructs haplotypes from population genotype data using
+a Bayesian statistical model that considers the decay of LD with distance
+due to recombination. Inputs can include biallelic SNPs as well as multi-allelic
+loci like SNPs with more than two alleles, HLA allels, or microsatellites.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>M. Stephens, M. Smith, and P. Donnelly. <em> A new statistical method for 
+        haplotype reconstruction from population data</em>. American Journal of Human Genetics
+    2001, 68:978-989.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/11254454">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1275651/">PMC</a>&nbsp;|&nbsp;
+    <a href="http://www.sciencedirect.com/science/article/pii/S0002929707614244">Journal</a>
+    </li>
+    <li>M. Stephens, P. Scheet. <em>Accounting for Decay of Linkage Disequilibrium in 
+        Haplotype Inference and Missing-Data Imputation.</em> American Journal of Human Genetics
+    2005, 76:449-462.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/15700229">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1196397/">PMC</a>&nbsp;|&nbsp;
+    <a href="http://www.sciencedirect.com/science/article/pii/S0002929707633412">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://stephenslab.uchicago.edu/assets/software/phase/instruct2.1.pdf">Manual</a>
+    </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: phase (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$PHASE_TEST_DATA</code></li>
+</ul>
+<P>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a>, load
+the phase module and analyze a simple test data set running 1000 iterations</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3114]$ <b>module load phase/2.1.1</b>
+[user@cn3114]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3114]$ <b>cp $PHASE_TEST_DATA/test.inp .</b>
+[user@cn3114]$ <b>PHASE test.inp test.out 1000</b>
+Reading in data
+Reading Positions of loci
+Reading individual      3
+Finished reading
+Computing matrix Q, please wait
+Done computing Q
+3
+5
+MSSSM
+0 #1
+12 0 0 1 3
+11 1 1 0 3
+0 #2
+12 0 1 1 3
+12 1 0 0 2
+0 #3
+12 1 0 1 2
+12 0 1 0 13
+Resolving with method R
+Making List of all possible haplotypes
+Method = R
+Performing Final Set of Iterations... nearly there!
+Performing Burn-in iterations
+  50% done
+Estimating recom rates
+Continuing Burn-in
+Performing Main iterations
+Writing output to files
+Producing Summary, please wait
+
+[user@cn3114]$ <b>ls -1 test.out*</b>
+test.out
+test.out_freqs
+test.out_hbg
+test.out_monitor
+test.out_pairs
+test.out_probs
+test.out_recom
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>The input format and options are described in the
+<a href="http://stephenslab.uchicago.edu/assets/software/phase/instruct2.1.pdf">manual</a>.</p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. phase.sh), which uses the input file 'phase.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load phase/2.1.1 || exit 1
+PHASE input output 1000
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch phase.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. phase.swarm). For example:</p>
+
+<pre class="term">
+PHASE -X10 input1 output1
+PHASE -X10 input2 output2
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f phase.swarm -g 4 -t 1 -p 2 --module phase/2.1.1</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module phase <td>Loads the phase module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

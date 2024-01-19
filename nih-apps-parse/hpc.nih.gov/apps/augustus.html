@@ -1,0 +1,86 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Augustus on Biowulf';</script>
+<div class="title"> Augustus on Biowulf</div>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#int">Interactive Jobs</a></div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Using Swarm</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+AUGUSTUS is a gene prediction program written by Mario Stanke, Oliver Keller, Stefanie König, Lizzy Gerischer and Katharina Hoff. It can be used as an ab initio program, which means it bases its prediction purely on the sequence. AUGUSTUS may also incorporate hints on the gene structure coming from extrinsic sources such as EST, MS/MS, protein alignments and syntenic genomic alignments. Since version 3.0 AUGUSTUS can also predict the genes simultaneously in several aligned genomes (see README-cgp.txt). 
+<p></p>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<p><a href="https://github.com/Gaius-Augustus/Augustus">https://github.com/Gaius-Augustus/Augustus</a></p>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>augustus</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Example files are under <tt>/usr/local/apps/augustus/version/example*</tt></li>
+</ul>
+
+<a Name="batch"></a><div class="heading">Submitting an interactive job</div>
+<P>
+Allocate an interactive session  and run the interactive job there.</p>
+<pre class="term">[biowulf]$ <b>sinteractive --mem=10g</b>
+salloc.exe: Granted job allocation 789523
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0135 are ready for job
+
+[cn0135]$ <b>cd /data/$USER/</b>
+
+[cn0135]$ <b>module load augustus</b>
+
+[cn0135]$ <b>cp -rp /usr/local/apps/augustus/version/examples/example.fa /data/$USER</b>
+[cn0135]$ <b>augustus --species=human example.fa
+</b>
+
+[cn0135]$ <b>exit</b>
+salloc.exe: Job allocation 789523 has been revoked.
+</pre>
+<p>
+
+<a Name="batch"></a><div class="heading">Submitting a single batch job</div>
+    
+<p>1. Create a script file (myscript) similar to the one below
+<pre class="term">#! /bin/bash
+# myscript
+set -e
+
+module load augustus || exit 1
+cd /data/$USER/
+augustus --species=human example.fa</pre>
+  <p>2. Submit the script on biowulf:   
+      
+  <pre class="term">[biowulf]$ sbatch --mem=5g myscript</pre>
+
+<p>
+
+<a Name="swarm"></a><div class="heading">Using Swarm</div>
+<P>
+Using the 'swarm' utility, one can submit many jobs to the cluster to run concurrently. </p>
+
+  <p>Set up a swarm command file (eg /data/$USER/cmdfile). </p>
+
+  <pre class="term">
+cd /data/$USER/dir1; augustus species=human example.fa
+cd /data/$USER/dir2; augustus species=human example.fa
+cd /data/$USER/dir3; augustus species=human example.fa
+...
+cd /data/$USER/dir20; augustus species=human example.fa
+</pre>
+<P>
+
+<p> submit the swarm job:
+  <pre class="term">$ swarm -f cmdfile --module augustus -g 5</pre>
+
+<p>For more information regarding running swarm, see <a href="swarm.html">swarm.html</a></p>
+
+
+</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

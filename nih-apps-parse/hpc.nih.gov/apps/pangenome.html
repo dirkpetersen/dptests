@@ -1,0 +1,191 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+
+<!-- Start content - do not edit above this line  -->
+<div class="title">pangenome on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+From the pangenome user manual:
+</p>
+
+<blockquote style="width: 70%"> 
+ nf-core/pangenome is a bioinformatics best-practise analysis pipeline for the rendering of a collection of sequences into a pangenome graph. Its goal is to build a graph that is locally directed and acyclic while preserving large-scale variation. Maintaining local linearity is important for interpretation, visualization, mapping, comparative genomics, and reuse of pangenome graphs.
+
+</blockquote>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/nf-core/pangenome">Manual</a> </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: pangenome (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>pangenome is a nextflow pipeline, and it can also run individually with the vg, pggb, odgi and wfmash command as shown below.</li>
+    <pre class="term">
+    [user@nc3144]$ <b>module load pangenome</b>
+    [user@nc3144]$ <b>vg</b>
+    </pre>
+    <li>Example files in <code>$PANGENOME_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+
+<p>Allocate an interactive session with <a href="/docs/userguide.html#int">sinteractive</a>
+and use as shown below. In this case we will use test data that is 
+an artificial mixture of 1M human exome reads and 1M environmental metagenomic 
+reads. The 50% human reads is treated as an artificial contamination and removed:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=36g --cpus-per-task=12 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 33247354
+salloc.exe: job 33247354 queued and waiting for resources
+salloc.exe: job 33247354 has been allocated resources
+salloc.exe: Granted job allocation 33247354
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@nc3144]$ <b>module load pangenome</b>
+[user@nc3144]$ <b>cd /lscratch/${SLURM_JOB_ID}</b>
+[user@nc3144]$ <b>vg</b>
+vg: variation graph tool, version v1.40.0 "Suardi"
+
+usage: /usr/local/bin/vg <command> [options]
+
+main mapping and calling pipeline:
+  -- autoindex     mapping tool-oriented index construction from interchange formats
+  -- construct     graph construction
+  -- rna           construct splicing graphs and pantranscriptomes
+  -- index         index graphs or alignments for random access or mapping
+  -- map           MEM-based read alignment
+  -- giraffe       fast haplotype-aware short read alignment
+  -- mpmap         splice-aware multipath alignment of short reads
+  -- augment       augment a graph from an alignment
+  -- pack          convert alignments to a compact coverage index
+  -- call          call or genotype VCF variants
+  -- help          show all subcommands
+
+For more commands, type `vg help`.
+For technical support, please visit: https://www.biostars.org/t/vg/
+
+[user@nc3144]$ <b>pggb</b>
+[user@nc3144]$ <b>odgi</b>
+odgi: optimized dynamic genome/graph implementation, version v0.8.3-0-g34f006f3
+
+usage: /usr/local/bin/odgi <command> [options]
+
+Overview of available commands:
+  -- bin           Binning of pangenome sequence and path information in the graph.
+  -- break         Break cycles in the graph and drop its paths.
+  -- build         Construct a dynamic succinct variation graph in ODGI format from a GFAv1.
+  -- chop          Divide nodes into smaller pieces preserving node topology and order.
+  -- cover         Cover the graph with paths.
+  -- crush         Crush runs of N.
+  -- degree        Describe the graph in terms of node degree.
+  -- depth         Find the depth of a graph as defined by query criteria.
+  -- draw          Draw previously-determined 2D layouts of the graph with diverse annotations.
+  -- explode       Breaks a graph into connected components storing each component in its own file.
+  -- extract       Extract subgraphs or parts of a graph defined by query criteria.
+  -- flatten       Generate linearizations of a graph.
+  -- flip          Flip path orientations to match the graph.
+  -- groom         Harmonize node orientations.
+  -- heaps         Path pangenome coverage permutations.
+  -- inject        Inject BED annotations as paths.
+  -- kmers         Display and characterize the kmer space of a graph.
+  -- layout        Establish 2D layouts of the graph using path-guided stochastic gradient descent.
+  -- matrix        Write the graph topology in sparse matrix format.
+  -- normalize     Compact unitigs and simplify redundant furcations.
+  -- overlap       Find the paths touched by given input paths.
+  -- panpos        Get the pangenome position of a given path and nucleotide position (1-based).
+  -- pathindex     Create a path index for a given graph.
+  -- paths         Interrogate the embedded paths of a graph.
+  -- pav           Presence/absence variants (PAVs).
+  -- position      Find, translate, and liftover graph and path positions between graphs.
+  -- priv          Differentially private sampling of graph subpaths.
+  -- procbed       Procrustes-BED: adjust BED to match subpaths in graph.
+  -- prune         Remove parts of the graph.
+  -- server        Start a basic HTTP server to lift coordinates between path and pangenomic positions.
+  -- similarity    Provides a sparse similarity matrix for paths or groups of paths.
+  -- sort          Apply different kind of sorting algorithms to a graph.
+  -- squeeze       Squeezes multiple graphs in ODGI format into the same file in ODGI format.
+  -- stats         Metrics describing a variation graph and its path relationship.
+  -- stepindex     Generate a step index and access the position of each step of each path once.
+  -- tension       evaluate the tension of a graph helping to locate structural variants and abnormalities
+  -- tips          Identifying break point positions relative to given references.
+  -- unchop        Merge unitigs into a single node preserving the node order.
+  -- unitig        Output unitigs of the graph.
+  -- untangle      Project paths into reference-relative, to decompose paralogy relationships.
+  -- validate      Validate a graph checking if the paths are consistent with the graph topology.
+  -- version       Print the version of ODGI to stdout.
+  -- view          Project a graph into other formats.
+  -- viz           Visualize a variation graph in 1D.
+
+[user@nc3144]$ # copy test data
+[user@nc3144]$ <b>cp $PANGENOME_TEST_DATA/* .</b>
+[user@nc3144]$ <b>cp /usr/local/apps/nextflow/nextflow.config .</b>
+[user@nc3144]$ <b># run pangenome on the test data with biowulflocal profile</b>
+[user@nc3144]$ <b>nextflow run nf-core/pangenome \
+-r dev -profile biowulflocal \
+--input DRB1-3123.fa.gz \
+--n_haplotypes 12 \
+--outdir testout \
+-with-singularity  $PANGENOME_PATH/pangenome.img</b>
+[user@nc3144]$ <b>exit</b>
+[user@biowulf]$</span>
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pangenome.sh) similar to the following example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load pangenome || exit 1
+
+if [[ ! -e DRB1-3123.fa.gz ]]; then
+    cp $PANGENOME_TEST_DATA/* .
+fi
+cp /usr/local/apps/nextflow/nextflow.config .
+
+nextflow run nf-core/pangenome \
+-r 1.0.0 -profile biowulf \
+--input DRB1-3123.fa.gz \
+--n_haplotypes 12 \
+--outdir testout \
+-with-singularity  $PANGENOME_PATH/pangenome.img
+
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=12 --mem=72g --gres=lscratch:10 pangenome.sh</pre>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>
+

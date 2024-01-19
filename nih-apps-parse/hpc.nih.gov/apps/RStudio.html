@@ -1,0 +1,102 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RStudio on Biowulf';</script>
+<div class="title">RStudio on Biowulf</div>
+
+<a href="http://www.rstudio.com"><img alt="RStudio Logo" src="/images/RStudio-Ball.png"
+align="right" border="0" vspace="10" hspace="10" /></a>
+
+<p><a href="https://www.rstudio.com/">RStudio</a> is an integrated development
+environment (IDE)for R. It includes a console, syntax-highlighting editor that
+supports direct code execution, as well as tools for plotting, history,
+debugging and workspace management. <span style="background-color: #ff9;">RStudio is 
+used interactively and requires a graphical connection
+to biowulf.</span> Please use the <a href="/docs/nx.html">NoMachine NX client</a> 
+to create the graphical connection as it is the most reliable for RStudio.</p>
+
+
+<p class="alert" ;="" width="940px">
+  There is RStudio Server (a browser-based interface) available with better performance:
+  <a href="https://hpc.nih.gov/apps/rstudio-server.html">rstudio-server</a>  
+  </p>
+
+<div class="heading"><a name="gotcha"></a>Common pitfalls</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<dl>
+<dd>   
+ <dt><b>working directory is /home</b></dt>
+    <dd>By default, the working directory is /home no matter where the interactive session is started. This could be changed by setwd(), which will set the workding directory to desired location. 
+<div class="term">
+setwd("/data/somewhere")
+</div>
+<br>
+Another way (more recommended) is using <a href="https://support.posit.co/hc/en-us/articles/200526207-Using-RStudio-Projects">project</a>, which will set it's own working directory.
+ File -> New Project -> New Directory -> Create New Project (assign diretory name, and choose the directory location such as "/data/XXX/")
+<br>
+
+         </dd>
+<br>
+    <dt><b>XDG_RUNTIME_DIR not set</b></dt>
+    <dd>This is a harmless warning: <div class="term"> 
+	QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/XXXX/'</div>
+	 </dd>
+	<br>
+    <dt><b>Can't open Rstudio </b></dt> 
+    <dd>Rstudio requires graphical connection, please use <a href="/docs/nx.html">NX</a> to avoid these errors:
+	<div class="term">
+	libGL error: No matching fbConfigs or visuals found
+	<br>libGL error: failed to load driver: swrast
+	<br>Unrecognized OpenGL version</pre></div>
+	or 
+	<div class="term">
+        qt.qpa.xcb: could not connect to display 
+	<br>qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+	<div>
+	</dd>
+
+</dl>
+<P>
+<div class="heading">Running RStudio interactively</div>
+<p>Connect to Biowulf with NoMachine (<a href="/docs/nx.html">NX</a>), then open a terminal inside of NX.
+
+<div style="width:75%; margin: 2em auto;">
+  <img src="/images/rstudio_nx1.png", alt="rstudio window" width="100%">
+</div>
+<div style="width:75%; margin: 2em auto;">
+  <img src="/images/rstudio_nx2.png", alt="rstudio window" width="100%">
+</div>
+
+ 
+<p>Allocate an <a href="https://hpc.nih.gov/docs/userguide.html#int">sinteractive</a>
+session. It is generally recommended to allocate at least a small amount of <a
+href="/docs/userguide.html#local">lscratch</a> for temporary storage for R.</p>
+
+<div class="term">
+<pre>
+[user@biowulf ~]$ <b>sinteractive --mem=10g --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 15323416
+salloc.exe: job 15323416 queued and waiting for resources
+salloc.exe: job 15323416 has been allocated resources
+salloc.exe: Granted job allocation 15323416salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1640 are ready for job
+[user@cn1640 ~]$ <b>module load rstudio R</b>
+[+] Loading Rstudio 1.1.447 
+Remember to load an R module before starting Rstudio
+...
+[user@cn1640 dir]$ <b>rstudio &</b>
+</pre></div>
+
+<div style="width:75%; margin: 2em auto;">
+  <img src="/images/rstudio_nx3.png", alt="rstudio window" width="100%">
+</div>
+
+
+<div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.rstudio.com">RStudio Web Site</a>
+<li><a href="https://www.rstudio.com/online-learning/#R">RStudio Resources</a>
+</ul>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

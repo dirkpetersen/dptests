@@ -1,0 +1,189 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'phASER on Biowulf';</script>
+<div class="title">phASER on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+phASER stands for <i>phasing and Allele Specific Expression from RNA-seq</i>. It performs haplotype phasing using read alignments in BAM format from both DNA and RNA based assays, and provides measures of haplotypic expression for RNA based assays.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    <a href="https://www.nature.com/articles/ncomms12817">Castel, Stephane E., et al. "Rare variant phasing and haplotypic expression from RNA sequencing with phASER." <i>Nature communications</i> 7.1 (2016): 1-6.</a>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/secastel/phaser">phASER on GitHub</a></li>
+<li><a href="https://stephanecastel.wordpress.com/2017/02/15/how-to-generate-ase-data-with-phaser/">phASER tutorial</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>phaser</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>phASER has a <tt>--threads</tt> option. Testing shows that <tt>--cpus-per-task</tt> should be set to twice the number specified by <tt>--threads</tt>.
+    <li>Example data can be found in <tt>/usr/local/apps/phaser/1.1.1/testdata</tt>
+    <li>Do <b>not</b> preface script calls with <tt>python</tt>.  Just call the <tt>phaser*.sh</tt> scripts directly and they will use the correct version of Python.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c8 --mem=10g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 63023261
+salloc.exe: job 63023261 queued and waiting for resources
+salloc.exe: job 63023261 has been allocated resources
+salloc.exe: Granted job allocation 63023261
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0873 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn0873 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0873 63023261]$ <b>cp -r /usr/local/apps/phaser/1.1.1/testdata .</b>
+
+[user@cn0873 63023261]$ <b>cd testdata/</b>
+
+[user@cn0873 testdata]$ <b>module load phaser</b>
+[+] Loading phaser  1.1.1  on cn0873
+[+] Loading singularity  3.6.1  on cn0873
+
+[user@cn0873 testdata]$ <b>phaser.py --vcf NA06986.vcf.gz \
+    --bam NA06986.2.M_111215_4.bam --paired_end 1 --mapq 255 --baseq 10 \
+    --sample NA06986 --blacklist hg19_hla.bed \
+    --haplo_count_blacklist hg19_haplo_count_blacklist.bed --threads 4 \
+    --o phaser_test_case</b>
+
+##################################################
+              Welcome to phASER v1.1.1
+  Author: Stephane Castel (scastel@nygenome.org)
+  Updated by: Bishwa K. Giri (bkgiri@uncg.edu)
+##################################################
+
+Completed the check of dependencies and input files availability...
+
+STARTED "Read backed phasing and ASE/haplotype analyses" ...
+    DATE, TIME : 2020-08-14, 14:14:10
+[...snip]
+     COMPLETED using 1176416 reads in 481 seconds using 4 threads
+     PHASED  23919 of 2142443 all variants (= 0.011164) with at least one other variant
+     GENOME WIDE PHASE CORRECTED  1 of 2142443 variants (= 0.000000)
+     Global maximum memory usage: 2822.19 (mb)
+
+COMPLETED "Read backed phasing" of sample NA06986 in 00:08:31 hh:mm:ss
+DATE, TIME : 2020-08-14, 14:22:42
+
+The End.
+
+[user@cn0873 testdata]$ <b>phaser_gene_ae.py \
+    --haplotypic_counts phaser_test_case.haplotypic_counts.txt \
+    --features gencode.v19.GRCh37.genes.bed --o phaser_test_case_gene_ae.txt</b>
+
+##################################################
+          Welcome to phASER Gene AE v1.2.0
+  Author: Stephane Castel (scastel@nygenome.org)
+##################################################
+
+#1 Loading features...
+#2 Loading haplotype counts...
+sys:1: DtypeWarning: Columns (5,16,17) have mixed types. Specify dtype option on import or set low_memory=False.
+#3 Processing results...
+    BAM: NA06986.2.M_111215_4
+          generating feature level haplotypic counts...
+          outputting feature haplotype counts...
+
+[user@cn0873 testdata]$ <b>exit</b>
+exit
+srun: error: cn0873: task 0: Exited with exit code 130
+salloc.exe: Relinquishing job allocation 63023261
+salloc.exe: Job allocation 63023261 has been revoked.
+
+[user@biowulf ~]$
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. phaser.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load phaser
+phaser.py --vcf NA06986.vcf.gz --bam NA06986.2.M_111215_4.bam --paired_end 1 \
+    --mapq 255 --baseq 10  --sample NA06986 --blacklist hg19_hla.bed \
+    --haplo_count_blacklist hg19_haplo_count_blacklist.bed --threads 4 \
+    --o phaser_test_case
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] phaser.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. phaser.swarm). For example:</p>
+
+<pre class="term">
+phaser_gene_ae.py \
+    --haplotypic_counts phaser_test_case.haplotypic_counts1.txt \
+    --features gencode.v19.GRCh37.genes.bed --o phaser_test_case_gene_ae1.txt
+phaser_gene_ae.py \
+    --haplotypic_counts phaser_test_case.haplotypic_counts2.txt \
+    --features gencode.v19.GRCh37.genes.bed --o phaser_test_case_gene_ae2.txt
+phaser_gene_ae.py \
+    --haplotypic_counts phaser_test_case.haplotypic_counts3.txt \
+    --features gencode.v19.GRCh37.genes.bed --o phaser_test_case_gene_ae3.txt
+phaser_gene_ae.py \
+    --haplotypic_counts phaser_test_case.haplotypic_counts4.txt \
+    --features gencode.v19.GRCh37.genes.bed --o phaser_test_case_gene_ae4.txt
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f phaser.swarm [-g #] [-t #] --module phaser</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module phaser</tt> <td>Loads the phaser module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

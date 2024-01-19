@@ -1,0 +1,80 @@
+
+```
+
+ *** Bismark methylation extractor version v0.16.0 ***
+
+Trying to determine the type of mapping from the SAM header line of file test_data_bismark_bt2.bam
+Treating file(s) as single-end data (as extracted from @PG line)
+
+Setting core usage to single-threaded (default). Consider using --multicore &ltint> to speed up the extraction process.
+
+Summarising Bismark methylation extractor parameters:
+===============================================================
+Bismark single-end SAM format specified (default)
+Number of cores to be used: 1
+Output will be written to the current directory ('/spin1/users/user/bismark_test')
+
+Writing result file containing methylation information for C in CpG context from the original top strand to CpG_OT_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CpG context from the complementary to original top strand to CpG_CTOT_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CpG context from the complementary to original bottom strand to CpG_CTOB_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CpG context from the original bottom strand to CpG_OB_test_data_bismark_bt2.txt
+
+Writing result file containing methylation information for C in CHG context from the original top strand to CHG_OT_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CHG context from the complementary to original top strand to CHG_CTOT_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CHG context from the complementary to original bottom strand to CHG_CTOB_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CHG context from the original bottom strand to CHG_OB_test_data_bismark_bt2.txt
+
+Writing result file containing methylation information for C in CHH context from the original top strand to CHH_OT_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CHH context from the complementary to original top strand to CHH_CTOT_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CHH context from the complementary to original bottom strand to CHH_CTOB_test_data_bismark_bt2.txt
+Writing result file containing methylation information for C in CHH context from the original bottom strand to CHH_OB_test_data_bismark_bt2.txt
+
+Now reading in Bismark result file test_data_bismark_bt2.bam
+skipping SAM header line:	@HD	VN:1.0	SO:unsorted
+skipping SAM header line:	@SQ	SN:chrX	LN:155270560
+skipping SAM header line:	@SQ	SN:chrY	LN:59373566
+skipping SAM header line:	@PG	ID:Bismark	VN:v0.16.1	CL:"bismark XandY test_data.fastq"
+
+Processed 378 lines in total
+Total number of methylation call strings processed: 378
+
+Final Cytosine Methylation Report
+=================================
+Total number of C's analysed:	3258
+
+Total methylated C's in CpG context:	88
+Total methylated C's in CHG context:	4
+Total methylated C's in CHH context:	13
+
+Total C to T conversions in CpG context:	108
+Total C to T conversions in CHG context:	777
+Total C to T conversions in CHH context:	2268
+
+C methylated in CpG context:	44.9%
+C methylated in CHG context:	0.5%
+C methylated in CHH context:	0.6%
+
+
+Determining maximum read length for M-Bias plot
+Maximum read length of Read 1: 50
+
+Determining maximum read length for M-Bias plot
+Maximum read length of Read 1: 50
+
+Deleting unused files ...
+
+CpG_OT_test_data_bismark_bt2.txt contains data ->	kept
+CpG_CTOT_test_data_bismark_bt2.txt was empty ->	deleted
+CpG_CTOB_test_data_bismark_bt2.txt was empty ->	deleted
+CpG_OB_test_data_bismark_bt2.txt contains data ->	kept
+CHG_OT_test_data_bismark_bt2.txt contains data ->	kept
+CHG_CTOT_test_data_bismark_bt2.txt was empty ->	deleted
+CHG_CTOB_test_data_bismark_bt2.txt was empty ->	deleted
+CHG_OB_test_data_bismark_bt2.txt contains data ->	kept
+CHH_OT_test_data_bismark_bt2.txt contains data ->	kept
+CHH_CTOT_test_data_bismark_bt2.txt was empty ->	deleted
+CHH_CTOB_test_data_bismark_bt2.txt was empty ->	deleted
+CHH_OB_test_data_bismark_bt2.txt contains data ->	kept
+
+```
+

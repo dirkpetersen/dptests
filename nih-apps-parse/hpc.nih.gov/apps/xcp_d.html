@@ -1,0 +1,145 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'XCP-D on Biowulf';</script>
+<div class="title">XCP-D on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+XCP-D uses the output of FMRIPREP to generate denoised BOLD images, parcellated time-series, functional connectivity matrices, and quality assesment reports.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Adebimpe, Azeez, Bertolero, Maxwell, Mehta, Kahini, Salo, Taylor, Murtha, Kristin, Cieslak, Matthew, Meisler, Steven, Madison, Thomas, Sydnor, Valerie, Covitz, Sydney, Fair, Damien, & Satterthwaite, Theodore.
+  <a href="https://zenodo.org/record/7717239">
+  <em>XCP-D : A Robust Postprocessing Pipeline of fMRI data.</em></a> 
+  Zenodo. https://doi.org/10.5281/zenodo.7717239.</li>
+</ul>
+
+<br>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://xcp-d.readthedocs.io">XCP-D Documentation</a></li>
+    <li><a href="https://github.com/PennLINC/xcp_d">Github page</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>xcp_d</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Test data in <tt>$XCP_D_TEST_DATA</tt> 
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load xcp_d</b>
+[+] Loading xcp_d  0.5.0  on cn3144 
+[+] Loading singularity  3.10.5  on cn3144 
+
+[user@cn3144 ~]$ <b>xcp_d --help</b>
+usage: xcp_d [-h] [--version] [--participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
+[-t TASK_ID] [-m] [-s] [--nthreads NTHREADS] [--omp-nthreads OMP_NTHREADS]
+[--mem_gb MEM_GB] [--use-plugin USE_PLUGIN] [-v] [--input-type {fmirprep,dcan,hpc}]
+[--smoothing SMOOTHING] [--despike]
+[-p {27P,36P,24P,acompcor,aroma,acompcor_gsr,aroma_gsr}]
+[-c CUSTOM_CONF] [-d DUMMYTIME] [--lower-bpf LOWER_BPF] [--upper-bpf UPPER_BPF]
+[--bpf-order BPF_ORDER] [--motion-filter-type {lp,notch}]
+[--band-stop-min BAND_STOP_MIN] [--band-stop-max BAND_STOP_MAX]
+[--motion-filter-order MOTION_FILTER_ORDER] [-r HEAD_RADIUS]
+[-f FD_THRESH] [-w WORK_DIR] [--clean-workdir] [--resource-monitor] [--notrack]
+fmri_dir output_dir
+
+xcp_d postprocessing workflow of fMRI data
+
+positional arguments:
+  fmri_dir              the root folder of a preprocessed fMRI output .
+  output_dir            the output path for xcp_d
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+
+[...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. xcp_d.sh). For example (using test data below):</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=xcp_d
+#SBATCH --gres=lscratch:20
+#SBATCH --mem=8g
+#SBATCH --time=2:00:00
+#SBATCH --cpus-per-task=4
+
+module load xcp_d/0.5.0
+
+tar -C /lscratch/${SLURM_JOB_ID} -xf ${XCP_D_TEST_DATA}/fmriprep.out.ds001.tar.gz
+
+xcp_d /lscratch/${SLURM_JOB_ID}/fmriprep.out.ds001 /data/$USER/xcp_d.out\
+         participant --participant_label sub-01 -w /lscratch/${SLURM_JOB_ID}  
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch xcp_d.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. xcp_d.swarm). For example:</p>
+
+<pre class="term">
+xcp_d /data/${USER}/BIDS-dataset/fmriprep.out.ds001/ /data/$USER/XCP-D/xcp_d.out.ds001 \
+         participant --participant_label sub-01 -w /lscratch/${SLURM_JOB_ID} \
+xcp_d /data/${USER}/BIDS-dataset/fmriprep.out.ds002/ /data/$USER/XCP-D/xcp_d.out.ds002 \
+         participant --participant_label sub-02 -w /lscratch/${SLURM_JOB_ID} \
+xcp_d /data/${USER}/BIDS-dataset/fmriprep.out.ds003/ /data/$USER/XCP-D/xcp_d.out.ds003 \
+         participant --participant_label sub-03 -w /lscratch/${SLURM_JOB_ID} \
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f xcp_d.swarm [--gres=lscratch:#] [-g #] -t auto --module xcp_d</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-gres=lscratch:<i>#</i> </tt><td>Number of Gigabytes of local disk space allocated per process (1 line in the swarm command file)
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file). We set this to <code>auto</code> to allocate all CPUs in each node.
+  <tr><td><tt>--module xcp_d</tt> <td>Loads the xcp_d module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

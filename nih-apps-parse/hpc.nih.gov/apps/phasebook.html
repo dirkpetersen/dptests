@@ -1,0 +1,155 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'phasebook on Biowulf';</script>
+<div class="title">phasebook on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+phasebook is a novel approach for reconstructing the haplotypes of diploid genomes from long reads <i>de novo</i>, that is without the need for a reference genome.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02512-x">Luo, Xiao, Xiongbin Kang, and Alexander Schönhuth. "phasebook: haplotype-aware de novo assembly of diploid genomes from long reads." <i>Genome biology</i> 22.1 (2021): 1-26.</a>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/phasebook/phasebook">phasebook on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+
+<ul>
+    <li>Module Name: <tt>phasebook</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Use the <tt>$SLURM_CPUS_PER_TASK</tt> variable to set the appropriate number of threads. (See example below.)
+    <li>Environment variables set <!--for ones users should be aware of -->
+      <ul>
+        <li><tt>$PHASEBOOK_TESTDATA</tt> points to a small test data set</li>
+      </ul>
+    <li>The online documentation suggest calling the main script like so: <tt>python phasebook.py</tt>. On our system it is incorrect to use the <tt>python</tt> prefix with this script due to the way it is installed.  
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c8 --mem=4g --gres=lscratch:10</b>
+salloc: Pending job allocation 33141417
+salloc: job 33141417 queued and waiting for resources
+salloc: job 33141417 has been allocated resources
+salloc: Granted job allocation 33141417
+salloc: Waiting for resource configuration
+salloc: Nodes cn0881 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.33141417.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0881 ~]$ <b>module load phasebook</b>
+[+] Loading phasebook  1.0.0  on cn0881
+[+] Loading singularity  3.8.5-1  on cn0881
+
+[user@cn0881 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0881 33141417]$ <b>cp -r $PHASEBOOK_TESTDATA .</b>
+
+[user@cn0881 33141417]$ <b>cd TESTDATA</b>
+
+[user@cn0881 TESTDATA]$ <b>phasebook.py -i reads.fa -t $SLURM_CPUS_PER_TASK -p hifi -g small -x</b>
+use preset parameters...
+2022-02-25 13:20:59,226 - /opt/phasebook/scripts/phasebook.py[line:262] - INFO: splitting input fastx file into 1 subfiles...
+2022-02-25 13:20:59,361 - /opt/phasebook/scripts/phasebook.py[line:270] - INFO: splitting finished.
+[...snip]
+start polishing...
+2022-02-25 13:22:26,529 - /opt/phasebook/scripts/phasebook.py[line:374] - INFO: All has been finished successfully.
+
+2022-02-25 13:22:26,529 - /opt/phasebook/scripts/phasebook.py[line:375] - INFO: The final output haplotype aware contigs are here: ./contigs.fa
+
+2022-02-25 13:22:26,529 - /opt/phasebook/scripts/phasebook.py[line:376] - INFO: Thank you for using phasebook!
+
+[user@cn0881 TESTDATA]$ <b>ls</b>
+1.split_fastx  3.cluster        5.polish          clustered_reads.list  phasebook.log  reference.fa
+2.overlap      4.asm_supereads  all.supereads.fa  contigs.fa            reads.fa
+
+[user@cn0881 TESTDATA]$ <b>exit</b>
+exit
+salloc: Relinquishing job allocation 33141417
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. phasebook.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+mkdir -p /data/${USER}/phasebook/${SLURM_JOB_ID}
+cd /data/${USER}/phasebook/${SLURM_JOB_ID}
+module load phasebook
+phasebook.py -i /path/to/reads.fa -t $SLURM_CPUS_PER_TASK -p hifi -g small -x
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] phasebook.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. phasebook.swarm). For example:</p>
+
+<pre class="term">
+mkdir -p /data/${USER}/phasebook/${SLURM_JOB_ID}; cd !$; phasebook.py -i /path/to/reads1.fa -t $SLURM_CPUS_PER_TASK -p hifi -g small -x
+mkdir -p /data/${USER}/phasebook/${SLURM_JOB_ID}; cd !$; phasebook.py -i /path/to/reads2.fa -t $SLURM_CPUS_PER_TASK -p hifi -g small -x
+mkdir -p /data/${USER}/phasebook/${SLURM_JOB_ID}; cd !$; phasebook.py -i /path/to/reads3.fa -t $SLURM_CPUS_PER_TASK -p hifi -g small -x
+mkdir -p /data/${USER}/phasebook/${SLURM_JOB_ID}; cd !$; phasebook.py -i /path/to/reads4.fa -t $SLURM_CPUS_PER_TASK -p hifi -g small -x
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f phasebook.swarm [-g #] [-t #] --module phasebook</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module phasebook</tt> <td>Loads the phasebook module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

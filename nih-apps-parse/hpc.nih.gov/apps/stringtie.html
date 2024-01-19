@@ -1,0 +1,104 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Stringtie on Biowulf';</script>
+    <div class="title">Stringtie on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>
+
+<P><strong>StringTie</strong> is a fast and highly efficient assembler of RNA-Seq alignments into potential transcripts. It uses a novel network flow algorithm as well as an optional <em>de novo</em> assembly step to assemble and quantitate full-length transcripts representing multiple splice variants for each gene locus. Its input can include not only the alignments of raw reads used by other transcript assemblers, but also alignments longer sequences that have been assembled from those reads.To identify differentially expressed genes between experiments, StringTie's output can be processed either by the <a href="http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/index.html">Cuffdiff</a> or <a href="https://github.com/alyssafrazee/ballgown">Ballgown</a> programs.
+</p><p>StringTie is free, open source software released under an <a href="http://opensource.org/licenses/artistic-license-2.0">Artistic Licen</a></p>
+
+<h3>References:</h3>    <ul>
+      <li>Pertea M, Pertea GM, Antonescu CM, Chang TC, Mendell JT &amp; Salzberg 
+        SL. <a href="https://www.nature.com/articles/nbt.3122">StringTie enables 
+        improved reconstruction of a transcriptome from RNA-seq reads</a> Nature 
+        Biotechnology 2015, doi:10.1038/nbt.3122 </li>
+      <li>Pertea M, Kim D, Pertea GM, Leek JT, Salzberg SL <a href="https://www.nature.com/articles/nprot.2016.095">Transcript-level 
+        expression analysis of RNA-seq experiments with HISAT, StringTie and Ballgown</a>, 
+        Nature Protocols 11, 1650-1667 (2016), doi:10.1038/nprot.2016.095</li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="https://ccb.jhu.edu/software/stringtie/index.shtml">https://ccb.jhu.edu/software/stringtie/index.shtml</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>stringtie</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) </li>
+      <li>Multithreaded</li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load stringtie</strong>
+[user@cn3144 ~]$ <strong>stringtie &lt;aligned_reads.bam&gt; -p $SLURM_CPUS_PER_TASK [other options]</strong>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>    <p>Create a batch input file (e.g. stringtie.sh). For example:</p>    
+    <pre class="term">
+#!/bin/bash
+set -e
+module load stringtie
+stringtie &lt;aligned_reads.bam&gt; -p $SLURM_CPUS_PER_TASK [other options]</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch --cpus-per-task=4 --mem=10g stringtie.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. stringtie.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; stringtie aligned_reads.bam -p $SLURM_CPUS_PER_TASK [other options]
+cd dir2; stringtie aligned_reads.bam -p $SLURM_CPUS_PER_TASK [other options]
+cd dir3; stringtie aligned_reads.bam -p $SLURM_CPUS_PER_TASK [other options]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f stringtie.swarm g 10 -t 4 --module stringtie</pre>
+where
+    <table width="55%" border=0>
+      <tr><td width=12%><tt>-g <i>#</i> </tt></td><td width="88%">Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  </td></tr><tr><td><tt>-t <i>#</i></tt> </td><td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  </td></tr><tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr></table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

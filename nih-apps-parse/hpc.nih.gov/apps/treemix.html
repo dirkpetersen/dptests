@@ -1,0 +1,186 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'treemix on Biowulf';</script>
+<div class="title">treemix on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width: 70%">
+<p>From the Treemix site:</p>
+<blockquote> TreeMix is a method for inferring the patterns of population splits and
+mixtures in the history of a set of populations. In the underlying model, the
+modern-day populations in a species are related to a common ancestor via a
+graph of ancestral populations. We use the allele frequencies in the modern
+populations to infer the structure of this graph.  </blockquote>
+
+<p>The input is a gzipped file with a header containing a space-delimited list
+of the names of populations, followed by lines containing the allele counts at
+each SNP. The order of the SNPs in the file is assumed to reflect the order of
+the SNPs in the genome. The line is space delimited between populations, and
+the two allele within the population are comma-delimited. For example:</p>
+
+<pre class="term">
+pop1 pop2 pop3 pop4
+5,1 1,1 4,0 0,4
+3,3 0,2 2,2 0,4
+1,5 0,2 2,2 1,3
+</pre>
+</div>
+
+<h3>References:</h3>
+<ul>
+    <li> Joseph K. Pickrell and Jonathan K. Pritchard. <em>Inference of Population 
+        Splits and Mixtures from Genome-Wide Allele Frequency Data</em>. PLOS Genetics 
+    2012, 8:e1002967. 
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/23166502">Pubmed</a> &nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3499260/">PMC</a> &nbsp;|&nbsp;
+    <a href="http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1002967">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://bitbucket.org/nygcresearch/treemix/wiki/Home">Bitbucket</a> </li>
+    <li><a href="https://bitbucket.org/nygcresearch/treemix/downloads/treemix_manual_10_1_2012.pdf" >Manual [PDF]</a></li>
+    <li>An application of treemix is presented on <a href="http://genomesunzipped.org/2012/03/identifying-targets-of-natural-selection-in-human-and-dog-evolution.php">genomes unzipped</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: treemix (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$TREEMIX_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load treemix</b>
+[user@cn3144]$ #copy example data to local directory
+[user@cn3144]$ <b>cp ${TREEMIX_TEST_DATA:-none}/treemix_test_files.tar.gz .</b>
+[user@cn3144]$ <b>tar -xzf treemix_test_files.tar.gz</b>
+[user@cn3144]$ <b>ls -lh</b>
+total 820K
+-rw-r----- 1 user group  196 Feb 17  2012 pop_order_test
+-rw-r----- 1 user group 402K Feb 17  2012 testin.gz
+[user@cn3144]$ <b>zcat testin.gz | head -n5 </b>
+Han Sardinian Colombian Dai French Mozabite Karitiana Lahu BiakaPygmy She Italian San Yoruba
+2,66 2,54 0,10 1,19 4,52 6,48 0,24 2,14 31,13 0,20 3,23 6,6 21,21
+11,55 2,54 0,10 1,19 4,52 2,52 0,26 3,13 10,36 2,18 1,25 5,7 12,32
+12,56 2,54 0,10 1,19 4,52 2,52 0,26 3,13 10,36 2,18 1,25 5,7 12,32
+0,68 0,56 0,10 0,20 0,56 1,53 0,26 0,16 9,37 0,20 0,26 2,10 10,32
+
+[user@cn3144]$ <b>treemix -i testin.gz -o testout</b>
+
+TreeMix v. 1.12
+$Revision: 231 $
+
+npop:13 nsnp:29999
+Estimating covariance matrix in 29999 blocks of size 1
+SEED: 1455041772
+Starting from:
+(Lahu:0.00323769,(San:0.0494469,She:0.0102143):0.00323769);
+Adding French [4/13]
+[...snip...]
+
+[user@cn3144]$ <b>ls -lh</b>
+total 848K
+-rw-r----- 1 user group  196 Feb 17  2012 pop_order_test
+-rw-r----- 1 user group 402K Feb 17  2012 testin.gz
+-rw-rw---- 1 user group  735 Feb  9 13:16 testout.cov.gz
+-rw-rw---- 1 user group  688 Feb  9 13:16 testout.covse.gz
+-rw-rw---- 1 user group  250 Feb  9 13:16 testout.edges.gz
+-rw-rw---- 1 user group  117 Feb  9 13:16 testout.llik
+-rw-rw---- 1 user group  722 Feb  9 13:16 testout.modelcov.gz
+-rw-rw---- 1 user group  247 Feb  9 13:16 testout.treeout.gz
+-rw-rw---- 1 user group  630 Feb  9 13:16 testout.vertices.gz
+
+[user@cn3144]$ # copy file with r functions for plotting trees
+[user@cn3144]$ <b>cp /usr/local/apps/treemix/1.12/bin/plotting_funcs.R .</b>
+[user@cn3144]$ <b>module load R</b>
+[user@cn3144]$ <b>R</b>
+R version 3.2.3 (2015-12-10) -- "Wooden Christmas-Tree"      
+Copyright (C) 2015 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)                       
+[...snip...]
+&gt; source("plotting_funcs.R")
+&gt; png(file="testout.png", width=1024, height=1024, res = 1024/7)
+&gt; plot_tree("testout", o="pop_order_test")
+[...snip...]
+&gt; dev.off()
+&gt; q()
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>Creates the following tree</p>
+<div style="margin: 0 auto;">
+    <img src="/images/treemix_out_example.png" alt="treemix example output"/ width="70%">
+</div>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. treemix.sh). For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load treemix/1.12 || exit 1
+treemix -i testin.gz -o testout -m 2 -global
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=2g treemix.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. treemix.swarm). For example to run bootstrap replicates of a tree:</p>
+
+<pre class="term">
+treemix -i testin.gz -m 2 -global -bootstrap -k 500 -o bootstrap1
+treemix -i testin.gz -m 2 -global -bootstrap -k 500 -o bootstrap2
+treemix -i testin.gz -m 2 -global -bootstrap -k 500 -o bootstrap3
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f treemix.swarm -g 2 -t 1 -p 2 --module treemix/1.12</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module treemix <td>Loads the treemix module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

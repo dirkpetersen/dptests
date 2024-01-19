@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Nibabies on Biowulf';</script>
+<div class="title">Nibabies on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Nibabies is an MRI preprocessing pipeline for the infant and neonate brain.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Mathias Goncalves, Christopher Markiewicz, Martin Styner, Lucille Moore, Kathy Snider, Eric Earl, Christopher Smyser, 
+     Lilla Zollei, Russell Poldrack, Oscar Esteban, Eric Feczko, Damien Fair.
+  <em>NiBabies: A robust preprocessing workflow tailored for neonate and infant MRI.</em></a> 
+  Organization for Human Brain Mapping, 2021 Annual Meeting. Abstract # 2452.</li>
+</ul>
+
+<h3>Web site</h3>
+<ul>
+    <li><a href="https://github.com/nipreps/nibabies">Github page</a></li>
+</ul>
+
+<br>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://https://github.com/nipreps/nibabies">Nibabies Documentation</a></li>
+</ul>
+
+
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li> <tt>nibabies</tt> on Biowulf is a singularity container built directly from a docker container. However, users do not need to execute singularity directly or bind directories manually because we have provided a wrapper shell script that takes care of that. 
+<li>Module Name: <tt>nibabies</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li><tt>nibabies</tt> is a scientific pipeline with the potential to overload Biowulf's central filesystem. To avoid filesystem issues we recommend the following:
+<ol>
+<li>Limit I/O with central Biowulf directories (e.g., /data, /home) by making use of local disk (/lscratch).  You can make use of lscratch to store temporary working directories by directly assigning the temporary work directory of <tt>fmriprep</tt> (-w option) to /lscratch/$SLURM_JOB_ID (remember to allocate enough space in /lscratch).
+<li>Limit memory usage. Once you determine how much memory your jobs will need (by benchmarking, but see point 5 below), It is still good idea to limit the memory used by <tt>nibabies</tt> by using the option --mem_mb. Something important to remember regarding memory allocation is to try to allocate some extra memory for your jobs as described in the resources described in point 6 below. 
+<li>Limit multi-threading. Biowulf's <tt>nibabies</tt> has been installed as a container and some of the applications in it will hyper-thread unless you explicitly limit the number of threads. You can limit the number of threads that <tt>nibabies</tt> is allowed to use across all processes by using the --nthreads flag.
+<li>Opt out of uploading <tt>nibabies</tt> metrics to <tt>nibabies</tt> website. You can disable the submission with the --notrack flag.
+<li>Make use of the flag --stop-on-first-crash flag to force a stop if issues occur.
+<li>Profile/benchmark <tt>nibabies</tt> jobs: We recommend making sure a given <tt>nibabies</tt> job can scale before launching a large number of jobs. You can do this by profiling/benchmarking small jobs (e.g., a swarm of 3 <tt>nibabies</tt> commands), then monitoring the jobs by using either the <a href="https://hpcnihapps.cit.nih.gov/auth/dashboard/">user dashboard</a> or the commands jobhist, sjobs, squeue, and jobload (see <a href="https://hpc.nih.gov/docs/biowulf_tools.html">biowulf utilities</a>). There are resources prepared by the HPC staff that go over how to monitor your jobs for benchmarking and profiling (<a href="https://youtu.be/fLMJ8-t5bm4">video</a>, and <a href="https://hpc.nih.gov/training/handouts/Effective_batch_system.pdf">slides</a>). Once you have profiled a swarm with a few jobs and you have refined the memory, CPU (and walltime) requirements, it is probably safe to (gradually) increase the number of <tt>nibabies</tt> jobs. For many analyses pipelines one has no way of knowing in advance how much memory or CPUs will be actually required in an HPC environment. This is why it is very important to profile/benchmark.
+</ol>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a>, run the program and download some imaging datasets to test. Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load nibabies</b>
+
+[user@cn3144 ~]$ <b>nibabies --help</b>
+
+[user@cn3144 ~]$ <b>cd /data/$USER</b>
+
+[user@cn3144 ~]$ <b>mkdir NIBABIES_TEST</b>
+
+[user@cn3144 ~]$ <b>cd NIBABIES_TEST</b>
+
+[user@cn3144 ~]$ <b>module load aws</b>
+
+[user@cn3144 ~]$ <b>aws s3 sync --no-sign-request s3://openneuro.org/ds003778 ds003778</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. nibabies.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=nibabies
+#SBATCH --gres=lscratch:20
+#SBATCH --exclusive
+#SBATCH --mem=32g
+#SBATCH --time=72:00:00
+
+module load nibabies
+
+nibabies /data/$USER/NIBABIES_TEST/ds003778 /data/$USER/NIBABIES_TEST/nibabies.out.ds003778 \
+         participant --participant-label sub-01 -w /lscratch/${SLURM_JOB_ID} \
+         --age-months 12 --notrack
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch nibabies.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. nibabies.swarm). For example:</p>
+
+<pre class="term">
+nibabies /data/$USER/NIBABIES_TEST/ds003778 /data/$USER/NIBABIES_TEST/nibabies.out.ds003778-01 \
+         participant --participant-label sub-01 -w /lscratch/${SLURM_JOB_ID} \
+         --age-months 12 --notrack
+nibabies /data/$USER/NIBABIES_TEST/ds003778 /data/$USER/NIBABIES_TEST/nibabies.out.ds003778-02 \
+         participant --participant-label sub-02 -w /lscratch/${SLURM_JOB_ID} \
+         --age-months 12 --notrack
+nibabies /data/$USER/NIBABIES_TEST/ds003778 /data/$USER/NIBABIES_TEST/nibabies.out.ds003778-03 \
+         participant --participant-label sub-03 -w /lscratch/${SLURM_JOB_ID} \
+         --age-months 12 --notrack
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f nibabies.swarm [--gres=lscratch:#] [-g #] [-t #] --module nibabies</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-gres=lscratch:<i>#</i> </tt><td>Number of Gigabytes of local disk space allocated per process (1 line in the swarm command file)
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module nibabies</tt> <td>Loads the nibabies module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

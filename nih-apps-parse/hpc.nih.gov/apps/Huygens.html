@@ -1,0 +1,95 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Huygens';</script>
+<div class="title">Huygens</div>
+
+<!-- Content -->
+
+<img align=right style="margin:2em;" src="Huygens_logo.png" alt="Huygens logo">
+
+<h2>Description</h2>
+  <p>The Huygens Suite is a complete and easy to use microscopic image restoration (deconvolution) package. Whether applied to images from a wide field (conventional) microscopes, confocal microscopes, 2-photon microscopes, the software in The Huygens Suite will remove blur from your images, improve resolution and reduce noise. It is capable of recovering lost details in very noisy confocal images. Applied to wide field images it will drastically remove blur and improve resolution.</p>
+
+
+<h2>How to Use</h2>
+
+<!--
+<p class="alert">NOTE: Huygens is only available on huygens.cit.nih.gov.  To connect to this host, you must first
+belong to the <b><em>huygens</em></b> group.  Please contact <a href="mailto:staff@hpc.nih.gov">staff@hpc.nih.gov</a>
+to be added to this group.</p>
+
+  <p>Huygens requires an X-windows session. <a href="/docs/connect.html">Click here for more information about X-Windows</a>.  You must also first connect to the huygens.cit.nih.gov host:</p>
+
+  <pre class="term">ssh -X -Y <b><em>user</em></b>@huygens.cit.nih.gov</pre>
+
+  <p>where <b><em>user</em></b> is your own username.</p>
+-->
+
+  <p>Huygens requires an X-windows session. <a href="/docs/connect.html">Click here for more information about X-Windows</a>.</p>
+
+  <p>Huygens is licensed to run on a single node in the Biowulf cluster, and only with fixed allocated resources.  There
+  are three "levels" of allocation: <b>Small, Medium, and Large</b>. The necessary level depends on your
+  processing needs. Each level allocates a fixed number of GPUs and CPUs.  To run Huygens, allocate an
+  interactive session with the chosen level, along with an appropriate amount of memory.  The memory allocated can be
+  any amount up to 240g (GB).</p>
+
+  <ul>
+    <li><b>Small Allocation</b> (with 64 GB of memory): 
+      <pre class="term">[biowulf]$ sinteractive --constraint=huygens --gres=gpu:k80:<b>1</b> --cpus-per-task=<b>14</b> --mem=64g</pre>
+    </li>
+    <li><b>Medium Allocation</b> (with 128 GB of memory): 
+      <pre class="term">[biowulf]$ sinteractive --constraint=huygens --gres=gpu:k80:<b>2</b> --cpus-per-task=<b>28</b> --mem=128g</pre>
+    </li>
+    <li><b>Large Allocation</b> (with 192 GB of memory):
+      <pre class="term">[biowulf]$ sinteractive --constraint=huygens --gres=gpu:k80:<b>3</b> --cpus-per-task=<b>42</b> --mem=192g</pre>
+    </li>
+  </ul>
+
+  <p>By default, an interactive session is given <b>8 hours</b>.  If you need more than that amount of time to finish
+  your processing, you should include <b><tt>--time</tt></b> in your allocation.  For example, to allocate 16 hours of
+  time to your <b>Medium</b> session, type:</p>
+
+    <pre class="term">[biowulf]$ sinteractive --constraint=huygens --gres=gpu:k80:2 --cpus-per-task=28 --mem=128g <b>--time=16:00:00</b></pre>
+
+  <p>Once an interactive session has been started, load the Huygens module:</p>
+
+  <pre class="term">[cn4243]$ module load Huygens
+[+] Loading Huygens 19.10 ...
+[cn4243]$ huygenspro</pre>
+
+  <p>When finished, make sure to exit the program and the interactive session:</p>
+
+  <pre class="term">[cn4243]$ exit
+[biowulf]$</pre>
+
+  <p>There are multiple versions of Huygens available. An easy way of selecting the version is to use modules. To see the modules available, type</p>
+
+  <pre class="term">module avail Huygens</pre>
+
+  <p>To select a module, type</p>
+
+  <pre class="term">module load Huygens/<b>[ver]</b></pre>
+
+  <p> where <b>[ver]</b> is the version of choice. This will set your $PATH variable to allow the Huygens executables.</p>
+
+  <p>Type the following commands at the prompt to start the corresponding programs:</p>
+  <ul>
+    <li><em>huygenspro</em> -- Huygens Professional</li>
+    <li><em>huscript</em> -- Huygens Scripting</li>
+  </ul> 
+
+<h2>Disk Space</h2>
+<p>By default, huygenspro writes to your /home directory.  Since /home is limited is disk space, it would be best to create a symlink to your /data directory from the beginning:</p>
+
+<pre class="term">mkdir /data/<b>$USER</b>/SVI
+ln -s /data/<b>$USER</b>/SVI /home/<b>$USER</b>/SVI
+</pre>
+
+<h2>Documentation</h2>
+  <p>Click on the 'Help' menu on the far right of the Huygens window after launching the application.</p>
+  <p>Web-accessible: <a href="http://www.svi.nl">SVI</a> (Scientific Volume Imaging). Also see the <a href="http://support.svi.nl">SVI Support Knowledge Base</a>.</p>
+
+<!--  For access to the restricted online tutorials at the SVI wiki, contact <a href="mailto:staff@hpc.nih.gov">staff@hpc.nih.gov</a> for the group login and password.</p> -->
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

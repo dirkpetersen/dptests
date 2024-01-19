@@ -1,0 +1,117 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'minimap2 on Biowulf';</script>
+<div class="title">minimap2 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Minimap2 is a fast sequence mapping and alignment program that can find overlaps between long noisy reads, or map long reads or their assemblies to a reference genome optionally with detailed alignment (i.e. CIGAR). At present, it works efficiently with query sequences from a few kilobases to ~100 megabases in length at an error rate ~15%. Minimap2 outputs in the PAF or the SAM format. On limited test data sets, minimap2 is over 20 times faster than most other long-read aligners. It will replace BWA-MEM for long reads and contig alignment.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Heng Li; Minimap2: pairwise alignment for nucleotide sequences, Bioinformatics, , bty191, doi:<a href="https://doi.org/10.1093/bioinformatics/bty191">10.1093/bioinformatics/bty191</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/lh3/minimap2">minimap2 main site</a></li>
+<li><tt>minimap2(1)</tt></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>minimap2</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>environment variables set
+  <ul>
+    <li><tt>MINIMAP2_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$MINIMAP2_HOME/test</tt> and <tt>/fdb/minimap2</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load minimap2</b>
+[+] Loading minimap2, version 2.2...
+[user@cn3144 ~]$ <b>man minimap2</b> # read the documentation
+[user@cn3144 ~]$ <b>minimap2 -ax map10k $MINIMAP2_HOME/test/MT-human.fa $MINIMAP2_HOME/test/MT-orang.fa > test.sam</b>
+[M::mm_idx_gen::0.005*1.16] collected minimizers
+[M::mm_idx_gen::0.007*1.24] sorted minimizers
+[M::main::0.007*1.24] loaded/built the index for 1 target sequence(s)
+[M::mm_mapopt_update::0.008*1.19] mid_occ = 3
+[M::mm_idx_stat] kmer size: 19; skip: 10; is_HPC: 1; #seq: 1
+[M::mm_idx_stat::0.008*1.27] distinct minimizers: 2127 (99.95% are singletons); average occurrences: 1.000; average spacing: 7.786
+[M::worker_pipeline::0.035*1.03] mapped 1 sequences
+[M::main] Version: 2.2-r409
+[M::main] CMD: minimap2 -ax map10k /usr/local/apps/minimap2/2.2/test/MT-human.fa /usr/local/apps/minimap2/2.2/test/MT-orang.fa
+[M::main] Real time: 0.036 sec; CPU: 0.037 sec
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. minimap2.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load minimap2
+minimap2 -ax map10k $MINIMAP2_HOME/test/MT-human.fa $MINIMAP2_HOME/test/MT-orang.fa > test.sam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] minimap2.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. minimap2.swarm). For example:</p>
+
+<pre class="term">
+minimap2 -ax map10k reference.fa reads1.fa > out1.sam
+minimap2 -ax map10k reference.fa reads2.fa > out2.sam
+minimap2 -ax map10k reference.fa reads3.fa > out3.sam
+minimap2 -ax map10k reference.fa reads4.fa > out4.sam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f minimap2.swarm [-g #] [-t #] --module minimap2</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module minimap2 <td>Loads the minimap2 module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

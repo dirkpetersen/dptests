@@ -1,0 +1,162 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ChromHMM on Biowulf';</script>
+<div class="title">ChromHMM on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p> ChromHMM can segment genomes into different chromatin states by modeling 
+re-occuring combinatorial and spatial pattern of various histone modifications
+with a multivariate Hidden Markov Model. The resulting segmentations can
+be used to annotate genomes. Bed files for immediate visualization
+in genome browsers are generated.</p>
+
+<p>ChromHMM automatically computes state enrichments for functional and
+annotation datasets (TSSs, exons, ...) which facilitates the biological
+characterization of each state.</p>
+
+<p>On Biowulf, ChromHMM can be run in two ways.  The full path to the jarfile can be called
+like this:</p>
+
+<pre class="term">
+java -mx4000M -Djava.awt.headless=true -jar $CHROMHMM_HOME/ChromHMM.jar [ command ] [ options ]
+java -mx4000M -Djava.awt.headless=true -jar $CHROMHMM_JAR [ command ] [ options ]
+</pre>
+
+<p>The amount of memory is assigned with -mx<em>[num]</em>, where 4000 MB is
+allocated.  The second option <em>-Djava.awt.headless=true</em> is required,
+unless an X11 display is available.  See <a href="/docs/connect.html">here</a>
+for more information about X11 display.</p>
+
+<p>An easier way is to use the wrapper script <tt><b>ChromHMM.sh</b></tt>.
+This wrapper script includes an additional option to set the amount of
+memory:</p>
+
+<pre class="term">
+ChromHMM.sh --memory 8g [ command ] [ options ]
+</pre>
+
+<p>By default, ChromHMM uses 4gb of memory. To allocate a different amount of
+memory, for example 20gb, include <b><tt>--memory 20g</tt></b> on the
+commandline.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Jason Ernst and Manolis Kellis. <em>ChromHMM: automating chromatin-state 
+        discovery and characterization</em>. Nature Methods 2012(9): 215.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/22373907">Pubmed</a> &nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3577932/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://www.nature.com/articles/nmeth.1906">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li> <a href="http://compbio.mit.edu/ChromHMM/">Home page</a> </li>
+    <li><a href="http://compbio.mit.edu/ChromHMM/ChromHMM_manual.pdf">Manual</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: ChromHMM (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>ChromHMM LernModel can use more than one CPU. Make sure to match the number of cpus 
+    requested with the number used with the -p option.</li>
+    <li>Module sets the <code>$CHROMHMM_HOME</code> and <code>$CHROMHMM_JAR</code> environment variables</li>
+    <li>Example files in <code>$CHROMHMM_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+
+<pre class="term">
+[user@biowulf]$
+[user@biowulf]$ <b>sinteractive --mem=8g --cpus-per-task=4 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load ChromHMM</b>
+[user@cn3144]$ <b>cp -R $CHROMHMM_TEST_DATA/SAMPLEDATA_HG18 .</b>
+[user@cn3144]$ # train a model with 8 States; leave some buffer between memory given to JVM and
+               # allocated memory
+[user@cn3144]$ <b>ChromHMM.sh --memory 7g LearnModel -p $SLURM_CPUS_PER_TASK SAMPLEDATA_HG18 out 8 hg18</b>
+...
+[user@cn3144]$ <b>cp -r out /data/user/where/you/want/your/chromhmm/results</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. ChromHMM.sh), which uses the input file 'ChromHMM.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+function fail() {
+    echo "$@" &gt;&amp;2
+    exit 1
+}
+module load ChromHMM/1.20 || fail "could not load module ChromHMM"
+cd /lscratch/$SLURM_JOB_ID || fail "could not use lscratch"
+cp -R $CHROMHMM_TEST_DATA/SAMPLEDATA_HG18 .
+ChromHMM.sh --memory 8g LearnModel -p ${SLURM_CPUS_PER_TASK} \
+  SAMPLEDATA_HG18 OUTPUTSAMPLE 10 hg18
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=9g ChromHMM.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. ChromHMM.swarm). For example:</p>
+
+<pre class="term">
+ChromHMM.sh --memory 8g LearnModel -p ${SLURM_CPUS_PER_TASK} \
+  SAMPLEDATA_HG18 OUTPUTSAMPLE8 8 hg18
+ChromHMM.sh --memory 8g LearnModel -p ${SLURM_CPUS_PER_TASK} \
+  SAMPLEDATA_HG18 OUTPUTSAMPLE10 10 hg18
+ChromHMM.sh --memory 8g LearnModel -p ${SLURM_CPUS_PER_TASK} \
+  SAMPLEDATA_HG18 OUTPUTSAMPLE12 12 hg18
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f ChromHMM.swarm -g 9 -t 4 --module ChromHMM/1.20</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module ChromHMM <td>Loads the ChromHMM module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

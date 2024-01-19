@@ -1,0 +1,169 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PennCNV: Copy Number Variation (CNV) detection from SNP genotyping arrays ';</script>
+<div class="title"><b>PennCNV: Copy Number Variation (CNV) detection from SNP genotyping arrays  </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+PennCNV is a free software tool for Copy Number Variation (CNV) detection 
+from SNP genotyping arrays. Currently it can handle signal intensity data 
+from Illumina and Affymetrix arrays. With appropriate preparation of file format, 
+it can also handle other types of SNP arrays and oligonucleotide arrays.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Wang K, Li M, Hadley D, Liu R, Glessner J, Grant S, Hakonarson H, Bucan M. <br/>
+<i>PennCNV: an integrated hidden Markov model designed for high-resolution 
+   copy number variation detection in whole-genome SNP genotyping data. </i>  <br />
+<a href="https://genome.cshlp.org/content/17/11/1665.short">
+Genome Research 17:1665-1674, 2007</a>.
+<li> Diskin SJ, Li M, Hou C, Yang S, Glessner J, Hakonarson H, Bucan M, Maris JM, Wang K. <br/>
+<i> Adjustment of genomic waves in signal intensities from whole-genome SNP genotyping platforms. </i>  <br />
+<a href="https://academic.oup.com/nar/article/36/19/e126/2409936?login=true">Nucleic Acids Research 36:e126, 2008</a>.
+<li> Wang K, Chen Z, Tadesse MG, Glessner J, Grant SFA, Hakonarson H, Bucan M, Li M. <br/> 
+<i>Modeling genetic inheritance of copy number variations. </i>  <br />
+<a href="https://academic.oup.com/nar/article/36/21/e138/2409932?login=true">Nucleic Acids Research 36:e138, 2008</a>. 
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/WGLab/PennCNV">PennCNV Github page</a></li>
+<li><a href="http://penncnv.openbioinformatics.org/en/latest/">PennCNV Home  page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>PennCNV</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PENNCNV_HOME</b>&nbsp; installation directory</li>
+    <li><b>PENNCNV_BIN</b>&nbsp; executable   directory</li>
+    <li><b>PENNCNV_SRC</b>&nbsp; source code  directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn0862 ~]$ <b>module load penncnv</b>
+[+] Loading penncnv  1.0.5    
+</pre>
+<pre class="term">
+[user@cn0862 ~]$ <b>detect_cnv.pl  -h</b>
+Usage:
+     detect_cnv.pl [arguments] <inputfile [inputfile2] ... | -listfile file>
+
+     Optional arguments:
+            -v, --verbose                   use verbose output
+            -h, --help                      print help message
+            -m, --man                       print complete documentation
+
+            Analysis Type:
+                --train                     train optimized HMM model (not recommended to use)
+                --test                      test HMM model to identify CNV
+                --wgs                       test HMM model to identify CNV from transformed wgs data
+                --trio                      posterior CNV calls for father-mother-offspring trio
+                --quartet                   posterior CNV calls for quartet
+                --joint                     joint CNV calls for trio
+                --cctest                    case-control comparison of per-marker CNV frequency
+                --validate                  validate copy number at a pre-specified region
+
+            Input/output Files:
+                --listfile &lt;file&gt;           a list file containing path to files to be processed
+                --output &lt;file&gt;             specify output root filename
+                --logfile &lt;file&gt;            write notification/warning messages to this file
+                --hmmfile &lt;file&gt;            HMM model file
+                --pfbfile &lt;file&gt;            population frequency for B allelel file
+                --sexfile &lt;file&gt;            a 2-column file containing filename and sex (male/female) for chrx CNV calling
+                --cnvfile &lt;file&gt;            specify CNV call file for use in family-based CNV calling by -trio or -quartet
+                --directory &lt;string&gt;        specify the directory where signal files are located
+                --refchr &lt;string&gt;           specify a chromosome for wave adjustment (default: 11 for human)
+                --refgcfile &lt;file&gt;          a file containing GC percentage of each 1M region of the chromosome specified by --refchr (default: 11 for human)
+                --gcmodelfile &lt;file&gt;        a file containing GC model for wave adjustment
+                --phenofile &lt;file&gt;          a file containing phenotype information for each input file for -cctest operation
+
+            CNV output control:
+                --minsnp &lt;int&gt;              minimum number of SNPs within CNV (default=3)
+                --minlength &lt;int&gt;           minimum length of bp within CNV
+                --minconf &lt;float&gt;           minimum confidence score of CNV
+                --confidence                calculate confidence for each CNV
+                --chrx                      use chrX-specific treatment
+                --chry                      use chrY-specific treatment (available soon)
+
+            Validation-calling arguments:
+                --startsnp &lt;string&gt;         start SNP of a pre-specified region for --validate operation
+                --endsnp &lt;string&gt;           end SNP of a pre-specified region for --validate operation
+                --delfreq &lt;float&gt;           prior deletion frequency of a pre-specified region for --validate operation
+                --dupfreq &lt;float&gt;           prior duplication frequency of a pre-specified region for --validate operation
+                --backfreq &lt;float&gt;          background CNV probability for any loci (default: 0.0001)
+                --candlist &lt;file&gt;           a file containing all candidate CNV regions to be validated
+
+            Misc options
+                --loh                       detect copy-neutral LOH (obselete argument; for SNP arrays only!)
+                --exclude_heterosomic       empirically exclude CNVs in heterosomic chromosomes
+                --fmprior &lt;numbers&gt;         prior belief on CN state for regions with CNV calls
+                --denovo_rate &lt;float&gt;       prior belief on genome-wide de novo event rate (default=0.0001)
+                --tabout                    use tab-delimited output
+                --coordinate_from_input     get marker coordindate information from input signal file
+                --control_label &lt;string&gt;    the phenotype label for control subjects in the phenotype file (default=control)
+                --onesided                  performed one-sided test for --cctest operation
+                --type_filter &lt;dup|del&gt;     used together with --cctest to specify types of CNVs to be tested
+                --(no)medianadjust          adjust genome-wide LRR such that median=0 (default=ON)
+                --(no)bafadjust             adjust genome-wide BAF such that median=0.5 (default=ON)
+                --(no)sdadjust              adjust SD of hidden Markov model based on input signal (default=ON)
+                --(no)flush                 flush input/output buffer (default=ON)
+                --bafxhet &lt;float&gt;           minimum BAF het rate to predict female gender when -sexfile is not supplied (default=0.1)
+
+     Function: generate CNV calls from high-density SNP genotyping data that
+     contains Log R Ratio and B Allele Frequency for each SNP or CN marker. Use -m
+     argument to read the complete manual.
+
+     Example: detect_cnv.pl -test -hmm hhall.hmm -pfb hhall.pfb file1 file2 file3 -log logfile -out outfile
+              detect_cnv.pl -trio -hmm hhall.hmm -pfb hhall.pfb -cnv outfile file1 file2 file3
+              detect_cnv.pl -validate -hmm hhall.hmm -pfb hhall.pfb -startsnp rs100 -endsnp rs200 -delfreq 0.2 file1 file2 file3
+
+     Version: $LastChangedDate: 2013-02-08 11:10:50 -0800 (Fri, 08 Feb 2013) 
+...
+[user@cn0862 ~]$ <b>convert_cnv.pl -h</b>
+...
+[user@cn0862 ~]$ <b>compare_cnv.pl -h</b>
+...
+[user@cn0862 ~]$ <b>cal_gc_snp.pl -h</b>  
+...
+[user@cn0862 ~]$ <b>compile_pfb.pl -h</b>
+...
+[user@cn0862 ~]$ <b>filter_cnv.pl -h</b>
+...
+[user@cn0862 ~]$ <b>genomic_wave.pl -h</b>
+...
+[user@cn0862 ~]$ <b>infer_snp_allele.pl -h</b>
+...
+[user@cn0862 ~]$ <b>scan_region.pl -h</b>
+[user@cn0862 ~]$ <b>visualize_cnv.pl -h</b>
+...
+</pre>
+Exit the application: <br />      
+<pre class="term">
+[user@cn0862 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

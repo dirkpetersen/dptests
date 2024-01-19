@@ -1,0 +1,129 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'HemTools:  a collection of NGS pipelines and bioinformatic analyses.';</script>
+<div class="title"><b>HemTools:  a collection of NGS pipelines and bioinformatic analyses.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+HemTools is a collection of NGS pipelines and bioinformatic analysis tools. It includes tools for data visualization, motif analysis, integrative analysis, bioinformatica analysis, differential analysis, CRISPR analysis, and more.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Phillip A. Doerfler, Ruopeng Feng, Yichao Li, Lance E. Palmer, Shaina N. Porter, Henry W. Bell, Merlin Crossley, Shondra M. Pruett-Miller, Yong Cheng and Mitchell J. Weiss, <br />
+<i>Activation of γ-globin gene expression by GATA1 and NF-Y in hereditary persistence of fetal hemoglobin</i> <br />
+<a href="https://www.nature.com/articles/s41588-021-00904-0">Nature Genetics</a> 2021, vol.53, p.1177–1186.
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/YichaoOU/HemTools">HemTools Github page</a></li>
+<li><a href="https://hemtools.readthedocs.io/en/latest/">HemTools Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>HemTools</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>HEMTOOLS_HOME</b>&nbsp; installation directory</li>
+    <li><b>HEMTOOLS_BIN</b>&nbsp; executable   directory</li>
+    <li><b>HEMTOOLS_DIR</b>&nbsp; source code  directory</li>
+    <li><b>HEMTOOLS_DATA</b>&nbsp; configuration files and models directory</li>
+    <li><b>HEMTOOLS_BENCHMARKS</b>&nbsp; benchmark datasets directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16g  --gres=gpu:p100:1,lscratch:10 -c4 </b>
+[user@cn3104 ~]$ <b>module load HemTools</b>
+[+] Loading singularity  3.10.5  on cn3104
+[+] Loading HemTools 20210512
+[user@cn3104 ~]$ <b>HemTools -h</b>
+usage: HemTools [-h] [-v]
+                {cut_run,cut_run_histone,chip_seq_pair,chip_seq_single,atac_seq,report_bug,rna_seq,my_dir,volcano_plot,crispr_seq}
+                ...
+
+HemTools: performs NGS pipelines and other common analyses. Contact:
+Yichao.Li@stjude.org or Yong.Cheng@stjude.org
+
+positional arguments:
+  {cut_run,cut_run_histone,chip_seq_pair,chip_seq_single,atac_seq,report_bug,rna_seq,my_dir,volcano_plot,crispr_seq}
+                        Available APIs in HemTools
+    cut_run             CUT &amp; RUN pipeline
+    cut_run_histone     CUT &amp; RUN pipeline
+    chip_seq_pair       Paired-end ChIP-seq pipeline
+    chip_seq_single     Single-end ChIP-seq pipeline
+    atac_seq            ATAC-seq pipeline
+    report_bug          Email the log files to the developer.
+    rna_seq             RNA-seq pipeline
+    my_dir              CD, search, and list my dirs
+    volcano_plot        Data visualization: Volcano plot
+    crispr_seq          Genome-wide CRISPR Screening pipeline
+[user@cn3104 ~]$ <b>HemTools cut_run -h</b>
+usage: HemTools cut_run [-h] [-j JID] [--short] [--debug] [-f INPUT]
+                        [-d DESIGN_MATRIX] [--guess_input] [-i INDEX_FILE]
+                        [-g GENOME] [-b BLACKLIST] [-s CHROM_SIZE]
+                        [-e EFFECTIVEGENOMESIZE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -j JID, --jid JID     enter a job ID, which is used to make a new directory.
+                        Every output will be moved into this folder. (default:
+                        {{subcmd}}_$USER_2023-05-30)
+  --short               Force to use the short queue. (only if R1+R2 fastq.gz
+                        size &lt;=250M) (default: False)
+  --debug               Not for end-user. (default: False)
+  -f INPUT, --input INPUT
+                        tab delimited 3 columns (tsv file): Read 1 fastq, Read
+                        2 fastq, sample ID (default: None)
+  -d DESIGN_MATRIX, --design_matrix DESIGN_MATRIX
+                        tab delimited 3 columns (tsv file): treatment sample
+                        ID, control sample ID, peakcall ID (default: None)
+  --guess_input         Let the program generate the input files for you.
+                        (default: False)
+
+Genome Info:
+  -i INDEX_FILE, --index_file INDEX_FILE
+                        BWA index file (default:
+                        /opt/conda/envs/hemtools/HemTools-
+                        HemTools/subcmd/../hg19/bwa_16a_index/hg19.fa)
+  -g GENOME, --genome GENOME
+                        genome version: hg19, hg38, mm10, mm9. (default: hg19)
+  -b BLACKLIST, --Blacklist BLACKLIST
+                        Blacklist file (default:
+                        /opt/conda/envs/hemtools/HemTools-
+                        HemTools/subcmd/../hg19/Hg19_Blacklist.bed)
+  -s CHROM_SIZE, --chrom_size CHROM_SIZE
+                        chrome size (default:
+                        /opt/conda/envs/hemtools/HemTools-
+                        HemTools/subcmd/../hg19/hg19.chrom.sizes)
+  -e EFFECTIVEGENOMESIZE, --effectiveGenomeSize EFFECTIVEGENOMESIZE
+                        effectiveGenomeSize for bamCoverage (default:
+                        2451960000)
+</pre>
+Exit the application: <br />      
+<pre class="term">
+[user@cn3104 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

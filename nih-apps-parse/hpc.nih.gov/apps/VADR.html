@@ -1,0 +1,354 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'VADR: Viral Annotation DefineR.';</script>
+<div class="title">VADR: Viral Annotation DefineR.</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+VADR is a suite of tools for classifying and analyzing sequences 
+homologous to a set of reference models of viral genomes or gene families.
+It has been mainly tested for analysis of Norovirus, Dengue, and SARS-CoV-2 virus sequences 
+in preparation for submission to the GenBank database.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Alejandro A Schäffer, Eneida L Hatcher, Linda Yankie, Lara Shonkwiler, J Rodney Brister, Ilene Karsch-Mizrachi, Eric P Nawrocki  <br />
+<i> VADR: validation and annotation of virus sequence submissions to GenBank`.</i><br />
+BMC Bioinformatics (2020) 21:211. https://doi.org/10.1186/s12859-020-3537-3
+ <br/>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/ncbi/vadr">VADR Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>VADR</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>VADR_HOME</b>&nbsp; VADR installation directory</li>
+    <li><b>VADR_BIN </b>&nbsp; &nbsp; &nbsp; VADR executable directory</li>
+    <li><b>VADR_SRC </b>&nbsp; &nbsp; a folder containing the source code</li>
+    <li><b>VADR_DATA</b>&nbsp; &nbsp; a folder containing sample data</li>
+    <li><b>VADR_HMM </b>&nbsp; &nbsp; a folder containing sample Hidden Markov Models</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn4471 ~]$ <b>module load vadr </b>
+[+] Loading hmmer  3.3.2  on cn0847
+[+] Loading perl 5.24.3 on cn0847
+[+] Loading vadr / 1.1.3  ...
+</pre>
+Copy sample data to your current folder:
+<pre class="term">
+[user@cn4471 ~]$ <b>cp -r $VADR_DATA/* .</b>
+</pre>
+Preprocess the data with samtools:
+<pre class="term">
+[user@cn4471 ~]$<b> v-build.pl -h</b>
+...
+# v-build.pl :: build homology model of a single sequence for feature annotation
+# VADR 1.1.3 (Feb 2021)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:    Mon Mar 29 12:40:22 2021
+#
+Usage: v-build.pl [-options] &lt;accession&gt; &lt;path to output directory to create&gt;
+
+basic options:
+  -f             : force; if dir &lt;output directory&gt; exists, overwrite it
+  -v             : be verbose; output commands to stdout as they're run
+  --stk &lt;s&gt;      : read single sequence stockholm 'alignment' from &lt;s&gt;
+  --infa &lt;s&gt;     : read single sequence fasta file from &lt;s&gt;, don't fetch it
+  --inft &lt;s&gt;     : read feature table file from &lt;s&gt;, don't fetch it
+  --ftfetch1     : fetch feature table with efetch -format ft
+  --ftfetch2     : fetch feature table with efetch -format gbc | xml2tbl
+  --gb           : parse a genbank file, not a feature table file
+  --ingb &lt;s&gt;     : read genbank file from &lt;s&gt;, don't fetch it
+  --addminfo &lt;s&gt; : add feature info from model info file &lt;s&gt;
+  --forcelong    : allow long models &gt; 25Kb in length
+  --keep         : do not remove intermediate files, keep them all on disk
+
+options for controlling what feature types are stored in model info file
+[default set is: CDS,gene,mat_peptide]:
+  --fall      : store info for all feature types (except those in --fskip)
+  --fadd &lt;s&gt;  : also store feature types in comma separated string &lt;s&gt;
+  --fskip &lt;s&gt; : do not store info for feature types in comma separated string &lt;s&gt;
+
+options for controlling what qualifiers are stored in model info file
+[default set is:product,gene,exception]:
+  --qall        : store info for all qualifiers (except those in --qskip)
+  --qadd &lt;s&gt;    : also store info for qualifiers in comma separated string &lt;s&gt;
+  --qftradd &lt;s&gt; : --qadd &lt;s2&gt; only applies for feature types in comma separated string &lt;s&gt;
+  --qskip &lt;s&gt;   : do not store info for qualifiers in comma separated string &lt;s&gt;
+  --noaddgene   : do not add gene qualifiers from gene features to overlapping features
+
+options for including additional model attributes:
+  --group &lt;s&gt;    : specify model group is &lt;s&gt;
+  --subgroup &lt;s&gt; : specify model subgroup is &lt;s&gt;
+
+options for controlling CDS translation step:
+  --ttbl &lt;n&gt; : use NCBI translation table &lt;n&gt; to translate CDS [1]
+
+options for controlling cmbuild step:
+  --cmn &lt;n&gt;       : set number of seqs for glocal fwd HMM calibration to &lt;n&gt;
+  --cmp7ml        : set CM's filter p7 HMM as the ML p7 HMM
+  --cmere &lt;x&gt;     : set CM relative entropy target to &lt;x&gt;
+  --cmeset &lt;x&gt;    : set CM eff seq # for CM to &lt;x&gt;
+  --cmemaxseq &lt;x&gt; : set CM maximum alowed eff seq # for CM to &lt;x&gt;
+  --cminfile &lt;s&gt;  : read cmbuild options from file &lt;s&gt;
+
+options for skipping stages:
+  --skipbuild : skip the cmbuild and blastn db creation steps
+  --onlyurl   : output genbank file url for accession and exit
+
+optional output files:
+  --ftrinfo : create file with internal feature information
+  --sgminfo : create file with internal segment information
+
+other expert options:
+  --execname &lt;s&gt; : define executable name of this script as &lt;s&gt;
+</pre>
+<pre class="term">
+[user@cn4471 ~]$<b> v-build.pl NC_039897 NC_039897</b>
+# v-build.pl :: build homology model of a single sequence for feature annotation
+# VADR 1.1.3 (Feb 2021)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:              Tue Mar 30 14:51:04 2021
+# $VADRBLASTDIR:     /usr/local/apps/VADR/1.1.3/vadr-vadr-1.1.3/ncbi-blast/bin
+# $VADREASELDIR:     /usr/local/apps/VADR/1.1.3/vadr-vadr-1.1.3/Bio-Easel/src/easel/miniapps
+# $VADRINFERNALDIR:  /usr/local/apps/VADR/1.1.3/vadr-vadr-1.1.3/infernal/binaries
+# $VADRSCRIPTSDIR:   /usr/local/apps/VADR/1.1.3/vadr-vadr-1.1.3/vadr
+#
+# accession/model name:  NC_039897
+# output directory:      NC_039897
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Fetching FASTA file                                          ... done. [    3.3 seconds]
+# Parsing FASTA file                                           ... done. [    0.0 seconds]
+# Fetching feature table file                                  ... done. [    3.9 seconds]
+# Parsing feature table file                                   ... done. [    0.0 seconds]
+# Fetching and parsing protein feature table file(s)           ... done. [   11.8 seconds]
+# Pruning data read from GenBank                               ... done. [    0.0 seconds]
+# Reformatting FASTA file to Stockholm file                    ... done. [    0.0 seconds]
+# Finalizing feature information                               ... done. [    0.0 seconds]
+# Translating CDS                                              ... done. [    0.0 seconds]
+# Building BLAST protein database                              ... done. [    0.2 seconds]
+# Building HMMER protein database                              ... done. [    2.6 seconds]
+# Building CM (should take roughly 10-30 minutes)              ... done. [  749.1 seconds]
+# Pressing CM file                                             ... done. [    0.2 seconds]
+# Building BLAST nucleotide database of CM consensus           ... done. [    0.4 seconds]
+# Creating model info file                                     ... done. [    0.0 seconds]
+#
+# Output printed to screen saved in:                                           NC_039897.vadr.log
+# List of executed commands saved in:                                          NC_039897.vadr.cmd
+# List and description of all output files saved in:                           NC_039897.vadr.filelist
+# fasta file for NC_039897 saved in:                                           NC_039897.vadr.fa
+# feature table format file for NC_039897 saved in:                            NC_039897.vadr.tbl
+# feature table format file for YP_009538340.1 saved in:                       NC_039897.vadr.YP_009538340.1.tbl
+# feature table format file for YP_009538341.1 saved in:                       NC_039897.vadr.YP_009538341.1.tbl
+# feature table format file for YP_009538342.1 saved in:                       NC_039897.vadr.YP_009538342.1.tbl
+# Stockholm alignment file for NC_039897 saved in:                             NC_039897.vadr.stk
+# fasta sequence file for CDS from NC_039897 saved in:                         NC_039897.vadr.cds.fa
+# fasta sequence file for translated CDS from NC_039897 saved in:              NC_039897.vadr.protein.fa
+# BLAST db .phr file for NC_039897 saved in:                                   NC_039897.vadr.protein.fa.phr
+# BLAST db .pin file for NC_039897 saved in:                                   NC_039897.vadr.protein.fa.pin
+# BLAST db .psq file for NC_039897 saved in:                                   NC_039897.vadr.protein.fa.psq
+# BLAST db .pdb file for NC_039897 saved in:                                   NC_039897.vadr.protein.fa.pdb
+# BLAST db .pot file for NC_039897 saved in:                                   NC_039897.vadr.protein.fa.pot
+# BLAST db .ptf file for NC_039897 saved in:                                   NC_039897.vadr.protein.fa.ptf
+# BLAST db .pto file for NC_039897 saved in:                                   NC_039897.vadr.protein.fa.pto
+# HMMER model db file for NC_039897 saved in:                                  NC_039897.vadr.protein.hmm
+# hmmbuild build output (concatenated) saved in:                               NC_039897.vadr.protein.hmmbuild
+# binary HMM and p7 HMM filter file saved in:                                  NC_039897.vadr.protein.hmm.h3m
+# SSI index for binary HMM file saved in:                                      NC_039897.vadr.protein.hmm.h3i
+# optimized p7 HMM filters (MSV part) saved in:                                NC_039897.vadr.protein.hmm.h3f
+# optimized p7 HMM filters (remainder) saved in:                               NC_039897.vadr.protein.hmm.h3p
+# hmmpress output file saved in:                                               NC_039897.vadr.hmmpress
+# CM file saved in:                                                            NC_039897.vadr.cm
+# cmbuild output file saved in:                                                NC_039897.vadr.cmbuild
+# binary CM and p7 HMM filter file saved in:                                   NC_039897.vadr.cm.i1m
+# SSI index for binary CM file saved in:                                       NC_039897.vadr.cm.i1i
+# optimized p7 HMM filters (MSV part) saved in:                                NC_039897.vadr.cm.i1f
+# optimized p7 HMM filters (remainder) saved in:                               NC_039897.vadr.cm.i1p
+# cmpress output file saved in:                                                NC_039897.vadr.cmpress
+# fasta sequence file with cmemit consensus sequence for NC_039897 saved in:   NC_039897.vadr.nt.fa
+# BLAST db .nhr file for NC_039897 saved in:                                   NC_039897.vadr.nt.fa.nhr
+# BLAST db .nin file for NC_039897 saved in:                                   NC_039897.vadr.nt.fa.nin
+# BLAST db .nsq file for NC_039897 saved in:                                   NC_039897.vadr.nt.fa.nsq
+# BLAST db .ndb file for NC_039897 saved in:                                   NC_039897.vadr.nt.fa.ndb
+# BLAST db .not file for NC_039897 saved in:                                   NC_039897.vadr.nt.fa.not
+# BLAST db .ntf file for NC_039897 saved in:                                   NC_039897.vadr.nt.fa.ntf
+# BLAST db .nto file for NC_039897 saved in:                                   NC_039897.vadr.nt.fa.nto
+# VADR 'model info' format file for NC_039897 saved in:                        NC_039897.vadr.minfo
+#
+# All output files created in directory ./NC_039897/
+#
+# Elapsed time:  00:12:51.55
+#                hh:mm:ss
+#
+[ok]
+</pre>
+<pre class="term">
+[user@cn4471 ~]$ <b>v-annotate.pl -h </b>
+# v-annotate.pl :: classify and annotate sequences using a CM library
+# VADR 1.1.3 (Feb 2021)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:    Tue Mar 30 15:17:51 2021
+#
+Usage: v-annotate.pl [-options] &lt;fasta file to annotate&gt; &lt;output directory to create&gt;
+
+basic options:
+  -f             : force; if output dir exists, overwrite it
+  -v             : be verbose; output commands to stdout as they're run
+  --atgonly      : only consider ATG a valid start codon
+  --minpvlen &lt;n&gt; : min CDS/mat_peptide/gene length for feature table output and protein validation is &lt;n&gt; [30]
+  --keep         : do not remove intermediate files, keep them all on disk
+
+options for specifying classification:
+  --group &lt;s&gt;    : set expected classification of all seqs to group &lt;s&gt;
+  --subgroup &lt;s&gt; : set expected classification of all seqs to subgroup &lt;s&gt;
+
+options for controlling severity of alerts:
+  --alt_list        : output summary of all alerts and exit
+  --alt_pass &lt;s&gt;    : specify that alert codes in comma-separated &lt;s&gt; do not cause FAILure
+  --alt_fail &lt;s&gt;    : specify that alert codes in comma-separated &lt;s&gt; do cause FAILure
+  --alt_mnf_yes &lt;s&gt; : alert codes in &lt;s&gt; for 'misc_not_failure' features cause misc_feature-ization, not failure
+  --alt_mnf_no &lt;s&gt;  : alert codes in &lt;s&gt; for 'misc_not_failure' features cause failure, not misc-feature-ization
+  --ignore_mnf      : ignore non-zero 'misc_not_feature' values in .minfo file, set to 0 for all features/models
+
+options related to model files:
+  -m &lt;s&gt;      : use CM file &lt;s&gt; instead of default
+  -a &lt;s&gt;      : use HMM file &lt;s&gt; instead of default
+  -i &lt;s&gt;      : use model info file &lt;s&gt; instead of default
+  -n &lt;s&gt;      : use blastn db file &lt;s&gt; instead of default
+  -x &lt;s&gt;      : blastx dbs are in dir &lt;s&gt;, instead of default
+  --mkey &lt;s&gt;  : .cm, .minfo, blastn .fa files in $VADRMODELDIR start with key &lt;s&gt;, not 'vadr'
+  --mdir &lt;s&gt;  : model files are in directory &lt;s&gt;, not in $VADRMODELDIR
+  --mlist &lt;s&gt; : only use models listed in file &lt;s&gt;
+
+options for controlling output feature table:
+  --nomisc        : in feature table for failed seqs, never change feature type to misc_feature
+  --notrim        : in feature table, don't trim coords due to Ns (for any feature types)
+  --noftrtrim &lt;s&gt; : in feature table, don't trim coords due to Ns for feature types in comma-delmited &lt;s&gt;
+  --noprotid      : in feature table, don't add protein_id for CDS and mat_peptides
+  --forceprotid   : in feature table, force protein_id value to be sequence name, then idx
+
+options for controlling thresholds related to alerts:
+  --lowsc &lt;x&gt;       : lowscore/LOW_SCORE bits per nucleotide threshold is &lt;x&gt; [0.3]
+  --indefclass &lt;x&gt;  : indfcls/INDEFINITE_CLASSIFICATION bits per nucleotide diff threshold is &lt;x&gt; [0.03]
+  --incspec &lt;x&gt;     : inc{group,subgrp}/INCORRECT_{GROUP,SUBGROUP} bits/nt threshold is &lt;x&gt; [0.2]
+  --lowcov &lt;x&gt;      : lowcovrg/LOW_COVERAGE fractional coverage threshold is &lt;x&gt; [0.9]
+  --dupregolp &lt;n&gt;   : dupregin/DUPLICATE_REGIONS minimum model overlap is &lt;n&gt; [20]
+  --dupregsc &lt;x&gt;    : dupregin/DUPLICATE_REGIONS minimum bit score is &lt;x&gt; [10]
+  --indefstr &lt;x&gt;    : indfstrn/INDEFINITE_STRAND minimum weaker strand bit score is &lt;x&gt; [25]
+  --lowsim5term &lt;n&gt; : lowsim5{s,f}/LOW_{FEATURE_}SIMILARITY_START minimum length is &lt;n&gt; [15]
+  --lowsim3term &lt;n&gt; : lowsim3{s,f}/LOW_{FEATURE_}SIMILARITY_END minimum length is &lt;n&gt; [15]
+  --lowsimint &lt;n&gt;   : lowsimi{s,f}/LOW_{FEATURE_}SIMILARITY (internal) minimum length is &lt;n&gt; [1]
+  --biasfract &lt;x&gt;   : biasdseq/BIASED_SEQUENCE fractional threshold is &lt;x&gt; [0.25]
+  --indefann &lt;x&gt;    : indf{5,3}loc/'INDEFINITE_ANNOTATION_{START,END} non-mat_peptide min allowed post probability is &lt;x&gt; [0.8]
+  --indefann_mp &lt;x&gt; : indf{5,3}loc/'INDEFINITE_ANNOTATION_{START,END} mat_peptide min allowed post probability is &lt;x&gt; [0.6]
+  --fstminnt &lt;n&gt;    : fst{hi,lo}cnf/POSSIBLE_FRAMESHIFT_{HIGH,LOW}_CONF max allowed frame disagreement nt length w/o alert is &lt;n&gt; [6]
+  --fsthighthr &lt;x&gt;  : fsthicnf/POSSIBLE_FRAMESHIFT_HIGH_CONF minimum average probability for alert is &lt;x&gt; [0.8]
+  --fstlowthr &lt;x&gt;   : fstlocnf/POSSIBLE_FRAMESHIFT_LOW_CONF minimum average probability for alert is &lt;x&gt; [0.3]
+  --xalntol &lt;n&gt;     : indf{5,3}{st,lg}/INDEFINITE_ANNOTATION_{START,END} max allowed nt diff blastx start/end is &lt;n&gt; [5]
+  --xmaxins &lt;n&gt;     : insertnp/INSERTION_OF_NT max allowed nucleotide insertion length in blastx validation is &lt;n&gt; [27]
+  --xmaxdel &lt;n&gt;     : deletinp/DELETION_OF_NT max allowed nucleotide deletion length in blastx validation is &lt;n&gt; [27]
+  --nmaxins &lt;n&gt;     : insertnn/INSERTION_OF_NT max allowed nucleotide (nt) insertion length in CDS nt alignment is &lt;n&gt; [27]
+  --nmaxdel &lt;n&gt;     : deletinn/DELETION_OF_NT max allowed nucleotide (nt) deletion length in CDS nt alignment is &lt;n&gt; [27]
+  --xlonescore &lt;n&gt;  : indfantp/INDEFINITE_ANNOTATION min score for a blastx hit not supported by CM analysis is &lt;n&gt; [80]
+  --hlonescore &lt;n&gt;  : indfantp/INDEFINITE_ANNOTATION min score for a hmmer hit not supported by CM analysis is &lt;n&gt; [10]
+
+options for controlling cmalign alignment stage:
+  --mxsize &lt;n&gt; : set max allowed memory for cmalign to &lt;n&gt; Mb [16000]
+  --tau &lt;x&gt;    : set the initial tau value for cmalign to &lt;x&gt; [0.001]
+  --nofixedtau : do not fix the tau value when running cmalign, allow it to decrease if nec
+  --nosub      : use alternative alignment strategy for truncated sequences
+  --noglocal   : do not run cmalign in glocal mode (run in local mode)
+
+options for controlling blastx protein validation stage:
+  --xmatrix &lt;s&gt; : use the matrix &lt;s&gt; with blastx (e.g. BLOSUM45)
+  --xdrop &lt;n&gt;   : set the xdrop value for blastx to &lt;n&gt; [25]
+  --xnumali &lt;n&gt; : number of alignments to keep in blastx output and consider if --xlongest is &lt;n&gt; [20]
+  --xlongest    : keep the longest blastx hit, not the highest scoring one
+
+options for using hmmer instead of blastx for protein validation:
+  --hmmer        : use hmmer for protein validation, not blastx
+  --h_max        : use --max option with hmmsearch
+  --h_minbit &lt;x&gt; : set minimum hmmsearch bit score threshold to &lt;x&gt; [-10]
+
+options related to blastn-derived seeded alignment acceleration:
+  -s               : use the max length ungapped region from blastn to seed the alignment
+  --s_blastnws &lt;n&gt; : for -s, set blastn -word_size &lt;n&gt; to &lt;n&gt; [7]
+  --s_blastnsc &lt;x&gt; : for -s, set blastn minimum HSP score to consider to &lt;x&gt; [50]
+  --s_overhang &lt;n&gt; : for -s, set length of nt overhang for subseqs to align to &lt;n&gt; [100]
+
+options related to replacing Ns with expected nucleotides:
+  -r               : replace stretches of Ns with expected nts, where possible
+  --r_minlen &lt;n&gt;   : minimum length subsequence to replace Ns in is &lt;n&gt; [5]
+  --r_minfract &lt;x&gt; : minimum fraction of Ns in subseq to trigger replacement is &lt;x&gt; [0.5]
+  --r_fetchr       : fetch features for output fastas from seqs w/Ns replaced, not originals
+  --r_cdsmpr       : detect CDS and MP alerts in sequences w/Ns replaced, not originals
+  --r_pvorig       : use original sequences for protein validation, not replaced seqs
+  --r_prof         : use slower profile methods, not blastn, to identify Ns to replace
+
+options related to parallelization on compute farm:
+  -p             : parallelize cmsearch/cmalign on a compute farm
+  -q &lt;s&gt;         : use qsub info file &lt;s&gt; instead of default
+  --nkb &lt;n&gt;      : number of KB of sequence for each farm job is &lt;n&gt; [10]
+  --wait &lt;n&gt;     : allow &lt;n&gt; wall-clock minutes for jobs on farm to finish, including queueing time [500]
+  --errcheck     : consider any farm stderr output as indicating a job failure
+  --maxnjobs &lt;n&gt; : set max number of jobs to submit to compute farm to &lt;n&gt; [2500]
+
+options for skipping stages:
+  --skip_align : skip the cmalign step, use results from an earlier run of the script
+  --skip_pv    : do not perform blastx-based protein validation
+
+optional output files:
+  --out_stk     : output per-model full length stockholm alignments (.stk)
+  --out_afa     : output per-model full length fasta alignments (.afa)
+  --out_rpstk   : with -r, output stockholm alignments of seqs with Ns replaced
+  --out_rpafa   : with -r, output fasta alignments of seqs with Ns replaced
+  --out_nofs    : do not output frameshift stockholm alignment files
+  --out_nofasta : do not output fasta files of features, or passing/failing seqs
+  --out_debug   : dump voluminous info from various data structures to output files
+
+other expert options:
+  --execname &lt;s&gt; : define executable name of this script as &lt;s&gt;
+  --alicheck     : for debugging, check aligned sequence vs input sequence for identity
+  --noseqnamemax : do not enforce a maximum length of 50 for sequence names (GenBank max)
+  --minbit &lt;x&gt;   : set minimum cmsearch bit score threshold to &lt;x&gt; [-10]
+  --origfa       : do not copy fasta file prior to analysis, use original
+  --msub &lt;s&gt;     : read model substitution file from &lt;s&gt;
+  --xsub &lt;s&gt;     : read blastx db substitution file from &lt;s&gt;
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn4471 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

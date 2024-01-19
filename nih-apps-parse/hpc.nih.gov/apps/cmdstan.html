@@ -1,0 +1,209 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'cmdstan on Biowulf';</script>
+<div class="title">cmdstan on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job</a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width:70%">
+<blockquote>
+Stan is a state-of-the-art platform for statistical modeling and
+high-performance statistical computation. Thousands of users rely on Stan for
+statistical modeling, data analysis, and prediction in the social, biological,
+and physical sciences, engineering, and business.<br>
+-- from <cite><a href="https://mc-stan.org/">https://mc-stan.org/</a></cite>
+</blockquote>
+
+<p>
+cmdstan is the command line interface to stan. Because it is meant to be
+used from within its own source tree, Biowulf provides a helper script
+which assists users in compiling their own local version of cmdstan as well
+as an example model, data, and batch script for illustration.
+</p>
+
+<p>
+R and python include stan interfaces as well.
+</p>
+    
+</div>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://mc-stan.org/">Stan</a></li>
+    <li><a href="https://mc-stan.org/users/interfaces/cmdstan.html">cmdstan</a></li>
+    <li><a href="https://github.com/stan-dev/cmdstan">cmdstan on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: cmdstan (see <a href="/apps/modules.html">the modules page</a> 
+    for more information)</li>
+    <li>This module currently only provides access to the MPI build of cmdstan</li>
+</ul>
+<P>
+
+<a Name="batch"></a><div class="heading">Batch job</div>
+
+<p>cmdstan assumes that it is run from within the source tree it was buit in.
+To make it simple to use, we provide a wrapper script that builds a local copy
+of cmdstan with a given compiler/MPI combination. The script along with source
+tar balls are the only thing provided by the module.</p>
+
+<p>As a first step, create a cmdstan build:</p>
+<pre class="term">
+[user@biowulf]$ <b>module load cmdstan</b>
+[+] Loading cmdstan  2.21.0-mpi
+[user@biowulf]$ <b>cmdstan help</b>
+NAME
+  cmdstan -- cmdstan installation wrapper
+SYNOPSIS
+  cmdstan <command>
+COMMANDS
+  help     show this help message
+  compile  submit a compile job
+  example  copy example to local stan directory and build it
+DESCRIPTION
+  The `cmdstan` wrapper script will submit a batch job to build
+  cmdstan in the current directory. You will be notified by
+  mail when the build is finished.
+VERSIONS
+  cmdstan 2.21.0
+  gcc     9.2.0
+  mpi     openmpi/3.1.4/gcc-9.2.0
+  arch    x2680
+[user@biowulf]$ <b>cmdstan compile</b>
+Submitted compile job 53209944
+You will receive an email when compile is complete
+</pre>
+
+<p>This will submit a batch job compiling cmdstan in the current
+working directory. It will use the processor architecture, compiler,
+and mpi module indicated in the help message. Once the job is done,
+a email notification will be sent. Once the build is done:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>ls -lh</b>
+drwxr-xr-x 10 user group   4096 Mar 24 09:00 cmdstan-2.21.0-mpi
+-rw-r--r--  1 user group 126916 Mar 24 09:04 cmdstan-2.21.0-mpi.53209944.log
+[user@biowulf]$ <b>cd cmdstan-2.21.0-mpi</b>
+</pre>
+
+<p>
+Stan models have to be compiled into standalone executables from
+within this directory. The wrapper script can compile an example - 
+again as a batch job because it requires the mpi module and needs
+to be compiled on an infiniband node
+</p>
+
+<pre class="term">
+[user@biowulf]$ <b>cmdstan example</b>
+running from within compiled cmdstan home dir
+copying example
+one sec - compiling model as a batch job
+  command run: module load openmpi/3.1.4/gcc-9.2.0; make linreg/linreg_par
+  This command can be run from a batch job or sinteractive session
+  where the openmpi library can be loaded.
+
+Submitted compile job 53210535
+You will receive an email when compile is complete
+</pre>
+
+<p>
+This will create a <code>linreg</code> directory with a model,
+the compiled model, as well as a batch script for submission. Let's run
+the example model on a single node with 28 tasks:
+</p>
+
+<pre class="term">
+[user@biowulf]$ <b>cd linreg</b>
+[user@biowulf]$ <b>cat batch.sh</b>
+#! /bin/bash
+#SBATCH --ntasks=28
+#SBATCH --ntasks-per-core=1
+#SBATCH --constraint=x2680
+#SBATCH --exclusive
+#SBATCH --partition=multinode
+#SBATCH --gres=lscratch:10
+#SBATCH --mem-per-cpu=2g
+
+module load openmpi/3.1.4/gcc-9.2.0
+
+N=1000
+n=500
+S=$SLURM_NTASKS
+O=4
+fn=/lscratch/$SLURM_JOB_ID/dat_order_${O}_shards_${S}.Rdump
+
+# copy the input file and set the number of shards
+sed "s/shards &lt;- S/shards &lt;- $S/" \
+    dat_order_${O}_shards_S.Rdump > $fn
+
+
+srun --mpi=pmix ./linreg_par  \
+    sample num_samples=$N num_warmup=$n \
+    data file=$fn \
+    output file=output_order_${O}_shards_${S}.csv
+[user@biowulf]$ <b>sbatch bash.sh</b>
+53161946
+[user@biowulf]$ <b>sleep 15m</b>
+[user@biowulf]$ <b>cat slurm-53161946.out</b>
+...snip...
+Gradient evaluation took 0.07 seconds
+1000 transitions using 10 leapfrog steps per transition would take 700 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 1500 [  0%]  (Warmup)
+Iteration:  100 / 1500 [  6%]  (Warmup)
+Iteration:  200 / 1500 [ 13%]  (Warmup)
+
+</pre>
+
+<p>This model scales well up to 16 tasks (32 CPUs since we set 
+<code>--ntasks-per-core=1</code> in this example) and still runs at
+about 70% efficiency with 28 tasks (56 CPUs). In addition, it appears
+to do fairly well with 2 tasks per core. In the following graph,
+runtime is shown as a function of the number of CPUs. Light grey
+circles used 1 task per core. Black used 2 tasks per core. The line
+shows ideal scaling.</p>
+
+<div style="margin: 0 auto; width: 70%">
+    <img src="/images/cmdstan.png" alt="cmdstan scaling" width="100%"/>
+</div>
+
+<p>Here is how you would compile your own model. We'll use the same example
+as above.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>mkdir linreg2</b>
+[user@biowulf]$ <b>cp linreg/linreg_par.stan linreg2</b>
+[user@biowulf]$ <b>sinteractive --constraint=x2680 --mem=4g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load openmpi/3.1.4/gcc-9.2.0</b>
+[user@cn3144]$ <b>make linreg2/linreg_par</b>
+...
+[user@cn3144]$ <b>exit</b>
+[user@biowulf]$
+</pre>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

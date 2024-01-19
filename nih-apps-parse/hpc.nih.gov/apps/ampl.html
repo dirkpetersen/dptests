@@ -1,0 +1,233 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'AMPL on Biowulf';</script>
+<div class="title">AMPL on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+AMPL is the Accelerating Therapeutics for Opportunites in Medicine (ATOM) Consortium Modeling PipeLine for drug discovery.
+</p>
+
+<h3>Reference:</h3>
+<ul>
+<li>
+<a href=https://pubs.acs.org/doi/abs/10.1021/acs.jcim.9b01053>Minnich, Amanda J., et al. "AMPL: A Data-Driven Modeling Pipeline for Drug Discovery." <i>Journal of Chemical Information and Modeling</i> 60.4 (2020): 1955-1968.</a>
+</li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://ampl.readthedocs.io/en/latest/pipeline.html">AMPL Read the Docs site</a></li>
+<!-- <li><a href="https://github.com/ravichas/AMPL-Tutorial">AMPL Tutorial</a></li> -->
+<li><a href="https://github.com/ATOMconsortium/AMPL/tree/master/atomsci/ddm/examples/tutorials">AMPL Tutorial</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>ampl</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>The <tt>ampl</tt> module sets the <tt>$AMPL_HOME</tt> environment variable which points to the location of the installation. A matched version of the GitHub repo is present in this directory for copying. If you want to modify ampl scripts before running, you should copy this directory to your own space.  
+	<li>AMPL is installed within a pre-made conda environment. All binaries in the original environment are symlinked into your path (it is mostly overwriting your existing Python). Do not attempt to use simultaneously with another Python environment.
+    <li> If you find that your <tt>sys.path</tt> contains libraries within your home directory that conflict with the central installation of ampl, you can start python with the <tt>-Es</tt> flags, or execute <tt>export PYTHONNOUSERSITE=True</tt>.
+    <li>The following commands and scripts are avaiable after loading the module. Please note that some of these scripts may not be executable. Please contact the NIH HPC staff if other commands are required within the AMPL environment:
+      <ul>
+      <li><tt>ave_splitter.py </tt></li> 
+      <li><tt>chem_diversity.py </tt></li> 
+      <li><tt>compare_models.py </tt></li> 
+      <li><tt>curate_data.py </tt></li> 
+      <li><tt>data_curation_functions.py </tt></li> 
+      <li><tt>datastore_functions.py </tt></li> 
+      <li><tt>dist_metrics.py </tt></li> 
+      <li><tt>diversity_plots.py </tt></li> 
+      <li><tt>featurization.py </tt></li>
+      <li><tt>genTestset.py </tt></li> 
+      <li><tt>hyperparam_search_wrapper.pec/ampl.sh </tt></li> 
+      <li><tt>hyper_perf_plots.py </tt></li> 
+      <li><tt>ipython </tt></li> 
+      <li><tt>jupyter </tt></li> 
+      <li><tt>jupyter-notebook </tt></li> 
+      <li><tt>jupyter-run </tt></li> 
+      <li><tt>llnl_utils.py </tt></li> 
+      <li><tt>model_datasets.py </tt></li>
+      <li><tt>model_pipeline.py </tt></li>
+      <li><tt>model_tracker.py </tt></li> 
+      <li><tt>model_wrapper.py </tt></li> 
+      <li><tt>nosetests </tt></li> 
+      <li><tt>open-docs.py </tt></li> 
+      <li><tt>parameter_parser.py </tt></li> 
+      <li><tt>perf_data.py </tt></li>
+      <li><tt>perf_plots.py </tt></li> 
+      <li><tt>process_slurm.py </tt></li> 
+      <li><tt>pubchem_utils.py </tt></li> 
+      <li><tt>pytest </tt></li> 
+      <li><tt>python </tt></li> 
+      <li><tt>rdkit_easy.py </tt></li>
+      <li><tt>splitting.py </tt></li> 
+      <li><tt>struct_utils.py </tt></li> 
+      <li><tt>temporal_splitter.py </tt></li>
+      <li><tt>tensorboard </tt></li> 
+      <li><tt>transformations.py </tt></li> 
+      </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --gres=lscratch:10 --mem=8g -c4 --tunnel</b>
+salloc: Pending job allocation 35296239
+salloc: job 35296239 queued and waiting for resources
+salloc: job 35296239 has been allocated resources
+salloc: Granted job allocation 35296239
+salloc: Waiting for resource configuration
+salloc: Nodes cn0857 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.35296239.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+Created 1 generic SSH tunnel(s) from this compute node to
+biowulf for your use at port numbers defined
+in the $PORTn ($PORT1, ...) environment variables.
+
+
+Please create a SSH tunnel from your workstation to these ports on biowulf.
+On Linux/MacOS, open a terminal and run:
+
+    ssh  -L 36858:localhost:36858 user@biowulf.nih.gov
+
+For Windows instructions, see https://hpc.nih.gov/docs/tunneling
+
+
+[user@cn0857 ~]$ <b>module load ampl</b>
+[+] Loading ampl  1.3.0  on cn0857
+
+[user@cn0857 ~]$ <b>ipython</b>
+Python 3.7.10 (default, Feb 26 2021, 18:47:35)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 7.16.1 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: <b>import atomsci</b>
+
+In [2]: <b>quit()</b>
+
+[user@cn0857 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0857 35296239]$ <b>cp -r ${AMPL_HOME}/ampl .</b>
+
+[user@cn0857 35296239]$ <b>cd ampl/atomsci/ddm/</b>
+
+[user@cn0857 ddm]$ <b>jupyter-notebook --no-browser --port=$PORT1</b>
+[I 14:23:09.610 NotebookApp] Serving notebooks from local directory: /lscratch/35296239/ampl/atomsci/ddm
+[I 14:23:09.610 NotebookApp] Jupyter Notebook 6.4.10 is running at:
+[I 14:23:09.610 NotebookApp] http://localhost:36858/?token=5ebfcff3cfccd637d36250f9a5a8191a22011edd2a262db5
+[I 14:23:09.610 NotebookApp]  or http://127.0.0.1:36858/?token=5ebfcff3cfccd637d36250f9a5a8191a22011edd2a262db5
+[I 14:23:09.610 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 14:23:09.618 NotebookApp]
+
+    To access the notebook, open this file in a browser:
+        file:///spin1/home/linux/user/.local/share/jupyter/runtime/nbserver-63375-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:36858/?token=5ebfcff3cfccd637d36250f9a5a8191a22011edd2a262db5
+     or http://127.0.0.1:36858/?token=5ebfcff3cfccd637d36250f9a5a8191a22011edd2a262db5
+</pre>
+
+
+<p>Now in a new terminal on your local machine, you should initiate a new ssh session to Biowulf to establish the ssh tunnel. Using the port that was allocated to you during the sinteractive step above:
+<pre class="term">
+[user@mymachine ~]$ <b>ssh  -L 36858:localhost:36858 user@biowulf.nih.gov</b>
+
+[user@biowulf ~]$
+
+</pre>
+
+<p>This will allow you to open a local browser and view the Jupyter Notebook session running on the compute node:
+
+<p> <center><img src="/images/ampl-jupyter-example.PNG" alt="AMPL Jupyter Notebook image" width=95%></center></p>
+
+When you are finished close the Jupyter Notebook session in original terminal using <tt>Ctrl-C</tt> and exit the interactive session to conserve system resources.  
+<pre class="term">
+<b>^C</b>[I 11:48:01.862 NotebookApp] interrupted
+Serving notebooks from local directory: /lscratch/1151805/ampl/atomsci/ddm
+1 active kernel
+The Jupyter Notebook is running at:
+http://localhost:36858/?token=05982663a539c9fac05608e4b7ca76649356f1cdb3dcc750
+Shutdown this notebook server (y/[n])? <b>y</b>
+[C 18:43:10.271 NotebookApp] Shutdown confirmed
+[I 11:48:03.637 NotebookApp] Shutting down 1 kernel
+[I 11:48:03.838 NotebookApp] Kernel shutdown: 1b0c8fe9-a2de-45bc-ab5a-bea16e60dc0f
+
+[user@cn0859 ddm]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 1151805
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. ampl.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load ampl
+# command here
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] ampl.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. ampl.swarm). For example:</p>
+
+<pre class="term">
+cmd1
+cmd2
+cmd3
+cmd4
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f ampl.swarm [-g #] [-t #] --module ampl</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module ampl</tt> <td>Loads the ampl module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

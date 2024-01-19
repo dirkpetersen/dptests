@@ -1,0 +1,88 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Gctf on Biowulf';</script>
+<div class="title">Gctf on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+Gctf provides accurate estimation of the contrast transfer function (CTF) for near-atomic resolution cryo electron microscopy (cryoEM) reconstruction using GPUs. The main target of Gctf is to maximize the cross-correlation of a simulated CTF with the logarithmic amplitude spectra (LAS) of observed micrographs after background subtraction.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+Zhang K.
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/26592709"><u><b>Gctf: Real-time CTF determination and correction.</b></u></a>
+<em>J Struct Biol. 2016 Jan;193(1):1-12.</em>
+
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="https://www.mrc-lmb.cam.ac.uk/kzhang/">Gctf Main Site</a></li>
+  <li>Type <tt><b>Gctf --help</b></tt></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Gctf</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>GPU-accelerated
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>GCTF_HOME</tt></li>
+    <li><tt>RELION_GCTF_EXECUTABLE</tt></li>
+  </ul>
+</ul>
+<p class="alert">Gctf can utilize GPUs.  This requires the user load the proper CUDA library for the executables.  For example, the executable <tt><b>Gctf-v1.06_sm_30_cu7.5_x86_64</b></tt> requires <tt><b>module load CUDA/7.5</b></tt> prior to use.</p>
+
+<p class="alert">Alternatively, a wrapper script which automatically loads the correct CUDA library can be used: <b><tt>Gctf</tt></b></p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a>, along with at least one GPU, and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --constraint=gpup100 --gres=gpu:p100:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load Gctf CUDA/7.5</b>
+[user@cn3144 ~]$ Gctf-v1.06_sm_30_cu7.5_x86_64 --apix 1.07  --kV 300 --Cs 2.7 --ac 0.1  Micrographs/Falcon*.mrc
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. Gctf.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load Gctf
+Gctf --apix 1.07 --kV 300 --Cs 2.7 --ac 0.1 Micrographs/Falcon*.mrc
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] --gres=gpu:p100:1 --partition=gpu Gctf.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

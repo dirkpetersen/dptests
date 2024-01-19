@@ -1,0 +1,144 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Gridss on Biowulf';</script>
+<div class="title">Gridss on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Gridss is a collection of tools for the detection of genomic rearrangements. It includes a genome-wide break-end assembler, as well as a structural variation caller for Illumina sequencing data. Gridss calls variants based on alignment-guided positional de Bruijn graph genome-wide break-end assembly, split read, and read pair evidence.
+</p>
+
+<a Name="doc"></a><div class="heading">References</div>
+<ul>
+<li>Cameron DL, Schröder J, Penington JS, et al. <a href="https://pubmed.ncbi.nlm.nih.gov/29097403/">GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly. </a>, Genome Res. 2017;27(12):2050-2060.</li> 
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/PapenfussLab/gridss">Gridss github page</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>gridss</tt> (see <a href="/apps/modules.html">the modules page</a> for more information).  
+
+<li>Gridss is installed as a singularity container and contains all the dependencies (e.g., picard, bwa) required for gridss to run.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> with 5 GB of local disk and run the program. Sample session below::</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g --cpus-per-task=8 --gres=lscratch:8</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load gridss</b>
+[+] Loading gridss  2.9.4  on cn3144
+[+] Loading singularity  3.6.1  on cn3144 
+
+[user@cn3144 ~]$ <b>cd /lscratch/${SLURM_JOB_ID}</b>
+
+[user@cn3144 ~]$ <b>cp /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa .</b>
+
+[user@cn3144 ~]$ <b>cp /data/$USER/test_dna.bam .</b>
+
+[user@cn3144 ~]$ <b>gridss.sh -r genome.fa \
+                  -o hg38_test_output.vcf.gz \
+                  -a /lscratch/${SLURM_JOB_ID}/assembly.bam \
+                  -w /lscratch/${SLURM_JOB_ID} \
+                  test_dna.bam </b>
+
+Using working directory "/lscratch/46116226"
+Wed Aug 19 13:40:00 EDT 2020: Full log file is: gridss.full.20200819_134000.cn3144.5147.log
+Wed Aug 19 13:40:00 EDT 2020: Found /usr/bin/time
+Wed Aug 19 13:40:00 EDT 2020: Using reference genome "genome.fa"
+Wed Aug 19 13:40:00 EDT 2020: Using assembly bam /lscratch/46116226
+Wed Aug 19 13:40:00 EDT 2020: Using output VCF hg38_test_output
+Wed Aug 19 13:40:00 EDT 2020: Using 8 worker threads.
+Wed Aug 19 13:40:00 EDT 2020: Using no blacklist bed. The encode DAC blacklist is recommended for hg19.
+Wed Aug 19 13:40:00 EDT 2020: Using JVM maximum heap size of 25g for assembly and variant calling.
+Wed Aug 19 13:40:00 EDT 2020: Using input file test_dna.bam
+Wed Aug 19 13:40:00 EDT 2020: Found /usr/bin/Rscript
+Wed Aug 19 13:40:00 EDT 2020: Found /usr/bin/samtools
+Wed Aug 19 13:40:00 EDT 2020: Found /usr/bin/java
+Wed Aug 19 13:40:00 EDT 2020: Found /usr/bin/bwa
+Wed Aug 19 13:40:01 EDT 2020: samtools version: 1.7+htslib-1.7-2
+Wed Aug 19 13:40:01 EDT 2020: R version: R scripting front-end version 3.6.3 (2020-02-29)
+Wed Aug 19 13:40:01 EDT 2020: bwa Version: 0.7.17-r1188
+
+[...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gridss.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load gridss
+
+gridss.sh -r genome.fa \
+          -o hg38_test_output.vcf.gz \
+          -a /lscratch/${SLURM_JOB_ID}/assembly.bam \
+          -w /lscratch/${SLURM_JOB_ID} \
+          test_dna.bam 
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  [--mem=#] --gres=lscratch:5 gridss.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<P>
+
+Create a swarmfile (e.g. gridss.swarm). For example:</p>
+
+<pre class="term">
+gridss.sh -r genome.fa -o hg38_test_output1.vcf.gz -a /lscratch/${SLURM_JOB_ID}/assembly1.bam \
+          -w /lscratch/${SLURM_JOB_ID} test_dna1.bam
+gridss.sh -r genome.fa -o hg38_test_output2.vcf.gz -a /lscratch/${SLURM_JOB_ID}/assembly2.bam \
+           -w /lscratch/${SLURM_JOB_ID} test_dna2.bam
+gridss.sh -r genome.fa -o hg38_test_output3.vcf.gz -a /lscratch/${SLURM_JOB_ID}/assembly3.bam \
+           -w /lscratch/${SLURM_JOB_ID} test_dna3.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f gridss.swarm [-t #] --gres=lscratch:5 --module gridss</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td width=20%><tt>--gres=lscratch:5</tt> <td>allocate 5 GB of local disk for each swarm subjob
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

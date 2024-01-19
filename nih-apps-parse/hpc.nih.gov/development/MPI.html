@@ -1,0 +1,104 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MPI';</script>
+<p>
+<div class="title">MPI</div>
+
+  <p>The Message Passing Interface (MPI) is a mechanism that parallel 
+  applications can use for inter-process communication across the various
+  network interconnects used by Biowulf compute nodes. MPI is used by 
+  parallel programs that require tight coupling between processes running
+  on different nodes, as opposed to programs that run independently in
+  parallel, such as the different sub-jobs of a <a href="/apps/swarm.html">
+  swarm</a>.</p>
+
+  <p>The MPI specification defines an application programmming interface
+  (API), which is a set of functions that can be called by programs to
+  pass data. The advantage of using this API is that program users and
+  developers can choose the implementation that runs best on their target
+  system without having to develop low-level communication routines
+  independently.</p>
+
+  <p>The Biowulf staff maintains two of the most popular MPI implementations for the
+  convenience of our users: OpenMPI and MVAPICH2. Both of these implementations
+  have been extensively tested on the cluster and are known to work well with the
+  current hardware and networking topology. Further details on both are given
+  below:</p>
+
+  <div class="subheading"><h4>OpenMPI</h4></div>
+
+  <p><a href="https://www.open-mpi.org">OpenMPI</a> is the most frequently used
+  MPI implementation on Biowulf. It is easy to use and integrates well with the
+  Slurm batch system. A large number of modules are available, however, the
+  staff recommends using version 4.0.4 or later. Older versions are deprecated
+  and their corresponding modules may be removed in the future. However,
+  programs compiled against OpenMPI 4 will only run correctly on Biowulf
+  InfiniBand nodes (i.e. nodes having the ibfdr, ibhdr, or ibhdr100 node
+  features). All nodes in the multinode partition have InfiniBand support.</p>
+
+  <p>To list all available Compiler and OpenMPI combinations, run:</p>
+
+  <div class="term">module avail openmpi/</div>
+
+  <div class="subheading"><h4>MVAPICH</h4></div>
+
+  <p><a href="http://mvapich.cse.ohio-state.edu/">MVAPICH</a> is another very 
+  popular MPI implementation developed at Ohio State University. It is notable
+  for its excellent support for various types of InfiniBand networks.</p>
+
+  <p>To list all available Compiler and MVAPICH2 combinations, run:</p>
+
+  <div class="term">module avail mvapich2/</div>
+
+<P>
+<div class="title">Helpful environment variables for OpenMPI</div>
+
+<p>Versions of OpenMPI prior to 4.1 on Biowulf are compiled with support for
+the OpenIB transport library, which is used for InfiniBand communication. However,
+OpenMPI versions &ge; 4.0.0 also include the newer UCX transport library. The
+UCX library is the preferred comunication library for InfiniBand. Using both
+OpenIB and UCX can cause confusing (but harmless) warnings. To suppress these
+warnings when using the 4.0 versions of OpenMPI, set the following environent
+variables in your batch script:</P
+
+<p><div class="term">
+export OMPI_MCA_btl_openib_allow_ib=1<br />
+export OMPI_MCA_pml=ucx<br />
+export OMPI_MCA_btl=^openib
+</div></p>
+
+<P>
+<div class="title">MPI startup and process management</div>
+
+  <p>Whichever MPI implementation is chosen needs to communicate with the
+  Slurm job scheduler at runtime in order to determine which resources have
+  been allocated to the job and their topology. For recent versions of
+  both OpenMPI (4.0.0 or newer) and MVAPICH (2.3.4+), this may be done through the PMIx (Process
+  Management Interface for eXascale) framework. This framework is
+  automatically used when the following command is used to launch the job:</p>
+
+  <div class="term">srun --pmi=pmix program arguments</div>
+
+  <p>Note that no information needs to be given regarding number of processes
+  to be used; the MPI implemmentation will figure that out via the information
+  passed from the scheduler via PMIx.</p>
+
+  <p>Some older versions of OpenMPI also have modules that support the PMI-2
+  process management framework. For these versions, jobs can be launched via:</p>
+
+  <div class="term">srun --pmi=pmi2 program arguments</div>
+
+  <p>Users may also elect to use the mpirun and mpiexec programs, which are
+  included in the <tt>$PATH</tt> by default after an MPI module is loaded,
+  to start MPI programs. These programs can also use the standard Slurm process
+  management functionality as opposed to an external PMI library, The general
+  syntax is:</p>
+
+  <div class="term">mpirun -np $SLURM_NTASKS program arguments</div>
+
+  <p>For more information, please see <a href="https://slurm.schedmd.com/mpi_guide.html">
+  the guide for using MPI with slurm</a>.</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

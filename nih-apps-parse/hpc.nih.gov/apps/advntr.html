@@ -1,0 +1,103 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'adVNTR on Biowulf';</script>
+<div class="title">adVNTR on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p> adVNTR is a tool for genotyping Variable Number Tandem Repeats (VNTR) from sequence data. It works with both NGS short reads (Illumina HiSeq) and SMRT reads (PacBio) and finds diploid repeating counts for VNTRs and identifies possible mutations in the VNTR sequences.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Bakhtiari, M., Shleizer-Burko, S., Gymrek, M., Bansal, V. and Bafna, V.
+<em>Targeted genotyping of variable number tandem repeats with adVNTR.</em> Genome Research, 28(11), pp.1709-1719.
+<a href="https://genome.cshlp.org/content/28/11/1709/">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>advntr on <a href="https://github.com/mehrdadbakhtiari/adVNTR">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: advntr (see <a href="/apps/modules.html">the modules page</a>
+for more information)</li>
+<li>Example files in <code>$ADVNTR_TEST_DATA</code></li>
+<li>The warning messages at the top regarding cudart library when running <code>advntr</code> can be safely ignored.</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load advntr</b>
+[user@cn3144]$ <b>cp ${ADVNTR_TEST_DATA} .</b>
+[user@cn3144]$ <b>cd TEST_DATA</b>
+[user@cn3144]$ <b>mkdir log_dir</b>
+[user@cn3144]$ <b>advntr genotype --vntr_id 301645 --alignment_file CSTB_2_5_testdata.bam --working_directory log_dir/</b>
+    2021-04-30 18:46:02.676445: I tensorflow/stream_executor/platform/default/dso_loader.cc:49] Successfully opened dynamic library libcudart.so.11.0
+    301645
+    2/2
+</pre>
+
+<!-- <p>Notes:</p>
+<ol>
+    <li>advntr tries to determine if data is paired end by comparing sequence
+        ids. This can fail with certain id lines like, for example, those
+        produced by the sra-toolkit. In other words, it's a fragile
+        autodetection and fastq files may have to be reformatted to make it
+        work correctly.</li>
+    <li>advntr supports compressed fastq files</li>
+</ol> -->
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch script file (e.g. advntr.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+cd /lscratch/$SLURM_JOB_ID
+module load advntr
+cp $ADVNTR_TEST_DATA .
+cd TEST_DATA
+advntr genotype --vntr_id 301645 --alignment_file CSTB_2_5_testdata.bam --working_directory log_dir/
+....
+....
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=10g --gres=lscratch:20 advntr.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

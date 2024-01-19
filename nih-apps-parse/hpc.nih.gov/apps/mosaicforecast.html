@@ -1,0 +1,160 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mosaicforecast on Biowulf';</script>
+<div class="title">mosaicforecast on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MosaicForecast is a machine learning method that leverages read-based phasing and read-level features to accurately detect mosaic SNVs (SNPs, small indels) from NGS data. It builds on existing algorithms to achieve a multifold increase in specificity. 
+</p>
+<p>
+<ul>
+  
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Dou Y, Kwon M, Rodin RE, Cortés-Ciriano I, Doan R, Luquette LJ, Galor A, Bohrson C, Walsh CA, Park PJ. <em>Accurate detection of mosaic variants in sequencing data without matched controls</em> Nat Biotechnol. 2020 Mar;38(3):314-319. doi: 10.1038/s41587-019-0368-8. Epub 2020 Jan 6.
+   <a href="https://www.ncbi.nlm.nih.gov/pubmed/31907404">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.nature.com/articles/s41587-019-0368-8">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>mosaicforecast Main Site:<a href="https://github.com/parklab/MosaicForecast">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>mosaicforecast</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+     <li>Mosaicforecast was installed as a container. There are 6 functions included in the packages, and please call them directly (without python or Rscript).
+	<pre class="term">
+        Phase.py
+	ReadLevel_Features_extraction.py
+	Prediction.R
+	Train_RFmodel.R
+	PhasingRefine.R
+	MuTect2-PoN_filter.py
+	</pre>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li>$MOSAIC_TESTDATA #include demo and umap_mappability(bigWig file,k=24) from hg19
+    <li>$MOSAIC_MODEL #include pre-trained model to predic genotypes, please choose the one match your sequence depths.
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=2G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load mosaicforecast</b>
+[user@cn3144 ~]$ <b>Phase.py</b>
+Usage: python Phase.py bam_dir output_dir ref_fasta input_positions(file format:chr pos-1 pos ref alt sample, sep=\t) min_dp_inforSNPs(int) Umap_mappability(bigWig file,k=24) n_threads_parallel sequencing_file_format(bam/cram)
+
+Note:
+1. Name of bam files should be "sample.bam" under the bam_dir, and there should be corresponding index files.
+2. There should be a fai file under the same dir of the fasta file (samtools faidx input.fa).
+3. The "min_dp_inforSNPs" is the minimum depth of coverage of trustworthy neaby het SNPs.
+4. Bam file is preferred than cram file, as the program would run much more slowly if using cram format.
+
+[user@cn3144 ~]$ <b>mkdir mosaicforecast_test && cd mosaicforecast</b>
+[user@cn3144 ~]$ <b>cp -r ${MOSAIC_TESTDATA:-none}/* .</b>
+[user@cn3144 ~]$ <b> Phase.py ./demo/ test_out \
+                     /fdb/GATK_resource_bundle/b37-2.8/human_g1k_v37_decoy.fasta \
+                     ./demo/test.input 20 k24.umap.wg.bw 2 bam</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mosaicforecast.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=2G
+#SBATCH --time=2:00:00
+#SBATCH --partition=norm
+
+set -e
+module load mosaicforecast
+cp -r ${MOSAIC_TESTDATA:-none}/* .
+cp -r ${MOSAIC_MODEL:-none}/* .
+Prediction.R demo/test.SNP.features models_trained/250xRFmodel_addRMSK_Refine.rds Refine test.SNP.predictions
+</pre>
+<p> Submit the job:
+<pre class="term">sbatch mosaicforecast.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+    <pre class="term">
+
+       Prediction.R demo/test.SNP.features models_trained/250xRFmodel_addRMSK_Refine.rds Refine SNP.predictions   
+       Prediction.R demo/test.DEL.features models_trained/deletions_250x.RF.rds Phase DEL.predictions
+
+    </pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module mosaicforecast</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,118 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'scVelo: RNA velocity of single cell generalized through dynamical modeling.';</script>
+<div class="title"><b>scVelo: RNA velocity of single cell generalized through dynamical modeling.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+scVelo is a method to describe the rate of gene expression change for an individual gene 
+at a given time point based on the ratio of its spliced and unspliced messenger RNA (mRNA). 
+It avoids errors in the velocity estimates by solving the full transcriptional dynamics 
+of splicing kinetics using a likelihood-based dynamical model. 
+This generalizes RNA velocity to systems with transient cell states, 
+which are common in development and in response to perturbations.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Volker Bergen, Marius Lange, Stefan Peidli, F. Alexander Wolf and Fabian J. Theis <br />
+<i>Generalizing RNA velocity to transient cell states through dynamical modeling </i> <br />
+<a href="https://www.nature.com/articles/s41587-020-0591-3">Nature Biotechnology</a> <b>38</b>,
+1408-1414 (2020).
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/theislab/scvelo">scVelo GitHub page</a></li>
+<li><a href="https://scvelo.readthedocs.io">scVelo Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>scVelo</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SCVELO_HOME</b>&nbsp; installation directory</li>
+    <li><b>SCVELO_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>SCVELO_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>SCVELO_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@cn0911 ~]$<b>module load scvelo  </b>
+[+] Loading scvelo  0.2.4  on cn0911
+[+] Loading singularity  3.8.5  on cn0911
+[user@cn0911 ~]$<b>python $SCVELO_SRC/tests/test_basic.py</b>
+[user@cn0911 ~]$<b>python </b>
+Python 3.8.12 (default, Oct 12 2021, 13:49:34)
+[GCC 7.5.0] :: Anaconda, Inc. on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; <b>import numpy as np  </b>
+&gt;&gt;&gt; <b>import matplotlib.pyplot as pl  </b>
+&gt;&gt;&gt; <b>import scvelo as scv  </b>
+
+&gt;&gt;&gt; <b>scv.settings.set_figure_params('scvelo', dpi_save=200, dpi=80, transparent=True)  </b>
+&gt;&gt;&gt; <b>scv.settings.plot_prefix = 'scvelo_fig2_'  </b>
+&gt;&gt;&gt; <b>scv.settings.verbosity = 2  </b>
+
+&gt;&gt;&gt; <b>adata = scv.datasets.dentategyrus()  </b>
+100%|██████████████████████████████████████████████████████████████████████████████████████| 23.7M/23.7M [00:00&lt;00:00, 71.1MB/s]
+
+&gt;&gt;&gt; <b>scv.pp.filter_and_normalize(adata, min_shared_cells=20, n_top_genes=2000)  </b>
+Filtered out 11835 genes that are detected in less than 20 cells (shared).
+Normalized count data: X, spliced, unspliced.
+Extracted 2000 highly variable genes.
+Logarithmized X
+&gt;&gt;&gt; <b>scv.pp.moments(adata, n_neighbors=30, n_pcs=30)  </b>
+computing neighbors
+    finished (0:00:13)
+computing moments based on connectivities
+    finished (0:00:00)
+&gt;&gt;&gt; <b>scv.tl.velocity(adata, vkey='steady_state_velocity', mode='steady_state')  </b>
+computing velocities
+    finished (0:00:00)
+&gt;&gt;&gt; <b>scv.tl.velocity_graph(adata, vkey='steady_state_velocity')  </b>
+computing velocity graph (using 1/56 cores)
+    finished (0:00:04)
+&gt;&gt;&gt; <b>scv.tl.recover_dynamics(adata)  </b>
+recovering dynamics (using 1/56 cores)
+    finished (0:06:25)
+&gt;&gt;&gt; <b>scv.tl.velocity(adata, mode='dynamical', vkey='dynamical_velocity')  </b>
+computing velocities
+    finished (0:00:02)
+&gt;&gt;&gt; <b>scv.tl.velocity_graph(adata, vkey='dynamical_velocity', variance_stabilization=True)  </b>
+computing velocity graph (using 1/56 cores)
+    finished (0:00:08)
+&gt;&gt;&gt; <b>scv.pl.velocity_embedding_stream(adata, vkey='dynamical_velocity')  </b>
+computing velocity embedding
+    finished (0:00:08)
+</pre> 
+<p>
+<img src="scvelo/Figure_1.png" width="600" border="0" alt="">
+</p>
+End the interactive session:
+<pre class="term">
+[user@cn0911 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

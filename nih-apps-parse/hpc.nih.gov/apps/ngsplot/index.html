@@ -1,0 +1,132 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ngsplot on Biowulf';</script>
+<div class="title">ngsplot on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>ngsplot is an easy-to-use global visualization tool for next-generation sequencing data.</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Shen L, Shao N, Liu X and Nestler E.
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/pmid/24735413/"><u><b>ngs.plot: Quick mining and visualization of next-generation sequencing data by integrating genomic databases.</b></u></a>
+    <em>BMC Genomics, 15, 284 (2014).</em>
+  </li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://code.google.com/p/ngsplot/">https://code.google.com/p/ngsplot/</li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>ngsplot</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>NGSPLOT_HOME</tt></li>
+    <li><tt>NGSPLOT_EXAMPLES</tt></li>
+  </ul>
+<li>Example files in <tt>NGSPLOT_EXAMPLES</tt>
+</ul>
+
+<h2>Memory Errors</h2>
+
+<p>When ngsplot is run without adequate memory allocation, you may get the following errors:</p>
+
+<pre class="term">
+Error: dims [product 89082] do not match the length of object [0]
+</pre>
+
+<p>or</p>
+
+<pre class="term">
+Error in (result.matrix + result.pseudo.rpm)/(bkg.matrix + bkg.pseudo.rpm) :
+</pre>
+
+<p>Typically ngsplot will require at least 4gb of memory.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=20g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load ngsplot</b>
+[user@cn3144 ~]$ <b>cp $NGSPLOT_EXAMPLES/* .</b>
+[user@cn3144 ~]$ <b>ngs.plot.r -G hg19 -R tss -C hesc.H3k4me3.1M.bam -O k4.test -P $SLURM_CPUS_PER_TASK</b>
+Loading R libraries.....Done
+Configuring variables...Done
+Analyze bam files and calculate coverage............................................................................................................................................................................................................................................Done
+Plotting figures...Done
+Saving results...Done
+Wrapping results up...Done
+All done. Cheers!
+[user@cn3144 ~]$ <b>ls *.pdf</b>
+hesc.H3k4me3.tss.avgprof.pdf  hesc.H3k4me3.tss.heatmap.pdf
+[user@cn3144 ~]$ <b>display hesc.H3k4me3.tss.avgprof.pdf</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<img align=center style="margin-left:2em;" src="k4.test.avgprof.png" alt="PNG output" width="700px" border=1>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. ngsplot.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load ngsplot
+ngs.plot.r -G hg19 -R tss -C hesc.H3k4me3.1M.bam -O hesc.H3k4me3.tss -T H3K4me3 -L 3000 -FL 300 -P $SLURM_CPUS_PER_TASK</pre>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] ngsplot.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. ngsplot.swarm). For example:</p>
+
+<pre class="term">
+ngs.plot.r -G hg19 -R tss -C sample1.bam -O sample1.tss -T H3K4me3_1 -L 3000 -FL 300 -P $SLURM_CPUS_PER_TASK
+ngs.plot.r -G hg19 -R tss -C sample2.bam -O sample2.tss -T H3K4me3_2 -L 3000 -FL 300 -P $SLURM_CPUS_PER_TASK
+ngs.plot.r -G hg19 -R tss -C sample3.bam -O sample3.tss -T H3K4me3_3 -L 3000 -FL 300 -P $SLURM_CPUS_PER_TASK
+ngs.plot.r -G hg19 -R tss -C sample4.bam -O sample4.tss -T H3K4me3_4 -L 3000 -FL 300 -P $SLURM_CPUS_PER_TASK
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f ngsplot.swarm [-g #] [-t #] --module ngsplot</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module ngsplot</tt> <td>Loads the ngsplot module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

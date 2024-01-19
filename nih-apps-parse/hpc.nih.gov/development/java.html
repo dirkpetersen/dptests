@@ -1,0 +1,121 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Java';</script>
+<p>
+<div class="title">Java</div>
+
+  <p>Several Java Development Kits are installed in <span
+  class="monospace">/usr/local/Java</span>. Older versions are available for
+  applications that require them.  The latest version of java is symlinked to
+  <span class="monospace">/usr/local/java</span>.</p>
+
+  When compiling against Java, load the appropriate java module file, for example:
+
+  <pre class="term">module load java/1.8.0_92</pre>
+
+  <p>This will set the appropriate <span class="monospace">JAVA_HOME</span>,
+  <span class="monospace">PATH</span> and <span
+  class="monospace">LD_LIBRARY_PATH</span> environment variables.
+
+  <div class="heading">Executing a Jar file with Java</div> 
+
+  <p>You may run a jar file directly using the <span
+  class="monospace">-jar</span> flag:
+    <pre class="term">
+java [options] -jar <i>jarfile</i>
+</pre>
+
+  <div class="heading">Common Java Options</div>
+
+  <p>All java-based applications can utilize these options.</p>
+
+  <div class="subheading"><h4>Specifying Memory<h4></div>
+  <p>Including these options will configure the amount of memory required to
+  run the java-based application. [size] can be defined in kilobytes (e.g.
+  5k), megabytes (10m), or gigabytes (8g).</p>
+
+  <ul>
+    <li>-Xms[size] set initial heap size</li>
+    <li>-Xmx[size] set maximum heap size</li>
+    <li>-Xss[size] set thread stack size</li>
+  </ul>
+
+  <p>It is very common to include -Xmx4g with calls to java.  This requires
+  that 4GB of memory is available to the java instance.</p>
+
+  <div class="subheading"><h4>Specifying Scratch Space<h4></div>
+  <p>Java-based applications will very often require a scratch space for
+  creating temporary files during execution. By default, this is set to /tmp.
+  Unfortunately, many genomic java applications require much more scratch
+  space than is available in /tmp. Worse, running multiple instances of java
+  on a single node may fill up /tmp. In this case, including the option</p>
+
+  <ul>
+    <li>-Djava.io.tmpdir=[TMPDIR]</li>
+  </ul>
+
+  <p>will configure java to use [TMPDIR] as a scratch space.  Typically, this
+  can be set to <tt>/lscratch/$SLURM_JOB_ID</tt>:</p>
+  
+  <pre class="term">java -Djava.io.tmpdir=/lscratch/$SLURM_JOB_ID -jar <i>jarfile</i></pre>
+
+  <p>Please see information on allocting lscratch 
+  <a href="https://hpc.nih.gov/docs/userguide.html#local">here</a>.</p>
+
+  <div class="subheading"><h4>Disabling X11 Display and Keyboard Interaction<h4></div>
+  <p>Some java applications fail to run under batch conditions because an X11
+  display is not available, or no keyboard is detected, even though the command
+  <u>should</u> run in batch or in the background.  For these situations,
+  running java in so-called "headless" mode may allow batch runs:</p>
+
+  <pre class="term">java -Djava.awt.headless=true -jar <i>jarfile</i></pre>
+
+  <p>For more information about how to configure java-based applications,
+  type</p>
+  <pre class="term">
+java --help
+</pre>
+
+  <p>at the prompt, or go to <a href=
+  "http://www.oracle.com/technetwork/java">http://www.oracle.com/technetwork/java</a>.</p>
+
+  <div class="subheading"><h4>Specifying the Number of Garbage Collection (GC)
+  threads.<h4></div>
+  <p>By default, the Java virtual machine (JVM) will calculate the available
+  number of CPUs at runtime.  This default behaviour can easily consume most of
+  the available CPUs.  In most cases, you should use the following option to
+  limit the number of threads the JVM will use for garbage collection:<p>
+
+  <ul>
+    <li>-XX:ParallelGCThreads=2</li>
+  </ul>
+
+  This will limit the number of parallel garbage collection threads to 2.
+  Adjust the value as needed for your application.
+
+  <div class="subheading"><h4>Specifying the Server VM<h4></div>
+  <p>The Server VM is intended for long-running Java applications. It is
+  optimized and tuned to maximize peak operating speed. For long running Java
+  processes, it is recommended to use the following option:<p>
+
+  <ul>
+    <li>-server</li>
+  </ul>
+
+<div class="subheading"><h4>Respecting compute node proxy settings<h4></div>
+  <p>Biowulf compute nodes are behind a firewall and must be configured to use
+  proxy servers to access the internet. This configuration is  not respected by
+  default within the Java environment. Set the flag 
+  <tt>-Djava.net.useSystemProxies</tt> to <tt>true</tt> to access the internet
+  from within Java.
+  <p>
+
+  <pre class="term">java -Djava.net.useSystemProxies=true -jar <i>jarfile</i></pre>
+
+  <p>In many instances, you can set an environment variable to the same effect.
+  </p>
+
+  <pre class="term">export JAVA_TOOL_OPTIONS="-Djava.net.useSystemProxies=true"</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

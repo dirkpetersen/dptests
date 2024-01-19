@@ -1,0 +1,86 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Xplor-NIH on Biowulf';</script>
+<div class="title">Xplor-NIH on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+XPLOR-NIH is a structure determination program which builds on the X-PLOR v
+3.851 program, including additional tools developed at the NIH. These tools
+include functionality for the following:</p>
+<ul>
+<li>3J couplings</li>
+<li>1J couplings</li>
+<li>13C shifts</li>
+<li>1H shifts</li>
+<li>T1/T2</li>
+<li>dipolar couplings</li>
+<li>radius of gyration</li>
+<li>CSA</li>
+<li>conformational database torsion angle potentials</li>
+<li>database base-base positioning potentials for DNA</li>
+<li>interface to the NMR graphics package <a href=
+"http://vmd-xplor.cit.nih.gov/">VMD-XPLOR</a>, downloadable separately.</li>
+<li>embedded Python and TCL interpreters.</li>
+</ul>
+<P>
+
+<P>
+</p>
+
+<h3>References:</h3>
+<p><a href="http://www.csb.yale.edu/userguides/datamanip/xplor/xplorman/htmlman.html">XPLOR</a> was developed at Yale
+University, and the NIH extensions were developed by G. Marius Clore, John
+Kuszewski, Charles D. Schwieters, and Nico Tjandra at the NIH.</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://bit.niddk.nih.gov/xplor-nih/">XPLOR-NIH web site</a></b>,
+including <a href="http://bit.niddk.nih.gov/xplor-nih/nih/">tools for use at
+NIH</a></p>
+<li><a href="http://bit.niddk.nih.gov/xplor-nih/xplorMan/">Xplor Manual</a></p>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Xplor-NIH</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Additional environment variables set: XPLOR_NIH_TOPPAR = location of topology/parameter files for that version
+<li>Xplor-NIH requires the usual set of Xplor input files -- coordinates, xplor
+input files, topology/parameter files. The 'standard' files are in
+<tt>$XPLOR_NIH_TOPPAR</tt>, the envronment variable that is set when the module is loaded. 
+<li>To run a job on Biowulf, please use the slurmXplor helper.
+<li>Sometimes a large Xplor-NIH slurm job will hang at startup time. In this case, try adding the option -startup_delay 1 to the command-line.</p>
+</ul>
+<P>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<pre class="term">
+ 
+[user@biowulf ~]$ slurmXplor -py -ntasks  num -partition partitionName [options] script.py
+</pre>
+
+<p>where num is the number of processes to run and options are any
+  option to the xplor command. It is also possible to specify
+  arbitrary sbatch options. For details please see </p> 
+
+<pre class="term">
+ 
+
+[user@biowulf ~]$ slurmXplor -help
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

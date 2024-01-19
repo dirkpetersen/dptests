@@ -1,0 +1,433 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ROSE: Rank Ordering of Super-Enhancers ';</script>
+<div class="title"><b>ROSE: Rank Ordering of Super-Enhancers </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<br />
+<p>
+ROSE (Rank Ordering of Super-Enhancers) is a tool for <br />
+(1) creating stitched enhancers, and  <br />
+(2) separating super-enhancers from typical enhancers. <br />
+given sequencing data (.bam) and a file of previously identified constituent enhancers (.gff)
+</p>
+
+<br />
+<h3>References:</h3>
+<ul>
+<li>Warren A. Whyte, David A. Orlando, Denes Hnisz, Brian J. Abraham, Charles Y. Lin, Michael H. Kagey, Peter B. Rahl, Tong Ihn Lee and Richard A. Young <br />
+<i>Master Transcription Factors and Mediator Establish Super-Enhancers at Key Cell Identity Genes</i><br />
+<a href="https://www.sciencedirect.com/science/article/pii/S0092867413003929">Cell</a> 2013, <b>153 </b>: 307-319 <br/>
+<li>Jakob Lovén, Heather A. Hoke, Charles Y. Lin, Ashley Lau, David A. Orlando, Christopher R. Vako
+c, James E. Bradner, Tong Ihn Lee, and Richard A. Young <br />
+<i>Selective Inhibition of Tumor Oncogenes by Disruption of Super-enhancers</i
+><br />
+<a href="https://www.sciencedirect.com/science/article/pii/S0092867413003930">Cell</a> 2013, <b>153</b>: 320-334 <br/>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/stjude/ROSE">ROSE on Github</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>ROSE</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>ROSE_HOME</b>&nbsp; ROSE    installation directory</li>
+    <li><b>ROSE_BIN </b>&nbsp; &nbsp; &nbsp; ROSE bin directory</li>
+    <li><b>ROSE_SRC </b>&nbsp; &nbsp; &nbsp; ROSE source directory</li>
+    <li><b>ROSE_DATA</b>&nbsp; &nbsp; ROSE sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3107 ~]$<b> module load ROSE</b>
+[+] Loading gcc  7.2.0  ...
+[+] Loading GSL 2.4 for GCC 7.2.0 ...
+[+] Loading openmpi 3.0.0  for GCC 7.2.0
+[+] Loading pandoc  2.10  on cn2385
+[+] Loading R 3.4.4
+[+] Loading samtools 0.1.19  ...
+[+] Loading ROSE  20200707
+</pre>
+Copy sample data to the current folder:
+<pre class="term">
+[user@cn3107 ~]$<b> cp -rP $ROSE_DATA/* . </b>
+</pre>
+The ROSE usage is as follows:
+<pre class="term">
+[user@cn3107 ~]$<b> ROSE_main.py -h </b>
+Usage: ROSE_main.py [options] -g [GENOME] -i [INPUT_REGION_GFF] -r [RANKBY_BAM_FILE] -o [OUTPUT_FOLDER] [OPTIONAL_FLAGS]
+
+Options:
+  -h, --help            show this help message and exit
+  -i INPUT, --i=INPUT   Enter a .gff or .bed file of binding sites used to
+                        make enhancers
+  -r RANKBY, --rankby=RANKBY
+                        bamfile to rank enhancer by
+  -o OUT, --out=OUT     Enter an output folder
+  -g GENOME, --genome=GENOME
+                        Enter the genome build (MM9,MM8,HG18,HG19,MM10,HG38)
+  -b BAMS, --bams=BAMS  Enter a comma separated list of additional bam files
+                        to map to
+  -c CONTROL, --control=CONTROL
+                        bamfile to rank enhancer by
+  -s STITCH, --stitch=STITCH
+                        Enter a max linking distance for stitching
+  -t TSS, --tss=TSS     Enter a distance from TSS to exclude. 0 = no TSS
+                        exclusion
+</pre>
+Run ROSE on the sample data:
+<pre class="term">
+[user@cn3107 ~]$<b> ROSE_main.py -g hg18 -i HG18_MM1S_MED1.gff -r MM1S_MED1.hg18.bwt.sorted.bam -o my_output_dir</b>
+USING HG18_MM1S_MED1.gff AS THE INPUT GFF
+USING hg18_refseq.ucsc AS THE GENOME
+('upper(genome)=', 'HG18_REFSEQ.UCSC')
+[user@cn2380 ROSE]$ vi ROSE_main.py
+[usera@cn2380 ROSE]$ python ROSE_main.py -g hg18 -i HG18_MM1S_MED1.gff -r MM1S_MED1.hg18.bwt.sorted.bam -o my_output_dir
+USING HG18_MM1S_MED1.gff AS THE INPUT GFF
+USING hg18 AS THE GENOME
+('upper(genome)=', 'HG18')
+MAKING START DICT
+LOADING IN GFF REGIONS
+CHECKING INPUT TO MAKE SURE EACH REGION HAS A UNIQUE IDENTIFIER
+REFERENCE COLLECTION PASSES QC
+STITCHING REGIONS TOGETHER
+PERFORMING REGION STITCHING
+MAKING GFF FROM STITCHED COLLECTION
+WRITING STITCHED GFF TO DISK AS my_output_dir/gff/HG18_MM1S_MED1_12KB_STITCHED.gff
+OUTPUT WILL BE WRITTEN TO  my_output_dir/HG18_MM1S_MED1_12KB_STITCHED_ENHANCER_REGION_MAP.txt
+python ROSE_bamToGFF.py -f 1 -e 200 -r -m 1 -b MM1S_MED1.hg18.bwt.sorted.bam -i my_output_dir/gff/HG18_MM1S_MED1_12KB_STITCHED.gff
+-o my_output_dir/mappedGFF/HG18_MM1S_MED1_12KB_STITCHED_MM1S_MED1.hg18.bwt.sorted.bam_MAPPED.gff &
+python ROSE_bamToGFF.py -f 1 -e 200 -r -m 1 -b MM1S_MED1.hg18.bwt.sorted.bam -i HG18_MM1S_MED1.gff -o my_output_dir/mappedGFF/HG18_
+MM1S_MED1_MM1S_MED1.hg18.bwt.sorted.bam_MAPPED.gff &
+PAUSING TO MAP
+{'matrix': '1', 'extension': '200', 'floor': '1', 'sense': 'both', 'output': 'my_output_dir/mappedGFF/HG18_MM1S_MED1_12KB_STITCHED_
+MM1S_MED1.hg18.bwt.sorted.bam_MAPPED.gff', 'bam': 'MM1S_MED1.hg18.bwt.sorted.bam', 'rpm': True, 'input': 'my_output_dir/gff/HG18_MM
+1S_MED1_12KB_STITCHED.gff'}
+[]
+mapping to GFF and making a matrix with fixed bin number
+{'matrix': '1', 'extension': '200', 'floor': '1', 'sense': 'both', 'output': 'my_output_dir/mappedGFF/HG18_MM1S_MED1_MM1S_MED1.hg18
+.bwt.sorted.bam_MAPPED.gff', 'bam': 'MM1S_MED1.hg18.bwt.sorted.bam', 'rpm': True, 'input': 'HG18_MM1S_MED1.gff'}
+[]
+mapping to GFF and making a matrix with fixed bin number
+WAITING FOR MAPPING TO COMPLETE. ELAPSED TIME (MIN):
+0
+using a MMR value of 17.4141
+using a MMR value of 17.4141
+has chr
+has chr
+Number lines processed
+0
+Number lines processed
+0
+100
+100
+200
+200
+...
+19300
+19400
+MAPPING TOOK 30 MINUTES
+BAM MAPPING COMPLETED NOW MAPPING DATA TO REGIONS
+FORMATTING TABLE
+1000
+2000
+...
+13000
+14000
+GETTING MAPPED DATA
+GETTING MAPPING DATA FOR  MM1S_MED1.hg18.bwt.sorted.bam
+OPENING my_output_dir/mappedGFF/HG18_MM1S_MED1_12KB_STITCHED_MM1S_MED1.hg18.bwt.sorted.bam_MAPPED.gff
+MAKING SIGNAL DICT FOR MM1S_MED1.hg18.bwt.sorted.bam
+CALLING AND PLOTTING SUPER-ENHANCERS
+R --no-save my_output_dir/ my_output_dir/HG18_MM1S_MED1_12KB_STITCHED_ENHANCER_REGION_MAP.txt HG18_MM1S_MED1 NONE &lt; ROSE_callSuper.
+R
+...
+ version 3.4.4 (2018-03-15) -- "Someone to Lean On"
+opyright (C) 2018 The R Foundation for Statistical Computing
+latform: x86_64-pc-linux-gnu (64-bit)
+
+ is free software and comes with ABSOLUTELY NO WARRANTY.
+ou are welcome to redistribute it under certain conditions.
+ype 'license()' or 'licence()' for distribution details.
+
+ Natural language support but running in an English locale
+
+ is a collaborative project with many contributors.
+ype 'contributors()' for more information and
+citation()' on how to cite R or R packages in publications.
+
+ype 'demo()' for some demos, 'help()' for on-line help, or
+help.start()' for an HTML browser interface to help.
+ype 'q()' to quit R.
+
+ #============================================================================
+ #==============SUPER-ENHANCER CALLING AND PLOTTING FUNCTIONS=================
+ #============================================================================
+&gt;
+&gt;  #This function calculates the cutoff by sliding a diagonal line and finding where it is tangential (or as close as possible)
+&gt;  calculate_cutoff &lt;- function(inputVector, drawPlot=TRUE,...){
++       inputVector &lt;- sort(inputVector)
++       inputVector[inputVector&lt;0]&lt;-0 #set those regions with more control than ranking equal to zero
++       slope &lt;- (max(inputVector)-min(inputVector))/length(inputVector) #This is the slope of the line we want to slide. This is t
+he diagonal.
++       xPt &lt;- floor(optimize(numPts_below_line,lower=1,upper=length(inputVector),myVector= inputVector,slope=slope)$minimum) #Find
+ the x-axis point where a line passing through that point has the minimum number of points below it. (ie. tangent)
++       y_cutoff &lt;- inputVector[xPt] #The y-value at this x point. This is our cutoff.
++
++       if(drawPlot){  #if TRUE, draw the plot
++               plot(1:length(inputVector), inputVector,type="l",...)
++               b &lt;- y_cutoff-(slope* xPt)
++               abline(v= xPt,h= y_cutoff,lty=2,col=8)
++               points(xPt,y_cutoff,pch=16,cex=0.9,col=2)
++               abline(coef=c(b,slope),col=2)
++               title(paste("x=",xPt,"\ny=",signif(y_cutoff,3),"\nFold over Median=",signif(y_cutoff/median(inputVector),3),"x\nFol
+d over Mean=",signif(y_cutoff/mean(inputVector),3),"x",sep=""))
++               axis(1,sum(inputVector==0),sum(inputVector==0),col.axis="pink",col="pink") #Number of regions with zero signal
++       }
++       return(list(absolute=y_cutoff,overMedian=y_cutoff/median(inputVector),overMean=y_cutoff/mean(inputVector)))
++ }
+&gt;
+&gt; #this is an accessory function, that determines the number of points below a diagnoal passing through [x,yPt]
+&gt; numPts_below_line &lt;- function(myVector,slope,x){
++       yPt &lt;- myVector[x]
++       b &lt;- yPt-(slope*x)
++       xPts &lt;- 1:length(myVector)
++       return(sum(myVector&lt;=(xPts*slope+b)))
++ }
+&gt;
+&gt;
+&gt; convert_stitched_to_bed &lt;- function(inputStitched,trackName,trackDescription,outputFile,splitSuper=TRUE,score=c(),superRows=c(),b
+aseColor="0,0,0",superColor="255,0,0"){
++       outMatrix &lt;- matrix(data="",ncol=4+ifelse(length(score)==nrow(inputStitched),1,0),nrow=nrow(inputStitched))
++
++       outMatrix[,1] &lt;- as.character(inputStitched$CHROM)
++       outMatrix[,2] &lt;- as.character(inputStitched$START)
++       outMatrix[,3] &lt;- as.character(inputStitched$STOP)
++       outMatrix[,4] &lt;- as.character(inputStitched$REGION_ID)
++       if(length(score)==nrow(inputStitched)){
++               score &lt;- rank(score,ties.method="first")
++               score &lt;- length(score)-score+1  #Stupid rank only does smallest to largest.
++               outMatrix[,5] &lt;- as.character(score)
++       }
++       trackDescription &lt;- paste(trackDescription,"\nCreated on ",format(Sys.time(), "%b %d %Y"),collapse="",sep="")
++       trackDescription &lt;- gsub("\n","\t", trackDescription)
++       tName &lt;- gsub(" ","_",trackName)
++       cat('track name="', tName,'" description="', trackDescription,'" itemRGB=On color=',baseColor,"\n",sep="",file=outputFile)
++       write.table(file= outputFile,outMatrix,sep="\t",quote=FALSE,row.names=FALSE,col.names=FALSE,append=TRUE)
++       if(splitSuper==TRUE){
++               cat("\ntrack name=\"Super_", tName,'" description="Super ', trackDescription,'" itemRGB=On color=', superColor,"\n"
+,sep="",file=outputFile,append=TRUE)
++               write.table(file= outputFile,outMatrix[superRows,],sep="\t",quote=FALSE,row.names=FALSE,col.names=FALSE,append=TRUE
+)
++       }
++ }
+&gt;
+&gt;
+&gt;
+&gt; convert_stitched_to_gateway_bed &lt;- function(inputStitched,outputFileRoot,splitSuper=TRUE,score=c(),superRows=c()){
++       outMatrix &lt;- matrix(data="",ncol=6,nrow=nrow(inputStitched))
++
++       outMatrix[,1] &lt;- as.character(inputStitched$CHROM)
++       outMatrix[,2] &lt;- as.character(inputStitched$START)
++       outMatrix[,3] &lt;- as.character(inputStitched$STOP)
++       outMatrix[,4] &lt;- as.character(inputStitched$REGION_ID)
++
++       if(length(score)==nrow(inputStitched)){
++               score &lt;- rank(score,ties.method="first")
++               score &lt;- length(score)-score+1  #Stupid rank only does smallest to largest.
++               outMatrix[,5] &lt;- as.character(score)
++       }
++
++       outMatrix[,6] &lt;- as.character(rep('.',nrow(outMatrix)))
++
++
++       outputFile1 = paste(outputFileRoot,'_Gateway_Enhancers.bed',sep='')
++       write.table(file= outputFile1,outMatrix,sep="\t",quote=FALSE,row.names=FALSE,col.names=FALSE,append=TRUE)
++       if(splitSuper==TRUE){
++               outputFile2 = paste(outputFileRoot,'_Gateway_SuperEnhancers.bed',sep='')
++
++               write.table(file= outputFile2,outMatrix[superRows,],sep="\t",quote=FALSE,row.names=FALSE,col.names=FALSE,append=TRU
+E)
++       }
++ }
+&gt;
+&gt;
+&gt;
+&gt;
+&gt; writeSuperEnhancer_table &lt;- function(superEnhancer,description,outputFile,additionalData=NA){
++       description &lt;- paste("#",description,"\nCreated on ",format(Sys.time(), "%b %d %Y"),collapse="",sep="")
++       description &lt;- gsub("\n","\n#",description)
++       cat(description,"\n",file=outputFile)
++       if(is.matrix(additionalData)){
++               if(nrow(additionalData)!=nrow(superEnhancer)){
++                       warning("Additional data does not have the same number of rows as the number of super enhancers.\n---&gt;&gt;&gt; AD
+DITIONAL DATA NOT INCLUDED &lt;&lt;&lt;---\n")
++               }else{
++                       superEnhancer &lt;- cbind(superEnhancer,additionalData)
++                       superEnhancer = superEnhancer[order(superEnhancer$enhancerRank),]
++
++               }
++       }
++       write.table(file=outputFile,superEnhancer,sep="\t",quote=FALSE,row.names=FALSE,append=TRUE)
++ }
+&gt;
+&gt;
+&gt;
+&gt; #============================================================================
+&gt; #===================SUPER-ENHANCER CALLING AND PLOTTING======================
+&gt; #============================================================================
+&gt;
+&gt;
+&gt;
+&gt; args &lt;- commandArgs()
+&gt;
+&gt; print('THESE ARE THE ARGUMENTS')
+[1] "THESE ARE THE ARGUMENTS"
+&gt; print(args)
+[1] "/usr/local/apps/R/3.4/3.4.4/lib64/R/bin/exec/R"
+[2] "--no-save"
+[3] "my_output_dir/"
+[4] "my_output_dir/HG18_MM1S_MED1_12KB_STITCHED_ENHANCER_REGION_MAP.txt"
+[5] "HG18_MM1S_MED1"
+[6] "NONE"
+&gt;
+&gt; #ARGS
+&gt; outFolder = args[3]
+&gt; enhancerFile = args[4]
+&gt; enhancerName = args[5]
+&gt; wceName = args[6]
+&gt;
+&gt;
+&gt;
+&gt; #Read enhancer regions with closestGene columns
+&gt; stitched_regions &lt;- read.delim(file= enhancerFile,sep="\t")
+&gt;
+&gt;
+&gt; #perform WCE subtraction. Using pipeline table to match samples to proper background.
+&gt; rankBy_factor = colnames(stitched_regions)[7]
+&gt;
+&gt; prefix = unlist(strsplit(rankBy_factor,'_'))[1]
+&gt;
+&gt; if(wceName == 'NONE'){
++
++
++       rankBy_vector = as.numeric(stitched_regions[,7])
++
++ }else{
++       wceName = colnames(stitched_regions)[8]
++       print('HERE IS THE WCE NAME')
++       print(wceName)
++
++       rankBy_vector = as.numeric(stitched_regions[,7])-as.numeric(stitched_regions[,8])
++ }
+&gt;
+&gt;
+&gt; #SETTING NEGATIVE VALUES IN THE rankBy_vector to 0
+&gt;
+&gt; rankBy_vector[rankBy_vector &lt; 0] &lt;- 0
+&gt;
+&gt;
+&gt; #FIGURING OUT THE CUTOFF
+&gt;
+&gt; cutoff_options &lt;- calculate_cutoff(rankBy_vector, drawPlot=FALSE,xlab=paste(rankBy_factor,'_enhancers'),ylab=paste(rankByFactor,'
+ Signal','- ',wceName),lwd=2,col=4)
+&gt;
+&gt;
+&gt; #These are the super-enhancers
+&gt; superEnhancerRows &lt;- which(rankBy_vector&gt; cutoff_options$absolute)
+&gt; typicalEnhancers = setdiff(1:nrow(stitched_regions),superEnhancerRows)
+&gt; enhancerDescription &lt;- paste(enhancerName," Enhancers\nCreated from ", enhancerFile,"\nRanked by ",rankBy_factor,"\nUsing cutoff
+of ",cutoff_options$absolute," for Super-Enhancers",sep="",collapse="")
+&gt;
+&gt;
+&gt; #MAKING HOCKEY STICK PLOT
+&gt; plotFileName = paste(outFolder,enhancerName,'_Plot_points.png',sep='')
+&gt; png(filename=plotFileName,height=600,width=600)
+&gt; signalOrder = order(rankBy_vector,decreasing=TRUE)
+&gt; if(wceName == 'NONE'){
++       plot(length(rankBy_vector):1,rankBy_vector[signalOrder], col='red',xlab=paste(rankBy_factor,'_enhancers'),ylab=paste(rankBy
+_factor,' Signal'),pch=19,cex=2)
++
++ }else{
++       plot(length(rankBy_vector):1,rankBy_vector[signalOrder], col='red',xlab=paste(rankBy_factor,'_enhancers'),ylab=paste(rankBy
+_factor,' Signal','- ',wceName),pch=19,cex=2)
++ }
+&gt; abline(h=cutoff_options$absolute,col='grey',lty=2)
+&gt; abline(v=length(rankBy_vector)-length(superEnhancerRows),col='grey',lty=2)
+&gt; lines(length(rankBy_vector):1,rankBy_vector[signalOrder],lwd=4, col='red')
+&gt; text(0,0.8*max(rankBy_vector),paste(' Cutoff used: ',cutoff_options$absolute,'\n','Super-Enhancers identified: ',length(superEnha
+ncerRows)),pos=4)
+&gt;
+&gt; dev.off()
+null device
+          1
+&gt;
+&gt;
+&gt;
+&gt;
+&gt; #Writing a bed file
+&gt; bedFileName = paste(outFolder,enhancerName,'_Enhancers_withSuper.bed',sep='')
+&gt; convert_stitched_to_bed(stitched_regions,paste(rankBy_factor,"Enhancers"), enhancerDescription,bedFileName,score=rankBy_vector,sp
+litSuper=TRUE,superRows= superEnhancerRows,baseColor="0,0,0",superColor="255,0,0")
+&gt;
+&gt;
+&gt; bedFileRoot = paste(outFolder,enhancerName,sep='')
+&gt;
+&gt; convert_stitched_to_gateway_bed(stitched_regions,bedFileRoot,splitSuper=TRUE,score=rankBy_vector,superRows = superEnhancerRows)
+&gt;
+&gt;
+&gt; #This matrix is just the super_enhancers
+&gt; true_super_enhancers &lt;- stitched_regions[superEnhancerRows,]
+&gt;
+&gt; additionalTableData &lt;- matrix(data=NA,ncol=2,nrow=nrow(stitched_regions))
+&gt; colnames(additionalTableData) &lt;- c("enhancerRank","isSuper")
+&gt; additionalTableData[,1] &lt;- nrow(stitched_regions)-rank(rankBy_vector,ties.method="first")+1
+&gt; additionalTableData[,2] &lt;- 0
+&gt; additionalTableData[superEnhancerRows,2] &lt;- 1
+&gt;
+&gt;
+&gt; #Writing enhancer and super-enhancer tables with enhancers ranked and super status annotated
+&gt; enhancerTableFile = paste(outFolder,enhancerName,'_AllEnhancers.table.txt',sep='')
+&gt; writeSuperEnhancer_table(stitched_regions, enhancerDescription,enhancerTableFile, additionalData= additionalTableData)
+Warning message:
+In write.table(file = outputFile, superEnhancer, sep = "\t", quote = FALSE,  :
+  appending column names to file
+&gt;
+&gt; superTableFile = paste(outFolder,enhancerName,'_SuperEnhancers.table.txt',sep='')
+&gt; writeSuperEnhancer_table(true_super_enhancers, enhancerDescription,superTableFile, additionalData= additionalTableData[superEnhan
+cerRows,])
+Warning message:
+In write.table(file = outputFile, superEnhancer, sep = "\t", quote = FALSE,  :
+  appending column names to file
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3107 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

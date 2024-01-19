@@ -1,0 +1,893 @@
+Index,Name,Version,Category
+acemd,Acemd,3.5.1,Computational Chemistry
+amber,AMBER,22,Computational Chemistry
+ampl,AMPL,1.3.0,Computational Chemistry
+apbs,APBS,3.4.1,Computational Chemistry
+autodock,Autodock,4.2.6,Computational Chemistry
+autodockvina,AutodockVina,1_1_2,Computational Chemistry
+charmm,CHARMM,c46b1,Computational Chemistry
+cryodrgn,cryoDRGN,1.1.0,Computational Chemistry
+gamess,GAMESS,30Sep22-R2,Computational Chemistry
+gaussian,Gaussian,G16-C02,Computational Chemistry
+gromacs,gromacs,2022.4,Computational Chemistry
+namd,NAMD,2.14,Computational Chemistry
+parmed,parmed,4.0.0,Computational Chemistry
+psi4,Psi4,1.6.1,Computational Chemistry
+q-chem,Q-Chem,5.0.1,Computational Chemistry
+schrodinger,Schrodinger,2023.1,Computational Chemistry
+vmd,vmd,1.9.3,Computational Chemistry
+b-soid,B-SOID,1.3,Deep Learning
+biobert,BioBERT,v20200409,Deep Learning
+biogans,BioGANs,20210916,Deep Learning
+cryodrgn,cryoDRGN,1.1.0,Deep Learning
+cudnn,cuDNN,8.0.3,Deep Learning
+danq,DanQ,20220825,Deep Learning
+deepcadrt,deepcadrt,0.1.0,Deep Learning
+deepcell-tf,DeepCell-tf,0.12.6,Deep Learning
+deepemhancer,DeepEmhancer,0.15,Deep Learning
+deeplabcut,DeepLabCut,2.3.4,Deep Learning
+deepmedic,deepmedic,0.8.4,Deep Learning
+deepmm,DeepMM,20220830,Deep Learning
+gcn_cancer,GCN_Cancer,20221105,Deep Learning
+isonet,IsoNet,0.2.1,Deep Learning
+keras,keras,2.4.3; 2.9.1,Deep Learning
+pytom,PyTom,1.0,Deep Learning
+release,ReLeaSE,20220825,Deep Learning
+rfdiffusion,RFdiffusion,1.1.0,Deep Learning
+spliceai,SpliceAI,1.3.1,Deep Learning
+talos,talos,1.0,Deep Learning
+tensorqtl,TensorQTL,1.0.7,Deep Learning
+tybalt,Tybalt,202208265,Deep Learning
+unet,UNet,20220825,Deep Learning
+emacs,Emacs,28.1,Editors
+scite,SciTE,5.4.1,Editors
+abyss,abyss,2.3.5,High-Throughput Sequencing
+afterqc,AfterQC,0.9.7,High-Throughput Sequencing
+angsd,angsd,0.940,High-Throughput Sequencing
+annotsv,AnnotSV,3.3.7,High-Throughput Sequencing
+annovar,ANNOVAR,2020-06-08,High-Throughput Sequencing
+ascatngs,ascatNgs,4.5.0,High-Throughput Sequencing
+augustus,augustus,3.4.0,High-Throughput Sequencing
+autoreject,autoreject,0.3.1,High-Throughput Sequencing
+bam2fastq,bam2fastq,1.1.0,High-Throughput Sequencing
+bamliquidator,bamliquidator,1.5.2,High-Throughput Sequencing
+bamreadcount,bamreadcount,cram-v0.0.1,High-Throughput Sequencing
+bamtools,bamtools,2.5.2,High-Throughput Sequencing
+bamutil,bamUtil,1.0.15,High-Throughput Sequencing
+bartender,Bartender,1.1,High-Throughput Sequencing
+basespace_cli,basespace_cli,1.5.2,High-Throughput Sequencing
+bazam,bazam,1.0.1,High-Throughput Sequencing
+bbtools,bbtools,38.96,High-Throughput Sequencing
+bcl-convert,bcl-convert,4.1.5,High-Throughput Sequencing
+bcl2fastq,bcl2fastq,2.20,High-Throughput Sequencing
+bedops,bedops,2.4.41,High-Throughput Sequencing
+bedtools,bedtools,2.30.0,High-Throughput Sequencing
+beta,BETA,1.0.7,High-Throughput Sequencing
+bigscale2,bigSCale2,20191119,High-Throughput Sequencing
+bioawk,bioawk,1.0,High-Throughput Sequencing
+biobakery_workflows,biobakery_workflows,3.1,High-Throughput Sequencing
+biobambam2,biobambam2,2.0.185-release-20221211202123,High-Throughput Sequencing
+biom-format,biom-format,2.1.12,High-Throughput Sequencing
+bismark,bismark,0.23.1,High-Throughput Sequencing
+bonito,bonito,0.7.2,High-Throughput Sequencing
+bowtie,bowtie,1.3.1,High-Throughput Sequencing
+bowtie2,bowtie2,2.5.1,High-Throughput Sequencing
+brass,BRASS,6.3.4,High-Throughput Sequencing
+breakdancer,breakdancer,1.4.5,High-Throughput Sequencing
+breseq,breseq,0.37.1,High-Throughput Sequencing
+bsmap,bsmap,2.90,High-Throughput Sequencing
+busco,busco,5.4.7,High-Throughput Sequencing
+bwa,bwa,0.7.17,High-Throughput Sequencing
+bwa-mem2,bwa-mem2,2.2.1,High-Throughput Sequencing
+cadd,CADD,1.6.post1,High-Throughput Sequencing
+canu,Canu,2.1,High-Throughput Sequencing
+canvas,Canvas,1.40,High-Throughput Sequencing
+ccbrpipeliner,ccbrpipeliner,5,High-Throughput Sequencing
+ceas,ceas,1.0.2,High-Throughput Sequencing
+cellbender,cellbender,0.3.1,High-Throughput Sequencing
+cellprofiler,cellprofiler,4.2.5,High-Throughput Sequencing
+cellranger,cellranger,7.2.0,High-Throughput Sequencing
+cellranger-arc,cellranger-arc,2.0.2,High-Throughput Sequencing
+cellranger-atac,cellranger-atac,2.1.0,High-Throughput Sequencing
+cellsnp-lite,cellsnp-lite,1.2.2,High-Throughput Sequencing
+cgpbattenberg,cgpBattenberg,3.5.3,High-Throughput Sequencing
+checkm2,checkm2,1.0.2,High-Throughput Sequencing
+chess,CHESS,0.3.7,High-Throughput Sequencing
+chromhmm,ChromHMM,1.23,High-Throughput Sequencing
+circexplorer2,circexplorer2,2.3.8,High-Throughput Sequencing
+circos,circos,0.69-9,High-Throughput Sequencing
+clair3,Clair3,1.0.4,High-Throughput Sequencing
+clark,clark,1.2.6.1,High-Throughput Sequencing
+cnvkit,cnvkit,0.9.9,High-Throughput Sequencing
+cnvnator,cnvnator,0.4.1,High-Throughput Sequencing
+cogentap,cogentap,2.0.1,High-Throughput Sequencing
+combp,combp,0.50.6,High-Throughput Sequencing
+conpair,conpair,0.2,High-Throughput Sequencing
+crispresso,crispresso,2.2.8,High-Throughput Sequencing
+crossmap,crossmap,0.6.5,High-Throughput Sequencing
+csvkit,csvkit,1.3.0,High-Throughput Sequencing
+cufflinks,cufflinks,2.2.1,High-Throughput Sequencing
+cutadapt,cutadapt,4.4,High-Throughput Sequencing
+cutruntools2,cutruntools2,2.0,High-Throughput Sequencing
+danpos,DANPOS,3.1.1,High-Throughput Sequencing
+deepcell-tf,DeepCell-tf,0.12.6,High-Throughput Sequencing
+deepconsensus,deepconsensus,0.3.1,High-Throughput Sequencing
+deepsignal,deepsignal,2-0.1.3,High-Throughput Sequencing
+deeptools,deeptools,3.5.4,High-Throughput Sequencing
+deepvariant,deepvariant,1.5.0,High-Throughput Sequencing
+defuse,defuse,0.8.1,High-Throughput Sequencing
+delly,delly,1.1.6,High-Throughput Sequencing
+detonate,DETONATE,1.11,High-Throughput Sequencing
+distiller-nf,distiller-nf,0.3.3,High-Throughput Sequencing
+dorado,dorado,0.5.1,High-Throughput Sequencing
+drop,drop,1.3.3,High-Throughput Sequencing
+ea-utils,ea-utils,1.04.807,High-Throughput Sequencing
+edd,edd,1.1.19,High-Throughput Sequencing
+encode-atac-seq-pipeline,encode-atac-seq-pipeline,2.1.0,High-Throughput Sequencing
+epacts,EPACTS,3.4.2,High-Throughput Sequencing
+eukdetect,eukdetect,1.2,High-Throughput Sequencing
+exomiser,exomiser,13.0.1,High-Throughput Sequencing
+express,express,1.5.1,High-Throughput Sequencing
+fade,fade,0.6.0,High-Throughput Sequencing
+fanc,fanc,0.9.21,High-Throughput Sequencing
+fastqc,fastqc,0.11.9,High-Throughput Sequencing
+fastqtools,fastqtools,0.8.3,High-Throughput Sequencing
+fastq_screen,fastq_screen,0.15.3,High-Throughput Sequencing
+fastxtoolkit,fastxtoolkit,0.0.14,High-Throughput Sequencing
+fcs,fcs,0.4.0,High-Throughput Sequencing
+fgbio,fgbio,2.0.2,High-Throughput Sequencing
+fithic,fithic,2.0.8,High-Throughput Sequencing
+flanker,flanker,0.1.5,High-Throughput Sequencing
+flashpca,flashpca,2.0,High-Throughput Sequencing
+flexbar,Flexbar,3.5.0,High-Throughput Sequencing
+flye,flye,2.9.1,High-Throughput Sequencing
+fqtools,fqtools,2.0,High-Throughput Sequencing
+freebayes,freebayes,1.3.5,High-Throughput Sequencing
+freec,freec,11.6,High-Throughput Sequencing
+fuseq-wes,fuseq-wes,1.0.0,High-Throughput Sequencing
+fusioncatcher,fusioncatcher,1.33,High-Throughput Sequencing
+gatk,GATK,4.3.0.0,High-Throughput Sequencing
+gem,gem,3.4,High-Throughput Sequencing
+gemini,Gemini,0.30.2,High-Throughput Sequencing
+gemma,GEMMA,0.98.5,High-Throughput Sequencing
+genome browser,Genome Browser,457,High-Throughput Sequencing
+genrich,genrich,0.6,High-Throughput Sequencing
+geomx ngs pipeline,GeoMX NGS Pipeline,2.3.3.10,High-Throughput Sequencing
+gistic,Gistic,2.0.23,High-Throughput Sequencing
+gmap-gsnap,gmap-gsnap,2021-12-17,High-Throughput Sequencing
+gopeaks,gopeaks,1.0.0,High-Throughput Sequencing
+graphaligner,graphaligner,1.0.18,High-Throughput Sequencing
+gridss,gridss,2.13.2,High-Throughput Sequencing
+gtex_rnaseq,gtex_rnaseq,V10,High-Throughput Sequencing
+gtool,gtool,0.7.5,High-Throughput Sequencing
+gunc,gunc,1.0.5,High-Throughput Sequencing
+guppy,guppy,6.5.7,High-Throughput Sequencing
+hail,Hail,0.2.99,High-Throughput Sequencing
+hap.py,hap.py,0.3.14,High-Throughput Sequencing
+hicexplorer,hicexplorer,3.7.2,High-Throughput Sequencing
+hichipper,hichipper,0.7.7,High-Throughput Sequencing
+hicpro,hicpro,3.1.0,High-Throughput Sequencing
+hic_breakfinder,hic_breakfinder,1.0,High-Throughput Sequencing
+hifiasm,hifiasm,0.19.8,High-Throughput Sequencing
+hint,hint,2.2.7,High-Throughput Sequencing
+hipstr,hipstr,0.7,High-Throughput Sequencing
+hisat,hisat,2.2.2.1-ngs3.0.1,High-Throughput Sequencing
+hla-la,HLA-LA,1.0.3,High-Throughput Sequencing
+hmmratac,HMMRATAC,1.2.10,High-Throughput Sequencing
+homer,homer,4.11.1,High-Throughput Sequencing
+htgts,htgts,2,High-Throughput Sequencing
+htsbox,htsbox,r346,High-Throughput Sequencing
+htseq,htseq,2.0.4,High-Throughput Sequencing
+humann,humann,3.6.0,High-Throughput Sequencing
+idba,IDBA,1.1.3,High-Throughput Sequencing
+idiffir,iDiffIR,20220121,High-Throughput Sequencing
+idr,IDR,2.0.3,High-Throughput Sequencing
+igv,IGV,2.12.3,High-Throughput Sequencing
+igvtools,IGVTools,2.12.3,High-Throughput Sequencing
+impute,IMPUTE,2.3.2,High-Throughput Sequencing
+intervar,InterVar,"2.1.2, 2.1.3",High-Throughput Sequencing
+intervene,intervene,0.6.5,High-Throughput Sequencing
+iva,iva,1.0.11,High-Throughput Sequencing
+ivar,iVar,1.3.1,High-Throughput Sequencing
+juicer,Juicer,1.6,High-Throughput Sequencing
+jvarkit,jvarkit,20211013,High-Throughput Sequencing
+kat,KAT,2.4.2,High-Throughput Sequencing
+kb-python,kb-python,0.27.3,High-Throughput Sequencing
+kmc,KMC,3.1.0,High-Throughput Sequencing
+kmergo2,KmerGO2,2.0.1,High-Throughput Sequencing
+kneaddata,kneaddata,0.11.0,High-Throughput Sequencing
+kraken,kraken,2.1.2,High-Throughput Sequencing
+lefse,lefse,1.0.8,High-Throughput Sequencing
+lja,LJA,0.1,High-Throughput Sequencing
+locuszoom,locuszoom,1.3,High-Throughput Sequencing
+lofreq,lofreq,2.1.5,High-Throughput Sequencing
+lordec,lordec,141,High-Throughput Sequencing
+lumpy,lumpy,0.3.1,High-Throughput Sequencing
+mach2qtl,mach2qtl,1.1.3,High-Throughput Sequencing
+macs,macs,3,High-Throughput Sequencing
+mafft,mafft,7.475,High-Throughput Sequencing
+mageck,MAGeCK,0.5.9.2,High-Throughput Sequencing
+mageck-vispr,mageck-vispr,0.5.6,High-Throughput Sequencing
+magicblast,magicblast,1.7.0,High-Throughput Sequencing
+majiq,MAJIQ,2.4,High-Throughput Sequencing
+manorm,manorm,1.1.4,High-Throughput Sequencing
+manta,manta,1.6.0-fork-jykr,High-Throughput Sequencing
+maps,maps,1.1.0,High-Throughput Sequencing
+mash,mash,2.3,High-Throughput Sequencing
+mbg,mbg,1.0.16,High-Throughput Sequencing
+medaka,medaka,1.10.0,High-Throughput Sequencing
+medusa,medusa,1.6,High-Throughput Sequencing
+megadepth,megadepth,1.2.0,High-Throughput Sequencing
+megahit,MEGAHIT,1.2.9,High-Throughput Sequencing
+megalodon,megalodon,2.5.0,High-Throughput Sequencing
+megan,MEGAN,6.24.11,High-Throughput Sequencing
+merfin,merfin,1.1,High-Throughput Sequencing
+merqury,merqury,1.3,High-Throughput Sequencing
+meryl,Meryl,0.0,High-Throughput Sequencing
+metabat,metabat,2.15,High-Throughput Sequencing
+metal,metal,2020-05-05,High-Throughput Sequencing
+metaphlan,metaphlan,4.0.3,High-Throughput Sequencing
+miniasm,miniasm,0.3.r179,High-Throughput Sequencing
+minimac,minimac,4 (1.0.1,High-Throughput Sequencing
+minimap2,minimap2,2.26,High-Throughput Sequencing
+mirdeep2,mirdeep2,0.1.3,High-Throughput Sequencing
+misopy,misopy,0.5.4,High-Throughput Sequencing
+mitosuite,mitosuite,1.0.9b,High-Throughput Sequencing
+mixcr,mixcr,4.3.2,High-Throughput Sequencing
+mixer,mixer,1.3,High-Throughput Sequencing
+modbamtools,modbamtools,0.4.8,High-Throughput Sequencing
+modkit,modkit,0.1.11,High-Throughput Sequencing
+modphred,modphred,1.0c,High-Throughput Sequencing
+monopogen,monopogen,Aug23.2023,High-Throughput Sequencing
+mosaicforecast,mosaicforecast,0.0.1,High-Throughput Sequencing
+mosdepth,mosdepth,0.3.3,High-Throughput Sequencing
+mtoolbox,mtoolbox,1.2.1,High-Throughput Sequencing
+multiqc,multiqc,1.14,High-Throughput Sequencing
+muse,MuSE,2.0.1,High-Throughput Sequencing
+mutect,muTect,1.1.7,High-Throughput Sequencing
+mutsig,MutSig,1.41,High-Throughput Sequencing
+nanopack,nanopack,20231214,High-Throughput Sequencing
+nanopolish,nanopolish,0.14.0,High-Throughput Sequencing
+neusomatic,neusomatic,0.2.1,High-Throughput Sequencing
+ngmlr,NGMLR,0.2.7,High-Throughput Sequencing
+ngsplot,ngsplot,2.63,High-Throughput Sequencing
+novocraft,novocraft,4.03.08,High-Throughput Sequencing
+octopus,Octopus,0.7.4,High-Throughput Sequencing
+ont-fast5-api,ont-fast5-api,4.1.0,High-Throughput Sequencing
+pairtools,pairtools,0.3.0; 1.0.2,High-Throughput Sequencing
+panaroo,panaroo,1.3.3,High-Throughput Sequencing
+parabricks,parabricks,4.2.0,High-Throughput Sequencing
+partekflow,PartekFlow,10.0.23.0720,High-Throughput Sequencing
+pb-cpg-tools,pb-cpg-tools,2.3.1,High-Throughput Sequencing
+pbipa,pbipa,1.8.0,High-Throughput Sequencing
+pbsuite,pbsuite,15.8.24,High-Throughput Sequencing
+peakachu,peakachu,2.2.post1,High-Throughput Sequencing
+pear,pear,0.9.11,High-Throughput Sequencing
+peddy,peddy,0.4.8,High-Throughput Sequencing
+penncnv,PennCNV,1.0.5,High-Throughput Sequencing
+pepatac,PEPATAC,0.10.3,High-Throughput Sequencing
+picard,picard,3.1.0,High-Throughput Sequencing
+picrust,picrust,2.5.2,High-Throughput Sequencing
+pindel,pindel,0.2.5,High-Throughput Sequencing
+platypus,Platypus,0.8.1,High-Throughput Sequencing
+plink,plink,3.6-alpha,High-Throughput Sequencing
+pod5,pod5,0.3.6,High-Throughput Sequencing
+pomoxis,pomoxis,0.3.10,High-Throughput Sequencing
+porechop,porechop,0.2.4,High-Throughput Sequencing
+poretools,poretools,0.6.1a1,High-Throughput Sequencing
+preseq,preseq,3.1.2,High-Throughput Sequencing
+prinseq,PRINSEQ,0.20.4,High-Throughput Sequencing
+proseq,proseq,2.0,High-Throughput Sequencing
+pvactools,pvactools,4.0.1,High-Throughput Sequencing
+pychopper,pychopper,2.7.1,High-Throughput Sequencing
+pyclone,pyclone,0.13.1,High-Throughput Sequencing
+pycoqc,pycoQC,2.5.2,High-Throughput Sequencing
+pyega3,pyega3,5.0.2,High-Throughput Sequencing
+qctool,qctool,2.2,High-Throughput Sequencing
+qualimap,qualimap,2.2.1,High-Throughput Sequencing
+quast,quast,5.2.0,High-Throughput Sequencing
+racon,racon,1.4.3,High-Throughput Sequencing
+ragtag,ragtag,2.1.0,High-Throughput Sequencing
+raremetal,raremetal,4.15.1,High-Throughput Sequencing
+rcorrector,Rcorrector,1.0.5,High-Throughput Sequencing
+regtools,regtools,1.0.0,High-Throughput Sequencing
+repeatmasker,RepeatMasker,4.1.5,High-Throughput Sequencing
+repeatmodeler,repeatmodeler,2.0.1,High-Throughput Sequencing
+reviewer,REViewer,0.2.7,High-Throughput Sequencing
+rgt,rgt,0.13.2,High-Throughput Sequencing
+rilseq,rilseq,0.82,High-Throughput Sequencing
+rnaseqc,rnaseqc,2.4.2,High-Throughput Sequencing
+rockhopper,rockhopper,2.0.3,High-Throughput Sequencing
+rose,ROSE,1.3.1,High-Throughput Sequencing
+rsd,RSD,1.1.7,High-Throughput Sequencing
+rsem,rsem,1.3.3,High-Throughput Sequencing
+rseqc,rseqc,5.0.3,High-Throughput Sequencing
+rtg-tools,rtg-tools,3.8.4,High-Throughput Sequencing
+rvtests,rvtests,2.1.0,High-Throughput Sequencing
+sailfish,sailfish,0.10.0,High-Throughput Sequencing
+salmon,salmon,1.10.1,High-Throughput Sequencing
+salmonte,SalmonTE,0.4,High-Throughput Sequencing
+sambamba,sambamba,0.8.2,High-Throughput Sequencing
+samblaster,samblaster,0.1.26,High-Throughput Sequencing
+samtools,samtools,1.19,High-Throughput Sequencing
+scallop,scallop,0.10.5,High-Throughput Sequencing
+scalpel,scalpel,0.5.4,High-Throughput Sequencing
+scanpy,scanpy,1.8.1,High-Throughput Sequencing
+schicexplorer,schicexplorer,7,High-Throughput Sequencing
+scramble,Scramble,1.0.2,High-Throughput Sequencing
+scvitools,scvitools,1.0.4,High-Throughput Sequencing
+seqan,seqan,2.4.0,High-Throughput Sequencing
+seqkit,seqkit,2.2.0,High-Throughput Sequencing
+seqtk,seqtk,1.4,High-Throughput Sequencing
+sequenza-utils,sequenza-utils,3.0.0,High-Throughput Sequencing
+shapeit,shapeit,5.1.0,High-Throughput Sequencing
+shasta,shasta,0.11.1,High-Throughput Sequencing
+shmlast,shmlast,1.6,High-Throughput Sequencing
+shrimp,shrimp,2_2_3,High-Throughput Sequencing
+sicer,sicer,2-1.0.3,High-Throughput Sequencing
+sickle,sickle,1.33,High-Throughput Sequencing
+sift,SIFT,6.2.1,High-Throughput Sequencing
+slamdunk,slamdunk,0.4.3,High-Throughput Sequencing
+smrtanalysis,smrtanalysis,13.0.0.207600,High-Throughput Sequencing
+sniffles,sniffles,2.2,High-Throughput Sequencing
+snippy,snippy,4.6.0,High-Throughput Sequencing
+snp2hla,snp2hla,1.0.3,High-Throughput Sequencing
+snpeff,snpEff,5.2,High-Throughput Sequencing
+snptest,snptest,2.5.6,High-Throughput Sequencing
+somaticsniper,somaticsniper,1.0.5.0,High-Throughput Sequencing
+sortmerna,sortmeRNA,4.3.6,High-Throughput Sequencing
+spaceranger,spaceranger,2.1.1,High-Throughput Sequencing
+spades,spades,3.15.5,High-Throughput Sequencing
+speedseq,speedseq,0.1.2-20180208-4e60002,High-Throughput Sequencing
+sratoolkit,sratoolkit,3.0.5,High-Throughput Sequencing
+srst2,SRST2,0.2.0,High-Throughput Sequencing
+stampy,stampy,1.0.32,High-Throughput Sequencing
+star,STAR,2.7.10b,High-Throughput Sequencing
+star-fusion,STAR-Fusion,1.12.0,High-Throughput Sequencing
+straglr,straglr,1.4.1,High-Throughput Sequencing
+stream,STREAM,20180816,High-Throughput Sequencing
+strelka,strelka,2.9.10,High-Throughput Sequencing
+stringtie,stringtie,2.2.1,High-Throughput Sequencing
+subread,subread,2.0.3,High-Throughput Sequencing
+suppa,suppa,2.3,High-Throughput Sequencing
+survivor,SURVIVOR,1.0.7,High-Throughput Sequencing
+svanna,svanna,1.0.3,High-Throughput Sequencing
+svtyper,svtyper,0.7.1,High-Throughput Sequencing
+svviz,svviz,1.6.2,High-Throughput Sequencing
+talon,talon,6.0,High-Throughput Sequencing
+taxonkit,taxonkit,0.12.0,High-Throughput Sequencing
+telescope,telescope,6cd5525,High-Throughput Sequencing
+telseq,telseq,0.0.2,High-Throughput Sequencing
+tetoolkit,tetoolkit,2.2.3,High-Throughput Sequencing
+theta,THetA,0.7-20-g94fd772,High-Throughput Sequencing
+tombo,tombo,1.5.1,High-Throughput Sequencing
+tophat,tophat,2.1.2,High-Throughput Sequencing
+tpmcalculator,TPMCalculator,0.0.4,High-Throughput Sequencing
+transcript_clean,transcript_clean,2.0.3,High-Throughput Sequencing
+transdecoder,TransDecoder,5.5.0,High-Throughput Sequencing
+transvar,transvar,2.5.9,High-Throughput Sequencing
+trimal,trimAl,1.2rev59,High-Throughput Sequencing
+trimgalore,trimgalore,0.6.7,High-Throughput Sequencing
+trimmomatic,trimmomatic,0.39,High-Throughput Sequencing
+trinity,trinity,2.15.1,High-Throughput Sequencing
+trinotate,Trinotate,4.0.2,High-Throughput Sequencing
+trnascan-se,tRNAscan-SE,2.0.9,High-Throughput Sequencing
+ultraplex,ultraplex,1.2.5,High-Throughput Sequencing
+umitools,umitools,1.1.2,High-Throughput Sequencing
+vcf2maf,vcf2maf,1.6.21,High-Throughput Sequencing
+vcfanno,vcfanno,0.3.3,High-Throughput Sequencing
+vcflib,vcflib,1.0.3,High-Throughput Sequencing
+vcftools,vcftools,0.1.16,High-Throughput Sequencing
+vep,VEP,110,High-Throughput Sequencing
+verifybamid,verifybamid,2.0.1,High-Throughput Sequencing
+verkko,verkko,1.4.1,High-Throughput Sequencing
+viper,viper,0-20231003-1525270,High-Throughput Sequencing
+virsorter2,VirSorter2,2.2.3,High-Throughput Sequencing
+virtus,VIRTUS,2.0.1,High-Throughput Sequencing
+vsearch,vsearch,2.22.1,High-Throughput Sequencing
+vt,vt,0.57721,High-Throughput Sequencing
+winnowmap,winnowmap,2.03,High-Throughput Sequencing
+xeniumranger,xeniumranger,1.7.0.2,High-Throughput Sequencing
+xhla,xHLA,2018-04-04,High-Throughput Sequencing
+xhmm,XHMM,2016-01-04,High-Throughput Sequencing
+yak,yak,r69,High-Throughput Sequencing
+3dslicer,3DSlicer,5.2.2,Image Analysis
+afni,AFNI,current-py3,Image Analysis
+ants,ANTs,2.4.2,Image Analysis
+aretomo,AreTomo,1.3.4,Image Analysis
+b-soid,B-SOID,1.3,Image Analysis
+baracus,baracus,1.1.4,Image Analysis
+brkraw,brkraw,0.3.7,Image Analysis
+bsoft,Bsoft,1.9.0,Image Analysis
+c3d,c3d,1.1.0,Image Analysis
+cellpose,cellpose,2.1.1,Image Analysis
+cistem,cisTEM,1.0.0-beta,Image Analysis
+civet,civet,2.1.1,Image Analysis
+cmtk,cmtk,3.3.2,Image Analysis
+compucell3d,CompuCell3D,4.4.0,Image Analysis
+connectome-workbench,connectome-workbench,1.5.0,Image Analysis
+coolbox,coolbox,0.3.8,Image Analysis
+cpac,cpac,1.8.6,Image Analysis
+cryosparc,cryosparc,4.2.1,Image Analysis
+ctf,CTF,6.1,Image Analysis
+ctffind,ctffind,4.1.14,Image Analysis
+dcm2bids,dcm2bids,3.1.0,Image Analysis
+dcm2niix,dcm2niix,1.0.20211006,Image Analysis
+deepcad,DeepCAD,20210826,Image Analysis
+deeplabcut,DeepLabCut,2.3.4,Image Analysis
+deepmedic,deepmedic,0.8.4,Image Analysis
+dmriprep,dmriprep,0.5.0,Image Analysis
+dynamo,dynamo,1.1.532,Image Analysis
+elastix,elastix,4.9; 5.1.0,Image Analysis
+eman2,EMAN2,2.99,Image Analysis
+fastsurfer,fastsurfer,1.1.1,Image Analysis
+fiji,Fiji,1.52f,Image Analysis
+fitlins,fitlins,0.9.1,Image Analysis
+fmriprep,fmriprep,23.1.4,Image Analysis
+frealign,Frealign,9.11_151031,Image Analysis
+frealix,frealix,1.1.0,Image Analysis
+freesurfer,Freesurfer,7.4.1,Image Analysis
+fsl,FSL,6.0.6,Image Analysis
+gctf,Gctf,1.06,Image Analysis
+huygens,Huygens,23.04.0-p6,Image Analysis
+imaris,Imaris,9.7,Image Analysis
+imod,IMOD,4.12.25,Image Analysis
+isonet,IsoNet,0.2.1,Image Analysis
+itk-snap,ITK-SNAP,3.8.0,Image Analysis
+itk-snap-bs,ITK-SNAP-BS,20131007,Image Analysis
+laynii,laynii,2.4.0,Image Analysis
+magetbrain,magetbrain,1.0,Image Analysis
+mango,mango,4.1,Image Analysis
+minc-toolkit,minc-toolkit,1.9.18,Image Analysis
+mipav,MIPAV,11.0.3,Image Analysis
+monailabel,MONAILabel,0.3.2; 0.4.2,Image Analysis
+motioncor2,MotionCor2,1.5.0,Image Analysis
+mricron,mricron,1.0.20190902,Image Analysis
+mriqc,mriqc,23.1.0,Image Analysis
+mrtrix,mrtrix,3.0.4,Image Analysis
+mrtrix3tissue,mrtrix3tissue,5.2.9,Image Analysis
+napari,napari,0.4.18,Image Analysis
+nibabies,nibabies,22.0.2,Image Analysis
+openslide,OpenSlide,3.4.1,Image Analysis
+peet,PEET,1.15.0,Image Analysis
+petprep_hmc,petprep_hmc,0.06,Image Analysis
+plastimatch,plastimatch,1.9.3,Image Analysis
+pytom,PyTom,1.0,Image Analysis
+qsiprep,qsiprep,0.19.1,Image Analysis
+qupath,QuPath,0.5.0,Image Analysis
+relion,RELION,4.0.1,Image Analysis
+resmap,ResMap,1.9,Image Analysis
+samsrcv3,SAMsrcV3,20180713-c5e1042,Image Analysis
+simnibs,SimNIBS,4.0,Image Analysis
+smriprep,smriprep,0.8.3,Image Analysis
+sphire,SPHIRE,1.4,Image Analysis
+spm12,spm12,7870,Image Analysis
+tedana,tedana,23.0.1,Image Analysis
+tomotwin,tomotwin,0.5.0,Image Analysis
+topaz,topaz,0.2.5-ba91e19,Image Analysis
+tortoise,TORTOISE,3.2.0,Image Analysis
+tractseg,tractseg,1.7.1,Image Analysis
+xcpengine,xcpengine,1.2.4,Image Analysis
+xcp_d,xcp_d,0.5.0,Image Analysis
+admixtools,AdmixTools,7.0.2,Linkage/Phylogenetics
+admixture,admixture,1.3.0,Linkage/Phylogenetics
+arcashla,arcashla,0.5.0,Linkage/Phylogenetics
+beagle,Beagle,5.4_22Jul22,Linkage/Phylogenetics
+beagle-lib,beagle-lib,4.0,Linkage/Phylogenetics
+beast,BEAST,"1.10.4,2.6.2",Linkage/Phylogenetics
+biobakery_workflows,biobakery_workflows,3.1,Linkage/Phylogenetics
+cd-hit,CD-HIT,4.6.8,Linkage/Phylogenetics
+eigensoft,eigensoft,8.0.0,Linkage/Phylogenetics
+fastqtl,FastQTL,2.184,Linkage/Phylogenetics
+fasttree,FastTree,2.1.11,Linkage/Phylogenetics
+gcta,GCTA,1.94.0beta0,Linkage/Phylogenetics
+gtdb-tk,gtdb-tk,2.3.2,Linkage/Phylogenetics
+gubbins,gubbins,2.3.4,Linkage/Phylogenetics
+hyphy,hyphy,2.5.29,Linkage/Phylogenetics
+iqtree,iqtree,2.2.0.5,Linkage/Phylogenetics
+king,king,2.2.7,Linkage/Phylogenetics
+ltsoft,LTSOFT,4.0,Linkage/Phylogenetics
+madeline2,Madeline2,2.0,Linkage/Phylogenetics
+mega,MEGA,11.0.10,Linkage/Phylogenetics
+mega2,mega2,6.0.0,Linkage/Phylogenetics
+merlin,merlin,1.1.2,Linkage/Phylogenetics
+metawrap,metaWRAP,1.3.2,Linkage/Phylogenetics
+mothur,mothur,1.48.0,Linkage/Phylogenetics
+mrbayes,MrBayes,3.2.7,Linkage/Phylogenetics
+ohana,ohana,current,Linkage/Phylogenetics
+oma,oma,2.6.0,Linkage/Phylogenetics
+phase,phase,2.1.1,Linkage/Phylogenetics
+phylip,Phylip,3.698,Linkage/Phylogenetics
+pplacer,pplacer,1.1,Linkage/Phylogenetics
+primus,PRIMUS,1.9.0,Linkage/Phylogenetics
+prsice,PRSice,2.3.3,Linkage/Phylogenetics
+qiime,QIIME,2023.5,Linkage/Phylogenetics
+raxml,RAxML,8.2.12,Linkage/Phylogenetics
+raxml-ng,raxml-ng,1.2.0,Linkage/Phylogenetics
+revbayes,RevBayes,1.2.1,Linkage/Phylogenetics
+scdrs,scDRS,1.02,Linkage/Phylogenetics
+shapeit,shapeit,5.1.0,Linkage/Phylogenetics
+smr,SMR,0.702; 1.03; 1.3.1,Linkage/Phylogenetics
+solar,solar,9.0.1,Linkage/Phylogenetics
+sumtrees,sumtrees,4.5.2,Linkage/Phylogenetics
+tensorqtl,TensorQTL,1.0.7,Linkage/Phylogenetics
+treemix,treemix,1.13,Linkage/Phylogenetics
+treetime,treetime,0.11.1,Linkage/Phylogenetics
+ants,ANTs,2.4.2,Mathematical/Statistics
+cmdstan,cmdstan,2.30.1,Mathematical/Statistics
+comsol,Comsol,6.1.0.346,Mathematical/Statistics
+dentist,dentist,1.1.0.0,Mathematical/Statistics
+febio,FEBio,v4.0,Mathematical/Statistics
+gauss,GAUSS,10,Mathematical/Statistics
+gurobi,gurobi,9.0.0,Mathematical/Statistics
+idl/envi,IDL/ENVI,8.8/5.6,Mathematical/Statistics
+lifelines,lifelines,0.27.4,Mathematical/Statistics
+mathematica,Mathematica,13.3.0,Mathematical/Statistics
+matlab,Matlab,2023a,Mathematical/Statistics
+mcl,MCL,14-137,Mathematical/Statistics
+meep,Meep,1.17.1,Mathematical/Statistics
+octave,Octave,5.1.0,Mathematical/Statistics
+peer,PEER,1.3,Mathematical/Statistics
+r,R,4.3.2,Mathematical/Statistics
+rstudio,Rstudio,2023.03.1-446,Mathematical/Statistics
+sas,SAS,9.4M7,Mathematical/Statistics
+autodockcrankprep,AutodockCrankprep,1.0,Molecular Modeling/Graphics
+blender,blender,2.82,Molecular Modeling/Graphics
+chap,chap,0.9.1,Molecular Modeling/Graphics
+chimera,Chimera,1.16.0,Molecular Modeling/Graphics
+chromeister,chromeister,1.5.a,Molecular Modeling/Graphics
+coot,Coot,0.9.8.92,Molecular Modeling/Graphics
+cytoscape,Cytoscape,3.9.1,Molecular Modeling/Graphics
+iqmol,iqmol,2.14.0,Molecular Modeling/Graphics
+lammps,lammps,29Oct20,Molecular Modeling/Graphics
+mosaics,mosaics,1.0.0,Molecular Modeling/Graphics
+openbabel,OpenBabel,3.1.1,Molecular Modeling/Graphics
+pdb2pqr,pdb2pqr,3.6.1,Molecular Modeling/Graphics
+posefilter,posefilter,619eca51,Molecular Modeling/Graphics
+psi4,Psi4,1.6.1,Molecular Modeling/Graphics
+rosetta,Rosetta,2023.26,Molecular Modeling/Graphics
+schrodinger,Schrodinger,2023.1,Molecular Modeling/Graphics
+vmd,vmd,1.9.3,Molecular Modeling/Graphics
+advntr,advntr,1.4.1,Sequence Analysis
+agat,agat,1.2.0,Sequence Analysis
+allelecount,alleleCount,4.2.1,Sequence Analysis
+annogesic,ANNOgesic,1.0.22,Sequence Analysis
+antismash,antiSMASH,7.1.0,Sequence Analysis
+anvio,anvio,7.1,Sequence Analysis
+arcashla,arcashla,0.5.0,Sequence Analysis
+arriba,arriba,2.3.0,Sequence Analysis
+augustus,augustus,3.4.0,Sequence Analysis
+bakta,bakta,1.8.1,Sequence Analysis
+bartender,Bartender,1.1,Sequence Analysis
+biobakery_workflows,biobakery_workflows,3.1,Sequence Analysis
+birdsuite,birdsuite,1.5.5,Sequence Analysis
+blast,Blast,2.15.0+,Sequence Analysis
+blat,blat,3.5,Sequence Analysis
+bolt-lmm,BOLT-LMM,2.4.1,Sequence Analysis
+bracken,bracken,2.8,Sequence Analysis
+bwa-mem2,bwa-mem2,2.2.1,Sequence Analysis
+cactus,cactus,2.6.4,Sequence Analysis
+cadd,CADD,1.6.post1,Sequence Analysis
+caviar,CAVIAR,2.2,Sequence Analysis
+cell2location,cell2location,0.1.3,Sequence Analysis
+cellsnp-lite,cellsnp-lite,1.2.2,Sequence Analysis
+cgpbigwig,cgpbigwig,1.6.0,Sequence Analysis
+checkm2,checkm2,1.0.2,Sequence Analysis
+chess,CHESS,0.3.7,Sequence Analysis
+chipseq_pipeline,chipseq_pipeline,2.1.6,Sequence Analysis
+circle-seq,CIRCLE-seq,1.1,Sequence Analysis
+circos,circos,0.69-9,Sequence Analysis
+clair3,Clair3,1.0.4,Sequence Analysis
+cloops2,cloops2,0.0.4,Sequence Analysis
+clustalo,clustalo,1.2.4,Sequence Analysis
+clustalw,ClustalW,2.1,Sequence Analysis
+conifer,conifer,0.2.2,Sequence Analysis
+cooltools,cooltools,0.5.4,Sequence Analysis
+coveragemaster,coverageMaster,20220706,Sequence Analysis
+cutruntools,CutRunTools,20200629,Sequence Analysis
+cytosig,CytoSig,0.1,Sequence Analysis
+cytotrace,cytotrace,0.3.3,Sequence Analysis
+decifer,decifer,2.1.3,Sequence Analysis
+deeploc,deeploc,2.0,Sequence Analysis
+deepsea,deepsea,0.94c,Sequence Analysis
+denovogear,denovogear,1.1.1,Sequence Analysis
+diamond,diamond,2.0.15,Sequence Analysis
+dnaworks,DNAWorks,3.2.4,Sequence Analysis
+drep,drep,3.2.2,Sequence Analysis
+duphold,duphold,0.2.3,Sequence Analysis
+dyno,dyno,20220906,Sequence Analysis
+eagle,Eagle,2.4,Sequence Analysis
+epic2,epic2,0.0.52,Sequence Analysis
+exonerate,exonerate,2.4.0,Sequence Analysis
+expansionhunter,ExpansionHunter,5.0.0,Sequence Analysis
+expansionhunterdenovo,ExpansionHunterDenovo,0.9.0,Sequence Analysis
+fastp,fastp,0.23.2,Sequence Analysis
+fastq_demux,fastq_demux,20230713,Sequence Analysis
+fithichip,FitHiChIP,9.1; 10.0; 11.0,Sequence Analysis
+flair,FLAIR,1.6.1,Sequence Analysis
+focus,focus,0.802,Sequence Analysis
+freepsi,freepsi,0.3,Sequence Analysis
+funannotate,funannotate,1.8.15,Sequence Analysis
+fuseq,FuSeq,1.1.4,Sequence Analysis
+fusioninspector,fusioninspector,2.8.0,Sequence Analysis
+gem1,GEM1,1.4.3,Sequence Analysis
+genometools,genometools,1.6.5,Sequence Analysis
+gfatools,gfatools,0.5,Sequence Analysis
+gffcompare,gffcompare,0.12.6,Sequence Analysis
+gimmemotifs,GimmeMotifs,0.17.2,Sequence Analysis
+glimpse,GLIMPSE,1.1.1,Sequence Analysis
+glnexus,glnexus,1.4.1,Sequence Analysis
+graphmap,graphmap,0.5.2,Sequence Analysis
+gtdb-tk,gtdb-tk,2.3.2,Sequence Analysis
+gutsmash,gutSMASH,0-20210610,Sequence Analysis
+hap-ibd,Hap-IBD,20221201,Sequence Analysis
+hemtools,HemTools,20230512,Sequence Analysis
+hhsuite,hhsuite,3.3.0,Sequence Analysis
+hicmaptools,hicmaptools,20230303,Sequence Analysis
+hipstr,hipstr,0.7,Sequence Analysis
+hmmer,HMMER,3.3.2,Sequence Analysis
+htgtsrep,HTGTSrep,9fe74ff,Sequence Analysis
+idiffir,iDiffIR,20220121,Sequence Analysis
+igblast,igblast,1.21.0,Sequence Analysis
+infernal,infernal,1.1.5,Sequence Analysis
+interproscan,interproscan,5.63-95.0,Sequence Analysis
+intervar,InterVar,"2.1.2, 2.1.3",Sequence Analysis
+intogen,intogen,2023.1,Sequence Analysis
+ivar,iVar,1.3.1,Sequence Analysis
+jellyfish,jellyfish,2.3.0,Sequence Analysis
+kallisto,kallisto,0.50.1,Sequence Analysis
+last,LAST,1519,Sequence Analysis
+lastz,LASTZ,1.04.03,Sequence Analysis
+ldsc,ldsc,1.0.1-20200724,Sequence Analysis
+liger2liger,liger2liger,20230901,Sequence Analysis
+lja,LJA,0.1,Sequence Analysis
+m-tools,m-tools,20210208,Sequence Analysis
+ma-focus,ma-focus,0.802,Sequence Analysis
+magma,magma,1.10,Sequence Analysis
+mantis,mantis,1.0.5,Sequence Analysis
+maps,maps,1.1.0,Sequence Analysis
+mashmap,MashMap,2.0,Sequence Analysis
+melt,MELT,2.2.2,Sequence Analysis
+meme,meme,5.4.1,Sequence Analysis
+metawrap,metaWRAP,1.3.2,Sequence Analysis
+mintie,MINTIE,0.4.2,Sequence Analysis
+mmseqs,mmseqs,2-13-45111-219-gaabc78c,Sequence Analysis
+mocha,MoChA,1.10.2; 1.11; 1.16,Sequence Analysis
+msisensor-pro,msisensor-pro,1.2.0,Sequence Analysis
+mummer,MUMmer,4.0.0rc1,Sequence Analysis
+muscle,MUSCLE,5.1,Sequence Analysis
+mutsig2cv,mutsig2cv,3.11,Sequence Analysis
+ncbi-toolkit,ncbi-toolkit,25.0.0,Sequence Analysis
+nested,nested,2.0.0,Sequence Analysis
+netoglyc,netOglyc,4.0,Sequence Analysis
+nirvana,Nirvana,3.18.1,Sequence Analysis
+octopus,Octopus,0.7.4,Sequence Analysis
+oncodriveclustl,oncodriveCLUSTL,1.1.1,Sequence Analysis
+oncodrivefml,oncodriveFML,2.2.0,Sequence Analysis
+opencravat,OpenCRAVAT,1.7.0; 2.2.5,Sequence Analysis
+optitype,OptiType,1.3.5,Sequence Analysis
+orffinder,ORFfinder,0.4.3,Sequence Analysis
+orthofinder,OrthoFinder,2.5.4,Sequence Analysis
+paintor,PAINTOR,3.0,Sequence Analysis
+pangenome,pangenome,1.0.0,Sequence Analysis
+pangolin,pangolin,2.3.6,Sequence Analysis
+parsnp,parsnp,1.7.4,Sequence Analysis
+patric,patric,1.035,Sequence Analysis
+pepper_deepvariant,PEPPER_deepvariant,0.7,Sequence Analysis
+phasebook,phasebook,1.0.0,Sequence Analysis
+phaser,phaser,1.1.1,Sequence Analysis
+phylowgs,phylowgs,20181105,Sequence Analysis
+popscle,popscle,0.1,Sequence Analysis
+prank,PRANK,150803,Sequence Analysis
+preseq,preseq,3.1.2,Sequence Analysis
+primer3,primer3,2.6.1,Sequence Analysis
+prokka,prokka,1.14.6,Sequence Analysis
+psipred,PSIPRED,4.0,Sequence Analysis
+pysamstats,pysamstats,1.1.2,Sequence Analysis
+qtltools,QTLtools,1.3.1,Sequence Analysis
+randfold,randfold,2.0.1,Sequence Analysis
+regenie,regenie,3.0.3,Sequence Analysis
+remora,remora,2.1.1,Sequence Analysis
+rgi,RGI,6.0.2,Sequence Analysis
+rmats,rMATS,4.1.2; 4.0.2,Sequence Analysis
+rmblast,rmblast,2.14.1,Sequence Analysis
+rnammer,RNAmmer,1.2,Sequence Analysis
+roary,roary,3.13.0,Sequence Analysis
+rose,ROSE,1.3.1,Sequence Analysis
+saige,SAIGE,1.1.9,Sequence Analysis
+scanpy,scanpy,1.8.1,Sequence Analysis
+scchromhmm,scChromHMM,20220610,Sequence Analysis
+scdrs,scDRS,1.02,Sequence Analysis
+scomatic,scomatic,current,Sequence Analysis
+scvelo,scvelo,0.2.3,Sequence Analysis
+seacr,SEACR,1.3,Sequence Analysis
+selscan,selscan,1.3.0; 2.0.0,Sequence Analysis
+seq2hla,seq2hla,2.3,Sequence Analysis
+sequencetubemap,sequencetubemap,2023.8,Sequence Analysis
+shimmer,shimmer,0.2,Sequence Analysis
+signalp,signalp,6.0g,Sequence Analysis
+slivar,slivar,0.3.0,Sequence Analysis
+smcpp,smcpp,1.15.4,Sequence Analysis
+smoove,smoove,0.2.7,Sequence Analysis
+snapatac2,SnapATAC2,2.1.2,Sequence Analysis
+splam,splam,1.0.9,Sequence Analysis
+straw,straw,1.3.1,Sequence Analysis
+stripenn,stripenn,1.1.50; 1.1.65.15,Sequence Analysis
+synthdnm,SynthDNM,0.1.3,Sequence Analysis
+tandem-genotypes,tandem-genotypes,1.9.1,Sequence Analysis
+tantan,tantan,40,Sequence Analysis
+telocal,TElocal,1.1.1,Sequence Analysis
+telomerehunter,TelomereHunter,1.1.0,Sequence Analysis
+tmhmm,TMHMM,2.0c,Sequence Analysis
+toga,toga,1.1.2,Sequence Analysis
+tombo,tombo,1.5.1,Sequence Analysis
+trf,TRF,4.09,Sequence Analysis
+trgt,trgt,0.7.0,Sequence Analysis
+trimal,trimAl,1.2rev59,Sequence Analysis
+triodenovo,triodenovo,0.06,Sequence Analysis
+trust4,trust4,1.0.8,Sequence Analysis
+ultra,ultra,0.1,Sequence Analysis
+unicycler,unicycler,0.5.0,Sequence Analysis
+uropa,uropa,4.0.2,Sequence Analysis
+usearch,usearch,11.0.667,Sequence Analysis
+vadr,VADR,1.3,Sequence Analysis
+varscan,VarScan,2.4.6,Sequence Analysis
+vcf-kit,VCF-kit,0.2.9,Sequence Analysis
+vcontact2,vcontact2,0.11.3,Sequence Analysis
+velocyto,velocyto,0.17,Sequence Analysis
+velvet,velvet,1.2.10,Sequence Analysis
+viennarna,viennarna,2.5.1,Sequence Analysis
+viper,viper,0-20231003-1525270,Sequence Analysis
+virsorter2,VirSorter2,2.2.3,Sequence Analysis
+weblogo,weblogo,3.6,Sequence Analysis
+xengsort,xengsort,1.1.0,Sequence Analysis
+xenome,xenome,1.0.1,Sequence Analysis
+xhla,xHLA,2018-04-04,Sequence Analysis
+xtail,xtail,1.1.5,Sequence Analysis
+xtea,xTea,0.1.9; 1.0.0,Sequence Analysis
+alphafold2,alphafold2,2.3.2,Structural Biology
+alphalink,alphalink,1.0,Structural Biology
+alphapulldown,AlphaPulldown,0.30.7,Structural Biology
+autodock-gpu,Autodock-GPU,1.5.3,Structural Biology
+braker,braker,3,Structural Biology
+ccp4,CCP4,8.0.016,Structural Biology
+colabfold,colabfold,1.5.2,Structural Biology
+cryodrgn,cryoDRGN,1.1.0,Structural Biology
+cryolo,cryolo,1.9.2,Structural Biology
+csd,CSD,2022,Structural Biology
+dali,Dali,5.1,Structural Biology
+deepab,deepab,1.2,Structural Biology
+deepmedic,deepmedic,0.8.4,Structural Biology
+deepmm,DeepMM,20220830,Structural Biology
+dssp,DSSP,2.3.0,Structural Biology
+esm,esm,2.0.0-74-g2b36991,Structural Biology
+foldseek,foldseek,5-53465f0,Structural Biology
+gautomatch,gautomatch,0.56_cuda-9.1,Structural Biology
+lammps,lammps,29Oct20,Structural Biology
+mdtraj,mdtraj,1.9.7,Structural Biology
+model-angelo,model-angelo,1.0.10,Structural Biology
+mustache,mustache,1.0.1,Structural Biology
+naccess,naccess,2.1.1,Structural Biology
+novactf,novactf,1.0,Structural Biology
+omegafold,OmegaFold,1.1.0,Structural Biology
+pf_refinement,pf_refinement,20Nov19,Structural Biology
+phenix,Phenix,1.20.1-4487,Structural Biology
+pydockrmsd,pydockrmsd,1.0.0,Structural Biology
+pyem,pyem,230821,Structural Biology
+pymol,PyMOL,2.6.0,Structural Biology
+pyrosetta,PyRosetta,360.py3.10,Structural Biology
+release,ReLeaSE,20220825,Structural Biology
+rfdiffusion,RFdiffusion,1.1.0,Structural Biology
+rosettafold,RoseTTAFold,1.1.0,Structural Biology
+rosettafoldna,rosettafoldna,0.2,Structural Biology
+schrodinger,Schrodinger,2023.1,Structural Biology
+scipion,Scipion,3.0.12,Structural Biology
+sidesplitter,sidesplitter,1.2,Structural Biology
+subtom,subtom,1.1.6-32f731b,Structural Biology
+vmd,vmd,1.9.3,Structural Biology
+xplor-nih,Xplor-NIH,3.5,Structural Biology
+zdock,ZDOCK,3.0.2,Structural Biology
+bakta,bakta,1.8.1,Systems Biology
+bionetgen,bionetgen,0.7.9,Systems Biology
+cellphonedb,cellphonedb,3.1.0,Systems Biology
+cytosig,CytoSig,0.1,Systems Biology
+dyno,dyno,20220906,Systems Biology
+eggnogmapper,eggNOGmapper,2.1.6,Systems Biology
+gcn_cancer,GCN_Cancer,20221105,Systems Biology
+gsea,gsea,4.3.2,Systems Biology
+maker,MAKER,3.01.03,Systems Biology
+neuron,Neuron,7.7,Systems Biology
+robot,ROBOT,1.9.4,Systems Biology
+scvelo,scvelo,0.2.3,Systems Biology
+vdjtools,vdjtools,1.2.1,Systems Biology
+apptainer,apptainer,1.1.6,Utilities
+aria2,aria2,1.36.0,Utilities
+asciinema,asciinema,2.2.0,Utilities
+aspera,Aspera,3.7..4,Utilities
+autoconf,autoconf,2.71,Utilities
+aws,AWS,1.25.49,Utilities
+azcopy,azcopy,10.11.0,Utilities
+bakta,bakta,1.8.1,Utilities
+bbcp,bbcp,15.02.03.01.1,Utilities
+bgen,BGEN,20230420,Utilities
+circos,circos,0.69-9,Utilities
+coreutils,coreutils,9.1,Utilities
+cpdf,cpdf,2.5.1,Utilities
+crypt4gh,crypt4gh,0.4.1,Utilities
+curl,curl,8.4.0,Utilities
+datalad,datalad,0.13.0rc2,Utilities
+datamash,datamash,1.7,Utilities
+dnanexus,DNAnexus,0.352.1,Utilities
+dxda,dxda,0.6.0,Utilities
+edirect,EDirect,20.5.20230926,Utilities
+editors,Editors,Unknown,Utilities
+gdc-client,gdc-client,1.6.1,Utilities
+gdrive,gdrive,2.1.0,Utilities
+ghostscript,Ghostscript,9.22,Utilities
+globus-timer-cli,globus-timer-cli,0.2.9,Utilities
+gnuplot,gnuplot,5.4.0,Utilities
+google-cloud-sdk,google-cloud-sdk,397.0.0,Utilities
+grace,Grace,5.1.25,Utilities
+graphviz,graphviz,2.40,Utilities
+groff,groff,1.22.3,Utilities
+h5utils,h5utils,1.13.1,Utilities
+imagemagick,ImageMagick,7.1.0,Utilities
+inkscape,inkscape,1.3,Utilities
+jax,JAX,0.3.7,Utilities
+jo,jo,1.6,Utilities
+jq,jq,1.6,Utilities
+jupyter,jupyter,5.0.0,Utilities
+k8,k8,0.2.5,Utilities
+kronatools,kronatools,2.8,Utilities
+lbzip2,lbzip2,2.5,Utilities
+longshot,longshot,0.4.5,Utilities
+mariadb,mariadb,10.4,Utilities
+mc,mc,4.8.22,Utilities
+megit,megit,0.4.0,Utilities
+mysql,MySQL,8.0.34,Utilities
+nda-tools,nda-tools,"0.2.12,0.2.16,0.2.25",Utilities
+neovim,neovim,0.9.5,Utilities
+netpbm,netpbm,10.86.33,Utilities
+nvchecker,nvchecker,2.9,Utilities
+openneuro_cli,OpenNeuro_cli,4.14.1,Utilities
+parallel,parallel,20231222,Utilities
+paraview,paraview,5.11.1,Utilities
+patchelf,patchelf,0.17,Utilities
+patric,patric,1.035,Utilities
+pdf2svg,pdf2svg,0.2.3,Utilities
+petsc,petsc,3.19.1,Utilities
+pigz,pigz,2.7,Utilities
+pilon,pilon,1.24,Utilities
+postgresql,postgresql,16.1,Utilities
+povray,POVRay,3.7,Utilities
+pre-commit,pre-commit,3.5.0,Utilities
+pyega3,pyega3,5.0.2,Utilities
+qpdf,qpdf,1.11.1,Utilities
+quarto,quarto,1.3.450,Utilities
+rclone,rclone,1.62.2,Utilities
+rdfind,rdfind,1.6.0,Utilities
+rfmix,rfmix,2.0,Utilities
+rstudio-server,rstudio-server,2023.06.0-421,Utilities
+sb_cli,sb_cli,0.25.0,Utilities
+screen,screen,4.9.1,Utilities
+singularity,singularity,4.0.1,Utilities
+snp-sites,snp-sites,2.4.1,Utilities
+spark,spark,3.2.2,Utilities
+sqlite,SQLite,3.38.5,Utilities
+stow,stow,2.3.1,Utilities
+swarm,swarm,23.2.1,Utilities
+swig,swig,4.1.1,Utilities
+synapseclient,synapseclient,3.1.1,Utilities
+tex,Tex,2022,Utilities
+texinfo,texinfo,6.8,Utilities
+tmux,tmux,3.3a,Utilities
+ukbb,UKBB,0.1,Utilities
+vartrix,vartrix,1.1.22,Utilities
+vcf2db,vcf2db,2020.09.14,Utilities
+vim,vim,9.0,Utilities
+visidata,visidata,2.11.1,Utilities
+whatshap,whatshap,1.1,Utilities
+wuzz,wuzz,0.5.0,Utilities
+xclip,xclip,0.13,Utilities
+xpdf,xpdf,4.04,Utilities
+zstd,zstd,1.5.5,Utilities

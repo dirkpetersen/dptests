@@ -1,0 +1,154 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'modbamtools on Biowulf';</script>
+<div class="title">modbamtools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Modbamtools is a set of tools to manipulate and visualize DNA/RNA base modification data that are stored in bam format. htslib has included a support for parsing modified base tags from alignment files (MM and ML). These tags have provided a better/efficient way for storing modification data inside alignment files. 
+</p>
+<p>
+<ul>
+  
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+ ProfileRoham Razaghi,  ProfilePaul W. Hook,  ProfileShujun Ou,  ProfileMichael C. Schatz,  ProfileKasper D. Hansen,  ProfileMiten Jain,  ProfileWinston Timp
+<em>Modbamtools: Analysis of single-molecule epigenetic data for long-range profiling, heterogeneity, and clustering</em>
+    <a href="https://www.biorxiv.org/content/10.1101/2022.07.07.499188v1.article-info">Biorxiv</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>modbamtools Main Site:<a href="https://rrazaghi.github.io/modbamtools/">Main Site</a></li>
+<li>modbamtools Main Site:<a href="https://rrazaghi.github.io/modbamtools/tutorial/">Tutorial</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>modbamtools</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li>$MODBAMTOOLS_TEST_DATA #include bam, bigwig, gtf and bed files.
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=2G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ]$ <b>module load modbamtools</b>
+[user@cn3144 ]$ <b>cp -r ${MODBAMTOOLS_TEST_DATA:-none}/* .</b>
+[user@cn3144 ]$ <b>cd modbamtools_tutorial_files</b>
+[user@cn3144 ]$ <b>modbamtools plot -r chr20:58815000-58895000 \
+     --gtf gencode.v38.annotation.sorted.gtf.gz \
+     --out . \
+     --prefix gm12878_GNAS \
+     --samples GM12878 \
+     --track-titles Genes\
+     gm12878_ul_sup_megalodon_HP_chr20.bam
+</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+This will generate gm12878_GNAS.html:
+<iframe width=900, height=1050 frameBorder=0 src="../images/gm12878_GNAS.html"></iframe>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. modbamtools.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=2G
+#SBATCH --time=2:00:00
+#SBATCH --partition=norm
+
+set -e
+module load modbamtools
+cp -r ${MODBAMTOOLS_TEST_DATA:-none}/* .
+cd modbamtools_tutorial_files
+modbamtools plot -r chr20:58815000-58895000 \
+    --gtf gencode.v38.annotation.sorted.gtf.gz \
+    --out . \
+    --hap \
+    --prefix gm12878_GNAS \
+    --samples GM12878 \
+    --track-titles Genes\
+    gm12878_ul_sup_megalodon_HP_chr20.bam 
+</pre>
+<p> Submit the job:
+<pre class="term">sbatch modbamtools.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+    <pre class="term">
+       modbamtools plot xxx
+       modbamtools plot xxx
+    </pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module modbamtools</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

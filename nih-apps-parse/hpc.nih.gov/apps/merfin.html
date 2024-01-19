@@ -1,0 +1,103 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'merfin on Biowulf';</script>
+<div class="title">merfin on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>From the documentation:
+<blockquote>
+Improved variant filtering and polishing via k-mer validation
+</blockquote>
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>G. Formenti et al. <em>Merfin: improved variant filtering, assembly evaluation and polishing via k-mer validation</em>.
+        Nature Methods 2022. <a href="https://pubmed.ncbi.nlm.nih.gov/35361932/">PubMed</a>&nbsp;|&nbsp;
+        <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/35361932/">PMC</a>&nbsp;|&nbsp;
+        <a href="https://www.nature.com/articles/s41592-022-01445-y">Journal</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>merfin on <a href="https://github.com/arangrhie/merfin">GitHub</a></li>
+<li><a href="https://github.com/arangrhie/merfin/wiki/Best-practices-for-Merfin">Best practices</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: merfin (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>merfin is multithreaded. Match the number of allocated CPUs to the number of threads</li>
+    <li>Example files in <code>$MERFIN_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16 --mem=36g --gres=lscratch:100</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load merfin</b>
+[user@cn3144]$ # unpack a meryl k-mer database created from PE 250pb illumina reads from the son of a trio
+[user@cn3144]$ # with     meryl count k=21 reads.fastq.gz output HG002.k21.meryl
+[user@cn3144]$ # followed by excluding kmers with frequency of 1
+[user@cn3144]$ <b>tar -xzf ${MERFIN_TEST_DATA:-none}/HG002.k21.gt1.meryl.tar.gz</b>
+[user@cn3144]$ <b>cp ${MERFIN_TEST_DATA:-none}/{chr20.fasta.gz,ill.vcf.gz} .</b>
+[user@cn3144]$ <b>merfin -filter -sequence chr20.fasta.gz  \
+           -memory 34 \
+           -threads $SLURM_CPUS_PER_TASK \
+           -readmers HG002.k21.gt1.meryl \
+           -vcf ill.vcf.gz               \
+           -output test.merfin</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. merfin.sh), which uses the input file 'merfin.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load merfin
+tar -xzf ${MERFIN_TEST_DATA:-none}/HG002.k21.gt1.meryl.tar.gz
+cp ${MERFIN_TEST_DATA:-none}/{chr20.fasta.gz,ill.vcf.gz} .
+merfin -filter -sequence chr20.fasta.gz  \
+    -memory 34 \
+    -threads $SLURM_CPUS_PER_TASK \
+    -readmers HG002.k21.gt1.meryl \
+    -vcf ill.vcf.gz               \
+    -output test.merfin
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=36g merfin.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

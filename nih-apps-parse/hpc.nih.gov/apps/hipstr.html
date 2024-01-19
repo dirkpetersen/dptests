@@ -1,0 +1,157 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'HipSTR on Biowulf';</script>
+<style>
+  .hl { background-color: #ffff99; }
+  code {padding: 1px; background-color: #eeeeee; border: 1px solid #bbbbbbc5;}
+  dt {font-weight: bold; margin-top: 5px;}
+  dd {padding-left: 2px; border-left: 1px solid #bbbbbb;}
+</style>
+<div class="title">HipSTR on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+  Short tandem repeats (STRs) are highly repetitive genomic sequences comprised of repeated copies of an underlying motif. Prevalent in most organisms' genomes, STRs are of particular interest because they mutate much more rapidly than most other genomic elements. As a result, they're extremely informative for genomic identification, ancestry inference and genealogy.
+
+  Despite their utility, STRs are particularly difficult to genotype. The repetitive sequence responsible for their high mutability also results in frequent alignment errors that can complicate and bias downstream analyses. In addition, PCR stutter errors often result in reads that contain additional or fewer repeat copies than the true underlying genotype.
+</p>
+<p>HipSTR was specifically developed to deal with these errors in the hopes of obtaining more robust STR genotypes. In particular, it accomplishes this by:</p>
+<ul>
+  <li>Learning locus-specific PCR stutter models using an EM algorithm 
+  <li>Mining candidate STR alleles from population-scale sequencing data
+  <li>Employing a specialized hidden Markov model to align reads to candidate alleles while accounting for STR artifacts
+  <li>Utilizing phased SNP haplotypes to genotype and phase STRs
+</p>
+</ul>
+
+<h3>References:</h3>
+<p><a href="https://www.nature.com/articles/nmeth.4267">https://www.nature.com/articles/nmeth.4267</a></p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/tfwillems/HipSTR">https://github.com/tfwillems/HipSTR</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>hipstr</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+	<li>HipSTR is easy to run: <code>HipSTR -h</code></li>
+  <li>Example files can be copied from: <code>/usr/local/apps/hipstr/HipSTR-tutorial</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load hipstr</b>
+[user@cn3144]$ <b>cp -r /usr/local/apps/hipstr/HipSTR-tutorial /data/$USER; cd /data/$USER/HipSTR-tutorial</b>
+[user@cn3144]$ <b>export bam=/data/$USER/HipSTR-tutorial/bams</b>
+[user@cn3144]$ <b>export fasta=/data/$USER/HipSTR-tutorial/fasta</b>
+[user@cn3144]$ <b>export tut=/data/$USER/HipSTR-tutorial</b>
+[user@cn3144]$ <b>HipSTR --bams $bam/ERR194147.bam,$bam/ERR194160.bam,\
+                                $bam/ERR194161.bam,$bam/SRR826427.bam,\
+                                $bam/SRR826428.bam,$bam/SRR826448.bam,\
+                                $bam/SRR826463.bam,$bam/SRR826465.bam,\
+                                $bam/SRR826467.bam,$bam/SRR826469.bam,\
+                                $bam/SRR826471.bam,$bam/SRR826473.bam \
+                        --fasta $fasta/all_chroms.fa \
+                        --regions $tut/regions.bed \
+                        --str-vcf $tut/trio.marshfield.vcf.gz \
+                        --log $tut/trio.marshfield.log \
+                        --viz-out $tut/trio.marshfield.viz.gz \
+                        --min-reads 25 --def-stutter-model</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. hipstr.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=hipstr
+#SBATCH --output=hipstr.out
+#SBATCH --ntasks=1
+#SBATCH --mem=4g
+#SBATCH --time=30:00
+#SBATCH --partition=quick
+
+set -e
+module load hipstr
+cp -r /usr/local/apps/hipstr/HipSTR-tutorial /data/$USER
+cd /data/$USER/HipSTR-tutorial
+HipSTR --bams $bam/ERR194147.bam,$bam/ERR194160.bam,\
+              $bam/ERR194161.bam,$bam/SRR826427.bam,\
+              $bam/SRR826428.bam,$bam/SRR826448.bam,\
+              $bam/SRR826463.bam,$bam/SRR826465.bam,\
+              $bam/SRR826467.bam,$bam/SRR826469.bam,\
+              $bam/SRR826471.bam,$bam/SRR826473.bam \
+        --fasta $fasta/all_chroms.fa \
+        --regions $tut/regions.bed \
+        --str-vcf $tut/trio.marshfield.vcf.gz \
+        --log $tut/trio.marshfield.log \
+        --viz-out $tut/trio.marshfield.viz.gz \
+        --min-reads 25 --def-stutter-model
+
+</pre>
+<p> Submit the job:
+<pre class="term">sbatch hipstr.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. hipstr.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;HipSTR ....... --def-stutter-model
+cd dir2;HipSTR ....... --def-stutter-model
+cd dir3;HipSTR ....... --def-stutter-model
+</pre>
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f hipstr.swarm -g 8 --module hipstr</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

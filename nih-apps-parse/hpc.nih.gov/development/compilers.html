@@ -1,0 +1,57 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Compiler Suites';</script>
+<p>
+<div class="title">Compiler Suites</div>
+
+<p> All compute nodes on the Biowulf cluster include the GCC compiler suite,
+which includes C, C++, FORTRAN77 and FORTRAN90/95 compilers (gcc, g++, g77 and
+  gfortran respectively) along with the GNU debugger (gdb). In addition to the 
+  default compilers, the Intel compiler suite is also available, which may improve the performance of your project.
+   
+<div class="subheading"><h4>GNU Compilers</h4></div>
+<p>The GNU compiler suite is available in the user's PATH by default. This is
+the system default version that comes with the operating system. Though not
+considered "high-performance" or "optimized," they are usually the best choice
+for pre-existing source codes since build-systems are often created with this
+compiler in mind (indeed, a lot of code will run faster using GCC unless pains
+have been taken to include optimal flags for the various proprietary
+compilers). Consequently, sensible compiler flags are generated and building
+will be comparatively trouble-free with these build-systems. However, if
+performance is an issue, you should consult the documentation distributed with
+the source distribution that you're trying to build to see if other compilers
+are supported. If you're developing a high-performance application "in-house,"
+you may want to explore the other compilers available on Biowulf.</p>
+
+<p>Some users need the latest features offered by the latest release of the GNU
+compiler suite, so we also maintain newer GCC releases. These newer
+GNU compilers require newer environment variables set before executing programs
+built with it. This is accomplished by loading the appropriate module.
+Alternatively, the user can specify "-static-libgcc", "-static-libgfortran" or
+"-static--libg++" (depending on the language) during the build phase to
+compile-in these runtimes and thus avoid needing to set different runtime
+paths.</p>
+
+<p>To view the available versions of GCC, run:<p>
+<div class="term">module avail gcc</div>
+
+<p>More documentation is available on the <a
+href="https://gcc.gnu.org/onlinedocs/">GNU website</a>.</p>
+
+<div class="subheading" id="intel"><h4>Intel Compilers</h4></div>
+<p>The Intel suite includes C, C+, FORTRAN77 and FORTRAN90/95 compilers along
+with OpenMP and the Intel debugger. Anecdotal evidence suggests that this
+compiler suite frequently provides the best performance for
+calculation-intensive applications. Included with these compilers are the Intel
+Math Kernel Library (MKL), LINPACK and Intel Performance Primitives (IPP) - all
+discussed in the scientific libraries section below.</p>                       
+
+<p>To view the available versions of the Intel compilers, run:<p>
+<div class="term">module avail intel</div>
+
+<p>More documentation is available on the <a
+href="https://software.intel.com/en-us/intel-parallel-studio-xe-support/documentation"
+>Intel website</a>.</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

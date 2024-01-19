@@ -1,0 +1,166 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'QuPath on Biowulf';</script>
+<div class="title">QuPath on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+"an open, powerful, flexible, extensible software platform for bioimage analysis"
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+      <a href="https://www.nature.com/articles/s41598-017-17204-5">Bankhead, Peter, et al. "QuPath: Open source software for digital pathology image analysis." <i>Scientific reports</i> 7.1 (2017): 1-7.</a>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://qupath.github.io/">QuPath Main Site</a></li>
+<li><a href="https://qupath.readthedocs.io/en/stable/index.html">QuPath Read the docs</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application generally requires a <a href="https://hpc.nih.gov/docs/nx.html">graphical connection using NX</a></p>
+
+<ul>
+    <li>Module Name: <tt>QuPath</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>Environment variable set <!--for ones users should be aware of -->
+      <ul>
+        <li><tt>QUPATH_ROOT</tt></li>
+      </ul>
+    <li>Example files in <tt>$QUPATH_ROOT/TESTDATA</tt>
+    </ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Start a session in <a href="https://hpc.nih.gov/docs/nx.html">NX</a>, open a terminal, allocate an <a href="/docs/userguide.html#int">interactive session</a>, and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c8 --mem=16g --gres=lscratch:10</b>
+salloc: Pending job allocation 30957652
+salloc: job 30957652 queued and waiting for resources
+salloc: job 30957652 has been allocated resources
+salloc: Granted job allocation 30957652
+salloc: Waiting for resource configuration
+salloc: Nodes cn0849 are ready for job
+
+[user@cn0849 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0849 30957652]$ <b>module load QuPath</b>
+[+] Loading QuPath  0.3.2  on cn0849 
+[+] Loading singularity  3.8.5-1  on cn0849 
+
+[user@cn0849 30957652]$ <b>cp -r $QUPATH_ROOT/TESTDATA .</b>
+
+[user@cn0849 30957652]$ <b>cd TESTDATA/</b>
+
+[user@cn0849 TESTDATA]$ <b>ls</b>
+CMU-1-JP2K-33005.svs  CMU-1-Small-Region.svs  CMU-1.svs  CMU-2.svs  CMU-3.svs  index.yaml  JP2K-33003-1.svs  JP2K-33003-2.svs
+
+[user@cn0849 TESTDATA]$ <b>QuPath.sh --image CMU-1-JP2K-33005.svs</b>
+OpenJDK 64-Bit Server VM warning: Option --illegal-access is deprecated and will be removed in a future release.
+Jan 25, 2022 9:04:02 PM com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @616fe72b'
+21:04:04.013 [JavaFX Application Thread] [INFO ] qupath.lib.common.ThreadTools - Setting parallelism to 7
+21:04:04.336 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathGUI - QuPath build: Version: 0.3.2
+Build time: 2022-01-17, 08:49
+Latest commit tag: '71884c6'
+21:04:04.337 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathGUI - Setting tile cache size to 48312.00 MB (25.0% max memory)
+
+(QuPath:11973): Gdk-WARNING **: 16:04:05.273: XSetErrorHandler() called with a GDK error trap pushed. Don't do that.
+21:04:05.888 [JavaFX Application Thread] [INFO ] qupath.lib.scripting.QP - Initializing type adapters
+21:04:06.648 [JavaFX Application Thread] [INFO ] q.l.i.s.b.BioFormatsOptionsExtension - Bio-Formats version 6.7.0
+21:04:06.651 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathGUI - Loaded extension Bio-Formats options (Bio-Formats 6.7.0) (18 ms)
+21:04:06.721 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathGUI - Loaded extension ImageJ extension (69 ms)
+21:04:06.750 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathGUI - Loaded extension Processing extension (29 ms)
+21:04:06.830 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathGUI - Loaded extension Rich script editor extension (79 ms)
+21:04:06.831 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathGUI - Loaded extension SVG export extension (1 ms)
+21:04:06.877 [JavaFX Application Thread] [INFO ] q.l.i.s.o.OpenslideServerBuilder - OpenSlide version 3.4.1
+21:04:07.549 [JavaFX Application Thread] [INFO ] qupath.lib.gui.QuPathApp - Starting QuPath with parameters: [--image=CMU-1-JP2K-33005.svs]
+21:04:07.550 [qupathgui-1] [INFO ] qupath.lib.gui.QuPathGUI - Update check for https://github.com/qupath/qupath
+21:04:07.910 [qupathgui-1] [ERROR] qupath.lib.gui.QuPathGUI - Update check failed for QuPath (owner=qupath, repo=qupath)
+21:04:07.965 [JavaFX Application Thread] [INFO ] q.l.i.s.b.BioFormatsServerOptions - Setting max Bio-Formats readers to 8
+21:04:08.245 [JavaFX Application Thread] [WARN ] q.l.i.s.b.BioFormatsImageServer$ReaderPool - Temp memoization directory created at /tmp/qupath-memo-4974945218509452371
+21:04:08.245 [JavaFX Application Thread] [WARN ] q.l.i.s.b.BioFormatsImageServer$ReaderPool - If you want to avoid this warning, either specify a memoization directory in the preferences or turn off memoization by setting the time to < 0
+21:04:12.187 [JavaFX Application Thread] [INFO ] qupath.lib.gui.viewer.QuPathViewer - Image data set to ImageData: Not set, CMU-1-JP2K-33005.svs
+</pre>
+<br>
+At this point you should see an Graphical User Interface like the one pictured below:
+<br>
+<br>
+<center>
+    <img src="/images/QuPath.jpg" alt="QuPath GUI image" width="75%">
+</center>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>In addition to running through the GUI, <tt>QuPath.sh</tt> can be used to run scripts non-interactively.  Create a groovy script with the image processing commands you want to run e.g. myScript.  Then create a batch input file (e.g. QuPath_batch.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load QuPath
+QuPath.sh script myScript
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] QuPath_batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. QuPath.swarm). For example:</p>
+
+<pre class="term">
+QuPath.sh script Script1
+QuPath.sh script Script2
+QuPath.sh script Script3
+QuPath.sh script Script4
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f QuPath.swarm [-g #] [-t #] --module QuPath</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module QuPath</tt> <td>Loads the QuPath module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

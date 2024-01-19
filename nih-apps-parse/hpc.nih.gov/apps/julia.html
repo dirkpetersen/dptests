@@ -1,0 +1,462 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'JULIA on Biowulf';</script>
+<div class="title">JULIA on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#gotcha">Common pitfalls</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#pkg">Package management </a></div>
+        <div class="tocItem"><a href="#jupyter">Julia &plus; Jupyter notebooks</a></div>
+        <div class="tocItem"><a href="#pluto">Pluto notebooks</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<div style='width: 70%'>
+<a href="http://julialang.org">
+    <img src="/images/julia.png" alt="julia logo" style="float: left; margin-right: 15px;">
+</a>
+
+<p>
+Julia is a flexible dynamic language for scientific and numerical computing. Julia's performance is comparable to traditional statically-typed languages.
+</p>
+
+<p>
+Julia has a high level syntax and has good support for interactive use. Julia is provided under the MIT license (free) and the source code is publically available on Github. 
+</p>
+
+</div> <!-- end intro paragraph -->
+
+<!-- ===================================================================================== -->
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://julialang.org">Julia Main Site</a></li>
+<li><a href="https://docs.julialang.org">Julia Documentation</a></li>
+<li><a href="https://github.com/JuliaLang">Julia GitHub page</a></li>
+</ul>
+
+<!-- ===================================================================================== -->
+<a Name="notes"></a><div class="heading">Notes</div>
+<ul>
+    <li>Module Name: <tt>julialang</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<!-- ===================================================================================== -->
+<a Name="gotcha"></a><div class="heading">Common pitfalls</div>
+<div class="btt"></div>
+
+<dl>
+<dt>Multithreading</dt>
+<dd>Some Julia libraries will attempt to use all CPUs on a compute node. Unless all CPUs have been allocated
+this will result in overloading the job. Please be sure to set <code>OMP_NUM_THREADS</code> 
+and <code>OPENBLAS_NUM_THREADS</code> explicitly for all code that can potentially multithread. If using the 
+<code>Distributed </code> package please first set <code>OPENBLAS_NUM_THREADS</code> and <code>OMP_NUM_THREADS</code> to 1
+to prevent multi-threading, and then set the number of cores in your Julia script as follows: 
+
+<pre class="term">
+# use distributed package to run parallel julia scripts
+using Distributed
+# launch workers to match the allocated CPUs
+num_cores = parse(Int, ENV["SLURM_CPUS_PER_TASK"])
+addprocs(num_cores)
+</pre>
+
+</dd>
+</dl>
+
+
+
+<!-- ===================================================================================== -->
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+</pre>
+
+<p>There may be multiple versions of <tt>julia</tt> available. An easy way of selecting the
+version is to use <a href="/apps/modules.html">modules</a>.To see the modules
+available, type</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>module avail julia</b>
+--------------------------------------- /usr/local/lmod/modulefiles ----------------------------------------
+   julia/0.6.2    julia/1.3.1    julia/1.6.0        julialang/0.6.2    julialang/1.3.1    julialang/1.6.0
+   julia/1.0.0    julia/1.4.0    julia/1.6.1 (D)    julialang/1.0.0    julialang/1.4.0    julialang/1.6.1 (D)
+   julia/1.1.0    julia/1.5.0    julia/1.7.1        julialang/1.1.0    julialang/1.5.0    julialang/1.7.1
+
+
+  Where:
+   L:  Module is loaded
+   D:  Default Module
+
+Use "module spider" to find all possible modules.
+Use "module keyword key1 key2 ..." to search for all possible modules matching any of the "keys".
+</pre>
+
+<p>Note that the julia and julialang modules are identical to accomodate both conventional
+names of the language. You can now load the module that corresponds to the desired Julia version and start an 
+interactive Julia session as follows:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>module load julialang/1.7.1</b>
+[+] Loading git 2.34.1  ... 
+[+] Loading julialang  1.7.1
+
+[user@cn3144 ~]$ <b>julia</b>
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.7.1 (2021-12-22)
+ _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
+|__/                   |
+
+julia&gt;
+
+julia&gt; <b>5 / 2</b>
+2.5
+
+julia&gt; <b>exit()</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- ===================================================================================== -->
+<a Name="pkg"></a><div class="heading">Package management</div>
+<p>To install, update, and remove packages you can use Julia's package manager, <a href="https://docs.julialang.org/en/latest/stdlib/Pkg/"><tt>Pkg</tt></a>. <tt>Pkg</tt></a> comes with a REPL shell that you can start from within Julia by typing <b>]</b>. To exit the REPL enter <b>^C</b> or <tt>backspace</tt>. Within the REPL you can obtain a list of available commands by typing <b>?</b>:</p>
+
+<pre class="term">
+julia> <b>]</b>
+(v1.7) pkg&gt; <b>?</b>
+  Welcome to the Pkg REPL-mode. To return to the julia> prompt, either press backspace when the input line is empty or press Ctrl+C.
+  Full documentation available at https://pkgdocs.julialang.org/
+
+  Synopsis
+
+  pkg&gt; cmd [opts] [args]
+
+  Multiple commands can be given on the same line by interleaving a ; between the commands. Some commands have an alias, indicated below.
+
+  Commands
+
+  activate: set the primary environment the package manager manipulates
+  add: add packages to project
+  build: run the build script for packages
+  develop, dev: clone the full package repo locally for development
+  free: undoes a pin, develop, or stops tracking a repo
+  gc: garbage collect packages not used for a significant time
+  generate: generate files for a new project
+  help, ?: show this message
+  instantiate: downloads all the dependencies for the project
+  pin: pins the version of packages
+  precompile: precompile all the project dependencies
+  redo: redo the latest change to the active project
+  remove, rm: remove packages from project or manifest
+  resolve: resolves to update the manifest from changes in dependencies of developed packages
+  status, st: summarize contents of and changes to environment
+  test: run tests for packages
+  undo: undo the latest change to the active project
+  update, up: update packages in manifest
+  registry add: add package registries
+  registry remove, rm: remove package registries
+  registry status, st: information about installed registries
+  registry update, up: update package registries
+
+</pre>
+
+<p>To obtain a list of installed packages, for example, type <b>status</b>:</p>
+
+<pre class="term">
+(v1.7) pkg&gt; <b>status</b>
+    Status `.julia/environments/v1.7/Project.toml` (empty project)
+</pre>
+
+<p>To install a package use <b>add</b>, for example:</p>
+
+<pre class="term">
+(v1.7) pkg&gt; <b>add Flux</b>
+  Updating registry at `~/.julia/registries/General`
+  Updating git-repo `https://github.com/JuliaRegistries/General.git`
+   Resolving package versions...
+   Installed IrrationalConstants ─ v0.1.1
+   Installed RealDot ───────────── v0.1.0
+   Installed Adapt ─────────────── v3.3.3
+   Installed DiffRules ─────────── v1.9.0
+   [...]
+   [8e850b90] + libblastrampoline_jll
+   [8e850ede] + nghttp2_jll
+   [3f19e933] + p7zip_jll
+Precompiling project...
+   69 dependencies successfully precompiled in 95 seconds
+</pre>
+
+<p>To update your packages use <b>up</b>:</p>
+
+<pre class="term">
+(v1.7) pkg&gt; <b>up</b>
+    Updating registry at `~/.julia/registries/General`
+    Updating git-repo `https://github.com/JuliaRegistries/General.git`
+  No Changes to `/spin1/home/linux/$USER/.julia/environments/v1.7/Project.toml`
+  No Changes to `/spin1/home/linux/$USER/.julia/environments/v1.7/Manifest.toml`
+[ Info: We haven't cleaned this depot up for a bit, running Pkg.gc()...
+      Active manifest files: 8 found
+      Active artifact files: 15 found
+      Active scratchspaces: 5 found
+     Deleted no artifacts, repos, packages or scratchspaces
+</pre>
+
+<p>You can also use <tt>Pkg</tt>'s REPL to create new environments and organize dependencies for each environment. For example the following creates a new environment, installs the <tt>Plots</tt> dependency in that environment, then switches back to the <tt>v1.1</tt> environment:</p>
+
+<pre class="term">
+(v1.7) pkg&gt; <b>activate ~/.julia/environments/new_environment/</b>
+[ Info: activating new environment at ~/.julia/environments/new_environment.
+
+(new_environment) pkg&gt; <b>status</b>
+    Status `~/.julia/environments/new_environment/Project.toml` (empty environment)
+
+(new_environment) pkg&gt; <b>add Plots</b>
+   Installed Xorg_xcb_util_renderutil_jll ─ v0.3.9+1
+   Installed JpegTurbo_jll ──────────────── v2.1.0+0
+   Installed FFMPEG ─────────────────────── v0.4.1
+   [...]
+  [8e850ede] + nghttp2_jll
+  [3f19e933] + p7zip_jll
+    Building GR → `~/.julia/scratchspaces/44cfe95a-1eb2-52ea-b672-e2afdf69b78f/4a740db447aae0fbeb3ee730de1afbb14ac798a1/build.log`
+Precompiling project...
+
+
+(new_environment) pkg&gt; <b>status</b>
+    Status `~/.julia/environments/new_environment/Project.toml`
+  [91a5bcdd] Plots v1.25.6
+
+(new_environment) pkg&gt; <b>activate ~/.julia/environments/v1.7/</b>
+
+(v1.7) pkg&gt; 
+
+</pre>
+
+<p>For the full documentation of <tt>Pkg</tt>'s REPL, check the <a href="https://docs.julialang.org/en/latest/stdlib/Pkg/">Pkg docs</a>. There is a searchable list of registered Julia packages at <a href="https://pkg.julialang.org/">Julia packages</a>. 
+
+<p>There are two ways to use this project/environment in a batch script non interactively:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load julia
+julia --project=$HOME/.julia/environments/new_environment my_simulation_of_everything.jl
+</pre>
+
+<p>or</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load julia
+export JULIA_PROJECT==$HOME/.julia/environments/new_environment
+julia my_simulation_of_everything.jl
+</pre>
+
+<h3>Reducing the size of the ~/.julia folder</h3>
+<p>The size of the <code>$HOME/.julia</code> folder where packages, environments, etc
+are stored can grow quite large. Here are some ways to reduce size:</p>
+
+<dl>
+    <dt>Removing environments</dt>
+    <dd>There isn't an obvious way to delete an environment from the
+    julia Pkg mode. To delete an environment and all its packages
+    first delete the environment folder from the file system and then run
+    a Pkg garbage collection to remove the actual packages. Using the example above:
+    <pre class="term">
+$ <b>rm -rf ~/.julia/new_environment</b>
+$ <b>julia</b>
+julia> <b>]</b>
+(v1.7) pkg&gt; <b>gc --all</b>
+     </pre>
+    </dd>
+
+    <dt>Registries</dt>
+    <dd>julia 1.7 changed the way registries are handled. Once you update to 1.7
+    it may be a good idea to remove and then add back registries.
+    <pre class="term">
+(v1.7) pkg&gt; <b>registry status</b>
+Registry Status
+ [23338594] General
+(v1.7) pkg&gt; <b>registry rm General</b>
+    Removing registry `General` from ~/.julia/registries/General
+(v1.7) pkg&gt; <b>registry add General</b>
+    </pre></dd>
+
+    <dt>Relocate .julia folder</dt>
+    <dd>If the folder is still too large it can be relocated to /data.
+    <pre class="term">
+$ <b>cd ~</b>
+$ <b>mv .julia /data/$USER/.julia</b>
+$ <b>ln -s /data/$USER/.julia</b>
+    </pre></dd>
+</dl> 
+
+
+<P>
+<!-- ===================================================================================== -->
+<a Name="jupyter"></a><div class="heading">Julia on Jupyter</div>
+<p>You can have access to a Julia kernel through Jupyter by installing the IJulia package in your home directory and setting up the 
+appropriate tunneling (as described in <A href="jupyter.html">Jupyter on Biowulf</a>). 
+To install the IJulia package do the following on a Julia interactive session first start the pkg mode with <b>]</b></p>
+
+<pre class="term">
+(v1.7) pkg&gt; <b>add IJulia</b>
+  Updating registry at `~/.julia/registries/General`
+  Updating git-repo `https://github.com/JuliaRegistries/General.git`
+ Resolving package versions...
+ Installed Rmath_jll  v0.2.2+0
+ Installed Gettext_jll  v0.20.1+1
+ [...]
+(v1.7) pkg&gt;
+
+</pre>
+
+<p>In addition to installing the IJulia package, this will also install a jupyter kernel
+in your home directory under <code>~/.local/share/jupyter/kernels</code> which will then
+be included in the kernels menu of jupyter notbook and jupyter lab.</p>
+
+<p>Note that we do not install Julia packages centrally so this has to be done by each
+user separately</p>
+
+<!-- ===================================================================================== -->
+<a Name="pluto"></a><div class="heading">Pluto notebooks</div>
+
+<p>Pluto notebooks can be setup similarly to Jupyter notebooks. Allocate an interactive session,
+start julia, enter the pkg mode, and install the Pluto package. Note that the <code>--tunnel</code>
+sets up a tunnel between the login node and the compute node. See also our <a href="/docs/tunneling/">tunneling docs</a>.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --tunnel</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load julialang/1.7.1</b>
+[+] Loading git 2.34.1  ... 
+[+] Loading julialang  1.7.1
+
+[user@cn3144 ~]$ <b>julia</b>
+               _
+   _       _ _(_)_     |  Documentation: https://docs.julialang.org
+  (_)     | (_) (_)    |
+   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
+  | | | | | | |/ _` |  |
+  | | |_| | | | (_| |  |  Version 1.7.1 (2021-12-22)
+ _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
+|__/                   |
+
+julia&gt;
+julia&gt> <b>]</b>
+(v1.7) pkg&gt; <b>add Pluto</b>
+    Updating registry at `~/.julia/registries/General.toml`
+   Resolving package versions...
+   Installed IniFile ──────────── v0.5.1
+   Installed RelocatableFolders ─ v0.2.0
+   [...]
+(v1.7) pkg&gt; ^C
+julia&gt;
+</pre>
+
+<p>Then start the notebook</p>
+<pre class="term">
+julia&gt; <b>using Pluto</b>
+julia&gt; # the following should not cause any errors unless you forgot to use --tunnel
+          # when starting the sinteractive session
+julia&gt; <b>port = parse(Int, get(ENV, "PORT1", ""))</b>
+julia&gt; <b>Pluto.run(host="127.0.0.1", port=port, launch_browser=false)</b>
+
+Go to http://localhost:34090/?secret=XXXXXX in your browser to start writing ~ have fun!
+
+Press Ctrl+C in this terminal to stop Pluto
+
+    Updating registry at `~/.julia/registries/General.toml`
+    Updating registry done ✓
+
+</pre>
+<p>At this point you should set up a tunnel from your local computer to the login
+node according to the instructions printed out by sinteractive (
+see also <A href="jupyter.html">Jupyter on Biowulf</a>). One that is
+set up you can visit the URL printed by Pluto from your local broswer.<p>
+
+
+<!-- ===================================================================================== -->
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. julia.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load julialang
+myscript.jl &lt; data.in &gt; result.out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] julia.sh</pre>
+
+<!-- ===================================================================================== -->
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. julia.swarm). For example:</p>
+
+<pre class="term">
+myscript.jl &lt; dataset1.in &gt; result1.out
+myscript.jl &lt; dataset2.in &gt; result2.out
+myscript.jl &lt; dataset3.in &gt; result3.out
+myscript.jl &lt; dataset4.in &gt; result4.out
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f julia.swarm [-g #] [-t #] --module julialang</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module julialang</tt> <td>Loads the julialang module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

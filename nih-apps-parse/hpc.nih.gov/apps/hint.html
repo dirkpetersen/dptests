@@ -1,0 +1,163 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' HiNT on Biowulf';</script>
+<div class="title"> HiNT on Biowulf</div>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#int">Interactive Jobs</a></div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Using Swarm</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+<p>HiNT (Hi-C for copy Number variation and Translocation detection), a computational method to detect CNVs and Translocations from Hi-C data. HiNT has three main components: HiNT-PRE, HiNT-CNV, and HiNT-TL. HiNT-PRE preprocesses Hi-C data and computes the contact matrix, which stores contact frequencies between any two genomic loci; both HiNT-CNV and HiNT-TL starts with HI-C contact matrix, predicts copy number segments, and inter-chromosomal translocations, respectively</p>
+
+<P>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<p><a href="https://github.com/parklab/HiNT">https://github.com/parklab/HiNT</a></p>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>hint</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>see <tt>/fdb/hint</tt> for reference, index, matrices, and example files</li>
+<li>Programs are multithreaded.</li>
+</ul>
+
+<a Name="batch"></a><div class="heading">Submitting an interactive job</div>
+<P>
+Allocate an interactive session  and run the interactive job there.</p>
+<pre class="term">[biowulf]$ <b>sinteractive  --mem=40g  --cpus-per-task=16</b>
+salloc.exe: Granted job allocation 789523
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0135 are ready for job
+
+[cn0135]$ <b>cd /data/$USER/</b>
+
+[cn0135]$ <b>module load hint</b>
+
+[cn0135]$ <b>cp /fdb/hint/testData/ .</b> 
+
+[cn0135]$ <b>cd testData</b>
+
+[cn0135]$ <b>hint pre -d $TESTDIR/test.bam \
+--refdir $REFDIR/hg19 \
+--informat bam \
+--outformat juicer \
+-g hg19 \
+-n test \
+-o /data/$USER/out \
+--samtoolspath $SAMTOOLS \
+-p $SLURM_CPUS_PER_TASK \
+--pairtoolspath $PAIRTOOLS \
+--juicerpath $JUICERPATH/scripts/juicer_tools_1.22.01.jar</b>
+[14:42:34] Argument List:
+[14:42:34] Hi-C data = /, f, d, b, /, h, i, n, t, /, t, e, s, t, D, a, t, a, /, t, e, s, t, ., b, a, m
+[14:42:34] Input format = bam
+[14:42:34] Output format = juicer
+[14:42:34] Genome = hg19
+...
+...
+Calculating norms for zoom BP_10000
+Calculating norms for zoom BP_5000
+Writing expected
+Writing norms
+Finished writing norms
+
+or
+
+[cn0135]$ <b>hint pre \
+-d $TESTDIR/TestSub_1.fq.gz,$TESTDIR/TestSub_2.fq.gz \
+-a $BWA \
+-i $BWAINDEXDIR/hg19/hg19.fa \
+--refdir $REFDIR/hg19 \
+--informat fastq \
+--outformat cooler \
+-g hg19 \
+-n test \
+-o /data/$USER/out \
+--samtoolspath $SAMTOOLS \
+-p $SLURM_CPUS_PER_TASK \
+--pairtoolspath $PAIRTOOLS \
+--coolerpath $COOLER</b>
+
+or
+
+[cn0135]$ <b>hint tl \
+-m test.hic \
+-f juicer \
+--refdir $REFDIR/hg19 \
+--backdir $MATRICESDIR/hg19 \
+-g hg19 \
+-n test \
+-c 0.05 \
+--ppath $PAIRIX \
+-p $SLURM_CPUS_PER_TASK \
+-o testout</b>
+
+[cn0135]$ <b>exit</b>
+salloc.exe: Job allocation 789523 has been revoked.
+[biowulf]$</pre>
+<p>
+Note: this job allocates 10 GB of memory and automatically assign the number of cpus allocated to the variable $SLURM_CPUS_PER_TASK. 
+
+<p>The test takes less than 30 minutes.
+</p>
+
+<a Name="batch"></a><div class="heading">Submitting a single batch job</div>
+    
+<p>1. Create a script file (myscript) similar to the one below.
+
+ 
+<pre class="term">#!/bin/bash 
+
+cd /data/$USER/testData
+module load hint
+hint pre -d $TESTDIR/test.bam \
+--refdir $REFDIR/hg19 \
+--informat bam \
+--outformat juicer \
+-g hg19 \
+-n test \
+-o /data/$USER/out \
+--samtoolspath $SAMTOOLS \
+-p $SLURM_CPUS_PER_TASK \
+--pairtoolspath $PAIRTOOLS \
+--juicerpath $JUICERPATH</pre>
+
+  <p>2. Submit the script on biowulf:   
+      
+  <pre class="term">[biowulf]$ sbatch --mem=40g --cpus-per-task=8  myscript</pre>
+
+<p>
+<!--- swarm -->
+
+<a Name="swarm"></a><div class="heading">Using Swarm</div>
+<P>
+Using the 'swarm' utility, one can submit many jobs to the cluster to run concurrently. </p>
+
+  <p>Set up a swarm command file (eg /data/$USER/cmdfile). </p>
+
+  <pre class="term">
+cd /data/$USER/dir1; hint pre -d $TESTDIR/test.bam ...
+cd /data/$USER/dir2; hint pre -d $TESTDIR/test.bam ...
+cd /data/$USER/dir3; hint pre -d $TESTDIR/test.bam ...
+...
+cd /data/$USER/dir20; hint pre -d $TESTDIR/test.bam ...
+</pre>
+<P>
+
+
+<p> submit the swarm job:
+  <pre class="term">$ swarm -f cmdfile --module hint -g 40 -t 16</pre>
+
+<p>For more information regarding running swarm, see <a href="swarm.html">swarm.html</a></p>
+
+
+</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

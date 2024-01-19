@@ -1,0 +1,103 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CCP4 on Biowulf';</script>
+<div class="title">CCP4 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+  <p>CCP4 (The Collaborative Computational Project Number 4 in Protein
+  Crystallography) is a suite of separate programs which communicate via
+  standard data files, rather than all operations being integrated into one
+  huge program.  The programs range from coordinate file manipulations and
+  dataset management to sequence alignment and structure validation.</p>
+
+  <p>To use the programs the user must assign input and output files, and
+  run the programs. Often an output file becomes the input to the next step,
+  and system parameter substitution may be used to create filenames in a
+  systematic way. Most crystallographic calculations involve a series of
+  steps in which no decisions need be made until the end, and a command
+  file provides an easy way of chaining calculations.</p>
+
+  <p>Standard file formats are defined for the principal data types used in
+  crystallography: reflection data; density maps; and atom coordinates.
+  In defining these formats, a number of trade-offs are made between
+  efficiency (in space and access time), flexibility, portability, and
+  simplicity of use.</p>
+
+  <p>There is a policy of continual technical and scientific updates to the
+  suite. Where existing programs have been incorporated into the suite they
+  have often subsequently undergone considerable modification above that
+  needed to use the CCP4 file formats.</p>
+
+<h3>References:</h3>
+<ul>
+<li>Please see <a href="http://www.ccp4.ac.uk/dist/html/REFERENCES.html">http://www.ccp4.ac.uk/dist/html/REFERENCES.html</a> for details on citing CCP4 programs.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://www.ccp4.ac.uk/docs.php">CCP4 Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>CCP4</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/Singlethreaded
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>CCP4_SCR</tt> -- scratch directory for CCP4, set to /lscratch/$SLURM_JOB_ID for interactive and batch jobs.</li>
+  </ul>
+<li>Reference data in <tt>/pdb/</tt>
+</ul>
+
+<p class="alert">CCP4 requires the allocation of local scratch space.  Please see
+<a href="https://hpc.nih.gov/docs/userguide.html#local">https://hpc.nih.gov/docs/userguide.html#local</a>
+for more information.</p>
+
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+  <p>This example aligns 3ESZ onto 3F6R, based on the superposition of the
+  A chains from both PDB entries.</p>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load CCP4</b>
+[user@cn3144 ~]$ zcat /pdb/pdb/es/pdb3esz.ent.gz &gt; 3esz.pdb
+[user@cn3144 ~]$ zcat /pdb/pdb/f6/pdb3f6r.ent.gz &gt; 3f6r.pdb
+[user@cn3144 ~]$ superpose 3esz.pdb -s "A" 3f6r.pdb -s "A" -o 3esz_ON_3f6r.pdb
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+ 
+<p>CCP4 also includes an interactive graphical interface.  This
+application requires an <a href="/docs/connect.html">X-Windows connection</a>.  First source the correct setup file (see above),
+then type 'ccp4i' at the prompt.</p>
+
+<img src="/images/ccp4i.gif" alt="CCP4i window" width=625px>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

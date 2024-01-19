@@ -1,0 +1,284 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'chipseq_pipeline on Biowulf';</script>
+<div class="title">chipseq_pipeline on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+This ChIP-Seq pipeline is based off the ENCODE (phase-3) transcription factor and histone ChIP-seq pipeline specifications.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/ENCODE-DCC/chip-seq-pipeline2">Main GitHub repository</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>chipseq_pipeline</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded app (using WDL)
+    <li>Reference data in <tt>/fdb/chipseq_pipeline/&lt;version&gt;</tt>
+    <li>Environment variables set <!--for ones users should be aware of -->
+      <ul>
+          Version 1.2.0
+          <ul>
+            <li><tt>CROMWELL_JAR=/usr/local/apps/cromwell/40/cromwell-40.jar</tt></li>
+            <li><tt>CHIPSEQ_HOME</tt></li>
+            <li><tt>CHIPSEQ_TESTDATA</tt></li>
+          </ul>
+          Versions 1.4.0.1 / 1.5.1 / 1.6.1 / 2.1.6
+          <ul>
+            <li><tt>CSP_WDL</tt></li>
+            <li><tt>CSP_TEST_JAR</tt></li>
+          </ul>
+       </ul>
+    <li>Version 2.1.6+ uses caper 2.1 which has requires new config. You should backup and replace your <tt>~/.caper/</tt> configuration prior to use.
+    <li>Version 2.1.6+ now requires the <tt>--singularity</tt> flag in <tt>caper run</tt> matching other ENCODE pipelines available on Biowulf.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+
+<div class="tabs-container">
+    <ul class="tabs">
+        <li data-tab="tab-120">1.2.0</li>
+        <li data-tab="tab-1401-151">1.4.0.1 / 1.5.1 / 1.6.1</li>
+        <li data-tab="tab-216" class="current">2.1.6</li>
+    </ul>
+    <div id="tab-120" class="tab-content">
+        <p></p>
+        <pre class="term">
+
+[user@biowulf]$ <b>sinteractive -c 12 --mem 20g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load chipseq_pipeline</b>
+
+[user@cn3144 ~]$ <b>cp -r $CHIPSEQ_TESTDATA/* .</b>
+
+[user@cn3144 ~]$ <b>INPUT=ENCSR936XTK_subsampled_chr19_only.json</b>
+
+[user@cn3144 ~]$ <b>java -jar -Xmx15G -Dconfig.file=$CHIPSEQ_HOME/backends/backend.conf
+-Dbackend.default=singularity $CROMWELL_JAR run $CHIPSEQ_HOME/chip.wdl
+-i ${INPUT} -o $CHIPSEQ_HOME/workflow_opts/singularity.json -m meta.json</b>
+[2019-06-04 12:22:50,83] [info] Running with database db.url = jdbc:hsqldb:mem:d0de5da6-b561-40fe-8cb9-a1b3cf4edb0b;shutdown=false;hsqldb.tx=mvcc
+[2019-06-04 12:22:58,86] [info] Running migration RenameWorkflowOptionsInMetadata with a read batch size of 100000 and a write batch size of 100000
+[2019-06-04 12:22:58,88] [info] [RenameWorkflowOptionsInMetadata] 100%
+[2019-06-04 12:22:59,01] [info] Running with database db.url = jdbc:hsqldb:mem:e0b3ccbd-65dd-41da-923d-2f806691bbab;shutdown=false;hsqldb.tx=mvcc
+[2019-06-04 12:22:59,41] [warn] This actor factory is deprecated. Please use cromwell.backend.google.pipelines.v1alpha2.PipelinesApiLifecycleActorFactory for PAPI v1 or cromwell.backend.google.pipelines.v2alpha1.PipelinesApiLifecycleActorFactory for PAPI v2
+[2019-06-04 12:22:59,69] [info] Slf4jLogger started
+[2019-06-04 12:22:59,97] [info] Workflow heartbeat configuration:
+{
+  "cromwellId" : "cromid-3b31626",
+  "heartbeatInterval" : "2 minutes",
+  "ttl" : "10 minutes",
+  "writeBatchSize" : 10000,
+  "writeThreshold" : 10000
+}
+[2019-06-04 12:23:00,07] [info] Metadata summary refreshing every 1 second.
+[2019-06-04 12:23:00,11] [info] KvWriteActor configured to flush with batch size 200 and process rate 5 seconds.
+[2019-06-04 12:23:00,12] [info] WriteMetadataActor configured to flush with batch size 200 and process rate 5 seconds.
+[2019-06-04 12:23:00,12] [info] CallCacheWriteActor configured to flush with batch size 100 and process rate 3 seconds.
+[2019-06-04 12:23:00,12] [warn] 'docker.hash-lookup.gcr-api-queries-per-100-seconds' is being deprecated, use 'docker.hash-lookup.gcr.throttle' instead (see reference.conf)
+[...]
+[2019-06-04 13:12:45,82] [info] Connection pools shut down
+[2019-06-04 13:12:45,82] [info] Shutting down SubWorkflowStoreActor - Timeout = 1800 seconds
+[2019-06-04 13:12:45,82] [info] Shutting down JobStoreActor - Timeout = 1800 seconds
+[2019-06-04 13:12:45,82] [info] Shutting down CallCacheWriteActor - Timeout = 1800 seconds
+[2019-06-04 13:12:45,82] [info] Shutting down ServiceRegistryActor - Timeout = 1800 seconds
+[2019-06-04 13:12:45,82] [info] Shutting down DockerHashActor - Timeout = 1800 seconds
+[2019-06-04 13:12:45,82] [info] Shutting down IoProxy - Timeout = 1800 seconds
+[2019-06-04 13:12:45,82] [info] SubWorkflowStoreActor stopped
+[2019-06-04 13:12:45,82] [info] CallCacheWriteActor Shutting down: 0 queued messages to process
+[2019-06-04 13:12:45,82] [info] CallCacheWriteActor stopped
+[2019-06-04 13:12:45,82] [info] WriteMetadataActor Shutting down: 0 queued messages to process
+[2019-06-04 13:12:45,82] [info] KvWriteActor Shutting down: 0 queued messages to process
+[2019-06-04 13:12:45,82] [info] JobStoreActor stopped
+[2019-06-04 13:12:45,83] [info] IoProxy stopped
+[2019-06-04 13:12:45,83] [info] ServiceRegistryActor stopped
+[2019-06-04 13:12:45,83] [info] DockerHashActor stopped
+[2019-06-04 13:12:45,84] [info] Database closed
+[2019-06-04 13:12:45,84] [info] Stream materializer shut down
+[2019-06-04 13:12:45,84] [info] WDL HTTP import resolver closed
+
+
+[user@cn3144 ~]$ <b>tail meta.json</b>
+    "chip.idr_thresh": 0.05
+  },
+  "labels": {
+    "cromwell-workflow-id": "cromwell-b3a17a9a-08aa-491b-ba91-cffaf0346068"
+  },
+  "submission": "2019-06-04T13:34:43.516-04:00",
+  "status": "Succeeded",
+  "end": "2019-06-04T14:11:36.841-04:00",
+  "start": "2019-06-04T13:34:43.589-04:00"
+}[apptest4@cn3585 test]$ 
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+    </div><!-- ********** end tab-1.2.0 ************ -->
+
+    <div id="tab-1401-151" class="tab-content">
+        <p></p>
+        <pre class="term">
+
+[user@biowulf ~]$ <b>sinteractive --cpus-per-task=12 --mem=15g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 56941209
+salloc.exe: job 56941209 queued and waiting for resources
+salloc.exe: job 56941209 has been allocated resources
+salloc.exe: Granted job allocation 56941209
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3130 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn3130 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3130 56941209]$ <b>module load chipseq_pipeline/&lt;ver&gt;</b>
+[+] Loading chipseq_pipeline  &lt;ver&gt;  on cn3130
+
+[user@cn3130 56941209]$ <b>cp $CSP_TEST_JAR .</b>
+
+[user@cn3130 56941209]$ <b>mkdir -p ~/.caper</b>
+
+[user@cn3130 56941209]$ <b>caper init local</b>
+Downloading Cromwell JAR... https://github.com/broadinstitute/cromwell/releases/download/47/cromwell-47.jar
+Downloading Womtool JAR... https://github.com/broadinstitute/cromwell/releases/download/47/womtool-47.jar
+
+[user@cn3130 56941209]$ <b>caper run $CSP_WDL -i  ENCSR000DYI_subsampled_chr19_only.json</b>
+2020-04-27 13:47:09,505|autouri.autouri|INFO| cp: copied, src=https://storage.googleapis.com/encode-pipeline-genome-data/hg38_chr19_chrM/GRCh38_no_alt_analysis_set_GCA_000001405.15.chr19_chrM.fasta.gz, dest=/lscratch/56941209/.caper_tmp/dcc664bb3e886aa9127f3bd8522bff3c/GRCh38_no_alt_analysis_set_GCA_000001405.15.chr19_chrM.fasta.gz
+[...snip...]
+2020-04-27 14:07:55,306 cromwell-system-akka.dispatchers.engine-dispatcher-43 INFO  - SingleWorkflowRunnerActor workflow finished with status 'Succeeded'.
+{
+  "outputs": {
+    "chip.report": "/lscratch/56941209/chip/e4dac084-f786-4f24-a567-4c63e34a1040/call-qc_report/execution/glob-eae855c82d0f7e2185388856e7b2cc7b/qc.html",
+    "chip.qc_json_ref_match": false,
+    "chip.qc_json": "/lscratch/56941209/chip/e4dac084-f786-4f24-a567-4c63e34a1040/call-qc_report/execution/glob-3440f922973abb7a616aaf203e0db08b/qc.json"
+  },
+  "id": "e4dac084-f786-4f24-a567-4c63e34a1040"
+}
+2020-04-27 14:07:58,575 cromwell-system-akka.dispatchers.engine-dispatcher-103 INFO  - SingleWorkflowRunnerActor writing metadata to /lscratch/56941209/.caper_tmp/chip/20200427_134708_801102/metadata.json
+2020-04-27 14:07:58,631  INFO  - Workflow polling stopped
+2020-04-27 14:07:58,648  INFO  - 0 workflows released by cromid-c5dda4a
+2020-04-27 14:07:58,651  INFO  - Shutting down WorkflowStoreActor - Timeout = 5 seconds
+2020-04-27 14:07:58,655  INFO  - Shutting down WorkflowLogCopyRouter - Timeout = 5 seconds
+2020-04-27 14:07:58,658  INFO  - Shutting down JobExecutionTokenDispenser - Timeout = 5 seconds
+2020-04-27 14:07:58,662  INFO  - JobExecutionTokenDispenser stopped
+2020-04-27 14:07:58,662 cromwell-system-akka.dispatchers.engine-dispatcher-104 INFO  - Aborting all running workflows.
+2020-04-27 14:07:58,663  INFO  - WorkflowStoreActor stopped
+2020-04-27 14:07:58,671  INFO  - WorkflowLogCopyRouter stopped
+2020-04-27 14:07:58,671  INFO  - Shutting down WorkflowManagerActor - Timeout = 3600 seconds
+2020-04-27 14:07:58,672 cromwell-system-akka.dispatchers.engine-dispatcher-80 INFO  - WorkflowManagerActor All workflows finished
+2020-04-27 14:07:58,672  INFO  - WorkflowManagerActor stopped
+2020-04-27 14:07:59,126  INFO  - Connection pools shut down
+2020-04-27 14:07:59,132  INFO  - Shutting down SubWorkflowStoreActor - Timeout = 1800 seconds
+2020-04-27 14:07:59,132  INFO  - Shutting down JobStoreActor - Timeout = 1800 seconds
+2020-04-27 14:07:59,132  INFO  - Shutting down CallCacheWriteActor - Timeout = 1800 seconds
+2020-04-27 14:07:59,132  INFO  - Shutting down ServiceRegistryActor - Timeout = 1800 seconds
+2020-04-27 14:07:59,132  INFO  - Shutting down DockerHashActor - Timeout = 1800 seconds
+2020-04-27 14:07:59,132  INFO  - Shutting down IoProxy - Timeout = 1800 seconds
+2020-04-27 14:07:59,132  INFO  - SubWorkflowStoreActor stopped
+2020-04-27 14:07:59,134  INFO  - CallCacheWriteActor Shutting down: 0 queued messages to process
+2020-04-27 14:07:59,134  INFO  - WriteMetadataActor Shutting down: 0 queued messages to process
+2020-04-27 14:07:59,134  INFO  - CallCacheWriteActor stopped
+2020-04-27 14:07:59,134  INFO  - KvWriteActor Shutting down: 0 queued messages to process
+2020-04-27 14:07:59,142  INFO  - JobStoreActor stopped
+2020-04-27 14:07:59,142  INFO  - IoProxy stopped
+2020-04-27 14:07:59,142  INFO  - ServiceRegistryActor stopped
+2020-04-27 14:07:59,143  INFO  - DockerHashActor stopped
+2020-04-27 14:07:59,167  INFO  - Database closed
+2020-04-27 14:07:59,168  INFO  - Stream materializer shut down
+2020-04-27 14:07:59,170  INFO  - WDL HTTP import resolver closed
+2020-04-27 14:07:59,434|caper.caper|INFO| run: 0, e4dac084-f786-4f24-a567-4c63e34a1040, None
+
+[user@cn3130 56941209]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 56941209
+salloc.exe: Job allocation 56941209 has been revoked.
+</pre> 
+</div><!-- ********** end tab-1.4.0.1 ************ -->
+<div id="tab-216" class="tab-content current">
+        <p></p>
+        <pre class="term">
+
+[user@biowulf ~]$ <b>sinteractive --cpus-per-task=12 --mem=15g --gres=lscratch:30</b>
+salloc: Pending job allocation 41186334
+salloc: job 41186334 queued and waiting for resources
+salloc: job 41186334 has been allocated resources
+salloc: Granted job allocation 41186334
+salloc: Waiting for resource configuration
+salloc: Nodes cn0873 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.41186334.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0873 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0873 41186334]$ <b>module load chipseq_pipeline/&lt;ver&gt;</b>
+[+] Loading chipseq_pipeline  &lt;ver&gt;  on cn0873
+
+        </pre>
+        <p>If you have used caper for an earlier version of an ENCODE pipeline you should regenerate your caper config. In this example the pipeline will only be run locally - i.e. it will not submit
+        tasks as slurm jobs. Follow the <a href="https://github.com/ENCODE-DCC/caper">caper</a>
+        docs to set up a config file for slurm submission. This has to be done only once.</p>
+        <pre class="term">
+[user@cn0873 41186334]$ <b>[[ -d ~/.caper ]] && mv ~/.caper ~/caper.$(date +%F).bak # back up old caper config</b>        
+        
+[user@cn0873 41186334]$ <b>mkdir -p ~/.caper && caper init local</b>
+        </pre>
+        <pre class="term">
+[user@cn0873 41186334]$ <b>caper run $CSP_WDL -i $CSP_TEST_JAR --singularity</b>
+2022-06-06 14:15:50,807|caper.cli|INFO| Cromwell stdout: /lscratch/41186334/cromwell.out
+2022-06-06 14:15:50,807|caper.caper_base|INFO| Creating a timestamped temporary directory. /lscratch/41186334/.caper_tmp/chip/20220606_135150_807598
+2022-06-06 14:15:50,807|caper.caper_runner|INFO| Localizing files on work_dir. /lscratch/41186334/.caper_tmp/chip/20220606_135150_807598
+[...snip...]
+2022-06-06 14:43:59,733|caper.cromwell_workflow_monitor|INFO| Workflow: id=dcee6b44-b2bd-414e-897b-baddc2d746b2, status=Succeeded
+2022-06-06 14:44:26,941|caper.cromwell_metadata|INFO| Wrote metadata file. /lscratch/41186334/chip/dcee6b44-b2bd-414e-897b-baddc2d746b2/metadata.json
+2022-06-06 14:44:26,942|caper.nb_subproc_thread|INFO| Cromwell finished successfully.
+
+[user@cn0873 41186334]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 41186334
+salloc.exe: Job allocation 41186334 has been revoked.
+</pre> 
+</div><!-- ********** end tab-2.1.6 ************ -->
+</div><!-- end of tabs -->
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. chipseq_pipeline.sh). For example:</p>
+        <p></p>
+        <pre class="term">
+#!/bin/bash
+set -e
+module load chipseq_pipeline
+cp $CSP_TEST_JAR .
+INPUT=ENCSR000DYI_subsampled_chr19_only.json
+caper run $CSP_WDL -i $INPUT # version 2+ requires --singularity
+        </pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=12 --mem=15g chipseq_pipeline.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

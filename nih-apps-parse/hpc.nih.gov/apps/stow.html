@@ -1,0 +1,66 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Stow on Biowulf';</script>
+<div class="title">Stow on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Example Session </a></div>
+      </div>
+</table>
+
+<p>
+GNU Stow is a symlink farm manager which takes distinct packages of software and/or data located in separate directories on the filesystem, and makes them appear to be installed in the same place. For example, /usr/local/bin could contain symlinks to files within /usr/local/stow/emacs/bin, /usr/local/stow/perl/bin etc., and likewise recursively for any other subdirectories such as .../share, .../man, and so on.
+<p>
+This is particularly useful for keeping track of system-wide and per-user installations of software built from source, but can also facilitate a more controlled approach to management of configuration files in the user's home directory, especially when coupled with version control systems.
+<p>
+Stow is safe-- it does not overwrite any files it didn't create.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.gnu.org/software/stow/">GNU Stow Main Site</a></li>
+<li><a href="https://www.gnu.org/software/stow/manual/">GNU Stow Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>stow</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Example Session</div>
+
+One good use case for <tt>stow</tt> is where you've built some software and want to symlink it to a directory that's already on your <tt>PATH</tt>.
+
+<p><br>Sample session (user input in <b>bold</b>):</p>
+
+<pre class="term">
+[user@helix]$ <b>ls myapp</b>
+bin
+src
+lib
+include
+README
+[user@helix ~]$ <b>which myapp <u># not curently on the PATH</u></b>
+/usr/bin/which: no myapp in (...)
+[user@cn3144 ~]$ <b>module load stow</b>
+[+] Loading stow, version 2.2.2...
+[user@helix ~]$ <b>stow --target $HOME/.local myapp</b>
+[user@helix ~]$ <b>which myapp</b>
+/home/user/.local/bin/myapp
+[user@helix ~]$ <b>stow -D --target $HOME/.local myapp <u># now unstow the application</u></b>
+[user@helix ~]$ <b>which myapp <u># now we're back to our original state</u></b>
+/usr/bin/which: no myapp in (...)
+[user@helix ~]$ <b>logout</b>
+</pre>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

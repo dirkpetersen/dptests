@@ -1,0 +1,495 @@
+
+
+document.querySelector('title').textContent = 'sortmeRNA: next-generation sequence filtering and alignment tool ';
+**sortmeRNA: next-generation sequence filtering and alignment tool** 
+
+
+|  |
+| --- |
+| 
+Quick Links
+[Documentation](#doc)
+[Notes](#notes)
+[Interactive job](#int) 
+[Batch job](#sbatch) 
+[Swarm of jobs](#swarm) 
+ |
+
+
+
+SortMeRNA is a local sequence alignment tool for filtering, mapping and clustering.
+The core algorithm is based on approximate seeds and allows for sensitive analysis 
+of NGS reads. The main application of SortMeRNA is filtering rRNA 
+from metatranscriptomic data. SortMeRNA takes as input a file of reads 
+(fasta or fastq format) and one or multiple rRNA database file(s), 
+and sorts apart aligned and rejected reads into two files specified by the user. 
+
+
+
+### References:
+
+
+* Evguenia Kopylova, Laurent Noé, Hélène Touzet   
+
+*SortMeRNA: fast and accurate filtering of ribosomal RNAs in metatranscriptomic data*   
+
+[Bioinformatics](https://academic.oup.com/bioinformatics/article/28/24/3211/246053), 2012, **28**(24): 3211-3217.
+
+
+Documentation
+* [SortMeRNA GitHub page](https://github.com/biocore/sortmerna)
+* [SortMeRNA User Manual](https://github.com/biocore/sortmerna/wiki/User-manual-v4.0)
+
+
+Important Notes
+* Module Name: sortmeRNA (see [the modules page](https://hpc.nih.gov/apps/modules.html) for more information)
+* Unusual environment variables set
+	+ **SORTMERNA\_HOME**  installation directory
+	+ **SORTMERNA\_BIN**    executables directory
+	+ **SORTMERNA\_DATA**  sample data directory
+	+ **SORTMERNA\_TESTS**  test examples directory
+
+
+
+Interactive job
+[Interactive jobs](/docs/userguide.html#int) should be used for debugging, graphics, or applications that cannot be run as batch jobs.
+Allocate an [interactive session](/docs/userguide.html#int) and run the program. Sample session:
+
+
+
+```
+
+[user@biowulf]$ **sinteractive --gres=lscratch:10 --mem=8g**
+[user@cn3329 ~]$ **module load sortmeRNA** 
+[+] Loading singularity  3.10.0  on cn3329
+[+] Loading sortmeRNA 4.3.6  ...
+[user@cn3329 ~]$ **sortmerna -h** 
+
+  Program:      SortMeRNA version 4.3.6
+  Copyright:    2016-2020 Clarity Genomics BVBA:
+                Turnhoutseweg 30, 2340 Beerse, Belgium
+                2014-2016 Knight Lab:
+                Department of Pediatrics, UCSD, La Jolla
+                2012-2014 Bonsai Bioinformatics Research Group:
+                LIFL, University Lille 1, CNRS UMR 8022, INRIA Nord-Europe
+  Disclaimer:   SortMeRNA comes with ABSOLUTELY NO WARRANTY; without even the
+                implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+                See the GNU Lesser General Public License for more details.
+  Contributors: Jenya Kopylova   jenya.kopylov@gmail.com
+                Laurent Noé      laurent.noe@lifl.fr
+                Pierre Pericard  pierre.pericard@lifl.fr
+                Daniel McDonald  wasade@gmail.com
+                Mikaël Salson    mikael.salson@lifl.fr
+                Hélène Touzet    helene.touzet@lifl.fr
+                Rob Knight       robknight@ucsd.edu
+
+  Usage:   sortmerna -ref FILE [-ref FILE] -reads FWD_READS [-reads REV_READS] [OPTIONS]:
+  -------------------------------------------------------------------------------------------------------------
+  | option            type-format           description                                          default      |
+  -------------------------------------------------------------------------------------------------------------
+
+    [REQUIRED]
+    --ref             PATH        Required  Reference file (FASTA) absolute or relative path.
+
+       Use mutliple times, once per a reference file
+
+
+    --reads           PATH        Required  Raw reads file (FASTA/FASTQ/FASTA.GZ/FASTQ.GZ).
+
+       Use twice for files with paired reads.
+       The file extensions are Not important. The program automatically
+       recognizes the file format as flat/compressed, fasta/fastq
+
+
+
+    [COMMON]
+    --workdir         PATH        Optional  Workspace directory                         USRDIR/sortmerna/run/
+
+       Default structure: WORKDIR/
+                              idx/   (References index)
+                              kvdb/  (Key-value storage for alignments)
+                              out/   (processing output)
+                              readb/ (pre-processed reads/index)
+
+
+    --kvdb            PATH        Optional  Directory for Key-value database            WORKDIR/kvdb
+
+       KVDB is used for storing the alignment results.
+
+
+    --idx-dir         PATH        Optional  Directory for storing Reference index.      WORKDIR/idx
+
+
+    --readb           PATH        Optional  Storage for pre-processed reads             WORKDIR/readb/
+
+       Directory storing the split reads, or the random access index of compressed reads
+
+
+    --fastx           BOOL        Optional  Output aligned reads into FASTA/FASTQ file
+    --sam             BOOL        Optional  Output SAM alignment for aligned reads.
+
+
+    --SQ              BOOL        Optional  Add SQ tags to the SAM file
+
+
+    --blast           STR         Optional  output alignments in various Blast-like formats
+
+       Sample values: '0'                    - pairwise
+                      '1'                    - tabular (Blast - m 8 format)
+                      '1 cigar'              - tabular + column for CIGAR
+                      '1 cigar qcov'         - tabular + columns for CIGAR and query coverage
+                      '1 cigar qcov qstrand' - tabular + columns for CIGAR, query coverage,
+                                               and strand
+
+
+    --aligned         STR/BOOL    Optional  Aligned reads file prefix [dir/][pfx]       WORKDIR/out/aligned
+
+       Directory and file prefix for aligned output i.e. each
+       output file goes into the specified directory with the given prefix.
+       The appropriate extension: (fasta|fastq|blast|sam|etc) is automatically added.
+       Both 'dir' and 'pfx' are optional.
+       The 'dir' can be a relative or an absolute path.
+       If 'dir' is not specified, the output is created in the WORKDIR/out/
+       If 'pfx' is not specified, the prefix 'aligned' is used
+       Examples:
+       '-aligned $MYDIR/dir_1/dir_2/1' -> $MYDIR/dir_1/dir_2/1.fasta
+       '-aligned dir_1/apfx'           -> $PWD/dir_1/apfx.fasta
+       '-aligned dir_1/'               -> $PWD/aligned.fasta
+       '-aligned apfx'                 -> $PWD/apfx.fasta
+       '-aligned  (no argument)'       -> WORKDIR/out/aligned.fasta
+
+
+    --other           STR/BOOL    Optional  Non-aligned reads file prefix [dir/][pfx]   WORKDIR/out/other
+
+       Directory and file prefix for non-aligned output i.e. each
+       output file goes into the specified directory with the given prefix.
+       The appropriate extension: (fasta|fastq|blast|sam|etc) is automatically added.
+       Must be used with 'fastx'.
+       Both 'dir' and 'pfx' are optional.
+       The 'dir' can be a relative or an absolute path.
+       If 'dir' is not specified, the output is created in the WORKDIR/out/
+       If 'pfx' is not specified, the prefix 'other' is used
+       Examples:
+       '-other $MYDIR/dir_1/dir_2/1' -> $MYDIR/dir_1/dir_2/1.fasta
+       '-other dir_1/apfx'           -> $PWD/dir_1/apfx.fasta
+       '-other dir_1/'               -> $PWD/dir_1/other.fasta
+       '-other apfx'                 -> $PWD/apfx.fasta
+       '-other  (no argument)'       -> aligned_out/other.fasta
+                                        i.e. the same output directory
+                                        as used for aligned output
+
+
+    --num_alignments  INT         Optional  Positive integer (INT >=0).
+
+       If used with '-no-best' reports first INT alignments per read reaching
+       E-value threshold, which allows to lower the CPU time and memory use.
+       Otherwise outputs INT best alignments.
+       If INT = 0, all alignments are output
+
+
+    --no-best         BOOL        Optional  Disable best alignments search                          False
+
+       The 'best' alignment is the highest scoring alignment out of All alignments of a read,
+       and the read can potentially be aligned (reaching E-value threshold) to multiple reference
+       sequences.
+       By default the program searches for best alignments i.e. performs an exhaustive search
+       over all references. Using '-no-best' will make the program to search just
+       the first N alignments, where N is set using '-num_alignments' i.e. 1 by default.
+
+
+    --min_lis         INT         Optional  Search only alignments that have the LIS                2
+                                            of at least N seeds long
+
+       LIS stands for Longest Increasing Subsequence. It is computed using seeds, which
+       are k-mers common to the read and the reference sequence. Sorted sequences of such seeds
+       are used to filter the candidate references prior performing the Smith-Waterman alignment.
+
+
+    --print_all_reads BOOL        Optional  Output null alignment strings for non-aligned reads     False
+                                            to SAM and/or BLAST tabular files
+
+    --paired          BOOL        Optional  Flags paired reads                                      False
+
+        If a single reads file is provided, use this option to indicate
+        the file contains interleaved paired reads when neither
+        'paired_in' | 'paired_out' | 'out2' | 'sout' are specified.
+
+
+    --paired_in       BOOL        Optional  Flags the paired-end reads as Aligned,                  False
+                                            when either of them is Aligned.
+
+        With this option both reads are output into Aligned FASTA/Q file
+        Must be used with 'fastx'.
+        Mutually exclusive with 'paired_out'.
+
+
+    --paired_out      BOOL        Optional  Flags the paired-end reads as Non-aligned,              False
+                                            when either of them is non-aligned.
+
+        With this option both reads are output into Non-Aligned FASTA/Q file
+        Must be used with 'fastx'.
+        Mutually exclusive with 'paired_in'.
+
+
+    --out2            BOOL        Optional  Output paired reads into separate files.                False
+
+       Must be used with 'fastx'.
+       If a single reads file is provided, this options implies interleaved paired reads
+       When used with 'sout', four (4) output files for aligned reads will be generated:
+       'aligned-paired-fwd, aligned-paired-rev, aligned-singleton-fwd, aligned-singleton-rev'.
+       If 'other' option is also used, eight (8) output files will be generated.
+
+
+    --sout            BOOL        Optional  Separate paired and singleton aligned reads.            False
+
+       To be used with 'fastx'.
+       If a single reads file is provided, this options implies interleaved paired reads
+       Cannot be used with 'paired_in' | 'paired_out'
+
+
+    --zip-out         STR/BOOL    Optional  Controls the output compression                        '-1'
+
+       By default the report files are produced in the same format as the input i.e.
+       if the reads files are compressed (gz), the output is also compressed.
+       The default behaviour can be overriden by using '-zip-out'.
+       The possible values: '1/true/t/yes/y'
+                            '0/false/f/no/n'
+                            '-1' (the same format as input - default)
+       The values are Not case sensitive i.e. 'Yes, YES, yEs, Y, y' are all OK
+       Examples:
+       '-reads freads.gz -zip-out n' : generate flat output when the input is compressed
+       '-reads freads.flat -zip-out' : compress the output when the input files are flat
+
+
+    --match           INT         Optional  SW score (positive integer) for a match.                2
+
+    --mismatch        INT         Optional  SW penalty (negative integer) for a mismatch.          -3
+
+    --gap_open        INT         Optional  SW penalty (positive integer) for introducing a gap.    5
+
+    --gap_ext         INT         Optional  SW penalty (positive integer) for extending a gap.      2
+
+    -e                DOUBLE      Optional  E-value threshold.                                      1
+
+       Defines the 'statistical significance' of a local alignment.
+       Exponentially correllates with the Minimal Alignment score.
+       Higher E-values (100, 1000, ...) cause More reads to Pass the alignment threshold
+
+
+    -F                BOOL        Optional  Search only the forward strand.                         False
+
+    -N                BOOL        Optional  SW penalty for ambiguous letters (N's) scored
+                                            as --mismatch
+
+    -R                BOOL        Optional  Search only the reverse-complementary strand.           False
+
+
+    [OTU_PICKING]
+    --id              INT         Optional  %%id similarity threshold (the alignment                0.97
+                                            must still pass the E-value threshold).
+
+    --coverage        INT         Optional  %%query coverage threshold (the alignment must          0.97
+                                            still pass the E-value threshold)
+
+    --de_novo_otu     BOOL        Optional  Output FASTA file with 'de novo' reads                  False
+
+       Read is 'de novo' if its alignment score passes E-value threshold, but both the identity
+       '-id', and the '-coverage' are below their corresponding thresholds
+       i.e. ID < %%id and COV < %%cov
+
+
+    --otu_map         BOOL        Optional  Output OTU map (input to QIIMEs make_otu_table.py).    False
+                                            Cannot be used with 'no-best because
+                                            the grouping is done around the best alignment
+
+
+    [ADVANCED]
+    --passes          INT,INT,INT Optional  Three intervals at which to place the seed on           L,L/2,3
+                                             the read (L is the seed length)
+
+    --edges           INT         Optional  Number (or percent if INT followed by %% sign) of       4
+                                            nucleotides to add to each edge of the read
+                                            prior to SW local alignment
+
+    --num_seeds       BOOL        Optional  Number of seeds matched before searching                2
+                                            for candidate LIS
+
+    --full_search     INT         Optional  Search for all 0-error and 1-error seed                 False
+                                            matches in the index rather than stopping
+                                            after finding a 0-error match (<1%% gain in
+                                            sensitivity with up four-fold decrease in speed)
+
+    --pid             BOOL        Optional  Add pid to output file names.                           False
+
+    -a                INT         Optional  DEPRECATED in favour of '-threads'. Number of           numCores
+                                            processing threads to use.
+                                            Automatically redirects to '-threads'
+
+    --threads         INT         Optional  Number of Processing threads to use                     2
+
+
+    [INDEXING]
+    --index           INT         Optional  Build reference database index                          2
+
+       By default when this option is not used, the program checks the reference index and
+       builds it if not already existing.
+       This can be changed by using '-index' as follows:
+       '-index 0' - skip indexing. If the index does not exist, the program will terminate
+                                and warn to build the index prior performing the alignment
+       '-index 1' - only perform the indexing and terminate
+       '-index 2' - the default behaviour, the same as when not using this option at all
+
+
+    -L                DOUBLE      Optional  Indexing: seed length.                                  18
+
+    -m                DOUBLE      Optional  Indexing: the amount of memory (in Mbytes) for          3072
+                                            building the index.
+
+    -v                BOOL        Optional  Produce verbose output when building the index          True
+
+    --interval        INT         Optional  Indexing: Positive integer: index every Nth L-mer in    1
+                                            the reference database e.g. '-interval 2'.
+
+    --max_pos         INT         Optional  Indexing: maximum (integer) number of positions to      1000
+                                            store for each unique L-mer.
+                                            If 0 - all positions are stored.
+
+
+    [HELP]
+    -h                BOOL        Optional  Print help information
+
+    --version         BOOL        Optional  Print SortMeRNA version number
+
+
+    [DEVELOPER]
+    --dbg_put_db      BOOL        Optional
+    --cmd             BOOL        Optional  Launch an interactive session (command prompt)          False
+
+    --task            INT         Optional  Processing Task                                         4
+
+       Possible values: 0 - align. Only perform alignment
+                        1 - post-processing (log writing)
+                        2 - generate reports
+                        3 - align and post-process
+                        4 - all
+
+
+    --dbg-level       INT         Optional  Debug level                                             0
+
+      Controls verbosity of the execution trace. Default value of 0 corresponds to
+      the least verbose output.
+      The highest value currently is 2.
+
+```
+
+Running a test example:   
+
+
+```
+
+[user@cn3329 user]$ **cp $SORTMERNA\_DATA/\* .** 
+[user@cn3329 user]$ **sortmerna -ref ref\_GQ099317\_forward\_and\_rc.fasta -reads set2\_environmental\_study\_550\_amplicon.fasta -workdir out**
+[process:1393] === Options processing starts ... ===
+Found value: /opt/conda/envs/sortmerna/bin/sortmerna
+Found flag: -ref
+Found value: ref_GQ099317_forward_and_rc.fasta of previous flag: -ref
+Found flag: -reads
+Found value: set2_environmental_study_550_amplicon.fasta of previous flag: -reads
+Found flag: -workdir
+Found value: out of previous flag: -workdir
+[opt_workdir:995] Using WORKDIR: "/gpfs/gsfs7/users/user/sortmeRNA/out" as specified
+[process:1483] Processing option: reads with value: set2_environmental_study_550_amplicon.fasta
+[opt_reads:98] Processing reads file [1] out of total [1] files
+[process:1483] Processing option: ref with value: ref_GQ099317_forward_and_rc.fasta
+[opt_ref:158] Processing reference [1] out of total [1] references
+[opt_ref:206] File "/gpfs/gsfs7/users/user/sortmeRNA/ref_GQ099317_forward_and_rc.fasta" exists and is readable
+[process:1503] === Options processing done ===
+[process:1504] Alignment type: [best:1 num_alignments:1 min_lis:2 seeds:2]
+[validate_kvdbdir:1248] Key-value DB location "/gpfs/gsfs7/users/user/sortmeRNA/out/kvdb"
+[validate_kvdbdir:1284] Creating KVDB directory: "/gpfs/gsfs7/users/user/sortmeRNA/out/kvdb"
+[validate_idxdir:1214] Using index directory: "/gpfs/gsfs7/users/user/sortmeRNA/out/idx"
+[validate_idxdir:1222] Created index directory - OK
+[validate_readb_dir:1306] Using split reads directory : "/gpfs/gsfs7/users/user/sortmeRNA/out/readb"
+[validate_readb_dir:1314] Created split reads directory - OK
+[validate_aligned_pfx:1335] Checking output directory: "/gpfs/gsfs7/users/user/sortmeRNA/out/out"
+[validate:1533] No output format has been chosen (fastx|sam|blast|otu_map). Using default 'blast'
+[main:62] Running command:
+/opt/conda/envs/sortmerna/bin/sortmerna -ref ref_GQ099317_forward_and_rc.fasta -reads set2_environmental_study_550_amplicon.fasta -workdir out
+[build_index:1127] ==== Index building started ====
+[build_index:1190] Begin indexing file ref_GQ099317_forward_and_rc.fasta of size: 244 under index name out/idx/10850222056975404418
+  done.
+
+[build_index:2108] ==== Done index building in 0.0130122 sec ====
+
+[init:108] Readfeed init started
+[define_format:877] file: "set2_environmental_study_550_amplicon.fasta" is FASTA flat ASCII
+[count_reads:915] started count  ...
+[next:322] EOF FWD reached. Total reads: 100000
+[count_reads:945] done count. Elapsed time: 0.0979533 sec. Total reads: 100000
+[init_split_files:967] added file: out/readb/fwd_0.fa
+[init_split_files:967] added file: out/readb/fwd_1.fa
+[split:605] start splitting. Using number of splits equals number of processing threads: 2
+[next:322] EOF FWD reached. Total reads: 100000
+[split:717] Done splitting. Reads count: 100000 Runtime sec: 0.0964581
+
+[init:135] Readfeed init done in sec [0.220833]
+[store_to_db:292] Stored Reads statistics to DB:
+     all_reads_count= 100000 all_reads_len= 12815500 min_read_len= 75 max_read_len= 152 total_aligned= 0 total_aligned_id= 0 total_aligned_cov= 0 total_aligned_id_cov= 0 total_denovo= 0 num_short= 0 reads_matched_per_db= TODO is_stats_calc= 0 is_total_reads_mapped_cov= 0
+
+[align:143] ==== Starting alignment ====
+[align:146] Number of cores: 64
+[align:163] Using number of Processor threads: 2
+[Refstats:60] Index Statistics calculation starts ... done in: 0.273445 sec
+[align:185] Loading index: 0 part: 1/1 Memory KB: 14 ...
+[align:190] done in [0.0122706] sec Memory KB: 23
+[align:193] Loading references ...
+[align:197] done in [1.4727e-05] sec. Memory KB: 23
+[align2:70] Processor 1 thread 23456112350976 started
+[align2:70] Processor 0 thread 23456110249728 started
+[next:455] EOF REV reached. Total reads: 50000
+[align2:133] Processor 1 thread 23456112350976 done. Processed 50000 reads. Skipped already processed: 0 reads Aligned reads (passing E-value): 0 Runtime sec: 0.446079
+[next:455] EOF FWD reached. Total reads: 50000
+[align2:133] Processor 0 thread 23456110249728 done. Processed 50000 reads. Skipped already processed: 0 reads Aligned reads (passing E-value): 0 Runtime sec: 0.45168
+[align:220] done index: 0 part: 1 in 0.451754 sec Memory KB: 23
+[align:227] Index and References unloaded in 0.00035275 sec. Memory KB: 23
+[align:237] ==== Done alignment in 0.464565 sec ====
+
+[store_to_db:292] Stored Reads statistics to DB:
+     all_reads_count= 100000 all_reads_len= 12815500 min_read_len= 75 max_read_len= 152 total_aligned= 0 total_aligned_id= 0 total_aligned_cov= 0 total_aligned_id_cov= 0 total_denovo= 0 num_short= 0 reads_matched_per_db= TODO is_stats_calc= 0 is_total_reads_mapped_cov= 0
+
+[writeSummary:179] ==== Starting summary of alignment statistics ====
+[Refstats:60] Index Statistics calculation starts ... done in: 0.271057 sec
+[write:62] Using summary file: out/out/aligned.log
+[writeSummary:185] ==== Done summary in sec [0.271671] ====
+
+[writeReports:169] === Report generation starts ===
+[writeReports:184] Restored Readstats from DB: 1
+[Refstats:60] Index Statistics calculation starts ... done in: 0.275999 sec
+[writeReports:199] loading reference 0 part 1/1 ... done in 2.4086e-05 sec
+[report:93] Report Processor: 1 thread: 23456110249728 started. Memory KB: 23
+[report:93] Report Processor: 0 thread: 23456112350976 started. Memory KB: 23
+[next:455] EOF FWD reached. Total reads: 50000
+[report:152] Report processor: 0 thread: 23456112350976 done. Processed reads: 50000 Invalid reads: 0 Memory KB: 23
+[next:455] EOF REV reached. Total reads: 50000
+[report:152] Report processor: 1 thread: 23456110249728 done. Processed reads: 50000 Invalid reads: 0 Memory KB: 23
+[writeReports:220] done reference 0 part: 1 in 0.157432 sec
+[writeReports:226] references unloaded in 5.41e-07 sec Memory KB: 23
+[merge:90] deleted out/out/aligned_1.blast
+[strip_path_sfx:169] moving out/out/aligned_0.blast -> "out/out/aligned.blast"
+[writeReports:268] === done Reports in 0.433945 sec ===
+
+```
+
+End the interactive session:
+
+```
+
+[user@cn3329 ~]$ **exit**
+salloc.exe: Relinquishing job allocation 46116226
+
+```
+
+
+
+
+

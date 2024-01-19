@@ -1,0 +1,177 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'raxml on Biowulf';</script>
+<div class="title">raxml on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+	<div class="tocItem"><a href="#MPI">MPI Parallel job</a></div>
+      </div>
+</table>
+
+<p>
+RAxML   (Randomized   Axelerated   Maximum   Likelihood)   is   a   program   for   sequential   and   parallel
+Maximum  Likelihood  based  inference  of  large  phylogenetic  trees. It can  also  be  used  for  post-
+analyses of sets of phylogenetic trees, analyses of alignments and, evolutionary placement of short
+reads.
+It  has   originally   been   derived   from  fastDNAml   which   in  turn   was  derived  from   Joe   Felsentein's
+dnaml which is part of the PHYLIP package. 
+[<A href="http://sco.h-its.org/exelixis/web/software/raxml/index.html">RAxML website</a>]
+<P>
+
+There are several different RAxML executables:
+<table border=0 class="horzTable" width=90%>
+<tr><td colspan=2 class="softBottom"><br>
+<tr><td width=150 class="softBottom">raxmlHPC  <td class="softBottom">sequential version. Intended   for   small   to   medium   datasets   and   for   initial experiments to determine appropriate search parameters. This is not built with SSE3, and for performance reasons one of the other versions is preferred. 
+<tr><td width=150 class="softBottom">raxmlHPC-SSE3  <td class="softBottom">sequential version built with SSE3. Intended   for   small   to   medium   datasets   and   for   initial experiments to determine appropriate search parameters.
+<tr><td class="softBottom">raxmlHPC-PTHREADS <td class="softBottom">Can run multiple threads on multiple cores of a single node. Works well for longer alignments..
+<tr><td class="softBottom">raxmlHPC-PTHREADS-SSE3 <td class="softBottom">Can run multiple threads on multiple cores of a single node, built with SSE3. Works well for longer alignments..
+<tr><td class="softBottom">raxmlHPC-MPI <td class="softBottom">Can run multiple MPI processes on multiple cores of multiple nodes. Intended for executing really large production runs 
+(i.e. 100 or 1,000 bootstraps). It   has   been   designed   to   do   multiple
+inferences or rapid/standard BS (bootstrap) searches in parallel! 
+For all remaining options, the usage of this type of coarse-grained parallelism does not make much
+sense!
+</table>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://sco.h-its.org/exelixis/php/countManualNew.php">raxml Manual</a></li>
+<li><A href="https://cme.h-its.org/exelixis/web/software/raxml/">RAxML memory calculator</a>. 
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>raxml</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>read the section in the <a href="http://sco.h-its.org/exelixis/php/countManualNew.php">user manual</a> on how many threads/cores to use. 
+Rough rule of thumb: 1 thread/core per 500 DNA site patterns.
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>raxml_HOME</tt></li>
+  </ul>
+<li>The test datasets for RAxML are available in <tt>/usr/local/apps/raxml/test-data</tt>.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load raxml</b>
+
+[user@cn3144 ~]$ <b>raxmlHPC -m BINGAMMA -p 12345 -s binary.phy -n T1 </b>
+IMPORTANT WARNING: Sequences t2 and t3 are exactly identical
+IMPORTANT WARNING: Sequences t2 and t4 are exactly identical
+IMPORTANT WARNING
+Found 2 sequences that are exactly identical to other sequences in the alignment.
+Normally they should be excluded from the analysis.
+
+Just in case you might need it, an alignment file with 
+sequence duplicates removed is printed to file binary.phy.reduced
+
+[...]
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -119.520001 .... 
+Final GAMMA-based Score of best tree -119.520001
+
+Program execution info written to /spin1/users/user/raxml/RAxML_info.T1
+Best-scoring ML tree written to: /spin1/users/user/raxml/RAxML_bestTree.T1
+Overall execution time: 0.496108 secs or 0.000138 hours or 0.000006 days
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. raxml.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load raxml
+raxmlHPC-PTHREADS -m BINGAMMA -p 12345 -s binary.phy -n T3  -T $SLURM_CPUS_PER_TASK
+</pre>
+The <tt>-T $SLURM_CPUS_PER_TASK</tt> flag specifies the number of threads to run. This will automatically be the same as the
+number of CPUs you allocate using the sbatch command with --cpus-per-task, as in the example above. As per the Raxml
+manual, it is very important to run the same number of threads as CPUs. 
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=# [--mem=#] raxml.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. raxml.swarm). For example:</p>
+
+<pre class="term">
+raxmlHPC -m BINGAMMA -p 12345 -s file1.phy -n T3  
+raxmlHPC -m BINGAMMA -p 12345 -s file2.phy -n T3  
+raxmlHPC -m BINGAMMA -p 12345 -s file3.phy -n T3  
+[...]     
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f raxml.swarm [-g #] --module raxml</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module raxml</tt> <td>Loads the raxml module for each subjob in the swarm 
+</table>
+If you are using threads (the 'raxmlHPC-PTHREADS' executable and -T $SLURM_CPUS_PER_TASK), be sure to specify the number of threads to swarm with:
+<div class="term"><pre>
+$ swarm -f cmdfile -t # --module raxml
+</pre></div>
+<P>
+
+<a Name="MPI"></a><div class="heading"> MPI RAxML batch job</div>
+<P>
+An MPI job can run in parallel across multiple nodes. It can also run on multiple CPUs of a single node, similar to the threaded version.
+Set up a batch script along the following lines:
+<pre class="term">
+#!/bin/bash
+#PBS -N raxml
+
+cd /data/user/raxml
+
+module load raxml
+
+echo "Running $SLURM_NTASKS MPI processes "
+
+mpirun -np $SLURM_NTASKS raxmlHPC-MPI -f d -m GTRCAt -p 12345 -s ex_al -N 100 -n MultipleOriginal
+</pre>
+Submit the job with:
+<pre class="term">
+sbatch --ntasks=8 --ntasks-per-core=1 jobscript
+</pre>
+where
+<table border=0 width=90% cellpadding=5>
+<tr><td>--ntasks=8 <td>tells slurm you need to run 8 MPI processes (up to 28 tasks can be submitted to a single node in the norm partition, and for any more than 28 you should submit to the multinode partition)
+<tr><td>--ntasks-per-core=1 <td>run only one task on a physical core (usually recommended for MPI jobs)
+<tr><Td valign=top width=180>--np $SLURM_NTASKS <td valign=top>tells mpirun to run $SLURM_NTASKS processes, which is set to 8 via the sbatch command line. 
+</table>
+You will need to experiment with the number of tasks to find the optimal settings. The batch script can remain the same, and you can modify the sbatch command line to try different values. The slurm-####.out file will report the number of tasks, and you can use <a href="/docs/biowulf_tools.html#jobhist">jobhist</a> to see how long a job took to complete. Please send us the results of your experiment -- i.e. the time taken for various values of ntasks -- to help in making recommendations to other users. 
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

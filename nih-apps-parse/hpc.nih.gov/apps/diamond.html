@@ -1,0 +1,189 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Diamond on Biowulf';</script>
+<div class="title">Diamond on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+DIAMOND is a sequence aligner for protein and translated DNA searches, designed for high performance analysis of big sequence data. The key features are:
+
+    <ul>
+    <li>Pairwise alignment of proteins and translated DNA at 500x-20,000x speed of BLAST.</li>
+    <li>Frameshift alignments for long read analysis.</li>
+    <li>Low resource requirements and suitable for running on standard desktops or laptops.</li>
+    <li>Various output formats, including BLAST pairwise, tabular and XML, as well as taxonomic classification.</li>
+    </ul>
+
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://www.nature.com/articles/nmeth.3176">Buchfink, Benjamin, Chao Xie, and Daniel H. Huson. "Fast and sensitive protein alignment using DIAMOND." <i>Nature methods</i> 12.1 (2015): 59-60.</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/bbuchfink/diamond">Diamond Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>diamond</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded app (use -p option)
+<li>Overloads and uses all available CPUs by default
+<li>Example files in <tt>/usr/local/apps/diamond/TEST_DATA</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c8 --mem=10g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 12273309
+salloc.exe: job 12273309 queued and waiting for resources
+salloc.exe: job 12273309 has been allocated resources
+salloc.exe: Granted job allocation 12273309
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0885 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.12273309.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0885 ~]$ <b>module load diamond</b>
+[+] Loading diamond  2.0.8  on cn0885
+
+[user@cn0885 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0885 12273309]$ <b>cp /usr/local/apps/diamond/TEST_DATA/* .</b>
+
+[user@cn0885 12273309]$ <b>diamond makedb --in uniprot_sprot.fasta.gz -d uniprot_sprot -p $SLURM_CPUS_PER_TASK</b>
+diamond v2.0.8.146 (C) Max Planck Society for the Advancement of Science
+Documentation, support and updates available at http://www.diamondsearch.org
+
+#CPU threads: 8
+Scoring parameters: (Matrix=BLOSUM62 Lambda=0.267 K=0.041 Penalties=11/1)
+Database input file: uniprot_sprot.fasta.gz
+Opening the database file...  [0s]
+Loading sequences...  [3.297s]
+Masking sequences...  [2.902s]
+Writing sequences...  [0.348s]
+Hashing sequences...  [0.118s]
+Loading sequences...  [0s]
+Writing trailer...  [0.066s]
+Closing the input file...  [0.017s]
+Closing the database file...  [0.013s]
+Database hash = 7190f6d1af560ffacdb1351b89d36883
+Processed 556568 sequences, 199530821 letters.
+Total time = 6.765s
+
+[user@cn0885 12273309]$ <b>diamond blastx -d uniprot_sprot.dmnd -q reads.fna -p ${SLURM_CPUS_PER_TASK} -o matches.m8</b>
+diamond v2.0.8.146 (C) Max Planck Society for the Advancement of Science
+Documentation, support and updates available at http://www.diamondsearch.org
+
+#CPU threads: 8
+Scoring parameters: (Matrix=BLOSUM62 Lambda=0.267 K=0.041 Penalties=11/1)
+Temporary directory:
+#Target sequences to report alignments for: 25
+Opening the database...  [0.115s]
+Database: uniprot_sprot.dmnd (type: Diamond database, sequences: 556568, letters: 199530821)
+Block size = 2000000000
+Opening the input file...  [0s]
+Opening the output file...  [0s]
+Loading query sequences...  [0s]
+Masking queries...  [0.003s]
+Building query seed set...  [0.001s]
+The host system is detected to have 405 GB of RAM. It is recommended to increase the block size for better performance using these parameters : -b8 -c1
+Algorithm: Query-indexed
+Building query histograms...  [0s]
+Allocating buffers...  [0s]
+Loading reference sequences...  [0.565s]
+Masking reference...  [2.883s]
+Initializing temporary storage...  [0s]
+Building reference histograms...  [0.154s]
+Allocating buffers...  [0s]
+Processing query block 1, reference block 1/1, shape 1/1.
+Building reference seed array...  [0.154s]
+Building query seed array...  [0s]
+Computing hash join...  [0s]
+Building seed filter...  [0s]
+Searching alignments...  [0.003s]
+Deallocating buffers...  [0s]
+Clearing query masking...  [0s]
+Computing alignments...  [0.005s]
+Deallocating reference...  [0.036s]
+Loading reference sequences...  [0s]
+Deallocating buffers...  [0s]
+Deallocating queries...  [0s]
+Loading query sequences...  [0s]
+Closing the input file...  [0s]
+Closing the output file...  [0s]
+Closing the database file...  [0.008s]
+Deallocating taxonomy...  [0s]
+Total time = 4.089s
+Reported 25 pairwise alignments, 25 HSPs.
+1 queries aligned.
+The host system is detected to have 405 GB of RAM. It is recommended to increase the block size for better performance using these parameters : -b8 -c1
+
+[user@cn0885 12273309]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 12273309
+salloc.exe: Job allocation 12273309 has been revoked.
+
+[user@biowulf ~]$ 
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. diamond.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load diamond
+diamond blastx -d uniprot_sprot.dmnd -q reads.fna -p ${SLURM_CPUS_PER_TASK} -o matches.m8
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=10g diamond.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. diamond.swarm). For example:</p>
+
+<pre class="term">
+diamond blastx -d db_name -q read1.fna -p ${SLURM_CPUS_PER_TASK} -o out1
+diamond blastx -d db_name -q read2.fna -p ${SLURM_CPUS_PER_TASK} -o out2
+diamond blastx -d db_name -q read3.fna -p ${SLURM_CPUS_PER_TASK} -o out3
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f diamond.swarm -g 10 -t 8 --module diamond</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module diamond</tt> <td>Loads the diamond module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

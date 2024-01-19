@@ -1,0 +1,144 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'STREAM: Single-cell Trajectories Reconstruction, Exploration And Mapping of omics data ';</script>
+<div class="title"><b>STREAM: Single-cell Trajectories Reconstruction, Exploration And Mapping of omics data </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+STREAM is an interactive pipeline capable of disentangling and visualizing 
+complex branching trajectories from both single-cell transcriptomic and
+epigenomic data.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Huidong Chen, Luca Albergante, Jonathan Y Hsu, Caleb A Lareau, Giosue Lo Bosco, Jihong Guan,
+Shuigeng Zhou, Alexander N Gorban, Daniel E Bauer, Martin J Aryee, David M Langenau, Andrei
+Zinovyev, Jason D Buenrostro, Guo-Cheng Yuan, Luca Pinello <br />
+<i>STREAM: Single-cell Trajectories Reconstruction, Exploration And Mapping of omics data </i><br />
+<a href="https://www.biorxiv.org/content/early/2018/04/18/302554.1">bioRxiv </a> April 18, 2018, doi:10.1101/302554. <br/>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/pinellolab/STREAM ">STREAM on GitHub</a></li>
+<li><a href="http://stream.pinellolab.org/">STREAM Home Page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>STREAM</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>STREAM_HOME</b>&nbsp; STREAM  installation directory</li>
+    <li><b>STREAM_BIN </b>&nbsp; &nbsp; &nbsp; STREAM executable directory</li>
+    <li><b>STREAM_DATA</b>&nbsp; &nbsp; STREAM sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b> sinteractive --mem=16g -c14</b>
+[user@@cn3107 ~]$<b> module load STREAM</b>
+[user@@cn3107 ~]$<b> cp $STREAM_DATA/* . </b>
+[user@@cn3107 ~]$<b> stream -m data_Guo.tsv.gz -l cell_label.tsv.gz -c cell_label_color.tsv.gz -g gene_list.tsv.gz -s all</b>
+   _____ _______ _____  ______          __  __
+  / ____|__   __|  __ \|  ____|   /\   |  \/  |
+ | (___    | |  | |__) | |__     /  \  | \  / |
+  \___ \   | |  |  _  /|  __|   / /\ \ | |\/| |
+  ____) |  | |  | | \ \| |____ / ____ \| |  | |
+ |_____/   |_|  |_|  \_\______/_/    \_\_|  |_|
+
+
+- Single-cell Trajectory Reconstruction and Mapping -
+
+[Luca Pinello &amp; Huidong Chen 2018, send bugs, suggestions or comments to lucapinello AT gmail DOT com]
+
+Version 0.1.0
+
+Loading input data...
+Input: 271 cells, 175 genes
+Filtering genes...
+After filtering out low-expressed genes:
+271 cells, 172 genes
+Number of CPUs being used: 56
+Reducing dimension...
+Structure Learning...
+Clustering...
+Minimum Spanning Tree...
+Number of initial branches: 5
+Elastic Principal Graph...
+[1] "Constructing tree 1 of 1 / Subset 1 of 1"
+[1] "Computing EPG with 50 nodes on 271 points and 3 dimensions"
+[1] "Using a single core"
+Nodes = 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49
+BARCODE ENERGY  NNODES  NEDGES  NRIBS   NSTARS  NRAYS   NRAYS2  MSE     MSEP    FVE     FVEP    UE      UR      URN     URN2    URSD
+2||50   0.000668        50      49      44      2       0       0       0.0002886       0.0002736       0.974   0.9754  0.000344        3.539e-05       0.001769        0.08846 0
+13.16 sec elapsed
+[[1]]
+
+Number of branches after initial ElPiGraph: 5
+Collasping small branches ...
+[1] "Constructing tree 1 of 1 / Subset 1 of 1"
+[1] "Computing EPG with 80 nodes on 271 points and 3 dimensions"
+[1] "Using a single core"
+Nodes = 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79
+BARCODE ENERGY  NNODES  NEDGES  NRIBS   NSTARS  NRAYS   NRAYS2  MSE     MSEP    FVE     FVEP    UE      UR      URN     URN2    URSD
+2||80   0.0004009       80      79      74      2       0       0       0.0001989       0.0001921       0.9821  0.9827  0.0001738       2.82e-05        0.002256        0.1805  0
+4.812 sec elapsed
+Number of branches after optimization: 5
+Extending leaves with additional nodes ...
+Number of branches after extension: 5
+Visualizing cells...
+Flat tree plots...
+/opt/conda/lib/python2.7/site-packages/networkx/drawing/nx_pylab.py:520: MatplotlibDeprecationWarning: The is_string_like function was deprecated in version 2.1.
+  if not cb.is_string_like(edge_color) \
+/opt/conda/lib/python2.7/site-packages/networkx/drawing/nx_pylab.py:524: MatplotlibDeprecationWarning: The is_string_like function was deprecated in version 2.1.
+  for c in edge_color]):
+/opt/conda/lib/python2.7/site-packages/networkx/drawing/nx_pylab.py:722: MatplotlibDeprecationWarning: The is_string_like function was deprecated in version 2.1.
+  if not cb.is_string_like(label):
+Subway map and Stream plots...
+Visulizing genes...
+Finished computation...
+
+</pre>
+<b>NOTE:</b> in order to download more sample data, use the
+ <a href="https://www.dropbox.com/sh/xnw9ro22bgrz2pa/AADQWmyCjUekg3hudvhsrAWka?dl=0">Dropbox link</a>. <br / >
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;The sample data available at the <a href="https://github.com/pinellolab/STREAM ">STREAM GitHub page</a> are corrupt!!! <br /><br />
+End the interactive session:
+<pre class="term">
+[user@cn3107 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. stream.sh). For example:</p>
+<pre class="term">
+#!/bin/bash
+module load STREAM
+stream -m data_Guo.tsv.gz       -l cell_label.tsv.gz -c cell_label_color.tsv.gz -g gene_list.tsv.gz -s all</b>
+stream -m data_Nestorowa.tsv.gz -l cell_label.tsv.gz -c cell_label_color.tsv.gz -s all
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] stream.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

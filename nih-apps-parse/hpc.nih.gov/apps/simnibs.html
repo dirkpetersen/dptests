@@ -1,0 +1,155 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SimNIBS on Biowulf';</script>
+<div class="title">SimNIBS on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#quick">Quick start</a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+SimNIBS is used to simulate non-invasive brain stimulation. Calculations of the 
+electric field induced by transcranial magnetic stimulation (TMS) and transcranial
+direct current stimulation (tDCS) are supported.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>A. Thielscher, A. Antunes, and G. B. Saturnino. <em>Field modeling for
+    transcranial magnetic stimulation: a useful tool to understand the
+    physiological effects of TMS?</em>. Conf Proc IEEE Eng Med Biol Soc, 2015.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/26736240">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://ieeexplore.ieee.org/xpls/icp.jsp?arnumber=7318340">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li> <a href="https://simnibs.github.io/simnibs/build/html/index.html">Home page</a> </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: simnibs (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$SIMNIBS_TEST_DATA</code></li>
+</ul>
+
+<P>
+
+<a Name="quick"></a><div class="heading">Quickstart</div>
+
+<p>Copy the test data and set up your environment</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load simnibs</b>
+[+] Loading simnibs 3.0 on cn3144 
+
+[user@cn3144]$ <b>cd /data/$USER</b>
+[user@cn3144]$ <b>cp $SIMNIBS_TEST_DATA/simnibs-3.0-examples.zip .</b>
+[user@cn3144]$ <b>unzip simnibs-3.0-examples.zip</b>
+</pre>
+
+<p>The first step would usually be the construction of a 3D mesh from MRI
+images. Since this step is time consuming, it should be run as a batch job. You have two options: 
+<b>mri2mesh</b> and <b>headreco</b>. <b>mri2mesh</b> uses FSL for skull segmentation and FreeSurfer for 
+brain segmentation. You would create a batch script similar to the following</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=mri2mesh-job
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=10g
+#SBATCH --time=24:00:00
+
+module load simnibs fsl freesurfer
+source $FREESURFER_HOME/SetUpFreeSurfer.sh
+
+cd /data/$USER/simnibs_examples
+mkdir new_mesh
+cd new_mesh
+mri2mesh --all ernie ../ernie/org/ernie_T1.nii.gz ../ernie/org/ernie_T2.nii.gz
+</pre>
+
+<p>and submit it as a batch job with</p>
+<pre class="term">
+[user@biowulf]$ <b>sbatch make_mesh_mri2mesh.sh</b>
+</pre>
+
+<p>If you wish to use <b>headreco</b> (which uses matlab, SPM, and CAT12), you can do so with a 
+batch script as follows:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=headreco-job
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=8g
+#SBATCH --time=7:00:00
+
+export JAVA_OPTS="-Xmx100g -XX:-UseGCOverheadLimit"
+export _JAVA_OPTIONS="-Xmx100g -XX:-UseGCOverheadLimit"
+export JAVA_TOOL_OPTIONS="-Xmx100g -XX:-UseGCOverheadLimit"
+
+cd /data/$USER/simnibs_examples/ernie
+
+module load simnibs/3.0 matlab/2018b
+
+headreco all ernie org/ernie_T1.nii.gz org/ernie_T2.nii.gz
+</pre>
+
+<p>and submit it as a batch job with</p>
+<pre class="term">
+[user@biowulf]$ <b>sbatch make_mesh_headreco.sh</b>
+</pre>
+
+
+<p>Since the example directory already contains a mesh reconstruction of
+the example data, we can proceed with the tutorial without waiting
+for the batch job to finish. This next part uses the SimNIBS GUI and
+we will run it on an interactive node. Since this is a GUI program,
+using <a href="https://hpc.nih.gov/docs/nx.html">Nomachine NX</a> to connect 
+to biowulf is likely to give better resonsiveness.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load simnibs</b>
+[+] Loading simnibs  3.0  on cn3144 
+
+[user@biowulf]$ <b>cd /data/$USER/simnibs_test</b>
+[user@biowulf]$ <b>simnibs_gui &</b>
+</pre>
+
+<p>This will start the following GUI:</p>
+<img src="/images/simnibs_gui.png" alt="GUI 1" 
+  width="720" style="margin: 0 auto; display: block;"/>
+
+<p> You will find a step-by-step guide on how to set up tDCS and TMS simulations (and more) at the <a href="https://simnibs.github.io/simnibs/build/html/tutorial/gui.html">Simnibs GUI Tutorial</a>.</p>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

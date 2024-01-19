@@ -1,0 +1,195 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'fitlins on Biowulf';</script>
+<div class="title">fitlins on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Fitlins is an application for estimating linear models for a given BIDS-compliant dataset.
+</p>
+
+
+<h3>Web site</h3>
+<ul>
+    <li><a href="https://fitlins.readthedocs.io">Home page</a></li>
+    <li><a href="https://github.com/poldracklab/fitlins">Github page</a></li>
+</ul>
+
+<br>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://fitlins.readthedocs.io">fitlins Documentation</a></li>
+</ul>
+
+
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li> <tt>fitlins</tt> on Biowulf is a singularity container built directly from <tt>docker://poldracklab/fitlins</tt>. However, users do not need to execute singularity directly or bind directories manually because we have provided a wrapper shell script that takes care of that. 
+<li>Module Name: <tt>fitlins</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li><tt>fitlins</tt> is a scientific pipeline with the potential to overload Biowulf's central filesystem. To avoid filesystem issues we recommend the following:
+<ol>
+<li>Limit I/O with central Biowulf directories (e.g., /data, /home) by making use of local disk (/lscratch).  You can make use of lscratch to store temporary working directories by directly assigning the temporary work directory of <tt>fitlins</tt> (-w option) to /lscratch/$SLURM_JOB_ID (remember to allocate enough space in /lscratch).
+<li>Limit memory usage. Once you determine how much memory your jobs will need (by benchmarking, but see point 5 below), It is still good idea to limit the memory used by <tt>fitlins</tt> by using the option --mem_gb. Something important to remember regarding memory allocation is to try to allocate some extra memory for your jobs as described in the resources described in point 6 below. 
+<li>Limit multi-threading. Biowulf's <tt>fitlins</tt> has been installed as a container and some of the applications in it will hyper-thread unless you explicitly limit the number of threads. You can limit the number of threads that <tt>fitlins</tt> is allowed to use across all processes by using the --n-cpus flag.
+<li>Profile/benchmark <tt>fitlins</tt> jobs: We recommend making sure a given <tt>fitlins</tt> job can scale before launching a large number of jobs. You can do this by profiling/benchmarking small jobs (e.g., a swarm of 3 <tt>fitlins</tt> commands), then monitoring the jobs by using either the <a href="https://hpc.nih.gov/dashboard/">user dashboard</a> or the commands jobhist, sjobs, squeue, and jobload (see <a href="https://hpc.nih.gov/docs/biowulf_tools.html">biowulf utilities</a>). There are resources prepared by the HPC staff that go over how to monitor your jobs for benchmarking and profiling (<a href="https://youtu.be/fLMJ8-t5bm4">video</a>, and <a href="https://hpc.nih.gov/training/handouts/Effective_batch_system.pdf">slides</a>). Once you have profiled a swarm with a few jobs and you have refined the memory, CPU (and walltime) requirements, it is probably safe to (gradually) increase the number of <tt>fitlins</tt> jobs. For many analyses pipelines one has no way of knowing in advance how much memory or CPUs will be actually required in an HPC environment. This is why it is very important to profile/benchmark.
+</ol>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<p>In the helix session below we fetch datasets from Poldrack's Stanford Lab using <tt>datalad</tt> then process them with <tt>fitlins</tt>, as shown in the <tt>fitlins</tt> docs linked above. If you are already have your own dataset and model you can skip to the next step. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@helix ~]$ <b>module load datalad git</b>
+[+] Loading datalad  0.13.0rc2  on helix 
+[+] Loading singularity  3.6.4  on helix
+[+] Loading git 2.29.2  ... 
+
+[user@helix ~]$ <b>cd /data/$USER</b>
+
+[user@helix ~]$ <b>datalad install -r ///labs/poldrack/ds003_fmriprep</b>
+install(ok): /data/user/ds003_fmriprep (dataset)                                                                        
+[INFO   ] Installing Dataset(/data/user/ds003_fmriprep) to get /data/user/ds003_fmriprep recursively    
+[INFO   ] Remote origin not usable by git-annex; setting annex-ignore                                                                   
+[INFO   ] access to 1 dataset sibling s3-PRIVATE not auto-enabled, enable with:                                                         
+| 		datalad siblings -d "/data/user/ds003_fmriprep/sourcedata" enable -s s3-PRIVATE 
+[INFO   ] Submodule HEAD got detached. Resetting branch master to point to 571d8737. Original location was c0905372 
+install(ok): /data/user/ds003_fmriprep/sourcedata (dataset)
+action summary:
+  install (ok: 2)
+
+[user@helix ~]$ <b>cd ds003_fmriprep</b>
+
+[user@helix ~]$ <b>datalad get ds003_fmriprep/sub-*/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                    ds003_fmriprep/sub-*/func/*_desc-confounds_*.tsv</b>
+get(ok): sub-05/func/sub-05_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-aseg_dseg.nii.gz (file) [from origin...]                  
+get(ok): sub-07/func/sub-07_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-aparcaseg_dseg.nii.gz (file) [from origin...]             
+get(ok): sub-05/func/sub-05_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-aparcaseg_dseg.nii.gz (file) [from origin...]
+get(ok): sub-03/func/sub-03_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz (file) [from origin...]
+get(ok): sub-04/func/sub-04_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz (file) [from origin...]
+get(ok): sub-10/func/sub-10_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-smoothAROMAnonaggr_bold.nii.gz (file) [from origin...]
+get(ok): sub-12/func/sub-12_task-rhymejudgment_desc-confounds_regressors.tsv (file) [from origin...]
+get(ok): sub-12/func/sub-12_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz (file) [from origin...]
+get(ok): sub-05/func/sub-05_task-rhymejudgment_desc-confounds_regressors.tsv (file) [from origin...]
+get(ok): sub-04/func/sub-04_task-rhymejudgment_space-MNI152NLin2009cAsym_desc-smoothAROMAnonaggr_bold.nii.gz (file) [from origin...]
+  [68 similar messages have been suppressed]
+action summary:
+  get (ok: 78)
+
+[user@helix ~]$ <b>exit</b>
+</pre>
+
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. In the example below we fetch datasets from Poldrack's Stanford Lab using datalad then process them with <tt>fitlins</tt>, as shown in the docs linked above. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fitlins</b>
+
+[user@cn3144 ~]$ <b>cd /data/$USER</b>
+
+[user@cn3144 ~]$ <b>fitlins ds003_fmriprep/sourcedata output/ dataset \
+                    --derivatives $PWD/ds003_fmriprep \
+                    --model model.json \
+                    --smoothing 5:run \
+                    -w /lscratch/${SLURM_JOB_ID} \
+                    --n-cpus 2</b>
+
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fitlins.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+# sbatch --gres=lscratch:50 --mem=32g --cpus-per-task=48 --time=06:00:00 fitlins.sh
+
+set -o pipefail
+set -e
+
+function fail {
+    echo "FAIL: $@" >&2
+    exit 1  # signal failure
+}
+
+module load fitlins
+fitlins /data/$USER/ds003_fmriprep/sourcedata /data/$USER/output/ dataset \
+                    --derivatives /data/$USER/ds003_fmriprep \
+                    --model /data/$USER/model.json \
+                    --smoothing 5:run \
+                    -w /lscratch/${SLURM_JOB_ID} \
+                    --n-cpus 2
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--gres=lscratch:#] [--cpus-per-task=#] [--mem=#] fitlins.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. fitlins.swarm). For example:</p>
+
+<pre class="term">
+export TMPDIR=/lscratch/$SLURM_JOB_ID; \
+mkdir -p $TMPDIR/wrk; \
+fitlins /data/$USER/ds003_fmriprep/sourcedata /data/$USER/output3/ dataset \
+                    --derivatives /data/$USER/ds003_fmriprep \
+                    --model /data/$USER/model.json \
+                    --smoothing 5:run \
+                    -w ${TMPDIR}/wrk \
+                    --n-cpus 2
+export TMPDIR=/lscratch/$SLURM_JOB_ID; \
+mkdir -p $TMPDIR/wrk; \
+fitlins /data/$USER/ds002_fmriprep/sourcedata /data/$USER/output2/ dataset \
+                    --derivatives /data/$USER/ds002_fmriprep \
+                    --model /data/$USER/model.json \
+                    --smoothing 5:run \
+                    -w ${TMPDIR}/wrk \
+                    --n-cpus 2
+export TMPDIR=/lscratch/$SLURM_JOB_ID; \
+mkdir -p $TMPDIR/wrk; \
+fitlins /data/$USER/ds001_fmriprep/sourcedata /data/$USER/output1/ dataset \
+                    --derivatives /data/$USER/ds001_fmriprep \
+                    --model /data/$USER/model.json \
+                    --smoothing 5:run \
+                    -w ${TMPDIR}/wrk \
+                    --n-cpus 2
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fitlins.swarm [--gres=lscratch:#] [-g #] [-t #] --module fitlins</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-gres=lscratch:<i>#</i> </tt><td>Number of Gigabytes of local disk space allocated per process (1 line in the swarm command file)
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module fitlins</tt> <td>Loads the fitlins module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

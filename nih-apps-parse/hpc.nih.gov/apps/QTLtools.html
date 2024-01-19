@@ -1,0 +1,246 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'QTLtools on Biowulf';</script>
+<div class="title">QTLtools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+QTLtools is a tool set for molecular QTL discovery and analysis. It allows to go from the raw sequence data to collection of molecular Quantitative Trait Loci (QTLs) in few easy-to-perform steps.
+</p>
+
+<h3>Reference:</h3>
+<ul>
+
+  <li>
+      <a href="https://www.nature.com/articles/ncomms15452">Delaneau, Olivier, et al. "A complete tool set for molecular QTL discovery and analysis." <i>Nature communications</i> 8.1 (2017): 1-7.</a>
+  </li>
+
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://qtltools.github.io/qtltools/">QTLtools documentation</a></li>
+    <li><a href="https://github.com/qtltools/qtltools">QTLtools on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+
+<ul>
+    <li>Module Name: <tt>qtltools</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c4 --mem=8g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 61635379
+salloc.exe: job 61635379 queued and waiting for resources
+salloc.exe: job 61635379 has been allocated resources
+salloc.exe: Granted job allocation 61635379
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3136 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn3136 ~]$ <b>module load qtltools</b>
+[+] Loading qtltools  1.2  on cn3136
+[+] Loading gcc  9.2.0  ...
+[+] Loading GSL 2.6 for GCC 9.2.0 ...
+[-] Unloading gcc  9.2.0  ...
+[+] Loading gcc  9.2.0  ...
+[+] Loading openmpi 3.1.4  for GCC 9.2.0
+[+] Loading ImageMagick  7.0.8  on cn3136
+[+] Loading HDF5  1.10.4
+[-] Unloading gcc  9.2.0  ...
+[+] Loading gcc  9.2.0  ...
+[+] Loading NetCDF 4.7.4_gcc9.2.0
+[+] Loading pandoc  2.10  on cn3136
+[+] Loading pcre2 10.21  ...
+[+] Loading R 4.0.0
+
+[user@cn3136 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3136 61635379]$ <b>wget http://jungle.unige.ch/QTLtools_examples/HG00381.chr22.bam && \
+    wget http://jungle.unige.ch/QTLtools_examples/HG00381.chr22.bam.bai && \
+    wget http://jungle.unige.ch/QTLtools_examples/gencode.v19.annotation.chr22.gtf.gz</b>
+--2020-07-22 15:44:12--  http://jungle.unige.ch/QTLtools_examples/HG00381.chr22.bam
+Resolving dtn01-e0 (dtn01-e0)... 10.1.200.237
+Connecting to dtn01-e0 (dtn01-e0)|10.1.200.237|:3128... connected.
+Proxy request sent, awaiting response... 200 OK
+Length: 47167929 (45M) [text/plain]
+Saving to: ‘HG00381.chr22.bam’
+
+100%[============================================================>] 47,167,929  16.2MB/s   in 2.8s
+
+2020-07-22 15:44:15 (16.2 MB/s) - ‘HG00381.chr22.bam’ saved [47167929/47167929]
+
+--2020-07-22 15:44:15--  http://jungle.unige.ch/QTLtools_examples/HG00381.chr22.bam.bai
+Resolving dtn01-e0 (dtn01-e0)... 10.1.200.237
+Connecting to dtn01-e0 (dtn01-e0)|10.1.200.237|:3128... connected.
+Proxy request sent, awaiting response... 200 OK
+Length: 50136 (49K) [text/plain]
+Saving to: ‘HG00381.chr22.bam.bai’
+
+100%[============================================================>] 50,136       173KB/s   in 0.3s
+
+2020-07-22 15:44:15 (173 KB/s) - ‘HG00381.chr22.bam.bai’ saved [50136/50136]
+
+--2020-07-22 15:44:15--  http://jungle.unige.ch/QTLtools_examples/gencode.v19.annotation.chr22.gtf.gz
+Resolving dtn01-e0 (dtn01-e0)... 10.1.200.237
+Connecting to dtn01-e0 (dtn01-e0)|10.1.200.237|:3128... connected.
+Proxy request sent, awaiting response... 200 OK
+Length: 881813 (861K) [application/x-gzip]
+Saving to: ‘gencode.v19.annotation.chr22.gtf.gz’
+
+100%[============================================================>] 881,813      194KB/s   in 4.4s
+
+2020-07-22 15:44:20 (194 KB/s) - ‘gencode.v19.annotation.chr22.gtf.gz’ saved [881813/881813]
+
+
+[user@cn3136 61635379]$ <b>QTLtools quan \
+    --bam HG00381.chr22.bam \
+    --gtf gencode.v19.annotation.chr22.gtf.gz \
+    --sample HG00381 \
+    --out-prefix HG00381 \
+    --filter-mapping-quality 150 \
+    --filter-mismatch 5 \
+    --filter-mismatch-total 5 \
+    --rpkm</b>
+
+QTLtools
+  * Authors : Olivier DELANEAU / Halit ONGEN / Emmanouil DERMITZAKIS
+  * Contact : olivier.delaneau@gmail.com / halit.ongen@unige.ch / Emmanouil.Dermitzakis@unige.ch
+  * Webpage : https://qtltools.github.io/qtltools/
+  * Version : 1.2
+  * Date    : 22/07/2020 - 15:44:33
+  * Citation: A complete tool set for molecular QTL discovery and analysis, https://doi.org/10.1038/ncomms15452
+
+QUANTIFY GENES AND EXONS FROM BAM FILES
+
+WARNING: OUTPUT IS NOT COMPATABLE WITH QUANTIFICATIONS GENERATED BEFORE VERSION 1.2
+
+  * Minimum mapping quality: 150
+  * Maximum mismatch count per mate-pair: 5
+  * Maximum mismatch count per read: 5
+  * Not checking properly paired flag
+  * Not checking if all blocks of a split read are consistent with the annotation
+  * Not filtering reads flagged as duplicate
+  * Not filtering reads flagged as failing QC
+  * Merging overlapping mate pairs
+  * Excluding exons smaller than 0 bp only in exon quantifications
+  * Including all gene types
+  * Unique hash for this combination of options and GTF file: 2bdBW71i0Bq
+
+Initialize random number generator
+  * Built-in seed is 15112011
+  * First Integer = 30554
+  * First Double = 0.0126695
+
+Reading exons in [gencode.v19.annotation.chr22.gtf.gz]
+
+Opening BAM file [HG00381.chr22.bam]
+  * reading header
+  * reading index file
+  * reading BAM file
+  * Expecting 610860 lines
+[======================================================================] 100 %
+  * DONE: 610860 lines read
+
+WARNING: 8842 unmatched mate pairs found
+
+Printing counts
+
+Printing RPKM
+
+Printing stats
+
+Running time: 3 seconds
+
+[user@cn3136 61635379]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 61635379
+salloc.exe: Job allocation 61635379 has been revoked.
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. qtltools.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+
+module load qtltools
+cd /lscratch/$SLURM_JOB_ID
+wget http://jungle.unige.ch/QTLtools_examples/HG00381.chr22.bam && \
+    wget http://jungle.unige.ch/QTLtools_examples/HG00381.chr22.bam.bai && \
+    wget http://jungle.unige.ch/QTLtools_examples/gencode.v19.annotation.chr22.gtf.gz
+QTLtools quan \
+    --bam HG00381.chr22.bam \
+    --gtf gencode.v19.annotation.chr22.gtf.gz \
+    --sample HG00381 \
+    --out-prefix HG00381 \
+    --filter-mapping-quality 150 \
+    --filter-mismatch 5 \
+    --filter-mismatch-total 5 \
+    --rpkm
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] [--gres=lscratch:#] qtltools.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. qtltools.swarm). For example:</p>
+
+<pre class="term">
+QTLtools mbv --bam samp1.bam --vcf samp1.vcf.gz --filter-mapping-quality 150 --out samp1.bamstat.txt
+QTLtools mbv --bam samp2.bam --vcf samp2.vcf.gz --filter-mapping-quality 150 --out samp2.bamstat.txt
+QTLtools mbv --bam samp3.bam --vcf samp3.vcf.gz --filter-mapping-quality 150 --out samp3.bamstat.txt
+QTLtools mbv --bam samp4.bam --vcf samp4.vcf.gz --filter-mapping-quality 150 --out samp4.bamstat.txt
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f qtltools.swarm [-g #] [-t #] --module qtltools</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module qtltools</tt> <td>Loads the qtltools module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

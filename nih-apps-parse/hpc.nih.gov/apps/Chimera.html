@@ -1,0 +1,134 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Chimera on Biowulf';</script>
+<div class="title">Chimera on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>UCSF Chimera is a highly extensible program for interactive visualization and analysis of molecular structures and related data, including density maps, supramolecular assemblies, sequence alignments, docking results, trajectories, and conformational ensembles. High-quality images and animations can be generated. Chimera includes complete documentation and several tutorials, and can be downloaded free of charge for academic, government, non-profit, and personal use.</p>
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Please see <a href="https://www.cgl.ucsf.edu/chimera/docs/credits.html">https://www.cgl.ucsf.edu/chimera/docs/credits.html</a> for details on how to cite UCSF Chimera.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://www.cgl.ucsf.edu/chimera/docindex.html">Chimera Documentation</a></li>
+  <li><a href="http://www.cgl.ucsf.edu/chimera/docs/ProgrammersGuide/index.html">Chimera Programmer's Guide</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Chimera</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded/MPI...
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>LD_LIBRARY_PATH</tt></li>
+    <li><tt>PYTHONPATH</tt></li>
+  </ul>
+<li>Reference data in <tt>/pdb</tt>
+</ul>
+<P>
+
+  <p class="alert">This application requires an <a href="/docs/connect.html">X-Windows connection</a>.  </p>
+  <p class="alert">There are combinations of X11 servers and drivers that cause Chimera to crash.  It is known that XQuartz (v2.7.x) is incompatible with Chimera.  Users are encouraged to use <a href="https://hpc.nih.gov/docs/nx.html">NX or FastX</a> as their X11 servers.</p>
+  <p class="alert">Chimera will not run normally on GPU nodes.  Chimera can only run on CPU-only nodes</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ module load Chimera
+[user@cn3144 ~]$ chimera &amp;
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P><a Name="script"></a><div class="heading">Running a Chimera script</a>
+<P>
+A Chimera script contains a series of commands for Chimera. Here is an example of how to run a demo script from the <a href="https://www.cgl.ucsf.edu/Outreach/Workshops/UCSF-Fall-2005/09-ScriptDemo/Scripting_Tutorial.html">
+Chimera Scripting Tutorial</a>.
+<p>
+Create a file with the Chimera commands you want to run. In this case, the demo commands will load the Green Fluorescent Protein and display it in various ways.
+This sample script is available in <tt>/usr/local/apps/Chimera/examples/GFP.chimera</tt>. 
+<P>
+Open a <a href="/docs/nx.html">NX session to Biowulf</a>.
+
+<pre class="term">
+biowulf% <b>sinteractive </b>					#Start an interactive sesssion on Biowulf
+salloc: Pending job allocation 48280698
+salloc: job 48280698 queued and waiting for resources
+salloc: job 48280698 has been allocated resources
+salloc: Granted job allocation 48280698
+salloc: Waiting for resource configuration
+salloc: Nodes cn4271 are ready for job
+
+[user@cn4271] <b>cp /usr/local/apps/Chimera/examples/GFP.chimera   /home/$USER</b>
+
+[user@cn4271] <b> module load chimera</b>
+
+[user@cn4271] <b> chimera GFP.chimera &</b>
+
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Chimera is almost entirely written in python.  As such, scripting chimera functions is relatively straightforward.  Once a python script is written, it can be run by either including this shebang at the top, </p>
+
+  <pre class="term">#!/usr/bin/env python2.7</pre>
+
+  <p>changing the script to executable,</p>
+
+  <pre class="term">chmod +x myChimeraScript.py</pre>
+
+  <p>and then running it like so:</p>
+
+  <pre class="term">./myChimeraScript.py</pre>
+
+  <p>Or, simply leaving off the shebang and calling the correct python executable:</p>
+
+  <pre class="term">python2.7 myChimeraScript.py</pre>
+
+  <p><a href="http://www.cgl.ucsf.edu/chimera/docs/ProgrammersGuide/Examples/CreateMolecule.py">Here</a> is an 
+  example of a chimera python script.</p>
+
+<p>Create a batch input file (e.g. Chimera.sh).</p>
+
+<pre class="term">
+#!/bin/bash
+module load Chimera
+./myChimeraScript.py
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] Chimera.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

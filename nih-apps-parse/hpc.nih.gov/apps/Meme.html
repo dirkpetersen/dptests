@@ -1,0 +1,174 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Meme on Biowulf';</script>
+<div class="title">Meme on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The MEME Suite allows you to:
+<ul>
+<li>discover motifs using MEME, DREME (DNA only) or GLAM2 on groups of related DNA or protein sequences,
+<li>search sequence databases with motifs using MAST, FIMO, MCAST or GLAM2SCAN,
+<li>compare a motif to all motifs in a database of motifs,
+<li>associate motifs with Gene Ontology terms via their putative target genes, and
+<li>analyse motif enrichment using SpaMo or CentriMo.
+</ul>
+The Meme Suite was developed at U. Queensland and  U. Washington. 
+<a href="http://meme-suite.org">Meme website</a>.
+<p>Meme is cpu-intensive for large numbers of sequences or long sequences and 
+scales well to 128 cores. 
+<P>
+Meme motif and GoMo databases are available in <tt>/fdb/meme/</tt>
+<P>
+<center><a href="http://meme-suite.org"><img alt="meme" src="/images/meme-programs.jpg"
+border="0" align="center" hspace=10 /></a> </center>
+<P>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Type 'meme' or any of the Meme Suite programs with no parameters on the command line to see a list
+of all available options and more information.</li>
+<li><a href="http://meme-suite.org">Meme Suite documentation</a></ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>meme</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Uses MPI for parallelization. 
+<li>Your input database should consist of a file containing sequences in fasta format. There are several example files in <tt>/usr/local/apps/meme/examples</tt>
+<li>Reference data in <tt>/fdb/meme/</tt>
+<li><b>Maxsize parameter:</b> The maximum dataset size in characters. Determine the number of characters in your dataset by typing 'wc -c filename'. e.g.
+<div class="term"><pre>
+[user@biowulf mydir]$ wc -c mini-drosoph.s 
+506016 mini-drosoph.s
+</pre>
+</div>
+For this dataset, the maxsize parameter has to be set to greater than 506,016, so we will use 600000 as the Maxsize parameter. See example under 'Batch job' below.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --ntasks=4 --ntasks-per-core=1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b> cd /data/$USER</b>
+
+[user@cn3144 ~]$ <b>module load meme</b>
++] Loading meme  4.12.0  on cn3144
+[+] Loading openmpi 2.1.1  for GCC 4.8.5
+
+[user@cn3144]$ <b>cp /usr/local/apps/meme/examples/protease-seqs  /data/$USER</b>
+
+[user@cn3144]$ <b>meme -text protease-seqs -p $SLURM_NTASKS > protease.meme.out</b>
+IInitializing the motif probability tables for 2 to 7 sites...
+nsites = 7
+Done initializing.
+SEEDS: highwater mark: seq 6 pos 300
+BALANCE: samples 7 residues 1750 nodes 1 residues/node 1750
+
+seqs=     7, min= 185, max=  300, total=     1750
+
+motif=1
+SEED WIDTHS: 8 11 15 21 29 41 50
+em: w=  50, psites=   7, iter=   0
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<P>
+In the example below, we are using the file 'mini-drosoph.s' as the input. This file can be copied from <tt>/usr/local/apps/meme/examples</tt>. The maxsize parameter will be set to 
+600000 as described in the <a href=#notes">Important Notes</a> section above.
+
+<p>Create a batch input file (e.g. meme.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+
+cd /data/$USER/
+module load meme
+meme mini-drosoph.s  -oc meme_out -maxsize 600000 -p $SLURM_NTASKS
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --ntasks=28  --ntasks-per-core=1 --exclusive meme.sh</pre>
+
+where
+<ul>
+<li>The meme command in the batch script does not include 'mpirun', or specify the nodes to be used. Meme uses OpenMPI that has built-in Slurm support, so it will automatically get the node/cpu list from Slurm. 
+<li>The number of MPI processes will be pulled from the variable $SLURM_NTASKS. (<tt>-p $SLURM_NTASKS</tt> in the meme command in the batch script).
+<li>--ntasks=28  : run 28 MPI tasks 
+<li>--ntasks-per-core=1  : run only one MPI task per physical core (i.e. don't use hyperthreading)
+<li>--exclusive : allocate the node exclusively
+</ul>
+<P>
+This job will run on the norm (default) partition, which is limited to single-node jobs. It will utilize all the cores on a 28-core norm node. Meme scales well 
+<!-- (see <a href="#bench">Benchmarks</a> below), -->
+and large meme jobs (maxsize ~500,000) can be submitted on up to 512 cores. A multinode job can be submitted with:
+<pre class="term">sbatch --partition=multinode --ntasks=512 --ntasks-per-core=1  meme.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources. </div>
+
+<P>
+You would submit a swarm of Meme jobs if you have several input files.
+<P>
+Meme is an MPI program which uses OpenMPI libraries. OpenMPI on Biowulf is
+built with Slurm support. An MPI program runs a specified number of MPI processes or 'tasks'. The user specifies the number of tasks with '--ntasks=#' on the sbatch command line, and the
+OpenMPI program automatically gets this number from Slurm and starts up the appropriate number of tasks.
+<P>
+Swarm is intended for single-threaded and multi-threaded applications.
+When you use the '-t #' (threads per process) flag to swarm, it sets up
+subjobs with $SLURM_CPUS_PER_TASK=# and allocates # cpus on a single
+node for each subjob.  The Meme MPI program sees this as a single 'task'
+with #threads, and not as # tasks, and will complain that there are not enough slots available
+for the MPI processes.
+<P>
+Thus, it is important to add the flag <tt>--sbatch '--ntasks=#</tt> when submitting a swarm of Meme jobs. You should also use '--ntasks-per-core=1' as most MPI applications
+run with greater efficiency with only one MPI task on each physical core. 
+<p>
+
+<p>Create a swarmfile (e.g. Meme.swarm). For example:</p>
+
+<pre class="term">
+meme query1.fa -oc query1.out -maxsize 10000000 -p $SLURM_NTASKS
+meme query2.fa -oc query2out -maxsize 10000000 -p $SLURM_NTASKS
+meme query3.fa -oc query3.out -maxsize 10000000 -p $SLURM_NTASKS
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f swarm.cmd -g 20 --sbatch '--ntasks=4 --ntasks-per-core=1' --module=meme</pre>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

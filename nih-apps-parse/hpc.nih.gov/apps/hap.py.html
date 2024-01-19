@@ -1,0 +1,151 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'hap.py';</script>
+<div class="title">hap.py</div>
+
+<P>
+<!-- ======================================================================= -->
+<!-- Quick links  -->
+<table border=0 cellpadding=10 align=right width=25%> 
+<tr><td>
+
+<!--
+<A href="!!!"><img src="!!!" alt="" align="center" width=125 height=125></a></p>
+-->
+<br>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#helix">Interactive</a></div>
+<div class="tocItem"><a href="#sbatch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Swarm of jobs on Biowulf</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</table>
+<!-- ======================================================================= -->
+
+<i>a set of programs based on htslib to benchmark variant calls against gold standard truth datasets</i>
+
+<P>
+Hap.py is a tool to compare diploid genotypes at haplotype level. Rather than comparing VCF records row by row, hap.py will generate and match alternate sequences in a superlocus. A superlocus is a small region of the genome (sized between 1 and around 1000 bp) that contains one or more variants.
+
+<P>
+<div class="subheading"><b>Web sites</b></div>
+<ul>
+<li><a href="https://github.com/Illumina/hap.py">hap.py on Github</a></li>
+<li><a href="https://github.com/Illumina/hap.py/blob/master/doc/happy.md">hap.py User's Manual</a></li>
+</ul>
+<!--
+<div class="subheading"><b>Reference</b></div>
+<ul>
+<li><a href="!!!">!!!</a></li>
+</ul>
+-->
+
+<P>
+<a Name="helix"></a><div class="heading">hap.py Interactive job</div>
+<a href="hap.py.html" style="font-size:12px">back to top</a><br/>
+<P>
+hap.py is installed in a <a href='https://hpc.nih.gov/apps/singularity.html'>Singularity</a> container and is not suitable for use on Helix.  Please run hap.py on a Biowulf compute node instead.  
+<P>
+In this example, the user allocates an interactive session on a compute node and then runs a test using example data (user input in <b>bold</b>)
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c 16 --mem=200g</b>
+salloc.exe: Pending job allocation 38693900
+salloc.exe: job 38693900 queued and waiting for resources
+salloc.exe: job 38693900 has been allocated resources
+salloc.exe: Granted job allocation 38693900
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1234 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn1234 ~]$ <b>mkdir -p /data/$USER/hap.py-test</b>
+
+[user@cn1234 ~]$ <b>cd /data/$USER/hap.py-test</b>
+
+[user@cn1234 ~]$ <b>module load hap.py</b>
+[+] Loading hap.py 0.3.7 on cn1311
+[+] Loading singularity 2.2.1 on cn1311
+
+[user@cn1234 ~]$ <b>cp -r $HAPPY_HOME/example .</b>
+
+[user@cn1234 ~]$ <b>hap.py \
+    example/happy/PG_NA12878_chr21.vcf.gz \
+    example/happy/NA12878_chr21.vcf.gz \
+    -f example/happy/PG_Conf_chr21.bed.gz \
+    -o test</b>
+WARNING: Bind file source does not exist on host: /etc/resolv.conf
+[W] overlapping records at chr21:10993857 for sample 0
+[W] Symbolic / SV ALT alleles at chr21:15847469
+[W] Variants that overlap on the reference allele: 144
+[W] Variants that have symbolic ALT alleles: 14
+[I] Total VCF records:         65402
+[I] Non-reference VCF records: 65402
+[W] overlapping records at chr21:24024261 for sample 0
+[W] Variants that overlap on the reference allele: 5
+[I] Total VCF records:         101524
+[I] Non-reference VCF records: 101524
+Benchmarking Summary:
+Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
+INDEL    ALL         8937      7839      1098        11812       343       3520     45       0.877140          0.958635        0.298002         0.916079                     NaN                     NaN                   1.357991                   1.457627
+INDEL   PASS         8937      7550      1387         9971       283       1964     30       0.844803          0.964656        0.196971         0.900760                     NaN                     NaN                   1.357991                   1.239305
+  SNP    ALL        52494     52125       369        90092       582      37348    107       0.992971          0.988966        0.414554         0.990964                2.082614                1.745874                   1.594335                   3.132586
+    SNP   PASS        52494     46920      5574        48078       143        992      8       0.893816          0.996963        0.020633         0.942576                2.082614                2.089282                   1.594335                   1.487599
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Running a single hap.py job on Biowulf</div>
+<a href="hap.py.html" style="font-size:12px">back to top</a><br/>
+<P>
+Set up a batch script along the following lines:
+<pre class="term">
+#!/bin/bash
+# file called myjob.bat
+cd /data/$USER/hap.py-test
+module load hap.py 
+hap.py \
+    example/happy/PG_NA12878_chr21.vcf.gz \
+    example/happy/NA12878_chr21.vcf.gz \
+    -f example/happy/PG_Conf_chr21.bed.gz \
+    -o test
+    --threads $SLURM_CPUS_PER_TASK
+</pre>
+<P>
+Submit this job with:
+<pre class="term">
+[user@biowulf ~]$ <b>sbatch --cpus-per-task=16 --mem=120g myjob.bat</b>
+</pre>
+<P>
+For more information on submitting jobs to slurm, see <a href="https://hpc.nih.gov/docs/userguide.html#submit">Job Submission</a> in the <a href="https://hpc.nih.gov/docs/userguide.html">Biowulf User Guide</a>.
+
+<a Name="swarm"></a><div class="heading">Running a swarm of hap.py jobs on Biowulf</div>
+<a href="hap.py.html" style="font-size:12px">back to top</a><br/>
+<P>
+<p>Sample swarm command file</p>
+<div class="term"><pre>
+# --------file myjobs.swarm----------
+hap.py example/happy/PG_chr1.vcf.gz chr1.vcf.gz -f PG_Conf_chr1.bed.gz -o outdir --threads $SLURM_CPUS_PER_TASK 
+hap.py example/happy/PG_chr2.vcf.gz chr2.vcf.gz -f PG_Conf_chr2.bed.gz -o outdir --threads $SLURM_CPUS_PER_TASK
+hap.py example/happy/PG_chr3.vcf.gz chr3.vcf.gz -f PG_Conf_chr3.bed.gz -o outdir --threads $SLURM_CPUS_PER_TASK
+....
+hap.py example/happy/PG_chrN.vcf.gz chrN.vcf.gz -f PG_Conf_chrN.bed.gz -o outdir --threads $SLURM_CPUS_PER_TASK
+# -----------------------------------
+</pre></div>
+<p>Submit this set of runs to the batch system by typing</p>
+<div class="term"><pre>
+[user@biowulf ~]$ <b>swarm --module hap.py --threads-per-process 16 --gb-per-process 120 -f myjobs.swarm</b>
+</pre></div>
+
+<p>
+For details on using <tt>swarm</tt> see <a href="/apps/swarm.html">Swarm on Biowulf</a>.
+<P>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<a href="hap.py.html" style="font-size:12px">back to top</a><br/>
+<P>
+<ul>
+<li>To see a list of commands, type <tt>hap.py --help</tt></li>
+<li><a href="https://github.com/Illumina/hap.py/blob/master/doc/happy.md">hap.py User's Manual</a></li>
+</ul>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

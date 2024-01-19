@@ -1,0 +1,97 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PyRosetta on Biowulf';</script>
+<div class="title">PyRosetta on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+PyRosetta is an interactive Python-based interface to the powerful Rosetta molecular modeling suite. It enables users to design their own custom molecular modeling algorithms using Rosetta sampling methods and energy functions.
+</p>
+<p>
+PyRosetta was created at Johns Hopkins University by Jeffrey J. Gray, Sergey Lyskov, and the PyRosetta Team.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://www.pyrosetta.org/">PyRosetta Main Site</a></li>
+  <li><a href="http://www.pyrosetta.org/tutorials">PyRosetta Tutorial Workshop</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>PyRosetta</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>PYROSETTA_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$PYROSETTA_HOME/demo</tt>
+<li>Reference data in <tt>/pdb/pdb</tt>
+</ul>
+
+<p class="alert">Many aspects of PyRosetta require an X11 connection.  Please see <a href="https://hpc.nih.gov/docs/connect.html">https://hpc.nih.gov/docs/connect.html</a> for graphical methods of connecting.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load PyRosetta</b>
+[user@cn3144 ~]$ <b>python</b>
+Python 2.7.15 |Anaconda, Inc.| (default, Oct 23 2018, 18:31:10) 
+[GCC 7.3.0] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <b>import pyrosetta</b>
+>>> <b>pyrosetta.init()</b>
+
+... your code here ...
+
+<b>quit()</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>cp -r $PYROSETTA_HOME/demo .</b>
+[user@cn3144 ~]$ <b>cd demo</b>
+[user@cn3144 ~]$ <b>cp -r $PYROSETTA_HOME/test .</b>
+[user@cn3144 ~]$ <b>mkdir .test.output</b>
+[user@cn3144 ~]$ <b>python D010_Pose_structure.py</b>
+
+... pyrosetta output here ...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. PyRosetta.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load PyRosetta
+python your_python_code.py
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] PyRosetta.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

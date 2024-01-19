@@ -1,0 +1,154 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DeepLoc2 on Biowulf';</script>
+<div class="title">DeepLoc2 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+  DeepLoc2 uses deep learning to predict subcellular localization of eukaryotic proteins. 
+  <blockquote>
+    DeepLoc 2.0 predicts the subcellular localization(s) of eukaryotic proteins. 
+    DeepLoc 2.0 is a multi-label predictor, which means that is able to predict one or 
+    more localizations for any given protein. It can differentiate between 10 different 
+    localizations: Nucleus, Cytoplasm, Extracellular, Mitochondrion, Cell membrane, 
+    Endoplasmic reticulum, Chloroplast, Golgi apparatus, Lysosome/Vacuole and Peroxisome. 
+    Additionally, DeepLoc 2.0 can predict the presence of the sorting signal(s) that had 
+    an influence on the prediction of the subcellular localization(s).
+  </blockquote>
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Vineet Thumuluri, Jose Juan Almagro Armenteros, Alexander Rosenberg Johansen, Henrik Nielsen, Ole Winther.
+    <a href="https://doi.org/10.1093/nar/gkac278"><b><u>DeepLoc 2.0: multi-label subcellular localization prediction using protein language models.</u></b></a>
+    <em>Nucleic Acids Research, Web server issue 2022.</em>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://services.healthtech.dtu.dk/service.php?DeepLoc-2.0">DeepLoc2 Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>deeploc</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+	<li>singlethreaded</li>
+  <li>Environment variables set <!--for ones users should be aware of -->
+    <ul>
+      <li><tt>DEEPLOC_TRAIN_DATA</tt></li>
+      <li><tt>DEEPLOC_TEST_DATA</tt></li>
+    </ul>
+  <li>Example files in <tt>$DEEPLOC_TEST_DATA</tt> or <tt>/usr/local/apps/deeploc/TEST_DATA</tt> </li>
+  <li>
+    The first time you run deeploc2, it will <b>download checkpoint data</b>. Due to the size of the checkpoint
+    files, deeploc2 on Biowulf is configured   to download this to <tt>/data/$USER/.cache/torch/hub/checkpoints</tt>.
+    Users can also copy the files from <tt>$DEEPLOC_TRAIN_DATA/checkpoints</tt> before running deeploc2 to skip this step. 
+    However, for this to work you can only copy to <b><tt>/data/$USER/.cache/torch/hub/checkpoints</tt></b>.
+  </li>
+  <li><b>Memory Considerations:</b> We recommend at least 24G memory for your runs. Please run test jobs to benchmark your dataset.</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program on the test data. Then compare it with the test data result using <tt>diff</tt>. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=24G --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load deeploc</b>
+
+[user@cn3144 ~]$ <b>mkdir -p /data/$USER/.cache/torch/hub</b>
+
+[user@cn3144 ~]$ <b>cp -r $DEEPLOC_TRAIN_DATA/checkpoints /data/$USER/.cache/torch/hub/</b>
+
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3144 ~]$ <b>cp $DEEPLOC_TEST_DATA/test.fasta .</b>
+
+[user@cn3144 ~]$ <b>deeploc2 -f test.fasta</b>
+
+[user@cn3144 ~]$ <b>diff outputs/results_20230101-000000.csv $DEEPLOC_TEST_DATA/results_test.csv</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. deeploc.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load deeploc
+cd /data/$USER
+deeploc2 -f input.fasta
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--mem=#] deeploc.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. deeploc.swarm). For example:</p>
+
+<pre class="term">
+deeploc2 -f 01.fasta -o results_01
+deeploc2 -f 02.fasta -o results_02
+deeploc2 -f 03.fasta -o results_03
+deeploc2 -f 04.fasta -o results_04
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f deeploc.swarm [-g #] --module deeploc</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module deeploc</tt> <td>Loads the deeploc module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

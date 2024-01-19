@@ -1,0 +1,175 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DANPOS on Biowulf';</script>
+<div class="title">DANPOS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A toolkit for Dynamic Analysis of Nucleosome and Protein Occupancy by Sequencing.
+</p>
+<p>
+Features
+<ul>
+  DANPOS provides different tools to analyze chromatin feature in different manner:
+  <li><B> dpos</B> analyzes changes in the location, fuzziness, and occupancy at each nucleosome or protein binding position. The functions is designed to analyze nucleosomes, but can be also very useful for analyzing other proteins whose binding pattern is similar to that of nucleosome, such as the protein MeCP2.
+  <li> <B>dpeak</B> analyzes change in width, height and total signal of each enriched peak. A peak may contains multiple positions. This function is designed to analyze transcription factor and is also useful for defining some histone modification peaks.
+  <li> <B>dregion</B> analyzes change in width, summit height, and total signal in each enriched region between samples. A region may contains multiple peaks, this function is designed to analyze chromatin features such as the histone modification H3K4me3.
+  <li><B>dtriple</B> is a combination of the Dpos, Dpeak, and Dregion functions. When there is no knowledge about characteristics of the sequencing target, this function provide users a way to try all the three algorithms above.
+  <li> <B>profile</B> is a tool in DANPOS for analyzing the distribution of a chromatin feature flanking each given group of genomic sites or regions.
+  <li> <B>stat</B> is a tool in DANPOS to do statistical analysis for positions, peaks, or regions.
+  <li> <B>wiq</B> is a tool in DANPOS to do genome wide quantile normalization for data in wiggle format  file.
+  <li> <B>wig2wiq</B> is a tool for converting .wig format file to .wiq format.
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Kaifu Chen, etc.  <em>DANPOS: Dynamic Analysis of Nucleosome Position and Occupancy by Sequencing.</em>Genome Research. 2012. doi:10.1101/gr.142067.112 
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/23193179">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3561875/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://genome.cshlp.org/content/23/2/341.long">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>DANPOS Main Site:<a href="https://sites.google.com/site/danposdoc/news">Main Site</a></li>
+<li>DANPOS Github:<a href="https://github.com/sklasfeld/DANPOS3">Github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>DANPOS</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Current DANPOS command lines could be run as:
+	<pre class="term">
+	danpos.py -h
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load DANPOS</b>
+[user@cn3144 ~]$ <b>danpos.py --help</b>
+danpos version 3.0.0
+For help information for each function, try:
+python danpos.py <function> -h
+
+Functions:
+	dpos:
+		analyze each protein-binding position (~100
+		to ~200bp wide) across the whole genome,
+		e.g. nucleosome positions.
+	dpeak:
+		analyze each protein-binding peak (~1 to ~1kb
+		wide) across the whole genome, e.g. protein
+		that binds accruately to some specific motifs.
+	dregion:
+		analyze each protein-binding region (~1 to
+		~10kb wide) across the whole genome, e.g.
+		some histone modifications.
+	dtriple:
+		Do analysis at all three levels including each
+		region, peak, and position. Would be useful
+		when little is known about the potential binding
+		pattern.
+	profile:
+		analyze wiggle format occupancy or differential
+		signal profile relative to gene structures or
+		bed format genomic regions.
+	wiq:
+		normalize wiggle files to have the same quantiles (Quantile normalization).
+	wig2wiq:
+		convert wiggle format file to wiq format.
+	stat:
+		some statistics for positions, peaks, or regions.
+	selector:
+		select a subset of positions, peaks, or regions
+		by value ranges or gene structures neighboring.
+	valuesAtRanks:
+		retrieve position, peak, or region values by ranks.
+
+Kaifu Chen, et al. chenkaifu@gmail.com, Li lab, Biostatistics department, Dan L. Duncan cancer center, Baylor College of Medicine.
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. DANPOS.sh). For example:</p>
+<script src='/js/highlight.pack.js' type="text/javascript"></script>
+<link href='/css/highlightjs/foundation.css' rel="stylesheet" type="text/css" />
+<script>hljs.highlightAll();</script>
+
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+set -e
+module load DANPOS
+danpos.py dops sampleA
+</code>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=2g DANPOS.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. DANPOS.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;danpos.py dpos sampleA
+cd dir2;danpos.py dpos sampleB
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f DANPOS.swarm [-g #] [-t #] --module DANPOS</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module DANPOS</tt> <td>Loads the DANPOS module for each subjob in the swarm
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

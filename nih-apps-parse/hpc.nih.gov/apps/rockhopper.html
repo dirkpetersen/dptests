@@ -1,0 +1,177 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Rockhopper on Biowulf';</script>
+<div class="title">Rockhopper on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style='width: 70%;'>
+    
+<p>
+From the Rockhopper manual:
+</p>
+
+<blockquote> Rockhopper is a comprehensive and user-friendly system for
+    computational analysis of bacterial RNA-seq data. As input, Rockhopper
+    takes RNA sequencing reads output by high-throughput sequencing technology
+    (FASTQ, QSEQ, FASTA, SAM, or BAM files).
+</blockquote>
+<p>Rockhopper has a graphical interface which is described in the Rockhopper manual.
+For the cluster, the most relevant mode of usage is the command line interface.</p>
+
+<h3>References:</h3>
+<ul>
+<li>B. Tjaden. <em>De novo assembly of bacterial transcriptomes from RNA-seq data.</em>
+Genome Biology 16:1 (2015)
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/25583448">PubMed</a>&nbsp;|&nbsp;
+<a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4316799/">PMC</a>&nbsp;|&nbsp;
+<a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0572-2">Journal</a>
+</li>
+</ul>
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Rockhopper<a href="https://cs.wellesley.edu/~btjaden/Rockhopper/index.html">home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: rockhopper (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Rockhopper is a multithreaded application (<code>-p</code>). Please match the number of allocated 
+    CPUs with the number of threads</li>
+    <li>The <code>$ROCKHOPPER_JAR</code> variable is set to the path of the jar file</li>
+    <li>Example files in <code>$ROCKHOPPER_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and
+run the program.  If using the GUI, make sure that you have a graphical
+connection to biowulf (NX or X11 forwarding though ssh). Sample session:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g --cpus-per-task=4 --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load rockhopper</b>
+
+[user@cn3144]$ # start up the GUI. Need to know the http proxy host for this.
+[user@cn3144]$ # Note that the proxy may change from session to session
+[user@cn3144]$ <b>echo $http_proxy</b>
+http://dtn03-e0:3128
+[user@cn3144]$ <b>java -Dhttp.proxyHost=dtn03-e0 -Dhttp.proxyPort=3128 -jar $ROCKHOPPER_JAR</b>
+</pre>
+
+<p>For more details on using the GUI, please see the Rockhopper manual. Now let's use
+the command line interface to do a reference based analysis of a small <em>Mycoplasma genitalium</em>
+data set:</p>
+
+<pre class="term">
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>cp -r ${ROCKHOPPER_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>tree</b>
+.
+|-- [user    16M]  Example_Condition1.fastq
+|-- [user    16M]  Example_Condition2.fastq
+`-- [user   4.0K]  Mycoplasma_genitalium_G37
+    |-- [user   575K]  NC_000908.fna
+    |-- [user     46]  NC_000908.fna.fai
+    |-- [user    10K]  NC_000908.genome
+    |-- [user    59K]  NC_000908.gff
+    |-- [user    37K]  NC_000908.ptt
+    `-- [user   2.3K]  NC_000908.rnt
+
+[user@cn3144]$ <b>mkdir tmp</b>
+[user@cn3144]$ <b>java -Xmx4000m -Djava.io.tmpdir=$PWD/tmp -cp $ROCKHOPPER_JAR Rockhopper \
+    -g $PWD/Mycoplasma_genitalium_G37 \
+    -p $SLURM_CPUS_PER_TASK \
+    -L cond1,cond2 \
+    -o $PWD/results \
+    Example_Condition1.fastq Example_Condition1.fastq
+</b>
+Aligning sequencing reads from file:    Example_Condition1.fastq
+Total reads:                    137473
+Successfully aligned reads:     125676  91%     (Mycoplasma genitalium G37 chromosome)
+        Aligning (sense) to protein-coding genes:       96%
+        Aligning (antisense) to protein-coding genes:   0%
+        Aligning (sense) to ribosomal RNAs:     0%
+        Aligning (antisense) to ribosomal RNAs: 0%
+        Aligning (sense) to transfer RNAs:      1%
+[...snip...]
+
+[user@cn3144]$ <b>tree results</b>
+results/
+|-- [user   4.0K]  genomeBrowserFiles
+|   |-- [user   1.4M]  Example_Condition1_NC_000908_v1_m15_aT_d500_l33_fr_cF.minus.wig
+|   |-- [user   1.5M]  Example_Condition1_NC_000908_v1_m15_aT_d500_l33_fr_cF.plus.wig
+|   |-- [user   1.1M]  NC_000908_diffExpressedGenes.wig
+|   |-- [user   1.1M]  NC_000908_ncRNAs.wig
+|   |-- [user   1.3M]  NC_000908_operons.wig
+|   `-- [user   1.1M]  NC_000908_UTRs.wig
+|-- [user   4.0K]  intermediary
+|   `-- [user   186K]  Example_Condition1_NC_000908_v1_m15_aT_d500_l33_fr_cF.gz
+|-- [user   4.4K]  NC_000908_operons.txt
+|-- [user    37K]  NC_000908_transcripts.txt
+`-- [user   2.0K]  summary.txt
+
+[user@cn3144]$ <b>cp -r results /data/$USER</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. rockhopper.sh), which uses the input file 'rockhopper.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+wd=$PWD
+
+module load rockhopper/2.0.3
+cd /lscratch/$SLURM_JOB_ID
+mkdir tmp
+
+cp -r ${ROCKHOPPER_TEST_DATA:-none}/* .
+java -Xmx4000m -Djava.io.tmpdir=$PWD/tmp -cp $ROCKHOPPER_JAR Rockhopper \
+    -g $PWD/Mycoplasma_genitalium_G37 \
+    -p $SLURM_CPUS_PER_TASK \
+    -L cond1,cond2 \
+    -o $PWD/results \
+    Example_Condition1.fastq Example_Condition1.fastq
+cp -r results $wd
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=5g rockhopper.sh</pre>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

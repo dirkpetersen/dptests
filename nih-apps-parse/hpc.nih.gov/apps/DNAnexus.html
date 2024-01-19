@@ -1,0 +1,224 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DNAnexus on Biowulf';</script>
+<div class="title">DNAnexus on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#helix">Interactive session</a></div>
+	<div class="tocItem"><a href="#batch">Batch job</a></div>
+      </div>
+</table>
+
+<p>
+DNAnexus is a cloud-based commercial solution for next-generation sequence analysis and visualization. It has a command-line interface (CLI) which can be used to log in
+to the DNAnexus platform, upload and navigate data, and launch analyses. For users who wish to upload/download data directly from the NIH HPC systems, the CLI has been 
+installed on Biowulf
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://documentation.dnanexus.com/getting-started/cli-quickstart">DNAnexus CLI quick start</a></li>
+<li><A href="https://github.com/dnanexus/dx-toolkit">dx-toolkit Github</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>DNAnexus</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Requires a DNAnexus account set up before use. Accounts can be set up at <A href="https://platform.dnanexus.com/">platform.dnanexus.com</a>. Small test jobs are 
+free but large-scale analyses will require billing to be set up by each user. 
+</ul>
+<P>
+<a Name="helix"></a><div class="heading">Helix, or Biowulf compute nodes</div>
+<P>
+<P>
+<b> DNAnexus cannot be run on the Biowulf login node. </b>
+Since DNAnexus CLI commands are either doing data transfer or remote jobs, they can be safely run on Helix (the interactive data transfer system where 
+scientific applications are not available), or you can allocate an interactive session on Biowulf by typing 'sinteractive'. The example below shows
+an interactive DNAnexus session on Helix, but an interactive session on a Biowulf compute node would be identical.
+<P>
+<pre class="term">
+helix% <b>module load DNAnexus</b>
+helix% <b>dx login</b>
+Acquiring credentials from https://auth.dnanexus.com
+Username [user]:
+Password:
+Using env variable HTTPS_PROXY=http://dtn04-e0:3128 as proxy
+
+Note: Use dx select --level VIEW or dx select --public to select from projects for
+which you only have VIEW permissions.
+
+Available projects (CONTRIBUTE or higher):
+0) Test (ADMINISTER)
+
+Pick a numbered choice [0]: <b>0</b>
+Setting current project to: Test
+You are now logged in. Your credentials are stored in /home/user/.dnanexus_config and will expire
+in 30 days, 0:00:00. Use dx login --timeout to control the expiration date, or dx
+logout to end this session.
+
+helix% <b>dx select</b>
+Available projects (CONTRIBUTE or higher):
+0) Test (ADMINISTER)
+Pick a numbered choice [0]: <b>0</b>
+Setting current project to: Test
+
+helix% <b>dx upload --wait /data/$USER/fastq_files/8_2_61PKFAAXX.fq.gz</b>
+[===========================================================>] Uploaded 257,945,911 of 257,945,911 bytes (100%) /data/CloudData/sean/fastq_files/8_2_61PKFAAXX.fq.gz
+ID                  file-FJzQ1b003PyyyjVbBVq84xKK
+Class               file
+Project             project-FJzPQV003PyqqVx409PJBgZ0
+Folder              /
+Name                8_2_61PKFAAXX.fq.gz
+State               closed
+Visibility          visible
+Types               -
+Properties          -
+Tags                -
+Outgoing links      -
+Created             Thu Aug 23 14:45:40 2018
+Created by          user
+Last modified       Thu Aug 23 14:47:04 2018
+archivalState       "live"
+Media type          application/gzip
+Size                246.00 MB
+
+helix% <b>dx find apps --installed</b>
+x Bowtie2 FASTA Indexer (bowtie2_fasta_indexer), v1.3.0
+x BWA FASTA Indexer (bwa_fasta_indexer), v2.0.1
+x FastQC Reads Quality Control (fastqc), v2.3.0
+
+helix% <b>dx run fastqc</b>
+Entering interactive mode for input selection.
+
+Input:   Reads (reads)
+Class:   file
+
+Enter file ID or path (<TAB> twice for compatible files in current directory, '?' for
+more options)
+reads: <b>8_2_61PKFAAXX.fq.gz</b>
+Select an optional parameter to set by its # (^D or <ENTER> to finish):
+
+ [0] Custom contaminants (contaminants_txt)
+ [1] Custom adapters (adapters_txt)
+ [2] Custom limits (limits_txt)
+ [3] Input format (format) [default="auto"]
+ [4] Kmer size (kmer_size) [default=7]
+ [5] Disable grouping of bases past 50bp? (nogroup) [default=true]
+ [6] Extra command-line options (extra_options)
+
+Optional param #:
+
+Using input JSON:
+{
+    "reads": {
+        "$dnanexus_link": {
+            "project": "project-FJzPQV003PyqqVx409PJBgZ0",
+            "id": "file-FJzQ1b003PyyyjVbBVq84xKK"
+        }
+    }
+}
+
+Confirm running the executable with this input [Y/n]: <b>y</b>
+Calling app-FBFjGpQ987vZKJXvF1zfPx8X with output destination project-FJzPQV003PyqqVx409PJBgZ0:/
+
+Job ID: job-FJzQ6K003PyY8BbgBV4qxXYF
+Watch launched job now? [Y/n] <b>y</b>
+
+Job Log
+-------
+Watching job job-FJzQ6K003PyY8BbgBV4qxXYF. Press Ctrl+C to stop.
+* FastQC Reads Quality Control (fastqc:main) (running) job-FJzQ6K003PyY8BbgBV4qxXYF
+  user 2018-08-23 14:55:52 (running for 0:00:39)
+2018-08-23 14:56:36 FastQC Reads Quality Control INFO Logging initialized (priority)
+2018-08-23 14:56:37 FastQC Reads Quality Control INFO CPU: 12% (4 cores) * Memory: 661/7478MB * Storage: 79GB free * Net: 0?/0?MBps
+2018-08-23 14:56:37 FastQC Reads Quality Control STDOUT dxpy/0.259.0 (Linux-4.4.0-98-generic-x86_64-with-Ubuntu-14.04-trusty)
+2018-08-23 14:56:38 FastQC Reads Quality Control INFO Downloading bundled file resources.tar.gz
+2018-08-23 14:56:39 FastQC Reads Quality Control STDOUT >>> Unpacking resources.tar.gz to /
+2018-08-23 14:56:39 FastQC Reads Quality Control INFO Installing apt packages openjdk-7-jre-headless
+2018-08-23 14:56:59 FastQC Reads Quality Control STDOUT dxpy/0.259.0 (Linux-4.4.0-98-generic-x86_64-with-Ubuntu-14.04-trusty)
+2018-08-23 14:56:59 FastQC Reads Quality Control STDOUT /usr/sbin/sshd already running.
+2018-08-23 14:56:59 FastQC Reads Quality Control STDOUT bash running (job ID job-FJzQ6K003PyY8BbgBV4qxXYF)
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ mark-section 'streaming input data'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ mkfifo ./8_2_61PKFAAXX.fq.gz
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ cat_pid=3235
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ dx cat '{"$dnanexus_link": "file-FJzQ1b003PyyyjVbBVq84xKK"}'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ mark-section 'running FastQC'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ opts=
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ '[' '' '!=' '' ']'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ '[' '' '!=' '' ']'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ '[' '' '!=' '' ']'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ '[' auto '!=' auto ']'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ '[' true == true ']'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ opts=' --nogroup'
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ mkdir results
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR +++ nproc
+2018-08-23 14:57:00 FastQC Reads Quality Control STDERR ++ /FastQC/fastqc -t 4 --extract -k 7 -o results --nogroup ./8_2_61PKFAAXX.fq.gz
+2018-08-23 14:57:01 FastQC Reads Quality Control STDERR Started analysis of 8_2_61PKFAAXX.fq.gz
+2018-08-23 14:57:30 FastQC Reads Quality Control STDOUT Analysis complete for 8_2_61PKFAAXX.fq.gz
+2018-08-23 14:57:34 FastQC Reads Quality Control STDERR ++ wait 3235
+2018-08-23 14:57:34 FastQC Reads Quality Control STDERR ++ mark-section 'uploading results'
+2018-08-23 14:57:34 FastQC Reads Quality Control STDERR ++ mkdir -p /home/dnanexus/out/report_html/ /home/dnanexus/out/stats_txt/
+2018-08-23 14:57:34 FastQC Reads Quality Control STDERR ++ mv results/8_2_61PKFAAXX.fq_fastqc/fastqc_report.html /home/dnanexus/out/report_html/8_2_61PKFAAXX.stats-fastqc.html
+2018-08-23 14:57:34 FastQC Reads Quality Control STDERR ++ mv results/8_2_61PKFAAXX.fq_fastqc/fastqc_data.txt /home/dnanexus/out/stats_txt/8_2_61PKFAAXX.stats-fastqc.txt
+2018-08-23 14:57:34 FastQC Reads Quality Control STDERR ++ dx-upload-all-outputs
+2018-08-23 14:57:34 FastQC Reads Quality Control STDOUT uploading file: /home/dnanexus/out/report_html/8_2_61PKFAAXX.stats-fastqc.html -> /8_2_61PKFAAXX.stats-fastqc.html
+2018-08-23 14:57:35 FastQC Reads Quality Control STDOUT uploading file: /home/dnanexus/out/stats_txt/8_2_61PKFAAXX.stats-fastqc.txt -> /8_2_61PKFAAXX.stats-fastqc.txt
+2018-08-23 14:57:35 FastQC Reads Quality Control STDERR ++ mark-success
+2018-08-23 14:57:35 FastQC Reads Quality Control STDERR ++ type -t main
+2018-08-23 14:57:35 FastQC Reads Quality Control STDERR + [[ '' == \f\u\n\c\t\i\o\n ]]
+2018-08-23 14:57:35 FastQC Reads Quality Control STDERR + echo '/home/dnanexus/job-FJzQ6K003PyY8BbgBV4qxXYF: Global scope execution complete. Not invoking entry point function main because it was not found'
+2018-08-23 14:57:35 FastQC Reads Quality Control STDERR /home/dnanexus/job-FJzQ6K003PyY8BbgBV4qxXYF: Global scope execution complete. Not invoking entry point function main because it was not found
+* FastQC Reads Quality Control (fastqc:main) (done) job-FJzQ6K003PyY8BbgBV4qxXYF
+  user 2018-08-23 14:55:52 (runtime 0:01:07)
+  Output: report_html = file-FJzQ77Q0Gjvj15Vz10y6JGXz
+          stats_txt = file-FJzQ77j0Gjvq6kg010ZzZ6Z0
+	  
+helix% <b>dx ls</b>
+8_2_61PKFAAXX.fq.gz
+8_2_61PKFAAXX.stats-fastqc.html
+8_2_61PKFAAXX.stats-fastqc.txt
+
+helix%
+</pre>
+<P>
+<a Name="batch"></a><div class="heading">Batch Job on Biowulf</div>
+<P>
+The initial DNAnexus login cannot be performed as part of a Biowulf batch job. You will need to run 'dx login' on interactively on Helix or a Biowulf compute node. Once logged in, the login will be valid for 30 days. 
+During that period it is possible to submit a batch job on Biowulf that runs DNAnexus commands.
+<P>
+Sample batch script
+<pre class="term">
+#!/bin/bash
+
+module load DNAnexus
+
+indir=/data/$USER/fastq_files
+infile=8_2_61PKFAAXX
+dx upload --wait ${indir}/${infile}.fq.gz
+dx ls
+dx run --wait fastqc -ireads=$infile
+dx ls
+dx download ${infile}.stats-fastqc.txt
+</pre>
+<P>
+Submit with:
+<pre class="term">
+sbatch myjob.sh
+</pre>
+The status of the job and any errors can be seen in the slurm-*.out file. DNAnexus will also send an
+email as below: 
+<P>
+<img src="/images/DNAnexus_email.png">
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

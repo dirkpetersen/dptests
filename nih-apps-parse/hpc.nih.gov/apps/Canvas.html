@@ -1,0 +1,140 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Canvas on Biowulf';</script>
+<div class="title">Canvas on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Canvas is a tool for calling copy number variants (CNVs) from human DNA sequencing data. It can work either with germline data, or paired tumor/normal samples. Its primary input is aligned reads (in .bam format), and its primary output is a report (in a .vcf file) giving the copy number status of the genome.
+<p>
+<p>
+Canvas is developed by Illumina. 
+<p>
+<p>
+Canvas is developed on a Windows platform. It is built as a Singularity container on Biowulf. The script Canvas.sh will start up the Singularity container, and run your command within it, as shown in the following examples. If you follow the examples described on the Illumina site, note that your command on Biowulf should start with the Canvas.dll command -- you do not need 'dotnet' or '/CanvasDIR/'.</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://academic.oup.com/bioinformatics/article/32/15/2375/1743834?login=true">Roller, Eric, et al. "Canvas: versatile and scalable detection of copy number variants." <i>Bioinformatics</i> 32.15 (2016): 2375-2377.</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Illumina/canvas">Canvas Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Canvas</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded application 
+<li>Reference data in <tt>/fdb/Canvas/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 16 --mem 40g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>mkdir -p /data/$USER/CANVAS_TEST</b>
+
+[user@cn3144 ~]$ <b>cd /data/$USER/CANVAS_TEST</b>
+
+[user@cn3144 ~]$ <b>cp /fdb/platinum_genomes/strelka_vcf/variants.vcf.gz .</b>
+
+[user@cn3144 ~]$ <b>module load Canvas</b>
+
+[user@cn3144 ~]$ <b>Canvas.dll -h</b>
+Usage: Canvas.exe [MODE] [OPTIONS]+
+ 
+Available modes:
+	Germline-WGS - CNV calling of a germline sample from whole genome sequencing data
+	Somatic-Enrichment - CNV calling of a somatic sample from targeted sequencing data
+	Somatic-WGS - CNV calling of a somatic sample from whole genome sequencing data
+	Tumor-normal-enrichment - CNV calling of a tumor/normal pair from targeted sequencing data
+	SmallPedigree-WGS - CNV calling of a small pedigree from whole genome sequencing data
+ 
+Options:
+  -h, --help                 show this message and exit
+  -v, --version              print version and exit
+
+[user@cn3144 ~]$ <b>Canvas.dll SmallPedigree-WGS -b /fdb/platinum_genomes/bam/sorted.bam \
+-r /fdb/Canvas/hg19/Sequence/kmer.fa \
+-g /fdb/Canvas/hg19/Sequence/WholeGenomeFasta \
+--sample-b-allele-vcf=/data/$USER/CANVAS_TEST/variants.vcf.gz \
+-f /fdb/Canvas/hg19/Sequence/filter13.bed \
+-o /data/$USER/CANVAS_TEST/out</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. submit.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load Canvas
+Canvas.dll Germline-WGS -b /fdb/platinum_genomes/bam/sorted.bam \ 
+-r /fdb/Canvas/hg19/Sequence/kmer.fa \
+-g /fdb/Canvas/hg19/Sequence/WholeGenomeFasta \
+--sample-b-allele-vcf=/data/teacher/canvas/variants.vcf.gz \
+-f /fdb/Canvas/hg19/Sequence/filter13.bed \
+-o /data/teacher/canvas/out 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=30g --time 4:00:00 submit.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. canvas.swarm). For example:</p>
+
+<pre class="term">
+Canvas.dll Germline-WGS -b sample1.bam --sample-b-allele-vcf=sample1.vcf -o sample1 ...
+Canvas.dll Germline-WGS -b sample2.bam --sample-b-allele-vcf=sample2.vcf -o sample2 ...
+Canvas.dll Germline-WGS -b sample3.bam --sample-b-allele-vcf sample3.vcf -o sample3 ...
+
+[...] rest of the required options (see batch script above) 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f canvas.swarm [-g 30] [-t 16] --module Canvas</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module Canvas</tt> <td>Loads the Canvas module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

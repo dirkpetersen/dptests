@@ -1,0 +1,148 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'kallisto on Biowulf';</script>
+<div class="title">kallisto on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+kallisto is a program for quantifying abundances of transcripts from RNA-Seq data, or more generally of target sequences using high-throughput sequencing reads. It is based on the novel idea of pseudoalignment for rapidly determining the compatibility of reads with targets, without the need for alignment.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>NL Bray, H Pimentel, P Melsted and L Pachter, Near optimal probabilistic RNA-seq quantification, Nature Biotechnology 34, p 525--527 (2016). doi:<a href="https://doi.org/10.1038/nbt.3519">10.1038/nbt.3519</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://pachterlab.github.io/kallisto/">Kallisto Main Site</a></li>
+<li><a href="https://groups.google.com/d/forum/kallisto-sleuth-users">Google Group</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>kallisto</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Example files in <tt>/fdb/kallisto</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>cp -r /fdb/kallisto/* . </b>
+[user@cn3144 ~]$ <b>kallisto index -i transcripts.kidx transcripts.fasta.gz</b>
+
+[build] loading fasta file transcripts.fasta.gz
+[build] k-mer length: 31
+[build] counting k-mers ... done.
+[build] building target de Bruijn graph ...  done 
+[build] creating equivalence classes ...  done
+[build] target de Bruijn graph has 27 contigs and contains 22118 k-mers 
+
+[user@cn3144 ~]$ <b>kallisto quant \
+ -i transcripts.kidx \
+ -b 30 \
+ -o kallisto_out \
+ --genomebam \
+ --gtf transcripts.gtf.gz \
+ --chromosomes chrom.txt \
+ reads_1.fastq.gz reads_2.fastq.gz
+</b>
+[quant] fragment length distribution will be estimated from the data
+[index] k-mer length: 31
+[index] number of targets: 14
+[index] number of k-mers: 22,118
+[index] number of equivalence classes: 20
+Warning: 13 transcripts were defined in GTF file, but not in the index
+[quant] running in paired-end mode
+[quant] will process pair 1: reads_1.fastq.gz
+                             reads_2.fastq.gz
+[quant] finding pseudoalignments for the reads ... done
+[quant] processed 10,000 reads, 9,413 reads pseudoaligned
+[quant] estimated average fragment length: 178.02
+[   em] quantifying the abundances ... done
+[   em] the Expectation-Maximization algorithm ran for 52 rounds
+[bstrp] running EM for the bootstrap: 30
+[  bam] writing pseudoalignments to BAM format .. done
+[  bam] sorting BAM files .. done
+[  bam] indexing BAM file .. done
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. kallisto.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+set -e
+module load kallisto
+
+kallisto index -i transcripts.kidx transcripts.fasta.gz
+
+kallisto quant \
+ -i transcripts.kidx \
+ -b 30 \
+ -o kallisto_out \
+ --genomebam \
+ --gtf transcripts.gtf.gz \
+ --chromosomes chrom.txt \
+ reads_1.fastq.gz reads_2.fastq.gz
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] kallisto.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. kallisto.swarm). For example:</p>
+
+<pre class="term">
+kallisto quant -i transcripts.kidx -b 30 -o kallisto/sample-01 --genomebam --gtf transcripts.gtf.gz --chromosomes chrom.txt sample01/reads_{1,2}.fastq.gz
+kallisto quant -i transcripts.kidx -b 30 -o kallisto/sample-02 --genomebam --gtf transcripts.gtf.gz --chromosomes chrom.txt sample02/reads_{1,2}.fastq.gz
+kallisto quant -i transcripts.kidx -b 30 -o kallisto/sample-03 --genomebam --gtf transcripts.gtf.gz --chromosomes chrom.txt sample03/reads_{1,2}.fastq.gz
+kallisto quant -i transcripts.kidx -b 30 -o kallisto/sample-04 --genomebam --gtf transcripts.gtf.gz --chromosomes chrom.txt sample04/reads_{1,2}.fastq.gz
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f kallisto.swarm [-g #] [-t #] --module kallisto</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module kallisto</tt> <td>Loads the kallisto module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

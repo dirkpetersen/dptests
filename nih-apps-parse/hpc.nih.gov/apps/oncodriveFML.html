@@ -1,0 +1,108 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'OncodriveFML: identifying coding and non-coding regions with cancer driver mutations';</script>
+<div class="title"><b>OncodriveFML: identifying coding and non-coding regions with cancer driver mutations</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+OncodriveFML is a method designed to analyze the pattern of somatic mutations 
+across tumors in both coding and non-coding genomic regions 
+to identify signals of positive selection, and therefore, their involvement in tumorigenesis.
+It can be used to identify protein-coding genes, promoters, untranslated regions,
+intronic splice regions, and lncRNAs-containing driver mutations.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Loris Mularoni, Radhakrishnan Sabarinathan, Jordi Deu-Pons, Abel Gonzalez-Perez and Núria López-Biga, <br /> 
+<i>OncodriveFML: a general framework to identify coding and non-coding regions with cancer driver mutations</i> <br />
+<a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0994-0">Genome Biology</a>, 2016 <b>17</b>-128. DOI 10.1186/s13059-016-0994-0
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://bitbucket.org/bbglab/oncodrivefml/src/master/">OncodriveFML Bitbucket repository</a></li>
+<li><a href="https://oncodrivefml.readthedocs.io/en/latest/oncodriveFML.html">OncodriveFML Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>oncodriveFML</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>ODFML_HOME</b>&nbsp; installation directory</li>
+    <li><b>ODFML_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>ODFML_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn3335 ~]$ <b>module load oncodriveFML</b>
+[+] Loading singularity  3.10.5  on cn4338
+[+] Loading oncodriveFML  2.2.0
+[user@cn3335 ~]$ <b>oncodrivefml -h</b>
+Usage: oncodrivefml [OPTIONS]
+
+  Run OncodriveFML on the genomic regions in ELEMENTS FILE using the mutations
+  in MUTATIONS FILE.
+
+Options:
+  -i, --input MUTATIONS_FILE      Variants file  [required]
+  -e, --elements ELEMENTS_FILE    Genomic elements to analyse  [required]
+  -t, --type [coding|noncoding]   Deprecated option
+  -s, --sequencing [wgs|wes|targeted]
+                                  Type of sequencing: whole genome, whole
+                                  exome or targeted.
+  -o, --output OUTPUT_FOLDER      Output folder. Default to regions file name
+                                  without extensions.
+  -c, --configuration CONFIG_FILE
+                                  Configuration file. Default to
+                                  'oncodrivefml_v2.conf' in the current folder
+                                  if exists or to
+                                  ~/.config/bbglab/oncodrivefml_v2.conf if
+                                  not.
+  --samples-blacklist SAMPLES_BLACKLIST
+                                  Remove these samples when loading the input
+                                  file.
+  --signature SIGNATURE           File with the signatures to use
+  --signature-correction [wg|wx]  Correct the computed signutares by genomic
+                                  or exomic signtures. Only valid for human
+                                  genomes
+  --no-indels                     Discard indels in your analysis
+  --cores INTEGER                 Cores to use. Default: all
+  --seed INTEGER RANGE            Set up an initial random seed to have
+                                  reproducible results  [0&lt;x&lt;=4294967295]
+  --generate-pickle               Deprecated flag. Do not use.
+  --force                         Overwrite results if exists
+  --debug                         Show more progress details
+  --version                       Show the version and exit.
+  -h, --help                      Show this message and exit.
+</pre>
+Copy sample data to the current folder:
+<pre class="term">
+[user@cn3335 ~]$ <b>cp $ODFML_DATA/* .</b>
+</pre>
+Run oncodriveFML on the sample data:
+<pre class="term">
+[user@cn3335 ~]$ <b>oncodrivefml -i paad.txt.gz -e cds.tsv.gz --sequencing wes</b>
+...
+</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

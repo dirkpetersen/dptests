@@ -1,0 +1,150 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GraphMap - A highly sensitive and accurate mapper for long, error-prone reads';</script>
+<div class="title"><b>GraphMap - A highly sensitive and accurate mapper for long, error-prone reads</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+GraphMap is a highly sensitive and accurate mapper for long, error-prone reads. 
+It offers a number of valuable features, such as mapping position agnostic to alignment parameters,
+high sensitivity and precision, handling circular genomes, meaningful mapping quality,
+various alignment strategies, and more.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Ivan Sović, Mile Šikić, Andreas Wilm, Shannon Nicole Fenlon, Swaine Chen &amp; Niranjan Nagarajan <br />
+<i>Fast and sensitive mapping of nanopore sequencing reads with GraphMap,</i> <br />
+<a href="https://www.nature.com/articles/ncomms11307">Nature Communications volume 7, Article number: 11307 (2016) </a>.
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/marbl/graphmap">GraphMap GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>graphmap</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Implemented as a Singularity container
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>GM_HOME</b>&nbsp; installation directory</li>
+    <li><b>GM_HOME</b>&nbsp; executable   directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@cn3316 ~]$ <b>module load graphmap </b>
+[+] Loading graphmap 0.5.2  ...
+[user@cn3316 ~]$ <b>graphmap -h</b>
+...
+
+Usage:
+  graphmap tool
+
+Options
+    tool       STR   Specifies the tool to run:
+                       align - the entire GraphMap pipeline.
+                       owler - Overlapping With Long Erroneous Reads.
+</pre>
+The grapgmap application can be used as follows: <br /> <br />
+**Align** all reads from a given FASTA/FASTQ file using anchored alignment approach:
+<pre class="term">
+[user@cn3316 ~]$ <b> graphmap align -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+**Overlap** all reads from a given FASTA/FASTQ file and report overlaps in MHAP format (fast):  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap owler -r reads.fa -d reads.fa -o overlaps.mhap  </b>
+</pre>
+**Align** all reads to a transcriptome sequence:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -r scerevisiae.fa --gtf scerevisiae.gtf -d reads.fastq -o alignments.sam</b>  
+</pre>
+Align all reads and report alignments using the extended CIGAR format.  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -r escherichia_coli.fa -d reads.fastq -o alignments.sam --extcigar </b> 
+</pre>
+Align all reads from a given FASTA/FASTQ file with default number of threads using semiglobal bit-vector alignment:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -a sg -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+Overlap all reads from a given FASTA/FASTQ in a full GraphMap mode with generating alignments (slow):  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -x overlap -r reads.fa -d reads.fa -o overlaps.sam </b> 
+</pre>
+Align reads using the Gotoh for semiglobal alignment:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -a sggotoh -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+Align reads using Gotoh alignment with anchored approach:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -a anchorgotoh -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+Process reads from a circular genome:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -C -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+Threshold the E-value of alignments to 1e-100. Alignments with E-value &gt; 1e-100 will be called unmapped:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align --evalue 1e-100 -r escherichia_coli.fa -d reads.fastq -o alignments.sam </b> 
+</pre>
+Output all secondary alignments instead of only one best:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align --secondary -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+Control the similarity for secondary alignments. All alignments to within F*num_covered_bases from the best will be output.  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align --secondary -F 0.05 -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+Limit the number of threads to 8, and load reads in batches of 50MB:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -t 8 -B 50 -r escherichia_coli.fa -d reads.fastq -o alignments.sam </b> 
+</pre>
+Align reads using more sensitive parameters for Illumina data:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -x illumina -r escherichia_coli.fa -d reads.fastq -o alignments.sam  </b>
+</pre>
+Load all reads in one batch and align only the first 1000 reads:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -B 0 -n 1000 -r escherichia_coli.fa -d reads.fastq -o alignments.sam </b> 
+</pre>
+Rebuild the index if it already exists:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align --rebuild-index -r escherichia_coli.fa -d reads.fastq -o alignments.sam </b> 
+</pre>
+Generate only the index.  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap align -I -r escherichia_coli.fa </b>
+</pre>
+Run a debug version of GraphMap (build with "make debug") and verbose the SAM output to see various info about alignment:  
+<pre class="term">
+[user@cn3316 ~]$ <b>graphmap-debug align -b 3 -r escherichia_coli.fa -d reads.fastq -o alignments.sam </b>
+</pre>
+
+End the interactive session:
+<pre class="term">
+[user@cn3316 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

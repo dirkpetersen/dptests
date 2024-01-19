@@ -1,0 +1,106 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'cisTEM on Biowulf';</script>
+<div class="title">cisTEM on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+cisTEM is user-friendly software to process cryo-EM images of macromolecular complexes and obtain high-resolution 3D reconstructions from them.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Grant T, Rohou A, Grigorieff N.  
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/29513216"><u><b>cisTEM, user-friendly software for single-particle image processing.</b></u></a>
+    <em>Elife. 2018 Mar 7;7.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="https://cistem.org/">cisTEM Main Site</a></li>
+  <li><a href="https://cistem.org/forum">cisTEM Forum</a></li>
+  <li><a href="cisTEM_tutorial.pdf">cisTEM Tutorial</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>cisTEM</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Distributed using ssh and TCP sockets
+<li>Example files in <tt>/fdb/app_testdata/cryoEM/cisTEM/</tt>
+</ul>
+
+<p class="alert">cisTEM is a <b>beta release</b>.  The program may crash for unknown reasons.  Please submit issues to the cisTEM Forum.</p> 
+
+<p class="alert">Interactive use of cisTEM requires a <a href="https://hpc.nih.gov/docs/connect.html"> graphical X11 connection</a>.NX and XQuartz work reasonably well.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p><b>There are a few very big problems with running cisTEM on the Biowulf cluster!!</b></p>
+
+<ul>
+  <li>Tasks launched from the GUI will crash prematurely if the GUI is ended before the jobs.  That means all cisTEM tasks <b>must complete before the interactive session times out</b>.</li>
+  <li>GPUs are <b><em>not supported</em></b>, making cisTEM actions run much longer than RELION jobs.</li>
+  <li>Very large jobs with hundreds of tasks will overwhelm the TCP network, and create communication bottlenecks.</li>
+</ul>
+
+<p>The NIH staff has made available a special QOS for allocating an interactive session for longer than normal.  From within an NX or XQuartz session, allocate a minimal allocation for 5 days:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --qos=cistem --time=5-00:00:00</b>
+...
+[user@cn3144 ~]$
+</pre>
+
+<p class="didyouknow">Access to the cistem QOS is only by request.  Please contact staff@hpc.nih.gov to be granted access.</p>
+
+<p>Start a cisTEM job on the batch system with appropriate allocations:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>sbatch -p multinode -t 1-00:00 -n 32 --mem-per-cpu=2g -J cisTEM --wrap="ml cisTEM; start_cisTEM"</b>
+15465689
+</pre>
+
+<p><b>NOTES:</b></p>
+<ul>
+  <li>Depending on the number of micrographs, you may need more than 32 tasks (<b><tt>-n 32</tt></b>).  The value can be increased to lower the amount of time required, but should not exceed 512.</li>
+  <li>You may require more than 2g per cpu.  For larger particles or micrographs, set <b><tt>--mem-per-cpu</tt></b> to 4g or 8g.</li>
+  <li>You may require more than 1 day of walltime (<b><tt>-t 1-00:00</tt></b>).  Keep in mind that you can run multiple batch cisTEM jobs in the time span of the interactive session.</li>
+  <li>Take note of the jobid given to the cisTEM job (15465689 in the above example).  This number will become part of the generated run profile text file (below).</li>
+  <li>It is possible to launch multiple batch cisTEM jobs simultaneously from the interactive session, but each must only run with its own unique run profile.</li>
+</ul> 
+
+<p>Once the batch job begins running, the CisTEM GUI will pop up:</p>
+
+<div><center><img src="cisTEM_1_new.png" border=1 alt="cisTEM splash page" width="800px"/></div>
+
+<p>Click on 'Create a new project', fill in the boxes, then click 'Settings', then 'Import'.  There should be a file whose name matches the jobid (noted above).  This is the <b>run profile text file</b>:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>ls *.txt</b>
+15465689_run_profile.txt
+</pre>
+
+<div><center><img src="cisTEM_2_new.png" border=1 alt="cisTEM run_profile import" width="800px"/></div>
+
+<p>Click 'Open'.  Now you have a custom run profile specifically for the current batch job:</p>
+
+<div><center><img src="cisTEM_3_new.png" border=1 alt="cisTEM run_profile import" width="800px"/></div>
+
+<p>Any tasks run within CisTEM using this run profile will launch commands across the cpus allocated in the batch job.</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

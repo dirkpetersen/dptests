@@ -1,0 +1,140 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'fuseq-wes: discovering fusion genes from whole exome sequencing data in cancer patients';</script>
+<div class="title"><b>fuseq-wes: discovering fusion genes from whole exome sequencing data in cancer patients</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+This tool is developed based on <a href="https://hpc.nih.gov/apps/FuSeq.html">FuSeq</a>, the method for detecting fusion genes from RNA-seq data.  A subsampling study of the prostate data suggests that a coverage of at least 75x is necessary to achieve high accuracy.
+
+<h3>References:</h3>
+<ul>
+Deng W, Murugan S, Lindberg J, Chellappa V, Shen X, Pawitan Y, Vu TN.  <br />
+<i>Fusion Gene Detection Using Whole-Exome Sequencing Data in Cancer Patients </i> <br />
+<a href="https://pubmed.ncbi.nlm.nih.gov/35251131/">PubMed</a>
+ <a href="https://www.frontiersin.org/articles/10.3389/fgene.2022.820493/full">Front Genet</a>, 2022, <b>13</b> 820493
+
+</ul>
+
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/nghiavtr/FuSeq_WES">fuseq-wes GitHub Page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: fuseq-wes (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>FUSEQ_WES</b>  fuseq-wes installation directory</li>
+   <li><b>FUSEQ_WES_REF</b> fuseq-wes reference directory</li>
+    <li><b>FUSEQ_WES_TEST_DATA</b> sample data for running fuseq-wes </li>
+  </ul>
+</ul>
+<P>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g --gres=lscratch:10 </b>
+[user@cn3144 ~]$ <b>module load fuseq-wes </b>
+[+] Loading python 3.8  ...
+[+] Loading gcc  9.2.0  ...
+[-] Unloading gcc  9.2.0  ...
+[+] Loading gcc  9.2.0  ...
+[+] Loading openmpi 4.0.5  for GCC 9.2.0
+[+] Loading ImageMagick  7.0.8  on cn4313
+[+] Loading HDF5  1.10.4
+[-] Unloading gcc  9.2.0  ...
+[+] Loading gcc  9.2.0  ...
+[+] Loading NetCDF 4.7.4_gcc9.2.0
+[+] Loading pandoc  2.17.1.1  on cn4313
+[+] Loading pcre2 10.21  ...
+[+] Loading R 4.2.0
+[+] Loading fuseq-wes  1.0.0
+</pre>
+Create soft links to the sample read data:
+<pre class="term">
+[user@cn3144 ]$ <b>cp -r $FUSEQ_WES_TEST_DATA/* . </b>
+[user@cn3144 ]$ <b>bamfile="FuSeq_WES_testdata/test.bam"</b>
+[user@cn3144 ]$ <b>ref_json="$FUSEQ_WES_REF/UCSC_hg19_wes_contigSize3000_bigLen130000_r100/\
+UCSC_hg19_wes_contigSize3000_bigLen130000_r100.json"</b>
+[user@cn3144 ]$ <b>gtfSqlite="$FUSEQ_WES_REF/UCSC_hg19_wes_contigSize3000_bigLen130000_r100/\
+UCSC_hg19_wes_contigSize3000_bigLen130000_r100.sqlite"
+</b>
+[user@cn3144 ]$ <b>output_dir="test_out"</b>
+[user@cn3144 ]$ <b>mkdir $output_dir</b>
+</pre>
+#extract mapped reads and split reads
+<pre class="term">
+[user@cn3144 ]$ <b>python3 $FUSEQ_WES/FuSeq_WES_v1.0.0/fuseq_wes.py \
+                   --bam $bamfile \
+                   --gtf $ref_json \
+                   --mapq-filter \
+                   --outdir $output_dir</b>
+</pre>
+#process the reads
+<pre class="term">
+
+[user@cn3144 ]$ <b>fusiondbFn="$FUSEQ_WES/FuSeq_WES_v1.0.0/Data/Mitelman_fusiondb.RData"</b>
+[user@cn3144 ]$ <b>paralogdb="$FUSEQ_WES/FuSeq_WES_v1.0.0/Data/ensmbl_paralogs_grch37.RData"</b>
+[user@cn3144 ]$ <b>Rscript $FUSEQ_WES/FuSeq_WES_v1.0.0/process_fuseq_wes.R \
+                   in=$output_dir \
+                   sqlite=$gtfSqlite \
+                   fusiondb=$fusiondbFn \
+                   paralogdb=$paralogdbFn \
+                   out=$output_dir</b>
+</pre>
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fuseq-wes.sh). For example:</p>
+
+<pre class="term">
+#! /bin/bash
+module load fuseq-wes
+set -e
+cp -r $FUSEQ_WES_TEST_DATA/* .
+bamfile="FuSeq_WES_testdata/test.bam"
+ref_json="$FUSEQ_WES_REF/UCSC_hg19_wes_contigSize3000_bigLen130000_r100/\
+UCSC_hg19_wes_contigSize3000_bigLen130000_r100.json"
+gtfSqlite="$FUSEQ_WES_REF/UCSC_hg19_wes_contigSize3000_bigLen130000_r100/\
+UCSC_hg19_wes_contigSize3000_bigLen130000_r100.sqlite"
+output_dir="test_out"
+mkdir -p $output_dir
+
+python3 $FUSEQ_WES/FuSeq_WES_v1.0.0/fuseq_wes.py \
+                   --bam $bamfile \
+                   --gtf $ref_json \
+                   --mapq-filter \
+                   --outdir $output_dir
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+
+<pre class="term">sbatch -c 2 --mem=4g --time=8:00:00 fuseq-wes.sh</pre>
+
+
+<p class="alert">The master process submitting jobs should be run
+either as a batch job or on an interactive node - not on the biowulf
+login node.</p>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

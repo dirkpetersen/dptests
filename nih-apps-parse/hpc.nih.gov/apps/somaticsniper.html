@@ -1,0 +1,117 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Somaticsniper on HPC';</script>
+    <div class="title">Somaticsniper on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> The purpose of this program is to identify single nucleotide positions that 
+      are different between tumor and normal (or, in theory, any two bam files). 
+      It takes a tumor bam and a normal bam and compares the two to determine 
+      the differences. It outputs a file in a format very similar to Samtools 
+      consensus format. It uses the genotype likelihood model of MAQ (as implemented 
+      in Samtools) and then calculates the probability that the tumor and normal 
+      genotypes are different. This probability is reported as a somatic score. 
+      The somatic score is the Phred-scaled probability (between 0 to 255) that 
+      the Tumor and Normal genotypes are not different where 0 means there is 
+      no probability that the genotypes are different and 255 means there is a 
+      probability of 1 – 10(255/-10) that the genotypes are different between 
+      tumor and normal. This is consistent with how the SAM format reports such 
+      probabilities. It is currently available as source code via github or as 
+      a Debian APT package. </p>
+    <p>This tool is developed by <a href="http://gmt.genome.wustl.edu/somatic-sniper/current/">David 
+      E. Larson etc</a>.</p>
+  
+  <h3>References:</h3>    <ul>
+      <li><a href="https://academic.oup.com/bioinformatics/article/28/3/311/188933">https://academic.oup.com/bioinformatics/article/28/3/311/188933</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="http://gmt.genome.wustl.edu/packages/somatic-sniper/">http://gmt.genome.wustl.edu/packages/somatic-sniper/</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>somaticsniper</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) </li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load somaticsniper</strong>
+[user@cn3144 ~]$ <strong>bam-somaticsniper -f ref.fasta tumor.bam normal.bam Outfile</strong>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load somaticsniper
+bam-somaticsniper -f ref.fasta tumor.bam normal.bam Outfile</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch [--mem=#] batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; bam-somaticsniper -f ref.fasta tumor.bam normal.bam Outfile
+cd dir2; bam-somaticsniper -f ref.fasta tumor.bam normal.bam Outfile
+cd dir3; bam-somaticsniper -f ref.fasta tumor.bam normal.bam Outfile
+cd dir4; bam-somaticsniper -f ref.fasta tumor.bam normal.bam Outfile
+
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module somaticsniper</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process 
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

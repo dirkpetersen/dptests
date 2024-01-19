@@ -1,0 +1,120 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Platypus on Biowulf';</script>
+<div class="title">Platypus on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Platypus is a tool designed for efficient and accurate variant-detection in high-throughput sequencing data.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Andy Rimmer, Hang Phan, Iain Mathieson, Zamin Iqbal, Stephen R. F. Twigg, WGS500 Consortium, Andrew O. M. Wilkie, Gil McVean, Gerton Lunter.  Integrating mapping-, assembly- and haplotype-based approaches for calling variants in clinical sequencing applications. Nature Genetics (2014) <a href="https://dx.doi.org/10.1038/ng.3036">doi:10.1038/ng.3036</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.well.ox.ac.uk/platypus">Platypus main site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>platypus</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres lscratch:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOBID</b>
+[user@cn3144 46116226]$ <b>module load platypus</b>
+[+] Loading platypus, version 0.8.1...
+[user@cn3144 46116226]$ <b>platypus callVariants \</b>
+> <b>--bamFiles /fdb/app_testdata/bam/hg19/gcat_set_053.bam \</b>
+> <b>--refFile /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa \</b>
+> <b>--output gcat_set_053.vcf </b>
+2017-09-29 14:53:42,435 - INFO - Beginning variant calling
+2017-09-29 14:53:42,435 - INFO - Output will go to gcat_set_053.vcf
+2017-09-29 14:53:42,710 - INFO - Processing region chr1:0-100000. (Only printing this message every 10 regions of size 100000)
+2017-09-29 14:53:43,061 - INFO - Processing region chr1:1000000-1100000. (Only printing this message every 10 regions of size 100000)
+...
+...
+2017-09-29 15:04:50,820 - INFO - Processing region chrY:58300000-58400000. (Only printing this message every 10 regions of size 100000)
+2017-09-29 15:04:51,941 - INFO - Processing region chrY:59300000-59373566. (Only printing this message every 10 regions of size 100000)
+2017-09-29 15:04:51,947 - INFO - Merging output VCF file(s) into final file gcat_set_053.vcf
+2017-09-29 15:04:55,587 - INFO - Finished merging VCF file(s)
+2017-09-29 15:04:55,591 - INFO - Finished variant calling
+[user@cn3144 46116226]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. platypus.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+
+set -e
+module load platypus
+
+platypus callVariants \
+ --bamFiles /fdb/app_testdata/bam/hg19/gcat_set_053.bam \
+ --refFile /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa \
+ --output gcat_set_053.vcf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] platypus.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. platypus.swarm). For example:</p>
+
+<pre class="term">
+platypus callVariants --bamFiles input1.bam --refFile hg19.fa --output input1.vcf
+platypus callVariants --bamFiles input2.bam --refFile hg19.fa --output input2.vcf
+platypus callVariants --bamFiles input3.bam --refFile hg19.fa --output input3.vcf
+platypus callVariants --bamFiles input4.bam --refFile hg19.fa --output input4.vcf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f platypus.swarm [-g #] [-t #] --module platypus</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module platypus <td>Loads the platypus module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

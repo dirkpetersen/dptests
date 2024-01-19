@@ -1,0 +1,127 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Q-Chem on Biowulf';</script>
+<div class="title">Q-Chem on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#openmp">OpenMP (threaded) Batch job </a></div>
+        <div class="tocItem"><a href="#mpi">MPI batch job</a></div>
+      </div>
+</table>
+
+<p>
+Q-Chem is a comprehensive ab initio quantum chemistry package for accurate predictions of molecular structures, reactivities, and vibrational, electronic and NMR spectra. The new release of Q-Chem 4.0 represents the state-of-the-art of methodology from the highest performance DFT/HF calculations to high level post-HF correlation methods:
+
+<ul>
+<li>Dispersion-corrected and double hybrid DFT functionals
+<li>Faster algorithms for DFT, HF and coupled-cluster calculations;
+<li>Structures and vibrations of excited states with TD-DFT;
+<li>Methods for mapping complicated potential energy surfaces;
+<li>Efficient valence space models for strong correlation;
+<li>More choices for excited states, solvation and charge-transfer;
+<li>Effective Fragment Potential and QM/MM for large systems;
+<li>Shared-memory for multicores and implementations for GPU's.
+</ul>
+</p>
+Q-Chem is a licensed product developed by <a href="http://www.q-chem.com">Q-Chem</a>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.q-chem.com/qchem-website/manual/qchem50_manual/index.html">Q-Chem 5.0 manual</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>qchem</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Q-Chem can use threads or MPI processes to parallelize. Different methods within Q-Chem can utilize one or both kinds of parallelization. See the
+section on <a href="http://www.q-chem.com/qchem-website/manual/qchem50_manual/sect-running.html">Running Q-Chem in parallel</a> for
+more information. 
+<b>OpenMP (threads)</b> can utilize multiple cores on a node,  but cannot run on multiple nodes. 
+<li>After you run 'module load qchem', a set of example input files is available  in <tt>$QC/samples</tt>.
+<li>Reference data in <tt>/fdb/qchem/</tt>
+</ul>
+<P>
+
+
+<a Name="sbatch"></a><div class="heading">OpenMP (theaded) Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. qchem.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name="QC"
+#SBATCH --mail-type=BEGIN,END
+
+module load qchem/4.3
+
+cd /data/$USER/qchem
+
+# copy the sample data to this directory
+cp ${QC}/samples/bsse/frgm_mp2_h2o_h2o_h2o.in .
+
+# run qchem
+qchem -nt $SLURM_CPUS_PER_TASK  frgm_mp2_h2o_h2o_h2o.in   frgm_mp2_h2o_h2o_h2o.in.out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command. e.g.</p>
+
+<pre class="term">sbatch --cpus-per-task=16  --threads-per-core=1 --mem=20g qchem.sh</pre>
+<table border=0 cellpadding=5>
+<tr><td width=250>-nt $SLURM_CPUS_PER_TASK  <td>tells Q-Chem to run  $SLURM_CPUS_PER_TASK threads
+<tr><td>--cpus-per-task=16 <td>tells Slurm how many CPUs to allocate
+<tr><td>--threads-per-core=1 <td>specifies that one thread should be run on each physical core (i.e. ignore hyperthreading). This is usually recommended for 
+cpu-intensive parallel jobs.
+<tr><td>--gres=lscratch:100<td>specifies that 100 GB of local scratch on the node should be allocated to this job. This parameter is required for all Qchem job submissions. 
+</table>
+<P>
+When the qchem module is loaded as part of a batch job, it sets the environment variable $QCLOCALSCR to '/lscratch/$SLURM_JOBID' . This directory is
+only created if you submit the job with <tt>--gres=lscratch:#</tt>. (see the <A href="http://hpc.nih.gov/docs/userguide.html#local">User Guide section on
+using local disk</a>. 
+
+<a Name="mpi"></a><div class="heading">MPI batch job on Biowulf </div>
+
+Q-Chem can also run <b>MPI </b>. Sample MPI batch script
+<Pre class="term">
+
+#!/bin/bash
+#SBATCH --job-name="QC"
+
+module load qchem/4.3
+
+cd /data/$USER/qchem
+
+# copy the sample input file to this directory
+cp  ${QC}/samples/sp/dft_b5050lyp_c4h6.in .
+
+# run qchem
+make-qchem-nodefile
+export QCMACHINEFILE=`pwd`/qchem.$SLURM_JOBID.nodes
+qchem -np $SLURM_NTASKS  dft_b5050lyp_c4h6.in   dft_b5050lyp_c4h6.in.out
+rm $QCMACHINEFILE
+
+</pre>
+<P>
+Submit this job with:
+<pre class="term">
+biowulf% sbatch --ntasks=4 --ntasks-per-core=1  --gres=lscratch:100 qchem.bat
+</pre>
+<P>
+where:
+<table border=0 cellpadding=5>
+<tr><td width=250>make-qchem-nodefile <td>a script that writes a file containing a list of nodes to be used
+<tr><td>$QCMACHINEFILE <td>environment variable used by Q-Chem to determine the nodes on which to run
+<tr><td>-np $SLURM_NTASKS <td>tells Q-Chem to run  $SLURM_NTASKS MPI processes
+<tr><td>--ntasks=4 <td>tells Slurm how many tasks (MPI processes) to run
+<tr><td>--ntasks-per-core=1 <td>tells Slurm to run only one task on each physical core (i.e. ignore hyperthreading).  This is usually recommended for 
+cpu-intensive parallel jobs.
+<tr><td>--gres=lscratch:100<td>specifies that 100 GB of local scratch on the node should be allocated to this job. This parameter is required for all Qchem job submissions. 
+</table>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

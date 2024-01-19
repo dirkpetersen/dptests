@@ -1,0 +1,172 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Manorm on Biowulf';</script>
+<div class="title">Manorm on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+ MAnorm is for quantitative comparison of ChIP-Seq data sets describing transcription factor binding sites and epigenetic modifications. The quantitative binding differences inferred by MAnorm showed strong correlation with both the changes in expression of target genes and the binding of cell type-specific regulators.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Shao Z, Zhang Y, Yuan GC, Orkin SH, Waxman DJ. (2012) MAnorm: a robust model for quantitative comparison of ChIP-Seq data sets. Genome Biol. Mar 16;13(3):R16.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/shao-lab/MAnorm">Manorm Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>manorm</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>singlethreaded app
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem 10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load manorm</b>
+
+[user@cn3144 ~]$ <b>manorm -h</b>
+usage: manorm [-h] [-v] --p1 PEAKS_FILE1 --p2 PEAKS_FILE2 --r1 READS_FILE1
+              --r2 READS_FILE2 [--s1 SHIFT_SIZE1] [--s2 SHIFT_SIZE2]
+              [-w WIDTH] [-d DIS_CUTOFF] [-n N_RANDOM] [-m M_CUTOFF]
+              [-p P_CUTOFF] [-s] [--name1 NAME1] [--name2 NAME2] -o
+              OUTPUT_NAME
+
+MAnorm -- A robust model for quantitative comparison of ChIP-Seq data sets.
+
+optional arguments:
+  -h, --help        show this help message and exit
+  -v, --version     show program's version number and exit
+
+Input Arguments:
+  --p1 PEAKS_FILE1  Peaks file of sample 1. BED and MACS format are currently
+                    supported. Please refer to documents for details.
+                    (default: None)
+  --p2 PEAKS_FILE2  Peaks file of sample 2. (default: None)
+  --r1 READS_FILE1  Reads file of sample 1. BED format are currently
+                    supported. (default: None)
+  --r2 READS_FILE2  Reads file of sample 2. (default: None)
+  --s1 SHIFT_SIZE1  Reads shift size of sample 1. This value is used to shift
+                    reads towards 3' direction to determine the precise
+                    binding site. Set as half of the fragment length.
+                    (default: 100)
+  --s2 SHIFT_SIZE2  Reads shift size of sample 2. (default: 100)
+
+Normalization Model Arguments:
+  -w WIDTH          Width of the window to calculate read densities. Windows
+                    with unified length of 2*width centered at peak
+                    summit/midpoint are used to quantify the binding signal.
+                    This should match the typical length of peaks, a value of
+                    1000 is recommended for sharp histone marks like H3K4me3
+                    and H3K9/27ac, and 500 for transcription factors or DNase-
+                    Seq. (default: 1000)
+  -d DIS_CUTOFF     Summit-to-summit distance cutoff for common peaks.
+                    Default=width/2. Only overlapped peaks with summit-to-
+                    summit distance less than than this value are considered
+                    as real common peaks of two samples when fitting M-A
+                    normalization model. (default: None)
+
+Advanced Arguments:
+  -n N_RANDOM       Number of simulation to test the enrichment of peak
+                    overlap between two samples. (default: 10)
+  -m M_CUTOFF       M-value cutoff to distinguish biased peaks from unbiased
+                    peaks. Peaks with M-value>=M_cutoff and P-value<=P_cutoff
+                    are defined as sample1-biased(specific) peaks, while peaks
+                    with M-value<=-1*M_cutoff and P-value<=P_cutoff are
+                    defined as sample2-biased peaks. (default: 1.0)
+  -p P_CUTOFF       P-value cutoff to define biased (sample 1/2-specific)
+                    peaks. (default: 0.01)
+
+Output arguments:
+  -s                By default, MAnorm will write the comparison results of
+                    unique and merged common peaks in a single output file.
+                    With this option on, two extra files which contains the
+                    results of the original(unmerged) peaks will also be
+                    outputted. (default: False)
+  --name1 NAME1     Name (experiment condition/cell-type etc.) of sample1. If
+                    specified, it will be used to replace the peaks/reads
+                    input file name as the sample name in output files.
+                    (default: None)
+  --name2 NAME2     Name (experiment condition/cell-type etc.) of sample2.
+                    (default: None)
+  -o OUTPUT_NAME    Output directory. When --name1 and --name2 are not
+                    specified, MAnorm will use it as the prefix of comparison
+                    output file. (default: None)
+
+[user@cn3144 ~]$ <b>manorm --p1 sample1_peaks.bed --p2 sample2_peaks.bed --r1 sample1_reads.bed --r2 sample2_reads.bed -o sample1_vs_sample2</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. manorm.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load manorm
+manorm --p1 sample1_peaks.bed --p2 sample2_peaks.bed \
+--r1 sample1_reads.bed --r2 sample2_reads.bed \
+-o sample1_vs_sample2
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=10g manorm.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. manorm.swarm). For example:</p>
+
+<pre class="term">
+manorm --p1 sample1_peaks.bed --p2 sample2_peaks.bed --r1 sample1_reads.bed --r2 sample2_reads.bed -o sample1_vs_sample2
+manorm --p1 sample3_peaks.bed --p2 sample4_peaks.bed --r1 sample3_reads.bed --r2 sample4_reads.bed -o sample3_vs_sample4
+manorm --p1 sample5_peaks.bed --p2 sample6_peaks.bed --r1 sample5_reads.bed --r2 sample6_reads.bed -o sample5_vs_sample6
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f manorm.swarm -g 10 [-t #] --module manorm</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module manorm</tt> <td>Loads the manorm module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

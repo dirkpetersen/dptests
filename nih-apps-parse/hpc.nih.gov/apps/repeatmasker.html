@@ -1,0 +1,140 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RepeatMasker on Biowulf';</script>
+<div class="title">RepeatMasker on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+RepeatMasker is a program that screens DNA sequences for interspersed repeats
+and low complexity DNA sequences. The output of the program is a detailed
+annotation of the repeats that are present in the query sequence as well as a
+modified version of the query sequence in which all the annotated repeats have
+been masked (default: replaced by Ns). On average, almost 50% of a human
+genomic DNA sequence currently will be masked by the program.
+</p>
+
+<!--
+<h3>References:</h3>
+<ul>
+<li>Paper</li>
+</ul>
+-->
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.repeatmasker.org/">RepeatMasker Main Site</a></li>
+<li><a href="http://repeatmasker.org/webrepeatmaskerhelp.html">RepeatMasker Documentation</a></li>
+
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>repeatmasker</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>By default, RepeatMasker will start 2 threads for every CPU in the node resulting in <b>badly overloaded jobs</b>.  Users must prevent this behavior by setting <tt>-pa N</tt> where <tt>N</tt> is equal to the number of allocated CPUs divided by 2.  In <tt>-pa N</tt>, "<tt>N</tt>" must always be greater than or equal to 2; <tt>-pa 1</tt> causes RepeatMasker to run as though the <tt>-pa</tt> option was not specified and to start 2 threads for each CPU. See the examples below for details.  
+<li>RepeatMasker uses the <a href="http://www.girinst.org">Repbase</a> libraries. Users should be aware of the <a href="repeatmasker/repbase_license.html">Repbase academic license agreement</a> before using RepeatMasker on the NIH HPC Systems.
+<li>On Biowulf, RepeatMasker has been configured to have <a href="hmmer.html">HMMER</a> as the default search engine. <a href="rmblast.html">RMBlast</a> can be used instead by passing <tt>-engine rmblast</tt> to the <tt>RepeatMasker</tt> command.
+<li><b>Setting a species/clade:</b> RepeatMasker in v4.1.1 has switched to the <a href="https://github.com/Dfam-consortium/FamDB">FamDB format</a> for the Dfam database. You may notice RepeatMasker being more strict with regards to what is acceptable for the <tt>-species</tt> flag. To check for valid names, you can query the database using <tt>famdb.py</tt>. See <tt>famdb.py --help</tt> for usage information and below for an example using our copy of the database:
+<p><tt>famdb.py -i /fdb/dfam/Dfam.h5 names mammal</tt></li>
+</ul>
+<P>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load repeatmasker</b>
+[user@cn3144 ~]$ <b>RepeatMasker -pa 2 sequence.fasta <i># for any sequence file sequence.fasta</i></b>
+RepeatMasker version open-4.0.7
+Search Engine: HMMER [ 3.1b2 (February 2015) ]
+Master RepeatMasker Database: /usr/local/apps/repeatmasker/4.0.7/Libraries/Dfam.hmm ( Complete Database: Dfam_2.0 )
+
+
+analyzing file sequence.fasta
+identifying Simple Repeats in batch 1 of 1
+identifying full-length ALUs in batch 1 of 1
+identifying full-length interspersed repeats in batch 1 of 1
+identifying remaining ALUs in batch 1 of 1
+identifying most interspersed repeats in batch 1 of 1
+identifying Simple Repeats in batch 1 of 1
+processing output: 
+cycle 1 
+cycle 2 
+cycle 3 
+cycle 4 
+cycle 5 
+cycle 6 
+cycle 7 
+cycle 8 
+cycle 9 
+cycle 10 
+Generating output... 
+masking
+done
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. repeatmasker.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+set -e
+module load repeatmasker
+RepeatMasker -engine rmblast -pa 2 sample.fasta
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] repeatmasker.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. repeatmasker.swarm). For example:</p>
+
+<pre class="term">
+RepeatMasker -pa 2 sample1.fasta
+RepeatMasker -pa 2 sample2.fasta
+RepeatMasker -pa 2 sample3.fasta
+RepeatMasker -pa 2 sample4.fasta
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f repeatmasker.swarm [-g #] [-t #] --module repeatmasker</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module repeatmasker</tt> <td>Loads the repeatmasker module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

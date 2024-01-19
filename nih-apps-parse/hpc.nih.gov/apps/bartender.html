@@ -1,0 +1,161 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Bartender: fast and accurate counting of barcode reads';</script>
+<div class="title"><b>Bartender: fast and accurate counting of barcode reads</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Bartender is an accurate clustering algorithm to detect barcodes
+and their abundances from raw next-generation sequencing data.
+In contrast with existing methods that cluster based on sequence similarity alone,
+Bartender uses a modified two-sample proportion test that also considers cluster size. This modification
+results in higher accuracy and lower rates of under- and over-clustering artifacts.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Lu Zhao, Zhimin Liu, Sasha F. Levy and Song Wu<br />
+<i>Bartender: a fast and accurate clustering algorithm to count barcode reads </i> <br />
+<a href="https://academic.oup.com/bioinformatics/article/34/5/739/4562326?login=true">Bioinformatics</a> <b>34</b>(5),
+739–747 (2018).
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/LaoZZZZZ/bartender-1.1">Bartender GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Bartender</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>BARTENDER_HOME</b>&nbsp; installation directory</li>
+    <li><b>BARTENDER_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>BARTENDER_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>BARTENDER_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3200 ~]$<b>module load bartender </b>
+[+] Loading singularity  3.8.2  
+[+] Loading bartender  1.1
+[user@cn3200 ~]$ <b>cp $BARTENDER_DATA/* .</b>
+[user@cn3200 ~]$ <b>bartender_extractor_com  -f 2M_test.fq -o 2M_extracted -q "?" -p "TACC[4-7]AA[4-7]AA[4-7]TT[4-7]ATAA" -m 2</b>
+    Running bartender extractor
+    bartender_extractor 2M_test.fq 2M_extracted 63 "(TAC.|TA.C|T.CC|.ACC)([ATCGN]{4,7})(AA)([ATCGN]{4,7})(AA)([ATCGN]{4,7})(TT)([ATCGN]{4,7})(ATA.|AT.A|A.AA|.TAA)" TACC ATAA 9 1
+    Totally there are 1000 reads in 2M_test.fq file!
+    Totally there are 976 valid barcodes from 2M_test.fq file
+    Totally there are 924 valid barcodes whose quality pass the quality condition
+    The estimated sequence error from the prefix and suffix parts is 0.00153689
+
+[user@cn3200 ~]$ <b>bartender_single_com -f 2M_extracted_barcode.txt -o 2M_barcode -d 3</b>
+Running bartender
+Loading barcodes from the file
+It takes 00:00:00 to load the barcodes from 2M_extracted_barcode.txt
+Shortest barcode length: 18
+Longest barcode length: 26
+Start to group barcode with length 18
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  1
+The distance threshold is 3
+Identified 1 barcodes with length 18
+Start to group barcode with length 19
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  7
+The distance threshold is 3
+Clustering iteration 1
+Clustering iteration 2
+Clustering iteration 3
+Clustering iteration 4
+Identified 7 barcodes with length 19
+Start to group barcode with length 20
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  221
+The distance threshold is 3
+Clustering iteration 1
+Clustering iteration 2
+Clustering iteration 3
+Clustering iteration 4
+Identified 221 barcodes with length 20
+Start to group barcode with length 21
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  0
+The distance threshold is 3
+Identified 0 barcodes with length 21
+Start to group barcode with length 22
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  0
+The distance threshold is 3
+Identified 0 barcodes with length 22
+Start to group barcode with length 23
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  0
+The distance threshold is 3
+Identified 0 barcodes with length 23
+Start to group barcode with length 24
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  0
+The distance threshold is 3
+Identified 0 barcodes with length 24
+Start to group barcode with length 25
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  0
+The distance threshold is 3
+Identified 0 barcodes with length 25
+Start to group barcode with length 26
+Using two sample unpooled test
+Transforming the barcodes into seed clusters
+Initial number of unique reads:  2
+The distance threshold is 3
+Clustering iteration 1
+Clustering iteration 2
+Clustering iteration 3
+Identified 2 barcodes with length 26
+The clustering process takes 00:00:00
+Start to dump clusters to file with prefix 2M_barcode
+Start to remove pcr effects
+***(Overall error rate estimated from the clustering result)***
+Total number of clusters after removing PCR effects: 231
+Could not find any high quality clusters(max entropy &lt; 0.33, cluster size &gt; 20 ) to estimate the error rate!
+Please use the result cautiously(Better to check the input data)!
+
+The estimated error rate is 0
+The overall running time 00:00:00 seconds.
+</pre>
+
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

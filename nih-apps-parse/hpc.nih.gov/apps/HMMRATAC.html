@@ -1,0 +1,151 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'HMMRATAC on Biowulf';</script>
+<div class="title">HMMRATAC on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A Hidden Markov ModeleR for ATAC-seq. HMMRATAC splits a single ATAC-seq dataset into nucleosome-free and nucleosome-enriched signals, learns the unique chromatin structure around accessible regions, and then predicts accessible regions across the entire genome.
+</p>
+
+<h3>Reference:</h3>
+<ul>
+<li><a href="https://academic.oup.com/nar/article/47/16/e91/5519166">Tarbell, Evan D., and Tao Liu. "HMMRATAC: a Hidden Markov ModeleR for ATAC-seq." <i>BioRxiv</i> (2019): 306621.</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/LiuLabUB/HMMRATAC">HMMRATAC GitHub repository</a></li>
+<li><a href="https://github.com/LiuLabUB/HMMRATAC/blob/master/HMMRATAC_Guide.md">HMMRATAC Guide</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>HMMRATAC</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Tests suggest that HMMRATAC will automatically try to use the number of threads that you allocate, but they are only utilized in short bursts.  
+	<li>In testing, HMMRATAC used around 3GB of memory for each CPU allocated.
+    <li>Environment variables set <!--for ones users should be aware of -->
+      <ul>
+        <li><tt>HMMRATAC_HOME</tt></li>
+      </ul>
+    <li>HMMRATAC is a java jar file and should be called like so:</li>
+    <ul>
+        <li><tt>java -jar $HMMRATAC_HOME/HMMRATAC.jar [options and arguments]</tt></li>
+    </ul>
+    </ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<p>First, use samtools to prepare a sample.</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --cpus-per-task=4 --mem=12G --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 41216741
+salloc.exe: job 41216741 queued and waiting for resources
+salloc.exe: job 41216741 has been allocated resources
+salloc.exe: Granted job allocation 41216741
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3125 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn3125 ~]$ <b>cd /data/$USER/HMMRATAC/testdata</b>
+
+[user@cn3125 testdata]$ <b>ls</b>
+ATACseq.bam
+
+[user@cn3125 testdata]$ <b>module load samtools</b>
+[+] Loading samtools 1.9  ...
+
+[user@cn3125 testdata]$ <b>samtools sort -@4 -m 1800M -T /lscratch/$SLURM_JOB_ID/ATACseq.bam \
+    -o ATACseq.sorted.bam ATACseq.bam</b>
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+
+[user@cn3125 testdata]$ <b>samtools index -@4 ATACseq.sorted.bam ATACseq.sorted.bam.bai</b>
+
+[user@cn3125 testdata]$ <b>samtools view -H ATACseq.sorted.bam | \
+    perl -ne 'if(/^@SQ.*?SN:(\w+)\s+LN:(\d+)/){print $1,"\t",$2,"\n"}' > \
+    genome.info</b>
+</pre>
+<p>Then use HMMRATAC to analyze the sample. (Note that these <tt>--upper</tt> and <tt>--lower</tt> option/argument pairs may not be realistic.)</p>
+<pre class="term">
+[user@cn3125 testdata]$ <b>module load HMMRATAC</b>
+[+] Loading HMMRATAC  1.2.9  on cn3125
+[+] Loading java 12.0.1  ...
+
+[user@cn3125 testdata]$ <b>HMMRATAC_HOME/HMMRATAC.jar --upper 100 --lower 2 \
+    --bam ATACseq.sorted.bam \
+    --index ATACseq.sorted.bam.bai \
+    --genome genome.info</b>
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. HMMRATAC.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name="HMMRATAC-test"
+#SBATCH --mem=12g
+#SBATCH --ntasks=1
+#SBATCH --partition=quick
+#SBATCH --time=2:0:0
+#SBATCH --cpus-per-task=4
+#SBATCH --error=/data/$USER/HMMRATAC-test.e
+#SBATCH --output=/data/$USER/HMMRATAC-test.o
+
+module load HMMRATAC
+cd /data/$USER/HMMRATAC/testdata
+
+java -jar $HMMRATAC_HOME/HMMRATAC.jar \
+    -b ATACseq.sorted.bam \
+    -i ATACseq.sorted.bam.bai \
+    -g genome.info
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">[user@biowulf ~]$ <b>sbatch HMMRATAC.sh</b></pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. HMMRATAC.swarm). For example:</p>
+
+<pre class="term">
+java -jar $HMMRATAC_HOME/HMMRATAC.jar -b 1.sorted.bam -i 1.sorted.bam.bai -g 1.info
+java -jar $HMMRATAC_HOME/HMMRATAC.jar -b 2.sorted.bam -i 2.sorted.bam.bai -g 2.info
+java -jar $HMMRATAC_HOME/HMMRATAC.jar -b 3.sorted.bam -i 3.sorted.bam.bai -g 3.info
+java -jar $HMMRATAC_HOME/HMMRATAC.jar -b 4.sorted.bam -i 4.sorted.bam.bai -g 4.info
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">[user@biowulf ~]$ <b>swarm -f HMMRATAC.swarm [-g #] [-t #] --module HMMRATAC</b></pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module HMMRATAC</tt> <td>Loads the HMMRATAC module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

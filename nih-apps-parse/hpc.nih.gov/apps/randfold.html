@@ -1,0 +1,162 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'randfold on Biowulf';</script>
+<div class="title">randfold on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width:70%">
+<p>
+Randfold computes the probability that, for a given RNA sequence, the
+Minimum Free Energy (MFE) of the secondary structure is different from a
+distribution of MFE computed with random sequences obtained by permuting
+the input sequence.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Eric Bonnet, J. Wuyts, P. Rouzé and Y. Van de Peer. <em>Evidence that 
+        microRNA precursors, unlike other non-coding RNAs, have lower folding
+        free energies than random sequences.</em> Bioinformatics, 2004, 
+        22:2911-2917.
+        <a href="http://www.ncbi.nlm.nih.gov/pubmed/15217813">Pubmed</a>
+        &nbsp;|&nbsp;
+        PMC&nbsp;|&nbsp;
+        <a href="http://bioinformatics.oxfordjournals.org/content/20/17/2911.long">Journal</a>
+    </li>
+</ul>
+    
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://bioinformatics.psb.ugent.be/software/details/Randfold">Source 
+        and supplemental data</a>
+    </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: randfold (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a>.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load randfold</b>
+</pre>
+
+<p>
+Example: running randfold on a single miRNA sequence
+</p>
+
+<pre class="term">
+[user@cn3144]$ <b>randfold</b>
+FATAL: Usage: randfold &lt;method&gt; &lt;file name&gt; &lt;number of randomizations&gt;
+
+methods:
+-s simple mononucleotide shuffling
+-d dinucleotide shuffling
+-m markov chain 1 shuffling
+
+Example: randfold -d let7.tfa 999
+
+[user@cn3144]$ <b>cat &gt; cel-let7.fa &lt;&lt;EOF</b>
+&gt;cel-let-7 Caenorhabditis elegans let-7 precursor RNA
+UACACUGUGGAUCCGGUGAGGUAGUAGGUUGUAUAGUUUGGAAUAUUACCACCGGUGAAC
+UAUGCAAUUUUCUACCUUACCGGAGACAGAACUCUUCGA
+<b>EOF</b>
+[user@cn3144]$ <b>randfold -d cel-let7.fa 999</b>
+cel-let-7       -42.90  0.001000
+</pre>
+
+<p>
+Running randfold on a set of mouse miRNA sequences in series (randfold
+will process one sequence at a time).
+</p>
+
+<pre class="term">
+[user@cn3144]$ <b>wget "ftp://mirbase.org/pub/mirbase/CURRENT/hairpin.fa.gz"</b>
+[user@cn3144]$ <b>gunzip hairpin.fa.gz</b>
+[user@cn3144]$ <b>awk '/^&gt;/ {p=0} /^&gt;mmu/{p=1} p==1' hairpin.fa &gt; mouse_hairpin.fa</b>
+[user@cn3144]$ <b>randfold -d mouse_hairpin.fa 99 &gt; mouse_hairpin.randfold</b>
+</pre>
+
+<p>End the interactive session</p>
+<pre class="term">
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. randfold.sh), which uses the input file 'randfold.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+#SBATCH --job-name=randfold
+set -e
+
+module load randfold
+inf=/data/$USER/test_data/randfold/mouse_hairpins.fa
+outf=/data/$USER/test_data/randfold/mouse_hairpins.fa.randfold
+randfold -d $inf 99 &gt; $outf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch randfold.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. randfold.swarm). For example:</p>
+
+<pre class="term">
+randfold -d mouse_hairpins/mmu-let-7a-1.fasta 999 &gt; mouse_hairpins/mmu-let-7a-1.fasta.randfold
+randfold -d mouse_hairpins/mmu-let-7a-2.fasta 999 &gt; mouse_hairpins/mmu-let-7a-2.fasta.randfold
+randfold -d mouse_hairpins/mmu-let-7b.fasta 999 &gt; mouse_hairpins/mmu-let-7b.fasta.randfold
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f randfold.swarm --module randfold</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module randfold <td>Loads the randfold module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

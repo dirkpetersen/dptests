@@ -1,0 +1,201 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'guppy on Biowulf';</script>
+<div class="title">guppy on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<div style="width: 70%">
+<p> Guppy is a basecaller from Oxford Nanopore Technologies. Current versions
+require GPUs to run.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>R. R. Wick, L. M. Judd, and K. E. Holt. <em>Performance of neural network basecalling tools for Oxford Nanopore sequencing</em>. Genome Biology 2019, 20:129. 
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/31234903">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6591954/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1727-y">Journal</a>
+    </li>
+</ul>
+    
+</div>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li>For more documentation see the ONT community site</li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>guppy</tt> (see <a href="/apps/modules.html">the modules page</a> 
+    for more information)</li>
+    <li>Current versions of guppy_basecaller require GPUs. On biowulf, guppy can only run on 
+    <span style="background-color: #ff9">P100 or newer</span> GPUs. guppy_aligner does not
+        require GPU. This can be achieved with <code>--gres=gpu:1 --constraint='gpup100|gpuv100|gpuv100x|gpua100'</code></li>
+    <li>Example files in <code>$GUPPY_TEST_DATA</code></li>
+    <li>If you encounter segmentation faults with version 6.4.2 on v100x GPUS please try a A100 GPU</li>
+</ul>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> with
+a suitable GPU for this example.  Note that the example data is as subset of
+data from a synthetic microbial community (see
+<a href="https://academic.oup.com/gigascience/article/8/5/giz043/5486468">Nicholls
+et al</a>) sequenced with the SQK-LSK109 1D sequencing kit in a FLO-MIN106 flowcell.  <br>Sample session
+(user input in <b>bold</b>):</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1,lscratch:200 --mem=16g --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn2369 are ready for job
+
+[user@cn2369 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn2369 ~]$ <b>module load guppy</b>
+[user@cn2369 ~]$ <b>cp -rL ${GUPPY_TEST_DATA:-none}/* .</b>
+[user@cn2369 ~]$ <b>ls -lh</b>
+drwxr-xr-x 3 user group 4.0K Sep 13 09:13 Zymo-GridION-EVEN-BB-SN
+[user@cn2369 ~]$ <b>du -sh Zymo-GridION-EVEN-BB-SN</b>
+11G     Zymo-GridION-EVEN-BB-SN
+[user@cn2369 ~]$ <b>find Zymo-GridION-EVEN-BB-SN -name '*.fast5' -printf '.' | wc -c</b>
+160000
+[user@cn2369 ~]$ <b>guppy_basecaller --print_workflows | grep SQK-LSK109 | grep FLO-MIN106</b>
+FLO-MIN106 SQK-LSK109           dna_r9.4.1_450bps_hac
+FLO-MIN106 SQK-LSK109-XL        dna_r9.4.1_450bps_hac
+
+[user@cn2369 ~]$ <b>guppy_basecaller --input_path Zymo-GridION-EVEN-BB-SN --recursive \
+                       --flowcell FLO-MIN106 --kit SQK-LSK109 \
+                       -x cuda:all \
+                       --records_per_fastq 0 \
+                       --compress_fastq \
+                       --save_path fastq</b>
+ONT Guppy basecalling software version x.x.x
+config file:        /opt/ont/guppy/data/dna_r9.4.1_450bps_hac.cfg
+model file:         /opt/ont/guppy/data/template_r9.4.1_450bps_hac.jsn
+input path:         Zymo-GridION-EVEN-BB-SN
+save path:          fastq
+chunk size:         1000
+chunks per runner:  512
+records per file:   0
+fastq compression:  ON
+num basecallers:    4
+gpu device:         cuda:all
+kernel path:
+runners per device: 4
+
+Found 160000 fast5 files to process.
+Init time: 4748 ms
+
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+Caller time: 1593158 ms, Samples called: 6901545514, samples/s: 4.33199e+06
+Finishing up any open output files.
+Basecalling completed successfully.
+
+[user@cn2369 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>guppy appears to number the first available GPU as GPU 0 even if it is in fact <em>not</em> the
+first GPU (i.e. CUDA_VISIBLE_DEVICES=0). The way to use all <em>allocated</em> GPUs is to
+use <code>-x cuda:all</code>.</p>
+
+
+<p>For a larger example data set, guppy_basecaller (6.4.2) runs 2.1x faster on
+a single V100x than a P100 and 1.6x faster on a single A100 than on a V100x for
+an overall speedup of 3.4 between P100 and A100. The graph below shows runtime
+and efficiency for 1-4 GPUs of each type using all default settings, 6CPUs/GPU,
+and 20GB of memory / GPU without compressing output. Input and output were
+located in lscratch.</p>
+
+<div style="width:70%; margin: 0 auto">
+    <img src="/images/guppy_gpu_performance.png" alt="guppy benchmarks" width="100%"/>
+</div>
+
+<p>When scaling CPUs with GPUs guppy 6.4.2 performs efficiently with multiple
+V100x and P100 GPUs. However no more than 2 A100 should be used.<p>
+
+<p>Note also that the default options are not alsways optimal for all GPUs. For
+example using <code>--chunks_per_runner 1024 --chunk_size 4000</code> in the
+benchmarks above (reads with a median length of 5000) on a single A100 reduces
+runtime by 2.6x from from 1h to 24min at the cost of increasing GPU memory
+consumption. This would be different on different GPUs or with different read
+lenghts. Some experimentation with data may be required to tune parameters.</p>
+
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. guppy.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load guppy/6.1.2 || exit 1
+guppy_basecaller --input_path $GUPPY_TEST_DATA/Zymo-GridION-EVEN-BB-SN --recursive \
+                       --flowcell FLO-MIN106 --kit SQK-LSK109 \
+                       -x cuda:all \
+                       --records_per_fastq 0 \
+                       --compress_fastq \
+                       --save_path fastq</b>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --partition=gpu --cpus-per-task=14 --mem=16g --gres=lscratch:200,gpu:p100:1 guppy.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. guppy.swarm). For example:</p>
+
+<pre class="term">
+guppy_basecaller --input_path indir1 --flowcell FLO-MIN106 --kit SQK-LSK109 --save_path outdir1 ...
+guppy_basecaller --input_path indir2 --flowcell FLO-MIN106 --kit SQK-LSK109 --save_path outdir2 ...
+...etc...
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f guppy.swarm --partition=gpu -g 16 -t 14 --gres=gpu:p100:1 --module guppy/3.2.2</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module guppy</tt> <td>Loads the guppy module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

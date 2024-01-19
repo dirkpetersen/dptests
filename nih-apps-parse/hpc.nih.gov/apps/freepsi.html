@@ -1,0 +1,220 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FreePSI on Biowulf';</script>
+<div class="title">FreePSI on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+FreePSI is a new method for genome-wide percent spliced in (PSI) estimation that requires neither a reference transcriptome (hence, transcriptome-free) nor the mapping of RNA-seq reads (hence, alignment-free). The first attribute allows FreePSI to work effectively when a high quality reference transcriptome is unavailable and the second not only helps make FreePSI more efficient, it also eliminates the necessity of dealing with multi-reads.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    <a href="https://academic.oup.com/nar/article-abstract/46/2/e11/4607800">Zhou, Jianyu, et al. "FreePSI: an alignment-free approach to estimating exon-inclusion ratios without a reference transcriptome." <i>Nucleic acids research</i> 46.2 (2018): e11-e11.</a>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/JY-Zhou/FreePSI">FreePSI GitHub repo</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>freepsi</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Set the number of threads for each instance using the <tt>SLURM_CPUS_PER_TASK</tt> variable. See examples below.
+	<li>When calling the python scripts, do so without adding the <tt>python</tt> or <tt>python3</tt> directives.  That will be added automatically.</li>
+    <li>Environment variables set <!--for ones users should be aware of -->
+      <ul>
+        <li><tt>FREEPSI_HOME</tt></li>
+        <li><tt>FREEPSI_TESTDATA</tt></li>
+      </ul>
+<li>Example files in <tt>/usr/local/apps/freepsi/TESTDATA</tt> (pointed to by the <tt>FREEPSI_TESTDATA</tt> environment variable).
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. In this example, we run a script that contains FreePSI commands. Reviewing the script provides individual command syntax.
+<br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c6 --mem=12g --gres=lscratch:10</b>
+salloc: Pending job allocation 33604907
+salloc: job 33604907 queued and waiting for resources
+salloc: job 33604907 has been allocated resources
+salloc: Granted job allocation 33604907
+salloc: Waiting for resource configuration
+salloc: Nodes cn0849 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.33604907.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0849 ~]$ <b>module load freepsi</b>
+[+] Loading freepsi  0.3  on cn0849
+[+] Loading singularity  3.8.5-1  on cn0849
+[+] Loading jellyfish  2.3.0
+
+[user@cn0849 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0849 33604907]$ <b>cp -r $FREEPSI_TESTDATA .</b>
+
+[user@cn0849 33604907]$ <b>cd TESTDATA/</b>
+
+[user@cn0849 TESTDATA]$ <b>cat run_FreePSI.sh</b>
+#!/bin/bash
+
+set -e
+
+# Provide the directory containing Jellyfish (usually named as 'bin')
+Jellyfish="$(dirname $(which jellyfish))"
+# Provide the directory containing FreePSI
+# E.g.
+#FreePSI=../bin
+FreePSI="${FREEPSI_HOME}/bin"
+
+if [ -z ${Jellyfish} ]; then
+    echo "Error: Please modify me to provide the directory containing Jellyfish"
+    exit;
+fi
+
+if [ -z ${FreePSI} ]; then
+    echo "Error: Please modify me to provide the directory containing FreePSI"
+    exit;
+fi
+
+GENOME_DIR=./genome
+BND_FILE=./annotation/hg38_refGene_exonBoundary_chr21.bed
+READS=RNA-seq
+K=27
+THREAD=$SLURM_CPUS_PER_TASK
+
+set -x
+# Count k-mers in RNA-seq reads using jellyfish
+${Jellyfish}/jellyfish count -m ${K} -s 100M -t ${THREAD} -Q 5 ${READS}/reads_final.1.fastq -o ${READS}/reads.1.jf
+${Jellyfish}/jellyfish dump ${READS}/reads.1.jf -o ${READS}/reads.1.fa
+${Jellyfish}/jellyfish count -m ${K} -s 100M -t ${THREAD} -Q 5 ${READS}/reads_final.2.fastq -o ${READS}/reads.2.jf
+${Jellyfish}/jellyfish dump ${READS}/reads.2.jf -o ${READS}/reads.2.fa
+
+# Produce raw estimates of PSI values using FreePSI
+#Build
+${FreePSI}/freePSI build\
+    -k $K -p ${THREAD} \
+    -g ${GENOME_DIR} \
+    -a ${BND_FILE} \
+    -1 ${READS}/reads.1.fa \
+    -2 ${READS}/reads.2.fa \
+    -o ./hashtable.json
+
+#Quant
+${FreePSI}/freePSI quant\
+    -k $K -p ${THREAD} \
+    -i ./hashtable.json \
+    -o .
+
+# Post-process the raw estimates of PSI values
+# python3 ${FreePSI}/postProc.py \
+${FreePSI}/postProc.py \
+    ./psi_freePSI_raw.json \
+    ./psi_freePSI.json
+
+# Summarize the PSI values into a readable file
+# python3 ${FreePSI}/summary.py \
+${FreePSI}/summary.py \
+    ./annotation/hg38_refGene_exonBoundary_chr21.bed \
+    ./psi_freePSI.json \
+    ./psi_freePSI.summary
+
+[user@cn0849 TESTDATA]$ <b>./run_FreePSI.sh</b>
++ /usr/local/apps/jellyfish/2.3.0/bin/jellyfish count -m 27 -s 100M -t 6 -Q 5 RNA-seq/reads_final.1.fastq -o RNA-seq/reads.1.jf
++ /usr/local/apps/jellyfish/2.3.0/bin/jellyfish dump RNA-seq/reads.1.jf -o RNA-seq/reads.1.fa
++ /usr/local/apps/jellyfish/2.3.0/bin/jellyfish count -m 27 -s 100M -t 6 -Q 5 RNA-seq/reads_final.2.fastq -o RNA-seq/reads.2.jf
++ /usr/local/apps/jellyfish/2.3.0/bin/jellyfish dump RNA-seq/reads.2.jf -o RNA-seq/reads.2.fa
++ /usr/local/apps/freepsi/0.3/bin/freePSI build -k 27 -p 6 -g ./genome -a ./annotation/hg38_refGene_exonBoundary_chr21.bed -1 RNA-seq/reads.1.fa -2 RNA-seq/reads.2.fa -o ./hashtable.json
+
+### Start to build theoretical and real kmer profile ...
+[...snip]
+Elasped time 2s.
+
+### Start to refine solution and compute PSI ...
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> OK!
+### Finish refining solution and computing PSI ...
+### Finished!
+CPU Time elapsed: 7s.
+Natural Time elapsed: 3s.
++ /usr/local/apps/freepsi/0.3/bin/postProc.py ./psi_freePSI_raw.json ./psi_freePSI.json
++ /usr/local/apps/freepsi/0.3/bin/summary.py ./annotation/hg38_refGene_exonBoundary_chr21.bed ./psi_freePSI.json ./psi_freePSI.summary
+
+[user@cn0849 TESTDATA]$ <b>exit</b>
+exit
+salloc: Relinquishing job allocation 33604907
+
+[user@biowulf ~]$ 
+
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. freepsi.sh). Use the script in <tt>TESTDATA</tt> (shown above) as an example:</p>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] freepsi.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. freepsi.swarm). For the sake of simplicity we place a single command in each line, but you can place multiple commands on a single line seperated by semicolons or you can create scripts and execute a different script or the same script with different inputs on each line instead:</p>
+
+<pre class="term">
+freePSI quant -k $K -p ${SLURM_CPUS_PER_TASK} -i /path/to/hashtable1.json -o /our/dir1
+freePSI quant -k $K -p ${SLURM_CPUS_PER_TASK} -i /path/to/hashtable2.json -o /our/dir2
+freePSI quant -k $K -p ${SLURM_CPUS_PER_TASK} -i /path/to/hashtable3.json -o /our/dir3
+freePSI quant -k $K -p ${SLURM_CPUS_PER_TASK} -i /path/to/hashtable4.json -o /our/dir4
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f freepsi.swarm [-g #] [-t #] --module freepsi</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module freepsi</tt> <td>Loads the freepsi module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

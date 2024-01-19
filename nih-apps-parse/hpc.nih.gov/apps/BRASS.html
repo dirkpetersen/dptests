@@ -1,0 +1,106 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BRASS on Biowulf';</script>
+<div class="title">BRASS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+BRASS analyses one or more related BAM files of paired-end sequencing to determine potential rearrangement breakpoints.
+
+There are several stages the main component being:
+<ul>
+<li>    Collect read-pairs where both ends map but NOT marked as properly-paired.
+ <li>    Perform grouping based on mapped locations
+<li>     Filter
+<li>     Run assembly
+<li>     Annotate with GRASS
+</ul>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/cancerit/BRASS">BRASS on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>BRASS</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>BRASS is part of the Cancer Genome Project and is closely related to the programs <a href="/apps/ascatNgs.html">Ascat NGS</a> and <a href="/apps/cgpBattenberg.html">cgpBattenberg</a> as well as the utilites <a href="https://github.com/cancerit/VAGrENT">VAGrENT</a> and <a href="https://github.com/cancerit/PCAP-core">PCAP-core</a>. All of these programs can be added to your path using the <tt>cancerit-wgs</tt> module. To get the most recent versions of all of these, use the <tt>cancerit-wgs/latest</tt> module version.
+<li>Multithreaded. Note: the BRASS documentation recommends a max of 2 CPUs during the 'input' phase.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=20g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load BRASS</b>
+
+[user@cn3144 ~]$ <b> brass.pl -c $SLURM_CPUS_PER_TASK -o myout -t tumour.bam -n normal.bam</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. BRASS.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load BRASS
+brass.pl -c $SLURM_CPUS_PER_TASK -o myout -t tumour.bam -n normal.bam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=4] [--mem=20g] BRASS.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. BRASS.swarm). For example:</p>
+
+<pre class="term">
+brass.pl -c $SLURM_CPUS_PER_TASK -o myout1 -t tumour1.bam -n normal.bam
+brass.pl -c $SLURM_CPUS_PER_TASK -o myout2 -t tumour2.bam -n normal.bam
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f BRASS.swarm -g 15 -t 4 --module BRASS</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module BRASS</tt> <td>Loads the BRASS module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

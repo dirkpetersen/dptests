@@ -1,0 +1,195 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'THetA on Biowulf';</script>
+<div class="title">THetA on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>Tumor Heterogeneity Analysis (THetA) is an algorithm used to estimate
+tumor purity and clonal/subclonal copy number aberrations simultaneously from
+high-throughput DNA sequencing data.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>L. Oesper, G. Satas, and B.J. Raphael. <em>Quantifying Tumor
+        Heterogeneity in Whole-Genome and Whole-Exome Sequencing Data.</em>
+    Bioinformatics 2014, 30:3532-3540.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/25297070">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4253833/">PMC</a>&nbsp;|&nbsp; 
+    <a href="http://bioinformatics.oxfordjournals.org/content/30/24/3532.long">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/raphael-group/THetA">GitHub</a> </li>
+    <li><a href="http://compbio.cs.brown.edu/projects/theta/">Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: theta (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>THetA is a multithreaded application. Please match the number of processes with your allocation.</li>
+    <li>Example files in /usr/local/apps/theta/TEST_DATA/example</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=14g --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load theta/0.7-20-g94fd772</b>
+[user@cn3144 ~]$ <b>cp -r ${THETA_TEST_DATA:-none}/example/ .</b>
+[user@cn3144 ~]$ <b>RunTHetA example/Example.intervals \
+                        --NUM_PROCESSES=$((SLURM_CPUS_PER_TASK - 1)) \
+                        --TUMOR_FILE example/TUMOR_SNP.formatted.txt \
+                        --NORMAL_FILE example/NORMAL_SNP.formatted.txt</b>
+=================================================
+Arguments are:
+        Query File: example/Example.intervals
+        k: 3
+        tau: 2
+        Output Directory: ./
+        Output Prefix: Example
+        Num Processes: 5
+        Graph extension: .pdf
+
+Valid sample for THetA analysis:
+        Ratio Deviation: 0.1
+        Min Fraction of Genome Aberrated: 0.05
+        Program WILL cluster intervals.
+=================================================
+Reading in query file...
+[...snip...]
+
+[user@cn3144 ~]$ <b>ls -lh</b>
+total 232K
+drwxr-xr-x 2 user group 4.0K Oct 13 10:32 example
+drwxr-xr-x 9 user group 4.0K Oct 13 16:19 Example_2_cluster_data
+drwxr-xr-x 8 user group 4.0K Oct 13 16:20 Example_3_cluster_data
+-rw-r--r-- 1 user group  13K Oct 13 16:19 Example_assignment.png
+-rw-r--r-- 1 user group 2.0K Oct 13 16:20 Example.BEST.results
+-rw-r--r-- 1 user group 118K Oct 13 16:19 Example_by_chromosome.png
+-rw-r--r-- 1 user group  17K Oct 13 16:19 Example_classifications.png
+-rw-r--r-- 1 user group  16K Oct 13 16:19 Example.n2.graph.pdf
+-rw-r--r-- 1 user group 2.0K Oct 13 16:19 Example.n2.results
+-rw-r--r-- 1 user group 3.6K Oct 13 16:19 Example.n2.withBounds
+-rw-r--r-- 1 user group  17K Oct 13 16:20 Example.n3.graph.pdf
+-rw-r--r-- 1 user group 2.2K Oct 13 16:20 Example.n3.results
+-rw-r--r-- 1 user group 3.6K Oct 13 16:20 Example.n3.withBounds
+-rw-r--r-- 1 user group  225 Oct 13 16:19 Example.RunN3.bash
+</pre>
+
+<p>The analysis will create a number of files including some graphs. For example,
+the following shows one of the models (2 components):</p>
+
+<div style="width:90%; margin: 0 auto;">
+    <img src="/images/theta_example_n2.png" alt="THetA model n=2" width="100%" />
+</div>
+
+<p>In addition to <code>RunTHetA</code> there are several other tools included
+in this package</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>ls /usr/local/apps/theta/0.7-20-g94fd772/bin</b>
+|-- CreateExomeInput
+|-- getAlleleCounts
+|-- runBICSeqToTHetA
+`-- RunTHetA
+</pre>
+
+<p>2 of these tools (getAlleleCounts and runBICSeqToTHetA) are wrappers around
+java tools. In addition to their normal arguments they also take the <code>--java-opts</code>
+argument which can be used to pass options to java</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>runBICSeqToTHetA --java-opts="-Xmx2g" --help</b>
+Error! Incorrect number of arguments.
+
+Program: BICSeqToTHetA
+USAGE (src): java BICSeqToTHetA &lt;INPUT_FILE&gt; [Options]
+USAGE (jar): java -jar BICSeqToTHetA &lt;INPUT_FILE&gt; [Options]
+&lt;INPUT_FILE&gt; [String]
+         A file output by BIC-Seq.
+-OUTPUT_PREFIX [STRING]
+         Prefix for all output files.
+-MIN_LENGTH [Integer]
+         The minimum length of intervals to keep.
+</pre>
+
+<p>For a more detailed manual see</p>
+<pre class="term">
+/usr/local/apps/theta/&lt;version&gt;/MANUAL.txt
+</pre>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. THetA.sh), which uses the input file 'THetA.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+module load theta/0.7-20-g94fd772 || exit 1
+
+RunTHetA example/Example.intervals \
+  --NUM_PROCESSES=$((SLURM_CPUS_PER_TASK - 1)) \
+  --TUMOR_FILE example/TUMOR_SNP.formatted.txt \
+  --NORMAL_FILE example/NORMAL_SNP.formatted.txt
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=14g theta.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. THetA.swarm). For example:</p>
+
+<pre class="term">
+RunTHetA sample1/Example.intervals --NUM_PROCESSES=$((SLURM_CPUS_PER_TASK-1)) \
+  --TUMOR_FILE sample1/TUMOR_SNP.formatted.txt --NORMAL_FILE sample2/NORMAL_SNP.formatted.txt
+RunTHetA sample2/Example.intervals --NUM_PROCESSES=$((SLURM_CPUS_PER_TASK-1)) \
+  --TUMOR_FILE sample2/TUMOR_SNP.formatted.txt --NORMAL_FILE sample2/NORMAL_SNP.formatted.txt
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f THetA.swarm -g 14 -t 6 --module theta</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module THetA <td>Loads the THetA module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

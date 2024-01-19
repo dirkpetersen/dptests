@@ -1,0 +1,210 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GNU Parallel on Biowulf';</script>
+<div class="title">GNU Parallel on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Important Notes</a></div>
+        <div class="tocItem"><a href="#examples">Examples</a></div>
+      </div>
+</table>
+
+<p>
+GNU parallel is a shell tool for executing jobs in parallel using one or more computers. A job can be a single command or a small script that has to be run for each of the lines in the input. The typical input is a list of files, a list of hosts, a list of users, a list of URLs, or a list of tables. A job can also be a command that reads from a pipe. GNU parallel can then split the input and pipe it into commands in parallel.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="https://www.gnu.org/software/parallel/">GNU Parallel Main Site</a></li>
+  <li><a href="https://www.gnu.org/software/parallel/parallel_cheat.pdf">Cheat Sheet</a></li>
+  <li><a href="https://www.gnu.org/software/parallel/parallel_tutorial.html">Tutorial (2018)</a></li>
+  <li>After loading the parallel module, the command
+<pre class="term">man parallel</pre>
+will display a simple explanation of all options and a few examples.</li>
+</ul>
+
+<ul>
+    <li>Module Name: <tt>parallel</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p>Here are some crucial options for GNU parallel:</p>
+
+<ul>
+  <li><b>-j</b> <em>N</em>: Run up to N jobs in parallel.  Usually <em>N</em> should be set to <b>$SLURM_CPUS_PER_TASK</b> when a job is submitted with either <b>-c</b> or <b>--cpus-per-task</b>.</li>
+  <li><b>-N</b> <em>max-args</em>: Use at most <em>max-args</em> arguments per command line.</li>
+  <li><b>--delay</b> <em> duration</em>: Delay starting next job by duration.</li>
+  <li><b>--joblog</b> <em>logfile</em>: Logfile for executed jobs.</li>
+  <li><b>-a</b> or <b>--arg-file</b>: Use input-file as input source.</li>
+  <li><b>{#}</b>: Sequence number of the job to run.</li>
+  <li><b>--tmpdir</b> <em>dirname</em>: Directory for temporary files.  If /lscratch is allocated, this should be set to <b>--tmpdir /lscratch/$SLURM_JOB_ID</b>.  Otherwise, parallel will use /tmp.</li>
+  <li><b>--workdir</b> <em>dir</em>: Jobs will be run in the given dir, rather than the current working directory.</li>
+
+</ul>
+
+<a Name="examples"></a><div class="heading">Examples</div>
+
+<table width=25% align=right><tr><td>
+  <div class="toc">
+    <div class="tocHeading">Quick Links</div>
+    <div class="tocItem"><a href="#ex1">Tar a set of directories</a></div>
+    <div class="tocItem"><a href="#ex2">Run a command with multiple inputs</a></div>
+    <div class="tocItem"><a href="#ex3">Passing multiple arguments to a parallelized command</a></div>
+    <div class="tocItem"><a href="#ex4">Passing large numbers of arguments</a></div>
+    <div class="tocItem"><a href="#ex5">Reading input from tab-separated file</a></div>
+    <div class="tocItem"><a href="#ex6">Saving output to unique files</a></div>
+    <div class="tocItem"><a href="#ex7">Combine parallel and swarm</a></div>
+  </div>
+</td></tr></table>
+
+<p>Here are some very useful examples.  All of these examples are done after first allocating an interactive session with 8 cpus:</p>
+
+<pre class="term">user@biowulf:~$ <b>sinteractive -c 8</b></pre>
+
+<p>The same examples can be run in a batch job by inserting them into sbatch script:</p>
+
+<pre class="term">#!/bin/bash
+#SBATCH --cpus-per-task 8
+
+ml parallel
+
+...</pre>
+
+<a name="ex1"></a><h3>Tar a set of directories</h3>
+
+<p>After a project is completed, the subdirectories should be compressed into individual gzipped tar files for easy transfer and archiving.  First, list the directories that are present:</p>
+
+<pre class="term">user@node:~$ <b>ls -F</b>
+001/  002/  003/  004/  005/  006/  007/  008/  README.txt  script.sh*
+user@node:~$ <b>ls -1d 00*</b>
+001 002 003 004 005 006 007 008</pre>
+
+<p>Tar each directory eight at a time using parallel.  In this example the option <b>-j</b> tells parallel to run the given command <b>tar</b> at most eight processes simultaneously (as dictated by the <b>$SLURM_CPUS_PER_TASK</b> variable set by slurm).  The individual directories from <b>ls -1d 00*</b> are passed to parallel by substituting <b>{}</b> in the command.</p>
+
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK "tar -c -z -f {}.tgz {}" ::: ls -1d 00*</b>
+user@node:~$ <b>ls *.tgz</b>
+001.tgz  002.tgz  003.tgz  004.tgz  005.tgz  006.tgz  007.tgz  008.tgz</pre>
+
+<a name="ex2"></a><h3>Run a command with multiple inputs</h3>
+
+<p>If you have a single-threaded command that accepts an argument and outputs to a unique file, parallel can be used to accelerate the processing with a minimal of fuss.</p>
+
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK "command -i {} -o {}.out" ::: a b c d e f g h</b></pre>
+
+<p>Keep in mind that because the number of simultaneous processes executed by parallel is determined by <b>$SLURM_CPUS_PER_TASK</b>, the slurm option <b>-c</b> or <b>--cpus-per-task</b> will change this number.  So, for the example above, if this was submitted like so:</p>
+<pre class="term">sbatch -c 4 <em>script.sh</em></pre>
+<p>only 4 processes would be run simultaneously.</p>
+
+<a name="ex3"></a><h3>Passing multiple arguments to a parallelized command</h3>
+
+<p>The option <b>-N</b>, along with positional replacement strings, allows passing multiple arguments to a parallelized command:</p>
+
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK -N 2 "echo {1} {2}" ::: a b c d e f g h</b>
+a b
+g h
+e f
+c d</pre>
+
+<p>The positional replacement strings can be given in any order:</p>
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK -N 2 "echo {2} {1} {2}.out" ::: a b c d e f g h</b>
+b a b.out
+f e f.out
+d c d.out
+h g h.out</pre>
+
+<a name="ex4"></a><h3>Passing large numbers of arguments</h3>
+
+<p>If a large number of arguments needs to be passed, making the command-line unwieldy, the arguments can be written to a file.  Each line is regarded as an input:</p>
+
+<pre class="term">user@node:~$ <b>cat args.txt</b>
+a
+b
+c
+d
+e
+f
+g
+h</pre>
+
+<p>Arguments can be passed to parallel in multiple ways, either piped</p>
+
+<pre class="term">user@node:~$ <b>cat args.txt | parallel -j $SLURM_CPUS_PER_TASK -N 4 "echo {1} {2} {3} {4}"</b></pre>
+
+<p>or by redirect</p>
+
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK -N 4 "echo {1} {2} {3} {4}" &lt; args.txt</b></pre>
+
+<p>or with the option <b>-a</b> or <b>--arg-file</b>:</p>
+
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK -N 4 -a args.txt "echo {1} {2} {3} {4}"</b></pre>
+
+<a name="ex5"></a><h3>Reading input from tab-separated file</h3>
+
+<p>If a command to be parallelized has multiple arguments, it is sometimes saner to save the set of arguments as a tab-separated list in a file.  For example,</p>
+
+<pre class="term">user@node:~$ <b>cat args.tsv</b>
+a       b
+c       d
+e       f
+g       h</pre>
+
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK -a args.tsv --colsep '\t' "echo {1}--{2}"</b>
+a--b
+c--d
+g--h
+e--f</pre>
+
+<p>Note that <b>-N</b> is not necessary, since <b>--colsep</b> automatically detects 2 arguments per line.</p>
+
+
+<a name="ex6"></a><h3>Saving output to unique files</h3>
+
+<p>The <b>{#}</b> replacement string within the parallelized commands can be used to enumerate each job.</p>
+
+<pre class="term">user@node:~$ <b>parallel -j $SLURM_CPUS_PER_TASK -N 4 -a args.txt "echo {1} {2} {3} {4} > {#}.out"</b>
+user@node:~$ <b>ls</b>
+1.out
+2.out
+args.txt
+user@node:~$ <b>cat 1.out</b>
+a b c d
+user@node:~$ <b>cat 2.out</b>
+e f g h</pre>
+
+<a name="ex7"></a><h3>Combine parallel and swarm</h3>
+
+<p><a href="https://hpc.nih.gov/apps/swarm.html">swarm</a> is a tool that allows easy submission of hundreds of similiar commands in a single slurm job.  In certain circumstances, those commands can be parallelized in each subjob.</p>
+
+<p>Imagine a set of 80 single-threaded commands that differ in one input parameter and output is independent:</p>
+
+<pre class="term">command -i x01.in -o 01.out
+command -i x02.in -o 02.out
+command -i x03.in -o 03.out
+command -i x04.in -o 04.out
+...
+command -i x80.in -o 80.out</pre>
+
+<p>We can parallelize these to run 10 simultaneously in a swarmfile:</p>
+
+<pre class="term">user@biowulf:~$ <b>cat swarmfile</b>
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 01 02 03 04 05 06 07 08 09 10
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 11 12 13 14 15 16 17 18 19 20
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 21 22 23 24 25 26 27 28 29 30
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 31 32 33 34 35 36 37 38 39 40
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 41 42 43 44 45 46 47 48 49 50
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 51 52 53 54 55 56 57 58 59 60
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 61 62 63 64 65 66 67 68 69 70
+parallel -j $SLURM_CPUS_PER_TASK "command -i x{}.in -o {}.out" ::: 71 72 73 74 75 76 77 78 79 80</pre>
+
+<p>Then submit using swarm, allocating 10 cpus per swarm subjob:</p>
+
+<pre class="term">user@biowulf:~$ <b>swarm -t 10 swarmfile</b></pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

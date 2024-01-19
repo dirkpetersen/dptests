@@ -1,0 +1,233 @@
+
+
+document.querySelector('title').textContent = 'MAGeCK: Model-based Analysis of Genome-wide CRISPR-Cas9 Knockout';
+**MAGeCK: Model-based Analysis of Genome-wide CRISPR-Cas9 Knockout**
+
+
+|  |
+| --- |
+| 
+Quick Links
+[Documentation](#doc)
+[Notes](#notes)
+[Interactive job](#int) 
+[Batch job](#sbatch) 
+[Swarm of jobs](#swarm) 
+ |
+
+
+
+MAGeCK (Model-based Analysis of Genome-wide CRISPR/Cas9 Knockout) is a method for prioritizing
+single-guide RNAs, genes and pathways in genome-scale CRISPR/Cas9 knockout screens. It demonstrates better performance compared with other methods, identifies both positively and negatively selected genes
+simultaneously, and reports robust results across different experimental conditions.
+
+
+
+### References:
+
+
+* Wei Li, Han Xu, Tengfei Xiao, Le Cong, Michael I Love, Feng Zhang, Rafael A Irizarry, Jun S Liu, Myles Brown and X Shirley Liu   
+
+ *MAGeCK enables robust identification of essential
+genes from genome-scale CRISPR/Cas9 knockout
+screens*  
+ Genome Biology, 2014, **15**, p.554.
+
+
+Documentation
+* [MAGeCK Bitbucket page](https://bitbucket.org/liulab/mageck/src/master/)
+* [MAGeCK SourceForge page](https://sourceforge.net/p/mageck/wiki/Home/)
+* [MAGeCK Github page](https://github.com/liulab-dfci/MAGeCK)
+
+
+Important Notes
+* Module Name: MAGeCK (see [the modules page](https://hpc.nih.gov/apps/modules.html) for more information)
+* Unusual environment variables set
+	+ **MAGECK\_HOME**  installation directory
+	+ **MAGECK\_BIN**       executable directory
+	+ **MAGECK\_DATA**  sample data directory
+
+
+
+Interactive job
+[Interactive jobs](/docs/userguide.html#int) should be used for debugging, graphics, or applications that cannot be run as batch jobs.
+Allocate an [interactive session](/docs/userguide.html#int) and run the program. Sample session:
+
+
+
+```
+
+[user@biowulf]$ **sinteractive** 
+[user@@cn0907 ~]$ **module load MAGeCK**
+[+] Loading gcc  7.3.0  ...
+[+] Loading GSL 2.4 for GCC 7.2.0 ...
+[-] Unloading gcc  7.3.0  ...
+[+] Loading gcc  7.3.0  ...
+[+] Loading openmpi 3.0.2  for GCC 7.3.0
+[+] Loading ImageMagick  7.0.8  on cn0907
+[+] Loading HDF5  1.10.4
+[+] Loading pandoc  2.9.1  on cn0907
+[+] Loading R 3.5.2
+[+] Loading TeX 2018
+[+] Loading mageck  0.5.9.2  on cn0907
+
+```
+
+Download FASTQ data: 
+
+```
+
+[user@@cn0907 ~]$  **wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376998/ERR376998.fastq.gz** 
+[user@@cn0907 ~]$  **wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376999/ERR376999.fastq.gz** 
+[user@@cn0907 ~]$  **gunzip gunzip ERR376998.fastq.gz ERR376999.fastq.gz** 
+
+```
+
+Prepare the library file:
+
+```
+
+[user@@cn0907 ~]$  **wget https://sourceforge.net/projects/mageck/files/libraries/yusa\_library.csv.zip** 
+[user@@cn0907 ~]$  **unzip yusa\_library.csv.zip** 
+
+```
+
+Run the MAGeCK count command: 
+
+```
+
+[user@@cn0907 ~]$ **mageck count -l yusa\_library.csv -n escneg --sample-label "plasmid,ESC1" --fastq ERR376998.fastq ERR376999.fastq** 
+INFO  @ Tue, 18 Feb 2020 11:37:55: Parameters: /usr/local/apps/mageck/0.5.9.2/bin/mageck count -l yusa
+_library.csv -n escneg --sample-label plasmid,ESC1 --fastq ERR376998.fastq ERR376999.fastq
+INFO  @ Tue, 18 Feb 2020 11:37:55: Welcome to MAGeCK v0.5.9.2. Command: count
+INFO  @ Tue, 18 Feb 2020 11:37:55: Header line of the library file detected; skip the first line ...
+INFO  @ Tue, 18 Feb 2020 11:37:56: Loading 87437 predefined sgRNAs.
+WARNING @ Tue, 18 Feb 2020 11:37:56: There are 0 sgRNAs with duplicated sequences.
+INFO  @ Tue, 18 Feb 2020 11:37:56: Parsing FASTQ file ERR376998.fastq...
+INFO  @ Tue, 18 Feb 2020 11:37:56: Determining the trim-5 length of FASTQ file ERR376998.fastq...
+INFO  @ Tue, 18 Feb 2020 11:37:56: Possible gRNA lengths:19
+INFO  @ Tue, 18 Feb 2020 11:37:56: Processing 0M reads ...
+INFO  @ Tue, 18 Feb 2020 11:37:58: Read length:50
+INFO  @ Tue, 18 Feb 2020 11:37:58: Total tested reads: 100001, mapped: 94560(0.945590544094559)
+INFO  @ Tue, 18 Feb 2020 11:37:58: --trim-5 test data: (trim_length reads fraction)
+INFO  @ Tue, 18 Feb 2020 11:37:58: 23   88855   0.9396679357021996
+INFO  @ Tue, 18 Feb 2020 11:37:58: 22   4047    0.04279822335025381
+INFO  @ Tue, 18 Feb 2020 11:37:58: 24   872     0.00922165820642978
+INFO  @ Tue, 18 Feb 2020 11:37:58: 21   648     0.006852791878172589
+INFO  @ Tue, 18 Feb 2020 11:37:58: 20   111     0.0011738578680203047
+INFO  @ Tue, 18 Feb 2020 11:37:58: 25   11      0.00011632825719120135
+INFO  @ Tue, 18 Feb 2020 11:37:58: 19   8       8.460236886632826e-05
+INFO  @ Tue, 18 Feb 2020 11:37:58: 26   4       4.230118443316413e-05
+INFO  @ Tue, 18 Feb 2020 11:37:58: 18   4       4.230118443316413e-05
+INFO  @ Tue, 18 Feb 2020 11:37:58: Auto determination of trim5 results: 23
+INFO  @ Tue, 18 Feb 2020 11:37:58: Possible gRNA lengths:19
+INFO  @ Tue, 18 Feb 2020 11:37:58: Processing 0M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:01: Processing 1M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:04: Processing 2M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:07: Processing 3M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:10: Processing 4M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:14: Processing 5M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:17: Processing 6M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:20: Processing 7M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:23: Processing 8M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:27: Processing 9M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:30: Processing 10M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:30: Total: 10093905.
+INFO  @ Tue, 18 Feb 2020 11:38:30: Mapped: 8615587.
+INFO  @ Tue, 18 Feb 2020 11:38:30: Parsing FASTQ file ERR376999.fastq...
+INFO  @ Tue, 18 Feb 2020 11:38:30: Determining the trim-5 length of FASTQ file ERR376999.fastq...
+INFO  @ Tue, 18 Feb 2020 11:38:30: Possible gRNA lengths:19
+INFO  @ Tue, 18 Feb 2020 11:38:30: Processing 0M reads ...
+INFO  @ Tue, 18 Feb 2020 11:38:32: Read length:50
+INFO  @ Tue, 18 Feb 2020 11:38:32: Total tested reads: 100001, mapped: 93656(0.936550634493655)
+INFO  @ Tue, 18 Feb 2020 11:38:32: --trim-5 test data: (trim_length reads fraction)
+INFO  @ Tue, 18 Feb 2020 11:38:32: 23   87989   0.9394913299735201
+INFO  @ Tue, 18 Feb 2020 11:38:32: 22   4008    0.042794909028786195
+INFO  @ Tue, 18 Feb 2020 11:38:32: 24   858     0.009161185615443752
+INFO  @ Tue, 18 Feb 2020 11:38:32: 21   652     0.006961646877936278
+INFO  @ Tue, 18 Feb 2020 11:38:32: 20   118     0.0012599299564363202
+INFO  @ Tue, 18 Feb 2020 11:38:32: 25   16      0.00017083796019475527
+INFO  @ Tue, 18 Feb 2020 11:38:32: 19   6       6.406423507303323e-05
+INFO  @ Tue, 18 Feb 2020 11:38:32: 18   4       4.270949004868882e-05
+INFO  @ Tue, 18 Feb 2020 11:38:32: 26   3       3.203211753651661e-05
+INFO  @ Tue, 18 Feb 2020 11:38:32: 28   2       2.135474502434441e-05
+INFO  @ Tue, 18 Feb 2020 11:38:32: Auto determination of trim5 results: 23
+INFO  @ Tue, 18 Feb 2020 11:38:32: Possible gRNA lengths:19
+INFO  @ Tue, 18 Feb 2020 11:38:32: Processing 0M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:36: Processing 1M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:39: Processing 2M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:42: Processing 3M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:45: Processing 4M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:48: Processing 5M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:51: Processing 6M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:55: Processing 7M reads ..
+INFO  @ Tue, 18 Feb 2020 11:38:58: Processing 8M reads ..
+INFO  @ Tue, 18 Feb 2020 11:39:01: Processing 9M reads ..
+INFO  @ Tue, 18 Feb 2020 11:39:04: Processing 10M reads ..
+INFO  @ Tue, 18 Feb 2020 11:39:05: Total: 10300758.
+INFO  @ Tue, 18 Feb 2020 11:39:05: Mapped: 8475790.
+INFO  @ Tue, 18 Feb 2020 11:39:07: Final size factor: 0.9462876015811941 1.0920750084215944
+INFO  @ Tue, 18 Feb 2020 11:39:07: Summary of file ERR376998.fastq:
+INFO  @ Tue, 18 Feb 2020 11:39:07: label        plasmid
+INFO  @ Tue, 18 Feb 2020 11:39:07: reads        10093905
+INFO  @ Tue, 18 Feb 2020 11:39:07: mappedreads  8615587
+INFO  @ Tue, 18 Feb 2020 11:39:07: totalsgrnas  87437
+INFO  @ Tue, 18 Feb 2020 11:39:07: zerosgrnas   210
+INFO  @ Tue, 18 Feb 2020 11:39:07: giniindex    0.1169783786098284
+INFO  @ Tue, 18 Feb 2020 11:39:07: Summary of file ERR376999.fastq:
+INFO  @ Tue, 18 Feb 2020 11:39:07: label        ESC1
+INFO  @ Tue, 18 Feb 2020 11:39:07: reads        10300758
+INFO  @ Tue, 18 Feb 2020 11:39:07: mappedreads  8475790
+INFO  @ Tue, 18 Feb 2020 11:39:07: totalsgrnas  87437
+INFO  @ Tue, 18 Feb 2020 11:39:07: zerosgrnas   4590
+INFO  @ Tue, 18 Feb 2020 11:39:07: giniindex    0.2014245727290216
+INFO  @ Tue, 18 Feb 2020 11:39:07: Loading Rnw template file: /usr/local/apps/mageck/0.5.9.2/lib/pytho
+n3.6/site-packages/mageck/fastq_template.Rnw.
+
+```
+
+
+```
+
+[user@cn3144 ~]$ **exit**
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+
+```
+
+
+Batch job
+Most jobs should be run as [batch jobs](/docs/userguide.html#submit).
+Create a batch input file (e.g. mageck.sh). For example:
+
+
+
+```
+
+mageck test -k sample.txt -t HL60.final,KBM7.final -c HL60.initial,KBM7.initial  -n demo
+mageck run --fastq test1.fastq test2.fastq -l library.txt -n demo --sample-label L1,CTRL -t L1 -c 
+CTRL
+mageck count -l library.txt -n demo --sample-label L1,CTRL  --fastq test1.fastq test2.fastq --pdf-re
+port
+mageck test -k demo.count.txt -t L1 -c CTRL -n demo --pdf-report
+mageck mle -k leukemia.new.csv -d designmat.txt -n beta_leukemia --cnv-norm cnv_data.txt --permutati
+on-round 2
+mageck test -k sample.txt -t HL60.final,KBM7.final -c HL60.initial,KBM7.initial -n demo4 --cnv-norm 
+cnv_data.txt --cell-line HL60_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE 
+
+```
+
+Submit this job using the Slurm [sbatch](/docs/userguide.html) command.
+
+
+
+```
+sbatch [--cpus-per-task=#] [--mem=#] mageck.sh
+```
+
+
+
+
+
+
+

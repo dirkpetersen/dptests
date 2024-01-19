@@ -1,0 +1,87 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ModelAngelo on Biowulf';</script>
+<div class="title">ModelAngelo on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+ModelAngelo is an automatic atomic model building program for cryo-EM maps.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Jamali K., Kimanius D., Scheres SHW.
+    <a href="https://openreview.net/forum?id=65XDF_nwI61"><b><u>A Graph Neural Network Approach to Automated Model Building in Cryo-EM Maps.</u></b></a>
+    <em>International Conference on Learning Representations (2023).</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/3dem/model-angelo">ModelAngelo Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>model-angelo</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Multithreaded
+  <li>GPU dependent
+</ul>
+
+<p>Some features of ModelAngelo require the <tt>hhblits</tt> command of <a href="https://hpc.nih.gov/apps/hhsuite.html">hhsuite</a>.
+
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:a100:1 --mem=20g -c 8</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load model-angelo</b>
+
+[user@cn3144 ~]$ <b>model_angelo build -v map.mrc -f sequence.fasta -o output</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. model-angelo.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load model-angelo
+model_angelo build_no_seq -v map.mrc -o output
+hhblits -i output/hmm_profiles/A.hhm -d PATH_TO_DB -o A.hhr -oa3m A.a3m -M first
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --gres=gpu:a100:1 --partition=gpu --mem=20g -c 8 model-angelo.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

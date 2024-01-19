@@ -1,0 +1,51 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Acemd v3 benchmarks';</script>
+<div class="title">
+Acemd v3 benchmarks</div>
+<P>
+<b>June 2020</b>
+<P>
+Benchmarks of Acemd v3 test suite on Biowulf GPU nodes. The test suite is provided with the Acemd package, and is available on Biowulf in <tt>/usr/local/apps/acemd/acemd3_examples/</tt>.
+
+<P>
+Hardware:<br>
+<ul>
+<li><b>k80</b>: Intel(R)_Xeon(R) CPU E5-2680 v4 @2.40GHz, Tesla K80 
+<li><b>p100</b>: Intel(R)_Xeon(R) CPU E5-2680 v4 @2.40GHz, Tesla P100-PCIE-16GB 
+<li><b>v100</b>: Intel(R)_Xeon(R) CPU E5-2680 v4 @2.40GHz, Tesla V100-PCIE-16GB 
+<li><b>v100x</b>: Intel(R) Xeon(R) Gold 6140 CPU @2.30GHz, Tesla V100-SXM2-32GB
+</ul>
+Details about the simulation conditions are at <a href="https://software.acellera.com/docs/latest/acemd3/performance.html">the Acellera website</a>. 
+<P>
+The runs were performed with varying numbers of CPUs. In most cases, 2 CPUs per GPU gave the best performance for a given number of GPUs, therefore all results presented below were done with 2 CPUs per GPU.
+<P>
+Based on these benchmarks, there is a significant performance advantage to the v100 and v100x over the p100 and k80 GPUs. However, in most cases there is no advantage to using more than 1 GPU of any type. Before allocating multiple GPUs for your own Acemd jobs, please <A href="/policies/multinode.html#benchmark">run your own benchmarks</a> to verify that the additional GPUs are providing a performance improvement for your jobs. (and please send any interesting results to staff@hpc.nih.gov).
+<P>
+
+<div class="heading">DHFR (Dihydrofolate reductase)</div>
+<P>
+Number of atoms: 23,558. Box size: 62.23 Å ✕ 62.23 Å ✕ 62.23 Å
+<P>
+<img src="v3.June2020/dhfr_amber.png">
+<img src="v3.June2020/dhfr_charmm.png">
+<P>
+
+<div class="heading">FactorIX (Factor IX)</div>
+<P>
+Number of atoms: 90,906. Box size: 142.09 Å ✕ 83.34 Å ✕ 78.68 Å
+<P>
+<img src="v3.June2020/factorIX_amber.png">
+<img src="v3.June2020/factorIX_charmm.png">
+<P>
+
+<div class="heading">STMV (Satellite tobacco mosaic virus)</div>
+<P>
+Number of atoms: 1,067,095. Box size: 221.2 Å ✕ 223.2 Å ✕ 224.5 Å
+<P>
+<img src="v3.June2020/stmv_amber.png">
+<img src="v3.June2020/stmv_charmm.png">
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

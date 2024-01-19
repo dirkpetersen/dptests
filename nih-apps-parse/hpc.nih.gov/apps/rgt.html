@@ -1,0 +1,141 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RGT on HPC';</script>
+    <div class="title">RGT on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>
+
+    <p> HINT (Hmm-based IdeNtification of Transcription factor footprints) integrates 
+      both DNase I hypersensitivity and histone modifications for the detection 
+      of open chromatin regions and active binding sites. Within transcription 
+      factor binding sites, there is a specific grammar of DNase I digestion and 
+      histone marks. The authors have therefore devised a multivariate HMM to 
+      model this regulatory grammar by simultaneous analysis of DNase-seq and 
+      the ChIP-seq profiles of histone modifications on a genome-wide level. The 
+      HMM has as input a normalized and a slope signal of DNase-seq and one of 
+      the histone marks. It can therefore detect the increase, top and decrease 
+      regions of either histone modification and DNase signals. The genomic regions 
+      annotated with the HMM state are considered predictions and represent likely 
+      binding sites within that cell context. For benchmarking data of main publication 
+      please visit authors lab's <a title="HINT on CostaLab" href="http://costalab.org/publications-2/hint-bc/" target="_blank">website</a>. 
+    </p>
+
+<h3>References:</h3>
+    <ul>
+      <li><a href="http://www.nature.com/nmeth/journal/vaop/ncurrent/full/nmeth.3772.html">http://www.nature.com/nmeth/journal/vaop/ncurrent/full/nmeth.3772.html</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+    <ul>
+      <li><a href="http://www.regulatory-genomics.org/rgt/rgt-data-folder/">http://www.regulatory-genomics.org/rgt/rgt-data-folder/</a></li>
+    </ul>
+
+<a href="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>rgt</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Example files in <tt>/usr/local/apps/rgt/DendriticCells.tar.gz</tt> and <tt>/usr/local/apps/rgt/HINT_DNaseTest.tar.gz</tt></li> 
+      <li>RGT data files in <tt>/fdb/rgt/rgtdata</tt>. The variable RGTDATA is set automatically when the rgt module is loaded </li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load rgt
+</strong>[user@cn3144 ~]$ <strong>rgt-hint footprinting --dnase-seq DNase.bam DNasePeaks.bed</strong>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>    
+    <pre class="term">
+#!/bin/bash
+#SBATCH --job-name="script"
+#SBATCH --mail-type=BEGIN,END
+
+cp -p /usr/local/apps/rgt/DendriticCells.tar.gz /data/$USER/rgt
+tar xvfz /data/$USER/rgt/DendriticCells
+cd /data/$USER/rgt/DendriticCells 
+
+module load rgt/0.13.2
+
+rgt-hint footprinting --atac-seq --paired-end --organism=mm10 --output-location=./ --output-prefix=pDC pDC.bam pDC_peaks.narrowPeak
+
+rgt-hint footprinting --atac-seq --paired-end --organism=mm10 --output-location=./ --output-prefix=cDC1 cDC1.bam cDC1_peaks.narrowPeak 
+
+rgt-hint tracks --bc --bigWig --organism=mm10 cDC1.bam cDC1_peaks.narrowPeak  --output-prefix=cDC1_BC
+rgt-hint tracks --bc --bigWig --organism=mm10 pDC.bam pDC_peaks.narrowPeak  --output-prefix=pDC_BC
+
+rgt-motifanalysis matching --organism=mm10 --input-files pDC.bed cDC1.bed
+rgt-hint differential --organism=mm10 --bc --nc $SLURM_CPUS_PER_TASK --mpbs-files=./match/cDC1_mpbs.bed,./match/pDC_mpbs.bed --reads-files=cDC1.bam,pDC.bam --conditions=cDC1,pDC --output-location=cDC1_pDC
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command. The $SLURM_CPUS_PER_TASK in the script will be replaced with the actual number of cpus automatically.</p>
+
+    <pre class="term">sbatch --cpus-per-task=16 --mem=25g --time=10:00:00 script</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; rgt-hint footprinting --dnase-seq DNase.bam DNasePeaks.bed
+cd dir2; rgt-hint footprinting --dnase-seq DNase.bam DNasePeaks.bed
+cd dir3; rgt-hint footprinting --dnase-seq DNase.bam DNasePeaks.bed
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] [-t #] --module rgt</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process 
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr>
+        <td width=18%><tt>-t <i>#</i> </tt></td>
+        <td width="82%">Number of cpus required for each process
+          (1 line in the swarm command file) </td>
+      </tr>
+
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

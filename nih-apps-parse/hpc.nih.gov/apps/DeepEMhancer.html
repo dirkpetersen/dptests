@@ -1,0 +1,246 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DeepEMhancer on Biowulf';</script>
+<div class="title">DeepEMhancer on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The DeepEMhancer is a python package designed to perform post-processing of cryo-EM map. 
+</p>
+<p>
+<ul>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+R Sanchez-Garcia, J Gomez-Blanco, A Cuervo, JM Carazo, COS Sorzano, J Vargas <em>DeepEMhancer: a deep learning solution for cryo-EM volume post-processing</em>bioRxiv 2020.06.12.148296; doi: https://doi.org/10.1101/2020.06.12.148296|&nbsp;
+    <a href="https://www.biorxiv.org/content/10.1101/2020.06.12.148296v3">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>DeepEMhancer Github:<a href="https://github.com/rsanchezgarc/deepEMhancer">Github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>DeepEMhancer</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Current DeepEMhancer command lines could be run as:
+	<pre class="term">
+	deepemhancer -h
+	</pre>
+	<li>Please make a copy of the deep learning models for the first run (this step only needs to be done once) to your destination.
+By default, DeepEMhancer will search ~/.local/share/deepEMhancerModels/production_checkpoints for models but you can change the location of model by 
+passing --deepLearningModelPath in the runtime.
+	<pre class="term">
+	cp -r /usr/local/apps/DeepEMhancer/0.13/deepEMhancerModels/ /data/$USER/
+	</pre>
+
+<P>
+<dl>
+  <li>  <dt>2022-08-4: the program was updated to use <code>tensorflow/2</code> instead of <code>tensorflow/1</code>. Please contact staff@hpc.nih.gov if you need to use the older version. Please copy the deep learning models for <code>tf2</code> to avoid errors.
+      <pre class="term">
+       cp -r /usr/local/apps/DeepEMhancer/0.13/deepEMhancerModels/ /data/$USER/
+        </pre>
+      <li>DeepEMhancer should not be run on k80 GPUs.
+      </dd>
+<P>
+</ul>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1 --mem=8g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load DeepEMhancer</b>
+[user@cn3144 ~]$ <b>mkdir /data/$USER/DeepEMhancer_test/</b>
+[user@cn3144 ~]$ <b>cd /data/$USER/DeepEMhancer_test/</b>
+[user@cn3144 ~]$ <b>deepemhancer -h</b>
+usage: deepemhancer -i INPUTMAP -o OUTPUTMAP
+                    [-p {wideTarget,tightTarget,highRes}] [-i2 HALFMAP2]
+                    [-s SAMPLINGRATE] [--noiseStats NOISE_MEAN NOISE_STD]
+                    [-m BINARYMASK]
+                    [--deepLearningModelPath PATH_TO_MODELS_DIR]
+                    [--cleaningStrengh CLEANINGSTRENGH] [-g GPUIDS]
+                    [-b BATCH_SIZE] [-h] [--download [DOWNLOAD_DEST]]
+
+DeepEMHancer. Deep post-processing of cryo-EM maps. https://github.com/rsanchezgarc/deepEMhancer
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --download [DOWNLOAD_DEST]
+                        download default DeepEMhancer models. They will be
+                        saved at /home/$USER/.local/share/deepEMhancerModels/pr
+                        oduction_checkpoints if no path provided
+
+Main options:
+  -i INPUTMAP, --inputMap INPUTMAP
+                        Input map to process or half map number 1. This map
+                        should be unmasked and not sharpened (Do not use post-
+                        processed maps, only maps directly obtained from
+                        refinement). If half map 1 used, do not forget to also
+                        provide the half map 2 using -i2
+  -o OUTPUTMAP, --outputMap OUTPUTMAP
+                        Output fname where post-processed map will be saved
+  -p {wideTarget,tightTarget,highRes}, --processingType {wideTarget,tightTarget,highRes}
+                        Select the deep learning model you want to use.
+                        WideTarget will produce less sharp results than
+                        tightTarget. HighRes is only recommended for overal
+                        FSC resolution &lt; 4 A This option is igonred if
+                        normalization mode 2 is selected
+  -i2 HALFMAP2, --halfMap2 HALFMAP2
+                        (Optional) Input half map 2 to process
+  -s SAMPLINGRATE, --samplingRate SAMPLINGRATE
+                        (Optional) Sampling rate (A/voxel) of the input map.
+                        If not provided, the sampling rate will be read from
+                        mrc file header
+
+Normalization options (auto normalization is applied if no option selected):
+  --noiseStats NOISE_MEAN NOISE_STD
+                        (Optional) Normalization mode 1: The statisitcs of the
+                        noise to normalize (mean and standard deviation) the
+                        input. Preferred over binaryMask but ignored if
+                        binaryMask provided. If not --noiseStats nor
+                        --binaryMask provided, nomralization params will be
+                        automatically estimated, although, in some rare cases,
+                        estimation may fail or be less accurate
+  -m BINARYMASK, --binaryMask BINARYMASK
+                        (Optional) Normalization mode 2: A binaryMask (1
+                        protein, 0 no protein) used to normalize the input. If
+                        no normalization mode provided, automatic
+                        normalization will be carried out. Supresses
+                        --precomputedModel option
+
+Alternative options:
+  --deepLearningModelPath PATH_TO_MODELS_DIR
+                        (Optional) Directory where a non default deep learning
+                        model is located (model is selected using
+                        --precomputedModel) or a path to hd5 file containing
+                        the model
+  --cleaningStrengh CLEANINGSTRENGH
+                        (Optional) Post-processing step to remove small
+                        connected components (hide dust). Max relative size of
+                        connected components to remove 0&lt;s&lt;1 or -1 to
+                        deactivate. Default: -1
+
+Computing devices options:
+  -g GPUIDS, --gpuIds GPUIDS
+                        The gpu(s) where the program will be executed. If more
+                        that 1, comma seppared. E.g -g 1,2,3. Set to -1 to use
+                        only cpu (very slow). Default: 0
+  -b BATCH_SIZE, --batch_size BATCH_SIZE
+                        Number of cubes to process simultaneously. Lower it if
+                        CUDA Out Of Memory error happens and increase it if
+                        low GPU performance observed. Default: 8
+
+examples:
+
+  + Download deep learning models
+deepemhancer --download
+
+  + Post-process input map path/to/inputVol.mrc and save it at path/to/outputVol.mrc using default  deep model tightTarget
+deepemhancer  -i path/to/inputVol.mrc -o  path/to/outputVol.mrc
+
+  + Post-process input map path/to/inputVol.mrc and save it at path/to/outputVol.mrc using high resolution deep model
+deepemhancer -p highRes -i path/to/inputVol.mrc -o  path/to/outputVol.mrc
+
+  + Post-process input map path/to/inputVol.mrc and save it at path/to/outputVol.mrc using a deep learning model located in path/to/deep/learningModel
+deepemhancer -c path/to/deep/learningModel -i path/to/inputVol.mrc -o  path/to/outputVol.mrc
+
+  + Post-process input map path/to/inputVol.mrc and save it at path/to/outputVol.mrc using high resolution  deep model and providing normalization information (mean
+    and standard deviation of the noise)
+deepemhancer -p highRes -i path/to/inputVol.mrc -o  path/to/outputVol.mrc --noiseStats 0.12 0.03
+
+[user@cn3144 ~]$ <b>deepemhancer --deepLearningModelPath /data/$USER/deepEMhancerModels/production_checkpoints -i input.mrc -o output.mrc </b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+    
+<P>
+<a Name="benchmarking"></a><div class="heading"> benchmarking</div>
+<p>To estimate the runtimes of DeepEMhancer on CentOS7, we run DeepEMhancer on 4 types of GPUs which 4G memory, 2 CPUs and 1 GPU (3 replicates). K80 GPU took about 3 times longer as other GPUs. p100 GPU is about as good as other modern GPUs.  </p>
+
+<p> <img src="/images/DeepEMhancer_benchmark_gpu.png" width="600"; alt="DeepEMhancer"/></p>
+
+<P>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. DeepEMhancer.sh). For example:</p>
+<script src='/js/highlight.pack.js' type="text/javascript"></script>
+<link href='/css/highlightjs/foundation.css' rel="stylesheet" type="text/css" />
+<script>hljs.highlightAll();</script>
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+set -e
+module load DeepEMhancer
+# -g will assign GPUIDs, always start with 0 for batch job
+deepemhancer --deepLearningModelPath /data/$USER/deepEMhancerModels/production_checkpoints -i input_half1.mrc -i2 input_half2.mrc -o output.mrc -g 0
+</code>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --partition=gpu --gres=gpu:p100:1 --mem=8g DeepEMhancer.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. DeepEMhancer.swarm). For example:</p>
+
+<pre class="term">
+
+cd dir1;deepemhancer --deepLearningModelPath /data/$USER/deepEMhancerModels/production_checkpoints -i input1.mrc -o output1.mrc 
+cd dir1;deepemhancer --deepLearningModelPath /data/$USER/deepEMhancerModels/production_checkpoints -i input2.mrc -o output2.mrc
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f DeepEMhancer.swarm [-t #] [-g #] --partition=gpu --gres=gpu:p100:1 --module DeepEMhancer</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module DeepEMhancer</tt> <td>Loads the DeepEMhancer module for each subjob in the swarm
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

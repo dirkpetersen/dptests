@@ -1,0 +1,118 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PSIPRED on Biowulf';</script>
+<div class="title">PSIPRED on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+  PSIPRED generates secondary structure predictions using up to four feed-forward neural networks and output from PSI-BLAST.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Jones DT.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/10493868"><b><u>Protein secondary structure prediction based on position-specific scoring matrices.</u></b></a>
+    <em>J. Mol. Biol. (1999) 292: 195-202.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="PSIPRED_README.txt">README</a></li>
+  <li><a href="http://bioinf.cs.ucl.ac.uk/psipred/">PSIPRED server</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>PSIPRED</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>PSIPRED_HOME</tt></li>
+    <li><tt>PSIPRED_EXAMPLES</tt></li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load PSIPRED</b>
+[user@cn3144 ~]$ <b>cp $PSIPRED_EXAMPLES/example.fasta .</b>
+[user@cn3144 ~]$ <b>runpsipredplus example.fasta</b>
+Running PSI-BLAST with sequence example.fasta ...
+Predicting secondary structure...
+Pass1 ...
+Pass2 ...
+Cleaning up ...
+Final output files: example.ss2 example.horiz
+Finished.
+[user@cn3144 ~]$ <b>ls</b>
+example.fasta  example.horiz  example.ss  example.ss2
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. PSIPRED.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load PSIPRED
+runpsipredplus my.fasta
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] PSIPRED.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. PSIPRED.swarm). For example:</p>
+
+<pre class="term">
+runpsipredplus file1.fasta &gt; run1.out
+runpsipredplus file2.fasta &gt; run2.out
+runpsipredplus file3.fasta &gt; run3.out
+runpsipredplus file4.fasta &gt; run4.out
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f PSIPRED.swarm [-g #] [-t #] --module PSIPRED</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module PSIPRED</tt> <td>Loads the PSIPRED module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

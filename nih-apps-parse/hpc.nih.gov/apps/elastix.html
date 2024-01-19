@@ -1,0 +1,279 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'elastix on Biowulf ';</script>
+<div class="title">elastix on Biowulf </div>
+<p></p>
+<table width=25% align=right> <tr><td>
+    <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><a href="#int">Interactive job on Biowulf</a></div>
+        <div class="tocItem"><a href="#serial">Batch job on Biowulf</a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+    </div>
+</table>
+
+<!-- ======================================================================= -->
+<div class="heading">Description</div>
+
+<p>
+elastix is a tool for (medical) image registration. It's based on the Insight
+Segmentation and Registration Toolkit (ITK).
+</p>
+
+<p>There may be multiple versions of elastix available. An easy way of selecting the
+version is to use <a href="/apps/modules.html">modules</a>.  To see the modules
+available, type</p>
+<pre class="term">
+module avail elastix 
+</pre>
+
+<p>To select a module use</p>
+<pre class="term">
+module load elastix/[version]
+</pre>
+<p>where <code>[version]</code> is the version of choice.</p>
+
+
+<h3>Environment variables set</h3>
+<ul>
+<li> <code>$PATH</code></li>
+</ul>
+
+<h3>References</h3>
+<ul>
+    <li>S. Klein, M. Staring, K. Murphy, M.A. Viergever, J.P.W. Pluim. 
+    <em>elastix: a toolbox for intensity based medical image registration</em>. 
+    IEEE Transactions on Medical Imaging 2010, 29:196-205.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/19923044">Pubmed</a>&nbsp;|&nbsp;
+    PMC &nbsp;|&nbsp;
+    <a href="http://ieeexplore.ieee.org/document/5338015/">Journal</a>
+    </li>
+</ul>
+
+<h3>Documentation</h3>
+<ul>
+    <li><a href="http://elastix.isi.uu.nl/index.php">Home page</a> </li>
+    <li><a href="https://github.com/SuperElastix/elastix">Github page</a> </li>
+</ul>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="int"></a>
+<div class="heading">Interactive job on Biowulf</div>
+
+<p>Allocate an interactive session with <a href="/docs/userguide.html#int">sinteractive</a>
+and use as shown below</p>
+<pre class="term">
+biowulf$ <b>sinteractive </b>
+node$ <b>module load elastix</b>
+[+] Loading elastix 4.9
+node$ <b>elastix --help</b>
+elastix version: 4.900
+
+elastix registers a moving image to a fixed image.
+The registration-process is specified in the parameter file.
+  --help, -h displays this message and exit
+  --version  output version information and exit
+
+Call elastix from the command line with mandatory arguments:
+  -f        fixed image
+  -m        moving image
+  -out      output directory
+  -p        parameter file, elastix handles 1 or more "-p"
+
+Optional extra commands:
+  -fMask    mask for fixed image
+  -mMask    mask for moving image
+  -t0       parameter file for initial transform
+  -priority set the process priority to high, abovenormal, normal (default),
+            belownormal, or idle (Windows only option)
+  -threads  set the maximum number of threads of elastix
+
+The parameter-file must contain all the information necessary for elastix to run properly. That includes which metric to use, which optimizer, which transform, etc. It must also contain information specific for the metric, optimizer, transform, etc. For a usable parameter-file, see the website.
+
+Need further help?
+Check the website http://elastix.isi.uu.nl, or mail elastix@bigr.nl.
+node$ <b>mkdir res</b>
+node$ <b>cp $ELASTIX_TEST/* .</b>
+node$ <b>elastix -f tile_A.tif -m tile_B.tif -out res -p parameters.2D.txt </b>
+...
+Running elastix with parameter file 0: "parameters.2D.txt".
+
+Current time: Tue May 15 09:10:28 2018.
+Reading the elastix parameters from file ...
+...
+Resolution: 0
+...
+Elastix initialization of all components (for this resolution) took: 9 ms.
+Initialization of TransformBendingEnergy metric took: 0 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+WARNING: The parameter "ASGDParameterEstimationMethod", requested at entry number 0, does not exist at all.
+  The default value "Original" is used instead.
+  Computing JacobianTerms ...
+  Computing the Jacobian terms took 0.083924s
+  NumberOfGradientMeasurements to estimate sigma_i: 2
+  Sampling gradients ...
+  Sampling the gradients took 0.258976s
+Automatic parameter estimation took 0.35s
+1:ItNr  2:Metric        3a:Time 3b:StepSize     4:||Gradient||  Time[ms]
+0       0.000000        0.000000        0.000000        0.000000        373.1
+1       0.000000        0.000000        0.000000        0.000000        5.5
+2       0.000000        0.000000        0.000000        0.000000        5.6
+3       0.000000        0.000000        0.000000        0.000000        5.6
+4       0.000000        0.000000        0.000000        0.000000        5.5
+...
+96      0.000000        0.000000        0.000000        0.000000        5.4
+97      0.000000        0.000000        0.000000        0.000000        5.4
+98      0.000000        0.000000        0.000000        0.000000        5.3
+99      0.000000        0.000000        0.000000        0.000000        5.5
+Time spent in resolution 0 (ITK initialization and iterating): 0.917 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 0:
+( SP_a 0.000000 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.990000 )
+( SigmoidScale 0.000000 )
+
+
+Resolution: 1
+...
+Elastix initialization of all components (for this resolution) took: 20 ms.
+Initialization of TransformBendingEnergy metric took: 0 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+WARNING: The parameter "ASGDParameterEstimationMethod", requested at entry number 0, does not exist at all.
+  The default value "Original" is used instead.
+  Computing JacobianTerms ...
+  Computing the Jacobian terms took 0.629961s
+  NumberOfGradientMeasurements to estimate sigma_i: 2
+  Sampling gradients ...
+  Sampling the gradients took 0.246773s
+Automatic parameter estimation took 0.89s
+1:ItNr  2:Metric        3a:Time 3b:StepSize     4:||Gradient||  Time[ms]
+0       0.000000        0.000000        50198347.615187 0.000000        908.2
+1       0.000000        0.000000        50198347.615187 0.000000        7.1
+2       0.000000        0.000000        50198347.615187 0.000000        7.1
+3       0.000000        0.000000        50198347.615187 0.000000        7.0
+...
+95      0.000000        0.000000        50198347.615187 0.000000        6.9
+96      0.000000        0.000000        50198347.615187 0.000000        7.0
+97      0.000000        0.000000        50198347.615187 0.000000        6.9
+98      0.000000        0.000000        50198347.615187 0.000000        7.0
+99      0.000000        0.000000        50198347.615187 0.000000        7.0
+Time spent in resolution 1 (ITK initialization and iterating): 1.606 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 1:
+( SP_a 1054165299.918932 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.722400 )
+( SigmoidScale 0.000000 )
+
+
+Resolution: 2
+...
+Elastix initialization of all components (for this resolution) took: 54 ms.
+Initialization of TransformBendingEnergy metric took: 5 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+WARNING: The parameter "ASGDParameterEstimationMethod", requested at entry number 0, does not exist at all.
+  The default value "Original" is used instead.
+  Computing JacobianTerms ...
+  Computing the Jacobian terms took 9.428071s
+  NumberOfGradientMeasurements to estimate sigma_i: 2
+  Sampling gradients ...
+  Sampling the gradients took 0.347363s
+Automatic parameter estimation took 9.79s
+1:ItNr  2:Metric        3a:Time 3b:StepSize     4:||Gradient||  Time[ms]
+0       0.000000        0.000000        4335379.536497  0.000000        9830.5
+1       0.000000        0.000000        4335379.536497  0.000000        21.0
+2       0.000000        0.000000        4335379.536497  0.000000        21.0
+3       0.000000        0.000000        4335379.536497  0.000000        20.8
+...
+96      0.000000        0.000000        4335379.536497  0.000000        20.9
+97      0.000000        0.000000        4335379.536497  0.000000        20.8
+98      0.000000        0.000000        4335379.536497  0.000000        21.0
+99      0.000000        0.000000        4335379.536497  0.000000        21.0
+Time spent in resolution 2 (ITK initialization and iterating): 11.913 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 2:
+( SP_a 91042970.266438 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.902823 )
+( SigmoidScale 0.000000 )
+
+
+
+Creating the TransformParameterFile took 0.15s
+Registration result checksum: 2802733262
+
+Skipping applying final transform, no resulting output image generated.
+
+Final metric value  = 0.000000
+Settings of AdaptiveStochasticGradientDescent for all resolutions:
+( SP_a 0.000000 1054165299.918932 91042970.266438 )
+( SP_A 20.000000 20.000000 20.000000 )
+( SP_alpha 1.000000 1.000000 1.000000 )
+( SigmoidMax 1.000000 1.000000 1.000000 )
+( SigmoidMin -0.990000 -0.722400 -0.902823 )
+( SigmoidScale 0.000000 0.000000 0.000000 )
+
+Time spent on saving the results, applying the final transform etc.: 161 ms.
+Running elastix with parameter file 0: "parameters.2D.txt", has finished.
+
+
+Current time: Tue May 15 09:10:44 2018.
+Time used for running elastix with this parameter file:
+  15.8s.
+
+-------------------------------------------------------------------------
+
+Total time elapsed: 15.9s.
+
+node$ <b>exit</b>
+biowulf$
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="serial"></a>
+<div class="heading">Batch job on Biowulf</div>
+
+<p>Create a batch script similar to the following example:</p>
+<pre class="term">
+#! /bin/bash
+# this file is elastix.sh
+
+module load elastix || exit 1
+elastix -f fixedImage.ext \
+        -m movingImage.ext \
+        -out outputDirectory \
+        -p parameterFile.txt
+</pre>
+
+<p>Submit to the queue with <a href="/docs/userguide.html">sbatch</a>:</p>
+<pre class="term">
+biowulf$ <b>sbatch elastix.batch</b>
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="swarm"></a>
+<div class="heading">Swarm of jobs on Biowulf</div>
+
+<p>Create a swarm command file similar to the following example:</p>
+<pre class="term">
+# this file is elastix.swarm
+elastix -f fixedImage.ext -m movingImage.ext -out outputDirectory1 -p parameterFile1.txt
+elastix -f fixedImage.ext -m movingImage.ext -out outputDirectory2 -p parameterFile2.txt
+elastix -f fixedImage.ext -m movingImage.ext -out outputDirectory3 -p parameterFile3.txt
+</pre>
+
+<p>And submit to the queue with <a href="/apps/swarm.html">swarm</a></p>
+<pre class="term">
+biowulf$ <b>swarm -f elastix.swarm</b>
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

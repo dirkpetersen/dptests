@@ -1,0 +1,104 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'msisensor-pro on Biowulf';</script>
+<div class="title">msisensor-pro on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>MSIsensor-pro is an updated version of msisensor. MSIsensor-pro evaluates Microsatellite Instability (MSI) for cancer patients with next generation sequencing data. It accepts the whole genome sequencing, whole exome sequencing and target region (panel) sequencing data as input. MSIsensor-pro introduces a multinomial distribution model to quantify polymerase slippages for each tumor sample and a discriminative sites selection method to enable MSI detection without matched normal samples. For samples of various sequencing depths and tumor purities, MSIsensor-pro significantly outperformed the current leading methods in terms of both accuracy and computational cost. If you want to know more detail about MSIsensor-pro, please see the <a href="https://github.com/xjtu-omics/msisensor-pro/wiki/MSIsensor-pro-Schematics-and-Internals">MSIsensor-pro Schematics and Internals MSIsensor-pro</a> page.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Peng Jia, Xiaofei Yang, Li Guo, Bowen Liu, Jiadong Lin, Hao Liang, et al.
+<em>MSIsensor-pro: fast, accurate, and matched-normal-sample-free detection of microsatellite instability.</em>Genomics Proteomics Bioinformatics 2020,18(1).
+<a href="https://www.sciencedirect.com/science/article/pii/S1672022920300218">PDF</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>msisensor-pro on <a href="https://github.com/xjtu-omics/msisensor-pro">GitHub</a></li>
+<!-- <li>msisensor-pro on <a href="https://nanoporetech.github.io/msisensor-pro/">Documentation</a></li> -->
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: msisensor-pro (see <a href="/apps/modules.html">the modules page</a>
+for more information)</li>
+<!-- <li>msisensor-pro is multithreaded. Please match the number of threads to the number of allocated CPUs</li> -->
+<li>Example files in <code>${MSISENSORPRO_TEST_DATA}</code></li>
+<!-- <li>General reference data in <code>/fdb/igenomes/</code></li> -->
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+module load msisensor-pro</b>
+[user@cn3144]$ <b>cp -rp ${MSISENSORPRO_TEST_DATA} /data/$USER</b>
+[user@cn3144]$ <b>cd /data/$USER/demo/scripts</b>
+[user@cn3144]$ <b>./1_test_scan.sh</b>
+[user@cn3144]$ <b>./2_test_msi.sh</b>
+[user@cn3144]$ <b>./3_test_baseline.sh</b>
+[user@cn3144]$ <b>./4_test_pro.sh</b>
+    
+</pre>
+
+<!-- <p>Notes:</p>
+<ol>
+    <li>msisensor-pro tries to determine if data is paired end by comparing sequence
+        ids. This can fail with certain id lines like, for example, those
+        produced by the sra-toolkit. In other words, it's a fragile
+        autodetection and fastq files may have to be reformatted to make it
+        work correctly.</li>
+    <li>msisensor-pro supports compressed fastq files</li>
+</ol> -->
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch script file (e.g. msisensor-pro.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load msisensor-pro
+cp -rp ${MSISENSORPRO_TEST_DATA} /data/$USER
+cd /data/$USER/demo/scripts
+./1_test_scan.sh
+./2_test_msi.sh
+./3_test_baseline.sh
+./4_test_pro.sh
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=5g msisensor-pro.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

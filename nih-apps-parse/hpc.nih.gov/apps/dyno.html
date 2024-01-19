@@ -1,0 +1,149 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'dyno: inferring single-cell trajectories';</script>
+<div class="title"><b>dyno: inferring single-cell trajectories</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+dyno is a meta package that installs several other packages
+from the <a href="https://github.com/dynverse">dynverse</a>. <br />
+It comprises a set of R packages 
+to construct and interpret single-cell trajectories. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Wouter Saelens, Robrecht Cannoodt, Helena Todorov &amp; Yvan Saeys<br /> 
+<i>A comparison of single-cell trajectory inference methods </i> <br />
+<a href="https://www.nature.com/articles/s41587-019-0071-9">Nature Biotechnology</a> <b>37</b>, 
+547-554 (2019).
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/dynverse/dyno">dyno Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>dyno</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set 
+  <ul>
+    <li><b>DYNOHOME</b>&nbsp; dyno installation directory</li>
+    <li><b>R_LIBS</b>&nbsp;&nbsp; dyno R library directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --mem=12g -c4 --gres=lscratch:10 --tunnel</b>
+...
+Created 1 generic SSH tunnel(s) from this compute node to
+biowulf for your use at port numbers defined
+in the $PORTn ($PORT1, ...) environment variables.
+
+Please create a SSH tunnel from your workstation to these ports on biowulf.
+On Linux/MacOS, open a terminal and run:
+
+    ssh  -L 33521:localhost:33521 user@biowulf.nih.gov
+
+For Windows instructions, see https://hpc.nih.gov/docs/tunneling
+[user@cn0868 ~]$
+</pre>
+Store the port number you get (in this case: 33521) and the id of the compute node you logged in to, in this case cn0868<br /> 
+On your local system (PC or Mac), open a (second) terminal/linux shell and type:
+<pre class="term"> 
+<b>ssh -t -L 33521:localhost:33521 biowulf "ssh -L 33521:localhost:33521 cn0868" </b>
+</pre>
+(make sure to use the actual port number you stored instead of 33521 and the actual node id number instead of cn0868). <br />
+Now return to the original (first) terminal/linux shell. <br />
+<pre class="term"> 
+[user@cn0868 ~]$ <b>module load dyno</b>
+[+] Loading dyno  20220906  on cn0868
+[+] Loading singularity  3.8.0  on cn0868
+
+[user@cn0868 ~]$ <b>R</b>
+&gt; <b> library(dyno) </b>
+Loading required package: dynfeature
+Loading required package: dynguidelines
+Loading required package: dynmethods
+Loading required package: dynplot
+Loading required package: dynwrap
+&gt; <b> data("fibroblast_reprogramming_treutlein") </b> 
+&gt; <b> dataset &lt;- wrap_expression(counts = fibroblast_reprogramming_treutlein$counts, expression = fibroblast_reprogramming_treutlein$expression) </b>
+&gt; <b> guidelines &lt;- guidelines_shiny(dataset, port=33521, launch.browser=F)</b> 
+Loading required package: shiny
+
+Listening on http://0.0.0.0:33521
+Warning: All elements of `...` must be named.
+Did you want `renderers = c(column_id, renderer, label, title, style, default, name, trajectory_type,
+    category_old, scaling_type)`?
+Loading required namespace: akima
+
+</pre>            
+On your local system (PC or Mac), open a web browser or new tab on it, and navigate to: <br />
+<pre class="term">
+<b> http://localhost:33521 </b>
+</pre>
+(make sure to use the port number you stored instead of 33521) <br /> <br />
+<img src="dyno/dynguidelines.png" width="800" border="0" alt="">
+ <br /> <br />
+Select method(s) to be used, then close the browser window/tab, or click on "Close &amp; use"
+<pre class="term">
+&gt; <b> methods_selected &lt;- guidelines$methods_selected </b>
+&gt; <b> methods_selected </b>
+[1] "slingshot" "paga_tree" "scorpius"  "angle"
+&gt; <b> model &lt;- infer_trajectory(dataset, methods_selected[1]) </b>
+Running singularity exec 'docker://dynverse/ti_slingshot:v1.0.3' echo hi
+...
+Running /usr/local/current/singularity/3.8.0/bin/singularity exec \
+  --containall -B \
+  '/tmp/RtmppFshCi/file941a3d4b0be4/:/copy_mount,/tmp/RtmppFshCi/file941a8f3b018/tmp:/tmp2' \
+  'docker://dynverse/ti_slingshot:v1.0.3' cp /code/definition.yml \
+  /copy_mount/
+...
+</pre>
+(the computation may take a few minutes)
+<pre class="term">
+&gt; <b> library(magrittr) </b>
+&gt; <b> model <- model %>% add_dimred(dyndimred::dimred_mds, expression_source = dataset$expression)</b>
+&gt; <b> plot_dimred(model, expression_source = dataset$expression, grouping = fibroblast_reprogramming_treutlein$grouping )  </b>
+Coloring by grouping
+Loading required namespace: RColorBrewer
+</pre>
+<img src="dyno/plot_dimread.png" width="400" border="0" alt="" class="center">
+<style>
+img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+<br />
+<pre class="term">
+&gt; <b> q() </b>
+[user@cn0868 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 49998864
+
+[user@biowulf ~]$ 
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

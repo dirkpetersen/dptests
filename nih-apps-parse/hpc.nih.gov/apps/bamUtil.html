@@ -1,0 +1,180 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Bamutil on Biowulf';</script>
+<div class="title">Bamutil on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+bamUtil is a collection of utilities for manipulating bam files compiled
+into a single executable called <code>bam</code>. Available tools:
+</p>
+
+<table class="horztable">
+<tr><th colspan=2 class="softBottom"><b>Tools to rewrite SAM/BAM files</b></th></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_convert "> convert </a></td><td> Convert SAM/BAM to SAM/BAM</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_writeRegion "> writeRegion </a></td><td> Write a file with reads in the specified region and/or have the specified read name</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_splitChromosome "> splitChromosome </a></td><td> Split BAM by Chromosome</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_splitBam "> splitBam </a></td><td> Split a BAM file into multiple BAM files based on ReadGroup</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_findCigars "> findCigars </a></td><td> Output just the reads that contain any of the specified CIGAR operations.</td></tr>
+<tr><th colspan=2 class="softBottom"><b>Tools to modify SAM/BAM files</b></th></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_clipOverlap "> clipOverlap </a></td><td> Clip overlapping read pairs in a SAM/BAM File already sorted by Coordinate or ReadName</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_filter "> filter </a></td><td> Filter reads by clipping ends with too high of a mismatch percentage and by marking reads unmapped if the quality of mismatches is too high</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_revert "> revert </a></td><td> Revert SAM/BAM replacing the specified fields with their previous values (if known) and removes specified tags</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_squeeze "> squeeze </a></td><td>  reduces files size by dropping OQ fields, duplicates, &amp; specified tags, using '=' when a base matches the reference, binning quality scores, and replacing readNames with unique integers</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_trimBam "> trimBam </a></td><td> Trim the ends of reads in a SAM/BAM file changing read ends to 'N' and quality to '!'</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_mergeBam "> mergeBam </a></td><td> merge multiple BAMs and headers appending ReadGroupIDs if necessary</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_polishBam "> polishBam </a></td><td> adds/updates header lines &amp; adds the RG tag to each record</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_dedup "> dedup </a></td><td> Mark Duplicates</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_recab "> recab </a></td><td> Recalibrate</td></tr>
+<tr><th colspan=2 class="softBottom"><b>Tools to extract information</b></th></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_validate "> validate </a></td><td> Validate a SAM/BAM File</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_diff "> diff </a></td><td> Diff 2 coordinate sorted SAM/BAM files.</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_stats "> stats </a></td><td> Stats a SAM/BAM File</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_gapInfo "> gapInfo </a></td><td> Print information on the gap between read pairs in a SAM/BAM File.</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_dumpHeader "> dumpHeader </a></td><td> Print SAM/BAM Header</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_dumpRefInfo "> dumpRefInfo </a></td><td> Print SAM/BAM Reference Name Information</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_dumpIndex "> dumpIndex </a></td><td> Print BAM Index File in English</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_readReference "> readReference </a></td><td> Print the reference string for the specified region</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_explainFlags "> explainFlags </a></td><td> Describe flags</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_bam2FastQ "> bam2FastQ </a></td><td> Convert the specified BAM file to fastQs.</td></tr>
+<tr><td><a href="http://genome.sph.umich.edu/wiki/BamUtil:_readIndexedBam "> readIndexedBam </a></td><td> Read Indexed BAM By Reference and write it from reference id </td></tr>
+</table>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://genome.sph.umich.edu/wiki/BamUtil#bamUtil_Overview">bamutil Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>bamutil</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded app
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load bamutil</b>
+[+] Loading bamutil  1.0.14 
+
+[user@cn3144 ~]$ <b>cd /data/$USER/test_data/bam</b>
+
+[user@cn3144 ~]$ <b>bam stats --in read1_250k.bam --qual --basic</b>
+Number of records read = 170016
+
+TotalReads      170016.00
+MappedReads     170016.00
+PairedReads     0.00
+ProperPair      0.00
+.....
+
+[user@cn3144 ~]$ <b>bam explainFlags --dec 96</b>
+0x60 (96):
+        mate reverse strand
+        first fragment
+
+[user@cn3144 ~]$ <b>bam dedup --in read1_500k_sorted.bam --out /scratch/$USER/temp.bam \</b>
+<b>--rmDups</b>
+
+[user@cn3144 ~]$ <b>cat /scratch/$USER/temp.bam.log</b>
+......
+--------------------------------------------------------------------------
+SUMMARY STATISTICS OF THE READS
+Total number of reads: 326389
+Total number of paired-end reads: 0
+Total number of properly paired reads: 0
+Total number of unmapped reads: 0
+Total number of reverse strand mapped reads: 162220
+Total number of QC-failed reads: 0
+Total number of secondary reads: 0
+Size of singleKeyMap (must be zero): 0
+Size of pairedKeyMap (must be zero): 0
+Total number of missing mates: 0
+Total number of reads excluded from duplicate checking: 0
+--------------------------------------------------------------------------
+Sorting the indices of 3651 duplicated records
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bamutil.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=bamUtil
+
+set -e
+module load bamutil
+inbam=/data/$USER/test_data/bam/gcat_set_025_raw.bam
+obam=/data/$USER/test_data/temp/gcat_set_025.clean.bam
+dbsnp=/data/$USER/test_data/snp/snp138_pos.hg19
+genome=/fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa
+
+# bamutil wants to write to the directory containing the genome file
+mkdir /lscratch/$SLURM_JOB_ID
+cp $genome /lscratch/$SLURM_JOB_ID
+lgenome=/lscratch/$SLURM_JOB_ID/$(basename $genome)
+
+bam dedup --in $inbam --out $obam \
+  --rmDups --verbose --recab \
+  --refFile $lgenome \
+  --dbsnp $dbsnp \
+  --storeQualTag OQ --maxBaseQual 40
+rm -rf /lscratch/$SLURM_JOB_ID
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=4g bamutil.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. bamutil.swarm). For example:</p>
+
+<pre class="term">
+bam squeeze --in file1.bam --out file1s.bam --refFile genome.fa 
+bam squeeze --in file2.bam --out file2s.bam --refFile genome.fa 
+bam squeeze --in file3.bam --out file3s.bam --refFile genome.fa 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f bamutil.swarm --module bamutil</pre>
+where
+<table border=0>
+  <tr><td><tt>--module bamutil</tt> <td>Loads the bamutil module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

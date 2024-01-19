@@ -1,0 +1,117 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CytoSig: prediction of cytokine signaling activity';</script>
+<div class="title"><b>CytoSig: prediction of cytokine signaling activity</b></div> 
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CytoSig is a data-driven infrastructure hosted by the National Cancer Institute. 
+CytoSig includes both a database of target genes modulated by cytokines and 
+a predictive model of cytokine signaling activity and regulatory cascade from transcriptomic profiles.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Peng Jiang, Yu Zhang, Beibei Ru, Yuan Yang, Trang Vu, Rohit Pau, Amer Mirza, Grégoire Altan-Bonnet, Lingrui Liu, Eytan Ruppin, Lalage Wakefield and Kai W. Wucherpfennig, <br /> 
+<i>Systematic investigation of cytokine signaling activity at the tissue and single-cell levels</i> <br />
+<a href="https://www.nature.com/articles/s41592-021-01274-5">Nature Methods</a> 2021, VOL. <b>18</b> 1181–1191.
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://cytosig.ccr.cancer.gov/">CytoSig Home Page</a></li>
+<li><a href="https://github.com/data2intelligence/CytoSig">CytoSig Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>CytoSig</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>CYTOSIG_HOME</b>&nbsp; installation directory</li>
+    <li><b>CYTOSIG_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>CYTOSIG_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g -c8 --gres=lscratch:10</b>
+[user@cig 3335 ~]$ <b>module load CytoSig</b>
+[+] Loading singularity  3.10.5  on cn3335
+[+] Loading CytoSig  0.1
+[user@cn3335 ~]$ <b>CytoSig_run.py -h</b>
+Usage:
+CytoSig_run.py -i &lt;input profiles&gt; -o &lt;output prefix&gt; -r &lt;randomization count, default: 1000&gt; -a &lt;penalty alpha, default: 10000&gt; -e &lt;generate excel report: 0|1, default: 0&gt; -s &lt;use an expanded response signature: 0|1, default: 0&gt;
+
+</pre>
+Download the CytoSig repository with test data  to the current folder:
+<pre class="term">
+[user@cn3335 ~]$ <b>wget https://github.com/data2intelligence/CytoSig/archive/refs/tags/v0.1.tar.gz</b>
+[user@cn3335 ~]$ <b>tar -zxf v0.1.tar.gz & rm -f v0.1.tar.gz</b>
+[user@cn3335 ~]$ <b>cd CytoSig-0.1</b>
+</pre>
+Run the unit test:
+<pre class="term">
+[user@cn3335 ~]$ <b>python3 -m unittest tests.prediction</b>
+Output:
+ Use permutation test with nrand = 1000
+0%
+10%
+20%
+30%
+40%
+50%
+60%
+70%
+80%
+90%
+Use permutation test with nrand = 1000
+0%
+10%
+20%
+30%
+40%
+50%
+60%
+70%
+80%
+90%
+.
+----------------------------------------------------------------------
+Ran 1 test in 3.095s
+
+OK
+</pre>
+Run SitoSig on test data:
+<pre class="term">
+[user@cn3335 ~]$ <b>CytoSig_run.py -i CytoSig-0.1/tests/GSE147507.diff.gz  -o output </b>
+Use permutation test with nrand = 1000
+0%
+10%
+20%
+30%
+40%
+50%
+60%
+70%
+80%
+90%
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

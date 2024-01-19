@@ -1,0 +1,198 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'OptiType on Biowulf';</script>
+<div class="title">OptiType on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+OptiType is a novel HLA genotyping algorithm based on integer linear programming, capable of producing accurate 4-digit HLA genotyping predictions from NGS data by simultaneously selecting all major and minor HLA Class I alleles.
+</p>
+
+<h3>References:</h3>
+<ul>
+<liSzolek, A, Schubert, B, Mohr, C, Sturm, M, Feldhahn, M, and Kohlbacher, O (2014). <b>OptiType: precision HLA typing from next-generation sequencing data</b>. Bioinformatics, 30(23):3310-6.
+doi: <a href="https://doi.org/10.1093/bioinformatics/btu548">10.1093/bioinformatics/btu548</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/FRED-2/OptiType">OptiType on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>optitype</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Environment variables set <!--for ones users should be aware of --></li>
+  <ul>
+    <li><tt>OPTITYPE_HOME</tt></li>
+  </ul>
+  <li>Default configuration file: <tt>$OPTITYPE_HOME/config.ini</tt>
+      <br><b>copy and edit this to set the number of threads you want to use, matching <tt>$SLURM_CPUS_PER_TASK</tt></b></li>
+  <li>Example files in <tt>$OPTITYPE_HOME/test</tt></li>
+  <li>Reference data in <tt>$OPTITYPE_HOME/data</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task 4 --gres lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load optitype</b>
+[+] Loading glpk  4.65 
+[+] Loading HDF5  1.10.1 
+[+] Loading samtools 1.9  ... 
+[+] Loading optitype, version 1.3.2...
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 46116226]$ <b>cp -a $OPTITYPE_HOME/test . </b>
+[user@cn3144 46116226]$ <b>cp $OPTITYPE_HOME/config.ini . # copy the default configuration and edit it to set the number of threads you want to use.</b>
+[user@cn3144 46116226]$ <b>OptiTypePipeline.py -i ./test/rna/CRC_81_N_1_fished.fastq ./test/rna/CRC_81_N_2_fished.fastq --rna -v -o ./test/rna/ -c config.ini</b>
+
+    mapping with 4 threads...
+
+    0:00:03.77 Mapping CRC_81_N_1_fished.fastq to NUC reference...
+
+    0:00:08.84 Mapping CRC_81_N_2_fished.fastq to NUC reference...
+
+    0:00:14.42 Generating binary hit matrix.
+    0:00:14.45 Loading ./test/rna/2019_02_01_16_43_08/2019_02_01_16_43_08_1.bam started. Number of HLA reads loaded (updated every thousand):
+
+    0:00:14.60 301 reads loaded. Creating dataframe...
+    0:00:14.62 Dataframes created. Shape: 301 x 7339, hits: 67072 (111698), sparsity: 1 in 19.78
+    0:00:14.70 Loading ./test/rna/2019_02_01_16_43_08/2019_02_01_16_43_08_2.bam started. Number of HLA reads loaded (updated every thousand):
+
+    0:00:14.89 291 reads loaded. Creating dataframe...
+    0:00:14.91 Dataframes created. Shape: 291 x 7339, hits: 59422 (104782), sparsity: 1 in 20.38
+    0:00:14.95 Alignment pairing completed. 152 paired, 268 unpaired, 10 discordant 
+
+    0:00:17.07 temporary pruning of identical rows and columns
+
+    0:00:17.11 Size of mtx with unique rows and columns: (124, 250)
+    0:00:17.11 determining minimal set of non-overshadowed alleles
+
+    0:00:17.58 Keeping only the minimal number of required alleles (14,)
+
+    0:00:17.58 Creating compact model...
+
+    starting ilp solver with 1 threads...
+
+    0:00:17.60 Initializing OptiType model...
+    GLPSOL: GLPK LP/MIP Solver, v4.65
+    Parameter(s) specified in the command line:
+    --write /tmp/tmpHIKpQd.glpk.raw --wglp /tmp/tmpM6Df7g.glpk.glp --cpxlp /tmp/tmpkcqGUm.pyomo.lp
+    Reading problem data from '/tmp/tmpkcqGUm.pyomo.lp'...
+    /tmp/tmpkcqGUm.pyomo.lp:715: warning: lower bound of variable 'x1' redefined
+    /tmp/tmpkcqGUm.pyomo.lp:715: warning: upper bound of variable 'x1' redefined
+    104 rows, 64 columns, 283 non-zeros
+    38 integer variables, all of which are binary
+    753 lines were read
+    Writing problem data to '/tmp/tmpM6Df7g.glpk.glp'...
+    632 lines were written
+    GLPK Integer Optimizer, v4.65
+    104 rows, 64 columns, 283 non-zeros
+    38 integer variables, all of which are binary
+    Preprocessing...
+    14 hidden covering inequaliti(es) were detected
+    103 rows, 63 columns, 282 non-zeros
+    38 integer variables, all of which are binary
+    Scaling...
+    A: min|aij| =  1.000e+00  max|aij| =  3.000e+00  ratio =  3.000e+00
+    Problem data seem to be well scaled
+    Constructing initial basis...
+    Size of triangular part is 103
+    Solving LP relaxation...
+    GLPK Simplex Optimizer, v4.65
+    103 rows, 63 columns, 282 non-zeros
+    0: obj =  -0.000000000e+00 inf =   3.000e+00 (3)
+    3: obj =  -0.000000000e+00 inf =   0.000e+00 (0)
+    *    65: obj =   1.284360000e+02 inf =   6.291e-16 (0)
+    OPTIMAL LP SOLUTION FOUND
+    Integer optimization begins...
+    Long-step dual simplex will be used
+    +    65: mip =     not found yet <=              +inf        (1; 0)
+    +    65: >>>>>   1.284360000e+02 <=   1.284360000e+02   0.0% (1; 0)
+    +    65: mip =   1.284360000e+02 <=     tree is empty   0.0% (0; 1)
+    INTEGER OPTIMAL SOLUTION FOUND
+    Time used:   0.0 secs
+    Memory used: 0.2 Mb (193401 bytes)
+    Writing MIP solution to '/tmp/tmpHIKpQd.glpk.raw'...
+    177 lines were written
+
+    0:00:17.78 Result dataframe has been constructed...
+[user@cn3144 46116226]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. optitype.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load optitype
+OptiTypePipeline.py -i ./test/rna/CRC_81_N_1_fished.fastq ./test/rna/CRC_81_N_2_fished.fastq --rna -v -o ./test/rna/ -c config.ini
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] optitype.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. optitype.swarm). For example:</p>
+
+<pre class="term">
+python OptiTypePipeline.py -i ./test/exome/NA11995_SRR766010_1_fished.fastq ./test/exome/NA11995_SRR766010_2_fished.fastq --dna -v -o ./test/exome/ -c config.ini
+OptiTypePipeline.py -i ./test/rna/CRC_81_N_1_fished.fastq ./test/rna/CRC_81_N_2_fished.fastq --rna -v -o ./test/rna/ -c config.ini
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f optitype.swarm [-g #] [-t #] --module optitype</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module optitype</tt> <td>Loads the OptiType module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,179 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Autodock & AutodockVina on Biowulf';</script>
+<div class="title">Autodock & AutodockVina on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+		<div class="tocItem"><A href="#gpu">Autodock-GPU</a></div>
+      </div>
+</table>
+
+<p>
+AutoDock is a suite of automated docking tools. It is designed to predict how small molecules, such as substrates or drug candidates, bind to a receptor of known 3D structure.
+<P>
+AutoDock Vina does not require choosing atom types and pre-calculating grid maps for them. Instead, it calculates the grids internally, for the atom types that are needed, and it does this virtually instantly.
+<P>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://autodock.scripps.edu/">Autodock website at Scripps</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: Autodock or AutodockVina (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>AutodockVina is multithreaded. Autodock is single-threaded.
+<li>The mgltools package that is used to create input files for Vina is also installed. When you load the Autodock or AutodockVina modules, you will also get access to the
+    mgltools executables.
+<li>If you wish to run the mgltools Python scripts you may need to use the <code>pythonsh</code> command available when you load the module. This will ensure your environment is properly set up.
+<li>mgltools is a graphics-intensive package, and can easily be installed/run on your desktop system for better performance. It can be <a href="http://mgltools.scripps.edu/downloads">downloaded here</a>.
+<li>The entire PDB (updated once a week) database is available in /pdb on all nodes, the Biowulf login node, and Helix.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load AutodockVina</b>
+
+[user@cn3144 ~]$ <b>module list</b>
+
+Currently Loaded Modules:
+  1) AutodockVina/1.1.2
+
+[user@cn3144 ~]$ <b>vina --config conf.txt --cpus $SLURM_CPUS_PER_TASK</b>
+
+#################################################################
+# If you used AutoDock Vina in your work, please cite:          #
+#                                                               #
+# O. Trott, A. J. Olson,                                        #
+# AutoDock Vina: improving the speed and accuracy of docking    #
+# with a new scoring function, efficient optimization and       #
+# multithreading, Journal of Computational Chemistry 31 (2010)  #
+# 455-461                                                       #
+#                                                               #
+# DOI 10.1002/jcc.21334                                         #
+#                                                               #
+# Please see http://vina.scripps.edu for more information.      #
+#################################################################
+
+Output will be ligand_out.pdbqt
+Reading input ... done.
+Setting up the scoring function ... done.
+Analyzing the binding site ... done.
+Using random seed: 653328095
+Performing search ...
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+done.
+Refining results ... done.
+
+mode |   affinity | dist from best mode
+     | (kcal/mol) | rmsd l.b.| rmsd u.b.
+-----+------------+----------+----------
+   1        -12.3      0.000      0.000
+   2        -10.1      5.153      9.937
+   3         -9.6      5.800      9.437
+   4         -9.5      5.027     10.364
+Writing output ... done.
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. autodock.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load Autodock
+autodock4 -p myfile.dpf -l myfile.dlg 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--mem=#] autodock.sh</pre>
+The --mem=#g flag should be used if the autodock run requires more than the default 4 GB of memory.
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. myfile.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/mydir;  autodock4 -p lig1.macro.def -l lig1.log
+cd /data/$USER/mydir;  autodock4 -p lig2.macro.def -l lig2.log
+cd /data/$USER/mydir;  autodock4 -p lig3.macro.def -l lig3.log
+cd /data/$USER/mydir;  autodock4 -p lig4.macro.def -l lig4.log
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f myfile.swarm [-g #] --module Autodock</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file). (not useful for Autodock which is single-threaded, 
+  but can be used for a swarm of Vina jobs)
+  <tr><td>--module Autodock<td>Loads the Autodock module for each subjob in the swarm 
+</table>
+
+<a Name="gpu"></a>
+<div class="heading">Autodock - GPU</div>
+<P>
+Autodock-GPU processes ligand-receptor poses in parallel over multiple compute units on GPUs. [<A href="https://github.com/ccsb-scripps/AutoDock-GPU">Autodock-GPU website</a>]
+<P>
+Test script: 
+<pre class="term">
+#!/bin/bash
+
+module load Autodock-GPU
+cd /data/$USER
+mkdir autodock-gpu
+cd autodock-gpu
+git clone https://github.com/L30nardoSV/reproduce-parcosi-moleculardocking.git
+cd reproduce-parcosi-moleculardocking
+git clone https://gitlab.com/L30nardoSV/ad-gpu_miniset_20.git
+
+# note: this test job requires the executables to be available in the same dir
+ln -s ${AUTODOCK_BIN}/* .
+
+./prepare_inputs.sh 
+./evaluate_numwi.sh &lt;&lt;EOF
+Y
+Y
+1
+k80
+EOF
+</pre>
+
+Select a GPU type (e.g. k80, p100, v100) and submit with:
+<pre class="term">
+sbatch --partition=gpu --gres=gpu:k80:1  test.sh
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

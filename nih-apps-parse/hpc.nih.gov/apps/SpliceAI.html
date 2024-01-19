@@ -1,0 +1,175 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SpliceAI: predicting splicing from primary sequence with deep learning';</script>
+<div class="title"><b>SpliceAI: predicting splicing from primary sequence with deep learning</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<br />
+<p>
+SpliceAI is a deep neural network that accurately predicts
+splice junctions from an arbitrary pre-mRNA
+transcript sequence, enabling precise prediction of
+noncoding genetic variants that cause cryptic
+splicing.
+</p>
+
+<br />
+<h3>References:</h3>
+<ul>
+<li>Kishore Jaganathan, Sofia Kyriazopoulou Panagiotopoulou, Jeremy F. McRae, et al. <br />
+<i>Predicting Splicing from Primary Sequence with Deep Learning </i>,
+Cell <b>176</b>, 535–548, January 24, 2019 </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Illumina/SpliceAI">SpliceAI GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: SpliceAI (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SPLICEAI_HOME</b> &nbsp; installation directory</li>
+    <li><b>SPLICEAI_BIN</b>  &nbsp; &nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>SPLICEAI_DATA</b> &nbsp; &nbsp; sample data directory</li>
+    <li><b>SPLICEAI_SRC</b> &nbsp; &nbsp; &nbsp; source code directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g --gres=gpu:v100:1</b>
+[user@cn4466 ~]$ <b>module load SpliceAI</b>
++] Loading python 3.6  ...
+[+] Loading cuDNN 7.0  libraries...
+[+] Loading CUDA Toolkit  9.0.176  ...
+[user@cn4466 ~]$ <b>spliceai -h</b>
+...
+usage: spliceai [-h] [-I [input]] [-O [output]] -R reference -A annotation
+                [-D [distance]] [-M [mask]]
+
+Version: 1.3
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -I [input]     path to the input VCF file, defaults to standard in
+  -O [output]    path to the output VCF file, defaults to standard out
+  -R reference   path to the reference genome fasta file
+  -A annotation  "grch37" (GENCODE V24lift37 canonical annotation file in
+                 package), "grch38" (GENCODE V24 canonical annotation file in
+                 package), or path to a similar custom gene annotation file
+  -D [distance]  maximum distance between the variant and gained/lost splice
+                 site, defaults to 50
+  -M [mask]      mask scores representing annotated acceptor/donor gain and
+                 unannotated acceptor/donor loss, defaults to 0
+</pre>
+Download sample data:
+<pre class="term">
+[user@cn4466 ~]$ <b>cp $SPLICEAI_DATA/* . </b>
+</pre>
+Specify a reference sequence:
+<pre class="term">
+[user@cn4466 ~]$ <b>ln -s  /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa hg38.fa</b>
+</pre>
+Run the spliceai executable on the sample data:
+<pre class="term"> 
+[user@cn4466 ~]$ <b>spliceai -I input.vcf -O output.vcf -R hg38.fa  -A grch37 & </b>
+...
+[user@cn4466 ~]$ <b>nvidia-smi</b>
+...
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 470.82.01    Driver Version: 470.82.01    CUDA Version: 11.4     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla K80           On   | 00000000:84:00.0 Off |                  Off |
+| N/A   35C    P0    71W / 149W |  11621MiB / 12206MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A     45210      C   /usr/bin/python                 11616MiB |
++-----------------------------------------------------------------------------+
+...
+WARNING:root:Skipping record (ref issue): 2     152389953       .       T       A,C,G   .       .       .
+
+WARNING:root:Skipping record (ref issue): 2     179415988       .       C       CA      .       .       .
+
+WARNING:root:Skipping record (ref issue): 2     179446218       .       ATACT   A       .       .       .
+
+WARNING:root:Skipping record (ref issue): 2     179446218       .       ATACT   AT,ATA  .       .       .
+
+WARNING:root:Skipping record (ref issue): 2     179642185       .       G       A       .       .       .
+
+WARNING:root:Skipping record (ref issue): 19    38958362        .       C       T       .       .       .
+
+WARNING:root:Skipping record (ref issue): 21    47406854        .       CCA     C       .       .       .
+
+WARNING:root:Skipping record (ref issue): 21    47406856        .       A       AT      .       .       .
+
+WARNING:root:Skipping record (ref issue): X     129274636       .       A       C,G,T   .       .       .
+</pre>
+An output file output.vcf will be produced:
+<pre class="term">
+[user@cn4466 ~]$ <b>cat output.vcf</b>
+...
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO
+1       25000   .       A       C,G,T   .       .       .
+2       152389953       .       T       A,C,G   .       .       .
+2       179415988       .       C       CA      .       .       .
+2       179446218       .       ATACT   A       .       .       .
+2       179446218       .       ATACT   AT,ATA  .       .       .
+2       179642185       .       G       A       .       .       .
+19      38958362        .       C       T       .       .       .
+21      47406854        .       CCA     C       .       .       .
+21      47406856        .       A       AT      .       .       .
+X       129274636       .       A       C,G,T   .       .       .
+</pre>
+Exit the application:
+<pre class="term">
+[user@cn4466 ~]$ <b>exit</b>
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. spliceai.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load SpliceAI      
+cp $SPLICEAI_DATA/* .  
+spliceai -I input.vcf -O output.vcf -R /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa  -A grch37
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] spliceai.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

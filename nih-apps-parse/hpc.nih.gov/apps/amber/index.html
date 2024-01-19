@@ -1,0 +1,73 @@
+/data/<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Amber22 benchmarks';</script>
+<div class="title">
+Amber22 benchmarks</div>
+<P>
+<b>April 2023</b>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#cpu">CPU benchmarks</a></div>
+<div class="tocItem"><a href="#gpu">GPU benchmarks</a></div>
+</div></table>
+The benchmark runs below used the Amber 20 Benchmark suite, downloadable from <a href="http://ambermd.org/GPUPerformance.php">here</a>. 
+<P>
+Older benchmarks: [<A href="amber20.html">Amber 20</a>] [<a href="amber18B.html">Amber 18</a>] <a href="amber16.html">Amber 16</a>] [<a href="amber14.html">Amber 14</a>] 
+<P>
+Based on these benchmarks, there is a significant performance advantage to running Amber on the GPU nodes rather than on a CPU-only node.
+<P>
+<A Name="cpu"></a>
+<div class="heading">CPU-only Benchmarks</div>
+<P>
+Amber 22 with all patches as of July 2022, built with gcc 9.2.0,  OpenMPI 4.1.3 (Biowulf module 'amber/22.gcc'), running under Rocky8 <br>
+Hardware: 64 x 2.8 GHz (AMD Epyc 7543)
+<P><center>
+<b>Explicit Solvent</b><br>
+<a href="22/explicit.cpus.png"><img src="22/explicit.cpus.png" width=550></a><br>
+<b>Implicit Solvent</b><br>
+<a href="22/myoglobin.cpus.png"><img src="22/myoglobin.cpus.png" width=400></a>
+<a href="22/nucleosome.cpus.png"><img src="22/nucleosome.cpus.png" width=400></a>
+<!--
+<a href="22/trpcage.cpus.png"><img src="22/trpcage.cpus.png" width=400></a>
+-->
+</center>
+<P>
+The benchmark above was run on a AMD Epyc 7543 @2.8GHz with 64 cores (128 hyperthreaded cores). As with other 
+MD applications, the performance drops when more than 64 MPI processes 
+(i.e. 1 process per physical core) are run. Thus, if running on CPUs, it is important to use the '--ntasks-per-core=1' flag 
+when submitting the job, to ensure that only 1 MPI process is run on each physical core. If it is possible to run on a GPU node, 
+you will get significantly better performance as shown in the benchmarks below.
+<P>
+<A Name="gpu"></a>
+<div class="heading">GPU benchmarks</div>
+<P>
+Amber 22 with all patches as of July 2022, built with gcc 9.2.0, CUDA 11.3, and OpenMPI 4.1.3 (Biowulf module 'amber/22-gpu'), running under Rocky8<br>
+Hardware:
+<ul>
+<li>k80: Intel(R)_Xeon(R)_CPU_E5-2680_v4_@_2.40GHz, Tesla K80 -- benchmark runs with 1-4 GPUs on single node
+<li>p100: Intel(R)_Xeon(R)_CPU_E5-2680_v4_@_2.40GHz, Tesla_P100-PCIE-16GB -- benchmark runs with 1-4 GPUs on single node
+<li>v100: Intel(R)_Xeon(R)_CPU_E5-2680_v4_@_2.40GHz, Tesla_V100-PCIE-16GB -- benchmark runs with 1-4 GPUs on single node
+<li>v100x: Intel(R)_Xeon(R)_Gold_6140@_2.30GHz, Tesla_V100-SXM2-32GB -- benchmark runs with 1-4 GPUs on single node
+<li>a100: AMD EPYC 7543P@_2.40GHz, Tesla_A100-SXM4-80GB -- benchmark runs with 1-4 GPUs on single node
+</ul>
+<P>
+<b>Explicit Solvent (PME)</b>
+<img src="22/Cellulose_NPT_4fs.png">
+<img src="22/Cellulose_NVE_4fs.png">
+<img src="22/FactorIX_NPT_4fs.png">
+<img src="22/FactorIX_NVE_4fs.png">
+<img src="22/JAC_NPT_4fs.png">
+<img src="22/JAC_NVE_4fs.png">
+<img src="22/STMV_NPT_4fs.png">
+<img src="22/STMV_NVE_4fs.png">
+<P>
+<b>Implicit Solvent (GB)</b>
+<img src="22/myoglobin.png">
+<img src="22/nucleosome.png">
+<img src="22/TRPCage.png">
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

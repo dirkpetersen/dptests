@@ -1,0 +1,188 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' vcflib on Biowulf';</script>
+<div class="title">
+vcflib on Biowulf</div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#int">Interactive job</a></div>
+<div class="tocItem"><a href="#serial">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#parallel">Parallel job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+</div></table>
+
+<!-- ======================================================================= -->
+<div class="heading">Description</div>
+
+<p>vcflib is a C++ library for parsing Variant Call Format (VCF) files and a
+set of command line tools based on that library.</p>
+
+<p>The following tools are currently available:</p>
+
+<div style="width: 70%; margin: 0 auto; padding: 5px; border: 1px solid #999;">
+
+<a href="https://github.com/ekg/vcflib#vcf2dag">vcf2dag</a>, 
+<a href="https://github.com/ekg/vcflib#vcf2fasta">vcf2fasta</a>, 
+<a href="https://github.com/ekg/vcflib#vcf2tsv">vcf2tsv</a>, 
+<a href="https://github.com/ekg/vcflib#vcfaddinfo">vcfaddinfo</a>, 
+<a href="https://github.com/ekg/vcflib#vcfafpath">vcfafpath</a>, 
+<a href="https://github.com/ekg/vcflib#vcfallelicprimitives">vcfallelicprimitives</a>, 
+<a href="https://github.com/ekg/vcflib#vcfaltcount">vcfaltcount</a>, 
+<a href="https://github.com/ekg/vcflib#vcfannotate">vcfannotate</a>, 
+<a href="https://github.com/ekg/vcflib#vcfannotategenotypes">vcfannotategenotypes</a>, 
+<a href="https://github.com/ekg/vcflib#vcfbreakmulti">vcfbreakmulti</a>, 
+<a href="https://github.com/ekg/vcflib#vcfcat">vcfcat</a>, 
+<a href="https://github.com/ekg/vcflib#vcfcheck">vcfcheck</a>, 
+<a href="https://github.com/ekg/vcflib#vcfclassify">vcfclassify</a>, 
+<a href="https://github.com/ekg/vcflib#vcfcleancomplex">vcfcleancomplex</a>, 
+<a href="https://github.com/ekg/vcflib#vcfcombine">vcfcombine</a>, 
+<a href="https://github.com/ekg/vcflib#vcfcommonsamples">vcfcommonsamples</a>, 
+<a href="https://github.com/ekg/vcflib#vcfcountalleles">vcfcountalleles</a>, 
+<a href="https://github.com/ekg/vcflib#vcfcreatemulti">vcfcreatemulti</a>, 
+<a href="https://github.com/ekg/vcflib#vcfdistance">vcfdistance</a>, 
+<a href="https://github.com/ekg/vcflib#vcfecho">vcfecho</a>, 
+<a href="https://github.com/ekg/vcflib#vcfentropy">vcfentropy</a>, 
+<a href="https://github.com/ekg/vcflib#vcfevenregions">vcfevenregions</a>, 
+<a href="https://github.com/ekg/vcflib#vcffilter">vcffilter</a>, 
+<a href="https://github.com/ekg/vcflib#vcffixup">vcffixup</a>, 
+<a href="https://github.com/ekg/vcflib#vcfflatten">vcfflatten</a>, 
+<a href="https://github.com/ekg/vcflib#vcfgeno2alleles">vcfgeno2alleles</a>, 
+<a href="https://github.com/ekg/vcflib#vcfgeno2haplo">vcfgeno2haplo</a>, 
+<a href="https://github.com/ekg/vcflib#vcfgenosamplenames">vcfgenosamplenames</a>, 
+<a href="https://github.com/ekg/vcflib#vcfgenosummarize">vcfgenosummarize</a>, 
+<a href="https://github.com/ekg/vcflib#vcfgenotypecompare">vcfgenotypecompare</a>, 
+<a href="https://github.com/ekg/vcflib#vcfgenotypes">vcfgenotypes</a>, 
+<a href="https://github.com/ekg/vcflib#vcfglbound">vcfglbound</a>, 
+<a href="https://github.com/ekg/vcflib#vcfglxgt">vcfglxgt</a>, 
+<a href="https://github.com/ekg/vcflib#vcfhetcount">vcfhetcount</a>, 
+<a href="https://github.com/ekg/vcflib#vcfhethomratio">vcfhethomratio</a>, 
+<a href="https://github.com/ekg/vcflib#vcfindex">vcfindex</a>, 
+<a href="https://github.com/ekg/vcflib#vcfinfo2qual">vcfinfo2qual</a>, 
+<a href="https://github.com/ekg/vcflib#vcfinfosummarize">vcfinfosummarize</a>, 
+<a href="https://github.com/ekg/vcflib#vcfintersect">vcfintersect</a>, 
+<a href="https://github.com/ekg/vcflib#vcfkeepgeno">vcfkeepgeno</a>, 
+<a href="https://github.com/ekg/vcflib#vcfkeepinfo">vcfkeepinfo</a>, 
+<a href="https://github.com/ekg/vcflib#vcfkeepsamples">vcfkeepsamples</a>, 
+<a href="https://github.com/ekg/vcflib#vcfleftalign">vcfleftalign</a>, 
+<a href="https://github.com/ekg/vcflib#vcflength">vcflength</a>, 
+<a href="https://github.com/ekg/vcflib#vcfnumalt">vcfnumalt</a>, 
+<a href="https://github.com/ekg/vcflib#vcfoverlay">vcfoverlay</a>, 
+<a href="https://github.com/ekg/vcflib#vcfparsealts">vcfparsealts</a>, 
+<a href="https://github.com/ekg/vcflib#vcfprimers">vcfprimers</a>, 
+<a href="https://github.com/ekg/vcflib#vcfqual2info">vcfqual2info</a>, 
+<a href="https://github.com/ekg/vcflib#vcfrandom">vcfrandom</a>, 
+<a href="https://github.com/ekg/vcflib#vcfrandomsample">vcfrandomsample</a>, 
+<a href="https://github.com/ekg/vcflib#vcfremap">vcfremap</a>, 
+<a href="https://github.com/ekg/vcflib#vcfremoveaberrantgenotypes">vcfremoveaberrantgenotypes</a>, 
+<a href="https://github.com/ekg/vcflib#vcfremovesamples">vcfremovesamples</a>, 
+<a href="https://github.com/ekg/vcflib#vcfroc">vcfroc</a>, 
+<a href="https://github.com/ekg/vcflib#vcfsample2info">vcfsample2info</a>, 
+<a href="https://github.com/ekg/vcflib#vcfsamplediff">vcfsamplediff</a>, 
+<a href="https://github.com/ekg/vcflib#vcfsamplenames">vcfsamplenames</a>, 
+<a href="https://github.com/ekg/vcflib#vcfsitesummarize">vcfsitesummarize</a>, 
+<a href="https://github.com/ekg/vcflib#vcfstats">vcfstats</a>, 
+<a href="https://github.com/ekg/vcflib#vcfstreamsort">vcfstreamsort</a>, 
+<a href="https://github.com/ekg/vcflib#vcfuniq">vcfuniq</a>, 
+<a href="https://github.com/ekg/vcflib#vcfuniqalleles">vcfuniqalleles</a>
+</div>
+
+<p>There may be multiple versions of vcflib available. An easy way of selecting the
+version is to use <a href="/apps/modules.html">modules</a>.  To see the modules
+available, type</p>
+<pre class="term">
+module avail vcflib 
+</pre>
+
+<p>To select a module use</p>
+<pre class="term">
+module load vcflib/[version]
+</pre>
+<p>where <code>[version]</code> is the version of choice.</p>
+
+
+<h3>Environment variables set</h3>
+<ul>
+    <li> <code>$PATH</code></li>
+    <li> <code>$CPATH</code></li>
+</ul>
+
+<h3>Web sites</h3>
+<ul>
+    <li><a href="https://github.com/ekg/vcflib#vcfroc">GitHub</a>
+    </li>
+</ul>
+
+
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="int"></a>
+<div class="heading">Interactive job</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>vcf=/fdb/GATK_resource_bundle/hg19-2.8/CEUTrio.HiSeq.WGS.b37.bestPractices.hg19.vcf.gz</b>
+
+[user@cn3144 ~]$ <b>vcfsamplenames $vcf</b>
+NA12878
+NA12891
+NA12892
+
+[user@cn3144 ~]$ <b>zcat $vcf | vcfcountalleles</b>
+12935193
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="serial"></a>
+<div class="heading">Batch job on Biowulf</div>
+
+<p>Create a batch script similar to the following example:</p>
+<pre class="term">
+#! /bin/bash
+
+function fail() {
+    echo "$@" &gt;&amp;2
+    exit 1
+}
+
+rb=/fdb/GATK_resource_bundle/hg19-2.8
+module load vcflib || fail "could not load vcflib module"
+module load samtools/1.2 || fail "could not load samtools module"
+tabix -h ${rb}/CEUTrio.HiSeq.WGS.b37.bestPractices.hg19.vcf.gz chr1:1-100000 \
+ | vcf2tsv &gt; CEUTrio.out
+</pre>
+
+Submit to the queue with <a href="/docs/userguide.html">sbatch</a>:
+<pre class="term">
+b2$ <b>sbatch vcf2tsv.sh</b>
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="swarm"></a>
+<div class="heading">Swarm of jobs on Biowulf</div>
+
+<p>Create a swarm command file similar to the following example:</p>
+<pre class="term">
+vcfannotate -b enhancers.bed -k enh sample1.vcf &gt; sample1_anno.vcf
+vcfannotate -b enhancers.bed -k enh sample2.vcf &gt; sample2_anno.vcf
+</pre>
+
+<p>And submit to the queue with <a href="/apps/swarm.html">swarm</a></p>
+<pre class="term">
+b2$ <b>swarm -f vcfannotate.swarm -g 5</b>
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

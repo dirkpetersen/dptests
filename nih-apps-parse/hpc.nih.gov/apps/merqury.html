@@ -1,0 +1,125 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'merqury on Biowulf';</script>
+<div class="title">merqury on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+Description from the GitHub repo
+</p>
+<blockquote>
+    Evaluate genome assemblies with k-mers and more</br>
+
+    Often, genome assembly projects have illumina whole genome sequencing reads
+    available for the assembled individual.
+
+    The k-mer spectrum of this read set can be used for independently evaluating
+    assembly quality without the need of a high quality reference.
+
+    Merqury provides a set of tools for this purpose.
+</blockquote>
+
+<h3>References:</h3>
+<ul>
+    <li>A. Rhie, B. P. Walenz, S. Koren et al. <em>Merqury: reference-free quality, completeness, and phasing assessment for genome assemblies</em>. Genome Biol (2020). <a href="https://pubmed.ncbi.nlm.nih.gov/32928274/">PubMed</a>&nbsp;|&nbsp;
+        <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/32928274/">PMC</a>&nbsp;|&nbsp;
+        <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02134-9">Journal</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>merqury on <a href="https://github.com/marbl/merqury">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: merqury (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Best run with approximately 6 CPUs in local mode.</li>
+    <li>Example files in <code>$MERQURY_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g --cpus-per-task=6 --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load merqury</b>
+[user@cn3144]$ <b>cp ${MERQURY_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>for f in *.tar.gz ; do tar -xzf $f ; done</b>
+[user@cn3144]$ <b>merqury.sh F1.k18.meryl col0.hapmer.meryl cvi0.hapmer.meryl athal_COL.fasta athal_CVI.fasta test</b>
+[user@cn3144]$ <b>ls test*</b>
+test.athal_COL.100_20000.phased_block.bed       test.athal_COL.spectra-cn.fl.png                test.athal_CVI.cvi0.hapmer.wig
+test.athal_COL.100_20000.phased_block.blob.png  test.athal_COL.spectra-cn.hist                  test.athal_CVI.only.hist
+test.athal_COL.100_20000.phased_block.counts    test.athal_COL.spectra-cn.ln.png                test.athal_CVI.qv
+test.athal_COL.100_20000.phased_block.sizes     test.athal_COL.spectra-cn.st.png                test.athal_CVI.sort.bed
+test.athal_COL.100_20000.phased_block.stats     test.athal_CVI.100_20000.phased_block.bed       test.athal_CVI.spectra-cn.fl.png
+test.athal_COL.100_20000.switch.bed             test.athal_CVI.100_20000.phased_block.blob.png  test.athal_CVI.spectra-cn.hist
+test.athal_COL.100_20000.switches.txt           test.athal_CVI.100_20000.phased_block.counts    test.athal_CVI.spectra-cn.ln.png
+test.athal_COL.block.N.png                      test.athal_CVI.100_20000.phased_block.sizes     test.athal_CVI.spectra-cn.st.png
+test.athal_COL.col0.hapmer.spectra-cn.fl.png    test.athal_CVI.100_20000.phased_block.stats     test.completeness.stats
+test.athal_COL.col0.hapmer.spectra-cn.ln.png    test.athal_CVI.100_20000.switch.bed             test.dist_only.hist
+test.athal_COL.col0.hapmer.spectra-cn.st.png    test.athal_CVI.100_20000.switches.txt           test.hapmers.blob.png
+test.athal_COL.col0.hapmer.spectra-hap-cn.hist  test.athal_CVI.block.N.png                      test.hapmers.count
+test.athal_COL.col0.hapmer.wig                  test.athal_CVI.col0.hapmer.spectra-cn.fl.png    test.only.hist
+test.athal_COL.contig.sizes                     test.athal_CVI.col0.hapmer.spectra-cn.ln.png    test.qv
+test.athal_COL.continuity.N.png                 test.athal_CVI.col0.hapmer.spectra-cn.st.png    test.spectra-asm.fl.png
+test.athal_COL.cvi0.hapmer.spectra-cn.fl.png    test.athal_CVI.col0.hapmer.spectra-hap-cn.hist  test.spectra-asm.hist
+test.athal_COL.cvi0.hapmer.spectra-cn.ln.png    test.athal_CVI.col0.hapmer.wig                  test.spectra-asm.ln.png
+test.athal_COL.cvi0.hapmer.spectra-cn.st.png    test.athal_CVI.contig.sizes                     test.spectra-asm.st.png
+test.athal_COL.cvi0.hapmer.spectra-hap-cn.hist  test.athal_CVI.continuity.N.png                 test.spectra-cn.fl.png
+test.athal_COL.cvi0.hapmer.wig                  test.athal_CVI.cvi0.hapmer.spectra-cn.fl.png    test.spectra-cn.hist
+test.athal_COL.only.hist                        test.athal_CVI.cvi0.hapmer.spectra-cn.ln.png    test.spectra-cn.ln.png
+test.athal_COL.qv                               test.athal_CVI.cvi0.hapmer.spectra-cn.st.png    test.spectra-cn.st.png
+test.athal_COL.sort.bed                         test.athal_CVI.cvi0.hapmer.spectra-hap-cn.hist
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. merqury.sh), which uses the test data in <code>$MERQURY_TEST_DATA</code>. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load merqury/1.3
+cp ${MERQURY_TEST_DATA:-none}/* .
+for f in *.tar.gz ; do tar -xzf $f ; done
+merqury.sh F1.k18.meryl col0.hapmer.meryl cvi0.hapmer.meryl athal_COL.fasta athal_CVI.fasta test
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=10g merqury.sh</pre>
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

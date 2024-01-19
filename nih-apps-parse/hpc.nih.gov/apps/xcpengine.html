@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'xcpEngine on Biowulf';</script>
+<div class="title">xcpEngine on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+xcpEngine is a pipeline application that performs denoising of fMRI datasets and computes functional connectivity. This pipeline can take as input a dataset that has been preprocessed with <a href="https://hpc.nih.gov/apps/fmriprep.html">fmriprep</a>   
+</p>
+
+<h3>Web site</h3>
+<ul>
+    <li><a href="https://xcpengine.readthedocs.io">Home page</a></li>
+    <li><a href="https://github.com/PennBBL/xcpEngine">Github page</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://xcpengine.readthedocs.io">xcpEngine Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>xcpengine</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li><tt>xcpEngine</tt> is a scientific pipeline with the potential to overload Biowulf's central filesystem. To avoid filesystem issues we recommend the following:
+<ol>
+<li>Limit I/O with central Biowulf directories (e.g., /data, /home) by making use of local disk (/lscratch).  You can make use of lscratch to store temporary working directories by directly assigning the temporary work directory of <tt>xcpEngine</tt> (-i option) to /lscratch/$SLURM_JOB_ID (remember to allocate enough space in /lscratch). You should also use re-direct the output of <tt>xcpEngine</tt> to /lscratch/$SLURM_JOB_ID (-o option), then copy the output back to your data directory at the end of your job (see <a href="https://hpc.nih.gov/apps/xcpengine.html#sbatch">batch example</a> below). Additionally, you shuold copy your input dataset and cohort and design files to /lscratch/$SLURM_JOB_ID to keep I/O local as much as possible (see <a href="https://hpc.nih.gov/apps/xcpengine.html#sbatch">batch example</a> below).
+<li>Profile/benchmark <tt>xcpEngine</tt> jobs: We recommend making sure a given <tt>xcpEngine</tt> job can scale before launching a large number of jobs. You can do this by profiling/benchmarking small jobs (e.g., a swarm of 3 <tt>xcpEngine</tt> commands), then monitoring the jobs by using either the <a href="https://hpcnihapps.cit.nih.gov/auth/dashboard/">user dashboard</a> or the commands jobhist, sjobs, squeue, and jobload (see <a href="https://hpc.nih.gov/docs/biowulf_tools.html">biowulf utilities</a>). There are resources prepared by the HPC staff that go over how to monitor your jobs for benchmarking and profiling (<a href="https://youtu.be/fLMJ8-t5bm4">video</a>, and <a href="https://hpc.nih.gov/training/handouts/Effective_batch_system.pdf">slides</a>). Once you have profiled a swarm with a few jobs and you have refined the memory, CPU (and walltime) requirements, it is probably safe to (gradually) increase the number of <tt>xcpEngine</tt> jobs. For many analyses pipelines one has no way of knowing in advance how much memory or CPUs will be actually required in an HPC environment. This is why it is very important to profile/benchmark.
+</ol>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session to display usage (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1234 are ready for job
+
+[user@cn1234 ~]$ <b>module load xcpengine</b>
+
+[user@cn1234 ~]$ <b>xcpEngine</b>
+   Usage: xcpEngine -d <design> <options>
+
+   Compulsory arguments:
+    -d : Primary design file for pipeline:
+         The design file specifies the pipeline modules to
+         be included in the current analysis and configures
+         any parameters necessary to run the modules.
+    -c : Cohort file for pipeline input:
+         A comma-separated catalogue of the analytic sample.
+         Each row corresponds to a subject, and each column
+         corresponds either to an identifier or to an input.
+    -o : Parent directory for pipeline output:
+         A valid path on the current filesystem specifying
+         the directory wherein all output from the current
+         analysis will be written.
+
+   Optional arguments:
+    -m : Execution mode:
+         Input can either be 's' (for serial execution on a
+         single machine)[default], 'c' (for execution on a
+         computing cluster) or a path to a file (for execution
+         on a computing cluster, subject to the specifications
+         defined in the file).
+    -i : Scratch space for pipeline intermediates:
+         Some systems operate more quickly when temporary
+         files are written in a dedicated scratch space. This
+         argument enables a scratch space for intermediates.
+    -r : Root directory for inputs:
+         If all paths defined in the cohort file are defined
+         relative to a root directory, then this argument will
+         define the root directory. Otherwise, all paths will
+         be treated as absolute.
+    -t : Trace:
+         Integer value ( 0 - 3 ) that indicates the level
+         of verbosity during module execution. Higher
+         levels reduce readability but provide useful
+         information for troubleshooting.
+         0  [default]: Human-readable explanations of
+            processing steps and error traces only.
+         1: Explicitly trace module-level computations.
+            Print a workflow map when execution completes.
+         2: Explicitly trace module- and utility-level
+            computations.
+         3: All commands called by the module and all
+            children are traced and explicitly replicated
+            in a log file.
+
+[user@cn1234 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. xcpengine.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+# sbatch --gres=lscratch:100 --mem=32g --cpus-per-task=48 --time=72:00:00 xcpengine.sh
+
+set -e
+
+function fail {
+    echo "FAIL: $@" >&2
+    exit 1  # signal failure
+}
+
+module load xcpengine; \
+cd /lscratch/$SLURM_JOB_ID/
+cp /data/user/XCPENGINE_TEST/fmriprep.tar.gz /lscratch/$SLURM_JOB_ID/.; \
+tar -xzf /lscratch/$SLURM_JOB_ID/fmriprep.tar.gz -C /lscratch/$SLURM_JOB_ID; \
+cp /data/user/XCPENGINE_TEST/anat-antsct.dsn /lscratch/$SLURM_JOB_ID/.; \
+cp /data/user/XCPENGINE_TEST/anat_cohort.csv /lscratch/$SLURM_JOB_ID/.; \
+xcpEngine -d /lscratch/$SLURM_JOB_ID/anat-antsct.dsn -c /lscratch/$SLURM_JOB_ID/anat_cohort.csv -o /lscratch/$SLURM_JOB_ID/xcp_output -t 1 -i /lscratch/$SLURM_JOB_ID -r /lscratch/$SLURM_JOB_ID; \
+tar -czf xcp_output.tar.gz xcp_output; \
+cp /lscratch/$SLURM_JOB_ID/xcp_output.tar.gz /data/user/XCPENGINE_TEST/. 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--gres=lscratch:#] [--cpus-per-task=#] [--mem=#] xcpengine.sh</pre>
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

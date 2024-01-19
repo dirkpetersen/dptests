@@ -1,0 +1,356 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'EGA Download Client on Helix & Biowulf';</script>
+<script src='/js/highlight.pack.js' type="text/javascript"></script>
+<link href='/css/highlightjs/foundation.css' rel="stylesheet" type="text/css" />
+<script>hljs.highlightAll();</script>
+
+    <div class="title">EGA Download Client on Helix & Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive use </a></div>
+        <div class="tocItem"><a href="#script">Scripted processes</a></div>
+      </div>
+</table>
+
+<p>
+    The European Genome-phenome Archive (EGA) is designed to be a repository for all types of sequence and genotype experiments, including case-control, population, and family studies.
+</p>
+pyega3 is python-based and data is downloaded over secure https connections, instead of http. This allows EGA to send the data as unencrypted data (via encrypted connections); so, you don’t have to decrypt files after download. Files are verified against the unencrypted MD5 after download (you can also get the unencrypted MD5 via REST call from the API directly). pyega3 supports segmenting (breaking a file into up to 4 segments and downloading them in parallel) and resume; so even if a file is downloaded as one continuous stream, the download will simply resume if there was an error or an interrupted connection.
+<P>
+Users will need the appropriate credentials (provided by EGA, contact ega-helpdesk@ebi.ac.uk) to download any data from EGA. 
+<P>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><A href="https://pypi.org/project/pyega3/">Docs for pyega3</a></li>
+    <li><a href="https://www.ebi.ac.uk/ega/about/your_EGA_account/download_streaming_client">EGA download client home</a
+></li>
+    <li><a href="https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json">Sample EGA credentials file</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>pyega3</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li> In the examples, the -t flag is used with pyega3 to specify a hard-coded test user for access.  This user has very limited access to most of the data sets.  Users should contact the EGA to get their own credentials and not use -t on their actual requests.
+<li>The older Java based EGA client is deprecated and has been removed.
+<li><b>pyega3 can only be used to transfer data via the dedicated transfer node Helix</b>. It does not work on the Biowulf compute nodes because of its use of non-standard port numbers.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive use</div>
+<div class="nudgeblock">Data transfers must be carried out on Helix.</div>
+<br>
+<p>Helix has a direct connection to the internet and transfers do not go through the HPC proxy servers. <br>Sample session using the latest pyega3 to download the test EGA dataset (-t flag)</p>
+<pre class="term">
+[user@helix ~]$ <b>mkdir -pv /data/${USER}/egatest</b>
+mkdir: created directory ‘/data/user/egatest’
+
+[user@helix ~]$ <b>cd !$</b>
+cd /data/${USER}/egatest
+
+[user@helix egatest]$ <b>module load pyega3</b>
+[+] Loading singularity  3.7.3  on helix.nih.gov
+[+] Loading pyega3 3.3.0  ...
+
+[user@helix egatest]$ <b>pyega3 -t datasets</b>
+[2021-04-23 16:33:47 -0400]
+[2021-04-23 16:33:47 -0400] pyEGA3 - EGA python client version 3.3.0 (https://github.com/EGA-archive/ega-download-client)
+[2021-04-23 16:33:47 -0400] Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly
+[2021-04-23 16:33:47 -0400] Python version : 3.6.9
+[2021-04-23 16:33:47 -0400] OS version : Linux #1 SMP Mon Feb 22 18:03:13 EST 2021
+[2021-04-23 16:33:47 -0400] Server URL: https://ega.ebi.ac.uk:8052/elixir/data
+[2021-04-23 16:33:47 -0400] Session-Id: 3090364833
+[2021-04-23 16:33:51 -0400]
+[2021-04-23 16:33:51 -0400] Authentication success for user 'ega-test-data@ebi.ac.uk'
+[2021-04-23 16:33:55 -0400] Dataset ID
+[2021-04-23 16:33:55 -0400] -----------------
+[2021-04-23 16:33:55 -0400] EGAD00001003338
+[2021-04-23 16:33:55 -0400] EGAD00001006673
+
+[user@helix egatest]$ <b>pyega3 -t files EGAD00001003338</b>
+[2021-04-23 16:34:27 -0400]
+[2021-04-23 16:34:27 -0400] pyEGA3 - EGA python client version 3.3.0 (https://github.com/EGA-archive/ega-download-client)
+[2021-04-23 16:34:27 -0400] Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly
+[2021-04-23 16:34:27 -0400] Python version : 3.6.9
+[2021-04-23 16:34:27 -0400] OS version : Linux #1 SMP Mon Feb 22 18:03:13 EST 2021
+[2021-04-23 16:34:27 -0400] Server URL: https://ega.ebi.ac.uk:8052/elixir/data
+[2021-04-23 16:34:27 -0400] Session-Id: 2040888476
+[2021-04-23 16:34:31 -0400]
+[2021-04-23 16:34:31 -0400] Authentication success for user 'ega-test-data@ebi.ac.uk'
+[2021-04-23 16:34:38 -0400] File ID         Status Bytes        Check sum                            File name
+[2021-04-23 16:34:38 -0400] EGAF00005007332      1 229305       56e8de04466aba23ab5acbaf1c087045     NA18534.GRCh38DH.exome.cram.crai
+[2021-04-23 16:34:38 -0400] EGAF00005007331      1 137465       fcf1cc38cd404ea1cdba3975d26f4a8b     HG01775.GRCh38DH.exome.cram.crai
+[2021-04-23 16:34:38 -0400] EGAF00005007330      1 4722         110b493c17210ff3484ed2561a2fe21f     HG01775.chrY.bcf.csi
+[2021-04-23 16:34:38 -0400] EGAF00005007329      1 876313       aaca702e347ae6caa734d44527a49212     HG01775.chrY.bcf
+[2021-04-23 16:34:38 -0400] EGAF00005007328      1 4981         d0e71e5dd7f5279e113c4f0dfd37fc23     HG01775.chrY.vcf.gz.tbi
+[2021-04-23 16:34:38 -0400] EGAF00005007327      1 850737       f3dee64b466efe334b2cac77f5c2f710     HG01775.chrY.vcf.gz
+[2021-04-23 16:34:38 -0400] EGAF00005007326      1 6251         ae2d2097a8744877d9d20907200cbdcf     ALL.chrY.phase3_integrated_v2a.20130502.genotypes.bcf.csi
+[2021-04-23 16:34:38 -0400] EGAF00005007325      1 5527171      395c0d3d454d7c7d61c4f771fbab02fc     ALL.chrY.phase3_integrated_v2a.20130502.genotypes.bcf
+[2021-04-23 16:34:38 -0400] EGAF00005007324      1 8074         fa37e14805cce3221f6f9d3a4cd749a4     ALL.chrY.phase3_integrated_v2a.20130502.genotypes.vcf.gz.tbi
+[2021-04-23 16:34:39 -0400] EGAF00005007323      1 5719142      388fb466c983d4bec2082941647409f3     ALL.chrY.phase3_integrated_v2a.20130502.genotypes.vcf.gz
+[2021-04-23 16:34:39 -0400] EGAF00005007181      1 2938941932   910141b9f4ccbfbf57813dee1a7a3f1d     NA18534.GRCh38DH.exome.cram
+[2021-04-23 16:34:39 -0400] EGAF00005007180      1 1837578063   74d3b803823d3f8b73bd592941f23726     HG01775.GRCh38DH.exome.cram
+[2021-04-23 16:34:39 -0400] EGAF00005001626      1 27620        09e3b4724404fc7bb5f9948f80016757     ALL_chr22_20130502_2504Individuals.bcf.csi
+[2021-04-23 16:34:39 -0400] EGAF00005001625      1 186424665    c65ca1a4abd55351598ccbc65ebfa9a6     ALL_chr22_20130502_2504Individuals.bcf
+[2021-04-23 16:34:39 -0400] EGAF00005001624      1 36094        4202e9a481aa8103b471531a96665047     ALL_chr22_20130502_2504Individuals.vcf.gz.tbi
+[2021-04-23 16:34:39 -0400] EGAF00005001623      1 214453766    ad7d6e0c05edafd7faed7601f7f3eaba     ALL_chr22_20130502_2504Individuals.vcf.gz
+[2021-04-23 16:34:39 -0400] EGAF00005000665      1 14509        7cf0f467fd44dd783ff05cb4662642b6     NA19238.chr22.bcf.csi
+[2021-04-23 16:34:39 -0400] EGAF00005000664      1 26957200     62b16cc9ce6ceb3ef97b98c99aa6fec5     NA19238.chr22.bcf
+[2021-04-23 16:34:39 -0400] EGAF00005000663      1 18596        02fdb6fc68b854f98fef710ff4dee0c1     NA19238.chr22.vcf.gz.tbi
+[2021-04-23 16:34:39 -0400] EGAF00005000662      1 25444204     274de4071bca5354ff16a1de0116c455     NA19238.chr22.vcf.gz
+[2021-04-23 16:34:39 -0400] EGAF00001775036      1 4804928      3b89b96387db5199fef6ba613f70e27c     ENCFF284YOU.bam.bai
+[2021-04-23 16:34:39 -0400] EGAF00001775034      1 5991400      b8ae14d5d1f717ab17d45e8fc36946a0     ENCFF000VWO.bam.bai
+[2021-04-23 16:34:39 -0400] EGAF00001770107      1 3551031027   dfef3f355230915418a78da460665d56     ENCFF284YOU.bam
+[2021-04-23 16:34:39 -0400] EGAF00001770106      1 462139278    ce073afcbc07afa343f2d4e4d07efeda     ENCFF000VWO.bam
+[2021-04-23 16:34:39 -0400] EGAF00001753757      1 9018288      351130149989cca43fe8c7382e9d326a     NA19240.bai
+[2021-04-23 16:34:39 -0400] EGAF00001753756      1 140445765831 2413ce93a4b2b50fa0c2ff5bdf97695f     NA19240.bam
+[2021-04-23 16:34:39 -0400] EGAF00001753755      1 9005792      767fc92be753de8cf570690bd7fbe629     NA19239.bai
+[2021-04-23 16:34:39 -0400] EGAF00001753754      1 136016115737 59fbc3828fb878d8e637557ce707d445     NA19239.bam
+[2021-04-23 16:34:39 -0400] EGAF00001753753      1 9379032      028ab5c73fea03c349e0d73943913141     NA19238.bai
+[2021-04-23 16:34:39 -0400] EGAF00001753752      1 229774247950 0751106bbe1c4c83ec934a5972a4efdf     NA19238.bam
+[2021-04-23 16:34:39 -0400] EGAF00001753751      1 9204720      c1eadd98469fcd3ced4c51a84b3ce307     NA12892.bai
+[2021-04-23 16:34:39 -0400] EGAF00001753750      1 66145394874  201bded705401615fe5e90988d509656     NA12892.bam
+[2021-04-23 16:34:39 -0400] EGAF00001753749      1 9212704      e04dbb7ccbc24ccd853d89b8b066166c     NA12891.bai
+[2021-04-23 16:34:39 -0400] EGAF00001753748      1 4317237247   71a78dfb5258939abab2257a2abd1126     NA12891.bam
+[2021-04-23 16:34:39 -0400] EGAF00001753747      1 8949984      a23a84c89d338796f78e68804c8d2c6c     NA12878.bam.bai
+[2021-04-23 16:34:39 -0400] EGAF00001753746      1 143427187111 11395de33f28ed867170d2dc723cc700     NA12878.bam
+[2021-04-23 16:34:39 -0400] EGAF00001753745      1 1622405      18e0e7070b6cf4d042c7f9bee15d56bd     NA19240.crai
+[2021-04-23 16:34:39 -0400] EGAF00001753744      1 48309446909  728bea9317cbab1c98429e43e48f9a83     NA19240.cram
+[2021-04-23 16:34:39 -0400] EGAF00001753743      1 1514700      be2024ccbf5b3bd9132f6d270a37118c     NA19239.crai
+[2021-04-23 16:34:39 -0400] EGAF00001753742      1 44113571936  d963539652de2ea20005d98e934d59c2     NA19239.cram
+[2021-04-23 16:34:39 -0400] EGAF00001753741      1 1195785      3b862e018b0b85db7954cbed2e17b6ba     NA19238.crai
+[2021-04-23 16:34:39 -0400] EGAF00001753740      1 34823972801  492780f603da2f5f3306c41011e0acd2     NA19238.cram
+[2021-04-23 16:34:39 -0400] EGAF00001753739      1 1331384      bb569235226b5b9f0578d34d1b52482e     NA12892.crai
+[2021-04-23 16:34:39 -0400] EGAF00001753738      1 38370156211  a7503d228d0851b999b826b736b8dd32     NA12892.cram
+[2021-04-23 16:34:39 -0400] EGAF00001753737      1 1310034      0ab7a2d110740561871ccdca7f15f13b     NA12891.crai
+[2021-04-23 16:34:39 -0400] EGAF00001753736      1 38215425935  bbc03793c9534a22f77e751d2723cb10     NA12891.cram
+[2021-04-23 16:34:39 -0400] EGAF00001753735      1 1575103      41fd8741e91924eae19c6baa7893eeb8     NA12878.crai
+[2021-04-23 16:34:39 -0400] EGAF00001753734      1 45030910198  040ef7533533a3db67a35b9f454b9269     NA12878.cram
+[2021-04-23 16:34:39 -0400] --------------------------------------------------------------------------------
+[2021-04-23 16:34:39 -0400] Total dataset size = 911.13 GB
+
+[user@helix egatest]$ <b>pyega3 -t fetch EGAF00001753735</b>
+[2021-04-23 16:35:45 -0400]
+[2021-04-23 16:35:45 -0400] pyEGA3 - EGA python client version 3.3.0 (https://github.com/EGA-archive/ega-download-client)
+[2021-04-23 16:35:45 -0400] Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly
+[2021-04-23 16:35:45 -0400] Python version : 3.6.9
+[2021-04-23 16:35:45 -0400] OS version : Linux #1 SMP Mon Feb 22 18:03:13 EST 2021
+[2021-04-23 16:35:45 -0400] Server URL: https://ega.ebi.ac.uk:8052/elixir/data
+[2021-04-23 16:35:45 -0400] Session-Id: 1656850299
+[2021-04-23 16:35:58 -0400]
+[2021-04-23 16:35:58 -0400] Authentication success for user 'ega-test-data@ebi.ac.uk'
+[2021-04-23 16:36:05 -0400]
+[2021-04-23 16:36:05 -0400] Authentication success for user 'ega-test-data@ebi.ac.uk'
+[2021-04-23 16:36:05 -0400] File Id: 'EGAF00001753735'(1575103 bytes).
+[2021-04-23 16:36:05 -0400] Total space : 5839680.00 GiB
+[2021-04-23 16:36:05 -0400] Used space : 3735395.91 GiB
+[2021-04-23 16:36:05 -0400] Free space : 2104284.09 GiB
+[2021-04-23 16:36:05 -0400] Download starting [using 1 connection(s)]...
+100%|###########################################################################| 1.58M/1.58M [00:08<00:00, 195kB/s]
+[2021-04-23 16:36:13 -0400] Combining file chunks (this operation can take a long time depending on the file size)
+100%|##########################################################################| 1.58M/1.58M [00:00<00:00, 3.06GB/s]
+[2021-04-23 16:36:13 -0400] Calculating md5 (this operation can take a long time depending on the file size)
+100%|###########################################################################| 1.58M/1.58M [00:00<00:00, 412MB/s]
+[2021-04-23 16:36:13 -0400] Verifying file checksum
+[2021-04-23 16:36:13 -0400] Saved to : '/gpfs/gsfs11/users/user/egatest/EGAF00001753735/NA12878.crai'(1575087 bytes, md5=41fd8741e91924eae19c6baa7893eeb8)
+[2021-04-23 16:36:13 -0400] Download complete
+
+[user@helix egatest]$ <b>ls -lh</b>
+total 129K
+drwxr-x--- 2 user user 4.0K Apr 23 16:36 EGAF00001753735
+-rw-r----- 1 user user 9.1K Apr 23 16:36 pyega3_output.log
+
+[user@helix egatest]$
+</pre>
+
+<a Name="int"></a><div class="heading">Scripting processes</div>
+<div class="nudgeblock">You can only run an absolute maximum of 6 simultaneous download processes on Helix.</div>
+<br>
+You might want to speed up your file transfer by starting multiple download streams to work on different files at the same time.  Here is an example illustrating one way to do this on Helix.   
+
+<p class="alert"><b>WARNING!</b><br>
+The following script will launch background processes that will continue to download data even after you log off of Helix. The EGA archive contains large data sets that can easily fill your quotas. If you decide to use this method or something similar, closely monitor your data and be ready kill processes if they are filling your directories. This example alone downloads a terabyte of data.</p>
+
+<P>
+First, generate or obtain a file with the names of the files you want to download. In this example we use the <tt>pyega3</tt> command to get informatin about the test data set from the archive, and then we use the <tt>grep</tt> command with a sensible regular expression to generate a file list.  You may need to use a different method to obtain or create a file list for you data set. 
+
+<pre class="term">
+[user@helix egatest]$ <b>module load pyega3</b>
+[+] Loading singularity  3.7.3  on helix.nih.gov
+[+] Loading pyega3 3.3.0  ...
+
+[user@helix egatest]$ <b>pyega3 -t files EGAD00001003338 >raw_file_info 2>&1</b>
+
+[user@helix egatest]$ <b>grep -oP "(EGAF\d{11})" raw_file_info >file_list</b>
+
+[user@helix egatest]$ <b>head file_list</b>
+EGAF00005007332
+EGAF00005007331
+EGAF00005007330
+EGAF00005007329
+EGAF00005007328
+EGAF00005007327
+EGAF00005007326
+EGAF00005007325
+EGAF00005007324
+EGAF00005007323
+
+[user@helix egatest]$
+</pre>
+
+<P>
+Once you have a file list, you can use the script below (or a modified variant) to start 6 simultaneous loops downloading the files. For our purposes, assume this script is named <b><tt>pyega3loop.sh</tt></b>. You can download this script (via most browsers) <a href="/examples/pyega3loop.sh">here</a>.
+
+<br>
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+
+usage () {
+    echo "nohup ${0} &lt;file list&gt; &lt;credentials file&gt;"
+    echo ""
+    echo "egaloop will read entries from a &lt;file list&gt;
+and start 6 processes to try to download those files to the current
+directory using the credentials saved in &lt;credentials file&gt;. It's a 
+good idea to run this script with the nohup directive"
+    exit 1
+}
+
+# if a credentials file was supplied make the arg string and check that the
+# file exists
+if [ $# -eq 2 ]; then 
+    CREDOPT="-cf ${2}"
+    if [ ! -f "${2}" ]; then 
+        usage
+    fi
+# otherwise, assume the -t (test account) option
+elif [ $# -eq 1 ]; then
+    CREDOPT="-t"
+# if the user did not supply 1 or 2 args then display usage and exit
+else
+    usage
+fi
+# also check that the file list exits
+if [ ! -f "${1}" ]; then 
+    usage
+fi
+
+egaloop () {
+    # loop through given indices of the file list
+    STR=$1
+    END=$2
+
+    while [ $STR -le $END ]; do
+        FILE=$(sed "${STR}q;d" $FLIST)
+        # echo "pyega3 ${CREDOPT} fetch ${FILE}"
+        pyega3 ${CREDOPT} fetch ${FILE}
+        STR=$(($STR+1))
+    done
+}
+
+module load pyega3/3.3.0
+FLIST=$1
+PROC_N=6
+LINE_N=$(wc -l ${FLIST} | awk '{split($0,a," "); print a[1]}')
+CHUNK=$(($LINE_N/$PROC_N))
+ii=1
+THIS_LINE=0
+while true; do 
+    # if it's the last iteration make sure to get the rest 
+    # in case of rounding errors 
+    if [ $ii -eq $PROC_N ]; then 
+        # echo "egaloop $(($THIS_LINE+1)) $LINE_N &"
+        egaloop $(($THIS_LINE+1)) $LINE_N &
+        break
+    fi
+    # echo "egaloop $(($THIS_LINE+1)) $(($THIS_LINE+$CHUNK)) &"
+    egaloop $(($THIS_LINE+1)) $(($THIS_LINE+$CHUNK)) &
+    THIS_LINE=$(($THIS_LINE+$CHUNK))
+    ii=$(($ii+1))
+done 
+</code>
+</pre>
+
+<P>
+You can call this script with the file list as the first argument and credentials file as an optional second argument.  The script splits up your file list into 6 different chunks and starts 6 simultaneous processes working to download each of the 6 sub-lists of files. If you begin this script with the <tt>nohup</tt> directive each process will work silently in the background and save output to the <tt>nohup.log</tt> file.  
+
+<pre class="term">
+[user@helix egatest]$ <b>nohup ./pyega3loop.sh file_list</b>
+nohup: ignoring input and appending output to ‘nohup.out’
+
+[user@helix egatest]$ <b>ps --forest -u $USER</b>
+  PID TTY          TIME CMD
+38178 ?        00:00:00 sshd
+38203 pts/145  00:00:00  \_ bash
+42096 pts/145  00:00:00      \_ ps
+41072 pts/145  00:00:00 pyega3loop.sh
+41084 pts/145  00:00:00  \_ pyega3
+41119 pts/145  00:00:00      \_ starter-suid
+41270 pts/145  00:00:00          \_ pyega3
+41071 pts/145  00:00:00 pyega3loop.sh
+41082 pts/145  00:00:00  \_ pyega3
+41120 pts/145  00:00:00      \_ starter-suid
+41272 pts/145  00:00:00          \_ pyega3
+41068 pts/145  00:00:00 pyega3loop.sh
+41086 pts/145  00:00:00  \_ pyega3
+41122 pts/145  00:00:00      \_ starter-suid
+41271 pts/145  00:00:00          \_ pyega3
+41067 pts/145  00:00:00 pyega3loop.sh
+41083 pts/145  00:00:00  \_ pyega3
+41121 pts/145  00:00:00      \_ starter-suid
+41267 pts/145  00:00:00          \_ pyega3
+41066 pts/145  00:00:00 pyega3loop.sh
+41087 pts/145  00:00:00  \_ pyega3
+41129 pts/145  00:00:00      \_ starter-suid
+41268 pts/145  00:00:00          \_ pyega3
+41065 pts/145  00:00:00 pyega3loop.sh
+41085 pts/145  00:00:00  \_ pyega3
+41127 pts/145  00:00:00      \_ starter-suid
+41269 pts/145  00:00:00          \_ pyega3
+
+[user@helix egatest]$ <b>ls -lh</b>
+total 8.2M
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00001753740
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00001753741
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00001753749
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00001753757
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00005000664
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00005000665
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00005007323
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00005007324
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00005007331
+drwxr-x--- 2 user user 4.0K Apr 26 12:46 EGAF00005007332
+-rw-r----- 1 user user  768 Apr 26 12:29 file_list
+-rw------- 1 user user  28K Apr 26 12:46 nohup.out
+-rwxr-x--- 1 user user 1.7K Apr 26 12:24 pyega3loop.sh
+-rw-r----- 1 user user  15K Apr 26 12:46 pyega3_output.log
+-rw-r----- 1 user user 6.7K Apr 26 12:27 raw_file_info
+
+[user@helix egatest]$ 
+</pre>
+
+<P>
+You can monitor the progress of these downloads using the <tt>tail -f</tt> command to output the contents of <tt>nohup.out</tt> or <tt>pyega3_output.log</tt>.  If you need to stop these processes you can do so with the <tt>killall</tt> command like so:
+
+<pre class="term">
+[user@helix egatest]$ <b>killall --user $USER pyega3loop.sh && killall --user $USER pyega3</b>
+
+[user@helix egatest]$ <b>ps --forest -u $USER</b>
+  PID TTY          TIME CMD
+38178 ?        00:00:00 sshd
+38203 pts/145  00:00:00  \_ bash
+40204 pts/145  00:00:00      \_ ps
+</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

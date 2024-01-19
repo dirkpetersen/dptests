@@ -1,0 +1,216 @@
+
+
+document.querySelector('title').textContent = 'TreeTime on Biowulf';
+TreeTime on Biowulf
+
+
+|  |
+| --- |
+| 
+Quick Links
+[Documentation](#doc)
+[Notes](#notes)
+[Interactive job](#int) 
+[Batch job](#sbatch) 
+[Swarm of jobs](#swarm) 
+ |
+
+
+
+TreeTime provides routines for ancestral sequence reconstruction and inference of molecular-clock phylogenies, i.e., a tree where all branches are scaled such that the positions of terminal nodes correspond to their sampling times and internal nodes are placed at the most likely time of divergence.
+
+
+
+Documentation
+* [TreeTime Github](https://github.com/neherlab/treetime)
+
+
+Important Notes
+* Module Name: treetime (see [the modules page](/apps/modules.html) for more information)
+* Singlethreaded
+* Environment variables set 
+	+ TREETIME\_TEST\_DATA* Test data files in /usr/local/apps/treetime/TEST\_DATA
+
+
+
+Interactive job
+[Interactive jobs](/docs/userguide.html#int) should be used for debugging, graphics, or applications that cannot be run as batch jobs.
+Allocate an [interactive session](/docs/userguide.html#int) and run the program.   
+Sample session (user input in **bold**):
+
+
+
+```
+
+[user@biowulf]$ **sinteractive --gres=lscratch:10**
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ **module load treetime**
+[+] Loading singularity  3.8.5-1  on cn0847
+[+] Loading treetime 0.9.0  ...
+
+[user@cn3144 ~]$ **cd /lscratch/$SLURM\_JOB\_ID**
+
+[user@cn3144 ~]$ **cp -r $TREETIME\_TEST\_DATA/data/ebola/\*** 
+
+[user@cn3144 ~]$ **treetime --aln ebola.fasta \
+ --tree ebola.nwk \
+ --dates ebola.metadata.csv**
+Attempting to parse dates...
+        Using column 'name' as name. This needs match the taxon names in the tree!!
+        Using column 'date' as date.
+0.00    -TreeAnc: set-up
+5.01    -WARNING: character U is unknown. Treating it as missing information
+5.04    WARNING: Previous versions of TreeTime (<0.7.0) RECONSTRUCTED sequences of
+        tips at positions with AMBIGUOUS bases. This resulted in unexpected
+        behavior is some cases and is no longer done by default. If you want to
+        replace those ambiguous sites with their most likely state, rerun with
+        `reconstruct_tip_states=True` or `--reconstruct-tip-states`.
+18.95   TreeTime.reroot: with method or node: least-squares
+18.95   TreeTime.reroot: rerooting will ignore covariance and shared ancestry.
+19.59   TreeTime.reroot: with method or node: least-squares
+19.59   TreeTime.reroot: rerooting will ignore covariance and shared ancestry.
+28.47   ###TreeTime.run: INITIAL ROUND
+42.43   TreeTime.reroot: with method or node: least-squares
+42.44   TreeTime.reroot: rerooting will ignore covariance and shared ancestry.
+43.00   ###TreeTime.run: rerunning timetree after rerooting
+60.59   ###TreeTime.run: ITERATION 1 out of 2 iterations
+88.84   ###TreeTime.run: ITERATION 2 out of 2 iterations
+117.79  TreeTime: the following tips have been marked as outliers. Their date
+        constraints were not used. Please remove them from the tree. Their dates
+        have been reset:
+117.79  EM_NG_2016_029366, input date: 2016.21, apparent date: 2015.17
+117.79  EM_NG_2016_029364, input date: 2016.21, apparent date: 2015.17
+117.79  EM_NG_2016_029417, input date: 2016.22, apparent date: 2015.17
+117.79  NZG_0381, input date: 2016.23, apparent date: 2015.17
+117.79  NZG_0393, input date: 2016.24, apparent date: 2015.24
+117.79  NZG_0422, input date: 2016.25, apparent date: 2015.24
+117.79  NZG_0358, input date: 2016.22, apparent date: 2015.24
+117.79  J0169, input date: 2014.85, apparent date: 2015.42
+117.79  2607_C2_12916_EMLH, input date: 2015.32, apparent date: 2016.02
+117.79  2607_C2_12855_EMLH, input date: 2015.28, apparent date: 2016.02
+117.79  1708_C1_13031_EMLH, input date: 2015.38, apparent date: 2016.15
+117.79  1507_C1_18660_EMLH, input date: 2015.52, apparent date: 2016.56
+117.79  1507_C1_18650_EMLH, input date: 2015.52, apparent date: 2016.49
+117.79  1507_C1_13268_EMLH, input date: 2015.47, apparent date: 2016.56
+117.79  1507_C1_18647_EMLH, input date: 2015.52, apparent date: 2016.42
+117.79  0208_C1_MK10173, input date: 2015.58, apparent date: 2016.49
+117.79  1507_C1_18706_EMLH, input date: 2015.53, apparent date: 2016.49
+117.79  2208_C2_18659R_EMLH, input date: 2015.52, apparent date: 2016.62
+117.79  2208_C2_18642R_EMLH, input date: 2015.51, apparent date: 2016.56
+117.79  1507_C1_18636_EMLH, input date: 2015.51, apparent date: 2016.62
+117.79  2208_C2_18687R_EMLH, input date: 2015.53, apparent date: 2016.62
+Inferred sequence evolution model (saved as sequence_evolution_model.txt):
+Substitution rate (mu): 1.0
+Equilibrium frequencies (pi_i):
+  A: 0.3139
+  C: 0.2144
+  G: 0.1979
+  T: 0.2638
+  -: 0.01
+Symmetrized rates from j->i (W_ij):
+        A       C       G       T       -
+  A     0       0.3826  2.5275  0.2294  6.7955
+  C     0.3826  0       0.1691  3.5602  12.1805
+  G     2.5275  0.1691  0       0.3724  5.295
+  T     0.2294  3.5602  0.3724  0       27.7433
+  -     6.7955  12.1805 5.295   27.7433 0
+Actual rates from j->i (Q_ij):
+        A       C       G       T       -
+  A     0       0.1201  0.7933  0.072   2.133
+  C     0.0821  0       0.0363  0.7634  2.612
+  G     0.5002  0.0335  0       0.0737  1.0478
+  T     0.0605  0.9393  0.0982  0       7.3198
+  -     0.0676  0.1212  0.0527  0.2761  0
+Inferred sequence evolution model (saved as molecular_clock.txt):
+Root-Tip-Regression:
+ --rate:        7.895e-04
+ --r^2:         0.81
+--- saved tree as
+         timetree.pdf
+--- root-to-tip plot saved to
+        root_to_tip_regression.pdf
+--- alignment including ancestral nodes saved as
+         ancestral_sequences.fasta
+--- saved divergence times in
+         dates.tsv
+--- tree saved in nexus format as
+         timetree.nexus
+--- divergence tree saved in nexus format as
+         divergence_tree.nexus
+
+[user@cn3144 ~]$ **exit**
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+
+```
+
+
+Batch job
+Most jobs should be run as [batch jobs](/docs/userguide.html#submit).
+Create a batch input file (e.g. treetime.sh). For example:
+
+
+
+```
+
+#!/bin/bash
+set -e
+module load treetime
+treetime --aln aln.fasta \
+         --tree tree.nwk \
+         --dates dates.csv
+
+```
+
+Submit this job using the Slurm [sbatch](/docs/userguide.html) command.
+
+
+
+```
+sbatch [--mem=#] treetime.sh
+```
+
+Swarm of Jobs 
+A [swarm of jobs](/apps/swarm.html) is an easy way to submit a set of independent commands requiring identical resources.
+Create a swarmfile (e.g. treetime.swarm). For example:
+
+
+
+```
+
+treetime --aln aln.fasta --tree tree1.nwk --dates dates.csv
+treetime --aln aln.fasta --tree tree2.nwk --dates dates.csv
+treetime --aln aln.fasta --tree tree3.nwk --dates dates.csv
+treetime --aln aln.fasta --tree tree4.nwk --dates dates.csv
+
+```
+
+Submit this job using the [swarm](/apps/swarm.html) command.
+
+
+
+```
+swarm -f treetime.swarm [-g #] --module treetime
+```
+
+where
+
+
+|  |  |
+| --- | --- |
+| -g *#* | Number of Gigabytes of memory required for each process (1 line in the swarm command file) |
+| --module treetime | Loads the treetime module for each subjob in the swarm |
+
+
+
+
+
+
+
+

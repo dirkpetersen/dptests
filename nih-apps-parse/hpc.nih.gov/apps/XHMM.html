@@ -1,0 +1,109 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'XHMM on Biowulf';</script>
+<div class="title">XHMM on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+  <p>The XHMM (eXome-Hidden Markov Model) C++ software suite was written to call copy number variation (CNV) from next-generation sequencing projects, where exome capture was used (or targeted sequencing, more generally).</p>
+
+  <p>XHMM uses principal component analysis (PCA) normalization and a hidden Markov model (HMM) to detect and genotype copy number variation (CNV) from normalized read-depth data from targeted sequencing experiments.</p>
+
+  <p>XHMM was explicitly designed to be used with targeted exome sequencing at high coverage (at least 60x - 100x) using Illumina HiSeq (or similar) sequencing of at least ~50 samples. However, no part of XHMM explicitly requires these particular experimental conditions, just high coverage of genomic regions for many samples.</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Menachem Fromer, Jennifer L. Moran, Kimberly Chambert, Eric Banks, Sarah E. Bergen, Douglas M. Ruderfer, Robert E. Handsaker, Steven A. McCarroll, Michael C. O'Donovan, Michael J. Owen, George Kirov, Patrick F. Sullivan, Christina M. Hultman, Pamela Sklar, and Shaun M. Purcell.
+    <a href="http://www.cell.com/AJHG/abstract/S0002-9297%2812%2900417-X"><u><b>Discovery and statistical genotyping of copy-number variation from whole-exome sequencing depth.</b></u></a>
+    <em>American Journal of Human Genetics, 91:597-607, Oct 2012.</em>
+  </li>
+  <li>
+    Christopher S. Poultney, Arthur P. Goldberg, Elodie Drapeau, Yan Kou, Hala Harony-Nicolas, Yuji Kajiwara, Silvia De Rubeis, Simon Durand, Christine Stevens, Karola Rehnstrom, Aarno Palotie, Mark J. Daly, Avi Ma'ayan, Menachem Fromer, and Joseph D. Buxbaum.
+    <a href="http://www.sciencedirect.com/science/article/pii/S000292971300414X"><u><b>Identification of small exonic CNV from whole-exome sequence data and application to autism spectrum disorder.</b></u></a>
+    <em>American Journal of Human Genetics, 93(4):607-619, 2013.</em>
+  </li>
+  <li>
+    Menachem Fromer and Shaun M. Purcell.
+    <a href="http://dx.doi.org/10.1002/0471142905.hg0723s81"><u><b>Using XHMM software to detect copy number variation in whole-exome sequencing data.</b></u></a>
+    <em>In Current Protocols in Human Genetics. John Wiley and Sons, Inc., 2014.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://atgu.mgh.harvard.edu/xhmm/tutorial.shtml">XHMM Tutorial</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>XHMM</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+
+  <p>A <tt><b>params.txt</b></tt> will need to be created.  Here is an example:</p>
+
+  <pre class="term">1e-8	6	70	-3	1.00	0	1.00	3	1.00</pre>
+
+  <p>A parameters file consists of the following 9 values (tab-delimited):</p>
+  <ol>
+    <li>Exome-wide CNV rate</li>
+    <li>Mean number of targets in CNV</li>
+    <li>Mean distance between targets within CNV (in KB)</li>
+    <li>Mean of DELETION z-score distribution</li>
+    <li>Standard deviation of DELETION z-score distribution</li>
+    <li>Mean of DIPLOID z-score distribution</li>
+    <li>Standard deviation of DIPLOID z-score distribution</li>
+    <li>Mean of DUPLICATION z-score distribution</li>
+    <li>Standard deviation of DUPLICATION z-score distribution</li>
+  </ol>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load XHMM</b>
+[user@cn3144 ~]$ <b>xhmm -p params.txt</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. XHMM.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load XHMM
+xhmm --mergeGATKdepths -o ./DATA.RD.txt \
+--GATKdepths group1.DATA.sample_interval_summary \
+--GATKdepths group2.DATA.sample_interval_summary \
+--GATKdepths group3.DATA.sample_interval_summary
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] XHMM.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

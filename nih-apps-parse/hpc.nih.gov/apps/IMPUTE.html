@@ -1,0 +1,204 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Impute, qctool, gtool and snptest on Biowulf';</script>
+<div class="title">Impute, qctool, gtool and snptest  on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+	<div class="tocItem"><a href="#par">Note about parallelization</a></div>
+      </div>
+</table>
+
+<p>
+<b><a href="https://mathgen.stats.ox.ac.uk/impute/impute.html">IMPUTE</a></b> version 2 (also known as IMPUTE2) is a genotype imputation and haplotype phasing program based on ideas from Howie et al. 2009: 
+<P>
+<b><a href="http://www.well.ox.ac.uk/~gav/qctool/#overview">QCTOOL</a></b> is a command-line utility program for basic quality control of GWAS datasets. 
+It supports the same file formats used by the WTCCC studies, as well as the binary file format described on the qctool webpage and the Variant Call Format, and is 
+designed to work seamlessly with SNPTEST and related tools 
+<P>
+<b><A HREF="http://www.well.ox.ac.uk/~cfreeman/software/gwas/gtool.html">GTOOL</a></b> is a program for transforming sets of genotype data for use with 
+the programs SNPTEST and IMPUTE. GTOOL can be used to:
+<ul>
+<li>    generate subsets of genotype data,
+  <li>   to convert genotype data between the PED file format and the file format used by SNPTEST and IMPUTE,
+  <li>   merge genotype datasets together,
+  <li>   orient genotype data according to a strand file.
+</ul>
+<P>
+<b><a href="https://mathgen.stats.ox.ac.uk/genetics_software/snptest/snptest.html">SNPTEST</a></b> is a program for the analysis of single SNP association 
+in genome-wide studies. The tests implemented include
+<ul>
+    <li>Binary (case-control) phenotypes, single and multiple quantitative phenotypes
+    <li>Bayesian and Frequentist tests
+    <li>Ability to condition upon an arbitrary set of covariates and/or SNPs.
+    <li>Various different methods for the dealing with imputed SNPs.
+</ul>
+Impute, qctool, gtool and snptest were all developed at the University of Oxford. 
+<P>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<a href="https://mathgen.stats.ox.ac.uk/impute/impute_v2.html#Instructions">Impute2 website</a><br>
+<a href="http://www.well.ox.ac.uk/~cfreeman/software/gwas/gtool.html">gtool website</a><br>
+<a href="https://mathgen.stats.ox.ac.uk/genetics_software/snptest/snptest.html">Snptest website</a><br>
+<a href="http://www.well.ox.ac.uk/~gav/qctool/#overview">qctool website</a>
+
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Names: <tt>impute, qctool, gtool, snptest</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>To add all these modules to your path, use 
+<pre class="term">
+module load impute qctool gtool snptest  
+</pre>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load impute</b>
+
+[user@cn3144 ~]$ <b>impute2 -ref_samp_out -m ./chr16.map -h ./chr16.haps \
+  -l ./chr16.legend -g ./chr16.reference.gtypes -s ./chr16.reference.strand \
+  -Ne 11418 -int 5000000 5500000 -buffer 250 -k 10 -iter 10 -burnin 3 \
+  -o ./Results/chr16.multi_panel.ref_gtypes.impute2 \
+  -i ./Results/chr16.multi_panel.ref_gtypes.impute2.info \
+  -r ./Results/chr16.multi_panel.ref_gtypes.impute2.summary</b>
+
+The seed for the random number generator is 1115038504.
+
+Command-line input: impute2 -ref_samp_out -m ./chr16.map -h ./chr16.haps -l ./chr16.legend -g ./chr16.reference.gtypes -s ./chr16.reference.strand -Ne 11418 -int 5000000 5500000 -buffer 250 -k 10 -iter 10 -burnin 3 -o ./Results/chr16.multi_panel.ref_gtypes.impute2 -i ./Results/chr16.multi_panel.ref_gtypes.impute2.info -r ./Results/chr16.multi_panel.ref_gtypes.impute2.summary
+
+
+======================
+ IMPUTE version 2.0.3 
+======================
+
+Copyright 2008 Bryan Howie, Peter Donnelly, and Jonathan Marchini
+Please see the LICENCE file included with this program for conditions of use.
+
+    haplotypes file : ./chr16.haps
+        legend file : ./chr16.legend
+ ref genotypes file : NULL
+ref gen strand file : NULL
+     genotypes file : ./chr16.reference.gtypes
+        strand file : ./chr16.reference.strand
+           map file : ./chr16.map
+ excluded SNPs file : NULL
+ included SNPs file : NULL
+    ref samp infile : NULL
+        output file : ./Results/chr16.multi_panel.ref_gtypes.impute2
+          info file : ./Results/chr16.multi_panel.ref_gtypes.impute2.info
+       summary file : ./Results/chr16.multi_panel.ref_gtypes.impute2.summary
+       [...]
+  Accuracy assessment for imputation of type 0 SNPs (those with data in the haploid reference panel only) .The maximum imputed genotype calls are distributed as follows:
+  Interval  #Genotypes %Concordance         Interval  %Called %Concordance
+  [0.0-0.1]          0          0.0         [ >= 0.0]   100.0         96.7
+  [0.1-0.2]          0          0.0         [ >= 0.1]   100.0         96.7
+  [0.2-0.3]          0          0.0         [ >= 0.2]   100.0         96.7
+  [0.3-0.4]          0          0.0         [ >= 0.3]   100.0         96.7
+  [0.4-0.5]         10         40.0         [ >= 0.4]   100.0         96.7
+
+[user@cn3144 ~]$  <b>ls Results</b>
+chr16.multi_panel.ref_gtypes.impute2
+chr16.multi_panel.ref_gtypes.impute2.info
+chr16.multi_panel.ref_gtypes.impute2.summary
+chr16.multi_panel.ref_gtypes.impute2_refsamp1.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp10.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp2.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp3.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp4.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp5.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp6.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp7.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp8.gz
+chr16.multi_panel.ref_gtypes.impute2_refsamp9.gz
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. impute.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load impute
+
+impute2 -ref_samp_out -m chr16.map -h chr16.haps  -l chr16.legend \
+	-g gtypes -s refstrand1  -Ne 11418 -int 5000000 5500000 -buffer 250 \
+	-k 10 -iter 10 -burnin 3  -o out1  -i info1  -r summary1
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  [--mem=#] impute.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. impute.swarm). For example:</p>
+
+<pre class="term">
+# this file is impute.swarm
+cd /data/user/dir1; impute2 -ref_samp_out -m chr16.map -h chr16.haps  \
+      -l chr16.legend -g gtypes -s refstrand1  -Ne 11418 -int 5000000 5500000 \
+      -buffer 250 -k 10 -iter 10 -burnin 3  -o out1  -i info1  -r summary1
+cd /data/user/dir2; impute2 -ref_samp_out -m chr26.map -h chr26.haps \
+      -l chr26.legend -g gtypes -s refstrand2  -Ne 22428 -int 5000000 5500000 \
+      -buffer 250 -k 20 -iter 20 -burnin 3  -o out2  -i info2  -r summary2
+cd /data/user/dir3; impute2 -ref_samp_out -m chr36.map -h chr36.haps  \
+      -l chr36.legend -g gtypes -s refstrand3  -Ne 33438 -int 5000000 5500000 \
+      -buffer 250 -k 30 -iter 30 -burnin 3  -o out3  -i info3  -r summary3
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f impute.swarm [-g #]  --module impute,qctool,gtool</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module impute</tt> <td>Loads the impute module for each subjob in the swarm 
+</table>
+<P>
+<a Name="par"></a><div class="heading">Note about parallelization</div>
+<P>
+In principle, it is possible to impute genotypes across an entire chromosome in a single run of IMPUTE2. However, we prefer to 
+split each chromosome into smaller chunks for analysis, both because the program produces higher accuracy over short genomic 
+regions and because imputing a chromosome in chunks is a good computational strategy: the chunks can be imputed in parallel 
+on multiple computer processors, thereby decreasing the real computing time and limiting the amount of memory needed for each run.
+<P>
+We therefore recommend using the program on regions of ~5 Mb or shorter, and versions from v2.1.2 onward will throw an error 
+if the analysis interval plus buffer region is longer than 7 Mb. People who have good reasons to impute a longer region in a single 
+run can override this behavior with the -allow_large_regions flag.
+<P>
+See <A href="https://mathgen.stats.ox.ac.uk/impute/impute_v2.html#whole_chroms">this informative snippet</a> from the Impute website for more details 
+about dealing with whole chromosomes.
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,178 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Exomiser on Biowulf';</script>
+    <div class="title">Exomiser on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>    
+    <p>The Exomiser is a Java program that finds potential disease-causing variants 
+      from whole-exome or whole-genome sequencing data.</p>
+    <p>Starting from a VCF file and a set of phenotypes encoded using the <a href="http://www.human-phenotype-ontology.org/">Human 
+      Phenotype Ontology (HPO)</a> it will annotate, filter and prioritise likely 
+      causative variants. The program does this based on user-defined criteria 
+      such as a variant's predicted pathogenicity, frequency of occurrence in 
+      a population and also how closely the given phenotype matches the known 
+      phenotype of diseased genes from human and model organism data.</p>
+    <p>The functional annotation of variants is handled by <a href="https://github.com/charite/jannovar">Jannovar</a> 
+      and uses <a href="http://genome.ucsc.edu/">UCSC</a> KnownGene transcript 
+      definitions and hg19 genomic coordinates.</p>
+    <p>Variants are prioritised according to user-defined criteria on variant 
+      frequency, pathogenicity, quality, inheritance pattern, and model organism 
+      phenotype data. Predicted pathogenicity data is extracted from the <a href="http://www.ncbi.nlm.nih.gov/pubmed/21520341">dbNSFP</a> 
+      resource. Variant frequency data is taken from the <a href="http://www.1000genomes.org/">1000 
+      Genomes</a>, <a href="http://evs.gs.washington.edu/EVS">ESP</a> and <a href="http://exac.broadinstitute.org/">ExAC</a> 
+      datasets. Subsets of these frequency and pathogenicity data can be defined 
+      to further tune the analysis. Cross-species phenotype comparisons come from 
+      our PhenoDigm tool powered by the OWLTools <a href="https://github.com/owlcollab/owltools">OWLSim</a> 
+      algorithm.</p>
+    <h3>References:</h3>    
+    <ul>
+      <li>The Exomiser was developed by the Computational Biology and Bioinformatics 
+        group at the Institute for Medical Genetics and Human Genetics of the 
+        Charité - Universitätsmedizin Berlin, the Mouse Informatics Group at the 
+        Sanger Institute and other members of the <a href="https://monarchinitiative.org/">Monarch 
+        initiative</a>.</li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    
+    <ul>
+      <li><a href="https://github.com/exomiser/Exomiser">https://github.com/exomiser/Exomiser</a></li>
+    </ul>
+
+<div class="heading">Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>exomiser</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) 
+      <li>Example files can be copied from /usr/local/apps/exomiser/examples/
+      <li>applications.properties must exist in current working directory 
+      <li>exomiser tends to auto thread to ~33 threads. So --cpus-per-task=34 is recommended
+      <li>output directory has to exist for the job to proceed or job may terminated with commandlinerunner error
+      <li>For a first run, you will likely have no idea how much mmemory is required. Submit a test job requesting, say, 20 GB of memory, and set the java process to use, say, 15 or 18 GB of memory (-Xms2g -Xmx18g). Xms indicates the initial memory allocation, and Xmx indicates the maximum memory allocation. If your job completes successfully, then look at the dashboard or use jobhist to see how much memory was actually used, and use that value (with a 10% buffer) to submit future jobs.
+    </ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <P>
+In the example below, previous testing has shown that the exomiser process on this test data requires about 3.3 GB to run. Therefore the job is submitted requesting 5 GB of memory, and the java process requests 4 GB (-Xmx4g in the command below). For other test data, more memory may be required. 
+
+<P>
+
+Sample session: (user input in bold)</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load exomiser</strong>
+[user@cn3144 ~]$ <strong>mkdir /data/$USER/exomiser
+</strong>[user@cn3144 ~]$ <strong>cd /data/$USER/exomiser
+</strong>[user@cn3144 ~]$ <strong>cp -rp /usr/local/apps/exomiser/9.0.0/examples .
+</strong>[user@cn3144 ~]$<strong> cp /usr/local/apps/exomiser/9.0.0/application.properties .
+</strong>[user@cn3144 ~]$<strong> mkdir results
+</strong>[user@cn3144 ~]$<strong> java -Xms2g -Xmx4g -jar $EXOMISERJAR --analysis examples/test-analysis-exome.yml</strong>
+
+08:57:33.907 [main] INFO org.monarchinitiative.exomiser.cli.Main - Locale set to en_GB
+
+ Welcome to:
+  _____ _            _____                     _
+ |_   _| |__   ___  | ____|_  _____  _ __ ___ (_)___  ___ _ __
+   | | | '_ \ / _ \ |  _| \ \/ / _ \| '_ ` _ \| / __|/ _ \ '__|
+   | | | | | |  __/ | |___ >  < (_) | | | | | | \__ \  __/ |
+   |_| |_| |_|\___| |_____/_/\_\___/|_| |_| |_|_|___/\___|_|
+
+ A Tool to Annotate and Prioritize Exome Variants     v11.0.0
+
+2019-08-09 08:57:35.487  INFO 14526 --- [           main] org.monarchinitiative.exomiser.cli.Main  : Starting Main on cn3096 with PID 14526 (/usr/local/apps/exomiser/11.0.0/exomiser-cli-11.0.0.jar started by user in /spin1/users/user/exomiser)
+2019-08-09 08:57:35.496  INFO 14526 --- [           main] org.monarchinitiative.exomiser.cli.Main  : No active profile set, falling back to default profiles: default
+2019-08-09 08:57:35.606  INFO 14526 --- [           main] s.c.a.AnnotationConfigApplicationContext : Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@47542153: startup date [Fri Aug 09 08:57:35 EDT 2019]; root of context hierarchy
+2019-08-09 08:57:40.127  INFO 14526 --- [           main] o.m.exomiser.cli.config.MainConfig       : Exomiser home: /usr/local/apps/exomiser/11.0.0
+2019-08-09 08:57:40.222  INFO 14526 --- [           main] o.m.exomiser.cli.config.MainConfig       : Data source directory defined in properties as: /usr/local/apps/exomiser/9.0.0/data
+2019-08-09 08:57:40.250  INFO 14526 --- [           main] o.m.exomiser.cli.config.MainConfig       : Root data source directory set to: /usr/local/apps/exomiser/9.0.0/data
+2019-08-09 08:57:40.383  INFO 14526 --- [           main] com.zaxxer.hikari.HikariDataSource       : exomiser-phenotype-1711 - Starting...
+2019-08-09 08:57:42.380  INFO 14526 --- [           main] com.zaxxer.hikari.HikariDataSource       : exomiser-phenotype-1711 - Start completed.
+2019-08-09 08:57:50.294  INFO 14526 --- [           main] o.m.e.c.prioritisers.util.DataMatrixIO   : reading line 500
+[...]
+
+2019-08-09 09:01:07.738  INFO 14526 --- [           main] com.zaxxer.hikari.HikariDataSource       : exomiser-phenotype-1711 - Shutdown initiated...
+2019-08-09 09:01:07.775  INFO 14526 --- [           main] com.zaxxer.hikari.HikariDataSource       : exomiser-phenotype-1711 - Shutdown completed.
+2019-08-09 09:01:07.776  INFO 14526 --- [           main] org.monarchinitiative.exomiser.cli.Main  : Exomising finished - Bye!
+
+[user@cn3144 ~]$ <strong>ls -rtl results</strong>
+total 6476
+-rw-r--r-- 1 user user 5764102 Aug  9 09:01 Pfeiffer-hiphive-exome-SPARSE.html
+-rw-r--r-- 1 user user  444683 Aug  9 09:01 Pfeiffer-hiphive-exome-SPARSE.vcf
+-rw-r--r-- 1 user user  161878 Aug  9 09:01 Pfeiffer-hiphive-exome-SPARSE.genes.tsv
+-rw-r--r-- 1 user user  212547 Aug  9 09:01 Pfeiffer-hiphive-exome-SPARSE.variants.tsv
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>    
+    <p>Create a batch input file (e.g. exomiser.sh). For example:</p>    
+    <pre class="term">
+#!/bin/bash
+set -e
+module load exomiser
+cd /data/$USER/..........
+
+java -Xms2g -Xmx10g -jar $EXOMISERJAR --analysis examples/test-analysis-exome.yml</pre>
+    <p>NOTE: -Xmx10g is depend on how much memory is requested when submitting 
+      the job below. For example, if 10g of memory is requested, then put 10g 
+      here. </p>
+    <p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> 
+      command.</p>
+
+    <pre class="term">sbatch --mem=10g --cpus-per-task=40 exomiser.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. exomiser.swarm). For example:</p>
+
+    <pre class="term">cd dir1;java -Xms2g -Xmx10g -jar $EXOMISERJAR --analysis examples/test-analysis-exome.yml
+cd dir2;java -Xms2g -Xmx10g -jar $EXOMISERJAR --analysis examples/test-analysis-exome.yml
+cd dir3;java -Xms2g -Xmx10g -jar $EXOMISERJAR --analysis examples/test-analysis-exome.yml
+cd dir4;java -Xms2g -Xmx10g -jar $EXOMISERJAR --analysis examples/test-analysis-exome.yml
+cd dir5;java -Xms2g -Xmx10g -jar $EXOMISERJAR --analysis examples/test-analysis-exome.yml</pre>
+    <p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f exomiser.swarm -g 10 -t 40 --module exomiser</pre>
+where
+    <table width="66%" border=0>
+      <tr>
+        <td width=23%><tt>-g <i>#</i> </tt>
+        <td width="77%">Number of Gigabytes of memory required for each process (1 line in 
+          the swarm command file) 
+	<tr>
+        <td width=23%><tt>-t <i>#</i> </tt>
+        <td width="77%">Number of threads required for each process (usually use 40)
+      <tr>
+        <td><tt>--module exomiser</tt> 
+        <td>Loads the vcftools module for each subjob in the swarm 
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

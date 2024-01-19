@@ -1,0 +1,154 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'igblast on Biowulf';</script>
+<div class="title">igblast on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+igblast is a tool developed at <A href="https://www.ncbi.nlm.nih.gov">NCBI</a> for analysis of immunoglobulin variable domain sequences and T cell receptor (TR) sequences. In addition to performing a regular Blast search, igblast
+<ul>
+<li>
+    Reports the germline V, D and J gene matches to the query sequence.
+    Annotates the immunoglobulin domains (FR1 through CDR3).
+    Reveals the V(D)J junction details such as nucleotide homology between the ends of V(D)J segments and N nucleotide insertions.
+    Indicates the whether the rearrangement is in-frame or out-of-frame. 
+</ul>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.ncbi.nlm.nih.gov/igblast/intro.html">igblast docs</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>igblast</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>Reference data in <tt>/fdb/igblast/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load igblast samtools</b>
+
+# Get the chromosome containing mouse Tcra (T-cell receptor alpha chain)
+[user@cn3144 ~]$ <b>ln -s /fdb/igenomes/Mus_musculus/NCBI/GRCm38/Sequence/Chromosomes/14.fa</b>
+
+[user@cn3144 ~]$ <b>igblastn \
+  -germline_db_V mouse_gl_V \
+  -germline_db_J mouse_gl_J \
+  -germline_db_D mouse_gl_D \
+  -organism mouse \
+  -domain_system kabat \
+  -query <(samtools faidx 14.fa 14:52427967-54224198) \
+  -auxiliary_data optional_file/mouse_gl.aux \
+  -show_translation \
+  -outfmt 7 </b>
+
+# IGBLASTN 2.6.1+
+# Query: 14:52427967-54224198
+# Database: mouse_gl_V mouse_gl_D mouse_gl_J
+# Domain classification requested: kabat
+
+# V-(D)-J rearrangement summary for query sequence (Top V gene match, Top J gene match, Chain type, stop codon, V-J frame, Productive, Strand).  Multiple equivalent top matches, if present, are separated by a comma.
+		    21-11N/AVLYesN/ANo+
+
+# V-(D)-J junction details based on top germline gene matches (V end, V-J junction, J start).  Note that possible overlapping nucleotides at VDJ junction (i.e, nucleotides that could be assigned to either rearranging gene) are indicated in parentheses (i.e., (TACT)) but are not included under the V, D, or J gene itself
+		    CAAGGN/AN/A
+
+# Hit table (the first field indicates the chain type of the hit)
+# Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, gaps, q. start, q. end, s. start, s. end, evalue, bit score
+# 3 hits found
+		    V14:52427967-5422419821-1189.15783524121582612159042853671.47e-1690.6
+		    V14:52427967-5422419821-1186.905847245232845233642853673.74e-1586.0
+		    V14:52427967-5422419821-1186.905847248342948343742853673.74e-1586.0
+
+Total queries = 1
+Total identifiable CDR3 = 0
+Total unique clonotypes = 0
+
+# BLAST processed 1 queries
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. igblast.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+ 
+cd /data/$USER/mydir
+module load igblast samtools
+ln -s /fdb/igenomes/Mus_musculus/NCBI/GRCm38/Sequence/Chromosomes/14.fa
+igblastn \
+  -germline_db_V mouse_gl_V \
+  -germline_db_J mouse_gl_J \
+  -germline_db_D mouse_gl_D \
+  -organism mouse \
+  -domain_system kabat \
+  -query <(samtools faidx 14.fa 14:52427967-54224198) \
+  -auxiliary_data optional_file/mouse_gl.aux \
+  -show_translation \
+  -outfmt 7
+  -num_threads $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command, e.g.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=10g igblast.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. igblast.swarm). For example:</p>
+
+<pre class="term">
+igblastn   -germline_db_V mouse_gl_V   -germline_db_J mouse_gl_J   -germline_db_D mouse_gl_D \
+  -organism mouse   -domain_system kabat   -query <(samtools faidx 14.fa 14:52427967-54224198) \
+  -auxiliary_data optional_file/mouse_gl.aux   -show_translation   -outfmt 7
+  -num_threads $SLURM_CPUS_PER_TASK
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f igblast.swarm [-g #] [-t #] --module igblast</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module igblast</tt> <td>Loads the igblast module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

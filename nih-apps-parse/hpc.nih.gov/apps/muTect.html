@@ -1,0 +1,121 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'muTect on Biowulf';</script>
+<div class="title">muTect on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MuTect is a method developed at the Broad Institute for the reliable and accurate identification of somatic point mutations in next generation sequencing data of cancer genomes.
+</p>
+
+
+<h3>References:</h3>
+<ul>
+
+Cibulskis, K. et al.
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/23396013"><u><b>Sensitive detection of somatic point mutations in impure and heterogeneous cancer samples.</b></u></a>
+<em>Nat Biotechnology (2013) Mar; 31(3)213-9 </em>
+
+
+<li>Paper</li>
+</ul>
+
+<p class="alert"><b>NOTE:</b> MuTect has been merged into the most recent versions of GATK, and is no longer 
+supported as a separate application.  Please see <a href="GATK.html">https://hpc.nih.gov/apps/GATK.html</a> for
+information on using GATK.</p> 
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://www.broadinstitute.org/cancer/cga/mutect/">MuTect Homepage</a></li>
+    <li><a href="http://gatkforums.broadinstitute.org/categories/mutect">MuTect Discussion Forum</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>muTect</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>MUTECT_JAR</tt> - full path to the mutect jar</li>
+    <li><tt>MUTECT_JARPATH</tt> - path to the directory containing the mutect jar</li>
+  </ul>
+<li>Reference data in <tt>/fdb/muTect/</tt>
+</ul>
+<P>
+
+  <p class="alert"><b>NOTE:</b> muTect uses code base from GATK, and therefore has many of the same options.  One option,
+  <b><tt>-nt</tt></b> or <b><tt>--num_threads</tt></b> <b>DOES NOT</b> work properly.  <b>DO NOT</b> use this
+  option.</p>
+
+  <p>MuTect requires two BAM input files, one for normal tissues, the other for the tumor tissue.  MuTect outputs
+    a wiggle format coverage file.  An additional wiggle file can be generated to display observed depth.</p>
+
+  <p>Two extra options have been added to allow for memory allocation and temporary file directory.</p>
+
+  <ul>
+    <li><b>--memory</b> memory allocated (default = 2gb)</li>
+    <li><b>--tmpdir</b> tmpdir location (default = /lscratch)</li>
+  </ul>
+
+  <p>By default, muTect uses 2gb of memory. To allocate
+    5gb of memory, include <b><tt>--memory 5g</tt></b> on the commandline.</p>
+
+  <p>MuTect takes as parameters database files, depending on the build of your alignments and which dbSNP version
+    you are using.  These files are located in <b><tt>/fdb/muTect</tt></b>.</p>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. muTect.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load muTect
+muTect --memory 8g --analysis_type MuTect \
+--reference_sequence /fdb/muTect/ucsc.hg19.fasta \
+--dbsnp              /fdb/muTect/dbsnp_137.hg19.vcf \
+--cosmic             /fdb/muTect/cosmic_v67.hg19.vcf \
+--input_file:normal /full/path/to/Normal.cleaned.bam \
+--input_file:tumor /full/path/to/Tumor.cleaned.bam \
+--out /full/path/to/example.call_stats.txt \ 
+--coverage_file /full/path/to/example.coverage.wig.txt
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] muTect.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

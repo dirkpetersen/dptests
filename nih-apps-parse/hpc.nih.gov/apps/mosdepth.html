@@ -1,0 +1,143 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mosdepth on Biowulf';</script>
+<div class="title">mosdepth on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Fast BAM/CRAM depth calculation for WGS, exome, or targeted sequencing.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>B. S. Pedersen and A. R. Quinlan. 
+    <em>mosdepth: quick coverage calculation for genomes and exomes.</em>
+    Bioinformatics 2017.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/29096012">PubMed</a> &nbsp;|&nbsp;
+    PMC &nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btx699/4583630">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>mosdepth Main Site: <a href="https://github.com/brentp/mosdepth">GitHub/mosdepth</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: mosdepth (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>mosdepth can use multiple threads for bam decompression but does not scale well 
+       to more than 4 threads.</li>
+    <li>Test data can be found in <code>$MOSDEPTH_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and follow
+the example in the following example session.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g --cpus-per-task=4 --gres=lscratch:50</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load mosdepth</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>cp -rL ${MOSDEPTH_TEST_DATA:-none} data</b> # ~20 GB of data
+[user@cn3144 ~]$ # whole exome data analyzed by capture probes
+[user@cn3144 ~]$ <b>mosdepth --by data/Agilent_SureSelect_Human_AllExon_V4_Covered.bed \
+                      HG00096_WES data/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam</b>
+
+[user@cn3144 ~]$ <b>ls -lh</b>
+-rw-r--r-- 1 user group 336K May  8 18:41 HG00096_WES.mosdepth.global.dist.txt
+-rw-r--r-- 1 user group 149K May  8 18:41 HG00096_WES.mosdepth.region.dist.txt
+-rw-r--r-- 1 user group 570M May  8 18:41 HG00096_WES.per-base.bed.gz
+-rw-r--r-- 1 user group  87K May  8 18:41 HG00096_WES.per-base.bed.gz.csi
+-rw-r--r-- 1 user group 2.2M May  8 18:41 HG00096_WES.regions.bed.gz
+-rw-r--r-- 1 user group 350K May  8 18:41 HG00096_WES.regions.bed.gz.csi
+</pre>
+
+<p>Note that version 0.2.0 produced only a single distribution file (
+<code>HG00096_WES.mosdepth.dist.txt</code>.</p>
+
+<pre class="term">
+[user@cn3144 ~]$ # create some graphs. Output file is dist.html
+[user@cn3144 ~]$ <b>plot-dist.py HG00096_WES.mosdepth.region.dist.txt</b>
+
+[user@cn3144 ~]$ # WGS data in 500 nt windows. No per-base data is written (-n)
+[user@cn3144 ~]$ <b>mosdepth -t3 -n --by 500 HG00096_WGS \
+                       data/HG00096.mapped.ILLUMINA.bwa.GBR.low_coverage.20120522.bam</b> 
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mosdepth.sh), which uses the input file 'mosdepth.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load mosdepth/0.3.3 || exit 1
+
+cd /lscratch/$SLURM_JOB_ID || exit 1
+mkdir data
+cp ${MOSDEPTH_TEST_DATA}/Agilent_SureSelect_Human_AllExon_V4_Covered.bed data
+cp ${MOSDEPTH_TEST_DATA}/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam data
+
+mosdepth -n -t2 --by data/Agilent_SureSelect_Human_AllExon_V4_Covered.bed \ 
+    HG00096_WES data/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam
+plot-dist.py HG00096_WES.mosdepth.region.dist.txt
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=5g mosdepth.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mosdepth.swarm). For example:</p>
+
+<pre class="term">
+mosdepth -t2 -n --by 500 sample1 sample1.bam
+mosdepth -t2 -n --by 500 sample2 sample2.bam
+mosdepth -t2 -n --by 500 sample3 sample3.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mosdepth.swarm -g 5 --module mosdepth</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module mosdepth <td>Loads the mosdepth module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

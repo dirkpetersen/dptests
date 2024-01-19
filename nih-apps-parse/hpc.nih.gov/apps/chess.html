@@ -1,0 +1,127 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CHESS: comparison and automatic feature extraction for chromatin contact data';</script>
+<div class="title"><b>CHESS: comparison and automatic feature extraction for chromatin contact data</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The CHESS (Comparison of Hi-C Experiments using Structural Similarity) application 
+implements an algorithm for the comparison of chromatin contact maps and automatic
+differential feature extraction. 
+</p>
+<h3>References:</h3>
+<ul>Silvia Galan, Nick Machnik, Kai Kruse, Noelia Díaz, Marc A. Marti-Renom and Juan M. Vaquerizas <br />
+<i>CHESS enables quantitative comparison of chromatin contact data and automatic feature extraction </i> <br />
+<a href="https://www.nature.com/articles/s41588-020-00712-y"></a>Nature Genetics <b>52</b>, 1247-1255 (2020).
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/vaquerizaslab/chess">CHESS Github page</a></li>
+<li><a href="https://chess-hic.readthedocs.io/en/latest/">CHESS Documentation</a></li>
+<li><a href="https://github.com/vaquerizaslab/chess/issues">CHESS Issues</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>CHESS</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>CHESS_HOME</b>&nbsp; installation directory</li>
+    <li><b>CHESS_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>CHESS_DATA</b>&nbsp; &nbsp; sample data folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. 
+<br />Sample session on a GPU node:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --mem=16g --cpus-per-task=4 --gres=lscratch:10</b>
+[user@cn2379 ~]$ <b>module load chess</b>
+[+] Loading singularity  3.8.2  on cn0890
+[+] Loading chess  0.3.7
+</pre>
+Generate a BED file to be used as input by the "chess sim" command:
+<pre class="term">
+[user@cn2379 ~]$ <b>chess pairs hg38 3000000 100000 ./hg38_chr2_3mb_win_100kb_step_v2.bed --chromosome chr2</b>
+2021-10-04 15:24:32,777 INFO Running '/chess-0.3.7/envs/chess/bin/chess pairs hg38 3000000 100000 ./hg38_chr2_3mb_win_100kb_step_v2.bed --chromosome chr2'
+2021-10-04 15:24:34,364 INFO CHESS version: 0.3.7
+2021-10-04 15:24:34,364 INFO FAN-C version: 0.9.21
+2021-10-04 15:24:34,374 INFO Finished '/chess-0.3.7/envs/chess/bin/chess pairs hg38 3000000 100000 ./hg38_chr2_3mb_win_100kb_step_v2.bed --chromosome chr2'
+[user@cn2379 ~]$ <b>head hg38_chr2_3mb_win_100kb_step_v2.bed  </b>
+chr2    0       3000000 chr2    0       3000000 0       .       +       +
+chr2    100000  3100000 chr2    100000  3100000 1       .       +       +
+chr2    200000  3200000 chr2    200000  3200000 2       .       +       +
+chr2    300000  3300000 chr2    300000  3300000 3       .       +       +
+chr2    400000  3400000 chr2    400000  3400000 4       .       +       +
+chr2    500000  3500000 chr2    500000  3500000 5       .       +       +
+chr2    600000  3600000 chr2    600000  3600000 6       .       +       +
+chr2    700000  3700000 chr2    700000  3700000 7       .       +       +
+chr2    800000  3800000 chr2    800000  3800000 8       .       +       +
+chr2    900000  3900000 chr2    900000  3900000 9       .       +       +
+</pre>
+Clone the chess repository, which contains sample data for running the "chess sim" command:
+<pre class="term"> 
+[user@cn2379 ~]$ <b>git clone https://github.com/vaquerizaslab/chess  </b>
+[user@cn2379 ~]$ <b>ls chess/examples/dlbcl/*hic</b>
+chess/examples/dlbcl/ukm_control_fixed_le_25kb_chr2.hic
+chess/examples/dlbcl/ukm_patient_fixed_le_25kb_chr2.hic
+</pre>
+Run the comparison between two sets of chromatin contact data:
+<pre class="term">
+[user@cn2379 ~]$ <b>chess sim chess/examples/dlbcl/ukm_control_fixed_le_25kb_chr2.hic   chess/examples/dlbcl/ukm_patient_fixed_le_25kb_chr2.hic hg38_chr2_3mb_win_100kb_step_v2.bed chr2_test_results.tsv</b>
+2021-10-04 15:37:35,790 INFO CHESS version: 0.3.7
+2021-10-04 15:37:35,791 INFO FAN-C version: 0.9.21
+2021-10-04 15:37:35,792 INFO Loading reference contact data
+2021-10-04 15:37:52,690 INFO Loading query contact data
+2021-10-04 15:38:15,418 INFO Loading region pairs
+2021-10-04 15:38:15,432 INFO Launching workers
+2021-10-04 15:38:15,497 INFO Submitting pairs for comparison
+2021-10-04 15:39:31,546 INFO Could not compute similarity for 105 region pairs.This can be due to faulty coordinates, too smallregion sizes or too many unmappable bins
+2021-10-04 15:39:32,514 INFO Finished '/chess-0.3.7/envs/chess/bin/chess sim chess/examples/dlbcl/ukm_control_fixed_le_25kb_chr2.hic chess/examples/dlbcl/ukm_patient_fixed_le_25kb_chr2.hic hg38_chr2_3mb_win_100kb_step_v2.bed chr2_test_results.tsv'
+Closing remaining open files:chess/examples/dlbcl/ukm_control_fixed_le_25kb_chr2.hic...donechess/examples/dlbcl/ukm_patient_fixed_le_25kb_chr2.hic...done
+</pre>
+This command outputs the file chr2_test_results.tsv:
+<pre class="term">
+[user@cn2379 ~]$ <b>head chr2_test_results.tsv</b>
+ID      SN      ssim    z_ssim
+0       0.2960129270866764      0.3175164525478461      -0.5045618358016883
+1       0.29579964403072184     0.32049616624170313     -0.48069735793965745
+2       0.30973377588805523     0.3081302861251631      -0.5797354879768108
+3       0.3216506307433863      0.27912370967940187     -0.8120486806403446
+4       0.34692871691024163     0.27788389871239105     -0.8219783062403915
+5       0.3524778796482955      0.26193620236586895     -0.9497031434274604
+6       0.3735910245839484      0.25348665707859275     -1.017375412366634
+7       0.3747548713752975      0.2497188855329951      -1.0475514325743729
+8       0.3784210151741191      0.2668178225320114      -0.9106063279763916
+</pre>                
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. chess.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load chess
+chess sim &lt;control_file&gt;.hic &lt;patient_file&gt;.hic &lt;chess_pairs_output&gt;.bed results.tsv
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+<pre class="term"><b>sbatch chess.sh</b></pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

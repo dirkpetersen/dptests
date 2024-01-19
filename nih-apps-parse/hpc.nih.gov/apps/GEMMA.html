@@ -1,0 +1,96 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' GEMMA on Biowulf & Helix';</script>
+<div class="title"> GEMMA on Biowulf & Helix</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation & Notes</a></div>
+        <div class="tocItem"><a href="#int-threaded">Interactive job</a></div>
+	<div class="tocItem"><a href="#sbatch-threaded">Batch job</a></div>
+      </div>
+</table>
+<p>
+GEMMA is the software implementing the Genome-wide Efficient Mixed Model Association algorithm for a standard linear mixed model and some of its close relatives for genome-wide association studies (GWAS):
+<ul>
+    <li>It fits a univariate linear mixed model (LMM) for marker association tests with a single phenotype to account for population stratification and sample structure, and for estimating the proportion of variance in phenotypes explained (PVE) by typed genotypes (i.e. "chip heritability").</li>
+    <li>It fits a multivariate linear mixed model (mvLMM) for testing marker associations with multiple phenotypes simultaneously while controlling for population stratification, and for estimating genetic correlations among complex phenotypes.</li>
+    <li>It fits a Bayesian sparse linear mixed model (BSLMM) using Markov chain Monte Carlo (MCMC) for estimating PVE by typed genotypes, predicting phenotypes, and identifying associated markers by jointly modeling all markers while controlling for population structure.</li>
+    <li>It estimates variance component/chip heritability, and partitions it by different SNP functional categories. In particular, it uses HE regression or REML AI algorithm to estimate variance components when individual-level data are available. It uses MQS to estimate variance components when only summary statisics are available.</li>
+</ul>
+GEMMA was developed in the Zhou Lab at U. Michigan. <a href="">GEMMA website</a>.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation and Notes</div>
+<ul>
+<li>For Documentation, see <a href="https://github.com/genetics-statistics/GEMMA">GEMMA Github</a></li>
+<li>Run `$ gemma -h` to see commandline help documentations</li>
+<li>Module Name: <tt>GEMMA</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Use environment variable $GEMMA_TEMPLATES to access GEMMA example files</tt></li>
+</ul>
+<P>
+
+<a Name="int-threaded"></a><div class="heading">Interactive job </div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 57710203
+salloc.exe: job 57710203 queued and waiting for resources
+salloc.exe: job 57710203 has been allocated resources
+salloc.exe: Granted job allocation 57710203
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3115 are ready for job
+
+[user@cn3115 ~]$ <b>mkdir -p /data/$USER/gemma-test</b>
+
+[user@cn3115 ~]$ <b>cd /data/$USER/gemma-test</b>
+
+[user@cn3115 ~]$ <b>module load GEMMA</b>
+[+] Loading GEMMA 0.98.1  ...
+
+[user@cn3115 ~]$ <b>gemma -g $GEMMA_EXAMPLES/mouse_hs1940.geno.txt.gz -p $GEMMA_EXAMPLES/mouse_hs1940.pheno.txt -gk -o mouse_hs1940</b>
+GEMMA 0.98.1 (2018-12-10) by Xiang Zhou and team (C) 2012-2018
+Reading Files ...
+## number of total individuals = 1940
+## number of analyzed individuals = 1410
+## number of covariates = 1
+## number of phenotypes = 1
+## number of total SNPs/var        =    12226
+## number of analyzed SNPs         =    10768
+Calculating Relatedness Matrix ...
+================================================== 100%
+**** INFO: Done.
+
+[user@cn3115 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 57710203
+salloc.exe: Job allocation 57710203 has been revoked.
+</pre>
+
+<P>
+<a Name="sbatch-threaded"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gemma.sh). For example, to run the threaded version of hyphy:</p>
+<pre class="term">
+#!/bin/bash
+# this file is called gemma.sh
+
+module load GEMMA
+mkdir -p /data/$USER/gemma-test
+cd /data/$USER/gemma-test
+
+gemma -g $GEMMA_EXAMPLES/mouse_hs1940.geno.txt.gz \
+      -p $GEMMA_EXAMPLES/mouse_hs1940.pheno.txt \
+      -gk -o mouse_hs1940
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+<pre class="term">$ sbatch --cpus-per-task=# [--mem=#] gemma.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

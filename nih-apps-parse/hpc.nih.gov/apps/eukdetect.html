@@ -1,0 +1,128 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'EukDetect on Biowulf';</script>
+<div class="title">EukDetect on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+EukDetect is a python-based workflow application that detects eukaryotes in shotgun metagenomic data using eukaryotic gene markers. According to the authors: 
+</p>
+<blockquote>
+  EukDetect is accurate, sensitive, has a broad taxonomic coverage of microbial eukaryotes, and is resilient against bacterial contamination in eukaryotic genomes.
+</blockquote>
+<p>
+The application can be run using the <tt>eukdetect</tt> executable or with <tt>snakemake</tt> that comes bundled with the application.
+The gene markers are available in <tt>/fdb/eukdetect/eukdb</tt>. User must create a configuration YAML for the pipeline.
+A default YAML is available to Biowulf users with certain fields edited based on the installation.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Lind, A. L. and K.S. Pollard.
+    <a href="https://doi.org/10.1101/2020.07.22.216580"><b><u>Accurate and sensitive detection of microbial eukaryotes from metagenomic shotgun sequencing data.</u></b></a>
+    <em>bioRxiv. 2020.07.22.216580. (2020).</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/allind/EukDetect">EukDetect GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>eukdetect</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+	<li>Multithreaded</li>
+  <li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>EUKDETECT_DB</tt></li>
+    <li><tt>EUKDETECT_EXAMPLES</tt></li>
+    <li><tt>EUKDETECT_SHARE</tt></li>
+  </ul>
+<li>Example fastq in <tt>/usr/local/apps/eukdetect/examples</tt></li>
+<li>Reference data in <tt>/fdb/eukdetect/eukdb</tt></li>
+<li>Default configuration YAML in <tt>/usr/local/apps/eukdetect/1.2/share</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 --mem=8G -c4</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load eukdetect</b>
+
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3144 ~]$ <b>mkdir fastq</b>
+
+[user@cn3144 ~]$ <b>cp $EUKDETECT_EXAMPLES/*fastq.gz fastq/</b>
+
+[user@cn3144 ~]$ <b>cp $EUKDETECT_SHARE/default_configfile.yml .</b>
+
+[user@cn3144 ~]$ <b>nano default_configfile.yml</b>
+# Edit YAML and set output_dir, fq_dir, and samples fields correctly
+
+[user@cn3144 ~]$ <b>eukdetect --mode runall --configfile default_configfile.yml --cores 4</b>
+  01/20/2022 16:43:16:  Parsing config file ...
+  01/20/2022 16:43:16:  Running: snakemake --snakefile /opt/EukDetect/rules/eukdetect.rules --configfile default_configfile.yml --cores 4
+  01/20/2022 16:43:16:  Redirecting snakemake output to snakemake_1642714996.749603.log
+  01/20/2022 16:43:46:  Snakemake finished
+  01/20/2022 16:43:46:  Snakemake pipeline created all files.
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. eukdetect.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load eukdetect
+eukdetect --mode runall --configfile default_configfile.yml --cores $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] eukdetect.sh</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

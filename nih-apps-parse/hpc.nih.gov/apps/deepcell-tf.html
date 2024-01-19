@@ -1,0 +1,97 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'funannotate: a pipeline for genome annotation ';</script>
+<div class="title"><b>DeepCell-tf: a deep learning library for single-cell analysis of biological images. </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The DeepCell-tf  library allows users to apply pre-existing models to imaging data 
+as well as to develop new deep learning models for single-cell analysis. 
+The library specializes in models for cell segmentation (whole-cell and nuclear) in 2D and 3D images 
+as well as cell tracking in 2D time-lapse datasets. 
+The models are applicable to data ranging from multiplexed images of tissues to dynamic live-cell imaging movies.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Noah F. Greenwald , Geneva Miller, Erick Moen, ..., Michael Angelo and David Van Valen, <br />
+<i>Whole-cell segmentation of tissue images with human-level performance using large-scale data annotation and deep learning,</i> <br />
+<a href="https://www.nature.com/articles/s41587-021-01094-0">Nature Biotechnology, vol.40, pp. 555–565</a></li>
+<li>David A. Van Valen, Takamasa Kudo, Keara M. Lane, ..., Euan A. Ashley, Markus W. Covert, <br />
+<i>Deep Learning Automates the Quantitative Analysis of Individual Cells in Live-Cell Imaging Experiments, </i> <br />
+<a href="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005177">PLOS Computational Biology | DOI:10.1371/journal.pcbi.1005177 November 4, 2016</a></li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/vanvalenlab/deepcell-tf">DeepCell-tf Github page</a></li>
+<li><a href="https://deepcell.readthedocs.io/en/master/notebooks/Training-Segmentation.html">DeepCell-tf Segmentation manual</a></li>
+<li><a href="https://deepcell.readthedocs.io/en/master/notebooks/Training-Tracking.html">DeepCell-tf Tracking manual</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>deepcell-tf</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>DEEPCELLTF_HOME</b>&nbsp; installation directory</li>
+    <li><b>DEEPCELLTF_BIN</b>&nbsp; &nbsp; executables directory</li>
+    <li><b>DEEPCELLTF_SRC</b>&nbsp; &nbsp; source code directory</li>
+    <li><b>DEEPCELLTF_DATA</b>&nbsp; &nbsp; sample input data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive  --mem=8g  -c4 \
+                                 --gres=gpu:p100,lscratch:10 \
+                                 --tunnel</b>
+</pre>
+Store the $PORT1 value provided by this command.
+<pre class="term">
+[user@cn0861 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn0861 ~]$ <b>module load deepcell-tf   </b>
+[+] Loading singularity  3.10.5  on cn0793
+[+] Loading jupyter
+[+] Loading deepcell-tf  0.12.6
+[user@cn0861 ~]$ <b>git clone https://github.com/vanvalenlab/deepcell-tf </b>
+[user@cn0861 ~]$ <b>cd deepcell-tf/notebooks/applications </b>
+</pre>
+Use here the $PORT1 value you tored previously:
+<pre class="term">
+[user@cn0861 ~]$ <b>jupyter notebook --ip localhost --port $PORT1 --no-browser</b>
+</pre>
+Store the URL provided by the latter command <br />
+On your local system (PC or Mac), open a new shell/terminal window and use it to run the command:
+<pre class="term">
+[user@cn0861 ~]$ <b>ssh  -L $PORT1:localhost:$PORT1 user@biowulf.nih.gov </b>
+</pre>
+Navigate a browser on your local system to the URL you stored. <br />
+<p>
+<img src="deepcell-tf/deepcell-tf.png" width="600" border="0" alt="">
+</p>
+In the browser, click on one on notebook files
+etc.: you can pretty much follow the instructions for running Jupyter notrebook: https://hpc.nih.gov/apps/jupyter.html
+<pre class="term">
+[user@cn0861 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

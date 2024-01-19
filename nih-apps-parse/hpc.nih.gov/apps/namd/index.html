@@ -1,0 +1,62 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' NAMD 2.12 Benchmarks';</script>
+<div class="title">
+NAMD Benchmarks</div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#3.0-GPU">NAMD 3.0 on GPUs</a></div>
+<div class="tocItem"><a href="#2.14-CPU">NAMD 2.14 on CPUs</a></div>
+<div class="tocItem"><a href="#2.14-GPU">NAMD 2.14 on GPUs</a></div>
+</div></table>
+<p><b>Important:</b> Please read the webpage <a href="https://hpc.nih.gov/policies/multinode.html">Making efficient use of Biowulf's Multinode Partition</a> before running large parallel jobs. 
+<P>
+Older Benchmarks: [<A href="2.12.html">NAMD 2.12</a>] [<A href="2.10.html">NAMD 2.10</a>]
+<P>
+<A Name="3.0-GPU"></a>
+<div class="heading">NAMD 3.0 beta on Biowulf GPUS</div>
+<P>
+<b>April 2023</b> STMV benchmark, 1,066,628 atoms, periodic, PME (available from <a href="http://www.ks.uiuc.edu/Research/namd/utilities/stmv.tar.gz">here</a>)
+<P>
+<A href="new-stmv.namd.5ksteps">NAMD config file used for these GPU benchmarks</a> was 
+run with these parameters: P100 & V100: GPUPERF=1;   V100X & A100: GPUPERF=2. (as recommended by 
+<a href="https://www.ks.uiuc.edu/~dhardy/">David Hardy, UIUC</a>). 
+<P>
+These benchmarks are simply provided here to give an estimate of the performance. Users who use NAMD 3.0 for their own runs
+should carefully read the <A href="https://www.ks.uiuc.edu/Research/namd/3.0/announce.html">NAMD 3.0 
+documentation</a>.
+<P>
+Hardware:
+<ul>
+<li>p100: Intel(R)_Xeon(R)_CPU_E5-2680_v4_@_2.40GHz, Tesla_P100-PCIE-16GB 
+<li>v100: Intel(R)_Xeon(R)_CPU_E5-2680_v4_@_2.40GHz, Tesla_V100-PCIE-16GB 
+<li>v100x: Intel(R)_Xeon(R)_Gold_6140@_2.30GHz, Tesla_V100-SXM2-32GB 
+<li>a100: AMD EPYC 7543P@_2.40GHz, Tesla_A100-SXM4-80GB 
+</ul>
+OS: Rocky Linux release 8.7
+<P>
+<img src="3.0beta3-stmv.png">
+<P>
+<A Name="2.14-CPU"></a>
+<div class="heading">NAMD 2.14 on CPUs</div>
+<P>
+The Infiniband CPU benchmarks were performed with NAMD 2.14, Linux-x86_64-ibverbs , downloaded from <a href="http://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD">here</a>.<br>
+Hardware: 28 x 2.3 GHz (Intel E5-2695v3)  (Biowulf multinode partition, x2695 nodes)
+<P>
+<img src="2.14-x2695.png" width=700>
+<A Name="2.14-GPU"></a>
+<div class="heading">NAMD 2.14 on Biowulf GPUs</div>
+<P>
+GPU benchmarks were performed with NAMD 2.14, Linux-x86_64-ibverbs-smp-CUDA downloaded from <a href="http://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD">here</a>.
+<P>
+  Hardware: as above for the 3.0alpha13 benchmarks.<br>
+  OS: Rocky Linux release 8.7
+
+<img src="2.14-stmv.png">
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

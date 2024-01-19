@@ -1,0 +1,259 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bedtools on Biowulf';</script>
+<div class="title">bedtools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>The BEDTools utilities allow one to address common genomics tasks such
+finding feature overlaps and computing coverage. In addition, one can develop
+sophisticated pipelines that answer complicated research questions by
+chaining several BEDTools together.</p>
+
+<p>Bedtools contains a single binary (<code>bedtools</code>) that takes a 
+number of commands as as it's first argument.</p>
+
+<pre class="term">
+bedtools &lt;subcommand&gt; [options]
+</pre>
+
+<h3> Subcommands available in version 2.29.0</h3>
+
+<div style="width: 70%; margin: 0 auto;">
+<table class="horztable">
+    <!-- bedtools | awk -f make_table.awk -->
+    <tr><th colspan="2" class="softBottom"><b>Genome</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/intersect.html">intersect</a></td><td>Find overlapping intervals in various ways.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/window.html">window</a></td><td>Find overlapping intervals within a window around an interval.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/closest.html">closest</a></td><td>Find the closest, potentially non-overlapping interval.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/coverage.html">coverage</a></td><td>Compute the coverage over defined intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/map.html">map</a></td><td>Apply a function to a column for each overlapping interval.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/genomecov.html">genomecov</a></td><td>Compute the coverage over an entire genome.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/merge.html">merge</a></td><td>Combine overlapping/nearby intervals into a single interval.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/cluster.html">cluster</a></td><td>Cluster (but don't merge) overlapping/nearby intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/complement.html">complement</a></td><td>Extract intervals _not_ represented by an interval file.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/shift.html">shift</a></td><td>Adjust the position of intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/subtract.html">subtract</a></td><td>Remove intervals based on overlaps b/w two files.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/slop.html">slop</a></td><td>Adjust the size of intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/flank.html">flank</a></td><td>Create new intervals from the flanks of existing intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/sort.html">sort</a></td><td>Order the intervals in a file.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/random.html">random</a></td><td>Generate random intervals in a genome.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/shuffle.html">shuffle</a></td><td>Randomly redistribute intervals in a genome.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/sample.html">sample</a></td><td>Sample random records from file using reservoir sampling.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/spacing.html">spacing</a></td><td>Report the gap lengths between intervals in a file.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/annotate.html">annotate</a></td><td>Annotate coverage of features from multiple files.</td></tr>
+    <tr><th colspan="2" class="softBottom"><b>Multi-way</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/multiinter.html">multiinter</a></td><td>Identifies common intervals among multiple interval files.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/unionbedg.html">unionbedg</a></td><td>Combines coverage intervals from multiple BEDGRAPH files.</td></tr>
+    <tr><th colspan="2" class="softBottom"><b>Paired-end</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/pairtobed.html">pairtobed</a></td><td>Find pairs that overlap intervals in various ways.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/pairtopair.html">pairtopair</a></td><td>Find pairs that overlap other pairs in various ways.</td></tr>
+    <tr><th colspan="2" class="softBottom"><b>Format</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/bamtobed.html">bamtobed</a></td><td>Convert BAM alignments to BED (&amp; other) formats.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/bedtobam.html">bedtobam</a></td><td>Convert intervals to BAM records.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/bamtofastq.html">bamtofastq</a></td><td>Convert BAM records to FASTQ records.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/bedpetobam.html">bedpetobam</a></td><td>Convert BEDPE intervals to BAM records.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/bed12tobed6.html">bed12tobed6</a></td><td>Breaks BED12 intervals into discrete BED6 intervals.</td></tr>
+    <tr><th colspan="2" class="softBottom"><b>Fasta</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/getfasta.html">getfasta</a></td><td>Use intervals to extract sequences from a FASTA file.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/maskfasta.html">maskfasta</a></td><td>Use intervals to mask sequences from a FASTA file.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/nuc.html">nuc</a></td><td>Profile the nucleotide content of intervals in a FASTA file.</td></tr>
+    <tr><th colspan="2" class="softBottom"><b>BAM</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/multicov.html">multicov</a></td><td>Counts coverage from multiple BAMs at specific intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/tag.html">tag</a></td><td>Tag BAM alignments based on overlaps with interval files.</td></tr>
+    <tr><th colspan="2" class="softBottom"><b>Statistical</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/jaccard.html">jaccard</a></td><td>Calculate the Jaccard statistic b/w two sets of intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/reldist.html">reldist</a></td><td>Calculate the distribution of relative distances b/w two files.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/fisher.html">fisher</a></td><td>Calculate Fisher statistic b/w two feature files.</td></tr>
+    <tr><th colspan="2" class="softBottom"><b>Miscellaneous</b></th></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/overlap.html">overlap</a></td><td>Computes the amount of overlap from two intervals.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/igv.html">igv</a></td><td>Create an IGV snapshot batch script.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/links.html">links</a></td><td>Create a HTML page of links to UCSC locations.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/makewindows.html">makewindows</a></td><td>Make interval "windows" across a genome.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/groupby.html">groupby</a></td><td>Group by common cols. &amp; summarize oth. cols. (~ SQL "groupBy")</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/expand.html">expand</a></td><td>Replicate lines based on lists of values in columns.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/split.html">split</a></td><td>Split a file into multiple files with equal records or base pairs.</td></tr>
+    <tr><td><a href="http://bedtools.readthedocs.org/en/latest/content/tools/summary.html">summary</a></td><td>Statistical summary of intervals in a file.</td></tr>
+
+</table>
+</div>
+
+<h3>References:</h3>
+<ul>
+    <li>Aaron R. Quinlan and Ira M. Hall. <emph>BEDTools: a flexible suite of utilities
+    for comparing genomic features.</emph> Bioinformatics 2010, 26:841-842
+     <a href="http://www.ncbi.nlm.nih.gov/pubmed/20110278">Pubmed</a>&nbsp;|&nbsp;
+     <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2832824/">PMC</a>&nbsp;|&nbsp;
+     <a href="http://bioinformatics.oxfordjournals.org/content/26/6/841.long">Journal</a>
+   </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://bedtools.readthedocs.org/en/latest/">Official
+    documentation</a></li>
+    <li><a href="https://github.com/arq5x/bedtools2">GitHub repository</a></li>
+    <li><a href="http://groups.google.com/group/bedtools-discuss">Mailing
+    list</a></li>
+    <li><a href="http://quinlanlab.org/tutorials/bedtools/bedtools.html" >Tutorial</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: bedtools (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$BEDTOOLS_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load bedtools</b>
+[user@cn3144 ~]$ <b>cp $BEDTOOLS_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>ls -lh</b>
+total 250M
+-rw-r--r-- 1 user group  115 Feb  3 09:43 chroms.txt
+-rw-r--r-- 1 user group 245M Feb  3 09:43 ENCFF001KOM.bam
+-rw-r--r-- 1 user group 2.1M Feb  3 09:43 ENCFF001XYE.bed
+-rw-r--r-- 1 user group 2.2M Feb  3 09:43 mm9_knownGene_promoters.bed
+</pre>
+
+<p>Merge identical intervals. Names (column 4 of bed file) of
+merged intervals are concatenated. All intervals are 2000nts, each
+centered on a promoter from the knownGenes table. Note that all
+example files used here are sorted identically. Note the negative
+distance with indicates the number of bp overlap required
+for merging.</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>bedtools merge -d -2000 -c 4 -o distinct \
+    -i mm9_knownGene_promoters.bed \
+  &gt; mm9_knownGene_upromoters.bed</b>
+[user@cn3144 ~]$ <b>wc -l mm9_knownGene_promoters.bed</b>
+55105 mm9_knownGene_promoters.bed
+[user@cn3144 ~]$ <b>wc -l mm9_knownGene_upromoters.bed</b>
+38862 mm9_knownGene_upromoters.bed
+</pre>
+
+<p>For each promoter interval, add a new column that contains the count of
+H3K27ac peaks that overlap it<p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>bedtools intersect -c -sorted \
+    -a mm9_knownGene_upromoters.bed \
+    -b ENCFF001XYE.bed \
+    &gt; mm9_knownGene_upromoters_ac.bed</b>
+[user@cn3144 ~]$ <b>head -5 mm9_knownGene_upromoters_ac.bed</b>
+chr1    3204713 3206713 uc007aet.1:     0
+chr1    3647985 3649985 uc007aev.1:     0
+chr1    3660579 3662579 uc007aeu.1:Q5GH67       0
+chr1    4349395 4351395 uc007aex.2:Q548Q8       0
+chr1    4398322 4400322 uc007aew.1:NP_001182591 0
+
+</pre>
+
+<p>Then count the number of reads from the H3K27ac IP that overlap the
+same interval</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>bedtools intersect -c -sorted \
+    -a mm9_knownGene_upromoters_ac.bed \
+    -b  ENCFF001KOM.bam \
+    &gt; mm9_knownGene_upromoters_ac_reads.bed</b>
+</pre>
+
+<p>Show the mean and median number of reads per interval for promoters that overlap
+0, 1, ... H3K27ac peaks. File needs to be sorted by the column that is used to
+group lines</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>sort -k5,5 mm9_knownGene_upromoters_ac_reads.bed \
+  | bedtools groupby -g 5 -c 6,6,6 -o count,mean,median</b>
+0       24848   7.26295878943979378306  3
+1       12288   95.410400390625 67
+2       1675    89.6119402985074628987  74
+3       48      86.4791666666666714036  62
+4       3       43.6666666666666642982  49
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bedtools.sh), which uses the input file 'bedtools.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash 
+set -e
+set -o pipefail
+
+module load bedtools
+bedtools merge -d -2000 -c 4 -o distinct \
+    -i mm9_knownGene_promoters.bed\
+  &gt; mm9_knownGene_upromoters.bed
+bedtools intersect -c -sorted \
+    -a mm9_knownGene_upromoters.bed \
+    -b ENCFF001XYE.bed \
+    &gt; mm9_knownGene_upromoters_ac.bed
+bedtools intersect -c -sorted \
+    -a mm9_knownGene_upromoters_ac.bed \
+    -b  ENCFF001KOM.bam \
+    &gt; mm9_knownGene_upromoters_ac_reads.bed
+sort -k5,5 mm9_knownGene_upromoters_ac_reads.bed \
+  | bedtools groupby -g 5 -c 6,6,6 -o count,mean,median \
+  &gt; median_counts.tsv
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] bedtools.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. bedtools.swarm). For example:</p>
+
+<pre class="term">
+bamToBed -i file1.bam &gt; file1.bed
+bamToBed -i file2.bam &gt; file2.bed
+bamToBed -i file3.bam &gt; file3.bed
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f bedtools.swarm [-g #] [-t #] --module bedtools</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module bedtools <td>Loads the bedtools module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

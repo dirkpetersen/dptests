@@ -1,0 +1,140 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Picard on HPC';</script>
+    <div class="title">Picard on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>
+
+<p>Picard comprises Java-based command-line utilities that manipulate SAM files, 
+      and a Java API (SAM-JDK) for creating new programs that read and write SAM 
+      files. Both SAM text format and SAM binary (BAM) format are supported.</p>
+<p>Picard changed a bit back to a single jar, so currently picard command lines look like this:
+<pre class="term">
+   java [java opts] -jar $PICARDJARPATH/picard.jar command [options]
+   java -jar $PICARDJARPATH/picard.jar --help</pre>
+
+<h3>Note 1</h3>
+<p>MarkDuplicates tends to initiate garbage collection threads. It's suggested that users add <code>-XX:ParallelGCThreads=5</code>
+ in the picard command and request 6 cpus for the command (1 for picard, 5 for garbage collection)</p>
+<pre class="term">
+java -Xmx???g -XX:ParallelGCThreads=5 -jar $PICARDJARPATH/picard.jar MarkDuplicates ........
+</pre>
+
+<h3> Note 2</h3>
+
+<p>For tools that can generate lots of temperatory files (such as FastqToSam),
+or when error message 'slurmstepd: Exceeded job memory limit at some point'
+appears, it's suggested to include this flag to the picard command:<p>
+
+<pre class="term">
+TMP_DIR=/lscratch/$SLURM_JOBID
+</pre>
+
+<p>Then submit with: <p>
+<pre class="term">
+sbatch --cpus-per-task=6 --mem=?g --gres=lscratch:200
+</pre>
+<p>or</p>
+<pre class="term">
+swarm -f swarmfile -t 6 -g ? --gres=lscratch:200
+</pre>
+    <p>Replace ? above with memory in GB <a Name="doc"></a></p>
+    <div class="heading">Documentation</div>
+    <ul>
+      <li><a href="http://broadinstitute.github.io/picard/">http://broadinstitute.github.io/picard/</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>picard</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Multithreaded</li>
+      environment variables set 
+      <ul>
+        <li><code>$PICARDJARPATH</code> - path to the directory holding the jar 
+          file(s)</li>
+        <li> <code>$PICARD_JARPATH</code> - path to the directory holding the 
+          jar file(s)</li>
+        <li> <code>$PICARDJAR</code> - for versions > 1.119, the path to the single 
+          picard jar file</li>
+        <li> <code>$PICARD_JAR</code> - for versions > 1.119, the path to the 
+          single picard jar file</li></tt></li>
+        
+      </ul></li>
+      
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load picard
+</strong>[user@cn3144 ~]$ <strong>java -Xmx4g -XX:ParallelGCThreads=5 -jar $PICARDJARPATH/picard.jar command [options]
+</strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>    
+    <pre class="term">
+#!/bin/bash
+set -e
+module load picard
+java -Xmx4g -XX:ParallelGCThreads=5 -jar $PICARDJARPATH/picard.jar command [options]</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch --cpus-per-task=6 batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+    <pre class="term">cd dir1; java -Xmx4g -XX:ParallelGCThreads=5 -jar $PICARDJARPATH/picard.jar command [options]
+cd dir2; java -Xmx4g -XX:ParallelGCThreads=5 -jar $PICARDJARPATH/picard.jar command [options]
+cd dir3; java -Xmx4g -XX:ParallelGCThreads=5 -jar $PICARDJARPATH/picard.jar command [options]
+cd dir4; java -Xmx4g -XX:ParallelGCThreads=5 -jar $PICARDJARPATH/picard.jar command [options]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm -t 6 --module picard</pre>
+where
+    <table width="63%" border=0>
+      <tr><td width=18%><tt>-g <i>#</i> </tt></td><td width="82%">Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  </td></tr><tr><td><tt>-t <i>#</i></tt> </td><td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  </td></tr><tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr></table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

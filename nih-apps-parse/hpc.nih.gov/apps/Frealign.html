@@ -1,0 +1,149 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Frealign on Biowulf';</script>
+<div class="title">Frealign on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> Frealign is a program for high-resolution refinement of 3D reconstructions from cryo-EM images of single particles.</p>
+
+<h3>References:</h3>
+<ul>
+<li>Grigorieff, N. 2007. <b><u><a href="http://dx.doi.org/10.1016/j.jsb.2006.05.004">FREALIGN: high-resolution refinement of single particle structures.</a></u></b> <em>J Struct Biol.</em> 157:117–125.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Frealign Main Site: <a href="http://grigoriefflab.janelia.org/frealign">Frealign Main Page (Grigorieff Lab)</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Frealign</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/Distributed
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>FREALIGN_HOME</tt> -- installation directory for Frealign</li>
+    <li><tt>NCPUS</tt> -- number of cpus/threads available for the job</li>
+  </ul>
+</ul>
+<p class="alert">The command frealign_v9_mp.exe is multithreaded. The number of threads is set by the <b>$NCPUS</b> environment variable. This variable is set dynamically by the Frealign module using the <b>$SLURM_CPUS_ON_NODE</b> variable set by the Slurm batch system. It can be overridden by setting <b>$NCPUS</b> prior to loading the Frealign module.
+<br>
+To see the value of <b>$NCPUS</b> prior to running, type '<b>module show Frealign</b>'.</p>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program.
+You will need to create an mparameters file (for example, frealign_run_refine).
+Sample session:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ module load Frealign
+[user@cn3144 ~]$ frealign_template
+[user@cn3144 ~]$ nano mparameters
+[user@cn3144 ~]$ frealign_run_refine
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<h3>Single Node Job</h3>
+
+<p>There are two ways of running a batch job on Biowulf.  If your commands involve subtasks that run very quickly (for
+example reconstruction steps that last a few minutes each), it is <b>much more efficient to run on a single node, using the local
+scratch disk</b>.  This is done by editing the mparameters file.  In this case, because the path to the local scratch disk
+space is unknown prior to the job submission, the mparameters file contains a dummy tag "XXXXXXXX".</p>
+
+<pre class="term">
+cluster_type         none
+nprocessor_ref       16
+nprocessor_rec       16
+scratch_dir          /lscratch/XXXXXXXX</pre>
+
+<p>Create a batch input file (e.g. frealign.sh) which cds to the directory containing the mparameters file and
+substitutes the actual path to local disk into the dummy tag. For example:</p>
+
+<pre class="term">#!/bin/bash
+module load Frealign
+cd /path/to/directory/where/mparameters/lives/
+sed -i "s#/lscratch/XXXXXXXX#/lscratch/$SLURM_JOB_ID#" mparameters
+frealign_run_refine</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command, allocating as many cpus as indicated
+in the nprocessor_ref and/or nprocessor_rec values, as well as local scratch space:</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --gres=lscratch:50 frealign.sh</pre>
+
+<h3>Multiple Node Job</h3>
+
+<p>In cases where the subtasks of Frealign as expected to run for a significantly long time (more than 10 minutes), it may
+be better to distribute the subtasks across multiple nodes.  Again, edit the mparameters file to indicate 'slurm' as the
+cluster type, and set nprocessor_{ref,rec} to no more than 50.  In this case, you must use a shared scratch space, so either
+leave scratch_dir blank to indicate the current working directory, or set the value to a specific directory.  The value for
+mp_cpus can be safely set to 2, because each sbatch job will allocate a minimum of 2 cpus.</p>
+
+<pre class="term">
+cluster_type         slurm
+nprocessor_ref       50
+nprocessor_rec       50
+mp_cpus              2
+</pre>
+
+<p>Create a batch script (for example frealign.sh):</p>
+
+<pre class="term">#!/bin/bash
+module load Frealign
+cd /path/to/directory/where/mparameters/lives/
+frealign_v9_mp.exe</pre>
+
+<p>Then submit to the cluster without any special allocations:</p>
+
+<pre class="term">sbatch frealign.sh</pre>
+
+<h3>Job Control via mparameters File</h3>
+
+<p>When the cluster_type is set to 'slurm', there are two values in mparameters which can give 
+control the allocations for batch submission: qsub_string_ref and qsub_string_rec.  These can be used to select
+specific partitions, allocations, etc.  For example, to run subtasks on a different partition:</p>
+
+<pre class="term">qsub_string_ref      "--partition=quick"
+qsub_string_rec      "--partition=quick""</pre>
+
+<p>If the number of cpus used during reconstruction can be larger than 2, then both mp_cpus and qsub_string_rec need to
+complement each other.  For example, to set then number of cpus to 8:</p>
+
+<pre class="term">
+mp_cpus              8
+qsub_string_rec      "--cpus-per-task=8"
+</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,134 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DeNovoGear:  Estimating de novo mutations from related individuals and cells ';</script>
+<div class="title"><b>DeNovoGear: Estimating de novo mutations from related individuals and cells </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+DeNovoGear is az software for analyzing de novo mutations from familial and somatic tissue sequencing data. 
+It uses likelihood-based error modeling to reduce the false positive rate of mutation discovery in exome analysis 
+and fragment information to identify the parental origin of germ-line mutations. DeNovoGear has been used on human
+whole-genome sequencing data to produce a set of predicted de novo insertion and/or deletion (indel) mutations.
+</p>
+
+<h3>Reference:</h3>
+<ul>
+<li>Avinash Ramu, Michiel J Noordam, Rachel S Schwartz, Arthur Wuster, Matthew E Hurles, Reed A Cartwright and Donald F Conrad<br /> 
+<i>DeNovoGear: de novo indel and point mutation discovery and phasing</i> <br />
+<a href="https://www.nature.com/articles/nmeth.2611">Nature Methods</a>, 2013, <b>10</b>(10), p.985.
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/ultimatesource/denovogear">DeNovoGear Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>denovogear</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>DENOVOGEAR_HOME</b>&nbsp; installation directory</li>
+    <li><b>DENOVOGEAR_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>DENOVOGEAR_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>DENOVOGEAR_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=12g -c5 --gres=lscratch:10</b>
+[user@cn3335 ~]$ <b>module load denovogear </b>
+[+] Loading samtools 1.17  ...
+[+] Loading denovogear 1.1.1  ...
+[user@cn3335 ~]$<b></b>
+[user@cn3335 ~]$ <b>dng</b>
+USAGE: dng command [options]
+       dng help
+       dng help [command]
+[user@cn3335 ~]$ <b>dng-dnm</b>
+DeNovoGear v1.1.1
+
+Usage:
+Autosomes:
+        dng dnm auto --bcf bcf_f --ped ped_f [OR] dng dnm auto --vcf vcf_f --ped ped_f
+X chromosome in male offspring:
+        dng dnm XS --bcf bcf_f --ped ped_f [OR] dng dnm XS --vcf vcf_f --ped ped_f
+X chromosome in female offspring:
+        dng dnm XD --bcf bcf_f --ped ped_f [OR] dng dnm XD --vcf vcf_f --ped ped_f
+
+Input:
+DNM:
+--ped:   Ped file to describe relationship between the samples.
+--bcf:   BCF file, contains per-sample read depths and genotype likelihoods.
+--vcf:   VCF file, contains per-sample read depths and genotype likelihoods.
+Phaser:
+--dnm: Tab delimited list of denovo mutations to be phased, format: chr pos inherited_base denovo_base.[example: 1 2000 A C]
+--pgt: Tab delimited genotypes of child and parents at SNP sites near denovo sites, format: chr pos GT_child GT_parent1 GT_parent2.[example: 1 2000 AC AC AA]
+--bam: alignment file (.bam) of the child.
+--window: optional argument which is the maximum distance between the DNM and a phasing site. The default value is 1000.
+
+Output:
+--output_vcf:    vcf file to write the output to.
+
+Parameters:
+--snp_mrate:     Mutation rate prior for SNPs. [1e-8]
+--indel_mrate:   Mutation rate prior for INDELs. [1e-9]
+--pair_mrate:    Mutation rate prior for paired sample analysis. [1e-9]
+--indel_mu_scale:        Scaling factor for indel mutation rate. [1]
+--pp_cutoff:     Posterior probability threshold. [0.0001]
+--rd_cutoff:     Read depth filter, sites where either one of the sample have read depth less than this threshold are filtered out. [10]
+--region:        Region of the BCF file to perform denovo calling. [string of the form "chr:start-end"
+[user@cn3335 ~]$ <b>dng-call</b>
+Usage:
+  dng call [options] input1 input2 input3 ...
+
+Allowed Options:
+  -f [ --fasta ] arg                 faidx indexed reference sequence file
+  -l [ --min-qlen ] arg (=0)         minimum query length
+  -m [ --min-prob ] arg (=0.1)       minimum probability for reporting a
+                                     mutation
+  --mu arg (=1e-9)                   the germline mutation rate
+  --mu-somatic arg (=0)              the somatic mutation rate
+  --mu-library arg (=0)              the library prep mutation rate
+  --nuc-freqs arg (=0.3,0.2,0.2,0.3) nucleotide frequencies in ACGT order
+  -p [ --ped ] arg                   the pedigree file
+  -q [ --min-basequal ] arg (=0)     minimum base quality
+  -Q [ --min-mapqual ] arg (=0)      minimum mapping quality
+  -r [ --region ] arg                chromosomal region
+  -R [ --ref-weight ] arg (=1)       weight given to reference base for
+                                     population prior
+  -s [ --sam-files ] arg             file containing a list of input filenames,
+                                     one per line
+  --theta arg (=0.001)               the population diversity
+  -o [ --output ] arg (=-)           Output VCF/BCF file
+  --version                          display version information
+  --help                             display usage informaiton
+  --arg-file arg                     read command-line arguments from a file
+[user@cn3335 ~]$ <b></b>
+
+</pre>
+etc. <br /> <br />
+End the interactive session:
+<pre class="term">
+[user@cn3335 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

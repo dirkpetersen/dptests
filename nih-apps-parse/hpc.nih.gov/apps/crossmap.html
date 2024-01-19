@@ -1,0 +1,150 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'crossmap on Biowulf';</script>
+<div class="title">crossmap on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CrossMap is a program for convenient conversion of genome coordinates between different assemblies (e.g. mm9-&gt;mm10). It can convert SAM, BAM, bed, GTF, GFF, wig/bigWig, and VCF files.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Hao Zhao <em>et al.</em> <em>CrossMap: a versatile tool for coordinate 
+        conversion between genome assemblies</em>. Bioinformatics 2014(30): 1006-1007.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/24351709">PubMed</a> &nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3967108/">PMC</a>&nbsp;|&nbsp;
+    <a href="http://bioinformatics.oxfordjournals.org/content/30/7/1006">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://crossmap.sourceforge.net/">crossmap Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>crossmap</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded app
+<li>Example files in <tt>/usr/local/apps/crossmap/TEST_DATA</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c2 --mem=4g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 11342506
+salloc.exe: job 11342506 queued and waiting for resources
+salloc.exe: job 11342506 has been allocated resources
+salloc.exe: Granted job allocation 11342506
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0865 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.11342506.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0865 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0865 11342506]$ <b>module load crossmap</b>
+[+] Loading crossmap  0.5.2  on cn0865
+[+] Loading singularity  3.7.2  on cn0865
+
+[user@cn0865 11342506]$ <b>cp $CMAP_DATA/* .</b>
+
+[user@cn0865 11342506]$ <b>crossmap -h</b>
+Program: CrossMap (v0.2.8)
+
+Description:
+  CrossMap is a program for convenient conversion of genome coordinates and genome
+  annotation files between assemblies (eg. lift from human hg18 to hg19 or vice
+  versa). It supports file in BAM, SAM, BED, Wiggle, BigWig, GFF, GTF and VCF
+  format.
+
+Usage: CrossMap.py <command> [options]
+
+  bam   convert alignment file in BAM or SAM format.
+  bed   convert genome cooridnate or annotation file in BED or BED-like format.
+  bigwig        convert genome coordinate file in BigWig format.
+  gff   convert genome cooridnate or annotation file in GFF or GTF format.
+  vcf   convert genome coordinate file in VCF format.
+  wig   convert genome coordinate file in Wiggle, or bedGraph format.
+
+
+[user@cn0865 11342506]$ <b>crossmap bed hg18ToHg19.over.chain test_input > test_output</b>
+@ 2021-03-25 12:17:39: Read chain_file:  hg18ToHg19.over.chain
+
+[user@cn0865 11342506]$ <b>head -n2 test_output</b>
+chr1    142614848       142617697       ->      chr1    143903503       143906352
+chr1    142617697       142623312       ->      chr1    143906355       143911970
+
+[user@cn0865 11342506]$ <b>diff --ignore-all-space expected_output test_output</b>
+
+[user@cn0865 11342506]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 11342506
+
+[user@biowulf ~]$ 
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. crossmap.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+function fail() {
+    echo "$@" >&2
+    exit 1
+}
+
+module load crossmap || fail "could not load crossmap module"
+if [[ ! -f hg19ToHg38.over.chain.gz ]]; then
+    wget http://hgdownload.soe.ucsc.edu/goldenPath/mm9/liftOver/hg19ToHg38.over.chain.gz
+fi
+crossmap bam hg19ToHg38.over.chain.gz hg19_example.bam out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch crossmap.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. crossmap.swarm). For example:</p>
+
+<pre class="term">
+crossmap bam hg19ToHg38.over.chain.gz sample1.bam sample1_hg38.bam
+crossmap bam hg19ToHg38.over.chain.gz sample2.bam sample2_hg38.bam
+crossmap bam hg19ToHg38.over.chain.gz sample3.bam sample3_hg38.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f crossmap.swarm --module crossmap</pre>
+where
+<table border=0>
+  <tr><td><tt>--module crossmap</tt> <td>Loads the crossmap module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,248 @@
+
+/* 
+.menu_links {
+        font-size: 13px;
+        color: #000000;
+        text-align: left;
+        #background-color: #E8E8E8;
+        #background-image:url(/images/sectionheading_blue_gradient.png);
+        #background-image:url(/images/sectionheading.png);
+        width: 900px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        border-top: 1px solid #000000;
+        border-bottom: 1px solid #000000;
+ */
+
+
+/*@import url(http://fonts.googleapis.com/css?family=Open+Sans:400,600,300);*/
+#cssmenu {
+  /*font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, Sans-Serif;*/
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  line-height: 0px;
+  /*text-transform: uppercase;*/
+  text-align: left;
+/* this is the color gradient of the navbar from top to bottom */
+        #background: -webkit-linear-gradient(#BFDAE0, #E7F1F4); /* For Safari 5.1 to 6.0 */
+        #background: -o-linear-gradient(#BFDAE0, #E7F1F4); /* For Opera 11.1 to 12.0 */
+        #background: -moz-linear-gradient(#BFDAE0, #E7F1F4); /* For Firefox 3.6 to 15 */
+        #background: linear-gradient(#BFDAE0, #E7F1F4); /* Standard syntax */
+        #background-image:url(/images/sectionheading_blue_gradient.png);
+
+  /*width: 880px;*/
+  border-top: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+    /*width: 100%;*/
+}
+#cssmenu > ul {
+  width: auto;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  /*background: #ffffff;*/
+  background: transparent; 
+  /*border: 1px solid #ece6e8;*/
+/*  border-bottom: 3px solid #d9ced2;
+  -webkit-border-radius: 2px;
+  -moz-border-radius: 2px;
+  -o-border-radius: 2px;
+  border-radius: 2px;*/
+}
+#cssmenu > ul li#responsive-tab {
+  display: none;
+  /* Hide for large screens */
+
+}
+#cssmenu > ul li {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+#cssmenu > ul li.right {
+  float: right;
+}
+#cssmenu > ul li.has-sub {
+  position: relative;
+}
+#cssmenu > ul li.has-sub:hover ul {
+  display: block;  
+  #background: #D4E6EA; /* default background color of pop-down boxes */
+  background: #005D97; /* default background color of pop-down boxes */
+  z-index: 10;
+}
+#cssmenu > ul li.has-sub ul {
+  display: none;
+  width: 170px; /* width of the dropdown box */
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  /*background: green;*/
+  /*border: 1px solid #ece6e8;*/
+  border: 1px solid black; /* border around pop-down boxes */
+  /*border-bottom: 3px solid #d9ced2;*/
+  border-top: 0 none;
+}
+#cssmenu > ul li.has-sub ul li {
+  display: block;
+}
+#cssmenu > ul li.has-sub > a {
+  /*background-image: url('/dropdown2/images/caret.png');*/
+  /*background-color: white;*/ /* color of links that will generate pop-down boxes */
+  background: transparent;
+  background-repeat: no-repeat;
+  background-position: 90% -95%;
+}
+#cssmenu > ul li.has-sub > a.active,
+#cssmenu > ul li.has-sub > a:hover {
+  /* background: #d80041 url('images/caret.png') no-repeat; */
+  /*background: black url('images/caret.png') no-repeat;*/
+  background-position: 90% 195%;
+}
+#cssmenu > ul li a {
+  display: block;
+  /* padding: 12px 24px 11px 24px;  default */
+  /* padding: top right bottom left */
+  padding: 14px 10px 13px 10px;  /* this controls the spacings of the navbar and dropdown text */
+  text-decoration: none;
+  color: white; /* default color of link text */
+  /*text-shadow: 0px 1px 0px #fff;*/
+}
+#cssmenu > ul li a.sublink {
+  font-size: 11px;
+  padding: 9px 10px 8px 10px;  /* this controls the spacings of the dropdown text */
+}
+#cssmenu > ul li a.active,
+#cssmenu > ul li a:hover {
+ /* background: #d80041; */
+  /*background: black;*/
+  /*color: #fff;*/
+  color: white; /* color of the hovered link text, both on the navbar and in the dropdown */
+  #background: #004755; /* color of the hovered link box, both on the navbar and in the dropdown */
+  background: #000000; /* color of the hovered link box, both on the navbar and in the dropdown */
+  #background #000000;
+  /*text-shadow: 0px 1px 0px #000;*/
+}
+/* .whatever > ul li {  */
+/*  display: inline; */
+/*  padding: 6px 10px 5px 10px;  /* this controls the spacings of the navbar and dropdown text */
+/* } */
+@media (max-width: 600px) {
+  #cssmenu > ul {
+    width: 100%;
+  }
+  #cssmenu > ul li#responsive-tab {
+    display: block;
+  }
+  #cssmenu > ul li#responsive-tab a {
+    /*background: url('images/menu.png') no-repeat;*/
+    background-position: 95% -35%;
+  }
+  #cssmenu > ul li#responsive-tab a:hover {
+    background-position: 95% 135%;
+    /* background-color: black; Does nothing? */
+  }
+  #cssmenu > ul li {
+    display: none;
+  }
+  #cssmenu > ul li.right {
+    float: none;
+  }
+  #cssmenu > ul li.has-sub {
+    position: relative;
+  }
+  #cssmenu > ul li.has-sub ul {
+    display: block;
+    position: static;
+    width: 100%;
+    background: white; /* the color of the compressed background */
+    border: 0 none;
+  }
+  #cssmenu > ul li.has-sub ul li {
+    display: block !important;
+  }
+  #cssmenu > ul li.has-sub ul li a span {
+    display: block;
+    padding-left: 24px;
+  }
+  #cssmenu > ul li.has-sub > a {
+    background-image: none;
+  }
+}
+/* Make sure they show even if hidden in mobile view by JS */
+@media (min-width: 600px) {
+  #cssmenu > ul > li.collapsed {
+    display: inline-block !important;
+    *display: inline;
+    zoom: 1;
+  }
+  #cssmenu > ul ul li.collapsed {
+    display: block !important;
+  }
+}
+
+
+
+/* #sb BEGIN NEW dropdown stuff */
+
+#nav-primary {
+float: right;
+margin: 0;
+}
+
+#nav-primary li {
+position: relative;
+height: 20px;
+float: left;
+padding: 10px;
+list-style: none;
+color: #fff;
+}
+
+data-inner {
+position: relative;
+text-align: left;
+}
+
+#nav-primary ul {
+margin: 0;
+width: auto;
+display: none;
+}
+
+#nav-primary a {
+position: relative;
+height: 20px;
+display: block;
+color: #fff;
+font-size: 14px;v-primar
+font-family: 'Tauri', sans-serif;
+text-transform: uppercase;
+}
+
+a:hover {
+color: #e51b24;
+text-decoration: none;
+transition: color .15s, background-color .15s;
+-moz-transition: color .15s, background-color .15s;
+}
+
+
+a, a:visited {
+color: #06c;
+outline: medium none;
+text-decoration: underline;
+}
+
+#nav-primary li li a {
+background: none;
+}
+
+a {
+color: #0160e4;
+text-decoration: none;
+transition: color .15s, background-color .15s;
+-moz-transition: color .15s, background-color .15s;
+}
+

@@ -1,0 +1,407 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "alphapulldown";</script>
+<style>
+    .hl { background-color: #ffff99; }
+    code {background-color: #eeeeee; border: 1px solid #bbbbbb; padding: 0;}
+    dt {font-weight: bold; margin-top: 5px;}
+    dd {padding-left: 2px; border-left: 1px solid #bbbbbb;}
+    .btt {border: 1px solid silver;
+          background-color: white;
+          padding: 5px;
+          position: relative;
+          margin: 5px 0px 10px 10px;
+          float: right;
+          top: -25px;
+          left: 10px;
+          }
+</style>
+
+<div class="title">alphapulldown on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p> Streamlines protein-protein interaction screens and high-throughput
+modelling of higher-order oligomers using AlphaFold-Multimer</p>
+
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+      D. Yu, G. Chojnowski, M. Rosenthal, and J. Josinski. 
+      <em>AlphaPulldown—a python package for protein–protein interaction screens using AlphaFold-Multimer</em>
+      Bioinformatics 2023.
+      <a href="https://pubmed.ncbi.nlm.nih.gov/36413069/">PubMed</a>&nbsp;|&nbsp;
+      <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/36413069/">PMC</a>&nbsp;|&nbsp;
+      <a href="https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btac749">Journal</a>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li>AlphaPulldown on <a href="https://github.com/KosinskiLab/AlphaPulldown">GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <code>alphapulldown</code> (see <a href="/apps/modules.html">the modules page</a> 
+        for more information)</li>
+    <li>Some steps in an analysis require GPU</li>
+    <li class="hl">Parallelizing the default alignment generation method adopted from alphafold has to be done with
+        care as it can easily overload file systems and generate more alignments than can be analyzed with
+        available GPUs in a reasonable amount of time. Limit parallelization to 10 concurrent jobs for this step or
+        use the mmseqs based <code>colabfold_search</code> from the
+        <a href="https://hpc.nih.gov/apps/colabfold.html">colabfold</a> module.</li>
+    <li>Example files in <code>$ALPHAPULLDOWN_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>In the following example we will screen a bait against a set of candidate
+interaction partners (i.e. <em>pulldown</em> mode).</p>
+
+<h3>Generating multiple sequence alignments (MSAs)</h3>
+
+<p>Alignment generation does not require GPUs and can be done with the either
+the alignment pipeline from alphafold (included in this module) or colabfold
+(separate module). The mmseqs based colabfold method is considerably faster.
+Allocate an <a href="/docs/userguide.html#int">interactive session</a> without
+GPUs for the alignment step.</p>
+
+<h4>Alphafold based alignment pipeline</h4>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=100g --cpus-per-task=8 --gres=lscratch:100 --time=1-12</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load alphapulldown/0.30.7</b>
+[user@cn3144]$ <b>cp ${ALPHAPULLDOWN_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>ls -lh</b>
+-rw-r--r-- 1 user group 1.1K Sep 12 10:50 bait.fasta
+-rw-r--r-- 1 user group    7 Sep 12 20:25 bait.txt
+-rw-r--r-- 1 user group  145 Sep 12 20:25 candidates.txt
+-rw-r--r-- 1 user group 7.4K Sep 12 10:49 candidates.fasta
+[user@cn3144]$ ### alphafold based alignment pipeline - not parallelized
+[user@cn3144]$ <b>create_individual_features.py \
+                    --fasta_paths=bait.fasta,candidates.fasta \
+                    --save_msa_files=True \
+                    --output_dir=pulldown \
+                    --use_precomputed_msas=False \
+                    --max_template_date=2023-01-01 \
+                    --skip_existing=True</b>
+[...much output...]
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>MSA generation takes 35h in the example above. Note that in an interactive
+job it cannot be parallelized. To parallelize across subunits please see the
+section on running a <a href="#sbatch">Batch job </a>. Note that not saving msa
+files saves space (12.7GB/15GB in this example) but precludes their re-use in
+the future.</p>
+
+<h4>Colabfold based alignment pipeline</h4>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=128g --cpus-per-task=16 --gres=lscratch:100</b>
+[user@cn3144]$ <b>cat bait.fasta candidates.fasta > for_colabfold.fa</b>
+[user@cn3144]$ <b>module load colabfold alphapulldown</b>
+[user@cn3144]$ <b>colabfold_search \
+                    --threads $SLURM_CPUS_PER_TASK \
+                    for_colabfold.fa $COLABFOLD_DB pulldown</b>
+[user@cn3144]$ <b>cd pulldown</b>
+[user@cn3144]$ <b>ls -lh</b>
+total 86M
+-rw-r--r-- 1 user group  7.1M Sep 12 16:29 0.a3m
+-rw-r--r-- 1 user group  9.2M Sep 12 16:29 10.a3m
+-rw-r--r-- 1 user group  803K Sep 12 16:29 11.a3m
+-rw-r--r-- 1 user group  611K Sep 12 16:29 12.a3m
+[...snip...]
+[user@cn3144]$ ## rename the alignments to something more useful
+[user@cn3144]$ <b>rename_colab_search_a3m.py</b>
+Renaming 18.a3m to P62945.a3m
+Renaming 20.a3m to Q9NX20.a3m
+Renaming 0.a3m to P78344.a3m
+Renaming 1.a3m to Q14240.a3m
+[...snip...]
+[user@cn3144]$ <b>ls -lh</b>
+total 86M
+-rw-r--r-- 1 user group  1.8M Sep 12 16:29 O76094.a3m
+-rw-r--r-- 1 user group  9.2M Sep 12 16:29 P08240.a3m
+-rw-r--r-- 1 user group  803K Sep 12 16:29 P09132.a3m
+-rw-r--r-- 1 user group  2.1M Sep 12 16:29 P22090.a3m
+[...snip...]
+[user@cn3144]$ <b>cd ..</b>
+[user@cn3144]$ <b>create_individual_features.py \
+                    --fasta_paths=bait.fasta,candidates.fasta \
+                    --output_dir=pulldown \
+                    --use_precomputed_msas=True \
+                    --max_template_date=2023-01-01 \
+                    --use_mmseqs2=True \
+                    --skip_existing=False</b>
+[user@cn3144]$ ## exiting the sinteractive allocation using CPUs
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>The local colabfold alignment pipleine above finished in 2.5h.</p>
+
+<p>Notes on the alignment step:</p>
+<ul>
+    <li>we do not recommend using <code>--use_mmseqs2=True</code> without pre-computing alignments
+        with the local colabfold pileine.</li>
+    <li>as mentioned in the <a href="https://hpc.nih.gov/apps/colabfold.html">colabfold docs</a>
+        <code>colabfold_search</code> works more efficiently the more sequences are provided in a single
+        query. Therefore all sequences for a pulldown should be submitted as a single job.</li>
+</ul>
+
+<h3>Pairwise inference of multimer structures</h3>
+
+<p>This stage of the process will require a GPU. On a A100 GPU the full example
+with 2 predictions per model woud take &approx; 17 h (1 bait * 20 candidates *
+5 models/interaction * 2 predictions/model * 300s/prediction). Therefore we
+only run the first 2 candidates in the example below. The output for this step
+in this example is about 8.6GB/pair (172GB for all 20 pairs). If we had run
+only 1 prediction per model per pair it would be half that.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=50g -c8 --gres=lscratch:50,gpu:a100:1</b>
+[user@cn3144]$ <b>module load alphapulldown</b>
+[user@cn3144]$ <b>head -2 candidates.txt &gt; 2candidates.txt </b>
+[user@cn3144]$ ## using more predictions / model will proportionally increase runtime
+[user@cn3144]$ <b>run_multimer_jobs.py \
+                  --mode=pulldown \
+                  --num_cycle=3 \
+                  --num_predictions_per_model=2 \
+                  --output_path=pulldown_models \
+                  --protein_lists=bait.txt,2candidates.txt \
+                  --monomer_objects_dir=pulldown</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<h3>Evaluation and visualization</h3>
+<p>alphapulldown has a script that will collect metrics from a run and create a jupyter notebook. Starting
+this interactive session with <code>--tunnel</code> so that we can immediately look at the
+notebook. See our <a href="https://hpc.nih.gov/apps/jupyter.html">Jupyter documentation</a>
+on how to connect to the notebook.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --tunnel --cpus-per-task=2 --mem=10g</b>
+[user@cn3144]$ <b>module load alphapulldown</b>
+[user@cn3144]$ <b>create_notebook.py --help</b>
+       USAGE: /opt/conda/envs/app/bin/create_notebook.py [flags]
+flags:
+
+/opt/conda/envs/app/bin/create_notebook.py:
+  --[no]create_notebook: Whether creating a notebook
+    (default: 'true')
+  --cutoff: cutoff value of PAE. i.e. only pae&lt;cutoff is counted good
+    (default: '5.0')
+    (a number)
+  --output_dir: directory where predicted models are stored
+    (default: '.')
+  --pae_figsize: figsize of pae_plot, default is 50
+    (default: '50')
+    (an integer)
+  --surface_thres: surface threshold. must be integer
+    (default: '2')
+    (an integer)
+
+[user@cn3144]$ <b>cd pulldown_models</b>
+[user@cn3144]$ <b>create_notebook.py</b>
+[user@cn3144]$ <b>alphapulldown_jupyter notebook --port $PORT1 --ip localhost --no-browser</b>
+</pre>
+
+<p>See <a href="alphapulldown_notebook.html">this</a> partially rendered example notebook.</p>
+
+<p>In addition alphapulldown provides a script to create a tabular summary
+of putative hits:</p>
+
+<pre class="term">
+[user@cn3144]$ <b>run_get_good_pae.sh --help</b>
+
+       USAGE: /app/alpha-analysis/get_good_inter_pae.py [flags]
+flags:
+
+/app/alpha-analysis/get_good_inter_pae.py:
+  --cutoff: cutoff value of PAE. i.e. only pae&lt;cutoff is counted good
+    (default: '5.0')
+    (a number)
+  --output_dir: directory where predicted models are stored
+  --surface_thres: surface threshold. must be integer
+    (default: '2')
+    (an integer)
+
+[user@cn3144]$ <b>run_get_good_pae.sh --output_dir .</b>
+[...much output...]
+[user@cn3144]$ <b>head -2 predictions_with_good_interpae.csv</b>
+jobs,interface,Num_intf_residues,Polar,Hydrophobhic,Charged,contact_pairs, sc, hb, sb, int_solv_en, int_area,pi_score,pdb, pvalue,iptm_ptm,iptm,mpDockQ/pDockQ
+P78344_and_P60842,C_B,100,0.23,0.25,0.39,104,0.52,32,27,-8.62,3795.28,0.88,,,0.7768986939967186,0.8371253,0.6383528254038463
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>pDockQ and Protein Interface score (pi_score) from the output table above</p>
+<div style="width: 75%; margin: 0 auto">
+  <img src="/images/alphapulldown.png" width="100%"/>
+</div>
+
+<h3>Custom mode inference</h3>
+
+<p>Custom mode can be used to explicitly define which interactions to test and can be used to only analyze fragments
+of a sequence. This can be used, for example, to screen for interaction domains in proteins within very large proteins.
+In our example we will use one of the highly scoring pairs above and map the interaction between the full length bait
+and three fragments of Q14240 to illustrate the procedure. Running from the same directory as the examples above.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=50g -c8 --gres=lscratch:50,gpu:a100:1</b>
+[user@cn3144]$ <b>module load alphapulldown</b>
+[user@cn3144]$ <b>cat <<__EOF__ > custom.txt
+P78344;Q14240,1-130
+P78344;Q14240,131-260
+P78344;Q14240,161-407
+__EOF__
+[user@cn3144]$ <b>run_multimer_jobs.py \
+                  --mode=custom \
+                  --num_cycle=3 \
+                  --num_predictions_per_model=2 \
+                  --output_path=custom \
+                  --protein_lists=custom.txt \
+                  --monomer_objects_dir=pulldown</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>The alphafold based alignment and the structural inference steps can be parallelized using
+slurm job arrays. The colabfold based alignment should submit <em>all</em> proteins in a single
+alignment job.<p>
+
+<h3>Alignment</h3>
+
+<h4>Colabfold based pipeline - single job</h4>
+<pre class="term">
+#! /bin/bash
+
+set -e
+
+module load colabfold alphapulldown
+
+cp ${ALPHAPULLDOWN_TEST_DATA:-none}/* .
+cat bait.fasta candidates.fasta > for_colabfold.fa 
+
+colabfold_search \
+    --threads $SLURM_CPUS_PER_TASK \
+    for_colabfold.fa $COLABFOLD_DB pulldown
+pushd pulldown
+rename_colab_search_a3m.py
+popd
+
+create_individual_features.py \
+    --fasta_paths=bait.fasta,candidates.fasta \
+    --output_dir=pulldown \
+    --use_precomputed_msas=True \
+    --max_template_date=2023-01-01 \
+    --use_mmseqs2=True \
+    --skip_existing=False
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sbatch --cpus-per-task=16 --mem=128g --time=6:00:00 \
+                   --gres=lscratch:50 alphapulldown_1a.sh</b>
+</pre>
+
+<h4>Alphafold based pipeline - at most 10 concurrent jobs</h4>
+<pre class="term">
+#! /bin/bash
+
+set -e
+
+module load alphapulldown
+
+cp ${ALPHAPULLDOWN_TEST_DATA:-none}/* .
+create_individual_features.py \
+    --fasta_paths=bait.fasta,candidates.fasta \
+    --save_msa_files=True \
+    --output_dir=pulldown \
+    --use_precomputed_msas=False \
+    --max_template_date=2023-01-01 \
+    --skip_existing=True \
+    --seq_index=$SLURM_ARRAY_TASK_ID
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>nbaits=$(grep -c ">" baits.fasta)</b>
+[user@biowulf]$ <b>ncandidates=$(grep -c ">" candidates.fasta)</b>
+[user@biowulf]$ <b>ntotal=$(( $nbaits + $ncandidates ))</b>
+[user@biowulf]$ # Run a job array, 10 jobs at a time:
+[user@biowulf]$ <b>sbatch --cpus-per-task=8 --mem=100g --time=2:00:00 --gres=lscratch:50 \
+                   --array=1-$ntotal%10 alphapulldown_1b.sh</b>
+</pre>
+
+
+<h3>Pairwise inference of multimer structures - at most 10 concurrent jobs</h3>
+
+<pre class="term">
+#! /bin/bash
+
+set -e
+
+module load alphapulldown
+
+run_multimer_jobs.py \
+    --mode=pulldown \
+    --num_cycle=3 \
+    --num_predictions_per_model=2 \
+    --output_path=pulldown_models \
+    --protein_lists=bait.txt,candidates.txt \
+    --monomer_objects_dir=pulldown \
+    --job_index=$SLURM_ARRAY_TASK_ID
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>nbaits=$(wc -l &lt; bait.txt)</b>
+[user@biowulf]$ <b>ncandidates=$(wc -l &lt; candidates.txt)</b>
+[user@biowulf]$ <b>ntotal=$(( $nbaits * $ncandidates ))</b>
+[user@biowulf]$ # Run a job array, 10 jobs at a time:
+[user@biowulf]$ <b>sbatch --cpus-per-task=8 --mem=50g --time=3:00:00 \
+                   --gres=lscratch:50,gpu:a100:1 --partition=gpu --array=1-$ntotal%10 alphapulldown_2.sh</b>
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

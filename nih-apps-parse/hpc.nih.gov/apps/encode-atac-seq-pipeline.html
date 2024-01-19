@@ -1,0 +1,501 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'encode-atac-seq-pipeline on Biowulf';</script>
+<div class="title">encode-atac-seq-pipeline on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width:70%;">
+<p>
+From the Encode documentation:
+</p>
+
+<blockquote> 
+    This pipeline is designed for automated end-to-end quality control
+    and processing of ATAC-seq or DNase-seq data. The pipeline can be run on
+    compute clusters with job submission engines or stand alone machines. It
+    inherently makes uses of parallelized/distributed computing. 
+</blockquote>
+
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://www.encodeproject.org/atac-seq">Description</a> on the Encode site</li>
+    <li>On <a href="https://github.com/ENCODE-DCC/atac-seq-pipeline">GitHub</a></li>
+    <li><a href="https://github.com/ENCODE-DCC/atac-seq-pipeline/blob/master/docs/input.md">Input Json</a>
+        description</li>
+    <li><a href="https://github.com/ENCODE-DCC/atac-seq-pipeline/blob/master/docs/output.md">Output</a>
+        description</li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: encode-atac-seq-pipeline (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>This pipeline has undergone frequent updates with backwards incompatible
+    changes to execution and configuration. If in doubt please refer back to the
+    upstream documentation.</li>
+<li>For local runs the CPU and memory consumption varies over time and its magnitude
+    depends on the number of replicates and size of input data. For the example below (2 fastq files per replicaate,
+    2 replicates), 10-12 CPUs and 16GB of memory were sufficient.</li>
+<li>As of version 2.0, we no longer provide a Slurm backend configuration. We recommend use of this pipeline in 'local'
+    backend mode. If you believe you have a use for Slurm backend execution, please get in touch with HPC staff.
+<li>Environment variables set (not all of them are set in each version due to significant
+changes in the pipeline):
+    <ul>
+        <li> <code>$EASP_BACKEND_CONF</code>: configuration for local backend</li>
+        <li> <code>$EASP_WFOPTS</code>: singularity backend opts (Versions &gt; 1.0 only)</li>
+        <li> <code>$EASP_WDL</code>: WDL file defining the workflow</li>
+        <li> <code>$EASP_TEST_DATA</code>: Input data for example below</li>
+    </ul>
+    <li>Reference data in /fdb/encode-atac-seq-pipeline/&lt;version&gt;</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+
+
+<p>A note about resource allocation:</p>
+<ul>
+    <li>Set the number of concurrent tasks (NUM_CONCURRENT_TASKS) to the number of replicates</li>
+    <li>Set <code>"atac.bowtie2_cpu"</code> in the input json to the number of CPUs you want
+    bowtie2 to use. Usually 8 or so.</li>
+    <li>Allocate <code>NUM_CONCURRENT_TASKS * atac.bowtie2_cpu</code> CPUs</li>
+    <li>Allocate <code>20GB * NUM_CONCURRENT_TASKS</code>  for big samples and 
+    <code>10GB * NUM_CONCURRENT_TASKS</code> for small samples</li>
+</ul>
+
+<p>
+WDL based workflows need a json file to define input and settings for a workflow run. In
+this example, we will use the 50nt data from ENCODE sample 
+<a href="https://www.encodeproject.org/experiments/ENCSR889WQX/">ENCSR889WQX</a> (mouse frontal
+cortex). This includes 2 fastq files for each of 2 replicates.
+</p>
+
+<div class="tabs-container">
+    <ul class="tabs">
+        <!--<li data-tab="tab-10">1.0</li>
+        <li data-tab="tab-117">1.1.7,1.3.0</li>
+        <li data-tab="tab-161">1.6.1</li>
+        <li data-tab="tab-190">1.9.0</li>-->
+        <li data-tab="tab-210" class="current">2.1.0</li>
+    </ul>
+    <div id="tab-10" class="tab-content">
+        <p></p>
+        <pre class="term">
+
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=20g --gres=lscratch:30</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>wd=$PWD</b>  # so we can copy results back later
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load encode-atac-seq-pipeline/1.0</b>
+[user@cn3144]$ <b>cp -Lr ${EASP_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>tree</b>
+.
+|-- [user    738]  ENCSR889WQX.json.1.0
+|-- [user    870]  ENCSR889WQX.json.1.1.7
+`-- [user   4.0K]  input
+    |-- [user   4.0K]  rep1
+    |   |-- [user   213M]  ENCFF439VSY_5M.fastq.gz
+    |   `-- [user   213M]  ENCFF683IQS_5M.fastq.gz
+    `-- [user   4.0K]  rep2
+        |-- [user   210M]  ENCFF463QCX_5M.fastq.gz
+        `-- [user   211M]  ENCFF992TSA_5M.fastq.gz
+
+[user@cn3144]$ <b>cat ENCSR889WQX.json.1.0</b>
+{
+    "atac.pipeline_type" : "atac",
+    "atac.genome_tsv" : "/fdb/encode-atac-seq-pipeline/v1/mm10/mm10.tsv",
+    "atac.fastqs" : [
+        [
+            ["input/rep1/ENCFF683IQS_5M.fastq.gz"],
+            ["input/rep1/ENCFF439VSY_5M.fastq.gz"]
+        ],
+        [
+            ["input/rep2/ENCFF992TSA_5M.fastq.gz"],
+            ["input/rep2/ENCFF463QCX_5M.fastq.gz"]
+        ]
+    ],
+    "atac.paired_end" : false,
+    "atac.multimapping" : 4,
+    "atac.trim_adapter.auto_detect_adapter" : true,
+    "atac.smooth_win" : 73,
+    "atac.enable_idr" : true,
+    "atac.idr_thresh" : 0.05,
+    "atac.qc_report.name" : "ENCSR889WQX (subsampled to 5M reads)",
+    "atac.qc_report.desc" : "ATAC-seq on Mus musculus C57BL/6 frontal cortex adult"
+}
+        </pre>
+
+        <p>In this example the pipeline will only be run locally - i.e. it will not submit
+        tasks as slurm jobs</p>
+        <pre class="term">
+[user@cn3144]$ <b>java -Dconfig.file=$EASP_BACKEND_CONF \
+                      -Dbackend.default=Local \
+                      -jar $CROMWELL_JAR run -i ENCSR889WQX.json.1.0 $EASP_WDL</b>
+[...much output...]
+[user@cn3144]$ <b>ls -lh</b>
+drwxrwxr-x 3 user group 4.0K Sep 18 17:46 cromwell-executions
+drwxrwxrwx 2 user group 4.0K Sep 18 19:39 cromwell-workflow-logs
+[...snip...]
+drwxr-xr-x 4 user group 4.0K Sep 18 15:45 input
+        </pre>
+<p>The pipeline outputs can be found in <code>cromwell-executions</code> with an
+idiosyncratic naming scheme. This directory contains a lot of hard links, so
+links have to be preserved when copying back to /data or the size of the folder
+will increase substantially.</p>
+
+<pre class="term">
+
+[user@cn3144]$ <b>cp -ra cromwell-executions $wd</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+        
+    </div><!-- ********** end tab-1.0 ********** -->
+    <div id="tab-117" class="tab-content">
+        <p></p>
+        <pre class="term">
+
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=20g --gres=lscratch:30</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>wd=$PWD</b>  # so we can copy results back later
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load encode-atac-seq-pipeline/1.1.7</b>
+[user@cn3144]$ <b>cp -Lr ${EASP_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>tree</b>
+.
+|-- [user    738]  ENCSR889WQX.json.1.0
+|-- [user    870]  ENCSR889WQX.json.1.1.7
+`-- [user   4.0K]  input
+    |-- [user   4.0K]  rep1
+    |   |-- [user   213M]  ENCFF439VSY_5M.fastq.gz
+    |   `-- [user   213M]  ENCFF683IQS_5M.fastq.gz
+    `-- [user   4.0K]  rep2
+        |-- [user   210M]  ENCFF463QCX_5M.fastq.gz
+        `-- [user   211M]  ENCFF992TSA_5M.fastq.gz
+
+[user@cn3144]$ <b>cat ENCSR889WQX.json.1.1.7</b>
+{
+    "atac.pipeline_type" : "atac",
+    "atac.genome_tsv" : "/fdb/encode-atac-seq-pipeline/v1/mm10/mm10.tsv",
+    "atac.fastqs_rep1_R1" :
+        ["input/rep1/ENCFF683IQS_5M.fastq.gz", "input/rep1/ENCFF439VSY_5M.fastq.gz"],
+    "atac.fastqs_rep2_R1" :
+        ["input/rep2/ENCFF992TSA_5M.fastq.gz", "input/rep2/ENCFF463QCX_5M.fastq.gz"],
+    "atac.paired_end" : false,
+    "atac.multimapping" : 4,
+    "atac.trim_adapter.auto_detect_adapter" : true,
+    "atac.smooth_win" : 73,
+    "atac.enable_idr" : true,
+    "atac.idr_thresh" : 0.05,
+    "atac.qc_report.name" : "ENCSR889WQX (subsampled to 5M reads)",
+    "atac.qc_report.desc" : "ATAC-seq on Mus musculus C57BL/6 frontal cortex adult",
+    "atac.bowtie2_cpu" : 4
+}
+        </pre>
+
+        <p>In this example the pipeline will only be run locally - i.e. it will not submit
+        tasks as slurm jobs</p>
+        <pre class="term">
+[user@cn3144]$ <b>java -jar -Dconfig.file=$EASP_BACKEND_CONF \
+                    -Dbackend.default=singularity \
+                    -Dbackend.providers.singularity.config.concurrent-job-limit=2 \
+                    ${CROMWELL_JAR} run $EASP_WDL -i ENCSR889WQX.json.1.1.7  -o $EASP_WFOPTS \
+                    -m meta.json </b>
+[...much output...]
+[user@cn3144]$ <b>ls -lh</b>
+drwxrwxr-x 3 user group 4.0K Sep 18 17:46 cromwell-executions
+drwxrwxrwx 2 user group 4.0K Sep 18 19:39 cromwell-workflow-logs
+[...snip...]
+drwxr-xr-x 4 user group 4.0K Sep 18 15:45 input
+-rw-r--r-- 1 user group 283K Sep 18 14:15 meta.json
+        </pre>
+<p>The pipeline outputs can be found in <code>cromwell-executions</code> with an
+idiosyncratic naming scheme. This directory contains a lot of hard links, so
+links have to be preserved when copying back to /data or the size of the folder
+will increase substantially.</p>
+
+<pre class="term">
+
+[user@cn3144]$ <b>cp -ra cromwell-executions $wd</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+    </div><!-- ********** end tab-1.1.7 ************ -->
+
+    <div id="tab-161" class="tab-content">
+        <p></p>
+        <pre class="term">
+
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=20g --gres=lscratch:30</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>wd=$PWD</b>  # so we can copy results back later
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load encode-atac-seq-pipeline/1.6.1</b>
+[user@cn3144]$ <b>cp -Lr ${EASP_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>tree</b>
+.
+|-- [user    738]  ENCSR889WQX.json.1.0
+|-- [user    870]  ENCSR889WQX.json.1.1.7
+|-- [user    870]  ENCSR889WQX.json.1.6.1
+|-- [user    870]  ENCSR889WQX.json.1.9.0
+`-- [user   4.0K]  input
+    |-- [user   4.0K]  rep1
+    |   |-- [user   213M]  ENCFF439VSY_5M.fastq.gz
+    |   `-- [user   213M]  ENCFF683IQS_5M.fastq.gz
+    `-- [user   4.0K]  rep2
+        |-- [user   210M]  ENCFF463QCX_5M.fastq.gz
+        `-- [user   211M]  ENCFF992TSA_5M.fastq.gz
+
+[user@cn3144]$ <b>cat ENCSR889WQX.json.1.6.1</b>
+{
+    "atac.pipeline_type" : "atac",
+    "atac.genome_tsv" : "/fdb/encode-atac-seq-pipeline/v1/mm10/mm10.tsv",
+    "atac.mito_chr_name": "chrM",
+    "atac.fastqs_rep1_R1" :
+        ["input/rep1/ENCFF683IQS_5M.fastq.gz", "input/rep1/ENCFF439VSY_5M.fastq.gz"],
+    "atac.fastqs_rep2_R1" :
+        ["input/rep2/ENCFF992TSA_5M.fastq.gz", "input/rep2/ENCFF463QCX_5M.fastq.gz"],
+    "atac.paired_end" : false,
+    "atac.multimapping" : 4,
+    "atac.auto_detect_adapter" : true,
+    "atac.smooth_win" : 73,
+    "atac.enable_idr" : true,
+    "atac.idr_thresh" : 0.05,
+    "atac.title" : "ENCSR889WQX (subsampled to 5M reads)",
+    "atac.description" : "ATAC-seq on Mus musculus C57BL/6 frontal cortex adult"
+}
+        </pre>
+
+        <p>In this example the pipeline will only be run locally - i.e. it will not submit
+        tasks as slurm jobs. Follow the <a href="https://github.com/ENCODE-DCC/caper">caper</a>
+        docs to set up a config file for slurm submission. This has to be done only once.</p>
+<pre class="term">
+[user@cn3144]$ <b>mkdir -p ~/.caper && caper init local</b>
+[user@cn3144]$ <b>caper run $EASP_WDL -i ENCSR889WQX.json.1.6.1</b>
+[...much output...]
+This workflow ran successfully. There is nothing to troubleshoot
+</pre>
+<p>This version of the pipeline comes with a tool to copy and organize pipeline output</p>
+<pre class="term">
+[user@cn3144]$ <b>croo --method copy --out-dir=${wd}/ENCSR889WQX \
+    atac/18a97503-94e1-4d75-a1e6-6a582a4c5407/metadata.json</b>
+</pre>
+    </div><!-- ********** end tab-1.6.1 ************ -->
+
+
+    <div id="tab-190" class="tab-content">
+        <p></p>
+        <p>Note the switch to annotation v3.</p>
+        <pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=20g --gres=lscratch:30</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>wd=$PWD</b>  # so we can copy results back later
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load encode-atac-seq-pipeline/1.9.0</b>
+[user@cn3144]$ <b>cp -Lr ${EASP_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>tree</b>
+.
+|-- [user    738]  ENCSR889WQX.json.1.0
+|-- [user    870]  ENCSR889WQX.json.1.1.7
+|-- [user    870]  ENCSR889WQX.json.1.6.1
+|-- [user    870]  ENCSR889WQX.json.1.9.0
+`-- [user   4.0K]  input
+    |-- [user   4.0K]  rep1
+    |   |-- [user   213M]  ENCFF439VSY_5M.fastq.gz
+    |   `-- [user   213M]  ENCFF683IQS_5M.fastq.gz
+    `-- [user   4.0K]  rep2
+        |-- [user   210M]  ENCFF463QCX_5M.fastq.gz
+        `-- [user   211M]  ENCFF992TSA_5M.fastq.gz
+
+[user@cn3144]$ <b>cat ENCSR889WQX.json.1.9.0</b>
+{
+    "atac.pipeline_type" : "atac",
+    "atac.genome_tsv" : "/fdb/encode-atac-seq-pipeline/v3/mm10/mm10.tsv",
+    "atac.mito_chr_name": "chrM",
+    "atac.fastqs_rep1_R1" :
+        ["input/rep1/ENCFF683IQS_5M.fastq.gz", "input/rep1/ENCFF439VSY_5M.fastq.gz"],
+    "atac.fastqs_rep2_R1" :
+        ["input/rep2/ENCFF992TSA_5M.fastq.gz", "input/rep2/ENCFF463QCX_5M.fastq.gz"],
+    "atac.paired_end" : false,
+    "atac.multimapping" : 4,
+    "atac.auto_detect_adapter" : true,
+    "atac.smooth_win" : 73,
+    "atac.enable_idr" : true,
+    "atac.idr_thresh" : 0.05,
+    "atac.title" : "ENCSR889WQX (subsampled to 5M reads)",
+    "atac.description" : "ATAC-seq on Mus musculus C57BL/6 frontal cortex adult"
+}
+        </pre>
+
+        <p>In this example the pipeline will only be run locally - i.e. it will not submit
+        tasks as slurm jobs. If you wish to run in Slurm execution mode, you will need to create
+        a custom Slurm configuration following the <a href="https://github.com/ENCODE-DCC/caper">caper</a>
+        docs to set up a config file for slurm submission. We recommend sticking to local execution
+        unless Slurm submission becomes necessary.</p>
+<pre class="term">
+[user@cn3144]$ <b>mkdir -p ~/.caper && caper init local</b>
+[user@cn3144]$ <b>caper run $EASP_WDL -i ENCSR889WQX.json.1.9.0</b>
+[...much output...]
+This workflow ran successfully. There is nothing to troubleshoot
+</pre>
+<p>This version of the pipeline comes with a tool to copy and organize pipeline output.</p>
+<pre class="term">
+[user@cn3144]$ <b>ls atac</b>
+a0fb9f58-ede3-4c02-9bcc-26d21ab5ccbb
+[user@cn3144]$ <b>croo --method copy --out-dir=${wd}/ENCSR889WQX \
+    atac/a0fb9f58-ede3-4c02-9bcc-26d21ab5ccbb/metadata.json</b>
+</pre>
+    </div><!-- ********** end tab-1.9.0 ************ -->
+
+    <div id="tab-210" class="tab-content current">
+        <p></p>
+        <p>Continues to use the v3 annotation. However, caper apparently changed
+        significantly so you should backup your old caper configuration and create
+        fresh config files for this version.</p>
+        <pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=20g --gres=lscratch:30</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>wd=$PWD</b>  # so we can copy results back later
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load encode-atac-seq-pipeline/2.1.0</b>
+[user@cn3144]$ <b>cp -Lr ${EASP_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>tree</b>
+.
+|-- [user    738]  ENCSR889WQX.json.1.0
+|-- [user    870]  ENCSR889WQX.json.1.1.7
+|-- [user    870]  ENCSR889WQX.json.1.6.1
+|-- [user    870]  ENCSR889WQX.json.1.9.0
+|-- [user    870]  ENCSR889WQX.json.2.1.0
+`-- [user   4.0K]  input
+    |-- [user   4.0K]  rep1
+    |   |-- [user   213M]  ENCFF439VSY_5M.fastq.gz
+    |   `-- [user   213M]  ENCFF683IQS_5M.fastq.gz
+    `-- [user   4.0K]  rep2
+        |-- [user   210M]  ENCFF463QCX_5M.fastq.gz
+        `-- [user   211M]  ENCFF992TSA_5M.fastq.gz
+
+[user@cn3144]$ <b>cat ENCSR889WQX.json.2.1.0</b>
+{
+    "atac.pipeline_type" : "atac",
+    "atac.genome_tsv" : "/fdb/encode-atac-seq-pipeline/v3/mm10/mm10.tsv",
+    "atac.mito_chr_name": "chrM",
+    "atac.fastqs_rep1_R1" :
+        ["input/rep1/ENCFF683IQS_5M.fastq.gz", "input/rep1/ENCFF439VSY_5M.fastq.gz"],
+    "atac.fastqs_rep2_R1" :
+        ["input/rep2/ENCFF992TSA_5M.fastq.gz", "input/rep2/ENCFF463QCX_5M.fastq.gz"],
+    "atac.paired_end" : false,
+    "atac.multimapping" : 4,
+    "atac.auto_detect_adapter" : true,
+    "atac.smooth_win" : 73,
+    "atac.enable_idr" : true,
+    "atac.idr_thresh" : 0.05,
+    "atac.title" : "ENCSR889WQX (subsampled to 5M reads)",
+    "atac.description" : "ATAC-seq on Mus musculus C57BL/6 frontal cortex adult"
+}
+        </pre>
+
+        <p>In this example the pipeline will only be run locally - i.e. it will not submit
+        tasks as slurm jobs. Follow the <a href="https://github.com/ENCODE-DCC/caper">caper</a>
+        docs to set up a config file for slurm submission. This has to be done only once.</p>
+<pre class="term">
+[user@cn3144]$ <b>[[ -d ~/.caper ]] && mv ~/.caper ~/caper.$(date +%F).bak</b> # back up old caper config
+[user@cn3144]$ <b>mkdir -p ~/.caper && caper init local</b>
+[user@cn3144]$ # note the need for --singularity in this version
+[user@cn3144]$ <b>caper run $EASP_WDL -i ENCSR889WQX.json.2.1.0 --singularity</b>
+[...much output...]
+This workflow ran successfully. There is nothing to troubleshoot
+</pre>
+<p>This version of the pipeline comes with a tool to copy and organize pipeline output.</p>
+<pre class="term">
+[user@cn3144]$ <b>ls atac</b>
+a0fb9f58-ede3-4c02-9bcc-26d21ab5ccbb
+[user@cn3144]$ <b>croo --method copy --out-dir=${wd}/ENCSR889WQX \
+    atac/a0fb9f58-ede3-4c02-9bcc-26d21ab5ccbb/metadata.json</b>
+</pre>
+    </div><!-- ********** end tab-2.1.0 ************ -->
+</div> <!-- end of tabs -->
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file. For example the following batch job will run a local job (assuming the caper config file is set up correctly):</p>
+
+<pre class="term">
+#! /bin/bash
+
+wd=$PWD
+module load encode-atac-seq-pipeline/2.2.0 || exit 1
+
+cd /lscratch/$SLURM_JOB_ID
+
+mkdir input
+cp -rL $EASP_TEST_DATA/* .
+caper run $EASP_WDL -i ENCSR889WQX.json.2.1.0
+rc=$?
+croo --method copy --out-dir=${wd}/ENCSR889WQX \
+    atac/*/metadata.json
+exit $rc
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --time=4:00:00 --cpus-per-task=8 --mem=20g --gres=lscratch:50 encode-atac-seq-pipeline.sh</pre>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

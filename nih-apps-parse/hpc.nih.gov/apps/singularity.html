@@ -1,0 +1,880 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Singularity';</script>
+<link rel="stylesheet" type="text/css" href="/css/asciinema-player.css" />
+<script src="/js/asciinema-player.js"></script>
+
+
+<div class="title">Singularity</div>
+<P>
+<!-- ======================================================================= -->
+<!-- Quick links  -->
+<table border=0 cellpadding=10 align=right width=25%> 
+<tr><td>
+&nbsp; &nbsp;&nbsp; &nbsp;
+<A href="https://www.sylabs.io/singularity/"><img src="/images/Singularity.png" alt="singularity logo" align="center" width=125 height=125></a></p>
+<br>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#notes">Important Notes</a></div>
+<div class="tocItem"><a href="#create">Creating Singularity containers</a></div>
+<div class="tocItem"><a href="#bind">Binding external directories</a>
+<!--    <ul>-->
+<!-- <div class="tocItem"><a href="#staff-bind-recs">Staff recommendations for binding</a></div> -->
+<!-- </ul> -->
+<div class="tocItem"><a href="#bind-stationary">Singularity as an Installation Medium</a>
+    <!--
+	 <ul>
+	 <div class="tocItem"><a href="#bind-portable">Bind Points for Portable Containers</a>
+	 </ul>
+    -->
+</div>
+<div class="tocItem"><a href="#int">Interactive Singularity containers</a></div>
+<div class="tocItem"><a href="#batch">Singularity containers in batch</a></div>
+<div class="tocItem"><a href="#gpu">Singularity containers on GPU nodes</a></div>
+<div class="tocItem"><a href="#docker">Using Docker containers with Singularity</a></div>
+<div class="tocItem"><a href="#oomkills">Troubleshooting containers that hang</a></div>
+</table>
+
+
+<!-- ======================================================================= -->
+<P>
+<i>Extreme Mobility of Compute</i>
+
+<P>
+Singularity containers let users run applications in a Linux environment of their choosing. 
+<P>
+Possible uses for Singularity on Biowulf:
+<ul>
+<li>Run an application that was built for a different distribution of Linux than the host OS.
+<li>Reproduce an environment to run a workflow created by someone else.
+<li>Run a series of applications (a 'pipeline') that includes applications built on different platforms.
+<li>Run an application from <a href="https://hub.docker.com/">Docker Hub</a> on Biowulf without actually installing anything.
+</ul>
+<P>
+
+<P>
+<div class="subheading"><b>Web sites</b></div>
+<ul>
+  <li><a href="https://www.sylabs.io/singularity/">Singularity home</a></li>
+  <li><A href="https://sylabs.io/guides/latest/user-guide/">Singularity Documentation</a>
+  <li><a href="https://github.com/sylabs/singularity">Singularity on GitHub</a></li>
+  <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity">Singularity on Google groups</a></li>
+<!--  <li><a href="https://singularity-hub.org/">Singularity Hub</a></li> -->
+  <li><a href="https://hub.docker.com/">Docker Hub</a></li>
+  <li><a href="https://cloud.sylabs.io/home">Singularity Container Services</a></li>
+</ul>
+
+
+<div class="subheading"><b>Additional Learning Resources</b></div>
+<ul>
+  <li>Class taught by NIH HPC staff: 
+  <ul>
+      <li><a href="https://github.com/NIH-HPC/Singularity-Tutorial/tree/2020-03-10">Materials</a> 
+      <li><a href="https://youtu.be/3Yg7XI39H4U">Day 1 recording</a> 
+      <li><a href="https://youtu.be/yi82PC--F2U">Day 2 recording</a>
+  </ul>
+  <li><a href="https://www.youtube.com/playlist?list=PL052H4iYGzysewYEelldGPOgKRJkxd5zp">Singularity Basics videos by Sylabs</a></li>
+  <li><a href="https://singularity-tutorial.github.io/">NIH HPC Singularity Tutorial</a></li>
+</ul>
+  
+<div class="subheading"><b>Example definition files written by the NIH HPC staff</b></div>
+<p>
+These definition files can all be found <a href="https://github.com/NIH-HPC/singularity-examples">on GitHub</a>, and the containers built from them are hosted on <a href="https://www.singularity-hub.org/collections/267/">Singularity hub</a>.
+<ul>
+<li><a href="https://github.com/NIH-HPC/singularity-examples/blob/master/Singularity.digits"><b>DIGITS</b> (From the latest NVIDIA Docker Hub image with drivers for NIH HPC GPU nodes)</a>
+<li><a href="https://github.com/NIH-HPC/singularity-examples/tree/master/keras"><b>Keras/tensorflow</b></a>
+<li><a href="https://github.com/NIH-HPC/singularity-examples/tree/master/rstudio"><b>RStudio</b></a>
+<!--<li><a href="https://github.com/NIH-HPC/singularity-examples/tree/master/rnaseq"><b>RNA-Seq tools</b> (samtools, bioconda, and several other packages running on a debian based miniconda3 image from DockerHub with a custom runscript making the container executable)</a>-->
+<li><a href="https://github.com/NIH-HPC/singularity-examples/blob/master/Singularity.theano"><b>Theano</b> (GPU/CPU support <i>but requires a GPU to be present either way</i>, running under Ubuntu 16.04)</a>
+</ul>
+<p> Additionally, a large number of staff maintained definition files and associated helper scripts can be found at <a href="https://github.com/NIH-HPC/singularity-def-files">this GitHub repo</a>. These are files that staff members use to install containerized apps on the NIH HPC systems.</p>
+
+
+
+<!-- ======================================================================= -->
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+<P>
+<ul>
+    <li> Module Name: <tt>singularity</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li> Singularity caches containers in your home directory by default. This can quickly fill your home directory, so the NIH HPC staff suggests you configure Singularity to cache containers in your <tt>data</tt> directory by executing the following or similar command. (If you use Singularity a lot, you might want to write this command into your <tt>~/.bashrc</tt> file.)
+        <br>
+        <p style="margin-left: 40px"> <tt>export SINGULARITY_CACHEDIR=/data/${USER}/.singularity</tt></p>
+    </li>
+    <li> You are encouraged to source the file <tt>/usr/local/current/singularity/app_conf/sing_binds</tt> to bind all appropriate host system directories in your container at runtime.</li>
+    <li> Bind-mounting the <tt>/scratch</tt> directory will result in an error because access to  <tt>/scratch</tt> (different from <tt>/lscratch</tt>) is disabled from compute nodes (since September 2021).</li> 
+    <li> Singularity gives you the ability to install and run applications in your own Linux environment with your own customized software stack.  With this ability comes the added responsibility of managing your own Linux environment.  While the NIH HPC staff can provide guidance on how to create and use singularity containers, we do not have the resources to manage containers for individual users.  If you decide to use Singularity, it is your responsibility to build and manage your own containers.</li>
+</ul>
+
+
+<!--========================================================================-->
+<a Name="create"></a>
+<div class="heading">Creating Singularity containers</div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+<P>
+  To use Singularity on Biowulf, you either need to create your own Singularity container, or use one created by someone else.
+  You have several options to build Singularity containers: 
+<ul>
+<li>You can build small and medium sized containers from Helix or Biowulf compute nodes using the <a href="https://sylabs.io/guides/latest/user-guide/endpoint.html#remote-endpoints"><tt>--remote</tt> option</a>. In a nutshell, you must log in and generate a token on <a href="https://cloud.sylabs.io/auth">Singularity Container Services</a> and use the command line to copy that token into your environment (using the command <tt>singularity remote login SylabsCloud</tt>).  Once you've done that, the <tt>--remote</tt> option will allow you to build containers using the Sylabs remote builder. 
+<li>If you have a Linux system to which you have root (admin) access, you can install Singularity and build your Singularity container there. 
+<li>If you have a very recent Linux system (like Ubuntu >=18) you can build Singularity containers without root access using the <a href="https://sylabs.io/guides/3.4/user-guide/fakeroot.html#build"><tt>--fakeroot</tt> option</a>. 
+<li>If you don't have a Linux system you could easily install one in a virtual machine using software like <a href="https://www.virtualbox.org/">VirtualBox</a>, <a href="https://www.vagrantup.com/">Vagrant</a>, <a href="http://www.vmware.com/">VMware</a>, or <a href="http://www.parallels.com/">Parallels</a>.  (If you use a virtual machine be sure to allocate at least 2GB of memory or some of your builds may fail with out of memory errors.)
+<li>You can allocate a cloud instance, to which you will have root access. Install Singularity and build your Singularity container there.
+</ul>
+<p>
+You can find information about installing Singularity on Linux <a href="https://sylabs.io/guides/latest/user-guide/quick_start.html#quick-installation-steps">here</a>.
+<p>
+In addition to your own Linux environment, you will also need a definition file to build a Singularity container from scratch.  You can find some simple definition files for a variety of Linux distributions in the <tt>/example</tt> directory of the source code.  You can also find a small list of definition files containing popular applications at the <a href="singularity.html">top of this page</a>.
+</pre>
+Detailed documentation about building Singularity container images is available at the <A href="https://sylabs.io/guides/latest/user-guide/">Singularity website</a>.
+<!--
+<p>
+Expand the tab below to watch a quick demo showing how to install Singularity on a build system (here it's Google cloud), create a container, and run your container on Biowulf.      
+
+<!-- Start of asciinema dropdown --
+<div>
+<div class="toggle-tag" title="click to toggle visibility" id="install_demo"><i class="fa fa-caret-right"></i> Singularity installation and use overview demo</div>
+<div class="toggle-content">
+<ul>
+<li><b>space</b> - play / pause
+<li><b>f</b> - toggle fullscreen mode
+<li><b>arrow keys</b>(←/→) - rewind 5 seconds / fast-forward 5 seconds
+<li><b>0</b>, <b>1</b>, <b>2</b> ... <b>9</b> - jump to 0%, 10%, 20% ... 90%
+<li><b>copy</b> and <b>paste</b> text from movie 
+</ul>
+<asciinema-player src="/json/singularity-install.json" cols="136" poster="data:text/plain,Singularity installation and basic use" speed="1.25" title="Singularity installation" author="david.godlove@nih.gov"></asciinema-player>
+</div>
+</div>
+-->
+
+<!--========================================================================-->
+<P>
+<a Name="bind"></a>
+<div class="heading">Binding external directories</div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+<P>
+Binding a directory to your Singularity container allows you to access files in a host system directory from within your container.  By default, Singularity will bind your <tt>$HOME</tt> directory (along with a few other directories such as <tt>/tmp</tt> and <tt>/dev</tt>). You can also bind other directories into your Singularity container yourself.
+The process is described in detail in the <a href="https://www.sylabs.io/guides/latest/user-guide/bind_paths_and_mounts.html#specifying-bind-paths"> Singularity documentation</a>.
+
+<P>
+While <tt>$HOME</tt> is bind-mounted to the container by default, there are several filesystems on the NIH HPC systems that you may also want to include.
+Furthermore, if you are running a job and have <a href="https://hpc.nih.gov/docs/userguide.html#local">allocated local scratch space</a>, you might like to bind mount your <tt>/lscratch</tt> directory to <tt>/tmp</tt> in the container.
+<P>
+The following command opens a shell in a container while bind-mounting your data directory, <tt>/fdb</tt>, and <tt>/lscratch</tt> into the same path inside the container
+If you have access to shared data directories, you'll want to add them to the list as well (for example, <tt>/data/$USER,/data/mygroup1,/data/mygroup2,/fdb,...</tt>).
+
+<pre class="term">
+[user@cn1234 ~]$ <b>singularity shell --bind /data/$USER,/fdb,/lscratch my-container.sif</b>
+</pre>
+
+or, using the environment variable:
+
+<pre class="term">
+[user@cn1234 ~]$ <b>export SINGULARITY_BINDPATH="/data/$USER,/fdb,/lscratch"</b>
+[user@cn1234 ~]$ <b>singularity shell my-container.sif</b>
+</pre>
+
+If you would like to store this in <tt>~/.bashrc</tt>, you can also automatically bind <tt>/lscratch/$SLURM_JOB_ID</tt> to <tt>/tmp</tt> inside the container depending on whether a local scratch allocation is detected:
+
+<pre class="term">
+SINGULARITY_BINDPATH="/data/$USER,/fdb"
+[ -d /lscratch ] && SINGULARITY_BINDPATH="${SINGULARITY_BINDPATH},/lscratch/${SLURM_JOB_ID}:/tmp"
+export SINGULARITY_BINDPATH
+</pre>
+
+
+<!--
+<P>
+Here, we describe two ways of organizing your mount points, corresponding to different use cases of Singularity.
+
+<P>
+<a Name="bind-portable"></a>
+<div class="subheading"><b>Bind Points for Portable Containers</b></div>
+<P>
+Newer systems can take advantage of Singularity's support for the <a href="https://en.wikipedia.org/wiki/OverlayFS">overlay filesystem</a>, which allows binding directories without having to manually manage creation of mount points.
+Unfortunately, Biowulf and other systems do not support this, so we cannot rely on this feature.
+However, rather than mirroring the NIH HPC directory tree in your container (by making mount points <tt>/fdb</tt>, <tt>/lscratch</tt>, and so on), we suggest creating a generic set of mount points in your container that can be used analogously on other systems.
+<p>
+With the following definition file, we create two additional mount points to be used alongside /mnt, which we reserve for some
+auxiliary use (like an additional data directory).
+
+<pre class="term">
+BootStrap: debootstrap
+OSVersion: xenial
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%post
+    # create generic mount points
+    mkdir \
+    /data      `# for your personal or group data directory` \
+    /resources `# for reference data-- corresponds to /fdb on NIH HPC`
+</pre>
+
+Now, after we have built a container using the above definition file, we can bind our directories as follows, assuming we have <a href="https://hpc.nih.gov/docs/userguide.html#local">allocated local scratch space</a>, which would make the <tt>/lscratch/$SLURM_JOB_ID</tt> directory available:
+
+<pre class="term">
+[user@cn1234 ~]$ <b>singularity shell --bind /data/$USER:/data,/fdb:/resources,/lscratch/$SLURM_JOB_ID:/tmp my-container.simg</b>
+</pre>
+
+or, using the environment variable:
+
+<pre class="term">
+[user@cn1234 ~]$ <b>export SINGULARITY_BINDPATH="/data/$USER:/data,/fdb:/resources,/lscratch/$SLURM_JOB_ID:/tmp"</b>
+[user@cn1234 ~]$ <b>singularity shell my-container.simg</b>
+</pre>
+
+If you would like to store this in <tt>~/.bashrc</tt>, you should make sure to test for the existence of the lscratch subdirectory before adding it to the bind path:
+
+<pre class="term">
+SINGULARITY_BINDPATH=/data/$USER:/data,/fdb:/resources
+if [ -n "$SLURM_JOB_ID" ] && [ -d "/lscratch/$SLURM_JOB_ID" ]
+then
+    SINGULARITY_BINDPATH="${SINGULARITY_BINDPATH},/lscratch/$SLURM_JOB_ID:/tmp"
+fi
+export SINGULARITY_BINDPATH
+</pre>
+
+-->
+
+When you share this container, your colleagues here and elsewhere can bind their own corresponding directories to these same mountpoints.
+
+Finally, the NIH HPC staff maintains a file that will set the <tt>$SINGULARITY_BINDPATH</tt> environment variable appropriately for a wide variety of situations.  It is considered a Biowulf best practice to source this file since it will be updated in the case of additions or deletions to the shared file system.  You can source this file from the command prompt or from within a script like so:
+
+<pre class="term">
+[user@cn1234 ~]$ <b>. /usr/local/current/singularity/app_conf/sing_binds</b>
+</pre>
+
+<P>
+<a Name="staff-bind-recs"></a>
+<div class="subheading"><b>NIH HPC Staff recommendations for bind mounts on Biowulf</b></div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+<P>
+
+When building containers for use on Biowulf, there are two steps you should take to ensure that users of the container can read and write data to all normal directories. These are the same steps that NIH HPC staff take when containerizing applications for general use. 
+<P>
+<b>Step 1. Add directories and symlinks at build time</b>
+<P>
+Data directories hosted on the GPFS file system rely on a series of symbolic links. Singularity can't follow these symlinks if they don't exist within the container, so you need to create them at build time. Other data directories can be automatically created within the container by recent versions of Singularity, but it's still a good idea to create them.
+
+<P>
+Include the following lines in the <tt>%post</tt> section of your definition file.
+
+<pre class="term">
+%post
+    # make nih hpc specific links
+    mkdir -p /vf /gpfs /spin1 /data /fdb /lscratch
+    for i in $(seq 1 30); do
+        ln -s /gpfs/gsfs${i} /gs${i};
+    done
+</pre>
+
+Creating the directories above is not necessary with modern versions of Singularity, but there may be situations in which they are needed and having those directories within the container will not hurt anything. This code snippet also creates more symbolic links to <tt>/gpfs/gsfs*</tt>than actually exist on Biowulf in case more of these links are added to Biowulf. 
+
+<P>
+<b>Step 2. Set the <tt>--bind</tt> option or the <tt>SINGULARITY_BIND</tt> variable appropriately at run time</b>
+<P>
+As described above, the best way to ensure that all appropriate directories are bind-mounted into your container at runtime is to source the staff maintained script like so:
+<pre class="term">
+[user@cn1234 ~]$ <b>. /usr/local/current/singularity/app_conf/sing_binds</b>
+</pre>
+
+This will set the <tt>$SINGULARITY_BINDPATH</tt> environment variable in you current environment.  Importantly, this script will be updated by the NIH HPC staff in the event of a file system change so sourcing it instead of setting up the bind mounts yourself helps to future-proof your workflow.  
+
+<!--========================================================================-->
+<P>
+<a Name="bind-stationary"></a>
+<div class="heading"><b>Singularity as an Installation Medium: faking a native installation</b></div>
+<p>
+
+One use case of Singularity is to transparently use software in a container as though it were directly installed on the host system.
+To accomplish this on our systems, you need to be aware of the shared filesystem locations and bind mount the corresponding directories inside the container, which is more complicated than it seems because we use symbolic links to refer to some of our network storage systems.
+As a result, you will need to specify some directories in addition to the ones you use directly to ensure that the symbolic link destinations are also bound into the container.
+
+<p>
+If you wanted to take advantage of a Debian package this way and use it to install software into your home directory, for example <tt>samtools</tt> and <tt>bcftools</tt>, you would use a definition file, <tt>Singularity</tt>, with these contents:
+
+<pre class="term">
+Bootstrap: docker
+From: debian:9-slim
+
+%post
+    # install the desired software
+    apt-get update
+    apt-get install -y samtools bcftools
+    apt-get clean
+
+    # Create symbolic links for the NIH HPC systems
+    for i in $(seq 1 30)
+    do
+        ln -s /gpfs/gsfs$i /gs$i
+    done
+</pre>
+
+This defines a container based on the space-efficient "slim" Debian images from Docker Hub, installs the <tt>samtools</tt> and <tt>bcftools</tt> packages, and then creates the necessary symbolic links to our GPFS mounts to be able to use the container transparently.
+
+<p>
+After finalizing the definition file, you can proceed to build the container (of course, on a system where you have sudo or root access): 
+
+<pre class="term">
+sudo singularity build hts.simg Singularity
+</pre>
+
+<p>
+You can then set up your installation prefix (here, it's <tt>$HOME/opt/hts</tt>) as follows, making use of symbolic links and a wrapper script:
+
+<pre class="term">
+$HOME/opt
+└── hts
+    ├── bin
+    │   ├── samtools -> ../libexec/wrap
+    │   └── bcftools -> ../libexec/wrap
+    └── libexec
+        ├── wrap
+        └── hts.simg
+</pre>
+
+where the wrapper script <tt>wrap</tt> looks like:
+
+<pre class="term">
+#!/bin/bash
+
+. /usr/local/current/singularity/app_conf/sing_binds</b>
+selfdir="$(dirname $(readlink -f ${BASH_SOURCE[0]}))"
+instdir="$(dirname ${selfdir})"
+cmd="$(basename $0)"
+singularity exec -B "${instdir}" "${selfdir}/hts.simg" "$cmd" "$@"
+</pre>
+
+<tt>wrap</tt> checks to see how it was called, then passes that same command to the container after appropriately setting <tt>SINGULARITY_BINDPATH</tt> by calling the staff maintained <tt>sing_binds</tt> script.
+
+<p>
+So if you have added the installation prefix <tt>$HOME/opt/hts/bin</tt> to your <tt>PATH</tt>, then calling <tt>samtools</tt> or <tt>bcftools</tt> will run those programs from within your container.
+And because we have arranged to bind mount all the necessary filesystems into the container, the path names you provide for input and output into the programs will be available to the container in the same way.
+
+<!--
+This approach guarantees that your <tt>/data</tt> directories and other commonly used directories will all be bound within your container.  Binding every link is also a robust approach ensuring that your <tt>/data</tt> directory will remain accessible even if it is moved to a different volume.
+<P>
+Expand the tab below to watch a quick demo on binding host system directories within a Singularity container. 
+
+<!-- Start of asciinema dropdown --
+<div>
+<div class="toggle-tag" title="click to toggle visibility" id="bind_demo"><i class="fa fa-caret-right"></i> Singularity binding directories demo</div>
+<div class="toggle-content">
+<ul>
+<li><b>space</b> - play / pause
+<li><b>f</b> - toggle fullscreen mode
+<li><b>arrow keys</b>(←/→) - rewind 5 seconds / fast-forward 5 seconds
+<li><b>0</b>, <b>1</b>, <b>2</b> ... <b>9</b> - jump to 0%, 10%, 20% ... 90%
+<li><b>copy</b> and <b>paste</b> text from movie 
+</ul>
+<asciinema-player src="/json/singularity-binding.json" cols="136" poster="data:text/plain,Singularity binding paths demo" speed="1.25" title="Singularity binding paths" author="david.godlove@nih.gov"></asciinema-player>
+</div>
+</div>
+<!-- =========================== -->
+
+<!--========================================================================-->
+<p>
+<a Name="int"></a>
+<div class="heading">Interactive Singularity containers</div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+<P>
+Singularity cannot be run on the Biowulf login node.
+<P>
+To run a Singularity container image on Biowulf interactively, you need to allocate an <a href="/docs/userguide.html#int">interactive session</a>, and load the Singularity module. 
+In this sample session (user input in bold), an Ubuntu 16.04 Singularity container is downloaded and run from <a href="https://hub.docker.com/">Docker Hub</a>. If you want to run a local Singularity container instead of downloading one, just replace the DockerHub URL with the path to your container image file. 
+
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --cpus-per-task=4 --mem=10g</b>
+salloc.exe: Pending job allocation 43131269
+salloc.exe: job 43131269 queued and waiting for resources
+salloc.exe: job 43131269 has been allocated resources
+salloc.exe: Granted job allocation 43131269
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0123 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn0123 ~]$ <b>module load singularity</b>
+[+] Loading singularity 2.4 on cn3160
+
+[user@cn0123 ~]$ <b>singularity shell docker://ubuntu</b>
+Docker image path: index.docker.io/library/ubuntu:latest
+Cache folder set to /spin1/home/linux/user/.singularity/docker
+Creating container runtime...
+WARNING: Bind file source does not exist on host: /etc/resolv.conf
+Singularity: Invoking an interactive shell within container...
+
+Singularity ubuntu:~> <b>cat /etc/os-release</b>
+NAME="Ubuntu"
+VERSION="16.04.3 LTS (Xenial Xerus)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 16.04.3 LTS"
+VERSION_ID="16.04"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+VERSION_CODENAME=xenial
+UBUNTU_CODENAME=xenial
+
+Singularity ubuntu:~> <b>exit</b>
+
+[user@cn0123 ~]$ <b>exit</b>
+exit
+
+salloc.exe: Relinquishing job allocation 23562157
+[user@biowulf ~]$
+</pre>
+Note that you need to exit your Singularity container as well as your allocated interactive Slurm session when you are done.
+
+<p>
+Expand the tab below to view a demo of interactive Singularity usage.
+<!-- Start of asciinema dropdown -->
+<div>
+<div class="toggle-tag" title="click to toggle visibility" id="interactive_demo"><i class="fa fa-caret-right"></i> Singularity interactive container demo</div>
+<div class="toggle-content">
+<ul>
+<li><b>space</b> - play / pause
+<li><b>f</b> - toggle fullscreen mode
+<li><b>arrow keys</b>(←/→) - rewind 5 seconds / fast-forward 5 seconds
+<li><b>0</b>, <b>1</b>, <b>2</b> ... <b>9</b> - jump to 0%, 10%, 20% ... 90%
+<li><b>copy</b> and <b>paste</b> text from movie 
+</ul>
+<asciinema-player src="/json/singularity-interactive.json" cols="136" poster="data:text/plain,user@some-build-system:~$" speed="1.25" title="Singularity interactive" author="david.godlove@nih.gov"></asciinema-player>
+</div>
+</div>
+<!-- =========================== -->
+
+
+
+<!--========================================================================-->
+<p>
+<a Name="batch"></a>
+<div class="heading">Singularity containers in batch</div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+<P>
+In this example, singularity will be used to run a <a href="https://www.tensorflow.org/">TensorFlow</a> example in an Ubuntu 16.04 container. (User input in <b>bold</b>). 
+<P>
+First, create a container image on a machine where you have root privileges.  These commands were run on a Google Cloud VM instance running an Ubuntu 16.04 image, and the Singularity container was created using <a href="https://github.com/NIH-HPC/singularity-examples/blob/master/Singularity.tensorflow">this definition file</a> that includes a TensorFlow installation.
+<P>
+<pre class="term">
+[user@someCloud ~]$ <b>sudo singularity build ubuntu_w_TFlow.simg ubuntu_w_TFlow.def</b>
+</pre>
+<P>
+Next, copy the TensorFlow script that you want to run into your home directory, or another directory that will be visible from within the container at runtime.  (See <a href="#bind">'binding external directories'</a> above). In this case, <a href="https://github.com/NIH-HPC/singularity-examples/blob/master/Singularity.tensorflow">this example script from the TensorFlow website</a> was copied to <tt>/home/$USER</tt>, and the container was moved to the user's data directory
+<P>
+<pre class="term">
+[user@someCloud ~]$ <b>scp TFlow_example.py user@biowulf.nih.gov: </b>
+
+[user@someCloud ~]$ <b>scp ubuntu_w_Tflow.simg user@biowulf.nih.gov:/data/user </b>
+</pre>
+<P>
+Then ssh to Biowulf and write a batch script to run the singularity command similar to this:
+<pre class="term">
+#!/bin/sh
+# file called myjob.batch
+set -e
+module load singularity
+cd /data/user
+singularity exec ubuntu_w_TFlow.simg python ~/TFlow_example.py
+</pre>
+<P>
+Submit the job like so:
+<P>
+<pre class="term">
+[user@biowulf ~]$ <b>sbatch myjob.batch</b>
+</pre>
+<P>
+After the job finishes executing you should see the following output in the slurm*.out file.
+<P>
+<pre class="term">
+[+] Loading singularity 2.4 on cn2725
+(0, array([-0.39398459], dtype=float32), array([ 0.78525567], dtype=float32))
+(20, array([-0.05549375], dtype=float32), array([ 0.38339305], dtype=float32))
+(40, array([ 0.05872268], dtype=float32), array([ 0.3221375], dtype=float32))
+(60, array([ 0.08904253], dtype=float32), array([ 0.30587664], dtype=float32))
+(80, array([ 0.09709124], dtype=float32), array([ 0.30156001], dtype=float32))
+(100, array([ 0.09922785], dtype=float32), array([ 0.30041414], dtype=float32))
+(120, array([ 0.09979502], dtype=float32), array([ 0.30010995], dtype=float32))
+(140, array([ 0.09994559], dtype=float32), array([ 0.30002919], dtype=float32))
+(160, array([ 0.09998555], dtype=float32), array([ 0.30000776], dtype=float32))
+(180, array([ 0.09999616], dtype=float32), array([ 0.30000207], dtype=float32))
+(200, array([ 0.09999899], dtype=float32), array([ 0.30000055], dtype=float32))
+</pre>
+<P>
+
+Expand the tab below to watch a quick demo of Singularity in batch mode.
+<!-- Start of asciinema dropdown -->
+<div>
+<div class="toggle-tag" title="click to toggle visibility" id="batch_demo"><i class="fa fa-caret-right"></i> Singularity containers in batch demo</div>
+<div class="toggle-content">
+<ul>
+<li><b>space</b> - play / pause
+<li><b>f</b> - toggle fullscreen mode
+<li><b>arrow keys</b>(←/→) - rewind 5 seconds / fast-forward 5 seconds
+<li><b>0</b>, <b>1</b>, <b>2</b> ... <b>9</b> - jump to 0%, 10%, 20% ... 90%
+<li><b>copy</b> and <b>paste</b> text from movie
+</ul>
+<asciinema-player src="/json/singularity-batch.json" cols="136" poster="data:text/plain,user@some-build-system:~$" speed="1.25" title="Singularity batch" author="david.godlove@nih.gov"></asciinema-player>
+</div>
+</div>
+<!-- =========================== -->
+
+
+
+<!--========================================================================-->
+<p>
+<a Name="gpu"></a>
+<div class="heading">Singularity containers on GPU nodes</div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+<P>
+With the release of Singularity v2.3 it is no longer necessary to install NVIDIA drivers into your Singularity container to access the GPU on a host node.  If you still want the deprecated <tt>gpu4singularity</tt> script that was used to install NVIDIA drivers within containers for use on our GPU nodes you can find it <a href="https://github.com/NIH-HPC/gpu4singularity">on GitHub</a>.  
+<p>
+Now, you can simply use the <tt>--nv</tt> option to grant your containers GPU support at runtime.  Consider the following example in which we will download some TensorFlow models to the user's home directory and then run the latest TensorFlow container from DockerHub to train a model on the MNIST handwritten digit data set using a GPU node.
+
+<pre class="term">
+[user@biowulf ~]$ <b>git clone https://github.com/tensorflow/models.git</b>
+Initialized empty Git repository in /home/user/models/.git/
+remote: Counting objects: 4971, done.
+remote: Compressing objects: 100% (26/26), done.
+remote: Total 4971 (delta 14), reused 11 (delta 2), pack-reused 4943
+Receiving objects: 100% (4971/4971), 153.50 MiB | 12.21 MiB/s, done.
+Resolving deltas: 100% (2540/2540), done.
+
+[user@biowulf ~]$ <b>sinteractive --constraint=gpuk80 --gres=gpu:k80:1</b>
+salloc.exe: Pending job allocation 39836528
+salloc.exe: job 39836528 queued and waiting for resources
+salloc.exe: job 39836528 has been allocated resources
+salloc.exe: Granted job allocation 39836528
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4178 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn4178 ~]$ <b>module load singularity</b>
+[+] Loading singularity 2.4 on cn4178
+
+[user@cn4178 ~]$ <b>singularity exec --nv docker://tensorflow/tensorflow:latest-gpu \
+                        python ~/models/tutorials/image/mnist/convolutional.py</b>
+Docker image path: index.docker.io/tensorflow/tensorflow:latest-gpu
+Cache folder set to /spin1/home/linux/user/.singularity/docker
+[19/19] |===================================| 100.0%
+Creating container runtime...
+WARNING: Bind file source does not exist on host: /etc/resolv.conf
+Extracting data/train-images-idx3-ubyte.gz
+Extracting data/train-labels-idx1-ubyte.gz
+Extracting data/t10k-images-idx3-ubyte.gz
+Extracting data/t10k-labels-idx1-ubyte.gz
+2017-06-14 18:54:40.157855: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.1 instructions, but these are available on your machine and could speed up CPU computations.
+2017-06-14 18:54:40.157887: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.2 instructions, but these are available on your machine and could speed up CPU computations.
+2017-06-14 18:54:40.157896: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX instructions, but these are available on your machine and could speed up CPU computations.
+2017-06-14 18:54:40.157903: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX2 instructions, but these are available on your machine and could speed up CPU computations.
+2017-06-14 18:54:40.157911: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use FMA instructions, but these are available on your machine and could speed up CPU computations.
+2017-06-14 18:54:40.737822: I tensorflow/core/common_runtime/gpu/gpu_device.cc:887] Found device 0 with properties:
+name: Tesla K80
+major: 3 minor: 7 memoryClockRate (GHz) 0.8235
+pciBusID 0000:84:00.0
+Total memory: 11.92GiB
+Free memory: 11.86GiB
+2017-06-14 18:54:40.737858: I tensorflow/core/common_runtime/gpu/gpu_device.cc:908] DMA: 0
+2017-06-14 18:54:40.737867: I tensorflow/core/common_runtime/gpu/gpu_device.cc:918] 0:   Y
+2017-06-14 18:54:40.737881: I tensorflow/core/common_runtime/gpu/gpu_device.cc:977] Creating TensorFlow device (/gpu:0) -> (device: 0, name: Tesla K80, pci bus id: 0000:84:00.0)
+Initialized!
+Step 0 (epoch 0.00), 17.1 ms
+Minibatch loss: 8.334, learning rate: 0.010000
+Minibatch error: 85.9%
+Validation error: 84.6%
+Step 100 (epoch 0.12), 13.4 ms
+Minibatch loss: 3.254, learning rate: 0.010000
+Minibatch error: 3.1%
+Validation error: 7.8%
+Step 200 (epoch 0.23), 11.6 ms
+Minibatch loss: 3.354, learning rate: 0.010000
+Minibatch error: 10.9%
+Validation error: 4.5%
+Step 300 (epoch 0.35), 11.5 ms
+[...snip...]
+</pre>
+
+<P>
+Expand the tab below to see a demo of installing and using GPU support in a Singularity container.
+<!-- Start of asciinema dropdown -->
+<div>
+<div class="toggle-tag" title="click to toggle visibility" id="gpu_demo"><i class="fa fa-caret-right"></i> Using the GPU demo</div>
+<div class="toggle-content">
+<ul>
+<li><b>space</b> - play / pause
+<li><b>f</b> - toggle fullscreen mode
+<li><b>arrow keys</b>(←/→) - rewind 5 seconds / fast-forward 5 seconds
+<li><b>0</b>, <b>1</b>, <b>2</b> ... <b>9</b> - jump to 0%, 10%, 20% ... 90%
+<li><b>copy</b> and <b>paste</b> text from movie 
+</ul>
+<asciinema-player src="/json/singularity-GPU.json" cols="136" poster="data:text/plain,user@some-build-system:~$" speed="1.25" title="Singularity GPU" author="david.godlove@nih.gov"></asciinema-player>
+</div>
+</div>
+<!-- =========================== -->
+
+
+<!--========================================================================-->
+<p>
+<a Name="docker"></a>
+<div class="heading">Using Docker containers with Singularity</div>
+<a href="singularity.html" style="font-size:12px">back to top</a><br/>
+
+<p>
+Singularity can import, bootstrap, and even run Docker images directly from <a href="https://hub.docker.com/">Docker Hub</a>.  For instance, the following commands will start an Ubuntu container running on a compute node with no need for a definition file or container image!
+And, of course, we remember to <a href="#bind">set <tt>SINGULARITY_BINDPATH</tt> appropriately</a> to be able to access all our files.
+
+<pre class="term">
+[user@cn0123 ~]$ <b>module load singularity</b>
+[+] Loading singularity on cn0123
+[user@cn0123 ~]$ <b>. /usr/local/current/singularity/app_conf/sing_binds</b>
+[user@cn0123 ~]$ <b>singularity shell docker://ubuntu:latest</b>
+Docker image path: index.docker.io/library/ubuntu:latest
+Cache folder set to /spin1/home/linux/user/.singularity/docker
+[5/5] |===================================| 100.0%
+Creating container runtime...
+WARNING: Bind file source does not exist on host: /etc/resolv.conf
+Singularity: Invoking an interactive shell within container...
+
+Singularity.ubuntu:latest> <b>cat /etc/os-release</b>
+NAME="Ubuntu"
+VERSION="16.04.3 LTS (Xenial Xerus)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 16.04.3 LTS"
+VERSION_ID="16.04"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+VERSION_CODENAME=xenial
+UBUNTU_CODENAME=xenial
+</pre>
+
+In this instance the container is ephemeral.  It will disappear as soon as you exit the shell.  If you wanted to actually download the container from Docker Hub, you could use the <tt>pull</tt> command like so:
+
+<pre class="term">
+[user@cn0123 ~]$ <b>singularity pull docker://ubuntu:latest</b>
+WARNING: pull for Docker Hub is not guaranteed to produce the
+WARNING: same image on repeated pull. Use Singularity Registry
+WARNING: (shub://) to pull exactly equivalent images.
+Docker image path: index.docker.io/library/ubuntu:latest
+Cache folder set to /spin1/home/linux/user/.singularity/docker
+Importing: base Singularity environment
+Importing: /spin1/home/linux/user/.singularity/docker/sha256:ae79f251470513c2a0ec750117a81f2d58a50727901ca416efecf297b8a03913.tar.gz
+Importing: /spin1/home/linux/user/.singularity/docker/sha256:c59d01a7e4caf1aba785eb33192fec3f96e4ab01975962bcec10f4989a6edcc6.tar.gz
+Importing: /spin1/home/linux/user/.singularity/docker/sha256:41ba73a9054d231e1f555c40a74762276900cc6487f5c6cf13b89c7606635c67.tar.gz
+Importing: /spin1/home/linux/user/.singularity/docker/sha256:f1bbfd495cc1112b503350686641ee4fa2cea8ccd13fb8a8a302c81dae61d418.tar.gz
+Importing: /spin1/home/linux/user/.singularity/docker/sha256:0c346f7223e24b517358f52c4a3f5f9af1c86e5ddeaee5659c8889846e46d1e2.tar.gz
+Importing: /spin1/home/linux/user/.singularity/metadata/sha256:f6be9f4f6905406c1e7fd6031ee3104d25ad6a31d10d5e9192e7abf7a21e519a.tar.gz
+WARNING: Building container as an unprivileged user. If you run this container as root
+WARNING: it may be missing some functionality.
+Building Singularity image...
+Singularity container built: ./ubuntu-latest.img
+Cleaning up...
+
+[user@cn0123 ~]$ <b>. /usr/local/current/singularity/app_conf/sing_binds</b>
+[user@cn0123 ~]$ <b>singularity shell ubuntu.img</b>
+WARNING: Bind file source does not exist on host: /etc/resolv.conf
+Singularity: Invoking an interactive shell within container...
+
+Singularity ubuntu.img:~> <b>cat /etc/os-release</b>
+NAME="Ubuntu"
+VERSION="16.04.3 LTS (Xenial Xerus)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 16.04.3 LTS"
+VERSION_ID="16.04"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+VERSION_CODENAME=xenial
+UBUNTU_CODENAME=xenial
+</pre>
+
+This feature gives you instant access to 100,000+ pre-built container images.  You can even use a Docker Hub container as a starting point in a definition file.  
+
+<p>
+In this example, we will create a Singularity container image starting from the official continuumio miniconda container on Docker Hub.  Then we'll install 
+a number of RNASeq tools. This would allow us to write a pipeline
+with, for example, Snakemake and distribute it along with the
+image to create an easily shared, reproducible workflow. This definition file also installs a runscript enabling us to treat our container like an executable.   
+
+<pre class="term">
+BootStrap: docker
+From: continuumio/miniconda:latest
+IncludeCmd: yes
+
+%post
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# this will install all necessary packages and prepare the container
+    apt-get -y update
+    apt-get -y install make gcc zlib1g-dev libncurses5-dev
+    wget https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2 \
+        && tar -xjf samtools-1.3.1.tar.bz2 \
+        && cd samtools-1.3.1 \
+        && make \
+        && make prefix=/usr/local install
+    export PATH=/opt/conda/bin:$PATH
+    conda install --yes -c bioconda \
+        star=2.5.2b \
+        sailfish=0.10.1 \
+        fastqc=0.11.5 \
+        kallisto=0.43.0 \
+        subread=1.5.0.post3
+    conda clean --index-cache --tarballs --packages --yes
+    mkdir /data /resources
+
+%runscript
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# this text code will run whenever the container
+# is called as an executable or with `singularity run`
+function usage() {
+    cat <&ltEOF
+NAME
+    rnaseq - rnaseq pipeline tools 0.1
+SYNOPSIS
+    rnaseq tool [tool options]
+    rnaseq list
+    rnaseq help
+DESCRIPTION
+    Singularity container with tools to build rnaseq pipeline. 
+EOF
+}
+
+function tools() {
+    echo "conda: $(which conda)"
+    echo "---------------------------------------------------------------"
+    conda list
+    echo "---------------------------------------------------------------"
+    echo "samtools: $(samtools --version | head -n1)"
+}
+
+arg="${1:-none}"
+
+case "$arg" in
+    none) usage; exit 1;;
+    help) usage; exit 0;;
+    list) tools; exit 0;;
+    # just try to execute it then
+    *)    $@;;
+esac
+
+%environment
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# This sets global environment variables for anything run within the container
+export PATH="/opt/conda/bin:/usr/local/bin:/usr/bin:/bin:"
+unset CONDA_DEFAULT_ENV
+export ANACONDA_HOME=/opt/conda
+
+</pre>
+
+<p>
+Assuming this file is called <tt>rnaseq.def</tt>, we can create a Singularity container called <tt>rnaseq</tt> on our build system with the following commands:
+
+<pre class="term">
+[user@some_build_system ~]$ <b>sudo singularity build rnaseq rnaseq.def</b>
+</pre>
+
+<p>This image contains miniconda and our rnaseq tools and can be called directly as an executable like so: <pre class="term">
+[user@some_build_system ~]$ <b>./rnaseq help</b>
+NAME
+    rnaseq - rnaseq pipeline tools 0.1
+SYNOPSIS
+    rnaseq snakemake [snakemake options]
+    rnaseq list
+    rnaseq help
+DESCRIPTION
+    Singularity container with tools to build rnaseq pipeline. 
+
+[user@some_build_system ~]$ <b>./rnaseq list</b>
+conda: /opt/conda/bin/conda
+---------------------------------------------------------------
+# packages in environment at /opt/conda:
+#
+fastqc                    0.11.5                        1    bioconda
+java-jdk                  8.0.92                        1    bioconda
+kallisto                  0.43.0                        1    bioconda
+sailfish                  0.10.1              boost1.60_1    bioconda
+[...snip...]
+
+[user@some_build_system ~]$ <b>./rnaseq samtools --version</b>
+samtools 1.3.1
+Using htslib 1.3.1
+Copyright (C) 2016 Genome Research Ltd.
+</pre>
+
+<p>After copying the image to the NIH HPC systems, allocate an sinteractive
+session and test it there</p>
+<pre class="term">
+[user@cn1234 ~]$ <b>module load singularity</b>
+[user@cn1234 ~]$ <b>./rnaseq list</b>
+conda: /opt/conda/bin/conda
+---------------------------------------------------------------
+# packages in environment at /opt/conda:
+#
+fastqc                    0.11.5                        1    bioconda
+java-jdk                  8.0.92                        1    bioconda
+kallisto                  0.43.0                        1    bioconda
+sailfish                  0.10.1              boost1.60_1    bioconda
+[...snip...]
+</pre>
+
+<p>This could be used with a Snakemake file like this</p>
+<pre class="term">
+rule fastqc:
+    input: "{sample}.fq.gz"
+    output: "{sample}.fastqc.html"
+    shell: 
+        """
+        module load singularity
+        ./rnaseq fastqc ... {input}
+        """
+
+rule align:
+    input: "{sample}.fq.gz"
+    output: "{sample}.bam"
+    shell: 
+        """
+        module load singularity
+        ./rnaseq STAR ....
+        """
+</pre>
+
+<p>
+Expand the tab below to see an example of creating a Singularity container to be used as an executable from a Docker image on DockerHub.
+<!-- Start of asciinema dropdown -->
+<div>
+<div class="toggle-tag" title="click to toggle visibility" id="docker_demo"><i class="fa fa-caret-right"></i> Singularity with Docker demo</div>
+<div class="toggle-content">
+<ul>
+<li><b>space</b> - play / pause
+<li><b>f</b> - toggle fullscreen mode
+<li><b>arrow keys</b>(←/→) - rewind 5 seconds / fast-forward 5 seconds
+<li><b>0</b>, <b>1</b>, <b>2</b> ... <b>9</b> - jump to 0%, 10%, 20% ... 90%
+<li><b>copy</b> and <b>paste</b> text from movie 
+</ul>
+<asciinema-player src="/json/singularity-docker.json" cols="136" poster="data:text/plain,user@some-build-system:~$" speed="1.25" title="Singularity Docker" author="david.godlove@nih.gov"></asciinema-player>
+</div>
+</div>
+<!-- =========================== -->
+
+<P>
+    <a Name="oomkills"></a>
+    <div class="heading"><b>Troubleshooting containers that hang when they run out of memory</b></div>
+    <a href="singularity.html" style="font-size:12px">back to top</a><br/>
+    <P>
+    A few containers have caused issues on Biowulf by triggering a kernel level bug described in detail <a href="https://bugs.centos.org/view.php?id=17584">here</a> and <a href="https://chrisdown.name/2018/04/17/kernel-adventures-the-curious-case-of-squashfs-stalls.html">here</a>. These include <a href="/apps/fmriprep.html">fmriprep</a> and <a href="https://github.com/fanglab/nanodisco">nanodisco</a>. The problems follow a predictable pattern:
+    
+    <ul>
+    <li>The containerized application uses more memory than has been allocated for the job.
+    <li>The Out Of Memory (OOM) killer is invoked by the kernel to kill the offending process.
+    <li>Other processes that presumably depend on the first process fail to cancel and may enter the D state (awaiting IO).  
+    <li>Node responses become sluggish as it bogged down with D state processes.
+    <li>File system performance may suffer as the container tries repeatedly to communicate with the singularity starter process. Depending on the number of jobs running, this may produce noticeable degragation of file system performance.  
+    </ul>
+    
+    If one of your containers displays these symptoms, you will need to convert the container from sif format to ext3 format. This a non-trivial operation and requires you have access to a system with root privileges. Please contact staff@hpc.nih.gov and we can give you recommendations.
+    
+<!--========================================================================-->
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,202 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'netOglyc on Biowulf';</script>
+<div class="title">netOglyc on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job</a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+        <div class="tocItem"><a href="#multi">Multi-sequence fasta file</a></div>
+      </div>
+</table>
+
+<p>
+NetOglyc produces neural network predictions of mucin type GalNAc O-glycosylation sites in mammalian proteins.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>
+  K. Julenius, A. Mølgaard, R. Gupta and S. Brunak.
+  <a href="https://www.ncbi.nlm.nih.gov/pubmed/?term=15385431">
+  <u>Prediction, conservation analysis and structural characterization of mammalian mucin-type O-glycosylation sites</u>
+  </a>
+  <em>Glycobiology,</em> 15:153-164, 2005.
+</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://services.healthtech.dtu.dk/services/NetOGlyc-4.0/">netOglyc 4.0 Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>netOglyc</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>singlethreaded
+    <li>Environment variables set <!--for ones users should be aware of -->
+        <ul>
+            <li><tt>NETOGLYC_HOME</tt></li>
+            <li><tt>NETOGLYC_EXAMPLES</tt></li>
+        </ul>
+    <li>Example files in <tt>$NETOGLYC_EXAMPLES</tt></li>
+    <li><b>This application requires <tt>/lscratch</tt> be allocated (see below)</b></li>
+    <li>The input fasta file header must conform to the following rules:
+        <ul>
+            <li>No spaces are allowed between the inital <tt>&gt;</tt> and the description:<br />
+                <b>GOOD:</b> <pre class="term">&gt;NM_001008540.2 Homo sapiens C-X-C motif</pre>
+                <b>BAD:</b> <pre class="term">&gt;   NM_001008540.2 Homo sapiens C-X-C motif</pre>
+            </li>
+            <li>The vertical bar character <tt>|</tt> is not allowed in the description:<br />
+                <b>GOOD:</b> <pre class="term">&gt;NM_000758.4 Homo sapiens colony stimulating factor 2 (CSF2), mRNA</pre>
+                <b>BAD:</b> <pre class="term">&gt;NM_000758.4 Homo sapiens colony stimulating factor 2 | other stuff</pre>
+            </li>
+        </ul>
+    </li>
+    <li>While netOglyc can process a multiple sequence fasta file, there is a limit to the input size of the file.  It is better to split the fasta file into single sequence files prior to running.  See below for an example perl script for doing this on the fly.</li>
+</ul>
+
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load netOglyc</b>
+[user@cn3144 ~]$ <b>netOglyc $NETOGLYC_EXAMPLES/GLP_MACFU.fsa</b>
+##gff-version 2
+##source-version NetOGlyc 4.0.0.11
+##date 23-9-6
+##Type Protein
+#seqname        source  feature start   end     score   strand  frame   comment
+GLP_MACFU       netOGlyc-4.0.0.11       CARBOHYD        1       1       0.680709        .       .       #POSITIVE
+GLP_MACFU       netOGlyc-4.0.0.11       CARBOHYD        2       2       0.790723        .       .       #POSITIVE
+GLP_MACFU       netOGlyc-4.0.0.11       CARBOHYD        3       3       0.848504        .       .       #POSITIVE
+GLP_MACFU       netOGlyc-4.0.0.11       CARBOHYD        4       4       0.707939        .       .       #POSITIVE...
+...
+</pre>
+
+<p>If something goes wrong, temporary files (including logs) are written to and compressed in <tt>/lscratch/$SLURM_JOB_ID</tt>:
+<pre class="term">
+[user@cn3144 ~]$ <b>ls /lscratch/$SLURM_JOB_ID</b>
+netOGlyc-1474660.tar.gz  netOGlyc-1474970.tar.gz
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. netOglyc.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load netOglyc
+netOglyc my_fasta_file.fasta &gt; my_fasta_file.out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --gres=lscratch:10 netOglyc.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. netOglyc.swarm). For example:</p>
+
+<pre class="term">
+netOglyc &lt; 1.fasta &gt; 1.out
+netOglyc &lt; 2.fasta &gt; 2.out
+netOglyc &lt; 3.fasta &gt; 3.out
+netOglyc &lt; 4.fasta &gt; 4.out
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f netOglyc.swarm --module netOglyc --gres lscratch:10</pre>
+where
+<table border=0>
+  <tr><td><tt>--module netOglyc</tt> <td>Loads the netOglyc module for each subjob in the swarm </td></tr>
+  <tr><td><tt>--gres lscratch:10</tt> <td>Allocates 10 GB of /lscratch</td></tr>
+</table>
+
+
+<a name="multi"></a><div class="heading">Multi-sequence fasta break-up script</div>
+<p>Very large, multi-sequence fasta files are not handled well with netOglyc.  It is safer to keep the fasta input small.</p>
+<p>Here is a perl script that will take a multi-sequence fasta file, break it up into single fasta files, and run netOglyc on each.  The output is appended to a single output file.</p>
+<pre class="term">
+#!/usr/bin/perl
+
+use File::Temp qw/ tempfile /;
+my (undef, $infile) = tempfile();
+
+my $ii=0;
+my $i=0;
+my $order="";
+my $tim=0;
+my $com="netOglyc $infile.fsa >& $infile.out";
+my $nam="";
+my $seq="";
+my $INPUT = $ARGV[0];
+my $OUTPUT = $ARGV[1];
+
+open (CFGFILE, $ARGV[0]);
+while (<CFGFILE>){
+    chomp;
+    my $line = $_;
+    if ($line =~ />/) {
+        $i++;
+        $seq[$i]=$line."\n";
+        $nam[$i]=$line;
+    } else {
+        $seq[$i] = $seq[$i].$line."\n";
+    }
+}
+
+unlink $OUTPUT;
+
+while ($ii<$i){
+    $ii++;
+    open OUTFILE, "> $infile.fsa";
+    $order=$seq[$ii];
+    print "Sent ".$order." ".$ii." of ".$i." to NetOglyc"."\n"."\n";
+    print OUTFILE $order;
+    close OUTFILE;
+    open OUTFILE, ">> $ARGV[1]";
+    $order=$nam[$ii];
+    print OUTFILE $order."\n";
+    close OUTFILE;
+    unlink "$infile.out";
+    system ($com);
+
+    open INFILE, "$infile.out";
+    open OUTFILE, ">> $ARGV[1]";
+    while (<INFILE>){
+        print OUTFILE $_;
+    }
+    print OUTFILE "\n";
+    close OUTFILE;
+}
+unlink "$infile.out";
+unlink "$infile.fsa";
+</pre>
+
+<p>The script can be run like so:</p>
+<pre class="term">perl multi.pl multi-fasta.fsa multi-fasta.out</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,237 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'paraview on Biowulf';</script>
+<div class="title">paraview on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#clientserver">Client/Server mode </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch mode</a></div>
+      </div>
+</table>
+
+<p>
+ParaView is an open-source, multi-platform data analysis and visualization application. It
+can be run in different modes:
+</p>
+
+<ul>
+    <li>In Destop mode, Paraview is run locally on your machine.</li>
+    <li>In client/server mode, a ParaView server runs on the biowulf cluster and
+        an interactive ParaView client on your computer connects to the server
+        for analysis via an ssh tunnel.</li>
+    <li>In batch mode, ParaView is used as a framework for analysis and visualisation 
+        in biowulf batch jobs through its Python interface.</li>
+</ul>
+
+
+
+<div class="alert">
+   ParaView can be run on k80 GPU nodes (egl offscreen rendering) or, without GPU acceleration, on multinode
+   (mesa offscreen rendering).
+</div>
+
+
+<h4>References:</h4>
+<ul>
+<li>J. Ahrens, B. Geveci, C. Law. <em>ParaView: An End-User Tool for Large Data Visualization</em>.
+    Visualization Handbook, 2005. </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>ParaView Main Site: <a href="https://www.paraview.org">paraview.org</a></li>
+<li>ParaView Tutorial: <a href="https://www.paraview.org/Wiki/images/1/13/ParaViewTutorial52.pdf">paraview.org</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: paraview (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>ParaView is an MPI program. Current versions are precompiled and include their own custom MPICH</li>
+    <li>For client/server mode please download ParaView from <a href="https://www.paraview.org/download/">paraview.org/download</a>. The version has to match exactly the server version running on biowulf.</li>
+</ul>
+<P>
+
+<a Name="clientserver"></a><div class="heading">Client/Server mode</div>
+
+<h4>k80 GPU</h4>
+<p>In this example we will run a ParaView server as a batch job allocating one
+node with 2 K80 GPUs each used for hardware accelerated rendering. We then
+connect a ParaView client running on the desktop to the server for interactive
+analysis. Paraview can either use half a node (1GPU + CPUS), or multiples
+of whole nodes (i.e. 1, 2, ... nodes allocated exclusively using both GPUs).
+That is due to the way GPUs are utilized by ParaView. The batch example
+uses half a node to illustrate how to use $CUDA_VISIBLE_DEVICES. The 1 node
+client/server example can easily be extended to more than one node. </p>
+
+<p>To start a ParaView server, create a batch script similar to the following:
+<pre class="term">
+#! /bin/bash
+# this file is paraview_server.sh
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=16
+#SBATCH --ntasks-per-core=1
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:k80:2
+#SBATCH --exclusive
+#SBATCH --mem=120g
+set -e
+
+
+module load paraview/5.10.1 || exit 1
+pvopts="--disable-xdisplay-test --force-offscreen-rendering"
+
+ntasks_per_gpu=$(( SLURM_NTASKS_PER_NODE / 2 ))
+
+mpiexec -map-by node -iface enet0 \
+    -np ${ntasks_per_gpu} pvserver ${pvopts} --displays=0 : \
+    -np ${ntasks_per_gpu} pvserver ${pvopts} --displays=1
+
+</pre>
+
+<p>Note that the mpiexec is set up such that half the tasks are assigned to each of the
+two GPUs on each node. This will only work properly if only whole nodes are allocated.</p>
+
+<p>In this example we will allocate just 1 node with 2GPUs. 8 tasks each share
+a single GPU for rendering. In some circumstances it may be better to use
+2 tasks per core, for example. Since we are using sbatch directives we can submit with</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sbatch paraview_server.sh</b>
+50077458
+</pre>
+
+<h4>Multinode CPU rendering</h4>
+
+<p>In some cases the server may need more memory than available on the k80 nodes
+or exceed the k80 GPU memory. In such cases the mesa based CPU server can be used.</p>
+
+<pre class="term">
+#! /bin/bash
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=28
+#SBATCH --partition=multinode
+#SBATCH --exclusive
+#SBATCH --mem=240g
+#SBATCH --constraint=x2695
+
+set -e
+
+module load paraview/5.10.1-mesa
+
+pvopts="--disable-xdisplay-test --force-offscreen-rendering"
+mpiexec -iface ib0 pvserver ${pvopts}
+</pre>
+
+<h4>Client connections</h4>
+<p>The server will run until the job hits its time limit, is canceled, or is
+stopped when the client terminates its connection to the server.</p>
+
+<p>Wait until the server job starts and check the output file for the
+port and hostname of the server</p>
+<pre class="term">
+[user@biowulf]$ <b>squeue -j 50077458</b>
+   JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+50077458       gpu paraview     user PD       0:00      1 (None)
+
+[user@biowulf]$ <b>squeue -j 50077458</b>
+   JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+50077458       gpu paraview     user  R       1:36      1 cn0605
+
+[user@biowulf]$ <b>cat slurm-50077458.out</b>
+[+] Loading paraview 5.10.1
+Waiting for client...
+Connection URL: cs://cn0605:11111
+Accepting connection(s): cn0605:11111
+</pre> 
+
+<p>Now we need a tunnel from your local machine to the compute node
+indicated by the pvserver process. Assuming your machine is on the NIH
+campus or on VPN this command will set up the tunnel on a Mac or
+a Linux machine to the node via biowulf:</p>
+
+<pre class="term">
+[myComputer]$ <b>ssh -L 11111:localhost:11111 user@biowulf.nih.gov \
+                     -t ssh -L 11111:localhost:11111 user@cn0605</b>
+</pre>
+
+<p>Replacing 'user' with your username and 'cn0605' with the node
+shown in the slurm output file.
+</p>
+
+
+<p>Using putty on a Windows machine involves a 2-step process:</p>
+<ul>
+<li>Establish a connection to biowulf with a tunnel from the putty GUI</li>
+<li>Extend the tunnel from biowulf to the compute node from the biowulf command line.</li>
+</ul>
+
+<p>Once a tunnel has been established, start your local ParaView client and click the
+connect button. The brief screencast below shows how to connect and open an example
+data set.</p>
+
+<img src="/images/video-icon.png"> <a href="https://www.youtube.com/watch?v=NYfiUcqZktU">Paraview client connection to server</a> (4 min)
+
+<p>Notes:</p>
+<ul>
+<li>Disconnecting from the server terminates the server job.</li>
+<li>The screencast was recored with the Linux version of ParaView 5.4.1.
+    Interfaces on other Systems may differ slightly.</li>
+<li>Note that the video uses some properties used in the video only become
+visible when selecting the gear icon (advanced properties).</li>
+<li>If port 11111 is used already you can select a different port with the <code>--server-port</code>
+    option to pvserver</li>
+<li>For server jobs with more than 1 node please make sure to check the slurm
+    log file to identify on which node the process listening for client connections
+    is running</li>
+</ul>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch mode</div>
+
+<p>We will use a very simple python script that renders a sphere and colors
+it by the rank of the MPI process that created it:</p>
+
+<pre class="term">
+# this file is sphere.py
+from paraview.simple import *
+
+sphere = Sphere()
+sphere.ThetaResolution = 32
+rep = Show()
+ColorBy(rep, ('POINTS', 'vtkProcessId'))
+Render()
+rep.RescaleTransferFunctionToDataRange(True)
+Render()
+WriteImage('sphere.png')
+</pre>
+
+<p>Then create a batch input file to run the python script on a single K80 GPU:</p>
+
+<pre class="term">
+#!/bin/bash
+# this file is sphere.sh
+module load paraview || exit 1
+
+mpirun --mca btl self,vader -np $SLURM_NTASKS \
+    pvbatch shpere.py
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sbatch --ntasks=4 --partition=gpu --mem=10g \
+                      --gres=gpu:k80:1 --nodes=1 sphere.sh</b>
+</pre>
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

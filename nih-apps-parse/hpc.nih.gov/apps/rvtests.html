@@ -1,0 +1,114 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Rvtests on Biowulf';</script>
+<div class="title">Rvtests on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Rvtests, which stands for Rare Variant tests, is a flexible software package for genetic association analysis for sequence datasets. Since its inception, rvtests was developed as a comprehensive tool to support genetic association analysis and meta-analysis. It can analyze both unrelated individual and related (family-based) individuals for both quantitative and binary outcomes. It includes a variety of association tests (e.g. single variant score test, burden test, variable threshold test, SKAT test, fast linear mixed model score test). It takes VCF/BGEN/PLINK format as genotype input file and takes PLINK format phenotype file and covariate file.</p>
+
+<h3>References:</h3>
+<ul>
+<li>Xiaowei Zhan, et al. RVTESTS: An Efficient and Comprehensive Tool for Rare Variant Association Analysis Using Sequence Data. Bioinformatics 2016 32: 1423-1426. doi:10.1093/bioinformatics/btw079 </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/zhanxw/rvtests">Rvtests Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>rvtests</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>singlethreaded
+<li>Example files in <tt>/usr/local/apps/rvtests/2.0.6/example/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load rvtests</b>
+
+[user@cn3144 ~]$ <b>RV_DIR=/usr/local/apps/rvtests/2.0.6/example/</b>
+
+[user@cn3144 ~]$ <b>rvtest --inVcf $RV_DIR/example.vcf --pheno $RV_DIR/pheno --out output --single wald,score</b>
+Thank you for using rvtests (version: 20171009, git: Unknown)
+  For documentations, refer to http://zhanxw.github.io/rvtests/
+  For questions and comments, send to Xiaowei Zhan <zhanxw@umich.edu>
+  For bugs and feature requests, please submit at: https://github.com/zhanxw/rvtests/issues
+[...]
+[INFO]	Analysis begins with [ 9 ] samples...
+[INFO]	Impute missing genotype to mean (by default)
+[INFO]	Analysis started
+[INFO]	Analyzed [ 3 ] variants
+[INFO]	Analysis ends at: Mon Apr  9 11:50:48 2018
+[INFO]	Analysis took 2 seconds
+RVTESTS finished successfully
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. rvtests.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load rvtests
+RV_DIR=/usr/local/apps/rvtests/2.0.6/example/
+rvtest --inVcf $RV_DIR/example.vcf --pheno $RV_DIR/pheno --out output --single wald,score</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch rvtests.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. rvtests.swarm). For example:</p>
+
+<pre class="term">
+rvtest --inVcf example.1vcf --pheno pheno1 --out output1 --single wald,score
+rvtest --inVcf example.2vcf --pheno pheno2 --out output2 --single wald,score
+rvtest --inVcf example.3vcf --pheno pheno3 --out output3 --single wald,score
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f rvtests.swarm --module rvtests</pre>
+where
+<table border=0>
+  <tr><td><tt>--module rvtests</tt> <td>Loads the rvtests module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

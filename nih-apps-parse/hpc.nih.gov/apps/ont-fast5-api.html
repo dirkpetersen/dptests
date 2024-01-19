@@ -1,0 +1,124 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ont-fast5-api on Biowulf';</script>
+<div class="title">ont-fast5-api on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+A set of tools to manipulate HDF5 files of the Oxford Nanopore .fast5 file format.
+This module only provides access to the command line tools, not the python API.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Tools are documented on <a href="https://github.com/nanoporetech/ont_fast5_api">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: ont-fast5-api (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Tools are multthreaded. Please match the number of threads to the number of allocated CPUs.</li>
+    <li>Example files in <code>$ONT_FAST5_API_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:100 --cpus-per-task=2 --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/${SLURM_JOB_ID}</b>
+[user@cn3144]$ <b>module load ont-fast5-api</b>
+[user@cn3144]$ <b>cp -rL ${ONT_FAST5_API_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>ls</b>
+Zymo-GridION-EVEN-BB-SN
+[user@cn3144]$ <b>find Zymo-GridION-EVEN-BB-SN -name '*.fast5' -printf '.' | wc -c</b>
+160000
+[user@cn3144]$ <b>du -sh Zymo-GridION-EVEN-BB-SN</b>
+11G     Zymo-GridION-EVEN-BB-SN/
+[user@cn3144]$ <b>single_to_multi_fast5 -i Zymo-GridION-EVEN-BB-SN \
+                    -s multi_fast5 -n 10000 -t $SLURM_CPUS_PER_TASK --recursive -c vbz</b>
+[user@cn3144]$ <b>ls -lh multi_fast5</b>
+total 6.6G
+-rw-r--r-- 1 user group 408M May 26 10:42 batch_0.fast5
+-rw-r--r-- 1 user group 425M May 26 10:49 batch_10.fast5
+-rw-r--r-- 1 user group 425M May 26 10:49 batch_11.fast5
+...
+[user@cn3144]$ <b>du -sh multi_fast5</b>
+6.6G    multi_fast5
+
+## copy results back to shared storage before exiting
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. ont_fast5_api.sh) like so:</p>
+
+<pre class="term">
+#!/bin/bash
+wd=$PWD
+module load ont-fast5-api
+cd /lscratch/${SLURM_JOB_ID} || exit 1
+module load ont-fast5-api/3.3.0
+cp -rL ${ONT_FAST5_API_TEST_DATA:-none}/* .
+single_to_multi_fast5 -i Zymo-GridION-EVEN-BB-SN \
+    -s multi_fast5 -n 10000 -t $SLURM_CPUS_PER_TASK --recursive -c vbz
+mv multi_fast5 $wd
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=10g --gres=lscratch:25 ont_fast5_api.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. ont_fast5_api.swarm). For example:</p>
+
+<pre class="term">
+multi_to_single_fast5 -i batch_0.fast5 -s batch_0 -t $SLURM_CPUS_PER_TASK
+multi_to_single_fast5 -i batch_1.fast5 -s batch_1 -t $SLURM_CPUS_PER_TASK
+multi_to_single_fast5 -i batch_2.fast5 -s batch_2 -t $SLURM_CPUS_PER_TASK
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f ont_fast5_api.swarm -g 10 -t 4 --module ont-fast5-api/3.3.0</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module ont_fast5_api <td>Loads the ont_fast5_api module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

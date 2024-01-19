@@ -1,0 +1,207 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'parabricks: a software suite for performing secondary analysis of NGS DNA and RNA data ';</script>
+<div class="title"><b>parabricks: a software suite for performing secondary analysis of NGS DNA and RNA data </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The Clara Parabricks toolkit is a set of GPU-accelerated genome analysis tools for secondary 
+analysis of next generation sequencing data. It includes GPU-accelerated tools for preprocessing, QC,
+alignment, variant calling, and GVCF processing.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Mohammed Alser, Zülal Bingöl, et al. <a href="https://ieeexplore.ieee.org/abstract/document/9154510"><i> Accelerating Genome Analysis: A Primer on an Ongoing Journey. </i></a>  IEEE Micro, Volume: 40, Issue: 5, 2020.</li>
+<li>Karl R Franke, Erin L Crowgey. <a href="https://pubmed.ncbi.nlm.nih.gov/32224843/"><i>Accelerating next generation sequencing data analysis: an evaluation of optimized best practices for Genome Analysis Toolkit algorithms</i></a>. Genomics & Informatics, Volume 18(1), 2020.</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://docs.nvidia.com/clara/parabricks/4.0.0/index.html">Parabricks 4.0.0 documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>parabricks</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)</li>
+<li>Parabricks requires a GPU with at least CUDA architecture 60. Currently, on the cluster this means
+    a V100, V100x, or A100 gpu. You can select from these by specifying <tt>--gres=gpu:1</tt> and 
+    <tt>--constraint="gpua100|gpuv100|gpuv100x"</tt>.</li>
+<li>Monitor your memory utilization with the <a href="https://hpcnihapps.cit.nih.gov/auth/dashboard/">
+        HPC Dashboard</a>. Running low on memory may cause unpredictable slowdowns in Parabricks software.</li>
+<li>Running out of GPU memory may cause an error like: <tt>cudaSafeCall() failed at ParaBricks/src/samGenerator.cu/772: out of memory</tt></li>
+  <ul>
+    <li>Some Parabricks programs include a <tt>--low-memory</tt> option that may help with this</li>
+  </ul>
+<li>All tools in Parabricks are used the the <tt>pbrun</tt> command line tool.</li>
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PARABRICKS_TEST_DATA</b>:&nbsp;Parabricks sample data</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:40,gpu:1 \
+                    --mem=32g \
+                    -c16 \
+                    --constraint="gpua100|gpuv100|gpuv100x"</b>
+
+[user@cn4464 ~]$ <b>module load parabricks  </b>
+[+] Loading parabricks  4.0.0  on cn4464
+[+] Loading singularity  3.8.5-1  on cn4464
+
+[user@cn4464 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn4464 ~]$ <b>tar xf $PARABRICKS_TEST_DATA</b>
+
+[user@cn4464 ~]$ <b>pbrun --help</b>
+Please visit https://docs.nvidia.com/clara/#parabricks for detailed documentation
+
+usage: pbrun <command> [<args>]
+Help: pbrun -h
+
+command can be a TOOL or FULL PIPELINE. Example:
+pbrun fq2bam --ref genome.fa --in-fq sample_1.fq.gz sample_2.fq.gz --out-bam sample.bam
+pbrun germline --ref genome.fa --in-fq sample_1.fq.gz sample_2.fq.gz --out-bam sample.bam --out-variants sample.vcf
+
+command options for standalone TOOL
+applybqsr               - Apply BQSR report to a BAM file and generate a new BAM file
+bam2fq                  - Convert a BAM file to FASTQ
+bammetrics              - Collect WGS Metrics on a BAM file
+bamsort                 - Sort a BAM file
+bqsr                    - Collect BQSR report on a BAM file
+collectmultiplemetrics  - Collect multiple classes of metrics on a BAM file
+dbsnp                   - Annotate variants based on a dbsnp
+deepvariant             - Run GPU-DeepVariant for calling germline variants
+fq2bam                  - Run bwa mem, co-ordinate sorting, marking duplicates, and Base Quality Score Recalibration
+genotypegvcf            - Convert a GVCF to VCF
+haplotypecaller         - Run GPU-HaplotypeCaller for calling germline variants
+indexgvcf               - Index a GVCF file
+mutectcaller            - Run GPU-Mutect2 for tumor-normal analysis
+postpon                 - Generate the final VCF output of doing mutect pon
+prepon                  - Build an index for PON file, which is the prerequisite to performing mutect pon
+rna_fq2bam              - Run RNA-seq data through the fq2bam pipeline
+starfusion              - Identify candidate fusion transcripts supported by Illumina reads
+
+command options for commonly used FULL PIPELINES
+germline                - Run the germline pipeline from FASTQ to VCF
+deepvariant_germline    - Run the germline pipeline from FASTQ to VCF using a deep neural network analysis
+somatic                 - Run the somatic pipeline from FASTQ to VCF
+
+Information about the software
+version                 - Current version of Parabricks
+
+Please visit https://docs.nvidia.com/clara/#parabricks for detailed documentation
+
+positional arguments:
+  command     The pipeline or tool to run.
+
+optional arguments:
+  -h, --help  show this help message and exit
+
+# It may be necessary to add --low-memory on V100 nodes
+[user@cn4464 ~]$ <b>time pbrun fq2bam \
+      --ref ./parabricks_sample/Ref/Homo_sapiens_assembly38.fasta \
+      --in-fq ./parabricks_sample/Data/sample_1.fq.gz ./parabricks_sample/Data/sample_2.fq.gz \
+      --out-bam fq2bam_output.bam \
+      --tmp-dir /lscratch/$SLURM_JOB_ID/tmp</b>
+[Parabricks Options Mesg]: Checking argument compatibility
+[Parabricks Options Mesg]: Automatically generating ID prefix
+[Parabricks Options Mesg]: Read group created for /lscratch/48192446/parabricks_sample/Data/sample_1.fq.gz and
+/lscratch/48192446/parabricks_sample/Data/sample_2.fq.gz
+[Parabricks Options Mesg]: @RG\tID:HK3TJBCX2.1\tLB:lib1\tPL:bar\tSM:sample\tPU:HK3TJBCX2.1
+[PB Info 2022-Sep-21 16:11:10] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:11:10] ||                 Parabricks accelerated Genomics Pipeline                 ||
+[PB Info 2022-Sep-21 16:11:10] ||                              Version 4.0.0-1                             ||
+[PB Info 2022-Sep-21 16:11:10] ||                       GPU-BWA mem, Sorting Phase-I                       ||
+[PB Info 2022-Sep-21 16:11:10] ------------------------------------------------------------------------------
+[M::bwa_idx_load_from_disk] read 0 ALT contigs
+[PB Info 2022-Sep-21 16:11:31] GPU-BWA mem
+[PB Info 2022-Sep-21 16:11:31] ProgressMeter    Reads           Base Pairs Aligned
+[PB Info 2022-Sep-21 16:12:10] 5043564          580000000
+[PB Info 2022-Sep-21 16:12:44] 10087128 1160000000
+[PB Info 2022-Sep-21 16:13:16] 15130692 1740000000
+[PB Info 2022-Sep-21 16:13:52] 20174256 2320000000
+[PB Info 2022-Sep-21 16:14:24] 25217820 2900000000
+[PB Info 2022-Sep-21 16:15:00] 30261384 3480000000
+[PB Info 2022-Sep-21 16:15:35] 35304948 4060000000
+[PB Info 2022-Sep-21 16:16:10] 40348512 4640000000
+[PB Info 2022-Sep-21 16:16:43] 45392076 5220000000
+[PB Info 2022-Sep-21 16:17:18] 50435640 5800000000
+[PB Info 2022-Sep-21 16:17:39]
+GPU-BWA Mem time: 368.713119 seconds
+[PB Info 2022-Sep-21 16:17:39] GPU-BWA Mem is finished.
+
+
+[main] CMD: /usr/local/parabricks/binaries//bin/bwa mem -Z ./pbOpts.txt /lscratch/48192446/parabricks_sample/Ref/Homo_sapiens_assembly38.fasta /lscratch/48192446/parabricks_sample/Data/sample_1.fq.gz /lscratch/48192446/parabricks_sample/Data/sample_2.fq.gz @RG\tID:HK3TJBCX2.1\tLB:lib1\tPL:bar\tSM:sample\tPU:HK3TJBCX2.1
+[main] Real time: 389.507 sec; CPU: 5828.472 sec
+[PB Info 2022-Sep-21 16:17:39] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:17:39] ||        Program:                      GPU-BWA mem, Sorting Phase-I        ||
+[PB Info 2022-Sep-21 16:17:39] ||        Version:                                           4.0.0-1        ||
+[PB Info 2022-Sep-21 16:17:39] ||        Start Time:                       Wed Sep 21 16:11:10 2022        ||
+[PB Info 2022-Sep-21 16:17:39] ||        End Time:                         Wed Sep 21 16:17:39 2022        ||
+[PB Info 2022-Sep-21 16:17:39] ||        Total Time:                           6 minutes 29 seconds        ||
+[PB Info 2022-Sep-21 16:17:39] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:17:42] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:17:42] ||                 Parabricks accelerated Genomics Pipeline                 ||
+[PB Info 2022-Sep-21 16:17:42] ||                              Version 4.0.0-1                             ||
+[PB Info 2022-Sep-21 16:17:42] ||                             Sorting Phase-II                             ||
+[PB Info 2022-Sep-21 16:17:42] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:17:42] progressMeter - Percentage
+[PB Info 2022-Sep-21 16:17:42] 0.0       0.00 GB
+[PB Info 2022-Sep-21 16:17:52] 81.5      0.00 GB
+[PB Info 2022-Sep-21 16:18:02] Sorting and Marking: 20.003 seconds
+[PB Info 2022-Sep-21 16:18:02] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:18:02] ||        Program:                                  Sorting Phase-II        ||
+[PB Info 2022-Sep-21 16:18:02] ||        Version:                                           4.0.0-1        ||
+[PB Info 2022-Sep-21 16:18:02] ||        Start Time:                       Wed Sep 21 16:17:42 2022        ||
+[PB Info 2022-Sep-21 16:18:02] ||        End Time:                         Wed Sep 21 16:18:02 2022        ||
+[PB Info 2022-Sep-21 16:18:02] ||        Total Time:                                     20 seconds        ||
+[PB Info 2022-Sep-21 16:18:02] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:18:02] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:18:02] ||                 Parabricks accelerated Genomics Pipeline                 ||
+[PB Info 2022-Sep-21 16:18:02] ||                              Version 4.0.0-1                             ||
+[PB Info 2022-Sep-21 16:18:02] ||                         Marking Duplicates, BQSR                         ||
+[PB Info 2022-Sep-21 16:18:02] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:18:02] progressMeter -  Percentage
+[PB Info 2022-Sep-21 16:18:12] 22.7      2.06 GB
+[PB Info 2022-Sep-21 16:18:22] 44.1      2.16 GB
+[PB Info 2022-Sep-21 16:18:32] 68.0      5.88 GB
+[PB Info 2022-Sep-21 16:18:42] 96.0      0.20 GB
+[PB Info 2022-Sep-21 16:18:52] 100.0     0.00 GB
+[PB Info 2022-Sep-21 16:18:52] BQSR and writing final BAM:  50.370 seconds
+[PB Info 2022-Sep-21 16:18:52] ------------------------------------------------------------------------------
+[PB Info 2022-Sep-21 16:18:52] ||        Program:                          Marking Duplicates, BQSR        ||
+[PB Info 2022-Sep-21 16:18:52] ||        Version:                                           4.0.0-1        ||
+[PB Info 2022-Sep-21 16:18:52] ||        Start Time:                       Wed Sep 21 16:18:02 2022        ||
+[PB Info 2022-Sep-21 16:18:52] ||        End Time:                         Wed Sep 21 16:18:52 2022        ||
+[PB Info 2022-Sep-21 16:18:52] ||        Total Time:                                     50 seconds        ||
+[PB Info 2022-Sep-21 16:18:52] ------------------------------------------------------------------------------
+
+real    7m46.118s
+user    107m4.313s
+sys     2m16.551s
+
+[user@cn4464 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

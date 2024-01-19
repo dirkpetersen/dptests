@@ -1,0 +1,185 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PEER: probabilistic estimation of expression residuals ';</script>
+<div class="title"><b>PEER: probabilistic estimation of expression residuals </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+PEER stands for "probabilistic estimation of expression residuals". It 
+is a collection of Bayesian approaches to infer hidden determinants and 
+their effects from gene expression profiles using factor analysis methods.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Oliver Stegle, Leopold Parts, Richard Durbin, and John Winn <br />
+<i>A Bayesian Framework to Account for Complex Non-Genetic Factors 
+in Gene Expression Levels Greatly Increases Power in eQTL Studies </i><br />
+<a href="http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000770">PLoS Computational Biology </a> 2010, <b>6</b>(5), e1000770. doi:10.1371/journal.pcbi.1000770 <br/>
+<li>Leopold Parts, Oliver Stegle, John Winn, and Richard Durbin  <br />
+<i>Joint Genetic Analysis of Gene Expression Data with Inferred Cellular Phenotypes </i><br />
+<a href="http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1001276">PLoS Genetics </a> 2011, <b>7</b>(1),  e1001276. doi:10.1371/journal.pgen.1001276
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/PMBio/peer/wiki/Tutorial">PEER Tutorial on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>PEER</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PEER_HOME</b>&nbsp; PEER    installation directory</li>
+    <li><b>PEER_BIN </b>&nbsp; &nbsp; &nbsp; PEER executable directory</li>
+    <li><b>PEER_DOC </b>&nbsp; &nbsp; &nbsp; PEER documentation directory</li>
+    <li><b>PEER_DATA</b>&nbsp; &nbsp; PEER test data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3107 ~]$<b>module load PEER</b>
+[user@cn3107 ~]$<b>peertool --help</b>
+
+USAGE: 
+
+   peertool  [--sigma_off <float>] [--var_tol <float>] [--bound_tol
+             <float>] [--e_pb <float>] [--e_pa <float>] [--a_pb <float>]
+             [--a_pa <float>] [-i <int>] [-n <int>] [--prior <string>] [-c
+             <string>] [--var_file <string>] -f <string> [-o <string>]
+             [--has_header] [--add_mean] [--no_a_out] [--no_z_out]
+             [--no_w_out] [--no_x_out] [--no_res_out] [--] [--version]
+             [-h]
+Where: 
+
+   --sigma_off <float>
+     Variance inactive component
+
+   --var_tol <float>
+     Variation tolerance
+
+   --bound_tol <float>
+     Bound tolerance
+
+   --e_pb <float>
+     Eps node prior parameter b
+
+   --e_pa <float>
+     Eps node prior parameter a
+
+   --a_pb <float>
+     Alpha node prior parameter b
+
+   --a_pa <float>
+     Alpha node prior parameter a
+
+   -i <int>,  --n_iter <int>
+     Number of iterations
+
+   -n <int>,  --n_factors <int>
+     Number of hidden factors
+
+   --prior <string>
+     Factor prior file
+
+   -c <string>,  --cov_file <string>
+     Covariate data file
+
+   --var_file <string>
+     Expression uncertainty (variance) data file
+
+   -f <string>,  --file <string>
+     (required)  Expression data file
+
+   -o <string>,  --out_dir <string>
+     Output directory
+
+   --has_header
+     Expression and covariates files have a header
+
+   --add_mean
+     Add a covariate to model mean effect
+
+   --no_a_out
+     No output of weight precision
+
+   --no_z_out
+     No output of posterior sparsity prior
+
+   --no_w_out
+     No output of estimated factor weights
+
+   --no_x_out
+     No output of estimated factors
+
+   --no_res_out
+     No output of residual values
+
+   --,  --ignore_rest
+     Ignores the rest of the labeled arguments following this flag.
+
+   --version
+     Displays version information and exits.
+
+   -h,  --help
+     Displays usage information and exits.
+
+   Probabilistic estimation of expression residuals (PEER)
+
+[user@cn3107 ~]$<b>cp $PEER_DATA/* . </b>
+[user@cn3107 ~]$<b>cd peer/examples/data</b>
+</pre>
+Basic usage:
+<pre class="term">
+[user@cn3107 ~]$<b>peertool -f expression.csv -n </b>
+	iteration 0/50
+	iteration 1/50
+	iteration 2/50
+	iteration 3/50
+	iteration 4/50
+Converged (var(residuals)) after 4 iterations
+</pre>
+If there are measured experimental variables that may contribute to variability in the data, they can be included in the inference, and specified with the -c flag.
+<pre class="term">
+[user@cn3107 ~]$<b>peertool -f expression_sparse.csv -c covs.csv --out_dir expression_sparse_out</b>
+	iteration 0/50
+	iteration 1/50
+	iteration 2/50
+	iteration 3/50
+	iteration 4/50
+	iteration 5/50
+	iteration 6/50
+	iteration 7/50
+	iteration 8/50
+Converged (var(residuals)) after 8 iterations
+
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3107 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

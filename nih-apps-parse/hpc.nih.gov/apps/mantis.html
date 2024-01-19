@@ -1,0 +1,100 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mantis on Biowulf';</script>
+<div class="title">mantis on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>MANTIS (Microsatellite Analysis for Normal-Tumor InStability) is a program developed for detecting microsatellite instability from paired-end BAM files. To perform analysis, the program needs a tumor BAM and a matched normal BAM file (produced using the same pipeline) to determine the instability score between the two samples within the pair. Longer reads (ideally, 100 bp or longer) are recommended, as shorter reads are unlikely to entirely cover the microsatellite loci, and will be discarded after failing the quality control filters.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Kautto, E. A., Bonneville, R., Miya, J., Yu, L., Krook, M. A., Reeser, J. W., & Roychowdhury, S
+<em>Performance evaluation for rapid detection of pan-cancer microsatellite instability with MANTIS.</em>Oncotarget, 8(5), 7452–7463.
+<a href="http://doi.org/10.18632/oncotarget.13918">http://doi.org/10.18632/oncotarget.13918</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>mantis on <a href="https://github.com/OSU-SRLab/MANTIS">GitHub</a></li>
+<!-- <li>mantis on <a href="https://nanoporetech.github.io/mantis/">Documentation</a></li> -->
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: mantis (see <a href="/apps/modules.html">the modules page</a>
+for more information)</li>
+<li>mantis is multithreaded. Please match the number of threads to the number of allocated CPUs</li>
+<li>Example files in <code>${MANTIS_TEST_DATA}</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g --cpus-per-task=4</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /data/$USER</b>
+[user@cn3144]$ <b>cp ${MANTIS_TEST_DATA} .</b>
+[user@cn3144]$ <b>cd TEST_DATA</b>
+[user@cn3144]$ <b>HG19=/fdb/igenomes/Homo_sapiens/UCSC/hg19/hg19.fa</b>
+[user@cn3144]$ <b>module load mantis</b>
+[user@cn3144]$ <b>mantis.py --threads $SLURM_CPUS_PER_TASK --bedfile target_loci.bed --genome $HG19 -n normal.bam -t tumor.bam -mrq 20.0 -mlq 25.0 -mlc 20 -mrr 1 -o mantis.out</b>
+    
+</pre>
+
+<!-- <p>Notes:</p>
+<ol>
+    <li>mantis tries to determine if data is paired end by comparing sequence
+        ids. This can fail with certain id lines like, for example, those
+        produced by the sra-toolkit. In other words, it's a fragile
+        autodetection and fastq files may have to be reformatted to make it
+        work correctly.</li>
+    <li>mantis supports compressed fastq files</li>
+</ol> -->
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch script file (e.g. mantis.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load mantis
+cd /data/$USER
+cp -r ${MANTIS_TEST_DATA} .
+cd TEST_DATA
+mantis.py --threads $SLURM_CPUS_PER_TASK --bedfile target_loci.bed --genome $HG19 -n normal.bam -t tumor.bam -mrq 20.0 -mlq 25.0 -mlc 20 -mrr 1 -o mantis.out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=5g --cpus-per-task=4 mantis.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

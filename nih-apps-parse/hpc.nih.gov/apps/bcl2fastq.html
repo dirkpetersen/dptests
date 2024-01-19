@@ -1,0 +1,152 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bcl2fastq on Biowulf';</script>
+<div class="title">bcl2fastq on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>The primary output of Illumina sequencing instruments are per-cycle base call 
+files in BCL format. Bcl2fastq converts BCL files to fastq files used by most
+downstream software.  It also separates reads into individual fastq files based
+on their barcode (demultiplexing), does adapter masking/trimming and moves unique
+molecular identifier (UMI) bases from the read to the fastq header. Bcl2fastq
+operates on Illumina run folders.</p>
+
+<p>bcl2fastq creates a number of files summarizing statistics of the conversion
+in the InterOp folder of the run folder. They can be examined with the Illumina
+Sequence Analysis Viewer.</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf">User guide for v2.20 [PDF]</a>
+    <li><a href="https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2_guide_15051736_v2.pdf">User guide for version 2.19 [PDF]</a>
+    </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: bcl2fastq (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+</ul>
+
+<p>bcl2fastq is a multithreaded application. By default it will run as many
+threads as there are CPUs for the conversion/demultiplexing plus additional
+threads for reading/writing data. <b style="background-color: #ffff99">
+You must therefore limit the threads to the number of threads
+allocated to your job or allocate nodes exclusively.</b></p>
+
+<p> The relevant options for limiting the number of threads are
+</p>
+<pre class="term">
+-r [ --loading-threads ] arg (=4)     number of threads used for loading BCL data
+-p [ --processing-threads ] arg       number of threads used for processing demultiplexed data
+-w [ --writing-threads ] arg (=4)     number of threads used for writing FASTQ data
+</pre>
+
+<p>Version 2.17 has an additional setting for the numer demultiplexing threads which is
+not present in later versions:</p>
+
+<pre class="term">
+-d [ --demultiplexing-threads ] arg   number of threads used for demultiplexing
+</pre>
+
+<p>For a job allocated 16 CPUs these options should be set to</p>
+<pre class="term">
+bcl2fastq -r 4 -w 4 -p 14 ...
+</pre>
+<p>This leads to a nominal overload but according to testing by Illumina
+this should yield optimal throughput.</p>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load bcl2fastq</b>
+[user@cn3144 ~]$ <b>bcl2fastq --help</b>
+BCL to FASTQ file converter
+bcl2fastq v2.20.0.422
+Copyright (c) 2007-2017 Illumina, Inc.
+
+Usage:
+      bcl2fastq [options]
+[...snip...]
+
+[user@cn3144 ~]$ <b>bcl2fastq -r 4 -w 4 -p 14 \
+    --runfolder-dir /path/to/your/run/folder/160601_mach1_0023 ...</b>
+
+[user@cn3144 ~]$
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bcl2fastq.sh), which uses the input file 'bcl2fastq.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load bcl2fastq/2.20.0 || exit 1
+bcl2fastq --runfolder-dir /path/to/your/run/folder/160601_mach1_0023 \
+          --output-dir ./160601_mach1_0023 \
+          -r 4 -w 4 -p 14 \
+          --barcode-mismatches 0
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 bcl2fastq.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. bcl2fastq.swarm). For example:</p>
+
+<pre class="term">
+bcl2fastq --runfolder-dir /path/to/your/run/folder/160601_mach1_0023 \
+          --output-dir ./160601_mach1_0023 \
+          -r 4 -w 4 -p 14
+bcl2fastq --runfolder-dir /path/to/your/run/folder/160602_mach1_0024 \
+          --output-dir ./160602_mach1_0024 \
+          -r 4 -w 4 -p 14
+bcl2fastq --runfolder-dir /path/to/your/run/folder/160603_mach1_0025 \
+          --output-dir ./160603_mach1_0025 \
+          -r 4 -w 4 -p 14
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f bcl2fastq.swarm -t 16 --module bcl2fastq</pre>
+where
+<table border=0>
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module bcl2fastq <td>Loads the bcl2fastq module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,180 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FAN-C on Biowulf';</script>
+<div class="title">FAN-C on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+FAN-C provides a pipeline for analysing Hi-C data starting at mapped paired-end sequencing reads.
+</p>
+
+<h3>Reference:</h3>
+<ul>
+
+  <li>
+      <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02215-9">Kruse, Kai, Clemens B. Hug, and Juan M. Vaquerizas. "FAN-C: a feature-rich framework for the analysis and visualisation of chromosome conformation capture data." <i>Genome biology</i> 21.1 (2020): 1-19.</a>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://fan-c.readthedocs.io/en/latest/">FAN-C Main Site</a></li>
+<li><a href="https://github.com/vaquerizaslab/fanc">FAN-C on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>fanc</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>FAN-C is multithreaded. Please use the option argument pair <tt>-t $SLURM_CPUS_PER_TASK</tt> as shown below.  
+	<li>This application produces PDF reports. You can use <a href="/docs/hpcdrive.html">hpcdrive</a> to view these reports on your local workstation.</li>
+    <li>Path to example files is set in the <tt>FANC_EXAMPLES</tt> environment variable after loading the module.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c8 --mem=16g --gres=lscratch:30</b>
+salloc.exe: Pending job allocation 11754716
+salloc.exe: job 11754716 queued and waiting for resources
+salloc.exe: job 11754716 has been allocated resources
+salloc.exe: Granted job allocation 11754716
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0996 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.11754716.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0996 ~]$ <b>module load fanc</b>
+[+] Loading fanc  0.9.17  on cn0996
+[+] Loading singularity  3.7.2  on cn0996
+
+[user@cn0996 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0996 11754716]$ <b>cp $FANC_EXAMPLES .</b>
+
+[user@cn0996 11754716]$ <b>unzip examples.zip</b>
+Archive:  examples.zip
+   creating: examples/
+  inflating: examples/SRR4271982_chr18_19_2.fastq.gzip
+[snip...]
+  inflating: examples/SRR4271982_chr18_19_1.fastq.gzip
+
+[user@cn0996 11754716]$ <b>cd examples/</b>
+
+[user@cn0996 examples]$ <b>fanc auto SRR4271982_chr18_19_1.fastq.gzip SRR4271982_chr18_19_2.fastq.gzip \
+    output/ -g hg19_chr18_19.fa -i hg19_chr18_19/hg19_chr18_19 -n fanc_example \
+    -t ${SLURM_CPUS_PER_TASK} -r HindIII --split-ligation-junction -q 30</b>
+2021-03-30 13:07:51,440 INFO FAN-C version: 0.9.17
+2021-03-30 13:07:51,443 INFO Output folder: output/
+2021-03-30 13:07:51,443 INFO Input files: SRR4271982_chr18_19_1.fastq.gzip, SRR4271982_chr18_19_2.fastq.gzip
+2021-03-30 13:07:51,443 INFO Input file types: fastq, fastq
+2021-03-30 13:07:51,443 INFO Final basename: fanc_example (you can change this with the -n option!)
+[...snip]
+2021-03-30 13:22:16,001 INFO Total: 556663. Filtered: 294
+Expected 100% (556369 of 556369) |###########################################| Elapsed Time: 0:00:08 Time:  0:00:08
+2021-03-30 13:22:29,543 INFO Done.
+2021-03-30 13:22:33,641 INFO Saving statistics...
+2021-03-30 13:22:33,832 INFO Normalising binned Hic file
+Expected 100% (556369 of 556369) |###########################################| Elapsed Time: 0:00:08 Time:  0:00:08
+Closing remaining open files:output/hic/fanc_example.hic...done
+
+[user@cn0996 examples]$ <b>fancplot chr18:63mb-70mb -p triangular -vmax 0.05 output/hic/binned/fanc_example_100kb.hic</b>
+2021-03-30 13:29:15,888 INFO Found 1 regions
+Closing remaining open files:output/hic/binned/fanc_example_100kb.hic...done
+
+[user@cn0996 examples]$ <b>ls -lh</b>
+total 558M
+drwxr-xr-x 9 user user 4.0K Aug  6  2020 architecture
+drwxr-xr-x 2 user user 4.0K Feb  4  2020 bwa-index
+drwxr-xr-x 2 user user 4.0K Feb  4  2020 hg19_chr18_19
+-rw-r--r-- 1 user user 134M Feb  4  2020 hg19_chr18_19.fa
+-rw-r--r-- 1 user user 996K Feb  4  2020 hg19_chr18_19_re_fragments.bed
+drwxr-xr-x 2 user user 4.0K Aug  6  2020 hicpro
+drwxr-x--- 7 user user 4.0K Mar 30 13:07 output
+-rw-r--r-- 1 user user 200M Feb  4  2020 SRR4271982_chr18_19_1.fastq.gzip
+-rw-r--r-- 1 user user 200M Feb  4  2020 SRR4271982_chr18_19_2.fastq.gzip
+-rw-r--r-- 1 user user  52K Feb  4  2020 test.cool
+-rw-r--r-- 1 user user  24M Feb  4  2020 test.hic
+
+[user@cn0996 examples]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 11754716
+salloc.exe: Job allocation 11754716 has been revoked.
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fanc.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load fanc
+
+fanc auto SRR4271982_chr18_19_1.fastq.gzip SRR4271982_chr18_19_2.fastq.gzip \
+    output/ -g hg19_chr18_19.fa -i hg19_chr18_19/hg19_chr18_19 -n fanc_example \
+    -t ${SLURM_CPUS_PER_TASK} -r HindIII --split-ligation-junction -q 30
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] fanc.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. fanc.swarm). For example:</p>
+
+<pre class="term">
+fanc auto a.fastq.gzip chrN.fastq.gzip outa -g N.fa -t $SLURM_CPUS_PER_TASK &lt;opts&gt; 
+fanc auto b.fastq.gzip chrN.fastq.gzip outb -g N.fa -t $SLURM_CPUS_PER_TASK &lt;opts&gt; 
+fanc auto c.fastq.gzip chrN.fastq.gzip outc -g N.fa -t $SLURM_CPUS_PER_TASK &lt;opts&gt; 
+fanc auto c.fastq.gzip chrN.fastq.gzip outd -g N.fa -t $SLURM_CPUS_PER_TASK &lt;opts&gt; 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fanc.swarm [-g #] [-t #] --module fanc</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module fanc</tt> <td>Loads the fanc module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,134 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Cactus on Biowulf';</script>
+<div class="title">Cactus on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> Cactus is a reference-free whole-genome multiple alignment program.</em>  
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Armstrong J, Hickey G, Diekhans M, Fiddes IT, Novak AM, Deran A, Fang Q, Xie D, Feng S, Stiller J, Genereux D, Johnson J, Marinescu VD, Alföldi J, Harris RS, Lindblad-Toh K, Haussler D, Karlsson E, Jarvis ED, Zhang G, Paten B.
+<em><a href="https://pubmed.ncbi.nlm.nih.gov/33177663/">Progressive Cactus is a multiple-genome aligner for the thousand-genome era. </a></em> Nature. 2020 Nov;587(7833):246-251.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Cactus Main Site: <a href="https://github.com/ComparativeGenomicsToolkit/cactus">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: cactus (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --gres=lscratch:8</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4224 are ready for job
+
+[user@cn4224 ~]$ <b>module load cactus</b>
+[+] Loading cactus  1.2.3  on cn4224 
+[+] Loading singularity  3.7.0  on cn4224
+
+[user@cn4224 ~]$ <b>cd /lscratch/${SLURM_JOB_ID}</b>
+[user@cn4224 ~]$ <b>export SINGULARITYENV_TMPDIR=/lscratch/${SLURM_JOB_ID}</b>
+[user@cn4224 ~]$ <b>wget https://raw.githubusercontent.com/ComparativeGenomicsToolkit/cactus/master/examples/evolverMammals.txt</b>
+
+[user@cn4224 ~]$ <b>cactus /lscratch/${SLURM_JOB_ID}/jobStore \
+       /lscratch/${SLURM_JOB_ID}/evolverMammals.txt \
+       /data/${USER}/evolverMammals.hal \
+       --root mr \
+       --binariesMode local</b>
+[...]
+Workflow Progress 100%||||||||||||||||||||||| 379/379 (0 failures) [19:08<00:00, 0.33 jobs/s]
+[2020-12-23T13:47:39-0500] [MainThread] [I] [toil.common] Successfully deleted the job store: FileJobStore(/lscratch/46116226/jobStore)
+[2020-12-23T13:47:39-0500] [MainThread] [I] [cactus.progressive.cactus_progressive] Cactus has finished after 1156.1930517529836 seconds
+
+[user@cn4224 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. cactus.sh) similar to the following.</p>
+
+<pre class="term">
+#! /bin/bash
+
+set -e
+
+module load cactus
+
+cd /lscratch/${SLURM_JOB_ID}
+export SINGULARITYENV_TMPDIR=/lscratch/${SLURM_JOB_ID}
+cactus /lscratch/${SLURM_JOB_ID}/jobStore \
+       /lscratch/${SLURM_JOB_ID}/evolverMammals.txt \
+       /data/${USER}/evolverMammals.hal \
+       --root mr \
+       --binariesMode local
+</pre>
+
+<p>Submit these jobs using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile for the first step of the pipeline (e.g. cactus.swarm). For example:</p>
+
+<pre class="term">
+cd /lscratch/${SLURM_JOB_ID}; \
+export SINGULARITYENV_TMPDIR=/lscratch/${SLURM_JOB_ID}; \
+cactus /lscratch/${SLURM_JOB_ID}/jobStore \
+       /lscratch/${SLURM_JOB_ID}/file1.txt \
+       /data/${USER}/file1.hal \
+       --root mr \
+       --binariesMode local
+cd /lscratch/${SLURM_JOB_ID}; \
+export SINGULARITYENV_TMPDIR=/lscratch/${SLURM_JOB_ID}; \
+cactus /lscratch/${SLURM_JOB_ID}/jobStore \
+       /lscratch/${SLURM_JOB_ID}/file2.txt \
+       /data/${USER}/file2.hal \
+       --root mr \
+       --binariesMode local
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f cactus.swarm [-g #] --module cactus</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>--module cactus <td>Loads the cactus module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

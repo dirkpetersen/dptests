@@ -1,0 +1,130 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SRST2: Short Read Sequence Typing for Bacterial Pathogens ';</script>
+<div class="title"><b>SRST2: Short Read Sequence Typing for Bacterial Pathogens </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+SRST2 is a a read mapping-based tool for rapid molecular typing of bacterial pathogens. 
+It allows fast and accurate detection of genes, alleles and multi-locus
+sequence types (MLST) from WGS data. SRST2 is highly accurate and outperforms assembly-based methods in terms of both gene detection and allele assignment.
+
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>M.Inouye, H.Dashnow, L.-A.Raven, M.B.Schultz, B.J.Pope, 
+    T.Tomita, J.Zobel and K.E.Holt <br />
+<i>SRST2: Rapid genomic surveillance for public health and hospital microbiology labs</i><br />
+<a href="https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-014-0090-6">Genome Medicine </a> 2014, <b>6:</b> 90 <br/>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/katholt/srst2">SRST2 GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>SRST2</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SRST2_HOME</b>&nbsp; installation directory</li>
+    <li><b>SRST2_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>SRST2_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3200 ~]$ <b>module load srst2   </b>
+[+] Loading bowtie  2-2.2.6
+[+] Loading srst2 0.2.0  ...
+</pre>
+Run a sample command:
+<pre class="term">
+[user@cn3200 ~]$ <b>getmlst.py --species "Staphylococcus aureus"</b>
+
+  For SRST2, remember to check what separator is being used in this allele database
+
+  Looks like --mlst_delimiter '_'
+
+  >arcC_1  --> -->   ('arcC', '_', '1')
+
+  Suggested srst2 command for use with this MLST database:
+
+    srst2 --output test --input_pe *.fastq.gz --mlst_db Staphylococcus_aureus.fasta --mlst_definitions saureus.txt --mlst_delimiter '_'
+</pre>
+The following files will be produced in the current folder:
+<pre class="term">
+[user@cn3200 ~]$ <b>tree .</b>
+.
+|-- Staphylococcus_aureus.fasta
+|-- arcC.tfa
+|-- aroE.tfa
+|-- glpF.tfa
+|-- gmk.tfa
+|-- mlst_data_download_Staphylococcus_aureus_2019-08-20.log
+|-- pta.tfa
+|-- saureus.txt
+|-- tpi.tfa
+`-- yqiL.tfa
+
+0 directories, 10 files
+</pre>
+Run another sample command:
+<pre class="term">
+[user@cn3200 ~]$ <b>getmlst.py --species "Staphylococcus epidermidis" --repository_url  http://pubmlst.org/data/dbases.xml</b>
+
+  For SRST2, remember to check what separator is being used in this allele database
+
+  Looks like --mlst_delimiter '_'
+
+  >arcC_1  --> -->   ('arcC', '_', '1')
+
+  Suggested srst2 command for use with this MLST database:
+
+    srst2 --output test --input_pe *.fastq.gz --mlst_db Staphylococcus_epidermidis.fasta --mlst_definitions sepidermidis.txt --mlst_delimiter '_'
+</pre>
+The output files are as follows:
+<pre class="term">
+[user@cn3200 ~]$ <b>tree .</b>
+.
+|-- Staphylococcus_epidermidis.fasta
+|-- arcC.tfa
+|-- aroE.tfa
+|-- gtr.tfa
+|-- mlst_data_download_Staphylococcus_epidermidis_2019-08-20.log
+|-- mutS.tfa
+|-- pyrR.tfa
+|-- sepidermidis.txt
+|-- tpiA.tfa
+`-- yqiL.tfa
+
+0 directories, 10 files
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

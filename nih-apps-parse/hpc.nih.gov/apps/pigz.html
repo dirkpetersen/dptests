@@ -1,0 +1,106 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pigz on Biowulf';</script>
+<div class="title">pigz on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>Pigz is a multi-core implementation of gzip.</em>  
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>pigz Main Site: <a href="https://github.com/madler/pigz">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: pigz (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Environment variables set: <em>PIGZ_HOME</em>.
+    <li>Ensure that the number of CPUs allocated is equal or greater than the threads used in the <em>pigz</em> command. 
+    <li>Note that to be able to use the environment variable <em>SLURM_MEM_PER_NODE</em> below, you will need to explicitly allocate memory resources.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=4g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4224 are ready for job
+
+[user@cn4224 ~]$ <b>module load pigz</b>
+[+] Loading pigz 2.7 on cn4224 
+
+[user@cn4224 ~]$ <b>pigz --best -p 4 -v longshot_output.vcf</b>
+longshot_output.vcf to longshot_output.vcf.gz 
+
+[user@cn4224 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pigz.sh) similar to the following.</p>
+
+<pre class="term">
+#! /bin/bash
+
+set -e
+
+module load pigz
+
+pigz --best -p 4 longshot_output.vcf
+</pre>
+
+<p>Submit these jobs using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=4g pigz.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile for the first step of the pipeline (e.g. pigz.swarm). For example:</p>
+
+<pre class="term">
+pigz --best -p 4 longshot_output_1.vcf
+pigz --best -p 4 longshot_output_2.vcf
+pigz --best -p 4 longshot_output_3.vcf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f pigz.swarm -g 4 -t 4 --module pigz</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module pigz <td>Loads the pigz module for each subjob in the swarm
+
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

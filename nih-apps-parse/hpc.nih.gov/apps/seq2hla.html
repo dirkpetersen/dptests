@@ -1,0 +1,279 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'seq2HLA on Biowulf';</script>
+<div class="title">seq2HLA on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+    seq2HLA computationally determines human leukocyte antigen (HLA) genotypes of a sample.
+    It takes standard RNA-Seq sequence reads in fastq format as input, uses a bowtie index comprising all HLA alleles and outputs the most likely HLA class I and class II genotypes (in 4 digit resolution), a p-value for each call, and the expression of each class.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+    <li>
+	Boegel, Sebastian, Martin Löwer, Michael Schäfer, Thomas Bukur, Jos De Graaf, Valesca Boisguérin, Özlem Türeci, Mustafa Diken, John C. Castle, and Ugur Sahin.
+	<a href="https://doi.org/10.1186/gm403"><b><u>HLA typing from RNA-Seq sequence reads.</u></b></a>
+	<em>Genome medicine 4 (2013): 1-12.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/TRON-Bioinformatics/seq2HLA">seq2HLA Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>seq2hla</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded: use <tt>-p</tt>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>SEQ2HLA_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$SEQ2HLA_HOME/test</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task 8 --mem 32g --gres lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load seq2hla</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 46116226]$ <b>cp $SEQ2HLA_HOME/test/*.fastq.gz .</b>
+[user@cn3144 46116226]$ <b>seq2HLA -1 SRR4300096_1.fastq.gz -2 SRR4300096_2.fastq.gz -r test -p $SLURM_CPUS_PER_TASK</b>
+Now running seq2HLA version 2.3!
+Input is a gipped file .....
+The read length of your input fastq was determined to be 100, so 2 mismatches will be allowed and 8 threads will be used by bowtie.
+----------HLA class I------------
+>---classical HLA alleles---
+First iteration starts....
+Mapping ......
+# reads processed: 34632623
+# reads with at least one reported alignment: 10689 (0.03%)
+# reads that failed to align: 34621934 (99.97%)
+Reported 853322 paired-end alignments to 1 output stream(s)
+
+Calculation of first digital haplotype.....
+The digital haplotype is written into test-ClassI-class.digitalhaplotype1
+1st iteration done.
+Now removing reads that mapped to the three top-scoring groups .......
+Second iterations starts .....
+ Mapping ......
+# reads processed: 4332
+# reads with at least one reported alignment: 4332 (100.00%)
+# reads that failed to align: 0 (0.00%)
+Reported 363543 paired-end alignments to 1 output stream(s)
+Calculation of second digital haplotype.....
+The digital haplotype is written into test-ClassI-class.digitalhaplotype2
+2nd iteration done.
+-----------2 digit typing results-------------
+#Locus	Allele 1	Confidence	Allele 2	Confidence
+A	A*25	0.0006404339	A*01	0.01656387
+B	B*08	0.0008702224	B*18	1.98204e-05
+C	C*12	7.154939e-05	C*07	0.006626664
+Calculation of locus-specific expression ...
+test-ClassI-class.bowtielog
+A: 76.22 RPKM
+C: 91.62 RPKM
+B: 96.65 RPKM
+-----------4 digit typing results-------------
+#Locus	Allele 1	Confidence	Allele 2	Confidence
+A	A*25:01	0.0006404339	A*01:01	0.0179885
+B	B*08:01	0.0008702224	B*18:01	1.98204e-05
+C	C*12:03	7.51191e-05	C*07:01'	0.006944861
+----------HLA class I------------
+>---nonclassical HLA alleles---
+First iteration starts....
+Mapping ......
+# reads processed: 34632623
+# reads with at least one reported alignment: 4465 (0.01%)
+# reads that failed to align: 34628158 (99.99%)
+Reported 35369 paired-end alignments to 1 output stream(s)
+
+Calculation of first digital haplotype.....
+The digital haplotype is written into test-ClassI-nonclass.digitalhaplotype1
+1st iteration done.
+Now removing reads that mapped to the three top-scoring groups .......
+Second iterations starts .....
+ Mapping ......
+Warning: Could not find any reads in "test-ClassI-nonclass-2nditeration_1.fq"
+Warning: Could not find any reads in "test-ClassI-nonclass-2nditeration_2.fq"
+# reads processed: 0
+# reads with at least one reported alignment: 0 (0.00%)
+# reads that failed to align: 0 (0.00%)
+No alignments
+Calculation of second digital haplotype.....
+The digital haplotype is written into test-ClassI-nonclass.digitalhaplotype2
+2nd iteration done.
+-----------2 digit typing results-------------
+#Locus	Allele 1	Confidence	Allele 2	Confidence
+E	E*01	NA	hoz("E*01")	NA
+F	F*01	NA	hoz("F*01")	NA
+G	no	NA	hoz("G*01")	NA
+H	H*02	0	hoz("H*02")	NA
+J	J*01	NA	hoz("J*01")	NA
+K	K*01	NA	hoz("K*01")	NA
+L	L*01	NA	hoz("L*01")	NA
+P	no	NA	hoz("P*02")	NA
+V	no	NA	hoz("V*01")	NA
+Calculation of locus-specific expression ...
+test-ClassI-nonclass.bowtielog
+E: 115.75 RPKM
+G: 0.0 RPKM
+F: 18.44 RPKM
+H: 25.7 RPKM
+K: 0.16 RPKM
+J: 0.03 RPKM
+L: 0.11 RPKM
+P: 0.0 RPKM
+V: 0.0 RPKM
+# reads processed: 4465
+# reads with at least one reported alignment: 4465 (100.00%)
+# reads that failed to align: 0 (0.00%)
+Reported 35369 paired-end alignments to 1 output stream(s)
+The digital haplotype is written into test-ClassI-nonclass.digitalhaplotype3
+-----------4 digit typing results-------------
+#Locus	Allele 1	Confidence	Allele 2	Confidence
+E	E*01:01	NA	E*01:01	NA
+F	F*01:01'	NA	F*01:01	NA
+G	no	NA	no	NA
+H	H*02:06	0.0	H*02:06	NA
+J	J*01:01	NA	J*01:01	NA
+K	K*01:01	NA	K*01:01	NA
+L	L*01:01	NA	L*01:01	NA
+P	no	NA	no	NA
+V	no	NA	no	NA
+----------HLA class II------------
+First iteration starts....
+Mapping ......
+# reads processed: 34632623
+# reads with at least one reported alignment: 1889 (0.01%)
+# reads that failed to align: 34630734 (99.99%)
+Reported 57508 paired-end alignments to 1 output stream(s)
+
+Calculation of first digital haplotype.....
+The digital haplotype is written into test-ClassII.digitalhaplotype1
+1st iteration done.
+Now removing reads that mapped to the three top-scoring groups .......
+Second iterations starts .....
+ Mapping ......
+# reads processed: 395
+# reads with at least one reported alignment: 395 (100.00%)
+# reads that failed to align: 0 (0.00%)
+Reported 19773 paired-end alignments to 1 output stream(s)
+Calculation of second digital haplotype.....
+The digital haplotype is written into test-ClassII.digitalhaplotype2
+2nd iteration done.
+-----------2 digit typing results-------------
+#Locus	Allele 1	Confidence	Allele 2	Confidence
+DQA1	DQA1*03	1.534371e-05	DQA1*05	0.2468488
+DQB1	DQB1*02	0.2004472	DQB1*03	0.3331947
+DRB1	DRB1*04	0.0006670405	DRB1*03	0.04627267
+DRA	DRA*01	NA	hoz("DRA*01")	NA
+DPA1	DPA1*01	0.3854021	hoz("DPA1*02")	0.0574801
+DPB1	DPB1*105	1.045282e-07	DPB1*04	0.1606171
+Calculation of locus-specific expression ...
+test-ClassII.bowtielog
+DQB1: 2.54 RPKM
+DQA1: 6.5 RPKM
+DRB1: 26.2 RPKM
+DPB1: 12.76 RPKM
+DRA: 40.35 RPKM
+DPA1: 17.21 RPKM
+# reads processed: 1889
+# reads with at least one reported alignment: 1889 (100.00%)
+# reads that failed to align: 0 (0.00%)
+Reported 57508 paired-end alignments to 1 output stream(s)
+The digital haplotype is written into test-ClassII.digitalhaplotype3
+-----------4 digit typing results-------------
+#Locus	Allele 1	Confidence	Allele 2	Confidence
+DQA1	DQA1*03:02'	1.534371e-05	DQA1*05:01	0.2468488
+DQB1	DQB1*02:01'	0.2004472	DQB1*03:03'	0.3331947
+DRB1	DRB1*04:01'	0.0006670405	DRB1*03:01	0.04627267
+DRA	DRA*01:01	NA	DRA*01:01	NA
+DPA1	DPA1*01:03	0.3854021	DPA1*01:03	0.0574801
+DPB1	DPB1*105:01	1.045282e-07	DPB1*04:01	0.1606171
+
+[user@cn3144 46116226]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. seq2hla.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load seq2hla
+seq2HLA -1 SRR4300096_1.fastq.gz -2 SRR4300096_2.fastq.gz -r test -p $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=# [--mem=#] seq2hla.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. seq2hla.swarm). For example:</p>
+
+<pre class="term">
+seq2HLA -1 sample1_1.fastq.gz -2 sample1_2.fastq.gz -r sample1 -p $SLURM_CPUS_PER_TASK
+seq2HLA -1 sample2_1.fastq.gz -2 sample2_2.fastq.gz -r sample2 -p $SLURM_CPUS_PER_TASK
+seq2HLA -1 sample3_1.fastq.gz -2 sample3_2.fastq.gz -r sample3 -p $SLURM_CPUS_PER_TASK
+seq2HLA -1 sample4_1.fastq.gz -2 sample4_2.fastq.gz -r sample4 -p $SLURM_CPUS_PER_TASK
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f seq2hla.swarm [-g #] -t # --module seq2hla</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module seq2hla</tt> <td>Loads the seq2HLA module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,126 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Fast and accurate HLA typing from short read sequence data on Biowulf';</script>
+<div class="title"><b>Fast and accurate HLA typing from short read sequence data on Biowulf</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The HLA gene complex on human chromosome 6 is one of the
+most polymorphic regions in the human genome and contributes
+in large part to the diversity of the immune system. Accurate typing
+of HLA genes with short-read sequencing data has historically
+been difficult due to the sequence similarity between the
+polymorphic alleles. xHLA iteratively refines the mapping results at the amino acid level to
+achieve high typing accuracy for both class I and II HLA genes.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Chao Xiea, Zhen Xuan Yeo, Marie Wong, Jason Piper, Tao Long, Ewen F. Kirkness, William H. Biggs, Ken Bloom,
+Stephen Spellman, Cynthia Vierra-Green, Colleen Brady, Richard H. Scheuermann, Amalio Telenti, Sally Howard,
+Suzanne Brewerton, Yaron Turpaz, and J. Craig Venter,
+Fast and accurate HLA typing from short-read
+next-generation sequence data with xHLA, Proc. Natl. Acad. Sci. USA, 2017, vol. 114, N30, p. 8059–8064</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/humanlongevity/HLA">xHLA Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>xHLA</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>XHLA_HOME</b>&nbsp; xHLA installation directory</li>
+    <li><b>XHLA_BIN </b>&nbsp; &nbsp; &nbsp; xHLA executable directory</li>
+    <li><b>XHLA_TEST</b>&nbsp; &nbsp; xHLA example directory</li>
+    <li><b>XHLA_DATA</b>&nbsp; &nbsp; xHLA  data directory</li>
+  </ul>
+<li>Example file in <b>$XHLA_TEST</b>
+</ul>
+<P>
+<b>IMPORTANT NOTE:</b> Before submitting a job running xHLA software to cluster, user(s) should estimate the amount of memory required for running the job by benchmarking their data.
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16g --cpus-per-task=14 --gres=lscratch:40</b>
+[user@cn3316 ~]$ <b>module load xHLA</b>
+[user@cn3316 ~]$ <b>git clone https://github.com/humanlongevity/HLA.git</b>
+[user@cn3316 ~]$ <b>mkdir test_run</b>
+[user@cn3316 ~]$ <b>xhla --sample_id test --input_bam_path HLA/tests/test.bam --output_path test_run</b>
+[07/Feb/2018 15:09:25] INFO - Xie Chao's HLA typing algorithm
+[07/Feb/2018 15:09:25] INFO - Sample_id: test Input file: HLA/tests/test.bam
+typer.sh parameters: DELETE=false FULL=false
+Extracting reads from S3
+...
+done lpsolve
+ [1] "A*01:01"    "A*02:01"    "B*13:02"    "B*37:01"    "C*06:02"   
+ [6] "DPB1*04:01" "DQB1*02:01" "DQB1*05:01" "DRB1*07:01" "DRB1*10:01"
+pulling non-core exons in
+  DQB1*02:01   DQB1*02:01 
+"DQB1*02:02" "DQB1*02:12" 
+named character(0)
+refining solution
+        allele rank
+ 1:    A*01:01  6.0
+ 2:    A*02:01  3.0
+ 3:    B*13:02 48.5
+ 4:    B*37:01 96.0
+ 5:    C*06:02 10.0
+ 6: DPB1*04:01   NA
+ 7: DQB1*02:02   NA
+ 8: DQB1*05:01 12.0
+ 9: DRB1*07:01  9.0
+10: DRB1*10:01 72.5
+     allele rank field1 field2
+1:  A*01:01    6      1      1
+2: A*01:01L   NA      1      1
+3: A*01:01N   NA      1      1
+4:  A*01:32   NA      1     32
+5:  A*01:45   NA      1     45
+6: A*01:56N   NA      1     56
+7: A*01:103   NA      1    103
+8: A*01:177   NA      1    177
+...
+Reporting
+[07/Feb/2018 15:18:50] INFO - Successfully wrote output file
+[07/Feb/2018 15:18:50] INFO - HLA typing: shutting down.
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+Note that the command <b>xhla</b> will accept both the relative and absolute paths to the input data.
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. xhla.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load xHLA
+mkdir HLA/test
+xhla --sample_id test --input_bam_path HLA/tests/test.bam --output_path HLA/test
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term"><b>sbatch [--cpus-per-task=#] [--mem=#] xHLA.sh</b></pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

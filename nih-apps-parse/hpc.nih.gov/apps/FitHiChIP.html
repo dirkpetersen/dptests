@@ -1,0 +1,214 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FitHiChIP: Identification of significant chromatin contacts from HiChIP data';</script>
+<div class="title"><b>FitHiChIP: Identification of significant chromatin contacts from HiChIP data</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+FitHiChIP is a computational method for identifying chromatin contacts 
+among regulatory regions such as enhancers and promoters from HiChIP/PLAC-seq data. 
+FitHiChIP jointly models the non-uniform coverage and genomic distance scaling of HiChIP data,
+captures previously validated enhancer interactions for several genes 
+including MYC and TP53, and recovers contacts genome-wide 
+that are supported by ChIA-PET, promoter capture Hi-C and Hi-C data.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Sourya Bhattacharyya, Vivek Chandra, Pandurangan Vijayanand, and Ferhat Ay, <br />
+<i>Identification of significant chromatin contacts from HiChIP data by FitHiChIP.</i> <br />
+<a href="https://www.nature.com/articles/s41467-019-11950-y"><i>Nature Communications </i>volume 10, Article number: 4221 (2019) .</a>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/ay-lab/FitHiChIP">FitHiChIP Github page</a></li>
+<li><a href="https://ay-lab.github.io/FitHiChIP">FitHiChIP Manual</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>FitHiChIP</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Implemented as a Singularity container
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>FITHICHIP_HOME</b>&nbsp; installation directory</li>
+    <li><b>FITHICHIP_BIN</b>&nbsp; &nbsp; executables directory</li>
+    <li><b>FITHICHIP_SRC</b>&nbsp; &nbsp; source directory</li>
+    <li><b>FITHICHIP_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g -c10 --gres=lscratch:20</b>
+[user@cn3316 ~]$ <b>module load FitHiChIP </b>
+[+] Loading singularity/3.10.5  on cn3316
+[+] Loading FitHiChIP  11.0
+[user@cn3316 ~]$ <b>mkdir -p /data/$USER/FitHiChIP && cd /data/$USER/FitHiChIP</b>
+</pre>
+Copy the source code folder and the sample sample data folder to your current directory:     
+<pre class="term">
+[user@cn3316 ~]$ <b>cp -r $FITHICHIP_SRC/*  .</b>
+[user@cn3316 ~]$ <b>cp -r $FITHICHIP_DATA .</b>
+</pre>
+Run the FitHiChIP_HiCPro.sh executable in the source folder:                
+<pre class="term">
+[user@cn3316 ~]$ <b >./FitHiChIP_HiCPro.sh -C configfile_test</b>
+ 
+ ================ Parsing input configuration file =================
+...
+
+ ================ Verifying input configuration parameters =================
+...
+
+ ====== Changing relative pathnames of the input files to their absolute path names ==========
+...
+
+ ====== Final checing of input parameters ==========
+
+ ====== Writing input parameters ==========
+...
+
+ ================ Processing HiC-pro generated valid pairs and / or matrix files provided as input =================
+
+ ====&gt;&gt; Computing HiC-pro matrices from the input valid pairs file
+
+ ====&gt;&gt; Executable to generate contact matrix from valid pairs: /usr/local/apps/FitHiChIP/11.0/bin/build_matrix
+
+***** HiC-pro input valid pairs file in gzipped format
+
+ ====&gt;&gt; Created file : /data/user/FitHiChIP/TestData/results/Matrix_BinSize5000/Matrix_abs.bed
+
+ ====&gt;&gt; Created file : /data/user/FitHiChIP/TestData/results/Matrix_BinSize5000/Matrix.matrix
+
+ ================ Creating input interactions (bin pairs + CC) =================
+...
+
+ ======= Generated interaction file : /data/user/FitHiChIP/TestData/results/Matrix_BinSize5000/FitHiChIP.interactions.initial.bed
+==&gt;&gt;&gt; Number of locus pairs with nonzero contact count (without any distance thresholding): 2364391
+
+
+ ======= Limiting input interactions to the specified distance ranges 5000 to 1000000 =========
+...
+
+===&gt;&gt; Number of cis pairs with nonzero contact count (after distance thresholding): 726467
+
+
+ ================ Generating coverage statistics and bias for individual bins =================
+...
+ Computing 1D coverage - Processing chromosome : chr1  -- number of input peaks for this chromosome : 4175
+ Computing 1D coverage - Processing chromosome : chr10  -- number of input peaks for this chromosome : 1797
+ Computing 1D coverage - Processing chromosome : chr11  -- number of input peaks for this chromosome : 2155
+...
+ Computing 1D coverage - Processing chromosome : chrX  -- number of input peaks for this chromosome : 1161
+ Computing 1D coverage - Processing chromosome : chrY  -- number of input peaks for this chromosome : 156
+...
+ ================ Computing bias statistics - coverage bias will be employed =================
+R...
+
+ ================ creating full feature file for FitHiChIP =================
+
+
+======== Created full feature file : /data/user/FitHiChIP/TestData/results/NormFeatures/Coverage_Bias/FitHiChIP.AllBin_CompleteFeat.bed
+
+ ================ Generating interactions + features for significance estimation =================
+...
+
+ **** Start of while Loop ----- current interaction type: 3  ******
+
+ ============ Calling significant interactions ===============
+...
+===&gt;&gt; Total Number of input interactions (locus pairs): 312536
+****** Total number of training interactions: 312536 ********
+****** Number of contacts per bin (allowed for equal occupancy binning): 2746 ********
+...
+==&gt;&gt;&gt; modeled the bias regression -- time: 0.646705150604248
+
+
+ *** NumElem: 312536 ExpTotContact : 432569
+ *** Modeling regression bias probability based P value --- uniq distance idx: 1  si: 1  ei: 26635 num elem : 26635
+ *** Modeling regression bias probability based P value --- uniq distance idx: 2  si: 26636  ei: 45246 num elem : 18611
+ *** Modeling regression bias probability based P value --- uniq distance idx: 3  si: 45247  ei: 59613 num elem : 14367
+...
+ *** Modeling regression bias probability based P value --- uniq distance idx: 198  si: 311681  ei: 311962 num elem : 282
+ *** Modeling regression bias probability based P value --- uniq distance idx: 199  si: 311963  ei: 312238 num elem : 276
+ *** Modeling regression bias probability based P value --- uniq distance idx: 200  si: 312239  ei: 312536 num elem : 298
+
+ *** p-value estimation is complete for the bias regression ****
+
+******** FINISHED calling significant interactions
+----- Extracted significant interactions ---- FDR threshold lower than: 0.01
+...
+ ********** Merged filtering option is true ************
+
+
+******** applying merge filtering on the FitHiChIP significant interactions ******
+
+****** Merge filtering of adjacent loops is enabled *****
+***** within function of merged filtering - printing the parameters ***
+*** bin_size:  5000
+*** headerInp:  1
+*** connectivity_rule:  8
+*** TopPctElem:  100
+*** NeighborHoodBinThr:  10000
+*** QValCol:  26
+*** PValCol:  25
+*** SortOrder:  0
+==================== End of merge filtering adjacent interactions !!! ======================
+----- Applied merged filtering (connected component model) on the adjacent loops of FitHiChIP
+pass1 - making usageList (24 chroms): 1 millis
+pass2 - checking and writing primary data (1882 records, 18 fields): 13 millis
+/bin/bash: /opt/conda/envs/fithichip/lib/libtinfo.so.6: no version information available (required by /bin/bash)
+
+ ---- Within function of plotting distance vs contact count ----
+ Input interaction file: /data/user/FitHiChIP/TestData/results/FitHiChIP_Peak2ALL_b5000_L5000_U1000000/P2PBckgr_0/Coverage_Bias/FitHiC_BiasCorr/Merge_Nearby_Interactions/FitHiChIP.interactions_FitHiC_Q0.01_MergeNearContacts.bed
+ Output plot file: /data/user/FitHiChIP/TestData/results/FitHiChIP_Peak2ALL_b5000_L5000_U1000000/P2PBckgr_0/Coverage_Bias/FitHiC_BiasCorr/Merge_Nearby_Interactions/FitHiChIP.interactions_FitHiC_Q0.01_MergeNearContacts_Dist_CC.png Warning message:
+Removed 1 rows containing missing values (`geom_bar()`).
+Merged filtering significant interactions - created various epigenome browser compatible files for these interactions!!!
+Updated CurrIntType: 4
+
+ **** Now summarizing FitHiChIP results in the HTML file ***
+
+***** FitHiChIP pipeline is completely executed - congratulations !!! *****
+</pre>
+Likewise, FitHiChIP can be run with other configuration files. 
+<pre class="term">
+[user@cn3316 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fithichip.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load FitHiChIP
+FitHiChIP_HiCPro.sh -C configfile_1
+FitHiChIP_HiCPro.sh -C configfile_2
+FitHiChIP_HiCPro.sh -C configfile_3
+FitHiChIP_HiCPro.sh -C configfile_4
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] fithichip.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

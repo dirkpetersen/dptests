@@ -1,0 +1,139 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'QSIPREP on Biowulf';</script>
+<div class="title">QSIPREP on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+QSIPREP configures pipelines for processing diffusion-weighted MRI (dMRI) data.
+</p>
+
+<h3>Web site</h3>
+<ul>
+    <li><a href="https://qsiprep.readthedocs.io">Home page</a></li>
+    <li><a href="https://github.com/PennBBL/qsiprep">Github page</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://qsiprep.readthedocs.io">QSIPREP Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li> <tt>qsiprep</tt> on Biowulf is a singularity container built directly from <tt>docker://pennbbl/qsiprep</tt>. However, users do not need to execute singularity directly or bind directories manually because we have provided a wrapper shell script that takes care of that. 
+<li>Module Name: <tt>qsiprep</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li><tt>qsiprep</tt> is a scientific pipeline with the potential to overload Biowulf's central filesystem. To avoid filesystem issues we recommend the following:
+<ol>
+<li>Limit I/O with central Biowulf directories (e.g., /data, /home) by making use of local disk (/lscratch).  You can make use of lscratch to store temporary working directories by directly assigning the temporary work directory of <tt>qsiprep</tt> (--work-dir flag) to /lscratch/$SLURM_JOB_ID (remember to allocate enough space in /lscratch).
+<li>Limit memory usage. Once you determine how much memory your jobs will need (by benchmarking, but see point 5 below), It is still good idea to limit the memory used by <tt>qsiprep</tt> by using the option --mem_mb. Something important to remember regarding memory allocation is to try to allocate some extra memory for your jobs as described in the resources described in point 6 below. 
+<li>Limit multi-threading. Biowulf's <tt>qsiprep</tt> has been installed as a container and some of the applications in it will hyper-thread unless you explicitly limit the number of threads. You can limit the number of threads that <tt>qsiprep</tt> is allowed to use across all processes by using the --nthreads flag.
+<li>Opt out of uploading <tt>qsiprep</tt> metrics to <tt>qsiprep</tt> website. You can disable the submission with the --notrack flag.
+<li>Make use of the flag --stop-on-first-crash flag to force a stop if issues occur.
+<li>Profile/benchmark <tt>qsiprep</tt> jobs: We recommend making sure a given <tt>qsiprep</tt> job can scale before launching a large number of jobs. You can do this by profiling/benchmarking small jobs (e.g., a swarm of 3 <tt>qsiprep</tt> commands), then monitoring the jobs by using either the <a href="https://hpc.nih.gov/dashboard/">user dashboard</a> or the commands jobhist, sjobs, squeue, and jobload (see <a href="https://hpc.nih.gov/docs/biowulf_tools.html">biowulf utilities</a>). There are resources prepared by the HPC staff that go over how to monitor your jobs for benchmarking and profiling (<a href="https://youtu.be/fLMJ8-t5bm4">video</a>, and <a href="https://hpc.nih.gov/training/handouts/Effective_batch_system.pdf">slides</a>). Once you have profiled a swarm with a few jobs and you have refined the memory, CPU (and walltime) requirements, it is probably safe to (gradually) increase the number of <tt>qsiprep</tt> jobs. For many analyses pipelines one has no way of knowing in advance how much memory or CPUs will be actually required in an HPC environment. This is why it is very important to profile/benchmark.
+</ol>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load qsiprep</b>
+
+[user@cn3144 ~]$ <b>qsiprep -h</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. qsiprep.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+# sbatch --gres=lscratch:100 --mem=32g --cpus-per-task=48 --time=72:00:00 qsiprep.sh
+
+set -e
+
+function fail {
+    echo "FAIL: $@" >&2
+    exit 1  # signal failure
+}
+
+module load qsiprep
+qsiprep /data/$USER/ds000114-download /data/$USER/qsiprep.out.ds001 \
+participant --participant_label sub-02 -w /lscratch/$SLURM_JOB_ID \
+--notrack --nthreads $SLURM_CPUS_PER_TASK --mem_mb $SLURM_MEM_PER_NODE \
+--stop-on-first-crash --output-resolution 1.2
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--gres=lscratch:#] [--cpus-per-task=#] [--mem=#] qsiprep.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. qsiprep.swarm). For example:</p>
+
+<pre class="term">
+export TMPDIR=/lscratch/$SLURM_JOB_ID; \
+mkdir -p $TMPDIR/out; \
+mkdir -p $TMPDIR/wrk; \
+qsiprep /data/$USER/ds000114-download $TMPDIR/out \
+participant --participant_label sub-01 -w $TMPDIR/wrk \
+--notrack --nthreads $SLURM_CPUS_PER_TASK \
+--mem_mb $SLURM_MEM_PER_NODE
+--stop-on-first-crash --output-resolution 1.2; \
+mv $TMPDIR/out /data/$USER/QSIPREP.out.s001
+export TMPDIR=/lscratch/$SLURM_JOB_ID; \
+mkdir -p $TMPDIR/out; \
+mkdir -p $TMPDIR/wrk; \
+qsiprep /data/$USER/ds000114-download $TMPDIR/out \
+participant --participant_label sub-02 -w $TMPDIR/wrk \
+--notrack --nthreads $SLURM_CPUS_PER_TASK \
+--mem_mb $SLURM_MEM_PER_NODE
+--stop-on-first-crash --output-resolution 1.2; \
+mv $TMPDIR/out /data/$USER/QSIPREP.out.s002
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f qsiprep.swarm [--gres=lscratch:#] [-g #] [-t #] --module qsiprep</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-gres=lscratch:<i>#</i> </tt><td>Number of Gigabytes of local disk space allocated per process (1 line in the swarm command file)
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module qsiprep</tt> <td>Loads the qsiprep module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

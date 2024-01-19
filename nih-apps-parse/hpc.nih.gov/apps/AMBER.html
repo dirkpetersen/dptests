@@ -1,0 +1,268 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Amber on Biowulf';</script>
+<div class="title">
+Amber on Biowulf</div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#gpu">On a single GPU</a></div>
+<div class="tocItem"><a href="#2gpu">On two GPUs</a></div>
+<div class="tocItem"><a href="#chain">Walltime Limits and Chaining</a></div>
+<div class="tocItem"><a href="amber">Benchmarks</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+<b><a href="http://ambermd.org">AMBER (Assisted Model Building with Energy
+Refinement)</a></b> is a package of molecular simulation programs. AMBER
+contains a large number of of modules; note that only the sander modules and
+pmemd are parallelized.</p>
+
+The term "Amber" refers to two things. First, it is a set of molecular mechanical force fields for the simulation of biomolecules (these force fields are in the public domain, and are used in a variety of simulation programs). Second, it is a package of molecular simulation programs which includes source code and demos.
+<P>
+Amber is developed by: David Case at Rutgers University, Tom Cheatham at the University of Utah, Ken Merz at Michigan State University, Adrian Roitberg at the University of Florida, Carlos Simmerling at SUNY-Stony Brook, Scott LeGrand at NVIDIA, Darrin York at Rutgers University, Ray Luo at UC Irvine, Junmei Wang at the University of Pittsburgh, Maria Nagan at Stony Brook, Ross Walker at GSK, and many others. Amber was originally developed under the leadership of Peter Kollman.
+<P>
+<A href="https://ambermd.org">Amber website</a>
+<P>
+<div class="alert"><A href="https://github.com/ParmEd/ParmEd/issues/1280">A bug in parmed was reported in Jan 2023.</a> The patch
+will be included in the upcoming AmberTools23. In the meantime, any users who use Amber to build CHARMM forcefields should
+use the independent <a href="parmed.html">parmed</a>, which has been patched. For more information, please contact Alex Sodt alexander.sodt@nih.gov
+</div>
+<p>
+There are several versions of Amber available. The module names are as follows: 
+<table class="horztable" border=0 cellpadding=5>
+<tr><td class="softBottom"><b>Module Name</b> <td class="softBottom" align=center><b>Details</b>
+<tr><td class="softBottom"><b>amber/22.gcc</b><td class="softBottom">built with gcc7.4.0, OpenMPI 4.0.4</td></tr>
+<tr><td class="softBottom"><b>amber/22-gpu</b></td><td class="softBottom">built with CUDA 11.3, gcc 7.4.0, openmpi/4.0.5. Will run on the A100 GPUs. <br>You may see errors like <tt>Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL</tt> but these can be ignored as per 
+<a href="http://archive.ambermd.org/201804/0130.html">http://archive.ambermd.org/201804/0130.html</a></td></tr>
+<tr><td class="softBottom"><b>amber/20.intel</b> <td class="softBottom">built with Intel 2020.0.166  compiler, OpenMPI  4.0.4. This version has better performance than the gcc build (amber/20.gcc), and runs on all of the nodes in norm and multinode, but will not run on the oldest nodes (x2670 and x5660) in the quick queue. 
+<tr><td class="softBottom"><b>amber/20-gpu</b> <td class="softBottom">built with gcc 7.4.0, OpenMPI  4.0.4. Intended for jobs that are run on the GPUs. Will run on all GPU types except A100.
+<tr><td class="softBottom"><b>amber/20.gcc</b><td class="softBottom">This is the same build as amber/20-gpu, but does not include the CUDA libraries so will not run on GPUs. It is appropriate for running on norm and multinode if for some reason the default Intel build is not desired. 
+
+<tr><td class="softBottom"><b>amber/18</b> <td class="softBottom">built with the AVX2 instruction set, Intel 2017.4.196 compilers, OpenMPI  2.1.2. This version has better performance, and runs on all of the nodes in norm and multinode, but will not 
+run on the oldest nodes (x2670 and x5660) in the quick queue. 
+<tr><td class="softBottom"><b>amber/18-gpu</b> <td class="softBottom"> module sets up CUDA library paths as well. Intended for GPU runs.
+<tr><td class="softBottom"><b>amber/18.generic</b> <td class="softBottom"> built with Intel 2017.4.196  compilers, OpenMPI 2.1.2. This version is slower because it does not use AVX2, but will run on any node in the 
+cluster including the oldest quick queue nodes.
+<tr><td class="softBottom"><b>amber/16</b> <td class="softBottom"> built with the AVX2 instruction set, Intel 2017.4.196 compilers, OpenMPI  2.1.2. This version has better performance, and runs on all of the nodes in norm and multinode, but will not 
+run on the oldest nodes (x2670 and x5660) in the quick queue. 
+<tr><td class="softBottom"><b>amber/16-gpu</b> <td class="softBottom">module sets up CUDA library paths as well. Intended for GPU runs.
+<tr><td class="softBottom"><b>amber/16.generic</b> <td class="softBottom"> built with Intel 2017.4.196 compilers, OpenMPI 2.1.2. This version is slower because it does not use AVX2, but will run on any node in the 
+cluster including the oldest quick queue nodes.
+</table>
+Thus, if you wish to run on any node in the quick queue, use the module <tt>amber/*.generic</tt>
+
+<P>
+<div class="heading"><a Name="leap">Setting up Amber files with LEaP</a></div>
+<p>LEaP is a graphical builder of input files for AMBER modules. LEaP can be
+used via the Xwindows graphical interface <tt>xleap</tt>, or the terminal
+version <tt>tleap</tt>. To run xleap,</p>
+<ol>
+<li>Open an Xwindows session to Biowulf (<a href=
+"/docs/connect.html">More information</a> about Xwindows on Macs,
+Windows, and Unix desktop machines.)</li>
+<li>Load the module for the version you want, and then type 'xleap'.
+<pre>
+biowulf% module load amber/16
+biowulf% xleap
+</pre>
+You should see the xleap window appear, in which you can type any LEaP
+commands.</li>
+</ol>
+
+See the <a href="http://ambermd.org/tutorials/">AMBER tutorials</a> for more information.
+
+<a class="navbar-safe-anchor"  Name="batch"></a><div class="heading">Batch job on Biowulf</div>
+<P>
+<p>For basic information about setting up an Amber job, see <a href=
+"http://www.lulu.com/content/2369585">the Amber manual</a> and the <a href=
+"http://ambermd.org/tutorials/">Amber tutorials</a> . 
+<P>
+The Amber executables can run in parallel on all Biowulf computational nodes. However, 
+<a href="/apps/amber/">benchmark runs</a> indicate that Amber jobs scale best to the CPUs on a 
+single node. Therefore we recommend that users run Amber jobs on the regular norm partition nodes or <a href="#gpu">on the GPU nodes</a>. 
+To determine the most appropriate number of CPUs to allocate, you should run your own benchmarks. 
+
+<P>
+<b>Sample script</b>
+<div class="term">
+<pre>
+#!/bin/bash
+# This file is amber.run
+#
+
+module load amber/16
+
+cd /data/$USER/amber/myproject
+mpirun  $AMBERHOME/bin/pmemd.MPI -O -i mdin -o mdout -inf mdinfo -x mdcrd -r restrt
+
+</pre></div>
+Submit with, for example:
+<div class="term">
+<pre>
+sbatch --ntasks=8 --ntasks-per-core=1 --nodes=1 --time=168:00:00 --exclusive amber.run
+</pre></div>
+This job would be run on 8 cores of a single node, and will not utilize hyperthreaded cores.
+The max walltime is set to 168 hrs, which is a week. See the <a href="#chain">section on
+walltime limits below</a>.
+
+<a Name="gpu"></a><div class="heading">On a single GPU</div>
+<P>
+Amber runs extremely fast on a single GPU. Since the GPU performance is significantly better than the CPU performance, it is
+worth running most Amber jobs on a single GPU.  (see <a href="/apps/amber/index.html">benchmarks</a>). Larger molecular systems may 
+benefit from running on more than 1 GPU, but please run your own benchmarks to make sure (and send them to us!)
+<P>
+Set up your Amber batch script along the following lines:
+<pre class="term">
+#!/bin/bash
+
+cd /data/$USER/mydir
+
+module load amber/16-gpu
+
+$AMBERHOME/bin/pmemd.cuda -O -i mdin -o mdout -inf mdinfo -x mdcrd -r restrt
+</pre>
+<P>
+Submit this job with:
+<pre class="term">
+sbatch --partition=gpu --gres=gpu:k80:1 jobscript       (1 K80 GPU)
+or
+sbatch --partition=gpu --gres=gpu:p100:1 jobscript      (1 P100 GPU)
+or
+sbatch --partition=gpu --gres=gpu:v100:1 jobscript      (1 V100 GPU)
+</pre>
+where
+<table border=0 cellpadding=5>
+<tr><td>--partition=gpu  <td>submit to the GPU partition
+<tr><td> --gres=gpu:k20x:1 <td>allocate a single k20x GPU for this job
+</table>
+<P>
+The jobload command will show 1 CPU being used. The output from Amber will indicate the GPU usage. The 'nvidia-smi' command can also be used to check whether Amber executables are using the GPU (as described in the section below)
+<P>
+
+<a Name="2gpu"></a><div class="heading">On 2 GPUs</div>
+<P>
+ It is not possible to run a single Amber job on both the K20s on a node, since those 2 GPUs do not have peer-to-peer communication. (see the <A href="http://ambermd.org/gpus/recommended_hardware.htm">Amber GPU page</a> for an explanation of peer-to-peer communication). 
+<P>
+However, on the K80 nodes, the GPUs do have peer-to-peer communication. It is therefore possible to run on 2 GPUs on a K80 node. However, the performance in most cases is worse on 2 GPUs than on a single GPU. If you plan to run a job on 2 GPUs, please run benchmarks first and verify that the performance is better on 
+2 GPUs than on 1. (<A href="/apps/amber/">Benchmarks</a>). Note that the batch system will set the variable $CUDA_VISIBLE_DEVICES to the allocated GPUs.
+<P>
+Sample batch script:
+<pre class="term">
+#!/bin/bash
+
+module load amber/16-gpu
+cd /path/to/your/dir
+mpirun -np 2 $AMBERHOME/bin/pmemd.cuda.MPI -O -i in1 -o out1 -inf info1 -x crd1 -r r1 
+</pre>
+Submit with:
+<pre class="term">
+sbatch --partition=gpu --gres=gpu:k80:2  --time=12:00:00  jobscript
+</pre>
+<P>
+</pre>
+
+<P>
+You can check the behaviour of your job with the 'nvidia-smi' utility. 
+Determine the GPU node on which your job is running via <a href="https://hpc.nih.gov/docs/biowulf_tools.html#jobload">jobload</a> or <a href="https://hpc.nih.gov/docs/biowulf_tools.html#sjobs">sjobs</a>. 
+Suppose your job is on node cn0626, and is using 2 GPUs:
+<pre class="term">
+biowulf% <b>ssh cn0626 nvidia-smi</b>
+Mon Jan 16 17:52:13 2017
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 367.48                 Driver Version: 367.48                    |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|===============================+======================+======================|
+|   0  Tesla K80           On   | 0000:83:00.0     Off |                  Off |
+| N/A   41C    P0   115W / 149W |    145MiB / 12205MiB |     75%      Default |
++-------------------------------+----------------------+----------------------+
+|   1  Tesla K80           On   | 0000:84:00.0     Off |                  Off |
+| N/A   27C    P8    33W / 149W |      0MiB / 12205MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+|   2  Tesla K80           On   | 0000:8A:00.0     Off |                  Off |
+| N/A   70C    P0   128W / 149W |    145MiB / 12205MiB |     80%      Default |
++-------------------------------+----------------------+----------------------+
+|   3  Tesla K80           On   | 0000:8B:00.0     Off |                  Off |
+| N/A   45C    P8    33W / 149W |      0MiB / 12205MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                       GPU Memory |
+|  GPU       PID  Type  Process name                               Usage      |
+|=============================================================================|
+|    0     51187    C   ...cal/apps/amber/amber16/bin/pmemd.cuda.MPI    61MiB |
+|    0     51188    C   ...cal/apps/amber/amber16/bin/pmemd.cuda.MPI    79MiB |
+|    2     51187    C   ...cal/apps/amber/amber16/bin/pmemd.cuda.MPI    79MiB |
+|    2     51188    C   ...cal/apps/amber/amber16/bin/pmemd.cuda.MPI    61MiB |
++-----------------------------------------------------------------------------+
+</pre>
+The GPU numbers reported by 'nvidia-smi' may not match the GPUs you specified with the 'CUDA_VISIBLE_DEVICES' variable.
+
+
+<P>
+<a class="navbar-safe-anchor"  Name="chain"></a><div class="heading">Walltime limits and chaining jobs</div>
+<P>
+Walltime limits are set on most Biowulf partitions. Type 'batchlim' to see the current walltime limits, or see the <a href="/systems/status/">systems
+status page</a>. Note that the default walltime on the norm queue is 4 hrs, but you can extend this to 10 days. 
+Amber jobs should be designed to run for a week or so, save a checkpoint file, and submit a new job starting from that checkpoint.
+<P>
+An example batch script is below. This script runs a single simulation, saves a copy of the output files, and then resubmits a new job starting 
+from Amber's 'restart' file. 
+<P>
+<div class="term"><pre>
+#!/bin/bash
+# this file is called amber.run
+
+module load  amber/16
+module list
+
+echo "Running on $SLURM_NTASKS corse"
+
+
+
+# rename the restart file to the coordinate filename
+mv restrt inpcrd
+
+#run sander
+mpirun -np $SLURM_NTASKS `which sander.MPI` -O -i mdin -c inpcrd -p prmtop -r restrt -x traj -e ene -o mdout
+
+#keep a copy of the output from this run
+ mv mdout  md_$run.out
+ mv traj  md_$run.trj
+ mv ene  md_$run.ene
+ cp restrt  md_$run.rst
+
+# if less than 10 runs have been performed, increase the run number and submit the next job
+if (( "$run" &lt; "10" ))
+   then
+     run=`expr $run + 1`
+     sbatch --ntasks=8 --ntasks-per-core=1 --time=168:00:00 --exclusive amber.run
+fi
+</pre></div>
+<P>
+To submit this job, copy the original input coordinate file to 'restrt' for the first run, and then submit.
+<pre class="term">
+cp inpcrd restrt               
+sbatch --ntasks=8 --ntasks--per-core=1 --time=168:00:00 --exclusive amber.run
+</pre>
+<P>
+
+<a class="navbar-safe-anchor"  Name="bench"></a><div class="heading">Benchmarks</div>
+<P>
+Based on the <A href="/apps/amber/index.html">benchmarks</a>, it is highly recomended that you run Amber on a GPU node. 
+<P>
+<A href="/apps/amber/">Full benchmark details</a>
+<P>
+<a class="navbar-safe-anchor"  Name="doc"></a><div class="heading">Documentation</div>
+<P>
+<a href="http://ambermd.org/doc12/Amber20.pdf">Amber 20 reference manual</a><br>
+<a href="http://ambermd.org/doc12/Amber18.pdf">Amber 18 reference manual</a><br>
+<a href="http://ambermd.org/doc12/Amber16.pdf">Amber 16 reference manual</a><br>
+<a href="http://ambermd.org">Amber website</a>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

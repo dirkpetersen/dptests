@@ -1,0 +1,224 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'VIRTUS on Biowulf';</script>
+<div class="title">VIRTUS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+VIRTUS is a bioinformatics pipeline for viral transcriptome detection and quantification considering splicing.
+
+<p class=alert>
+The HPC version do not support docker, but use singularity instead.
+Please do not install cwltool(3.1.20211014180718), since it can't work well with singularity CE.
+</p>
+
+</p>
+<p>
+Features
+<ul>
+  <li>VIRTUS is the first tool to detect viral transcripts considering their splicing event rather than the viral genome copy number. 
+  <li>VIRTUS can be applied to both bulk RNAseq and single-cell RNAseq.
+  <li>The virus reference covers 762 viruses including SARS-CoV-2 (cause of COVID-19).
+  <li>The workflow is implemented by Common Workflow Language and Rabix. 
+  <li>You can specify each parameter individually or give yaml or json file which describes all the parameter information. 
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Yasumizu, Yoshiaki, Atsushi Hara, Shimon Sakaguchi, and Naganari Ohkura.  <em>/VIRTUS: a pipeline for comprehensive virus analysis from conventional RNA-seq data</em>Bioinformatics. 2020;btaa859. doi:10.1093/bioinformatics/btaa859
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/33017003">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btaa859/5918022">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>VIRTUS Main Site:<a href="https://github.com/yyoshiaki/VIRTUS">Main Site</a></li>
+<li>VIRTUS2 Main Site:<a href="https://github.com/yyoshiaki/VIRTUS2">Main Site</a></li>
+
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>VIRTUS</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>VIRTUS is easy to run with wrapper:
+        <pre class="term">
+	VIRTUS_wrapper.py -h</pre>
+	<li>VIRTUS workflow can also run with cwltool:
+	<pre class="term">
+        cwltool --singularity --tmp-outdir-prefix=/lscratch/$SLURM_JOB_ID/ \
+	--tmpdir-prefix=/lscratch/$SLURM_JOB_ID/ \
+	$VIRTUS_WORKFLOW/VIRTUS.PE.cwl</pre>
+        <li>VIRTUS workflow has to be run with "--singularity" option. Using "--singularity" will download several containers to your local directory.  
+	<li>You need to locate lscratch, because by default cwltools can easily fill up /tmp.
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$VIRTUS_WORKFLOW</tt></li>
+    <li><tt>$VIRTUS_INDEX</tt></li>
+  </ul>
+<li>Example files in <tt>$VIRTUS_TEST_DATA</tt></li>
+<li> VIRTUS/1 and VIRTUS/2 are running differently: see examples bellow.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:500 --cpus-per-task=40 --mem=40G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load VIRTUS/1.2.1</b>
+[user@cn3144 ~]$ <b>mkdir -p /data/$USER/VIRTUS; cd /data/$USER/VIRTUS</b>
+[user@cn3144 VIRTUS]$ <b>cp "$VIRTUS_TEST_DATA"/* .</b>
+[user@cn3144 VIRTUS]$ <b>VIRTUS_wrapper.py -h</b>
+usage: VIRTUS_wrapper.py [-h] [--VIRTUSDir VIRTUSDIR] --genomeDir_human
+                         GENOMEDIR_HUMAN --genomeDir_virus GENOMEDIR_VIRUS
+                         --salmon_index_human SALMON_INDEX_HUMAN
+                         [--salmon_quantdir_human SALMON_QUANTDIR_HUMAN]
+                         [--outFileNamePrefix_human OUTFILENAMEPREFIX_HUMAN]
+                         [--nthreads NTHREADS] [--hit_cutoff HIT_CUTOFF]
+                         [-s SUFFIX_SE] [-s1 SUFFIX_PE_1] [-s2 SUFFIX_PE_2]
+                         [--fastq]
+                         input_path
+
+positional arguments:
+  input_path
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --VIRTUSDir VIRTUSDIR
+  --genomeDir_human GENOMEDIR_HUMAN
+  --genomeDir_virus GENOMEDIR_VIRUS
+  --salmon_index_human SALMON_INDEX_HUMAN
+  --salmon_quantdir_human SALMON_QUANTDIR_HUMAN
+  --outFileNamePrefix_human OUTFILENAMEPREFIX_HUMAN
+  --nthreads NTHREADS
+  --hit_cutoff HIT_CUTOFF
+  -s SUFFIX_SE, --Suffix_SE SUFFIX_SE
+  -s1 SUFFIX_PE_1, --Suffix_PE_1 SUFFIX_PE_1
+  -s2 SUFFIX_PE_2, --Suffix_PE_2 SUFFIX_PE_2
+  --fastq
+
+[user@cn3144 VIRTUS]$ <b>cwltool --singularity --tmp-outdir-prefix=/lscratch/$SLURM_JOB_ID/ \
+   --tmpdir-prefix=/lscratch/$SLURM_JOB_ID/ \
+   $VIRTUS_WORKFLOW/VIRTUS.PE.cwl \
+   --fastq1 ERR3240275_1.fastq.gz --fastq2 ERR3240275_2.fastq.gz \
+   --genomeDir_human $VIRTUS_INDEX/STAR_index_human \
+   --genomeDir_virus $VIRTUS_INDEX/STAR_index_virus \
+   --salmon_index_human $VIRTUS_INDEX/salmon_index_human \
+   --salmon_quantdir_human salmon_human \
+   --nthreads 40
+
+</b>
+[user@cn3144 ]$ <b>module load VIRTUS/2.0.1</b>
+[user@cn3144 ]$ <b>VIRTUS_wrapper.py -h </b>
+usage: VIRTUS_wrapper.py [-h] [--VIRTUSDir VIRTUSDIR] --genomeDir_human GENOMEDIR_HUMAN --genomeDir_virus GENOMEDIR_VIRUS
+                         [--outFileNamePrefix_human OUTFILENAMEPREFIX_HUMAN] [--nthreads NTHREADS] [-s SUFFIX_SE] [-s1 SUFFIX_PE_1] [-s2 SUFFIX_PE_2]
+                         [--fastq] [--figsize FIGSIZE] [--th_cov TH_COV] [--th_rate TH_RATE]
+                         input_path
+
+positional arguments:
+  input_path
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --VIRTUSDir VIRTUSDIR
+  --genomeDir_human GENOMEDIR_HUMAN
+  --genomeDir_virus GENOMEDIR_VIRUS
+  --outFileNamePrefix_human OUTFILENAMEPREFIX_HUMAN
+  --nthreads NTHREADS
+  -s SUFFIX_SE, --Suffix_SE SUFFIX_SE
+  -s1 SUFFIX_PE_1, --Suffix_PE_1 SUFFIX_PE_1
+  -s2 SUFFIX_PE_2, --Suffix_PE_2 SUFFIX_PE_2
+  --fastq
+  --figsize FIGSIZE     (default:8,3)
+  --th_cov TH_COV       threshold of max viral coverage to plot, test (default:10)
+  --th_rate TH_RATE     threshold of max rate virus/human to plot, test (default:0.0001)
+
+[user@cn3144 ]$ <b>cwltool --singularity \
+    --tmp-outdir-prefix=/lscratch/$SLURM_JOB_ID/ \
+    --tmpdir-prefix=/lscratch/$SLURM_JOB_ID/ \
+    $VIRTUS_WORKFLOW/VIRTUS.PE.cwl \
+    --fastq1 ERR3240275_1.fastq.gz \
+    --fastq2 ERR3240275_2.fastq.gz \
+    --genomeDir_human $VIRTUS_INDEX/STAR_index_human \
+    --genomeDir_virus $VIRTUS_INDEX/STAR_index_virus \
+    --nthreads 40
+</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. VIRTUS.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=S1_VIRTUS
+#SBATCH --output=S1_VIRTUS.out
+#SBATCH --ntasks=1
+#SBATCH --gres=lscratch:500
+#SBATCH --cpus-per-task=40
+#SBATCH --mem=40Gb
+#SBATCH --time=8:00:00
+#SBATCH --partition=norm
+
+set -e
+module load VIRTUS/2
+cp "$VIRTUS_TEST_DATA"/* /data/$USER/VIRTUS
+cd /data/$USER/VIRTUS
+VIRTUS_wrapper.py input.csv \ 
+--genomeDir_human $VIRTUS_INDEX/STAR_index_human \
+--genomeDir_virus $VIRTUS_INDEX/STAR_index_virus \
+--nthreads 40
+
+</pre>
+<p> Submit the job:
+<pre class="term">sbatch VIRTUS.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+
+<pre class="term">
+</pre>
+
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

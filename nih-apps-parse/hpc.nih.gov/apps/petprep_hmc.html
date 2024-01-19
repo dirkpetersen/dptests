@@ -1,0 +1,114 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PETprep_HMC: Positron Emission Tomography data preprocessing for Head Motion Correction';</script>
+<div class="title"><b>PETprep_HMC: Positron Emission Tomography data preprocessing for Head Motion Correction </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Positron Emission Tomography (PET) is a state-of-the-art neuroimaging
+tool for quantification of the in vivo spatial distribution of specific
+molecules in the brain. It is affected by various kinds of patient movement during a scan.
+The PETprep_HMC application allows for correction of the PET results in the presence of head motions.
+</p>
+<h3>References:</h3>
+<ul>
+<li>Martin Nørgaard, Melanie Ganz, Claus Svarer, Vibe G. Frokjaer, Douglas N. Greve,
+Stephen C. Strother, Gitte M. Knudsen <br />
+<i>Optimization of preprocessing strategies in Positron Emission Tomography
+(PET) neuroimaging: A [11C]DASB PET study</i>
+<a href="https://www.sciencedirect.com/science/article/pii/S1053811919304471"> NeuroImage </a>, 199 (2019) 466–479.     
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/mnoergaard/petprep_hmc">PETprep_HMC Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>RFdissusion</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PETPREP_HMC_HOME</b>&nbsp; installation directory</li>
+    <li><b>PETPREP_HMC_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>PETPREP_HMC_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>PETPREP_HMC_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3335 ~]$ <b>module load petprep_hmc </b>
+[+] Loading singularity  3.10.5  on cn4174
+[+] Loading freesurfer  7.3.2  on cn4174
+[+] Loading freetype 2.12.1 on cn4174
+[+] Loading FSL 6.0.4  ...
+[+] Loading petprep_hmc  0.06
+[user@cn3335 ~]$<b></b>
+[user@cn3335 ~]$ <b>run.py -h</b>
+usage: run.py [-h] --bids_dir BIDS_DIR [--output_dir OUTPUT_DIR]
+              [--analysis_level {participant,group}]
+              [--participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
+              [--mc_start_time MC_START_TIME] [--mc_fwhm MC_FWHM] [--mc_thresh MC_THRESH]
+              [--n_procs N_PROCS] [--no_resample] [--skip_bids_validator] [-v]
+
+BIDS App for PETPrep head motion correction workflow
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --bids_dir BIDS_DIR   The directory with the input dataset formatted according to the BIDS
+                        standard.
+  --output_dir OUTPUT_DIR
+                        The directory where the output files should be stored. If you are running
+                        group level analysis this folder should be prepopulated with the results
+                        of theparticipant level analysis.
+  --analysis_level {participant,group}
+                        Level of the analysis that will be performed. Multiple participant level
+                        analyses can be run independently (in parallel) using the same output_dir.
+  --participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]
+                        The label(s) of the participant(s) that should be analyzed. The label
+                        corresponds to sub-<participant_label> from the BIDS spec (so it does not
+                        include "sub-"). If this parameter is not provided all subjects should be
+                        analyzed. Multiple participants can be specified with a space separated
+                        list.
+  --mc_start_time MC_START_TIME
+                        Start time for when to perform motion correction (subsequent frame will be
+                        chosen) in seconds
+  --mc_fwhm MC_FWHM     FWHM for smoothing of frames prior to estimating motion
+  --mc_thresh MC_THRESH
+                        Threshold below the following percentage (0-100) of framewise ROBUST RANGE
+                        prior to estimating motion correction
+  --n_procs N_PROCS     Number of processors to use when running the workflow
+  --no_resample         Whether or not to resample the motion corrected PET data to lowest x/y/z
+                        dim in original data
+  --skip_bids_validator
+                        Whether or not to perform BIDS dataset validation
+  -v, --version         show program's version number and exit
+[user@cn3335 ~]$ <b></b>
+
+</pre>
+etc. <br /> <br />
+End the interactive session:
+<pre class="term">
+[user@cn3335 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

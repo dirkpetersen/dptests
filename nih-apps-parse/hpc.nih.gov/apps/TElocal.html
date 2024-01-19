@@ -1,0 +1,93 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'TElocal: a tool that utilizes both uniquely and ambiguously mapped reads to quantify transposable element expression at the locus level. ';</script>
+<div class="title"><b>TElocal: a tool that utilizes both uniquely and ambiguously mapped reads to quantify transposable element expression at the locus level. </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+TElocal: a tool that utilizes both uniquely and ambiguously mapped reads to quantify transposable element expression at the locus level.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/mhammell-laboratory/TElocal">TElocal Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>TElocal</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>TElocal_HOME</b>&nbsp; installation directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive  </b>
+[user@cn0861 ~]$ <b>module load TElocal </b>
+[+] Loading singularity  3.8.5-1  on cn4177
+[+] Loading TElocal 1.1.2  ...
+</pre>
+<pre class="term">
+[user@cn0861 ~]$ <b>TElocal -h </b>
+usage: TElocal [-h] -b RNAseq.bam --GTF genic-GTF-file --TE TE-annot-file [--stranded option] [--mode TE counting mode]
+               [--project name] [--sortByPos] [-i iteration] [--maxL maxL] [--minL minL] [-L fragLength]
+               [--verbose [verbose]] [--version]
+
+Measuring TE expression per-locus, per-sample.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b RNAseq.bam, --BAM RNAseq.bam
+                        An RNAseq BAM file.
+  --GTF genic-GTF-file  GTF or db file for gene annotations
+  --TE TE-annot-file    locInd file for transposable element annotations
+  --stranded option     Is this a stranded library? (forward, no, or reverse). For "first-strand" cDNA libraries (e.g.
+                        TruSeq), choose reverse. For "second-strand" cDNA libraries (e.g. QIAseq stranded), choose
+                        forward. DEFAULT: no.
+  --mode TE counting mode
+                        How to count TE: uniq (unique mappers only), or multi (distribute among all alignments).
+                        DEFAULT: multi
+  --project name        Name of this project. DEFAULT: TElocal_out
+  --sortByPos           Alignment file is sorted by chromosome position.
+  -i iteration, --iteration iteration
+                        number of iteration to run the optimization. DEFAULT: 100
+  --maxL maxL           maximum fragment length. DEFAULT:500
+  --minL minL           minimum fragment length. DEFAULT:0
+  -L fragLength, --fragmentLength fragLength
+                        average fragment length for single end reads. For paired-end, estimated from the input alignment
+                        file. DEFAULT: for paired-end, estimate from the input alignment file; for single-end, ignored
+                        by default.
+  --verbose [verbose]   Set verbose level. 0: only show critical message, 1: show additional warning message, 2: show
+                        process information, 3: show debug messages. DEFAULT:2
+  --version             show program's version number and exit
+
+Example: TElocal -b RNAseq.bam --GTF gene_annotation.gtf --TE TE_annotation.locInd --mode multi
+
+</pre>
+etc.
+
+<pre class="term">
+[user@cn0861 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

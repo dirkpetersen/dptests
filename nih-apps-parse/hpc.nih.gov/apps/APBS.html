@@ -1,0 +1,67 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'APBS (Adaptive Poisson-Boltzmann Solver) on Biowulf';</script>
+<div class="title">APBS (Adaptive Poisson-Boltzmann Solver) on Biowulf</div>
+<p>APBS is a software package for the numerical solution of the
+Poisson-Boltzmann equation (PBE), one of the most popular continuum models for
+describing electrostatic interactions between molecular solutes in salty,
+aqueous media. Continuum electrostatics plays an important role in several
+areas of biomolecular simulation, including:</p>
+<ul>
+<li>simulation of diffusional processes to determine ligand-protein and
+protein-protein binding kinetics,</li>
+<li>implicit solvent molecular dynamics of biomolecules ,</li>
+<li>solvation and binding energy calculations to determine ligand-protein and
+protein-protein equilibrium binding constants and aid in rational drug
+design,</li>
+<li>and biomolecular titration studies.</li>
+</ul>
+<p>APBS was designed to efficiently evaluate electrostatic properties for such
+simulations for a wide range of length scales to enable the investigation of
+molecules with tens to millions of atoms.</p>
+
+<p>There are multiple versions of APBS available.  An easy way of selecting the version is to use <a href="/apps/modules.html">modules</a>.  To see the modules available, type</p>
+
+  <pre class="term">module avail apbs</pre>
+
+  <p>To select a module, type</p>
+
+  <pre class="term">module load apbs/[ver]</pre>
+
+  <p>where [ver] is the version of choice.  This will set your $PATH variable to allow the apbs executables.</p>
+
+<p>Please note that the APBS 3.0.0 module contains pdb2pqr version 3.4.0.</p>
+
+<h2>Interactive use</h2>
+
+<pre class="term">module load apbs
+apbs &lt; apbs.in &gt; apbs.out</pre>
+
+<h2>sbatch</h2>
+<p>Create a batch input file (e.g. apbs_run.sh), which uses the input file
+'apbs.in'. For example:</p>
+
+<pre class="term">#!/bin/bash
+module load apbs
+apbs &lt; apbs.in &gt; apbs.out</pre>
+<p>Submit this job using the Slurm 'sbatch' command.</p>
+
+<pre>sbatch --cpus-per-task=1 apbs-run.sh</pre>
+
+<h2>Examples</h2>
+<p>Input files are available in $APBSEXAMPLES:</p>
+<pre class="term">ls $APBSEXAMPLES
+actin-dimer  bem   FKBP     hca-bind  ion-pmf      membrane  opal     point-pmf    README.html  solv
+alkanes      born  geoflow  ionize    ion-protein  misc      pka-lig  protein-rna  smpbe
+</pre>
+
+<h2>Documentation</h2>
+<ul>
+<li>Main web site: <a href="http://www.poissonboltzmann.org/">http://www.poissonboltzmann.org/</a></li>
+<li>APBS Users Mailing List: <a href="http://lists.sourceforge.net/mailman/listinfo/apbs-users">http://lists.sourceforge.net/mailman/listinfo/apbs-users</a>
+- an excellent resource for detailed discussions of the software</li>
+</ul>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

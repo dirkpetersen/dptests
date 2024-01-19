@@ -1,0 +1,89 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'LTSOFT: analysis of case–control association studies with known risk variants';</script>
+<div class="title"><b>LTSOFT: analysis of case–control association studies with known risk variants</b></div> 
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The LTSOFT application implements a new approach 
+to using information from known associated variants 
+when conducting disease association studies.
+The approach is based in part on the classical technique 
+of liability threshold modeling and performs estimation
+of model parameters for each known variant 
+while accounting for the published disease prevalence from
+the epidemiological literature.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Noah Zaitlen, Bogdan Pasaniuc, Nick Patterson, et al., <br /> 
+<i>Analysis of case–control association studies with known risk variants</i><br />
+<a href="https://academic.oup.com/bioinformatics/article/28/13/1729/235461?login=true">Bioinformatics</a>Volume 28, Issue 13, July 2012, Pages 1729–1737, https://doi.org/10.1093/bioinformatics/bts259.
+<li>Noah Zaitlen, Sara Lindstrom, Bogdan Pasaniuc, et al.,<br />
+<i>Informed Conditioning on Clinical Covariates Increases Power in Case-Control Association Studies</i><br />
+<a href="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003032">PLOS Genetics</a>November 2012 | Volume 8 | Issue 11 | e1003032.
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.hsph.harvard.edu/alkes-price/software/">LTSOFT Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>ltsoft</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>LTSOFT_HOME</b>&nbsp; installation directory</li>
+    <li><b>LTSOFT_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>LTSOFT_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>LTSOFT_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cig 3335 ~]$ <b>module load ltsoft</b>
+[+] Loading singularity  3.10.5  on cn4326
+[+] Loading ltsoft  4.0
+[user@cn4326 ~]$ <b>ls $LTSOFT_BIN</b>
+convertf  gcta64  ltfit  LTFIT  LTMLM  ltprev  ltpub  ltscore  LTSCORE  ltscore.perl 
+[user@cn4326 ~]$ <b>ltfit</b>
+usage:  ltfit  < parameter-file >
+[user@cn4326 ~]$ <b>ltprev</b>
+usage:  ltprev < parameter-file >
+[user@cn4326 ~]$ <b>ltpub</b>
+usage: ltpub < in-file > < outfile >
+[user@cn4326 ~]$ <b>ltscore</b>
+usage:  ltscore <parameter-file>
+[user@cn4326 ~]$ <b>ltscore.perl --help</b>
+...
+
+Usage: ltscore.perl [-OPTIONS [-MORE_OPTIONS]] [--] [PROGRAM_ARG1 ...]
+
+The following single-character options are accepted:
+        With arguments: -g -i -n -c -o -s -p
+
+Options may be merged together.  -- stops processing of options.
+Space is not required between options and their arguments.
+...
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

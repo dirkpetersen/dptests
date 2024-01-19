@@ -1,0 +1,135 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' GCTA on Biowulf ';</script>
+<div class="title">
+GCTA on Biowulf </div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#serial">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+<div class="tocItem"><a href="#int">Interactive job on Biowulf</a></div>
+</div></table>
+
+<!-- ======================================================================= -->
+<div class="heading">Description</div>
+
+<p>GCTA (Genome-wide Complex Trait Analysis) was originally designed to
+estimate the proportion of phenotypic variance explained by genome- or
+chromosome-wide SNPs for complex traits (the GREML method), and has
+subsequently extended for many other analyses to better understand the genetic
+architecture of complex traits. GCTA currently supports the following
+functionalities: </p>
+
+<ul>
+    <li>Estimate the genetic relationship from genome-wide SNPs</li>
+    <li>Estimate the inbreeding coefficient from genome-wide SNPs</li>
+    <li>Estimate the variance explained by all the autosomal SNPs</li>
+    <li>Partition the genetic variance onto individual chromosomes</li>
+    <li>Estimate the genetic variance associated with the X-chromosome</li>
+    <li>Test the effect of dosage compensation on genetic variance on the X-chromosome</li>
+    <li>Predict the genome-wide additive genetic effects for individual subjects and for individual SNPs</li>
+    <li>Estimate the LD structure encompassing a list of target SNPs</li>
+    <li>Simulate GWAS data based upon the observed genotype data</li>
+    <li>Convert Illumina raw genotype data into PLINK format</li>
+    <li>Conditional &amp; joint analysis of GWAS summary statistics without individual level genotype data</li>
+    <li>Estimating the genetic correlation between two traits (diseases) using SNP data</li>
+    <li>Mixed linear model association analysis</li>
+</ul>
+
+
+<p>There may be multiple versions of GCTA available. An easy way of selecting the
+version is to use <a href="/apps/modules.html">modules</a>.  To see the modules
+available, type</p>
+<pre class="term">
+module avail GCTA 
+</pre>
+
+<p>To select a module use</p>
+<pre class="term">
+module load GCTA/[version]
+</pre>
+<p>where <code>[version]</code> is the version of choice.</p>
+
+<!-- comment out where applicable -->
+<p class="alert">GCTA is a multithreaded application. Make sure to match the
+number of cpus requested with the number of threads.</p>
+
+<h3>Environment variables set</h3>
+<ul>
+<li> <code>$PATH</code></li>
+<li> <code>$GCTAHOME</code>: location of test data</li>
+</ul>
+
+<h3>References</h3>
+<ul>
+    <li>J. Yang J, S. H. Lee, M. E. Goddard and P. M. Visscher PM. 
+    <em>GCTA: a tool for Genome-wide Complex Trait Analysis</em>. 
+    Am J Hum Genet. 2011, 76-82.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/21167468">Pubmed</a> &nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3014363/">PMC</a> &nbsp;|&nbsp;
+    <a href="http://www.sciencedirect.com/science/article/pii/S0002929710005987">Journal</a>
+    </li>
+</ul>
+
+<h3>Documentation</h3>
+<ul>
+    <li><a href="http://cnsgenomics.com/software/gcta/index.html">Home page</a> </li>
+    <li><a href="http://cnsgenomics.com/software/gcta/GCTA_UserManual_v1.24.pdf">Manual</a></li>
+    <li><a href="http://gcta.freeforums.net/">Forum</a></li>
+</ul>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="serial"></a>
+<div class="heading">Batch job on Biowulf</div>
+
+<p>Create a batch script similar to the following example:</p>
+<pre class="term">
+#! /bin/bash
+# this file is GCTA.batch
+module load GCTA
+gcta --bfile test --make-grm --out test</pre>
+</pre>
+
+<p>Submit to the queue with <a href="/docs/userguide.html">sbatch</a>:</p>
+<pre class="term">
+biowulf$ <b>sbatch --cpus-per-task=1 --mem-per-cpus=2g GCTA.batch</b>
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="swarm"></a>
+<div class="heading">Swarm of jobs on Biowulf</div>
+
+<p>Create a swarm command file similar to the following example:</p>
+<pre class="term">
+# this file is GCTA.swarm
+gcta --bfile test2 --make-grm --out test2
+gcta --bfile test3 --make-grm --out test3
+gcta --bfile test4 --make-grm --out test4
+</pre>
+
+<p>And submit to the queue with <a href="/apps/swarm.html">swarm</a></p>
+<pre class="term">
+biowulf$ <b>swarm -f GCTA.swarm --module GCTA -g 2</b>
+</pre>
+
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="int"></a>
+<div class="heading">Interactive job on Biowulf</div>
+
+
+<p>Allocate an interactive session with <a href="/docs/userguide.html#int">sinteractive</a>
+and use as described <a href="#helix">above</a></p>
+<pre class="term">
+biowulf$ <b>sinteractive --mem=4g --cpus-per-task=2</b>
+node$ <b>module load GCTA</b>
+node$ <b>cp $GCTAHOME/test.* .</b>
+node$ <b>gcta --bfile test --make-grm --out test</b>
+node$ <b>exit</b>
+biowulf$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

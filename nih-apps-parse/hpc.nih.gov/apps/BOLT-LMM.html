@@ -1,0 +1,222 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BOLT-LMM on Biowulf';</script>
+<div class="title">BOLT-LMM on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The BOLT-LMM software package currently consists of two main algorithms, the BOLT-LMM algorithm for mixed model association testing, and the BOLT-REML algorithm for variance components analysis (i.e., partitioning of SNP-heritability and estimation of genetic correlations).
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Loh, P.-R. et al. Efficient Bayesian mixed model analysis increases association power in large cohorts. Nature Genetics 47, 284–290 (2015).</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>BOLT-LMM Main Site: <a href="https://data.broadinstitute.org/alkesgroup/BOLT-LMM/">https://data.broadinstitute.org/alkesgroup/BOLT-LMM/</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: BOLT-LMM (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Starting with v1.3, multi-threaded support available for BGEN-formatted data files
+<li>Example files in /usr/local/apps/BOLT-LMM/v2.3/example
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c4 --mem=8g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 11198398
+salloc.exe: job 11198398 queued and waiting for resources
+salloc.exe: job 11198398 has been allocated resources
+salloc.exe: Granted job allocation 11198398
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0852 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.11198398.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0852 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0852 11198398]$ <b>module load BOLT-LMM</b>
+[+] Loading BOLT-LMM  v2.3.4  on cn0852
+
+[user@cn0852 11198398]$ <b>cp -r /usr/local/apps/BOLT-LMM/v2.3/example .</b>
+
+[user@cn0852 11198398]$ <b>cp -r /usr/local/apps/BOLT-LMM/v2.3/tables .</b>
+
+[user@cn0852 11198398]$ <b>cd example/</b>
+
+[user@cn0852 example]$ <b>bolt \
+    --bfile=EUR_subset \
+    --remove=EUR_subset.remove \
+    --exclude=EUR_subset.exclude \
+    --phenoFile=EUR_subset.pheno.covars \
+    --phenoCol=PHENO \
+    --covarFile=EUR_subset.pheno.covars \
+    --covarCol=CAT_COV \
+    --qCovarCol=QCOV{1:2} \
+    --modelSnps=EUR_subset.modelSnps \
+    --lmm \
+    --LDscoresFile=../tables/LDSCORE.1000G_EUR.tab.gz \
+    --numThreads=${SLURM_CPUS_PER_TASK} \
+    --statsFile=example.stats \
+    --dosageFile=EUR_subset.dosage.chr17first100 \
+    --dosageFile=EUR_subset.dosage.chr22last100.gz \
+    --dosageFidIidFile=EUR_subset.dosage.indivs \
+    --statsFileDosageSnps=example.dosageSnps.stats \
+    --impute2FileList=EUR_subset.impute2FileList.txt \
+    --impute2FidIidFile=EUR_subset.impute2.indivs \
+    --statsFileImpute2Snps=example.impute2Snps.stats \
+    --dosage2FileList=EUR_subset.dosage2FileList.txt \
+    --statsFileDosage2Snps=example.dosage2Snps.stats \
+    2>&1 | tee example.log # log output written to stdout and stderr</b>
+                      +-----------------------------+
+                      |                       ___   |
+                      |   BOLT-LMM, v2.3.4   /_ /   |
+                      |   August 10, 2019     /_/   |
+                      |   Po-Ru Loh            //   |
+                      |                        /    |
+                      +-----------------------------+
+
+Copyright (C) 2014-2019 Harvard University.
+Distributed under the GNU GPLv3 open source license.
+
+Compiled with USE_SSE: fast aligned memory access
+Compiled with USE_MKL: Intel Math Kernel Library linear algebra
+Boost version: 1_58
+
+Command line options:
+
+bolt \
+    --bfile=EUR_subset \
+    --remove=EUR_subset.remove \
+    --exclude=EUR_subset.exclude \
+    --phenoFile=EUR_subset.pheno.covars \
+    --phenoCol=PHENO \
+    --covarFile=EUR_subset.pheno.covars \
+    --covarCol=CAT_COV \
+    --qCovarCol=QCOV{1:2} \
+    --modelSnps=EUR_subset.modelSnps \
+    --lmm \
+    --LDscoresFile=../tables/LDSCORE.1000G_EUR.tab.gz \
+    --numThreads=2 \
+    --statsFile=example.stats \
+    --dosageFile=EUR_subset.dosage.chr17first100 \
+    --dosageFile=EUR_subset.dosage.chr22last100.gz \
+    --dosageFidIidFile=EUR_subset.dosage.indivs \
+    --statsFileDosageSnps=example.dosageSnps.stats \
+    --impute2FileList=EUR_subset.impute2FileList.txt \
+    --impute2FidIidFile=EUR_subset.impute2.indivs \
+    --statsFileImpute2Snps=example.impute2Snps.stats \
+    --dosage2FileList=EUR_subset.dosage2FileList.txt \
+    --statsFileDosage2Snps=example.dosage2Snps.stats
+
+Verifying contents of --dosage2FileList: EUR_subset.dosage2FileList.txt
+Checking map file EUR_subset.dosage2.chr17first100.map and 2-dosage genotype file EUR_subset.dosage2.chr17first100.gz
+Checking map file EUR_subset.dosage2.chr17second100.map and 2-dosage genotype file EUR_subset.dosage2.chr17second100
+Checking map file EUR_subset.dosage2.chr22last100.map and 2-dosage genotype file EUR_subset.dosage2.chr22last100.gz
+
+Setting number of threads to 4
+fam: EUR_subset.fam
+bim(s): EUR_subset.bim
+bed(s): EUR_subset.bed
+
+=== Reading genotype data ===
+[...snip]
+
+Total elapsed time for analysis = 36.6498 sec
+
+[user@cn0852 example]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 11198398
+salloc.exe: Job allocation 11198398 has been revoked.
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g., run_example.sh in the example directory). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load BOLT-LMM
+bolt \
+    --bfile=EUR_subset \
+    --remove=EUR_subset.remove \
+    --exclude=EUR_subset.exclude \
+    --phenoFile=EUR_subset.pheno.covars \
+    --phenoCol=PHENO \
+    --covarFile=EUR_subset.pheno.covars \
+    --covarCol=CAT_COV \
+    --qCovarCol=QCOV{1:2} \
+    --modelSnps=EUR_subset.modelSnps \
+    --lmm \
+    --LDscoresFile=../tables/LDSCORE.1000G_EUR.tab.gz \
+    --numThreads=2 \
+    --statsFile=example.stats \
+    --dosageFile=EUR_subset.dosage.chr17first100 \
+    --dosageFile=EUR_subset.dosage.chr22last100.gz \
+    --dosageFidIidFile=EUR_subset.dosage.indivs \
+    --statsFileDosageSnps=example.dosageSnps.stats \
+    --impute2FileList=EUR_subset.impute2FileList.txt \
+    --impute2FidIidFile=EUR_subset.impute2.indivs \
+    --statsFileImpute2Snps=example.impute2Snps.stats \
+    --dosage2FileList=EUR_subset.dosage2FileList.txt \
+    --statsFileDosage2Snps=example.dosage2Snps.stats \
+    2>&1 | tee example.log # log output written to stdout and stderr
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] run_example.sh</pre>
+
+<p>Note: For test runs: Copy /usr/local/apps/BOLT-LMM/v2.3/example and /usr/local/apps/BOLT-LMM/v2.3/tables to your local directory. Under the example directory,  run_example.sh and run_example_reml2.sh are batch scripts that can be used in slurm </p>
+  
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. BOLT-LMM.swarm). For example:</p>
+
+<pre class="term">
+bolt --bfile=AFR_subset ...
+bolt --bfile=AMR_subset ...
+bolt --bfile=EAS_subset ...
+bolt --bfile=EUR_subset ...
+bolt --bfile=SAS_subset ...
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f BOLT-LMM.swarm [-g #] [-t #] --module BOLT-LMM</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module BOLT-LMM <td>Loads the BOLT-LMM module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

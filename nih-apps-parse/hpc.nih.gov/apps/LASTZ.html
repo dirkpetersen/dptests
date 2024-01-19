@@ -1,0 +1,104 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'LASTZ on Biowulf';</script>
+<div class="title">LASTZ on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+LASTZ is a tool for (1) aligning two DNA sequences, and (2) inferring appropriate scoring parameters automatically. It is a drop-in replacement for BLASTZ, and is backward compatible with BLASTZ's command-line syntax.</p>
+
+<p>LASTZ is designed to preprocess one sequence or set of sequences (which we collectively call the target) and then align several query sequences to it. The general flow of the program is like a pipeline: the output of one stage is the input to the next. The user can choose to skip most stages via command-line options; any stages that are skipped pass their input along to the next stage unchanged. Two of the stages, scoring inference and interpolation, are special in that they perform a miniature version of the pipeline within them.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="http://www.bx.psu.edu/~rsharris/rsharris_phd_thesis_2007.pdf">Harris, R.S. (2007) Improved pairwise alignment of genomic DNA. Ph.D. Thesis, The Pennsylvania State University.</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.bx.psu.edu/~rsharris/lastz/">LASTZ Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>LASTZ</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Single-threaded
+<li>Reference data in <tt>/data/genome/fasta/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ lastz hg18.chr4.fa galGal3.chr4.fa --notransition --step=20 --nogapped --format=maf &gt; hg18_4_vs_galGal3_4.maf 
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. LASTZ.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load LASTZ
+lastz hg18.chr4.fa galGal3.chr4.fa --notransition --step=20 --nogapped --format=maf &gt; hg18_4_vs_galGal3_4.maf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] LASTZ.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. LASTZ.swarm). For example:</p>
+
+<pre class="term">
+lastz hg18.chr1.fa galGal3.chr1.fa --notransition --step=20 --nogapped --format=maf &gt; hg18_1_vs_galGal3_1.maf
+lastz hg18.chr2.fa galGal3.chr2.fa --notransition --step=20 --nogapped --format=maf &gt; hg18_2_vs_galGal3_2.maf
+lastz hg18.chr3.fa galGal3.chr3.fa --notransition --step=20 --nogapped --format=maf &gt; hg18_3_vs_galGal3_3.maf
+lastz hg18.chr4.fa galGal3.chr4.fa --notransition --step=20 --nogapped --format=maf &gt; hg18_4_vs_galGal3_4.maf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f LASTZ.swarm [-g #] [-t #] --module LASTZ</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module LASTZ</tt> <td>Loads the LASTZ module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

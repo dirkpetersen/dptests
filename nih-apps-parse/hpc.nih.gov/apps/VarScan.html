@@ -1,0 +1,121 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'VarScan: Variant calling and somatic mutation/CNV detection for next-generation sequencing data';</script>
+<div class="title"><b>VarScan: Variant calling and somatic mutation/CNV detection for next-generation sequencing data</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+VarScan is an open source tool for variant detection that is compatible with several short
+read aligners. It is capable of detecting SNPs
+and indels with high sensitivity and specificity, in both Roche/454
+sequencing of individuals and deep Illumina/Solexa sequencing of
+pooled samples. VarScan2 detects somatic mutations and copy number alterations (CNAs) in exome data from tumor–normal pairs.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Daniel C. Koboldt, Ken Chen, Todd Wylie, David E. Larson, Michael D. McLellan,
+Elaine R. Mardis, George M. Weinstock, Richard K. Wilson and Li Ding <br />
+<i>VarScan: variant detection in massively parallel sequencing of
+individual and pooled samples</i><br /><a href="https://academic.oup.com/bioinformatics/article/25/17/2283/210190"> </a> Bioinformatics, 2009, <b>25</b>(17), pp.2283-2285.
+<li>Daniel C. Koboldt, Qunyuan Zhang, David E. Larson, Dong Shen,
+Michael D. McLellan, Ling Lin, Christopher A. Miller, Elaine R. Mardis, Li Ding,
+and Richard K. Wilson<br />
+<i>VarScan 2: Somatic mutation and copy number
+alteration discovery in cancer by exome sequencing </i> <br /><a href="https://genome.cshlp.org/content/22/3/568.short"> </a> Genome Res. 2012, <b>22</b>, pp.568-576.    
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/dkoboldt/varscan">VarScan Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>VarScan</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>VARSCAN_BIN </b>&nbsp; &nbsp; &nbsp; VarScan executable directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn3316 ~]$ <b>module load VarScan</b>
+</pre>
+Download/prepare sample input data:                        
+<pre class="term">
+[user@cn3316 ~]$ <b>URL="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeUwRepliSeq"</b>
+[user@cn3316 ~]$ <b>wget $URL/wgEncodeUwRepliSeqBg02esG1bAlnRep1.bam -O myData1.bam</b>
+[user@cn3316 ~]$ <b>wget $URL/wgEncodeUwRepliSeqBg02esG2AlnRep1.bam -O myData2.bam</b>
+[user@cn3316 ~]$ <b>samtools sort  myData1.bam > myData1_sorted.bam </b>
+[user@cn3316 ~]$ <b>samtools sort  myData2.bam > myData2_sorted.bam </b>
+[user@cn3316 ~]$ <b>ln -s /fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa hg19.fa</b>
+[user@cn3316 ~]$ <b>samtools mpileup -B -f hg19.fa  myData1_sorted.bam  > myData1.pileup</b>
+[user@cn3316 ~]$ <b>samtools mpileup -B -f hg19.fa  myData2_sorted.bam  > myData2.pileup</b>
+</pre>
+Run a VarScan executable on the inputs:
+<pre class="term">
+[user@cn3316 ~]$<b>varscan somatic myData1.pileup myData2.pileup --output-snp snp --output-indel indel</b>
+Normal Pileup: myData1.pileup
+Tumor Pileup: myData2.pileup
+NOTICE: While dual input files are still supported, using a single mpileup file (normal-tumor) with the --mpileup 1 setting is strongly recommended.
+Min coverage:   8x for Normal, 6x for Tumor
+Min reads2:     2
+Min strands2:   1
+Min var freq:   0.2
+Min freq for hom:       0.75
+Normal purity:  1.0
+Tumor purity:   1.0
+Min avg qual:   15
+P-value thresh: 0.99
+Somatic p-value:        0.05
+52831015 positions in tumor
+52831015 positions shared in normal
+225836 had sufficient coverage for comparison
+0 were called Reference
+0 were mixed SNP-indel calls and filtered
+225836 were called Germline
+0 were called LOH
+0 were called Somatic
+0 were called Unknown
+0 were called Variant
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. VarScan.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load VarScan
+varscan somatic myData1.pileup myData2.pileup --output-snp snp12 --output-indel indel12
+varscan somatic myData3.pileup myData4.pileup --output-snp snp34 --output-indel indel34
+...
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] VarScan.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

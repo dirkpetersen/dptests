@@ -1,0 +1,74 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Comsol on Biowulf';</script>
+<div class="title">Comsol on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+Comsol Multiphysics (previously named Femlab) is a modeling package for the simulation of any
+physical process you can describe with partial differential equations (PDEs). It features
+state-of-the-art solvers that address complex problems quickly and accurately, while its 
+intuitive structure is designed to provide ease of use and flexibility.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://www.comsol.com/support">Comsol: Support</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Comsol</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Interactive Only
+</ul>
+<P>
+
+<p class="alert">An <a href="/docs/connect.html">X-Windows</a> connection is required.</p>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=14 --mem=20g --gres=lscratch:100</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3920 are ready for job
+
+[user@cn3920 ~]$ <b>module load Comsol</b>
+[user@cn3920 ~]$ <b>comsol -tmpdir /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3920 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>You should see the Comsol Desktop image as below:</p>
+<p align=center><img src="Comsol_53a.png" width=80% border=1 alt="Comsol Desktop"></p>
+
+<p>After the first time running, the default location of Comsol output is generated in your home directory:</p>
+
+<pre class="term">[user@biowulf]$ <b>ls ~/.comsol</b>
+v61</pre>
+
+<p>Because your /home directory is limited in space, it is a good idea to move and symlink the ~/.comsol directory to your /data directory, where there is a much larger
+amount of disk space available.  This can be done like this:</p>
+
+<pre class="term">[user@biowulf]$ <b>mv ~/.comsol /data/$USER/comsol ; ln -s /data/$USER/comsol ~/.comsol</b></pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

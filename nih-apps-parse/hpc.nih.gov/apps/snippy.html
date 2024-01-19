@@ -1,0 +1,234 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'snippy: rapid haploid variant calling and core genome alignment ';</script>
+<div class="title"><b>snippy: rapid haploid variant calling and core genome alignment </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+snippy is a tool for rapid haploid variant calling and core genome alignment.
+
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/tseemann/snippy">snippy GitHub page</a></li>
+<li><a href="http://sepsis-omics.github.io/tutorials/modules/snippy/">snippy tutorial</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>snippy</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SNIPPY_HOME</b>&nbsp; installation directory</li>
+    <li><b>SNIPPY_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>SNIPPY_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>SNIPPY_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16g --gres=lscratch:10</b>
+[user@cn3200 ~]$<b>module load snippy  </b>
+[+] Loading snippy 4.4.1  ...
+</pre>
+Here is how snippy can be run on a test example:
+<pre class="term">
+[user@cn3200 ~]$ <b>cp $SNIPPY_DATA/* .</b>
+[user@cn3200 ~]$ <b>ln -s /fdb/igenomes/Homo_sapiens/UCSC/hg19/hg19.fa</b>
+[user@cn3200 ~]$ <b>snippy --cpus 16 --outdir mysnps --ref hg19.fa  --R1  test_R1.fastq.gz --R2 test_R2.fastq.gz</b>
+...
+[11:14:32] Written by Torsten Seemann <torsten.seemann@gmail.com>
+[11:14:32] Obtained from https://github.com/tseemann/snippy
+[11:14:32] Detected operating system: linux
+[11:14:32] Enabling bundled linux tools.
+[11:14:32] Found bwa - /opt/conda/envs/snippy/bin/bwa
+[11:14:32] Found samtools - /opt/conda/envs/snippy/bin/samtools
+[11:14:32] Found tabix - /opt/conda/envs/snippy/bin/tabix
+[11:14:32] Found bgzip - /opt/conda/envs/snippy/bin/bgzip
+[11:14:32] Found snpEff - /opt/conda/envs/snippy/bin/snpEff
+[11:14:32] Found java - /opt/conda/envs/snippy/bin/java
+[11:14:32] Found gzip - /usr/bin/gzip
+[11:14:32] Found parallel - /opt/conda/envs/snippy/bin/parallel
+[11:14:32] Found freebayes - /opt/conda/envs/snippy/bin/freebayes
+[11:14:32] Found freebayes-parallel - /opt/conda/envs/snippy/bin/freebayes-parallel
+[11:14:32] Found fasta_generate_regions.py - /opt/conda/envs/snippy/bin/fasta_generate_regions.py
+[11:14:32] Found vcfstreamsort - /opt/conda/envs/snippy/bin/vcfstreamsort
+[11:14:32] Found vcfuniq - /opt/conda/envs/snippy/bin/vcfuniq
+[11:14:32] Found vcffirstheader - /opt/conda/envs/snippy/bin/vcffirstheader
+[11:14:32] Found vcf-consensus - /opt/conda/envs/snippy/bin/../binaries/noarch/vcf-consensus
+[11:14:32] Found snippy-vcf_to_tab - /opt/conda/envs/snippy/bin/snippy-vcf_to_tab
+[11:14:32] Found snippy-vcf_report - /opt/conda/envs/snippy/bin/snippy-vcf_report
+[11:14:32] Found snippy-vcf_filter - /opt/conda/envs/snippy/bin/snippy-vcf_filter
+[11:14:32] Checking version: samtools --version is &gt;= 1.3 - ok, have 1.6
+[11:14:32] Checking version: freebayes --version is &gt;= 1.1 - ok, have 1.3
+[11:14:32] Checking version: snpEff -version is &gt;= 4.3 - ok, have 5.1
+[11:14:32] Using reference: /gpfs/gsfs7/users/user/snippy/hg19.fa
+[11:14:50] Treating reference as 'fasta' format.
+[11:14:50] Will use 16 CPU cores.
+[11:14:50] Using read file: /gpfs/gsfs7/users/user/snippy/test_R1.fastq.gz
+[11:14:50] Using read file: /gpfs/gsfs7/users/user/snippy/test_R2.fastq.gz
+[11:14:50] Output folder mysnps3 already exists.
+[user@cn1113 snippy]$ snippy --cpus 16 --outdir mysnps4 --ref hg19.fa  --R1  test_R1.fastq.gz --R2 test_R2.fastq.gz
+[11:15:07] This is snippy 3.2-dev
+[11:15:07] Written by Torsten Seemann <torsten.seemann@gmail.com>
+[11:15:07] Obtained from https://github.com/tseemann/snippy
+[11:15:07] Detected operating system: linux
+[11:15:07] Enabling bundled linux tools.
+[11:15:07] Found bwa - /opt/conda/envs/snippy/bin/bwa
+[11:15:07] Found samtools - /opt/conda/envs/snippy/bin/samtools
+[11:15:07] Found tabix - /opt/conda/envs/snippy/bin/tabix
+[11:15:07] Found bgzip - /opt/conda/envs/snippy/bin/bgzip
+[11:15:07] Found snpEff - /opt/conda/envs/snippy/bin/snpEff
+[11:15:07] Found java - /opt/conda/envs/snippy/bin/java
+[11:15:07] Found gzip - /usr/bin/gzip
+[11:15:07] Found parallel - /opt/conda/envs/snippy/bin/parallel
+[11:15:07] Found freebayes - /opt/conda/envs/snippy/bin/freebayes
+[11:15:07] Found freebayes-parallel - /opt/conda/envs/snippy/bin/freebayes-parallel
+[11:15:07] Found fasta_generate_regions.py - /opt/conda/envs/snippy/bin/fasta_generate_regions.py
+[11:15:07] Found vcfstreamsort - /opt/conda/envs/snippy/bin/vcfstreamsort
+[11:15:07] Found vcfuniq - /opt/conda/envs/snippy/bin/vcfuniq
+[11:15:07] Found vcffirstheader - /opt/conda/envs/snippy/bin/vcffirstheader
+[11:15:07] Found vcf-consensus - /opt/conda/envs/snippy/bin/../binaries/noarch/vcf-consensus
+[11:15:07] Found snippy-vcf_to_tab - /opt/conda/envs/snippy/bin/snippy-vcf_to_tab
+[11:15:07] Found snippy-vcf_report - /opt/conda/envs/snippy/bin/snippy-vcf_report
+[11:15:07] Found snippy-vcf_filter - /opt/conda/envs/snippy/bin/snippy-vcf_filter
+[11:15:07] Checking version: samtools --version is &gt;= 1.3 - ok, have 1.6
+[11:15:07] Checking version: freebayes --version is &gt;= 1.1 - ok, have 1.3
+[11:15:08] Checking version: snpEff -version is &gt;= 4.3 - ok, have 5.1
+[11:15:08] Using reference: /gpfs/gsfs7/users/user/snippy/hg19.fa
+[11:15:19] Treating reference as 'fasta' format.
+[11:15:19] Will use 16 CPU cores.
+[11:15:19] Using read file: /gpfs/gsfs7/users/user/snippy/test_R1.fastq.gz
+[11:15:19] Using read file: /gpfs/gsfs7/users/user/snippy/test_R2.fastq.gz
+[11:15:19] Creating folder: mysnps4
+[11:15:19] Changing working directory: mysnps4
+[11:15:19] Creating reference folder: reference
+[11:15:19] Extracting FASTA and GFF from reference.
+[11:16:01] Wrote 25 sequences to ref.fa
+[11:16:01] Wrote 0 features to ref.gff
+[11:16:01] Freebayes will process 64 chunks of 49176391 bp, 16 chunks at a time.
+[11:16:01] Using BAM RG (Read Group) ID: snps
+[11:16:01] Running: samtools faidx reference/ref.fa 2&gt;&gt; snps.log
+[11:16:17] Running: bwa index reference/ref.fa 2&gt;&gt; snps.log
+
+[12:01:52] Running: mkdir reference/genomes &amp;&amp; cp -f reference/ref.fa reference/genomes/ref.fa 2&gt;&gt; snps.log
+[12:01:54] Running: mkdir reference/ref &amp;&amp; bgzip -c reference/ref.gff &gt; reference/ref/genes.gff.gz 2&gt;&gt; snps.log
+[12:01:54] Running: (bwa mem  -v 2 -M -R '@RG\tID:snps\tSM:snps' -t 16 reference/ref.fa /gpfs/gsfs7/users/user/snippy/test_R1.fastq.gz /gpfs/gsfs7/users/user/snippy/test_R2.fastq.gz | samtools view -u -T reference/ref.fa -F 3844 -q 60 | samtools sort --reference reference/ref.fa &gt; snps.bam) 2&gt;&gt; snps.log
+[12:01:57] Running: samtools index snps.bam 2&gt;&gt; snps.log
+[12:01:58] Running: samtools depth -aa -q 20 snps.bam | bgzip &gt; snps.depth.gz 2&gt;&gt; snps.log
+[12:07:08] Running: tabix -s 1 -b 2 -e 2 snps.depth.gz 2&gt;&gt; snps.log
+[12:11:06] Running: fasta_generate_regions.py reference/ref.fa.fai 49176391 &gt; reference/ref.txt 2&gt;&gt; snps.log
+[12:11:07] Running: freebayes-parallel reference/ref.txt 16 -p 1 -q 20 -m 60 --min-coverage 10 -V -f reference/ref.fa snps.bam &gt; snps.raw.vcf 2&gt;&gt; snps.log
+[12:11:25] Running: /opt/conda/envs/snippy/bin/snippy-vcf_filter --minqual 10 --mincov 10 --minfrac 0.9  snps.raw.vcf &gt; snps.filt.vcf 2&gt;&gt; snps.log
+[12:11:25] Running: cp snps.filt.vcf snps.vcf 2&gt;&gt; snps.log
+[12:11:25] Running: bgzip -c snps.vcf &gt; snps.vcf.gz 2&gt;&gt; snps.log
+[12:11:25] Running: tabix -p vcf snps.vcf.gz 2&gt;&gt; snps.log
+[12:11:25] Running: /opt/conda/envs/snippy/bin/snippy-vcf_to_tab --gff reference/ref.gff --ref reference/ref.fa --vcf snps.vcf &gt; snps.tab 2&gt;&gt; snps.log
+[12:11:49] Running: vcf-consensus snps.vcf.gz &lt; reference/ref.fa &gt; snps.consensus.fa 2&gt;&gt; snps.log
+[12:13:43] Running: /opt/conda/envs/snippy/bin/snippy-vcf_filter --subs snps.filt.vcf &gt; snps.filt.subs.vcf 2&gt;&gt; snps.log
+[12:13:43] Running: bgzip -c snps.filt.subs.vcf &gt; snps.filt.subs.vcf.gz 2&gt;&gt; snps.log
+[12:13:43] Running: tabix -p vcf snps.filt.subs.vcf.gz 2&gt;&gt; snps.log
+[12:13:43] Running: vcf-consensus snps.filt.subs.vcf.gz &lt; reference/ref.fa &gt; snps.consensus.subs.fa 2&gt;&gt; snps.log
+[12:15:40] Generating aligned/masked FASTA relative to reference: snps.aligned.fa
+
+...
+
+[12:46:32] Creating extra output files: BED GFF CSV TXT HTML
+[12:46:32] Identified 3 variants.
+[12:46:32] Result folder: mysnps4
+[12:46:32] Result files:
+[12:46:32] * mysnps4/snps.aligned.fa
+[12:46:32] * mysnps4/snps.bam
+[12:46:32] * mysnps4/snps.bam.bai
+[12:46:32] * mysnps4/snps.bed
+[12:46:32] * mysnps4/snps.consensus.fa
+[12:46:32] * mysnps4/snps.consensus.subs.fa
+[12:46:32] * mysnps4/snps.csv
+[12:46:32] * mysnps4/snps.depth.gz
+[12:46:32] * mysnps4/snps.depth.gz.tbi
+[12:46:32] * mysnps4/snps.filt.subs.vcf
+[12:46:32] * mysnps4/snps.filt.subs.vcf.gz
+[12:46:32] * mysnps4/snps.filt.subs.vcf.gz.tbi
+[12:46:32] * mysnps4/snps.filt.vcf
+[12:46:32] * mysnps4/snps.gff
+[12:46:32] * mysnps4/snps.html
+[12:46:32] * mysnps4/snps.log
+[12:46:32] * mysnps4/snps.raw.vcf
+[12:46:32] * mysnps4/snps.tab
+[12:46:32] * mysnps4/snps.txt
+[12:46:32] * mysnps4/snps.vcf
+[12:46:32] * mysnps4/snps.vcf.gz
+[12:46:32] * mysnps4/snps.vcf.gz.tbi
+[12:46:32] Walltime used: 1 hours, 31 minutes, 25 seconds
+[12:46:32] Found a bug? Post it at https://github.com/tseemann/snippy/issues
+[12:46:32] Done.
+</pre>
+An output folder <b>mysnps </b> is created:
+<pre class="term">
+[user@cn3200 ~]$ <b>tree mysnps</b>
+mysnps
+├ reference
+│   ├ genomes
+│   │   └ ref.fa
+│   ├ ref
+│   │   ├ genes.gff.gz
+│   │   └ snpEffectPredictor.bin
+│   ├ ref.fa
+│   ├ ref.fa.amb
+│   ├ ref.fa.ann
+│   ├ ref.fa.bwt
+│   ├ ref.fa.fai
+│   ├ ref.fa.pac
+│   ├ ref.fa.sa
+│   ├ ref.gff
+│   ├ ref.txt
+│   └ snpeff.config
+├ ref.fa -> reference/ref.fa
+├ ref.fa.fai -> reference/ref.fa.fai
+├ snps.aligned.fa
+├ snps.bam
+├ snps.bam.bai
+├ snps.bed
+├ snps.consensus.fa
+├ snps.consensus.subs.fa
+├ snps.csv
+├ snps.filt.vcf
+├ snps.gff
+├ snps.html
+├ snps.log
+├ snps.raw.vcf
+├ snps.subs.vcf
+├ snps.tab
+├ snps.txt
+├ snps.vcf
+├ snps.vcf.gz
+└ snps.vcf.gz.csi
+
+3 directories, 33 filesa
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

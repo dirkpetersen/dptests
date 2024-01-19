@@ -1,0 +1,151 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Express on Biowulf';</script>
+<div class="title">
+Express on Biowulf</div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#int">Running an interactive job on Biowulf</a></div>
+<div class="tocItem"><a href="#serial">Single Express job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Swarm of Express jobs</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+
+<P>
+   
+<p>eXpress is a streaming tool for quantifying the abundances of a set of target sequences from sampled subsequences. Example applications include 
+transcript-level RNA-Seq quantification, allele-specific/haplotype expression analysis (from RNA-Seq), transcription factor binding quantification in ChIP-Seq, 
+and analysis of metagenomic data. It is based on an online-EM algorithm [<a href="http://bio.math.berkeley.edu/eXpress/overview.html#ref1">more info here</a>] that 
+results in space (memory) requirements proportional to the total size of the target sequences and time requirements that are proportional to the number of sampled 
+fragments. Thus, in applications such as RNA-Seq, eXpress can accurately quantify much larger samples than other currently available tools greatly reducing 
+computing infrastructure requirements. eXpress can be used to build lightweight high-throughput sequencing processing pipelines when coupled with a streaming 
+aligner (such as Bowtie), as output can be piped directly into eXpress, effectively eliminating the need to store read alignments in memory or on disk.</p>
+
+
+<p>
+<p>The environment variable(s) need to be set properly first. The easiest way to do this is by using the 
+<a href="modules.html"> modules</a> commands, '<b>module load express</b>', as in the example below. 
+<p>
+<pre class="term">
+biowulf% module load express
+</pre>
+This command will load the required <code>bowtie/1</code> and <code>samtools</code> as well as <code>express</code>.
+
+<P>
+Express was developed by Adam Roberts and Lior Pachter at the University of California, Berkeley. [<A href="http://bio.math.berkeley.edu/eXpress/index.html">Express website</a>]
+<P>
+<P>
+<a class="navbar-safe-anchor" Name="int"></a><div class="heading">Running an interactive job on Biowulf</div>
+<P>
+The sample sessions in this document use the example sets from the Express documentation. In the following two sub-sections, you will run eXpress on a sample RNA-Seq dataset 
+with simulated reads from UGT3A2 and the HOXC cluster using the human genome build hg18. Both the transcript sequences (transcripts.fasta) and raw reads (reads_1.fastq, 
+reads_2.fastq) can be found in the <code>/usr/local/apps/express/sample_data</code> directory. 
+<P>
+Before you begin, you must prepare your Bowtie index. Since you wish to allow many multi-mappings, it is useful to build the index with a small offrate (in this case 1). 
+The smaller the offrate, the larger the index and the faster the mapping. If you have disk space to spare, always use an offrate of 1.
+<P>
+<ol>
+<li>Build the index with the following commands.
+<pre class="term">
+$ <b>sinteractive --gres=lscratch:40</b>
+$ <b>cp -rp /usr/local/apps/express/sample_data /lscratch/$SLURM_JOB_ID/</b>
+$ <b>cd /lscratch/$SLURM_JOB_ID/sample_data</b>
+$ <b>module load express</b>
+$ <b>bowtie-build --offrate 1 transcripts.fasta transcript</b>
+</pre>
+<P>
+This command will populate your directory with several index files that allow Bowtie to more easily align reads to the transcripts.
+<P>
+You can now map the reads to the transcript sequences using the following Bowtie command, which outputs in SAM (-S), allows for unlimited multi-mappings (-a), 
+a maximum insert distance of 800 bp between the paired-ends (-X 800), and 3 mismatches (-v 3). The first three options (a,S,X) are highly recommended for best results. 
+You should also allow for many mismatches, since eXpress models sequencing errors. Furthermore, you will want to take advantage of multiple processors when mapping large files 
+using the -poption. See the Bowtie Manual for more details on various parameters and options. 
+<P>
+<li>The SAM output from Bowtie is piped into SAMtools in order to compress it to BAM format. This conversion is optional, but will greatly reduce the size of the alignment file.
+<P>
+<pre class="term">
+$ <b>bowtie -aS -X 800 --offrate 1 -v 3 transcript -1 reads_1.fastq -2 reads_2.fastq | samtools view -Sb - > hits.bam</b>
+</pre>
+<P>
+<li>Once you have aligned your reads to the transcriptome and stored them in a SAM or BAM file, you can run eXpress in default mode with the command:
+
+<div class="term"><pre>
+$ <b>module load express</b>
+$ <b>express transcripts.fasta hits.bam</b>
+</pre></div>
+<P>
+<li>
+ If you do not wish to store an intermediate SAM/BAM file, you can pipe the Bowtie output directly into eXpress with the command:
+
+<pre class="term">
+$ <b>module load express</b>
+$ <b>bowtie -aS -X 800 --offrate 1 -v 3 transcript -1 reads_1.fastq -2 reads_2.fastq | express transcripts.fasta </b>
+$ <b>exit</b> 
+  </pre>
+  </ol>
+<P>
+
+<a class="navbar-safe-anchor" Name="serial"></a><div class="heading">Running a single Express batch job on Biowulf</div>
+<P>
+The following batch script uses the same commands as in the preceding example.
+<P>
+<pre class="term">
+#!/bin/bash
+#
+# this file is called express.bat
+
+module load express
+cd /data/$USER/express
+cp -rp $EXPRESS_ROOT/sample_data  .
+cd sample_data
+bowtie-build --offrate 1 transcripts.fasta transcript
+bowtie -p $SLURM_CPUS_PER_TASK -aS -X 800 --offrate 1 -v 3 transcript -1 reads_1.fastq -2 reads_2.fastq \
+          | express transcripts.fasta 
+</pre>
+<P>
+Submit this job with:
+<P>
+<pre class="term">
+sbatch  --cpus-per-task=4  express.bat
+</pre>
+<P>
+Bowtie is a multi-threaded program, and so the job is submitted to 4 CPUs ('--cpus-per-task=4' in the sbatch command above). 
+In the batch script express.bat, bowtie is run with '-p $SLURM_CPUS_PER_TASK' to utilize all 4 cpus. 
+
+<P>
+<a class="navbar-safe-anchor" Name="swarm"></a><div class="heading">Running a swarm of Express batch jobs on Biowulf</div>
+<P>
+Set up a swarm command file along the following lines:
+<pre class="term">
+bowtie -p $SLURM_CPUS_PER_TASK -aS -X 800 --offrate 1 -v 3 transcript -1 reads_1.fastq -2 reads_2.fastq  \
+        | express transcripts.fasta
+bowtie -p $SLURM_CPUS_PER_TASK -aS -X 800 --offrate 1 -v 3 transcript -1 reads_3.fastq -2 reads_4.fastq \ 
+       | express transcripts.fasta
+etc...
+</pre>
+Submit this job with:
+<pre class="term">
+swarm -t 4 -f cmdfile --module express
+</pre>
+<P>
+The parameter '-t 4' tells swarm to allocate 4 CPUs for each command above. Express is single-threaded, but bowtie will make
+use of the 4 CPUS ('-p $SLURM_CPUS_PER_TASK' in the swarm command file above).
+<P>
+By default, each line in the swarm command file above will be executed on 4 CPU and can utilize up to 8 GB of memory.
+If your commands require more than 8 GB, you should submit with:
+<pre class="term">
+swarm -g # -f cmdfile --module express
+</pre>
+where '#' is the number of GigaBytes of memory required for a single process (1 line in your swarm command file).
+<P>
+
+<a class="navbar-safe-anchor" Name="doc"></a><div class="heading">Documentation</div>
+<P>
+<A href="http://bio.math.berkeley.edu/eXpress/manual.html">http://bio.math.berkeley.edu/eXpress/manual.html</a>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

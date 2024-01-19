@@ -1,0 +1,157 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Trimmomatic on Biowulf';</script>
+<div class="title">Trimmomatic on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Trimmomatic performs a variety of useful trimming tasks for illumina paired-end and single ended data.The selection of trimming steps and their associated parameters are supplied on the command line.
+
+Trimmomatic was developed at the <a href="http://www.usadellab.org/cms/index.php?page=trimmomatic">Usadel lab in Aachen, Germany</a>.
+<P>
+The current trimming steps are:
+<ul>
+<li>    ILLUMINACLIP: Cut adapter and other illumina-specific sequences from the read.
+<li>    SLIDINGWINDOW: Perform a sliding window trimming, cutting once the average quality within the window falls below a threshold.
+<li>    LEADING: Cut bases off the start of a read, if below a threshold quality
+<li>    TRAILING: Cut bases off the end of a read, if below a threshold quality
+<li>    CROP: Cut the read to a specified length
+<li>    HEADCROP: Cut the specified number of bases from the start of the read
+<li>    MINLEN: Drop the read if it is below a specified length
+<li>    TOPHRED33: Convert quality scores to Phred-33
+<li>    TOPHRED64: Convert quality scores to Phred-64
+</ul>
+<P>
+It works with FASTQ (using phred + 33 or phred + 64 quality scores, depending on the Illumina pipeline used), either uncompressed or gzipp'ed FASTQ. Use of gzip format is determined based on the .gz extension.
+<P>
+For single-ended data, one input and one output file are specified, plus the processing steps. For paired-end data, two input files are specified, and 4 output files, 2 for the 'paired' output where both reads survived the processing, and 2 for corresponding 'unpaired' output where a read survived, but the partner read did not.
+<P>
+
+Use the <a href="modules.html">modules commands</a> to set up trimmomatic, as
+in the example below.  The module sets environment variables called 
+'TRIMMOJAR' and 'TRIMMOMATIC_JAR' which point to the location of the
+trimmomatic java file.  The variable 'TRIMMOMATIC_JARPATH' points to the 
+directory in which the trimmomatic jar file is located.<P>
+
+<p>Fasta files of adapter sequences are included with trimmomatic and can be found at
+ <b><code>/usr/local/apps/trimmomatic/&ltversion&gt/adapters</code></b>   </p>
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Bolger et al.,Trimmomatic: a flexible trimmer for Illumina sequence data. Bioinformatics (2014). <a href="https://academic.oup.com/bioinformatics/article/30/15/2114/2390096">Link</a> </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.usadellab.org/cms/index.php?page=trimmomatic">Trimmomatic Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>trimmomatic</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$TRIMMOJAR</tt></li>
+  </ul>
+<li>Reference data in <tt>/usr/local/apps/trimmomatic/&ltversion&gt/adapters</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem 10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load trimmomatic</b>
+
+[user@cn3144 ~]$ <b>java -jar $TRIMMOJAR PE -phred33 \</b>
+    <b>/fdb/app_testdata/fastq/H_sapiens/hg100_1m_pe1.fq.gz /fdb/app_testdata/fastq/H_sapiens/hg100_1m_pe2.fq.gz \</b>
+    <b>output_forward_paired.fq.gz output_forward_unpaired.fq.gz \</b>
+    <b>output_reverse_paired.fq.gz output_reverse_unpaired.fq.gz \</b>
+    <b>ILLUMINACLIP:/usr/local/apps/trimmomatic/0.39/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36</b>
+TrimmomaticPE: Started with arguments:
+ -phred33 /fdb/app_testdata/fastq/H_sapiens/hg100_1m_pe1.fq.gz /fdb/app_testdata/fastq/H_sapiens/hg100_1m_pe2.fq.gz out1 out2 out3 out4 ILLUMINACLIP:/usr/local/apps/trimmomatic/0.39/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+Multiple cores found: Using 2 threads
+Using PrefixPair: 'TACACTCTTTCCCTACACGACGCTCTTCCGATCT' and 'GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT'
+ILLUMINACLIP: Using 1 prefix pairs, 0 forward/reverse sequences, 0 forward only sequences, 0 reverse only sequences
+Input Read Pairs: 1000000 Both Surviving: 964918 (96.49%) Forward Only Surviving: 25517 (2.55%) Reverse Only Surviving: 7780 (0.78%) Dropped: 1785 (0.18%)
+TrimmomaticPE: Completed successfully
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. trimmomatic.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+
+ml trimmomatic || exit 1
+java -Djava.io.tmpdir=. -jar $TRIMMOJAR PE -phred33 -threads $SLURM_CPUS_PER_TASK \
+    SRR292678_1.fastq.gz SRR292678_2.fastq.gz \
+    output_forward_paired.fq.gz output_forward_unpaired.fq.gz \
+    output_reverse_paired.fq.gz output_reverse_unpaired.fq.gz \
+    ILLUMINACLIP:/usr/local/apps/trimmomatic/0.39/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 \
+    SLIDINGWINDOW:4:15 MINLEN:36
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch -c 2 --mem=6g trimmomatic.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. trimmomatic.swarm). For example:</p>
+
+<pre class="term">
+java -Djava.io.tmpdir=. -jar $TRIMMOJAR PE -phred33 -threads $SLURM_CPUS_PER_TASK \
+    /fdb/app_testdata/fastq/H_sapiens/hg100_1m_pe1.fq.gz /fdb/app_testdata/fastq/H_sapiens/hg100_1m_pe2.fq.gz \
+    output_forward_paired.fq.gz output_forward_unpaired.fq.gz \
+    output_reverse_paired.fq.gz output_reverse_unpaired.fq.gz \
+    ILLUMINACLIP:/usr/local/apps/trimmomatic/0.39/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 \
+    SLIDINGWINDOW:4:15 MINLEN:36
+[...etc....]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f trimmomatic.swarm -g 6 -t 8 --module trimmomatic</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module trimmomatic</tt> <td>Loads the trimmomatic module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

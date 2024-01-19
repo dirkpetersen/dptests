@@ -1,0 +1,144 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'HiC-Pro on HPC';</script>
+    <div class="title">HiC-Pro on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> HiC-Pro was designed to process Hi-C data, from raw fastq files (paired-end 
+      Illumina data) to the normalized contact maps. Since version 2.7.0, HiC-Pro 
+      supports the main Hi-C protocols, including digestion protocols as well 
+      as protocols that do not require restriction enzyme such as DNase Hi-C. 
+      In practice, HiC-Pro can be used to process dilution Hi-C, in situ Hi-C, 
+      DNase Hi-C, Micro-C, capture-C, capture Hi-C or HiChip data.<br />
+      The pipeline is flexible, scalable and optimized. It can operate either 
+      on a single laptop or on a computational cluster. HiC-Pro is sequential 
+      and each step of the workflow can be run independantly.<br />
+      HiC-Pro includes a fast implementatation of the iterative correction method 
+      (see the iced python library for more information).</p>
+
+<h3>References:</h3>    <ul>
+      <li><a href="http://www.genomebiology.com/2015/16/1/259">http://www.genomebiology.com/2015/16/1/259</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+    <ul>
+      <li><a href="http://nservant.github.io/HiC-Pro/">http://nservant.github.io/HiC-Pro/</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>hicpro</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Test files: /usr/local/apps/hicpro/test</li>
+      <li>The --cpur-per-task should match the N_CPU set in the config.txt. For example, if it's 'N_CPU = 4' in the config.txt, then one should use --cpus-per-task=4 when submit the job.</li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=40g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load hicpro</strong>
+[user@cn3144 ~]$ <strong>cp -r /usr/local/apps/hicpro/test /data/$USER/hicpro/test</strong>
+[user@cn3144 ~]$ <strong>cd /data/$USER/hicpro/test</strong>
+[user@cn3144 ~]$ <strong>tar xvfz HiCPro_testdata.tar.gz</strong>
+
+# Modify the config.txt and change 'username@hpc.nih.gov' to your email address
+
+[user@cn3144 ~]$ <strong>HiC-Pro -i test_data -o output -c config.txt</strong>
+
+# Running the aligment step of HiC-Pro in parallel.
+[user@cn3144 ~]$ <strong>module load hicpro/3.1.0_v2</strong>
+
+# First, split reads in small chunks, by default --nreads would be 2,000,000:
+[user@cn3144 ~]$ <strong>split_reads.py \
+                           --results_folder split_test/dixon_2M_split \
+                           --nreads 50000 \
+                           ./dixon_2M/SRR400264_00_R1.fastq.gz </strong>
+[user@cn3144 ~]$ <strong>split_reads.py \
+                           --results_folder split_test/dixon_2M_split \
+                           --nreads 50000 \
+                           ./dixon_2M/SRR400264_00_R2.fastq.gz </strong>
+
+# Then, generate two sbatch jobs:
+[user@cn3144 ~]$ <strong>HiC-Pro \
+                          -i split_test \
+                          -o split_out \
+                          -c config.txt -p
+
+Run HiC-Pro 3.1.0 parallel mode
+The following command will launch the parallel workflow through 5 torque jobs:
+sbatch HiCPro_step1_apptest1.sh
+The following command will merge the processed data and run the remaining steps per sample:
+sbatch HiCPro_step2_apptest1.sh </strong>
+
+# Last, submit sbatch jobs:
+[user@cn3144 ~]$ <strong>cd split_out</strong>
+[user@cn3144 ~]$ <strong>sbatch --dependency=afterok:$(sbatch HiCPro_step1_apptest1.sh) HiCPro_step2_apptest1.sh </strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. sbatch.sh). For example:</p>    
+    <pre class="term">
+#!/bin/bash
+set -e
+module load hicpro
+cd /data/$USER/hicpro/test
+HiC-Pro -i test_data -o output -c config.txt</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch --cpus-per-task=4 --mem=40g sbatch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; HiC-Pro -i test_data -o output -c config.txt
+cd dir2; HiC-Pro -i test_data -o output -c config.txt
+cd dir3; HiC-Pro -i test_data -o output -c config.txt</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm -g 40 -t 4 --module hicpro</pre>
+where
+    <table width="63%" border=0>
+      <tr><td width=18%><tt>-g <i>#</i> </tt></td><td width="82%">Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  </td></tr><tr><td><tt>-t <i>#</i></tt> </td><td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  </td></tr><tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr></table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,146 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'rosettafoldna on Biowulf';</script>
+<div class="title">rosettafoldna on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+rosettafoldnaNA: rapidly produces 3D structure models with confidence estimates for protein-DNA and protein-RNA complexes, and for RNA tertiary structures.
+</p>
+<p>
+<ul>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Baek M et al.<em>Accurate prediction of nucleic acid and protein-nucleic acid complexes using rosettafoldnaNA
+</em> biorxiv
+    <a href="https://www.biorxiv.org/content/10.1101/2022.09.09.507333v1">biorxiv</a>&nbsp;|&nbsp;
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>rosettafoldna Github:<a href="https://github.com/uw-ipd/rosettafoldna2NA">Github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>rosettafoldna</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Since only the last step of rosettafoldna can use GPU, we strongly suggest to run the edited pipeline which was spited to part1(CPUs and memory heavy) and part2(GPU >V100), see the examples in interactive job. 
+</ul>
+</a>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=10 --mem=70G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load rosettafoldna</b>
+[user@cn3144]$ <b>mkdir /data/$USER/rosettafoldna_test/</b>
+[user@cn3144]$ <b>cd /data/$USER/rosettafoldna_test/</b>
+[user@cn3144]$ <b>cp -r ${ROSETTAFOLDNA_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>tree rosettafoldna_test/</b>
+rosettafoldna_test/
+├── protein.fa
+└── RNA.fa
+
+0 directories, 2 files
+
+[user@cn3144]$ <b>run_RF2NA_part1.sh test_o protein.fa R:RNA.fa</b>
+Running HHblits
+Running PSIPRED
+Running hhsearch
+Running rMSA (lite)
+Done with part1, please run part2 on GPU node (>= V100)
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=10g --gres=gpu:v100:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144]$ <b>run_RF2NA_part2.sh test_o protein.fa R:RNA.fa</b>
+Running RoseTTAFold2NA to predict structures
+Running on GPU
+  msa[msa == "U"] = 30
+           plddt    best
+RECYCLE  0   0.874  -1.000
+RECYCLE  1   0.892   0.874
+RECYCLE  2   0.898   0.892
+RECYCLE  3   0.899   0.898
+RECYCLE  4   0.901   0.899
+RECYCLE  5   0.902   0.901
+RECYCLE  6   0.901   0.902
+RECYCLE  7   0.902   0.902
+RECYCLE  8   0.901   0.902
+RECYCLE  9   0.901   0.902
+Done2 with part2 (prediction)
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. rosettafoldna_1.sh) for first step. For example:</p>
+
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+set -e
+module load rosettafoldna
+cd /data/$USER/rosettafoldna_test/
+cp -r ${ROSETTAFOLDNA_TEST_DATA:-none}/* .
+run_RF2NA_part1.sh test_o protein.fa R:RNA.fa
+</code>
+</pre>
+<p> Then create a batch input file (e.g. rosettafoldna_2.sh) for the second step. For example:</p>
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+set -e
+module load rosettafoldna
+cd /data/$USER/rosettafoldna_test/
+run_RF2NA_part2.sh test_o protein.fa R:RNA.fa
+</code>
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+
+<pre class="term">
+[user@biowulf]$ <b>sbatch --cpus-per-task=10 --mem=70g rosettafoldna_1.sh</b>
+1001
+[user@biowulf]$ <b>sbatch --dependency=afterany:1001 --cpus-per-task=2 \
+                  --mem=10g --partition=gpu --gres=gpu:v100:1 rosettafoldna_2.sh</b>
+1002
+
+</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

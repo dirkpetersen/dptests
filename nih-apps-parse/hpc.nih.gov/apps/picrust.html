@@ -1,0 +1,159 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PICRUSt on Biowulf';</script>
+<div class="title">PICRUSt on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+PICRUSt (pronounced “pie crust”) is a bioinformatics software package designed to predict metagenome functional content from marker gene (e.g., 16S rRNA) surveys and full genomes.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+  <a href="https://www.nature.com/articles/s41587-020-0548-6">Douglas, Gavin M., et al. "PICRUSt2 for prediction of metagenome functions." <i>Nature Biotechnology</i> 38.6 (2020): 685-688.</a>
+  </li>
+    
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://huttenhower.sph.harvard.edu/picrust">PICRUSt Main Site</a></li>
+<li><a href="https://github.com/picrust/picrust2">PICRUSt on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>picrust</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Remember to set the processes option/argument pair like so: <tt>-p $SLURM_CPUS_PER_TASK</tt>
+    <li>Environment variables set <!--for ones users should be aware of -->
+      <ul>
+        <li><tt>PICRUST_HOME</tt></li>
+      </ul>
+    <li>Example files in <tt>$PICRUST_HOME/tutorials</tt>
+    <li>Recent versions of PICRUSt on Biowulf are technically PICRUSt2</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c8 --mem=16g --gres=lscratch:10</b>
+salloc: Pending job allocation 30152043
+salloc: job 30152043 queued and waiting for resources
+salloc: job 30152043 has been allocated resources
+salloc: Granted job allocation 30152043
+salloc: Waiting for resource configuration
+salloc: Nodes cn0890 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.30152043.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0890 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0890 30152043]$ <b>module load picrust/2.4.2</b>
+[+] Loading picrust  2.4.2  on cn0890
+[+] Loading singularity  3.8.5-1  on cn0890
+
+[user@cn0890 30152043]$ <b>cp $PICRUST_HOME/tutorials/chemerin_16S.zip .</b>
+
+[user@cn0890 30152043]$ <b>unzip chemerin_16S.zip</b>
+Archive:  chemerin_16S.zip
+  inflating: chemerin_16S/metadata.tsv
+  inflating: chemerin_16S/seqs.fna
+  inflating: chemerin_16S/table.biom
+
+[user@cn0890 30152043]$ <b>picrust2_pipeline.py -s chemerin_16S/seqs.fna -i chemerin_16S/table.biom -o \
+     picrust2_out_pipeline -p $SLURM_CPUS_PER_TASK</b>
+
+
+
+
+All ASVs were below the max NSTI cut-off of 2.0 and so all were retained for downstream analyses.
+
+All ASVs were below the max NSTI cut-off of 2.0 and so all were retained for downstream analyses.
+
+
+
+[user@cn0890 30152043]$ <b>ls picrust2_out_pipeline/</b>
+EC_metagenome_out    intermediate       KO_predicted.tsv.gz               out.tre
+EC_predicted.tsv.gz  KO_metagenome_out  marker_predicted_and_nsti.tsv.gz  pathways_out
+
+[user@cn0890 30152043]$ <b>exit</b>
+exit
+salloc: Relinquishing job allocation 30152043
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. picrust.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load picrust
+picrust2_pipeline.py -s seqs.fna -i table.biom -o output -p $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] picrust.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. picrust.swarm). For example:</p>
+
+<pre class="term">
+picrust2_pipeline.py -s seqs1.fna -i table1.biom -o output -p $SLURM_CPUS_PER_TASK
+picrust2_pipeline.py -s seqs2.fna -i table2.biom -o output -p $SLURM_CPUS_PER_TASK
+picrust2_pipeline.py -s seqs3.fna -i table3.biom -o output -p $SLURM_CPUS_PER_TASK
+picrust2_pipeline.py -s seqs4.fna -i table4.biom -o output -p $SLURM_CPUS_PER_TASK
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f picrust.swarm [-g #] [-t #] --module picrust</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module picrust</tt> <td>Loads the picrust module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

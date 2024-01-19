@@ -1,0 +1,131 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'shmlast: an improved implementation of Conditional Reciprocal Best Hits with LAST and Python ';</script>
+<div class="title"><b>shmlast: an improved implementation of Conditional Reciprocal Best Hits with LAST and Python </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+shmlast is a reimplementation of the Conditional Reciprocal Best Hits algorithm for finding potential orthologs between a transcriptome and a species-specific protein database. It uses the LAST aligner and the pydata stack to achieve much better performance while staying in the Python ecosystem.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Bo Li, Nathanael Fillmore, Yongsheng Bai, Mike Collins, James A. Thomson, Ron Stewart, and Colin N. Dewey. <br />
+<i> Evaluation of de novo transcriptome assemblies from RNA-Seq data</i><br />
+<a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0553-5">Genome Biology </a> 2014, <b>15</b>:553 <br/>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://pypi.org/project/shmlast/">shmlast project home page</a></li>
+<li><a href="https://github.com/camillescott/shmlast">shmlast github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>shmlast</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SHMLAST_HOME</b>&nbsp; installation directory</li>
+    <li><b>SHMLAST_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>SHMLAST_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@@cn3200 ~]$<b>module load shmlast  </b>
+[+] Loading singularity  3.10.0  on cn1113
+[+] Loading shmlast  1.6
+[user@biowulf]$ <b>shmlast</b>
+usage: shmlast [-h] [--version] {rbl,crbl} ...
+
+shmlast is a reimplementation of the Conditional Reciprocal Best
+Hits algorithm for finding potential orthologs between
+a transcriptome and a species-specific protein database. It uses the LAST
+aligner and the pydata stack to achieve much better performance while staying in the Python ecosystem. 
+
+positional arguments:
+  {rbl,crbl}
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit
+[user@biowulf]$ <bshmlast crbl -q $SHMLAST_DATA/test-transcript.fa -d  $SHMLAST_DATA/test-protein.fa</b>
+shmlast 1.2.1 -- Camille Scott, 2016
+------------------------------------
+subcommand: Conditional Reciprocal Best LAST
+doit action: run
+
+--- Begin Task Execution ---
+.  rename:/usr/local/apps/shmlast/1.2.1/sample_data/test-transcript.fa:
+    * Python: rename_input
+.  rename:/usr/local/apps/shmlast/1.2.1/sample_data/test-protein.fa:
+    * Python: rename_input
+.  translate:.test-transcript.fa:
+    * Python: function translate_fastx
+.  lastdb:.test-transcript.fa.pep:
+    * Cmd: `/usr/local/apps/shmlast/1.2.1/bin/lastdb -p -w3 .test-transcript.fa.pep .test-transcript.fa.pep`
+.  lastdb:.test-protein.fa:
+    * Cmd: `/usr/local/apps/shmlast/1.2.1/bin/lastdb -p -w3 .test-protein.fa .test-protein.fa`
+.  lastal:.test-protein.fa.x.test-transcript.fa.pep.maf:
+    * Cmd: `cat .test-protein.fa | /usr/local/apps/parallel/20171222/bin/parallel --round-robin --pipe -L 2 -N 10000 --gnu -j 1 -a .test-protein.fa /usr/local/apps/shmlast/1.2.1/bin/lastal -D100000.0 .test-transcript.fa.pep &gt; .test-protein.fa.x.test-transcript.fa.pep.maf`
+.  lastal:.test-transcript.fa.pep.x.test-protein.fa.maf:
+    * Cmd: `cat .test-transcript.fa.pep | /usr/local/apps/parallel/20171222/bin/parallel --round-robin --pipe -L 2 -N 10000 --gnu -j 1 -a .test-transcript.fa.pep /usr/local/apps/shmlast/1.2.1/bin/lastal -D100000.0 .test-protein.fa &gt; .test-transcript.fa.pep.x.test-protein.fa.maf`
+.  fit_and_filter_crbl_hits:
+    * Python: do_crbl_fit_and_filter
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. shmlast.sh). For example:</p>
+<pre class="term">
+#!/bin/bash
+#SBATCH --mem=4g
+module load shmlast
+cd /data/$USER         
+shmlast crbl -q $SHMLAST_DATA/test-transcript.fa -d  $SHMLAST_DATA/test-protein.fa     
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch shmlast.sh </pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. shmlast.swarm). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load shmlast
+cd /data/$USER
+shmlast crbl -q $SHMLAST_DATA/test-transcript.fa -d  $SHMLAST_DATA/test-protein.fa
+</pre>
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f shmlast.swarm -g 4</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

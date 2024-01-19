@@ -1,0 +1,80 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Datalad on Helix';</script>
+<div class="title">Datalad on Helix</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Example</a></div>
+      </div>
+</table>
+
+<p>
+Datalad provides users with access to a data sharing platform. Users can upload, version and share datasets as well as download datasets using datalad.
+</p>
+
+<h3>Web site</h3>
+<ul>
+    <li><a href="https://www.datalad.org/">Home page</a></li>
+    <li><a href="https://github.com/datalad">Github page</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://handbook.datalad.org/en/latest/">Datalad Documentation</a></li>
+</ul>
+
+
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li> Please use <tt>datalad</tt> on an <b>Helix</b> and not on Biowulf. 
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Example</div>
+<p>Establish a connection to Helix and run the program to download selected datasets from neurovault. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@helix]$ <b>module load datalad git</b>
+[+] Loading datalad  0.13.0rc2  on helix 
+[+] Loading singularity  3.6.4  on helix
+[+] Loading git 2.29.2  ... 
+
+[user@helix]$ <b>cd /data/$USER</b> 
+
+[user@helix]$ <b>datalad install -r ///neurovault</b>
+install(ok): /data/user/neurovault (dataset)                                                                            
+[INFO   ] Installing Dataset(/data/user/neurovault) to get /data/user/neurovault recursively            
+install(ok): /data/user/neurovault/snapshots (dataset)                                                                  
+action summary:                                                                                                                         
+  install (ok: 2)
+
+[user@helix]$ <b>cd neurovault</b>
+
+[user@helix]$ <b>datalad get snapshots/1003/</b>
+get(ok): snapshots/1003/13873.nii.gz (file) [from origin...]                                                                            
+get(ok): snapshots/1003/13874.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13875.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13876.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13877.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13878.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13879.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13880.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13881.nii.gz (file) [from origin...]
+get(ok): snapshots/1003/13882.nii.gz (file) [from origin...]
+  [10 similar messages have been suppressed]
+get(ok): snapshots/1003 (directory)
+action summary:
+  get (notneeded: 1, ok: 21)
+
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

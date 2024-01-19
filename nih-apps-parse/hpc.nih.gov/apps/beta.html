@@ -1,0 +1,217 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BETA: Binding and Expression Target Analysis ';</script>
+<div class="title"><b>BETA: Binding and Expression Target Analysis </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Binding and expression target analysis (BETA) is a software package 
+that integrates ChIP-seq of TFs or chromatin regulators 
+with differential gene expression data to infer direct target genes. 
+The combination of ChIP-seq and transcriptome analysis is a compelling approach to unravel the regulation of gene expression. 
+</p>
+
+<h3>Reference:</h3>
+<ul>
+<li>Su Wang, Hanfei Sun, Jian Ma, Chongzhi Zang, Chenfei Wang, Juan Wang, Qianzi Tang, Clifford A Meyer, Yong Zhang and X Shirley Liu <br />
+<i>Target analysis by integration of transcriptome and ChIP-seq data with BETA </i><br />
+<a href="https://www.nature.com/articles/nprot.2013.150">Nature Protocols</a> 2013, <b>8</b>(12), p.2502-2515.<br/>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://cistrome.org/BETA">Citrome BETA Home page</a></li>
+<li><a href="https://github.com/suwangbio/BETA">BETA Github_page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>BETA</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>BETA_HOME</b>&nbsp; BETA    installation directory</li>
+    <li><b>BETA_BIN </b>&nbsp; &nbsp; &nbsp; BETA executable directory</li>
+    <li><b>BETA_DOC </b>&nbsp; &nbsp; &nbsp; BETA documentation directory</li>
+    <li><b>BETA_DATA</b>&nbsp; &nbsp; BETA test data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3111 ~]$ <b>module load BETA</b>
+[user@cn3111 ~]$ <b>BETA -h</b>
+usage: BETA [-h] [--version] {basic,plus,minus} ...
+
+BETA --- Binding Expression Target Analysis
+
+positional arguments:
+  {basic,plus,minus}  sub-command help
+    basic             Main BETA Function: Transcription factors direct targets
+                      prediction.
+    plus              The super beta beta can not only do TF's direct targets
+                      and active or repressive prediction, but also do the
+                      motif analysis with the target regions
+    minus             Find Target Genes with only binding data: regulatiry
+                      potential score
+
+optional arguments:
+  -h, --help          show this help message and exit
+  --version           show program's version number and exit
+
+For command line options of each command, type: BETA COMMAND -h
+</pre>
+Download sample data:
+<pre class="term">
+[user@cn3111 ~]$ <b>cp $BETA_DATA/* . </b>
+</pre>
+Link a human genome sequence in FASTA format to the current folder:
+<pre class="term">
+[user@cn3111 ~]$ <b>ln -s /fdb/igenomes/Homo_sapiens/UCSC/hg19/hg19.fa</b>
+</pre>
+BETA Basic will do the factor function prediction and direct target detecting:
+<pre class="term">
+[user@cn3111 ~]$ <b>BETA basic -p 3656_peaks.bed -e AR_diff_expr.xls -k LIM -g hg19 --da 500 -n basic --info 1,2,6 </b>
+[09:09:02] Argument List: 
+[09:09:02] Name = basic
+[09:09:02] Peak File = 3656_peaks.bed
+[09:09:02] Top Peaks Number = 10000
+[09:09:02] Distance = 100000 bp
+[09:09:02] Genome = hg19
+[09:09:02] Expression File = AR_diff_expr.xls
+[09:09:02] Expression Type = MicroArray, LIMMA result
+[09:09:02] Number of differential expressed genes = 500.0
+[09:09:02] Differential expressed gene FDR Threshold = 1
+[09:09:02] Up/Down Prediction Cutoff = 0.001000
+[09:09:02] Function prediction based on regulatory potential
+[09:09:02] Check 3656_peaks.bed successfully!
+[09:09:02] #ID	logFC	AveExpr	t	P.Value	adj.P.Val	B
+ is the header of the expression file
+[09:09:02] Checking the differential expression infomation...
+[09:09:02] Take the first line with Differential Information as an example: NR_045762_at3.16711734	9.140369116	35.91057535	6.99E-11	4.18E-07	14.13456018
+
+[09:09:02] Differential Expression file format successful passed
+[09:09:02] You do not like filter peak by CFCT boundary, it will be filtered only by the distance
+[09:09:02] Read file <3656_peaks.bed> OK! All <7059> peaks.
+[09:09:09] Process <50801> genes
+[09:09:16] Finished! Preliminary results saved into temporary file: <basic.txt>
+[15841, 18956]
+[09:09:16] Genes were seprated to two parts: up regulated and down regulated.
+cut: write error: Broken pipe
+cut: write error: Broken pipe
+[09:09:17] Prepare file for the Up/Down Test
+null device 
+          1 
+[09:09:20] Finished, Find the result in basic_function_prediction.pdf
+[09:09:20] Get the Rank Product of the "upregulate" genes
+['"upregulate"']
+[09:10:00] pick out the peaks 100000bp around the selected genes
+...
+total time: 0:0:58 
+
+</pre>
+BETA Plus will do TF active and repressive function prediction, direct targets
+detecting and motif analysis in target regions:
+<pre class="term">
+[user@cn3111 ~]$ <b>BETA plus -p 3656_peaks.bed -e AR_diff_expr.xls -k LIM -g hg19 --gs hg19.fa </b>
+[08:38:05] Argument List: 
+[08:38:05] Name = NA
+[08:38:05] Peak File = 3656_peaks.bed
+[08:38:05] Top Peaks Number = 10000
+[08:38:05] Distance = 100000 bp
+[08:38:05] Genome = hg19
+[08:38:05] Expression File = AR_diff_expr.xls
+[08:38:05] Genome Sequence fasta formated data = hg19.fa
+[08:38:05] Expression Type = MicroArray, LIMMA result
+[08:38:05] Number of differential expressed genes = 0.5
+[08:38:05] Differential expressed gene FDR Threshold = 1
+[08:38:05] Up/Down Prediction Cutoff = 0.001000
+[08:38:05] Function prediction based on regulatory potential
+[08:38:05] Check 3656_peaks.bed successfully!
+[08:38:05] #ID	logFC	AveExpr	t	P.Value	adj.P.Val	B
+ is the header of the expression file
+[08:38:05] Checking the differential expression infomation...
+[08:38:05] Take the first line with Differential Information as an example: NR_045762_at3.16711734	9.140369116	35.91057535	6.99E-11	4.18E-07	14.13456018
+
+[08:38:05] Differential Expression file format successful passed
+[08:38:05] You do not like filter peak by CFCT boundary, it will be filtered only by the distance
+[08:38:06] Read file <3656_peaks.bed> OK! All <7059> peaks.
+[08:38:13] Process <50801> genes
+[08:38:20] Finished! Preliminary results saved into temporary file: <NA.txt>
+[15841, 18956]
+[08:38:20] Genes were seprated to two parts: up regulated and down regulated.
+cut: write error: Broken pipe
+cut: write error: Broken pipe
+[08:38:20] Prepare file for the Up/Down Test
+null device 
+          1 
+[08:39:05] Finished, Find the result in NA_function_prediction.pdf
+[08:39:05] Get the Rank Product of the "upregulate" genes
+['"upregulate"']
+[08:39:35] pick out the peaks 100000bp around the selected genes
+...
+[08:39:36] get three regions of every peak around the up genes
+['up_middle.bed', 'up_left.bed', 'up_right.bed']
+ [08:40:42] get the fasta format sequence data of the three regions of up
+[08:40:42] get three regions of every peak around the non genes
+['non_middle.bed', 'non_left.bed', 'non_right.bed']
+[08:41:46] get the fasta format sequence data of the three regions of non
+[08:41:46] run mis to do the known motif scan with cistrome motif database
+Calculating Background..
+A or T: 161685
+C or G: 131715
+Others: 0
+ Calculating Background..
+A or T: 161503
+C or G: 130430
+Others: 0
+Calculating Background..
+A or T: 159938
+C or G: 131995
+Others: 0
+Calculating Background..
+A or T: 236519
+C or G: 149281
+Others: 0
+Calculating Background..
+A or T: 236826
+C or G: 147045
+Others: 0
+Calculating Background..
+A or T: 235215
+C or G: 148656
+Others: 0
+[08:43:51] T statistic test performed here to do the significance testing of every motif
+[09:05:12] motif result will be in html format
+...
+Success parser from table.
+[09:05:20] Done: find motif result in beatmotif.html file
+...
+total time: 0:27:14 
+
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3111 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

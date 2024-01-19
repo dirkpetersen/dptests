@@ -1,0 +1,162 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'IGV and IGVTools on Biowulf';</script>
+<div class="title">IGV and IGVTools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>The Integrative Genomics Viewer (IGV) is a high-performance visualization tool for interactive exploration of large, integrated datasets. Features include:</p>
+<ul>
+  <li>Support for a wide variety of data types including</li>
+  <ul>
+        <li>Genetic variation (copy number, loss of heterozygosity, somatic mutations)</li>
+       <li>Gene/microRNA expression</li>
+        <li>RNAi screens</li>
+        <li>Epigenetic data</li>
+        <li>Genomic annotations</li>
+        <li>Sequence Alignments</li>
+  </ul>
+  <li>Easy access to genomes and datasets hosted by the Broad Institute</li>
+</ul>
+
+<h3>References:</h3>
+<ul>
+  <li>James T. Robinson, Helga Thorvaldsdóttir, Wendy Winckler, Mitchell Guttman, Eric S. Lander, Gad Getz, Jill P. Mesirov. <a href="http://www.nature.com/nbt/journal/v29/n1/abs/nbt.1754.html">Integrative Genomics Viewer. Nature Biotechnology 29, 24–26 (2011)</a></li>
+  <li>Helga Thorvaldsdóttir, James T. Robinson, Jill P. Mesirov.  <a href="https://academic.oup.com/bib/article/14/2/178/208453/Integrative-Genomics-Viewer-IGV-high-performance?searchresult=1">Integrative Genomics Viewer (IGV): high-performance genomics data visualization and exploration. Briefings in Bioinformatics 14, 178-192 (2013).</a></li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://software.broadinstitute.org/software/igv/">IGV Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<p class="NXblock">This application requires a <a href="/docs/nx.html">graphical connection using NX</a></p>
+<ul>
+<li>Module Name: <tt>IGV</tt> and <tt>IGVTools</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>IGV_HOME</tt></li>
+    <li><tt>IGV_JAR</tt></li>
+    <li><tt>IGV_JARPATH</tt></li>
+    <li><tt>IGVTOOLS_HOME</tt></li>
+    <li><tt>IGVTOOLS_JAR</tt></li>
+    <li><tt>IGVTOOLS_JARPATH</tt></li>
+  </ul>
+<!-- <li>This application requires an <a href="/docs/connect.html">X-Windows connection</a>.</li> -->
+<li>Mac users: If mouse right-click fail to work when opening IGV in NoMachine, please 'peel' the top right corner of NoMachine window, select 'input', then check 'grab the mouse input'.</li>
+</ul>
+
+<P>
+
+<p class="alert"><b>NOTE:</b> When running on Biowulf, make sure that web proxying is enabled by the <b><tt>http_proxy</tt></b> environment variable.
+Otherwise you may get a java error message about being unable to connect to remote hosts.  For 
+information about web proxies on the Biowulf cluster, see <a href="https://hpc.nih.gov/docs/transfer.html#compute ">here</a>.</p>
+
+<a Name="pitfall"></a><div class="heading">Common pitfall</div>
+
+<p>This is a list of common errors for IGV users on the cluster. </p>
+
+<dl>
+    <b>Failed to load saved session</b>
+<dd>This can be fixed by unusing the relative path:
+<pre>
+View -> Preferences -> General
+Unselect "Use relative paths in session files"
+</pre>
+The cause of this error is IGV can't locate the files using relative paths. 
+This appears to be a problem under only some circumstances.
+</dd>
+
+</dl>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load IGV IGVTools</b>
+[user@cn3144 ~]$ <b>igv -m 8g</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+  <p>Here are the commandline options:</p>
+
+  <ul>
+    <li><b>-b [file]</b> or <b>--batch=[file]</b> Immediately run the supplied batch script after start up.</li>
+    <li><b>-g [genomeId]</b> or <b>--genome=[genomeId]</b> Specify the genome by ID. You can locate the genomeId as the last entry in each line of the genome registry.  NEW since 2.1.28: the -g option can specify a path to a .genome or indexed fasta file.</li>
+    <li><b>-d [URL]</b> or <b>--dataServerURL=[URL]</b> Specify URL to data registry file.</li>
+    <li><b>-u [URL]</b> or <b>--genomeServerURL=[URL]</b> Specify URL to genome registry file.</li>
+    <li><b>-p [port]</b> or <b>--port=[port]</b> Specify port IGV opens for port commands.</li>
+    <li><b>-o [file]</b> or <b>--preferences=[file]</b> A user preference properties file. This can override any properties IGV supports.</li>
+  </ul>
+
+  <p>The igv command on Helix is wrapped to include two additional options:</p>
+
+  <ul>
+    <li><b>-m</b> or <b>--memory</b> memory allocated</li>
+    <li><b>-t</b> or <b>--tmpdir</b> temporary directory</li>
+  </ul>
+
+  <p>By default, IGV uses 2gb of memory and uses either <b>/lscratch/$SLURM_JOBID/igvtmp</b> if <b>--gres=lscratch:<i>N</i></b> is used in a batch job (where <b><i>N</i></b> is the number GB needed for scratch space, where
+    <b>$USER</b> is the login of the user running IGV. To allocate 20gb of memory, use:</p>
+
+  <pre class="term">igv --memory 20g</pre>
+
+  <p>Input/output for IGV is menu-driven through the GUI.</p>
+
+<h2>IGVTools</h2>
+  <p>IGVTools allows commandline utilities for working with ascii file formats.</p>
+  <ul>
+    <li><b>tile</b> converts a sorted data input file to a binary tiled data (.tdf) file.  Supported input file formats: .wig, .cn, .snp, .igv, .gct</li>
+    <li><b>count</b> computes average alignment or feature density for over a specified window size across the genome.  Supported input file formats: .sam,  .bam,  .aligned,  .sorted.txt, .bed</li>
+    <li><b>sort</b> sorts the input file by start position.  Supported input file formats: .cn, .igv, .sam, .aligned, and .bed</li>
+    <li><b>index</b> creates an index file for an input ascii alignment or feature file.  Supported input file formats: .sam,  .aligned, .sorted.txt, and .bed</li>
+  </ul>
+
+  <p>By default, IGVTools uses 5gb of memory and the same temporary directory method as IGV.
+    To allocate 20gb of memory, use:</p>
+
+  <pre class="term">igvtools --memory 20g [ additional options for igvtools ]</pre>
+
+  <p>To see what options are available for the commandline IGVTools, just type <b>igvtools</b> at the prompt:</p>
+
+  <pre class="term">
+Program: igvtools. IGV Version 2.3.98 (141)07/25/2017 12:12 AM
+
+Usage: igvtools [command] [options] [input file/dir] [other arguments]
+
+Command: version print the version number
+	 sort    sort an alignment file by start position.
+	 index   index an alignment file
+	 toTDF    convert an input file (cn, gct, wig) to tiled data format (tdf)
+	 count   compute coverage density for an alignment file
+	 formatexp  center, scale, and log2 normalize an expression file
+	 gui      Start the gui
+	 help <command>     display this help message, or help on a specific command
+	 See http://www.broadinstitute.org/software/igv/igvtools_commandline for more detailed help
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

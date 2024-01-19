@@ -1,0 +1,115 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Abyss on HPC';</script>
+    <div class="title">Abyss on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+<!--        <div class="tocItem"><a href="#mpi">MPI job </a></div>
+-->      </div>
+</td></tr></table>    <p> ABySS is a de novo, parallel, paired-end sequence assembler that is designed 
+      for short reads. The parallel version is implemented using MPI and is capable 
+      of assembling larger genomes. 
+      <!--========================================================================-->
+    </p>
+
+<h3>References:</h3>    <ul>
+      <li><a href="https://genome.cshlp.org/content/27/5/768">https://genome.cshlp.org/content/27/5/768</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="https://github.com/bcgsc/abyss">https://github.com/bcgsc/abyss</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>abyss</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>MPI app; when running abyss on multiple nodes, please follow the syntax in the example below instead of using traditional MPI syntax.</li>
+    </ul>
+<P>
+
+<a Name="sbatch"></a></p><div class="heading">Batch job (in MPI mold)</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+#SBATCH --job-name="abyss"
+#SBATCH --mail-type=BEGIN,END
+### sbatch --partition=multinode --ntasks=16 --nodes=2 --time=24:00:00 --mem=60g batch.sh
+
+cd /data/$USER/abyss
+module load abyss
+`which abyss-pe` np=${SLURM_NTASKS} j=8 k=25 n=10 in='/data/$USER/File_1.fq /data/$USER/File_2.fq' name=OutputPrefix
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch --partition=multinode --ntasks=16 --nodes=2 --time=24:00:00 --mem=60g batch.sh</pre>
+<p> The job runs 16 tasks ( np=${SLURM_NTASKS} ) on 2 nodes with 8 (j=8) cpus each node.
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;abyss-pe np=${SLURM_NTASKS} j=8 k=25 n=10 in='1.fq 2.fq' name=out
+cd dir2;abyss-pe np=${SLURM_NTASKS} j=8 k=25 n=10 in='1.fq 2.fq' name=out
+cd dir3;abyss-pe np=${SLURM_NTASKS} j=8 k=25 n=10 in='1.fq 2.fq' name=out
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm --module abyss --sbatch "--partition=multinode --ntasks=16 --nodes=2 --time=24:00:00 --mem=60g"</pre>
+    where 
+    <table width="63%" border=0>
+      <tr> 
+        <td width=18%><tt>--sbatch</tt></td>
+        <td width="82%">use this flag to pass sbatch flags to swarm</td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+<!--
+<a Name="mpi"></a><div class="heading">MPI job </div>
+<div class="nudgeblock">Abyss is able to run across nodes using MPI</div>
+
+    <p>Create a script (e.g. mpiscript). For example:</p>
+
+<pre class="term">
+#!/bin/bash                                                                                                                                             
+#SBATCH --job-name="abyss"                                                                                                                              
+#SBATCH --mail-type=BEGIN,END                                                                                                                           
+# submit the job with: sbatch --partition=multinode --ntasks=32 --time=24:00:00 --mem=60g mpiscript                                                       
+
+cd /data/$USER/abyss
+module load abyss/2.3.1
+`which abyss-pe` np=$SLURM_NTASKS B=45G k=25 n=10 in='1.fq 2.fq' name=051321
+</pre>
+
+<p>Submit this job using the sbatch command.</p>
+
+    <pre class="term">sbatch --partition=multinode --ntasks=32 --time=24:00:00 --mem=60g mpiscript</pre>
+    where 
+    <table width="63%" border=0>
+      <tr> 
+        <td width=18%><tt>--ntasks</tt></td>
+        <td width="82%">use this flag to allocate cpus for the job.</td>
+      </tr>
+    </table>
+-->
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

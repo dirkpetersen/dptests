@@ -1,0 +1,111 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MutSig on Biowulf';</script>
+<div class="title">MutSig on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+MutSig analyzes lists of mutations discovered in DNA sequencing, to identify genes that were mutated more often than expected by chance given background mutation processes.
+</p>
+<p>
+MutSigCV starts from the observation that the data is very sparse, and that there are usually too few silent mutations in a gene for its background mutation rate (BMR) to be estimated with any confidence.  MutSigCV improves the BMR estimatation by pooling data from 'neighbor' genes in covariate space.  These neighbor genes are chosen on the basis of having similar genomic properties to the central gene in question: properties such as DNA replication time, chromatin state (open/closed), and general level of transcription activity (e.g. highly transcribed vs. not transcribed at all).  These genomic parameters have been observed to strongly correlate (co-vary) with background mutation rate.  For instance, genes that replicate early in S-phase tend to have much lower mutation rates than late-replicating genes.  Genes that are highly transcribed also tend to have lower mutation rates than unexpressed genes, due in part to the effects of transcription-coupled repair (TCR).  Genes in closed chromatin (as measured by HiC or ChipSeq) have higher mutation rates than genes in open chromatin. Incorporating these covariates into the background model substantially reduces the number of false-positive findings.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Lawrence, M. et al.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/23770567"><u><b>Mutational heterogeneity in cancer and the search for new cancer-associated genes.</b></u></a>
+    <em>Nature 499, 214-218 (2013).</em>
+  </li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://www.broadinstitute.org/cancer/cga/mutsig">MutSig Home</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>MutSig</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>MUTSIG_HOME</tt> = path to the chosen version of MutSig</li>
+    <li><tt>MUTSIG_EX</tt> = directory contain useful example files </li>
+    <li><tt>MUTSIG_REF</tt> = directory contain requred reference files</li>
+  </ul>
+<li>Example files in <tt>$MUTSIG_EX</tt>
+<li>Reference data in <tt>$MUTSIG_REF</tt>
+</ul>
+<P>
+
+<p>You will need to create a mutations file in MAF format.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$
+[user@cn3144 ~]$ <b>ml MutSig</b>
+[user@cn3144 ~]$ <b>MutSigCV \
+$MUTSIG_EX/LUSC.mutations.maf \
+$MUTSIG_REF/exome_full192.coverage.txt \
+$MUTSIG_REF/gene.covariates.txt \
+output \
+$MUTSIG_REF/mutation_type_dictionary_file.txt \
+$MUTSIG_REF/chr_files_hg19</b>
+[user@cn3144 ~]$ <b>ls -l</b>
+-rw-r--r-- 1 user user      510 Aug 29 12:47 output.categs.txt
+-rw-r--r-- 1 user user  8989673 Aug 29 12:47 output.coverage.txt
+-rw-r--r-- 1 user user 38760466 Aug 29 12:47 output.mutations.txt
+-rw-r--r-- 1 user user      750 Aug 29 12:43 output.mutcateg_discovery.txt
+-rw-r--r-- 1 user user  1397350 Aug 29 13:09 output.sig_genes.txt
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. MutSig.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load MutSig
+MutSigCV \
+  $MUTSIG_EX/LUSC.mutations.maf \
+  $MUTSIG_REF/exome_full192.coverage.txt \
+  $MUTSIG_REF/gene.covariates.txt \
+  output \
+  $MUTSIG_REF/mutation_type_dictionary_file.txt \
+  $MUTSIG_REF/chr_files_hg19
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=10g MutSig.sh</pre>
+
+10 GB memory is sufficient for this example job. You may need to increase the memory allocation for your own MutSig jobs. 
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

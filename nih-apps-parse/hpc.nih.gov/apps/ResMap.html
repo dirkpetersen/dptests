@@ -1,0 +1,109 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ResMap on Biowulf';</script>
+<div class="title">ResMap on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job</a></div>
+        <div class="tocItem"><a href="#gpus">GPU Acceleration</a></div>
+      </div>
+</table>
+
+<p>ResMap (Resolution Map) is a Python (NumPy/SciPy) application with a Tkinter GUI
+and a command-line interface. It is a software package for computing the local resolution
+of 3D density maps studied in structural biology, primarily electron cryo-microscopy (cryo-
+EM).</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    A. Kucukelbir, F.J. Sigworth, H.D. Tagare.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/24213166"><b><u>Quantifying the Local Resolution of Cryo-EM Density Maps.</u></b></a>
+    <em>Nature Methods, Volume 11, Issue 1, Pages 63-65, 2014.</em>
+</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li>ResMap Main Site: <a href="http://resmap.sourceforge.net/">http://resmap.sourceforge.net/</a></li>
+  <li>ResMap PDF: <a href="ResMap-manual_v-1.95.pdf">ResMap-manual_v-1.95.pdf</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>ResMap</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+
+<p class="alert">This application requires an <a href="/docs/connect.html">X-Windows connection</a>. Users are encouraged to use <a href="https://hpc.nih.gov/docs/nx.html">NX</a> as their X11 servers.</p>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load ResMap</b>
+
+[user@cn3144 ~]$ <b>ResMap</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>After typing 'ResMap' at the prompt, input is menu-driven.</p>
+
+<img src="ResMap.PNG" alt="ResMap window" width="850px" />
+
+<p class="alert">The correct path for the CUDA library file is <tt><b>/opt/resmap/ResMap_krnl-cuda-V9.0.102-sm35_gpu.so</b></tt>.  You will need to update the GUI.</p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. ResMap.sh). ResMap can be run without the need for an X11 server by starting a dummy X11 server with Xvfb and setting the $DISPLAY variable to a bogus number.</p>
+
+<pre class="term">#!/bin/bash
+module load ResMap
+Xvfb -shmem -screen 0 1280x1024x24 &
+export DISPLAY=":0"
+cp $RESMAP_EXAMPLES/*.map .
+ResMap --doBenchMarking --noguiSplit \
+  emd_8731_half_map_1.map emd_8731_half_map_2.map</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=10 ResMap.sh</pre>
+
+<a Name="gpus"></a><div class="heading">GPU Acceleration</div>
+
+<p>ResMap can be accelerated at least 10-fold by using GPUs rather than CPUs.  This requires three options, <tt><b>--use_gpu</b></tt>, <tt><b>--set_gpu</b></tt> and <tt><b>--lib_krnl_gpu</b></tt>. Here is a batch script for doing so:</p>
+<pre class="term">#!/bin/bash
+module load ResMap
+Xvfb -shmem -screen 0 1280x1024x24 &
+export DISPLAY=":0"
+cp $RESMAP_EXAMPLES/*.map .
+ResMap --doBenchMarking --noguiSplit \
+  emd_8731_half_map_1.map emd_8731_half_map_2.map \
+  --use_gpu=yes --set_gpu=0 \
+  --lib_krnl_gpu=/opt/resmap/ResMap_krnl-cuda-V9.0.102-sm35_gpu.so</pre>
+
+<p>Submit this job using this Slurm command, allocating a single GPU for the job:</p>
+
+<pre class="term">sbatch --mem=10 --gres=gpu:p100:1 ResMap.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

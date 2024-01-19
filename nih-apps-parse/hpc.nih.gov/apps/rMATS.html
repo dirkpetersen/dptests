@@ -1,0 +1,136 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'rMATS on Biowulf';</script>
+<div class="title">rMATS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MATS is a computational tool to detect differential alternative splicing events from RNA-Seq data. 
+The statistical model of MATS calculates the P-value and false discovery rate 
+that the difference in the isoform ratio of a gene between two conditions 
+exceeds a given user-defined threshold. 
+The replicate MATS (rMATS) is designed for detection of differential alternative splicing 
+from replicate RNA-Seq data.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Shen S., Park JW., Lu ZX., Lin L., Henry MD., Wu YN., Zhou Q., Xing Y. rMATS: Robust and Flexible Detection of Differential Alternative Splicing from Replicate RNA-Seq Data. PNAS, 111(51):E5593-601. doi: 10.1073/pnas.1419161111</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://rnaseq-mats.sourceforge.net/index.html">rMATS home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>rmats</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded app (set --nthread $SLURM_CPUS_PER_TASK)
+<li>Example files in <tt>/usr/local/apps/rmats/TEST_DATA</tt>
+<li>Reference data in <tt>/fdb/STAR_indices</tt>
+<li>Unusual environment variables set
+  <ul>
+    <li><b>RMATS_HOME</b>&nbsp; installation directory</li>
+    <li><b>RMATS_BIN</b>&nbsp; executable   directory</li>
+    <li><b>RMATS_SRC</b>&nbsp; source code  directory</li>
+    <li><b>RMATS_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 16 --mem 45g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>mkdir -p /data/$USER/rmats && cd /data/$USER/rmats</b>
+</pre>
+Here is how one can use the most recent rMATS version 4.1.2:
+<pre class="term">
+[user@cn3144 ~]$ <b>module load rmats/4.1.2</b>
+[+] Loading singularity  3.8.5-1  on cn3144
+[+] Loading rMATS  4.1.2
+[user@cn3144 ~]$ <b> cp -r $RMATS_DATA/* . </b>
+
+[user@cn3144 ~]$ <b> rmats.py --s1 $PWD/s1.txt --s2 $PWD/s2.txt --gtf gtf/Homo_sapiens.Ensembl.GRCh37.72.gtf --bi /fdb/STAR_indices/2.7.8a/GENCODE/Gencode_human/release_27/genes-100 --od out_test -t paired --nthread $SLURM_CPUS_PER_TASK --readLength 50 --tophatAnchor 8 --cstat 0.0001 --tstat 6 --tmp /lscratch/${SLURM_JOB_ID} </b>
+...
+</pre>
+In order to use an older rMATS version 4.0.2:
+<pre class="term">
+[user@cn3144 ~]$ <b>module load rmats/4.0.2</b>
+[+] Loading rmats  4.0.2  on cn3144
+[+] Loading singularity  3.8.5-1  on cn3144
+[user@cn3144 ~]$ <b>cp -r /usr/local/apps/rmats/testData/* .</b>
+
+[user@cn3144 ~]$ <b>export TMPDIR=/lscratch/$SLURM_JOBID</b> # write temp files in lscratch
+
+[user@cn3144 ~]$ <b>rmats --s1 $PWD/s1.txt --s2 $PWD/s2.txt --gtf gtf/Homo_sapiens.Ensembl.GRCh37.72.gtf --bi /fdb/STAR_indices/2.6.1c/GENCODE/Gencode_human/release_27/genes-100 --od out_test -t paired --nthread $SLURM_CPUS_PER_TASK --readLength 50 --tophatAnchor 8 --cstat 0.0001 --tstat 6 </b>
+</pre>
+<pre class="term">
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. submit.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load rmats
+export TMPDIR=/lscratch/$SLURM_JOBID
+rmats.py  --s1 $PWD/s1.txt --s2 $PWD/s2.txt --gtf $PWD/gtf/Homo_sapiens.Ensembl.GRCh37.72.gtf --bi /fdb/STAR_indices/2.7.8a/GENCODE/Gencode_human/release_27/genes-100 --od out_test -t paired --nthread $SLURM_CPUS_PER_TASK --readLength 50 --tophatAnchor 8 --cstat 0.0001 --tstat 6 --tmp /lscratch/${SLURM_JOB_ID}</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=30g --gres=lscratch:20 submit.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. rmats.swarm). For example:</p>
+
+<pre class="term">
+rmats.py  --s1 $PWD/s1.txt --s2 $PWD/s2.txt --gtf $PWDgtf/Homo_sapiens.Ensembl.GRCh37.72.gtf --bi /fdb/STAR_indices/2.7.8a/GENCODE/Gencode_human/release_27/genes-100 --od out_test1 -t paired --nthread $SLURM_CPUS_PER_TASK --readLength 50  --tophatAnchor 8 --cstat 0.0001 --tstat 6 --tmp /lscratch/${SLURM_JOB_ID}
+rmats.py  --s1 $PWD s3.txt --s2 $PWD s4.txt --gtf $PWDgtf/Homo_sapiens.Ensembl.GRCh37.72.gtf --bi /fdb/STAR_indices/2.7.8a/GENCODE/Gencode_human/release_27/genes-100 --od out_test2 -t paired --nthread $SLURM_CPUS_PER_TASK --readLength 50  --tophatAnchor 8 --cstat 0.0001 --tstat 6 --tmp /lscratch/${SLURM_JOB_ID}
+rmats.py  --s1 $PWD s5.txt --s2 $PWD s6.txt --gtf $PWDgtf/Homo_sapiens.Ensembl.GRCh37.72.gtf --bi /fdb/STAR_indices/2.7.8a/GENCODE/Gencode_human/release_27/genes-100 --od out_test3 -t paired --nthread $SLURM_CPUS_PER_TASK --readLength 50  --tophatAnchor 8 --cstat 0.0001 --tstat 6 --tmp /lscratch/${SLURM_JOB_ID}
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f rmats.swarm [-g 30] [-t 16] --module rmats</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module TEMPLATE</tt> <td>Loads the TEMPLATE module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

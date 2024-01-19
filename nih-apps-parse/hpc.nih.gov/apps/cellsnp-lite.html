@@ -1,0 +1,98 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' cellSNP-lite on Biowulf';</script>
+<div class="title"> cellSNP-lite on Biowulf</div>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#int">Interactive Jobs</a></div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Using Swarm</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+<p>
+cellsnp-lite aims to pileup the expressed alleles in single-cell or bulk RNA-seq data, which can be directly used for donor deconvolution in multiplexed single-cell RNA-seq data, particularly with vireo, which assigns cells to donors and detects doublets, even without genotyping reference.
+
+cellsnp-lite heavily depends on htslib. This program should give very similar results as samtools/bcftools mpileup. Also, there are two major differences comparing to bcftools mpileup:
+
+cellsnp-lite can now pileup a list of positions, with directly splitting into a list of cell barcodes, e.g., for 10x genome. With bcftools, you may need to manipulate the RG tag in the bam file if you want to divide reads into cell barcode groups.
+cellsnp-lite uses simple filtering for outputting SNPs, i.e., total UMIs or counts and minor alleles fractions. The idea here is to keep most information of SNPs and the downstream statistical model can take the full use of it.
+cellsnp-lite is the C version of cellSNP, which is implemented in Python. Compared to cellSNP, cellsnp-lite is basically more efficient with higher speed and less memory usage.
+<P>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<p><a href="https://github.com/single-cell-genetics/cellsnp-lite">https://github.com/single-cell-genetics/cellsnp-lite</a></p>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>cellsnp-lite</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Example files are under <tt>/usr/local/apps/cellsnp-lite/test</tt></li>
+<li>Mutithreaded, use -p $SLURM_CPUS_PER_TASK to specify number of cpus.</li>
+</ul>
+
+<a Name="batch"></a><div class="heading">Submitting an interactive job</div>
+<P>
+Allocate an interactive session  and run the interactive job there.</p>
+<pre class="term">[biowulf]$ <b>sinteractive  --mem=5g --cpus-per-task=4</b>
+salloc.exe: Granted job allocation 789523
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0135 are ready for job
+
+[cn0135]$ <b>cd /data/$USER/</b>
+
+[cn0135]$ <b>module load cellsnp-lite</b>
+
+[cn0135]$ <b>cp -r /usr/local/apps/cellsnp-lite/test .</b>
+
+[cn0135]$ <b>cd test</b>
+
+[cn0135]$ <b>bash ./test_10x.sh</b>
+
+[cn0135]$ <b>exit</b>
+salloc.exe: Job allocation 789523 has been revoked.
+[biowulf]$</pre>
+<p>
+
+<a Name="batch"></a><div class="heading">Submitting a single batch job</div>
+    
+<p>1. Create a script file (myscript) similar to the one below
+<pre>#! /bin/bash
+# myscript
+set -e
+
+module load cellsnp-lite || exit 1
+cd /data/$USER/test/
+cellsnp-lite -p $SLURM_CPUS_PER_TASK -s file.bam -O OurDir -R file.csv.gz -b file.tsv --minCOUNT 20</pre>
+  <p>2. Submit the script on biowulf:   
+      
+  <pre class="term">[biowulf]$ sbatch --mem=5g -cpus-per-task=4 myscript</pre>
+
+<p>
+
+<a Name="swarm"></a><div class="heading">Using Swarm</div>
+<P>
+Using the 'swarm' utility, one can submit many jobs to the cluster to run concurrently. </p>
+
+  <p>Set up a swarm command file (eg /data/$USER/cmdfile). </p>
+
+  <pre class="term">
+cd /data/$USER/dir1; cellsnp-lite ...
+cd /data/$USER/dir2; cellsnp-lite ...
+cd /data/$USER/dir3; cellsnp-lite ...
+...
+cd /data/$USER/dir20; cellsnp-lite ...
+</pre>
+<P>
+
+<p> submit the swarm job:
+  <pre class="term">$ swarm -f cmdfile --module cellsnp-lite -g 5 -t 4</pre>
+
+<p>For more information regarding running swarm, see <a href="swarm.html">swarm.html</a></p>
+
+
+</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

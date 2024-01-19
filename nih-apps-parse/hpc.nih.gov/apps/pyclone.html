@@ -1,0 +1,122 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Pyclone on HPC';</script>
+    <div class="title">Pyclone on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> PyClone is statistical model and software tool designed to infer the prevalence 
+      of point mutations in heterogeneous cancer samples. The input data for PyClone 
+      consists of a set read counts from a deep sequencing experiment, the copy 
+      number of the genomic region containing the mutation and an estimate of 
+      tumour content. </p>
+
+<h3>References:</h3>    
+    <ul>
+      <li>Roth <em>et al.</em> PyClone: statistical inference of clonal population 
+        structure in cancer <a href="http://www.nature.com/nmeth/journal/v11/n4/full/nmeth.2883.html">PMID: 
+        24633410</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="https://github.com/aroth85/pyclone">https://github.com/aroth85/pyclone</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>pyclone</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) </li>
+      <li>Example files in /usr/local/apps/pyclone/examples</li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>    
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load pyclone</strong>
+[user@cn3144 ~]$ <strong>cp -r /usr/local/apps/pyclone/examples /data/$USER</strong>
+[user@cn3144 ~]$ <strong>cd /data/$USER/examples/mixing/tsv</strong>
+[user@cn3144 ~]$ <strong>PyClone run_analysis_pipeline --in_files SRR385939.tsv SRR385940.tsv SRR385941.tsv --working_dir pyclone_analysis</strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<p>This will create a directory pyclone_analysis. After the command completes the directory will contain several folders and the file config.yaml:<p>
+<ul>
+<li>config.yaml</li>
+<li>plots/</li>
+<li>tables/</li>
+<li>trace/</li>
+<li>yaml/</li>
+</ul>
+The contents of these folders are as follows:
+<ul><li>config.yaml - This file specifies the configuration used for the PyClone analysis.
+</li><li>plots - Contains all plots from the analysis. There will be two sub-folders clusters/ and loci/ for cluster and locus specific plots respectively.
+</li><li>tables - This contains the output tables with summarized results for the analysis. There will be two tables clusters.tsv and loci.tsv, for cluster and locus specific information.
+</li><li>trace - This the raw trace from the MCMC sampling algorithm. Advanced users may wish to work with these files directly for generating plots and summary statistics.
+</li></ul><P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load pyclone
+PyClone run_analysis_pipeline --in_files SRR385939.tsv SRR385940.tsv SRR385941.tsv --working_dir pyclone_analysis</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch [--mem=#] batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;PyClone ...
+cd dir2;PyClone ...
+cd dir3;PyClone ...
+cd dir4;PyClone ...
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module pyclone</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process 
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

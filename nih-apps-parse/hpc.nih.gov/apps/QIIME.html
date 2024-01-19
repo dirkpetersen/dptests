@@ -1,0 +1,199 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'QIIME2 on Biowulf';</script>
+<div class="title">QIIME2 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+<p>
+QIIME 2 is a powerful, extensible, and decentralized microbiome analysis package with a focus on data and analysis transparency. QIIME 2 enables researchers to start an analysis with raw DNA sequence data and finish with publication-quality figures and statistical results.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>J Gregory Caporaso, Justin Kuczynski, Jesse Stombaugh, Kyle Bittinger, Frederic D Bushman, Elizabeth K Costello, Noah Fierer, Antonio Gonzalez Pena, Julia K Goodrich, Jeffrey I Gordon, Gavin A Huttley, Scott T Kelley, Dan Knights, Jeremy E Koenig, Ruth E Ley, Catherine A Lozupone, Daniel McDonald, Brian D Muegge, Meg Pirrung, Jens Reeder, Joel R Sevinsky, Peter J Turnbaugh, William A Walters, Jeremy Widmann, Tanya Yatsunenko, Jesse Zaneveld and Rob Knight.  <a target="_puplication"  href="https://www.ncbi.nlm.nih.gov/pubmed/20383131">QIIME allows analysis of high-throughput community sequencing data.</a> <em>Nature Methods</em>, 2010</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://qiime2.org/">QIIME2 Main Site</a></li>
+<li><a target="_main_docs" href="https://docs.qiime2.org">QIIME2 Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: QIIME (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+  <li>Some QIIME commands can utilize multiple threads with <b><tt>--p-n-threads</b></tt></li>
+  <li>Environment variables:
+    <ul>
+      <li><b><tt>$QIIME_EXAMPLES</tt></b> -- example files for tutorials</li>
+    </ul>
+  <li>Reference data in <b><tt>/fdb/QIIME/</b></tt></li>
+  <li>q2studio is <b>NOT</b> available due to system conflicts</li>
+  <li>Users connecting to Biowulf using PuTTY with X11-forwarding enabled, may encounter an error with
+      matplotlib not outputing .qzv files (using <tt>qiime2 demux summarize</tt> for example). The workaround
+      documented <a href="https://forum.qiime2.org/t/error-converting-qza-to-qzv-on-cluster/354">here</a> is to
+      run the following before running qiime2 commands:
+      <pre>
+        mkdir -p $HOME/.config/matplotlib/
+        echo "backend: Agg" >> $HOME/.config/matplotlib/matplotlibrc
+      </pre>
+  </li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session (user input in bold):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load QIIME</b>
+[user@cn3144 ~]$ <b>cp -R $QIIME_EXAMPLES/qiime2-moving-pictures-tutorial .</b>
+[user@cn3144 ~]$ <b>cd qiime2-moving-pictures-tutorial</b>
+[user@cn3144 ~]$ <b>qiime tools import --type EMPSingleEndSequences \
+  --input-path emp-single-end-sequences \
+  --output-path emp-single-end-sequences.qza</b>
+[user@cn3144 ~]$ <b>qiime demux emp-single \
+  --i-seqs emp-single-end-sequences.qza \
+  --m-barcodes-file sample-metadata.tsv \
+  --m-barcodes-column BarcodeSequence \
+  --output-dir demux-summarize-out \
+  --o-per-sample-sequences demux.qza</b>
+[user@cn3144 ~]$ <b>qiime demux summarize \
+  --i-data demux.qza \
+  --o-visualization demux.qzv</b>
+[user@cn3144 ~]$ <b>qiime dada2 denoise-single \
+  --i-demultiplexed-seqs demux.qza \
+  --p-trim-left 0 \
+  --p-trunc-len 120 \
+  --o-representative-sequences rep-seqs-dada2.qza \
+  --output-dir denoise-single-out \
+  --o-table table-dada2.qza</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. QIIME.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load QIIME
+cp -R $QIIME_EXAMPLES/qiime2-atacama-tutorial .
+cd qiime2-atacama-tutorial
+
+qiime tools import \
+  --type EMPPairedEndSequences \
+  --input-path emp-paired-end-sequences \
+  --output-path emp-paired-end-sequences.qza
+
+qiime demux emp-paired \
+  --verbose \
+  --m-barcodes-file sample-metadata.tsv \
+  --m-barcodes-category BarcodeSequence \
+  --i-seqs emp-paired-end-sequences.qza \
+  --o-per-sample-sequences demux \
+ --p-rev-comp-mapping-barcodes
+
+qiime demux summarize \
+  --verbose \
+  --i-data demux.qza \
+  --o-visualization demux.qzv
+
+qiime dada2 denoise-paired \
+  --verbose \
+  --p-n-threads $SLURM_CPUS_PER_TASK \
+  --i-demultiplexed-seqs demux.qza \
+  --o-table table \
+  --o-representative-sequences rep-seqs \
+  --p-trim-left-f 13 \
+  --p-trim-left-r 13 \
+  --p-trunc-len-f 150 \
+  --p-trunc-len-r 150
+
+qiime feature-table summarize \
+  --verbose \
+  --i-table table.qza \
+  --o-visualization table.qzv \
+  --m-sample-metadata-file sample-metadata.tsv
+
+qiime feature-table tabulate-seqs \
+  --verbose \
+  --i-data rep-seqs.qza \
+  --o-visualization rep-seqs.qzv
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=20g --gres:lscratch:20 --time=4:00:00 QIIME.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. QIIME.swarm). For example:</p>
+
+<pre class="term">
+qiime dada2 denoise-single \
+  --p-n-threads $SLURM_CPUS_PER_TASK \
+  --p-trim-left 13 \
+  --p-trunc-len 150 \
+  --i-demultiplexed-seqs fmt-tutorial-demux-1.qza \
+  --o-representative-sequences rep-seqs-1.qza \
+  --o-table table-1.qza
+qiime dada2 denoise-single \
+  --p-n-threads $SLURM_CPUS_PER_TASK \
+  --p-trim-left 13 \
+  --p-trunc-len 150 \
+  --i-demultiplexed-seqs fmt-tutorial-demux-2.qza \
+  --o-representative-sequences rep-seqs-2.qza \
+  --o-table table-2.qza
+qiime dada2 denoise-single \
+  --p-n-threads $SLURM_CPUS_PER_TASK \
+  --p-trim-left 13 \
+  --p-trunc-len 150 \
+  --i-demultiplexed-seqs fmt-tutorial-demux-3.qza \
+  --o-representative-sequences rep-seqs-3.qza \
+  --o-table table-3.qza
+qiime dada2 denoise-single \
+  --p-n-threads $SLURM_CPUS_PER_TASK \
+  --p-trim-left 13 \
+  --p-trunc-len 150 \
+  --i-demultiplexed-seqs fmt-tutorial-demux-4.qza \
+  --o-representative-sequences rep-seqs-4.qza \
+  --o-table table-4.qza
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f QIIME.swarm -g 10 -t 8 --module QIIME</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module QIIME <td>Loads the QIIME module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

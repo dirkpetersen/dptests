@@ -1,0 +1,95 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Text Editors';</script>
+<?php
+  /* function for obtaining version numbers, David 10/29/09 */
+  include('print_version.php');
+?>
+
+<div class="title">Text Editors</div>
+
+<p>A variety of text and source code editors are available for both X-windows and text terminals.</p>
+
+<p class="appHead"><b>Nano (Pico)</b></p>
+
+<p class="appDesc">Pico and its clone, nano, are simple, user-friendly text
+editors derived from the editor in the Pine email client. Type <em
+class="cmd">pico [filename]</em> or <em class="cmd">nano [filename]</em> to
+edit a file and use the key commands listed at the bottom of the screen to
+access various functions. <br>
+
+[<A href="http://www.csee.umbc.edu/courses/104/spring05/dblock/picocmds.shtml">Summary of Pico commands</a>]
+[<A href="https://en.wikipedia.org/wiki/Pico_%28text_editor%29#Command-line_options">Pico command-line options</a>]
+
+</p>
+
+<p class="appHead"><b>Atom</a> </b></p>
+
+<p class="appDesc">Atom is a modern desktop text editor. The stated
+  goal is a zero-compromise combination of hackability and usability: an
+  editor that will be welcoming to an elementary school student on their
+  first day learning to code, but also a tool they won't outgrow as they
+  develop into seasoned hackers. Atom is a specialized variant of
+  Chromium designed to be a text editor rather than a web browser. Every
+  Atom window is essentially a locally-rendered web page.</p>
+
+<p class="appDesc">To run Atom, you must use a graphical connection to Biowulf, set up an <a href="https://hpc.nih.gov/docs/userguide.html#int">interactive session</a>, and load the <tt>atom</tt> <a href="https://hpc.nih.gov/apps/modules.html">module</a> before executing the <tt>atom</tt> command.
+
+<p class="appDesc">When you launch Atom for the first time, you should
+  get a screen presenting several options for documentation and for
+  customization and operation of the editor.  Atom's primary
+  documentation is the [<a href="http://flight-manual.atom.io/">Atom
+  Flight Manual</a>], including its [<a
+  href="http://flight-manual.atom.io/getting-started/sections/atom-basics">Atom
+  Basics</a>] material.</p>
+
+<p class="appHead"><b>Emacs</a> </b></p>
+
+<p class="appDesc">Emacs is a text and source code editor for text
+terminals and X. It has a vast set of features and is well suited for doing
+everything from reading mail and simple text editing to managing and
+editing large programming projects. It has its own help and tutorial which
+can be accessed by typing <em class="cmd">Ctrl-h i</em> and <em
+class="cmd">Ctrl-h t</em> respectively. Type <em class="cmd">emacs
+[filename]</em> to edit a file. [<a
+href="http://www.gnu.org/software/emacs/manual/html_mono/emacs.html">Emacs
+Manual</a>]</p>
+
+<p class="appDesc">Newer versions of emacs are available through the environment modules. See
+<em class="cmd">module avail emacs</em> for mor details.</p>
+
+<p class="appHead"><b>ESS</b></p>
+
+    <p class="appDesc">Emacs Speaks Statistics is an Emacs mode for interactive statistical programming and data analysis. Languages supported: the S family (S, S-PLUS and R), SAS, BUGS/JAGS, Stata and XLispStat. First load an R module per <a href="http://helix.nih.gov/Applications/R.html">our R applications page</a>.
+										  Putting the line <em class="cmd">(load "/usr/local/share/emacs/site-lisp/ess-17.11/lisp/ess-site")</em> in your .emacs file, or its one-time equivalent <em class="cmd">M-x load-library /usr/local/share/emacs/site-lisp/ess-17.11/lisp/ess-site</em>, will make an *ESS* buffer available. [<a href="http://ess.r-project.org/index.php?Section=documentation&subSection=manuals">ESS Documentation</a>]</p>
+
+<p class="appHead"><b>Nedit </b></p>
+
+    <p class="appDesc">NEdit is an GUI style editor for plain text and source code files. It provides mouse based editing and a streamlined editing style, based on popular Macintosh and MS Windows editors, using the X-window system. NEdit requires an X-based workstation or X-Terminal. Type <em class="cmd">nedit [filename]</em> to edit a file. 
+[<A href="ftp://ftp.fu-berlin.de/unix/editors/nedit/contrib/misc/nedit.pdf">Nedit manual</a>]
+</p>
+
+<p class="appHead"><b>SciTE</b></p>
+<p class="appDesc"><a href="http://www.scintilla.org/SciTE.html">SciTE</a> is a source code editor for X-windows that is well suited for scripting and programming small projects. Type <em class="cmd">SciTE [filename]</em> to edit a file. 
+[<a href="http://www.scintilla.org/SciTEDoc.html">SciTE documentation</a>]
+</p>
+
+<p class="appHead"><b>vi</b></p>
+
+    <p class="appDesc">The venerable vi editor is a text and source code editor for text terminals and X-windows. It has a large set of features for simple text editing and for sophisticated programming projects. Type <em class="cmd">vi [filename]</em> to edit a file. Type <em class="cmd">:help</em> to start learning vi. 
+[<A href="http://tuxgraphics.org/~guido/vi/">vi documentation</a>]
+</p>
+
+<p class="appHead"><b>vim</b></p>
+
+  <p class="appDesc">vim is a text editor that is upwards compatible to Vi. It can be used to edit all kinds of plain text. It is especially useful for editing programs with syntactical coloring. There  are a lot of enhancements above Vi: multi level undo, multi win- dows and buffers, syntax highlighting, command line editing, filename completion,   on-line   help,   visual  selection,  etc.
+[<A href="http://www.vim.org/docs.php">vim documentation</a>]</p>
+
+<p class="appHead"><b><a href="vscode.html">VScode</a></b></p>
+
+  <p class="appDesc">Visual Studio Code is a lightweight but powerful source code editor which runs on your desktop and is available for Windows, macOS and Linux. It comes with built-in support for JavaScript, TypeScript and Node.js and has a rich ecosystem of extensions for other languages (such as C++, C#, Java, Python, PHP, Go) and runtimes (such as .NET and Unity). 
+[<A href="https://code.visualstudio.com/docs">VS Code documentation</a>]</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

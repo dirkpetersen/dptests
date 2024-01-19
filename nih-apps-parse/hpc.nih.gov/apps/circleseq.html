@@ -1,0 +1,128 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'funannotate: a pipeline for genome annotation ';</script>
+<div class="title"><b>CIRCLE-seq: Circularization In vitro Reporting of CLeavage Effects by Sequencing. </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CIRCLE-seq is a tool for analysis of circularization for in vitro reporting of cleavage effects by sequencing.
+It is a highly sensitive, sequencing-efficient in vitro screening strategy 
+that outperforms existing cell-based or biochemical approaches 
+for identifying CRIScrisPR–Cas9 genome-wide off-target mutations. 
+It can be practiced using widely accessible next-generation sequencing technology 
+and does not require reference genome sequences. 
+Importantly, CIRCLEcircle-seq can be used to identify off-target mutations 
+associated with cell-type-specific single-nucleotide polymorphisms, 
+demonstrating the feasibility 
+and importance of generating personalized specificity profiles.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Shengdar Q Tsai, Nhu T Nguyen, Jose Malagon-Lopez, Ved V Topkar, Martin J Aryee &amp; J Keith Joung <br />
+<i>CIRCLE-seq: a highly sensitive in vitro screen for genome-wide CRIScrisPR–Cas9 nuclease off-targets.</i> <br />
+<a href="https://www.nature.com/articles/nmeth.42789">Nature Methods,  VOL.14, NO.6, p.607-614. </a>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/tsailabSJ/circleseq">CIRCLE-seq GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>circleseq</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>CS_HOME</b>&nbsp; installation directory</li>
+    <li><b>CS_BIN</b>&nbsp; &nbsp; executables directory</li>
+    <li><b>CS_SRC</b>&nbsp; &nbsp; source code directory</li>
+    <li><b>CS_DATA</b>&nbsp; &nbsp; sample input data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn0861 ~]$ <b>module load circleseq   </b>
+[+] Loading singularity  3.10.5  on cn4189
+[+] Loading circleseq  1.1
+user@cn0861 ~]$ <b>mkdir -p /data/$USER/circleseq && cd /data/$USER/circleseq </b>
+</pre>
+Copy sample data and sample manifest file to the current folder:
+<pre class="term">
+[user@biowulf]$ <b>cp $CS_DATA/* .  </b>
+[user@biowulf]$ <b>cp $CS_SRC/manifest.yaml . </b>
+</pre>
+Run the circleseq.py executable on the sample data:
+<pre class="term">
+[user@biowulf]$ <b>circleseq.py all --manifest ./manifest.yaml </b>
+[08/24 08:36:38AM][INFO][circleseq] Loading manifest...
+/opt/conda/envs/circleseq/circleseq-1.1/circleseq/circleseq.py:39: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
+  manifest_data = yaml.load(f)
+[08/24 08:36:38AM][INFO][circleseq] Merging reads...
+[08/24 08:36:39AM][INFO][alignReads] BWA genome index found.
+[08/24 08:36:39AM][INFO][alignReads] Running paired end mapping for U2OS_exp1_VEGFA_site_1
+[08/24 08:36:39AM][INFO][alignReads] bwa mem /data/user/circleseq/CIRCLEseq_test_genome.fa /data/user/circleseq/fastq/U2OS_exp1_VEGFA_site_1_merged.fastq.gz  &gt; /data/user/circleseq/aligned/U2OS_exp1_VEGFA_site_1.sam
+[M::bwa_idx_load_from_disk] read 0 ALT contigs
+[M::process] read 2439 sequences (736578 bp)...
+[M::mem_process_seqs] Processed 2439 reads in 0.356 CPU sec, 0.357 real sec
+[main] Version: 0.7.17-r1188
+[main] CMD: bwa mem /data/user/circleseq/CIRCLEseq_test_genome.fa /data/user/circleseq/fastq/U2OS_exp1_VEGFA_site_1_merged.fastq.gz
+[main] Real time: 0.377 sec; CPU: 0.377 sec
+[08/24 08:36:40AM][INFO][alignReads] Paired end mapping for U2OS_exp1_VEGFA_site_1 completed.
+[08/24 08:36:40AM][INFO][alignReads] samtools sort -o /data/user/circleseq/aligned/U2OS_exp1_VEGFA_site_1.bam /data/user/circleseq/aligned/U2OS_exp1_VEGFA_site_1.sam
+[08/24 08:36:40AM][INFO][alignReads] Sorting by coordinate position for U2OS_exp1_VEGFA_site_1 complete.
+[08/24 08:36:40AM][INFO][alignReads] samtools index /data/user/circleseq/aligned/U2OS_exp1_VEGFA_site_1.bam
+[08/24 08:36:40AM][INFO][alignReads] Indexing for U2OS_exp1_VEGFA_site_1 complete.
+[08/24 08:36:40AM][INFO][alignReads] samtools sort -o /data/user/circleseq/aligned/U2OS_exp1_VEGFA_site_1_sorted.bam -n /data/user/circleseq/aligned/U2OS_exp1_VEGFA_site_1.bam
+[08/24 08:36:40AM][INFO][alignReads] Sorting for U2OS_exp1_VEGFA_site_1 by name complete.
+[08/24 08:36:40AM][INFO][alignReads] BWA genome index found.
+[08/24 08:36:40AM][INFO][alignReads] Running paired end mapping for control_U2OS_exp1_VEGFA_site_1
+[08/24 08:36:40AM][INFO][alignReads] bwa mem /data/user/circleseq/CIRCLEseq_test_genome.fa /data/user/circleseq/fastq/control_U2OS_exp1_VEGFA_site_1_merged.fastq.gz  &gt; /data/user/circleseq/aligned/control_U2OS_exp1_VEGFA_site_1.sam
+[M::bwa_idx_load_from_disk] read 0 ALT contigs
+[M::process] read 967 sequences (292034 bp)...
+[M::mem_process_seqs] Processed 967 reads in 0.146 CPU sec, 0.146 real sec
+[main] Version: 0.7.17-r1188
+[main] CMD: bwa mem /data/user/circleseq/CIRCLEseq_test_genome.fa /data/user/circleseq/fastq/control_U2OS_exp1_VEGFA_site_1_merged.fastq.gz
+[main] Real time: 0.157 sec; CPU: 0.154 sec
+[08/24 08:36:40AM][INFO][alignReads] Paired end mapping for control_U2OS_exp1_VEGFA_site_1 completed.
+[08/24 08:36:40AM][INFO][alignReads] samtools sort -o /data/user/circleseq/aligned/control_U2OS_exp1_VEGFA_site_1.bam /data/user/circleseq/aligned/control_U2OS_exp1_VEGFA_site_1.sam
+[08/24 08:36:40AM][INFO][alignReads] Sorting by coordinate position for control_U2OS_exp1_VEGFA_site_1 complete.
+[08/24 08:36:40AM][INFO][alignReads] samtools index /data/user/circleseq/aligned/control_U2OS_exp1_VEGFA_site_1.bam
+[08/24 08:36:40AM][INFO][alignReads] Indexing for control_U2OS_exp1_VEGFA_site_1 complete.
+[08/24 08:36:40AM][INFO][alignReads] samtools sort -o /data/user/circleseq/aligned/control_U2OS_exp1_VEGFA_site_1_sorted.bam -n /data/user/circleseq/aligned/control_U2OS_exp1_VEGFA_site_1.bam
+[08/24 08:36:41AM][INFO][alignReads] Sorting for control_U2OS_exp1_VEGFA_site_1 by name complete.
+[08/24 08:36:41AM][INFO][circleseq] Finished merging and aligning reads.
+[08/24 08:36:41AM][INFO][circleseq] Identifying off-target cleavage sites.
+[08/24 08:36:41AM][INFO][circleseq] Window: 3, MAPQ: 50, Gap: 3, Start 1, Mismatches 6, Search_Radius 20
+Writing counts to /data/user/circleseq/identified/U2OS_exp1_VEGFA_site_1_count.txt
+Tabulate nuclease merged start positions.
+Tabulate control merged start positions.
+[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+Writing matched table
+Writing unmatched table
+[08/24 08:36:41AM][INFO][circleseq] Visualizing off-target sites
+[08/24 08:36:41AM][INFO][circleseq] Finished visualizing off-target sites
+[user@cn0861 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

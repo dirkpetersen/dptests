@@ -1,0 +1,162 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'OmegaFold: High-resolution de novo Structure Prediction from Primary Sequence ';</script>
+<div class="title"><b>OmegaFold: High-resolution de novo Structure Prediction from Primary Sequence </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+OmegaFold is the first computational method to successfully predict high-resolution protein structure 
+from a single primary sequence alone. 
+Using a new combination of a protein language model 
+that allows us to make predictions from single sequences 
+and a geometry-inspired transformer model trained on protein structures, 
+OmegaFold outperforms RoseTTAFold 
+and achieves similar prediction accuracy to AlphaFold2 on recently released structures. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Ruidong Wua, Fan Dinga, Rui Wanga, Rui Shena, Xiwen Zhanga, Shitong Luoa, Chenpeng Sua, Zuofan Wua, Qi Xieb,
+Bonnie Bergerc, Jianzhu Maa and Jian Penga <br />
+<i>High-resolution de novo structure prediction from primary sequence.</i> <br />
+<a href="https://www.biorxiv.org/content/10.1101/2022.07.21.500999v1.abstract">bioRxiv preprint doi: https://doi.org/10.1101/2022.07.21.500999; posted July 22, 2022. T</a>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/HeliXonProtein/OmegaFold">OmegaFold GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>OmegasFold</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>OMEGAFOLD_HOME</b>&nbsp; installation directory</li>
+    <li><b>OMEGAFOLD_BIN </b>&nbsp; executable directory</li>
+    <li><b>OMEGAFOLD_DATA</b>&nbsp; test data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+<p>The OmegaFold application installed on Biowulf is supposed to be run on a GPU node. 
+As the first step, please allocate an <a href="/docs/userguide.html#int">interactive session</a>:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:a100:1,lscratch:10 --mem=100g -c16</b>
+[user@cn1113 ~]$ <b>module load OmegaFold </b>
+[+] Loading singularity  3.8.5-1  on cn1113
+[+] Loading CUDA Toolkit  11.3.0  ...
+[+] Loading cuDNN/8.2.1/CUDA-11.3 libraries...
+[+] Loading OmegaFold  1.1.0
+[user@cn1113 user]$ <b>omegafold --help</b>
+usage: omegafold [-h] [--num_cycle NUM_CYCLE] [--subbatch_size SUBBATCH_SIZE] [--device DEVICE]
+                 [--weights_file WEIGHTS_FILE] [--weights WEIGHTS]
+                 [--pseudo_msa_mask_rate PSEUDO_MSA_MASK_RATE] [--num_pseudo_msa NUM_PSEUDO_MSA]
+                 [--allow_tf32 ALLOW_TF32]
+                 input_file output_dir
+
+Launch OmegaFold and perform inference on the data. Some examples (both the input and output
+files) are included in the Examples folder, where each folder contains the output of each
+available model from model1 to model3. All of the results are obtained by issuing the general
+command with only model number chosen (1-3).
+
+positional arguments:
+  input_file            The input fasta file
+  output_dir            The output directory to write the output pdb files. If the directory does
+                        not exist, we just create it. The output file name follows its unique
+                        identifier in the rows of the input fasta file"
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --num_cycle NUM_CYCLE
+                        The number of cycles for optimization, default to 10
+  --subbatch_size SUBBATCH_SIZE
+                        The subbatching number, the smaller, the slower, the less GRAM
+                        requirements. Default is the entire length of the sequence. This one takes
+                        priority over the automatically determined one for the sequences
+  --device DEVICE       The device on which the model will be running, default to the accelerator
+                        that we can find
+  --weights_file WEIGHTS_FILE
+                        The model cache to run
+  --weights WEIGHTS     The url to the weights of the model
+  --pseudo_msa_mask_rate PSEUDO_MSA_MASK_RATE
+                        The masking rate for generating pseudo MSAs
+  --num_pseudo_msa NUM_PSEUDO_MSA
+                        The number of pseudo MSAs
+  --allow_tf32 ALLOW_TF32
+                        if allow tf32 for speed if available, default to True
+</pre>
+Copy testing data to your current folder:                                  
+<pre class="term">
+[user@cn1113 user]$ <b>cp $OMEGAFOLD_DATA/* .</b>
+</pre>
+Run the omegafold executable on testingf data:
+<pre class="term">
+[user@cn1113 user]$ <b>omegafold pi3k.fa outdir & </b>
+[1] 530515
+[user@cn1113 OmegaFold]$ INFO:root:Loading weights from /home/user/.cache/omegafold_ckpt/model.pt
+INFO:root:Constructing OmegaFold
+INFO:root:Reading pi3k.fa
+INFO:root:Predicting 1th chain in pi3k.fa
+INFO:root:724 residues in this chain.
+...
+[user@cn1113 OmegaFold]$ nvidia-smi
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 470.82.01    Driver Version: 470.82.01    CUDA Version: 11.4     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  NVIDIA A100-SXM...  On   | 00000000:C7:00.0 Off |                    0 |
+| N/A   61C    P0   367W / 400W |  23136MiB / 81251MiB |    100%      Default |
+|                               |                      |             Disabled |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A    530539      C   /usr/bin/python3                23133MiB |
++-----------------------------------------------------------------------------+
+
+...
+INFO:root:Finished prediction in 185.76 seconds.
+INFO:root:Saving prediction to outdir/sp|P27986|P85A_HUMAN Phosphatidylinositol 3-kinase regulatory subunit alpha OS=Homo sapiens OX=9606 GN=PIK3R1 PE=1 SV=2.pdb
+INFO:root:Saved
+INFO:root:Predicting 2th chain in pi3k.fa
+INFO:root:1068 residues in this chain.
+INFO:root:Finished prediction in 529.51 seconds.
+INFO:root:Saving prediction to outdir/sp|P42336|PK3CA_HUMAN Phosphatidylinositol 4,5-bisphosphate 3-kinase catalytic subunit alpha isoform OS=Homo sapiens OX=9606 GN=PIK3CA PE=1 SV=2.pdb
+INFO:root:Saved
+INFO:root:Done!
+
+[user@cn1113 OmegaFold]$ <b>ls outdir</b>
+'sp|P27986|P85A_HUMAN Phosphatidylinositol 3-kinase regulatory subunit alpha OS=Homo sapiens OX=9606 GN=PIK3R1 PE=1 SV=2.pdb'
+'sp|P42336|PK3CA_HUMAN Phosphatidylinositol 4,5-bisphosphate 3-kinase catalytic subunit alpha isoform OS=Homo sapiens OX=9606 GN=PIK3CA PE=1 SV=2.pdb'
+</pre>
+En the interactive session:
+<pre class="term">
+[user@cn1113 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

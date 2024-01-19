@@ -1,0 +1,289 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Bbtools on Biowulf';</script>
+<script src='/js/highlight.pack.js' type="text/javascript"></script>
+<link href='/css/highlightjs/foundation.css' rel="stylesheet" type="text/css" />
+<script>hljs.highlightAll();</script>
+
+<div class="title">Bbtools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+This extensive package of tools is being developed by Brian Bushnell. It includes
+</p>
+
+<ul>
+
+    <li><strong>BBMap</strong>: short read aligner for DNA- and RNASeq. Handles Illumina, PacBio, 454,
+      and Nanopore.</li>
+    <li> <strong>BBNorm</strong>: kmer based error correction and normalization</li>
+    <li> <strong>Dedupe</strong>: Removing duplicates or contained subsequences from unaligned reads</li>
+    <li> <strong>Reformat</strong>: Reformat reads in different formats.</li>
+    <li> <strong>BBDuk</strong>: filter, trim, mask reads with kmer matches to an artifact/contaminant file</li>
+</ul>
+<p>and many more.</p>
+
+<p>
+On biowulf all bbtools are used through a wrapper script that automatically passes correct
+memory information to each of the tools. This is important as the automatic memory detection
+by the individual tools is not slurm aware and reports incorrect amounts of available
+memory.
+</p>
+<p>Usage of the wrapper script:</p>
+<pre class="term">
+NAME
+       bbtools - BBMap short read aligner and other bioinformatic tools
+
+SYNOPSIS
+       bbtools command [options]
+
+DESCRIPTION
+       bbtools  is  a  convenient  frontend to the collection of bioinformatic
+       tools created by Brian Bushnell at  the  Joint  Genome  Institute.   It
+       includes  a short read mapper, a k-mer based normalization tool, refor-
+       matting tools, and many more. The wrapper script will automatically set
+       an  appropriate  maximum memory for the JVM executing the code. It will
+       limit runs on helix to 10GB and use  SLURM  to  determine  the  correct
+       amount of memory for batch/interactive jobs.
+
+COMMANDS
+       help    display this help message
+
+       man     list  all  available commands with their descrcription and gen-
+               eral usage information
+
+       list    list all available commands
+
+       All other commands  are  essentially  the  name  of  the  corresponding
+       bbtools script without the extension.
+
+OPTIONS
+       Options  are  tool  specific.  See tool documentation for more details.
+       use --help to get tool specific help.
+
+AUTHOR OF WRAPPER SCRIPT
+        Wolfgang Resch. Contact staff@hpc.nih.gov for help.
+</pre>
+
+<p>Use <code>bbtools man to see an overview of all available tools as well
+as some general documentation.</code></p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://sourceforge.net/projects/bbmap/">Sourceforge</a> </li>
+    <li><a href="https://www.biostarhandbook.com/tools/bbmap/bbmap-help.html">Biostar handbook</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>bbtools</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded app
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$BBTOOLS_SRC</tt></li>
+  </ul>
+<li>Example files in <tt>/usr/local/apps/bbtools/TEST_DATA/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load bbtools</b>
+
+[user@cn3144 ~]$ <b>r1=/usr/local/apps/bbtools/TEST_DATA/read1_2000k.fastq.gz</b>
+
+[user@cn3144 ~]$ <b>r2=/usr/local/apps/bbtools/TEST_DATA/read2_2000k.fastq.gz</b>
+
+[user@cn3144 ~]$ <b>bbtools reformat in=${r1} in2=${r2} \</b>
+   <b>out=read12_2000k.fastq.gz \</b>
+   <b>qin=auto qout=33 ow=t cardinality=t \</b>
+   <b>bhist=read12.bhist qhist=read12.qhist lhist=read12.lhist</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+If you would like to specify the Java memory usage, you may add a custom <tt>-Xmx#</tt> to your command. The wrapper will set
+the maximum JVM heap size to 85% of what you select. (See the <tt>-Xmx17408m</tt> below).
+<pre class="term">
+[user@biowulf ~]# <b>bbtools bbmap -Xmx20g</b>
+java -ea -Xmx17408m -Xms17408m -cp /usr/local/apps/bbtools/38.87/bbmap_src/current/ align2.BBMap build=1 overwrite=true fastareadlen=500 -Xmx17408m
+Executing align2.BBMap [build=1, overwrite=true, fastareadlen=500, -Xmx17408m]
+Version 38.87
+
+No output file.
+[...]
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>As an example for using a few of the tools we will download some bacterial
+genomes, simulate reads from these genomes in different ratios, apply kmer
+based normalization, align the raw and normalized reads to the genomes, and
+finally plot the coverage of the genomes before and after normalization.</p>
+
+<p>This is all included in a single script for this example. For a real analysis,
+each of these steps should be carried out separately.</p>
+
+
+<pre class="term">
+<code class="bash">
+#! /bin/bash
+
+ENSBACT="ftp://ftp.ensemblgenomes.org/pub/bacteria/release-30/fasta/bacteria"
+
+module load bbtools || exit 1
+module load R || exit 1
+
+################################################################################
+#                            copy bacterial genomes                            #
+################################################################################
+# from the TEST_DATA directory
+
+mkdir -p data tmp out
+cp /usr/local/apps/bbtools/TEST_DATA/drad.fa.gz data  # Deinococcus radiodurans
+dr=data/drad.fa.gz
+cp /usr/local/apps/bbtools/TEST_DATA/ecoli.fa.gz data # Eschericia coli
+ec=data/ecoli.fa.gz
+cp /usr/local/apps/bbtools/TEST_DATA/saur.fa.gz data  # Staphylococcus aureus
+sa=data/saur.fa.gz
+
+################################################################################
+#                                simulate reads                                #
+################################################################################
+# simulate 50 nt reads with different coverage from each of the genomes. the
+# amp parameter simulates amplification.
+
+bbtools randomreads ref=$ec build=1 out=tmp/ec.fq length=50 \
+    reads=2000000 seed=132565 snprate=0.05 amp=50
+bbtools randomreads ref=$dr build=2 out=tmp/dr.fq length=50 \
+    reads=4000000 seed=3565 snprate=0.05 amp=200
+bbtools randomreads ref=$sa build=3 out=tmp/sa.fq length=50 \
+    reads=12000000 seed=981 snprate=0.05 amp=200
+cat tmp/ec.fq tmp/dr.fq tmp/sa.fq | gzip -c > data/mg_raw.fq.gz
+rm tmp/ec.fq tmp/dr.fq tmp/sa.fq
+
+################################################################################
+#                              kmer normalization                              #
+################################################################################
+# normalize coverage and do error correction
+
+bbtools bbnorm in=data/mg_raw.fq.gz out=data/mg_norm.fq.gz tmpdir=./tmp threads=$SLURM_CPUS_PER_TASK \
+    target=20 k=25 ecc=t mindepth=2
+
+################################################################################
+#              align raw and normalized against the three genomes              #
+################################################################################
+
+bbtools bbsplit build=4 ref_ec=$ec ref_dr=$dr ref_sa=$sa
+bbtools bbsplit build=4 in=data/mg_raw.fq.gz out_ec=out/mg_raw_ec.bam \
+    out_dr=out/mg_raw_dr.bam out_sa=out/mg_raw_sa.bam refstats=out/mg_raw_stat \
+    t=$SLURM_CPUS_PER_TASK
+bbtools bbsplit build=4 in=data/mg_norm.fq.gz out_ec=out/mg_norm_ec.bam \
+    out_dr=out/mg_norm_dr.bam out_sa=out/mg_norm_sa.bam refstats=out/mg_norm_stat \
+    t=$SLURM_CPUS_PER_TASK
+
+################################################################################
+#                     calculate coverage for all 6 samples                     #
+################################################################################
+
+for f in out/mg_*.bam; do
+    bbtools pileup in=$f out=${f%.bam}.covstat hist=${f%.bam}.covhist
+done
+
+# merge into a single file
+rm -f out/mg_covhist.csv
+for f in out/mg_*.covhist; do
+    fld=( $(echo $f | tr '_.' '  ') )
+    awk -v t=${fld[1]} -v o=${fld[2]} 'NR &gt; 1 {{print $1","$2","t","o}}' $f \
+        &gt;&gt; out/mg_covhist.csv
+done
+
+# plot the coverage data
+echo &gt; tmp/plot.R &lt;&lt;EOF
+library(ggplot2)
+dta &lt;- read.table("out/mg_covhist.csv", sep=",", col.names=c("cov", "freq", "type", "org"))
+dta &lt;- subset(dta, cov &lt; 400)
+p &lt;- ggplot(dta) +
+    geom_line(aes(x=cov, y=freq, col=org), size=1) +
+    scale_color_brewer(palette="Set1") +
+    facet_wrap(~type, nrow=2, scale="free_x") +
+    theme_bw(14) +
+    theme(legend.position="top", panel.grid.minor=element_blank(), 
+      panel.grid.major=element_blank(), panel.border=element_rect(colour="black"))
+ggsave(p, file="out/mg_covhist.png")
+EOF
+Rscript tmp/plot.R
+</code>
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=10G --cpus-per-task=6 examble.sh</pre>
+
+<p>This generates the following graphs demonstrating the effect of kmer based normalization:</p>
+   <img src="/images/bbtools_mg_covhist.png" width="640"; alt="normalization graph"/>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="swarm"></a>
+<div class="heading">Swarm of jobs on Biowulf</div>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. bbtools.swarm). For example:</p>
+
+<pre class="term">
+bbtools reformat in=a1.fq.gz in2=a2.fq.gz \
+  out=a12.fq.gz \
+  qin=auto qout=33 ow=t cardinality=t
+bbtools reformat in=b1.fq.gz in2=b2.fq.gz \
+  out=b12.fq.gz \
+  qin=auto qout=33 ow=t cardinality=t
+bbtools reformat in=c1.fq.gz in2=c2.fq.gz \
+  out=c12.fq.gz \
+  qin=auto qout=33 ow=t cardinality=t
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f bbtools.swarm -g 4 -t 2 --module bbtools</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module bbtools</tt> <td>Loads the bbtools module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,138 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'lefse on Biowulf';</script>
+<div class="title">lefse on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width:70%">
+<p>From the lefse documentation:</p>
+<blockquote> LEfSe (Linear discriminant analysis Effect Size) determines the features
+(organisms, clades, operational taxonomic units, genes, or functions) most
+likely to explain differences between classes by coupling standard tests for
+statistical significance with additional tests encoding biological consistency
+and effect relevance.  </blockquote>
+
+<h3>References:</h3>
+<ul>
+<li>N. Segata, J. Izard, L. Waldron, D. Gevers, L. Miropolsky, W. S. Garrett, and C. Huttenhower. 
+<em>Metagenomic biomarker discovery and explanation</em>. Genome Biol. 2011, 12:R60.
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/21702898">Pubmed</a>&nbsp;|&nbsp;
+<a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3218848/">PMC</a>&nbsp;|&nbsp;
+<a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2011-12-6-r60">Journal</a>
+</li>
+</ul>
+    
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/SegataLab/lefse">Lefse main site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: lefse (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$LEFSE_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and
+run the program. The input format for this tool contains two rows of metadata,
+one row of sample ids, and a microbial abundance table.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 --cpus-per-task=2</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load lefse</b>
+[user@cn3144]$ <b>cp ${LEFSE_TEST_DATA:-none}/hmp_aerobiosis_small.txt .</b>
+[user@cn3144]$ <b>head hmp_aerobiosis_small.txt  | cut -f1-4</b>
+oxygen_availability     High_O2 Mid_O2  Low_O2
+body_site       ear     oral    gut
+subject_id      158721788       158721788       159146620
+Archaea|Euryarchaeota|Methanobacteria|Methanobacteriales|Methanobacteriaceae|Methanobrevibacter 2.96541e-06     5.08937e-06      4.93921e-06
+Bacteria        0.999994        0.99999 0.99999
+Bacteria|Acidobacteria  5.0412e-05      8.65194e-05     8.39666e-05
+Bacteria|Acidobacteria|Acidobacteria_Gp10|Gp10  2.96541e-06     5.08937e-06     4.93921e-06
+Bacteria|Acidobacteria|Acidobacteria_Gp11|Gp11  2.96541e-06     5.08937e-06     4.93921e-06
+Bacteria|Acidobacteria|Acidobacteria_Gp16|Gp16  2.96541e-06     5.08937e-06     4.93921e-06
+Bacteria|Acidobacteria|Acidobacteria_Gp17|Gp17  2.96541e-06     5.08937e-06     4.93921e-06
+
+[user@cn3144]$ <b>format_input.py hmp_aerobiosis_small.txt hmp_aerobiosis_small.in\
+                  -c 1 -s 2 -u 3 -o 1000000</b>
+[user@cn3144]$ <b>run_lefse.py hmp_aerobiosis_small.in hmp_aerobiosis_small.res</b>
+f significantly discriminative features: 51 ( 131 ) before internal wilcoxon
+Number of discriminative features with abs LDA score > 2.0 : 51
+</pre>
+
+<p>Then plot the LDA scores with</p>
+<pre class="term">
+[user@cn3144]$ <b>plot_res.py hmp_aerobiosis_small.res hmp_aerobiosis_small.png --format png --dpi=300</b>
+</pre>
+<div style="width: 70%; margin: 0 auto">
+   <img width="100%" src="/images/lefse_lda.png" alt="lefse lda scores"/> 
+</div>
+
+<p>Or as a cladogram:</p>
+<pre class="term">
+[user@cn3144]$ <b>plot_cladogram.py hmp_aerobiosis_small.res hmp_aerobiosis_small.cladogram.png --format png --dpi 300</b>
+</pre>
+<div style="width: 70%; margin: 0 auto">
+   <img width="100%" src="/images/lefse_cladogram.png" alt="lefse cladogram"/> 
+</div>
+
+<p>Copy results back from lscratch and exit</p>
+<pre class="term">
+[user@cn3144]$ <b>mkdir -p /data/$USER/lefse_results</b>
+[user@cn3144]$ <b>mv ./* /data/$USER/lefse_results</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. lefse.sh), which uses the input file 'lefse.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load lefse/1.0.8
+format_input.py ${LEFSE_TEST_DATA:-none}/hmp_aerobiosis_small.txt hmp_aerobiosis_small.in \
+                  -c 1 -s 2 -u 3 -o 1000000
+plot_res.py hmp_aerobiosis_small.res hmp_aerobiosis_small.png --format png --dpi=300
+plot_cladogram.py hmp_aerobiosis_small.res hmp_aerobiosis_small.cladogram.png --format png --dpi 300
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=5g lefse.sh</pre>
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

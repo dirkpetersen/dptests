@@ -1,0 +1,189 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "TEMPLATE";</script>
+
+<div class="title">Transcript Clean on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Description
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Blow J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A really amazing research paper.</u></b></a>
+    <em>J Mol Biol. 2012 Jan 13;415(2):406-18.</em>
+  </li>
+  <li>
+    Blow J., Doe J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A retread of another amazing research paper.</u></b></a>
+    <em>J Struct Biol. 2012 Dec;180(3):519-30.</em>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://hpcwebdev.cit.nih.gov/">TEMPLATE Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application requires a <a href="/docs/connect.html#nx">graphical connection using NX</a></p>
+
+<ul>
+    <li>Module Name: <tt>TEMPLATE</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded/singlethreaded/MPI...
+	<li>This application produces HTML reports. You can use <a href="/docs/hpcdrive.html">hpcdrive</a> to view these reports on your local workstation.</li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>TEMPLATE_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>???</tt>
+<li>Reference data in <tt>/fdb/TEMPLATE/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cncn4338 ~]$ <b>module load transcript_clean</b>
+[+] Loading transcript_clean  2.0.3  on cn4338 
+[+] Loading singularity  3.10.5  on cn4338 
+[user@cn4338 ~]$ <b> cd /usr/local/apps/transcript_clean/2.0.3/TranscriptClean-2.0.3</b>
+[user@cn4338 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+<P>
+    <a Name="sbatch"></a><div class="heading">Example</div>
+    <div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Example using help command:</p>
+    
+<pre class="term">
+[user@cn4338 TranscriptClean-2.0.3]$ <b>python TranscriptClean.py --help</b> 
+Usage: TranscriptClean.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -s FILE, --sam=FILE   Input SAM file containing transcripts to correct. Must
+                        contain a header.
+  -g FILE, --genome=FILE
+                        Reference genome fasta file. Should be the same one
+                        used during mapping to generate the provided SAM file.
+  -t N_THREADS, --threads=N_THREADS
+                        Number of threads to run program with.
+  -j FILE, --spliceJns=FILE
+                        Splice junction file obtained by mapping Illumina
+                        reads to the genome using STAR, or alternately,
+                        extracted from a GTF using the accessory script. More
+                        formats may be supported in the future.
+  -v FILE, --variants=FILE
+                        VCF formatted file of variants to avoid correcting
+                        away in the data (optional).
+  --maxLenIndel=MAXLENINDEL
+                        Maximum size indel to correct (Default: 5 bp)
+  --maxSJOffset=MAXSJOFFSET
+                        Maximum distance from annotated splice junction to
+                        correct (Default: 5 bp)
+  -o FILE, --outprefix=FILE
+                        Output file prefix. '_clean' plus a file extension
+                        will be added to the end.
+  -m CORRECTMISMATCHES, --correctMismatches=CORRECTMISMATCHES
+                        If set to false, TranscriptClean will skip mismatch
+                        correction. Default: true
+  -i CORRECTINDELS, --correctIndels=CORRECTINDELS
+                        If set to false, TranscriptClean will skip indel
+                        correction. Default: true
+  --correctSJs=CORRECTSJS
+                        If set to false, TranscriptClean will skip splice
+                        junction correction. Default: true, but you must
+                        provide a splice junction annotation file in order for
+                        it to work.
+  --dryRun              If this option is set, TranscriptClean will read in
+                        the sam file and record all insertions, deletions, and
+                        mismatches, but it will skip correction. This mode is
+                        useful for checking the distribution of transcript
+                        errors in the data before running correction.
+  --primaryOnly         If this option is set, TranscriptClean will only
+                        output primary mappings of transcripts (ie it will
+                        filter                       out unmapped and
+                        multimapped lines from the SAM input.
+  --canonOnly           If this option is set, TranscriptClean will output
+                        only canonical transcripts and transcripts containing
+                        annotated noncanonical junctions to the clean SAM file
+                        at the end of the run.
+  --tmpDir=TMP_PATH     If you would like the tmp files to be written
+                        somewhere different than the final output, provide the
+                        path to that location here.
+  --bufferSize=BUFFER_SIZE
+                        Number of lines to output to file at once by each
+                        thread during run. Default = 100
+  --deleteTmp           If this option is set, the temporary directory
+                        generated by TranscriptClean (TC_tmp) will be removed
+                        at the end of the run.
+    </pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. TEMPLATE.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load TEMPLATE
+TEMPLATE &lt; TEMPLATE.in &gt; TEMPLATE.out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] TEMPLATE.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. TEMPLATE.swarm). For example:</p>
+
+<pre class="term">
+TEMPLATE &lt; TEMPLATE.in &gt; TEMPLATE.out
+TEMPLATE &lt; TEMPLATE.in &gt; TEMPLATE.out
+TEMPLATE &lt; TEMPLATE.in &gt; TEMPLATE.out
+TEMPLATE &lt; TEMPLATE.in &gt; TEMPLATE.out
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f TEMPLATE.swarm [-g #] [-t #] --module TEMPLATE</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module TEMPLATE</tt> <td>Loads the TEMPLATE module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

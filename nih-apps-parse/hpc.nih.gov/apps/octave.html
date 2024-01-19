@@ -1,0 +1,262 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Octave on Biowulf';</script>
+<div class="title">Octave on Biowulf</div>
+
+<p><a href="http://www.gnu.org/software/octave/"><img src="/images/octave.jpg"
+align="left" vspace="10" hspace="10" border="0" alt="Octave logo" /></a>
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job with GUI</a></div>
+	<div class="tocItem"><a href="#int">Interactive job without GUI</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+	<div class="tocItem"><a href="#pkg">Octave Packages</a></div>
+      </div>
+</table>
+
+<p>
+GNU Octave is a
+high-level language, primarily intended for numerical computations. It provides
+a convenient command line interface for solving linear and nonlinear problems
+numerically, and for performing other numerical experiments using a language
+that is mostly compatible with Matlab. It may also be used as a batch-oriented
+language.</p>
+<p>Many, but not all, Matlab .m scripts will run in Octave. MEX files (to call
+custom C or Fortran routines directly from Matlab) can be executed in Octave
+with some limitations.</p>
+<p>Octave runs are typically slower than the equivalent Matlab run. However,
+Octave is not license-limited, so many more simultaneous runs are possible than
+with Matlab. Thus, on the Biowulf cluster Octave is most useful for projects
+which can be split into large numbers of independent simultaneous runs.</p>
+
+<P>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Online documentation is available by typing <tt>help</tt> at the Octave
+prompt. (e.g. <tt>help acos</tt>)</li>
+<li><a href="http://www.gnu.org/software/octave/doc/interpreter/">The Octave
+Manual</a></li>
+<li><a href="http://wiki.octave.org/">Octave Wiki</a></li>
+<li><a href=
+"http://en.wikibooks.org/wiki/MATLAB_Programming/Differences_between_Octave_and_MATLAB">
+Differences between Matlab &amp; Octave</a>, at Wikibooks.</li>
+<li><A href="http://homepages.inf.ed.ac.uk/imurray2/compnotes/matlab_octave_efficiency.html">Efficient Matlab and Octave</a> -- by Iain Murray, University of Edinburgh.
+</ul>
+
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>octave</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded/MPI...
+<li>The following libraries are currently not available with Octave on Biowulf. 
+<table border=0 cellpadding=2>
+<tr><td>OSMesa library: </td><td>Offscreen rendering with OpenGL will be disabled.</td></tr>
+<tr><td>Qscintilla library: </td><td> Built-in GUI editor is disabled.</td></tr>
+</table>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive session with GUI</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+
+[user@cn3144 ~]$ <b>module load octave</b>
+[+] Loading gnuplot 5.2.2  ...
+[+] Loading HDF5  1.10.1
+[+] Loading LAPACK/3.8.0  3.8.0-gcc4.8.5  libraries...
+[+] Loading FFTW 3.3.7 , compiled with gcc4.8.5  and openmpi2.1.2  ...
+[+] Loading ImageMagick  7.0.7  on cn4242
+[+] Loading gl2ps 1.4.0  ...
+[+] Loading Octave 4.4.0  ...
+
+[user@cn3144 ~]$ <b>octave --gui</b>
+<img src="/images/octave1.jpg" width=800>
+</pre>
+
+<P>
+<a Name="int_nogui"></a><div class="heading">Interactive session without GUI</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load octave</b>
+[+] Loading gnuplot 5.2.2  ...
+[+] Loading HDF5  1.10.1
+[+] Loading LAPACK/3.8.0  3.8.0-gcc4.8.5  libraries...
+[+] Loading FFTW 3.3.7 , compiled with gcc4.8.5  and openmpi2.1.2  ...
+[+] Loading ImageMagick  7.0.7  on cn4242
+[+] Loading gl2ps 1.4.0  ...
+[+] Loading Octave 4.4.0  ...
+
+[user@cn3144 ~]$ <b>octave-cli</b>
+warning: function ./test.m shadows a core library function
+GNU Octave, version 4.0.2
+Copyright (C) 2016 John W. Eaton and others.
+This is free software; see the source code for copying conditions.
+There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  For details, type 'warranty'.
+
+Octave was configured for "x86_64-unknown-linux-gnu".
+
+Additional information about Octave is available at http://www.octave.org.
+
+Please contribute if you find this software useful.
+For more information, visit http://www.octave.org/get-involved.html
+
+Read http://www.octave.org/bugs.html to learn how to submit bug reports.
+For information about changes from previous versions, type 'news'.
+
+octave:1><b>a=1+1</b>
+a =  2
+octave:2&gt; <b> sin(a)</b>
+ans = -0.27942
+octave:3&gt; <b>a=5*pi</b>
+x =  15.708
+octave:4&gt; <b>sin(a)</b>
+ans =  6.1230e-16
+octave:6&gt; <b>quit</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>
+<oL>
+<li>Create an Octave script. The following sample script takes a single
+argument from the command line.</p>
+
+<pre class="term">
+!/bin/env octave -qf
+
+if( nargin != 1 )
+    printf( "Usage: %s &lt;integer&gt;\n", program_name );
+    return;
+endif
+
+len = str2num( argv(){1} );
+printf( "Working with array size %6d\n", len );
+
+clear a; 
+tic(); 
+for i=1:len
+    a(i) = i; 
+endfor 
+time1 = toc();
+
+a = [1]; 
+tic(); 
+for i=2:len 
+    a = [a i]; 
+endfor
+time2 = toc();
+
+printf( "The time taken for method 1 was %.4f seconds\n", time1 );
+printf( "The time taken for method 2 was %.4f seconds\n", time2 );
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+<li>Create a batch script for the job. Sample script:
+<div class="term">
+<pre>
+-------- file array.bat----------------------
+#!/bin/bash
+
+module load octave/4.0.2
+
+cd /data/user/mydir
+./array.oct 10000 
+---------------------------------------------
+</pre></div>
+<P>
+</li>
+<li>Submit this job to the batch system with:
+<pre class="term">
+sbatch  [--mem=#g] array.bat
+</pre></li>
+</ol>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. octave.swarm). For example:</p>
+
+<pre class="term">
+array.oct 1000 &gt; array.out.1000
+array.oct 2000 &gt; array.out.2000
+array.oct 3000 &gt; array.out.3000
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f octave.swarm [-g #] [-t #] --module octave</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module octave</tt> <td>Loads the octave module for each subjob in the swarm 
+</table>
+
+
+<a Name="pkg"></a>
+<div class="heading">Octave Packages</div>
+
+<p>If you have a particular package from the <a href="http://octave.sourceforge.net/packages.php">Octave-Forge project</a> that you need installed, let us know. To see the centrally installed packages,
+use <tt>pkg list</tt> e.g.
+<pre class="term">
+octave:3> <strong>pkg list</strong>
+Package Name  | Version | Installation directory
+--------------+---------+-----------------------
+     control  |   2.8.2 | /usr/local/apps/octave/4.0.2/share/octave/packages/control-2.8.2
+       image  |   2.0.0 | /usr/local/apps/octave/4.0.2/share/octave/packages/image-2.0.0
+      signal  |   1.3.2 | /usr/local/apps/octave/4.0.2/share/octave/packages/signal-1.3.2
+
+</pre>
+
+You can also install your
+own Octave tool-boxes in your home directory with <tt>pkg install</tt>. You will need to set the TMPDIR variable first. e.g.
+<pre class="term">
+
+cn1234% <b>export TMPDIR=/lscratch/$USER</b>
+
+cn1234% <b>octave</b>
+octave:1> <strong>pkg install -forge fpl</strong>
+For information about changes from previous versions of the fpl package, run 'news fpl'.
+
+octave:2> <strong>pkg list</strong>
+Package Name  | Version | Installation directory
+--------------+---------+-----------------------
+     control  |   2.8.2 | /usr/local/apps/octave/4.0.2/share/octave/packages/control-2.8.2
+         fpl  |   1.3.5 | /home/teacher/octave/fpl-1.3.5
+       image  |   2.0.0 | /usr/local/apps/octave/4.0.2/share/octave/packages/image-2.0.0
+      signal  |   1.3.2 | /usr/local/apps/octave/4.0.2/share/octave/packages/signal-1.3.2
+</pre>
+<P>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

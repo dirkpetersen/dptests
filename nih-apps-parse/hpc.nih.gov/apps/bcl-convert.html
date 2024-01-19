@@ -1,0 +1,160 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bcl-convert on Biowulf';</script>
+<div class="title">bcl-convert on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+Illumina's bcl-convert is the (future) successor to bcl2fastq. The application converts Binary Base Call (BCL)
+files produced by Illumina sequencing systems to FASTQ files. bcl-convert also provides adapter handling
+(through masking and trimming) and UMI trimming and produces metric outputs.
+</p>
+
+<p class="NXblock">
+The current setup of bcl-convert on Biowulf requires <b>at least 32 CPUs</b>, and preferrably a whole node,
+to run without overloading a compute node. Additionally certain options have been preset and setting
+them will cause an error. See <a href="#notes">Important Notes</a> below!
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://support-docs.illumina.com/SW/BCL_Convert/Content/SW/FrontPages/BCL_Convert.htm">bcl-convert Documentation</a></li>
+<li><a href="https://support.illumina.com/bulletins/2020/10/upgrading-from-bcl2fastq-to-bcl-convert.html">Upgrading from bcl2fastq to BCL Convert</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>bcl-convert</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+	<li>Multithreaded. <b>Requires a minimum of 32 CPUs</b>.</li>
+  <li>bcl-convert will write logs to <tt>/data/$USER/.bclconvert_logs</tt> or to <tt>lscratch</tt>, if available</li>
+</ul>
+  
+<h3>bcl-convert Options</h3>
+
+<p>Do <b>NOT</b> set the following options when running bcl-convert:
+  <ul>
+    <li><tt>--bcl-num-parallel-tiles</tt></li>
+    <li><tt>--bcl-num-conversion-threads</tt></li>
+    <li><tt>--bcl-num-compression-threads</tt></li>
+    <li><tt>--bcl-num-decompression-threads</tt></li>
+  </ul>
+</p>
+
+<h3>sbatch/sinteractive Options</h3>
+
+<p>You <b>MUST</b> set the following sbatch/sinteractive options as described below.</p>
+<table border=0 cellpadding=5 class=horztable width=80%>
+  <tr><th width=20% class=softBottom><b>Option</b></th><td class=softBottom><b>Explanation/Howto</b></td></tr>
+  <tr><td class=softBottom>--exclusive</td><td class=softBottom>The node must be allocated exclusively, else your bcl-convert process will overload CPUs and be inefficient/run slower.</td></tr>
+  <tr><td class=softBottom>--constraint</td><td class=softBottom>The number of CPUs on the allocated node must be known, so that bcl-convert will run the correct number of threads. To determine
+  this, use the <tt>freen</tt> command to find the different types of nodes and select one type. (example below)</td></tr>
+  <tr><td class=softBottom>--cpus-per-task</td><td class=softBottom> Must be set to the number of CPUs on the node type you are requesting.</td></tr>
+  <tr><td class=softBottom>--gres=lscratch</td><td class=softBottom><em>Optional</em>, bcl-convert will write temporary logs in lscratch. Additionally using lscratch to write output may be beneficial. See example session below</td></tr>
+  <tr><td class=softBottom>--mem</td><td class=softBottom><em>Optional</em>, set to all the available memory on the type of node you are requesting.</td></tr>
+</table>
+  <P>
+
+<P>
+Example session to choose parameters
+<pre class="term">
+biowulf% <b>freen</b>
+                                                    .......Per-Node Resources......
+Partition    FreeNds      FreeCPUs           Cores  CPUs  GPUs    Mem   Disk Features
+-------------------------------------------------------------------------------------------------------
+norm*         0 / 695    7926 / 38920         28    56         247g   400g cpu56,core28,g256,ssd400,x2695,ibfdr
+norm*         0 / 521    2806 / 29168         28    56         247g   800g cpu56,core28,g256,ssd800,x2680,ibfdr
+norm*         0 / 7       144 / 392           28    56         247g  2400g cpu56,core28,g256,ssd2400,x2680,ibfdr
+norm*       397 / 519   13290 / 16608         16    32         121g   800g cpu32,core16,g128,ssd800,x2650,10g
+[...]
+</pre>
+freen reports that there are 'cpu32' (32 CPUs), or 'cpu56' (56 CPUs) nodes available. <br>
+Thus, to submit to a 32-cpu node (121 GB of RAM), your sbatch or sinteractive command would have the parameters: 
+<pre>--exclusive --constraint=cpu32 --cpus-per-task=32 --mem=121g --gres=lscratch:400</pre>
+Alternatively, if you want a 56-CPU node, you would use:
+<pre>--exclusive --constraint=cpu56 --cpus-per-task=56 --mem=247g --gres=lscratch:400</pre>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --exclusive --constraint=cpu32 --cpus-per-task=32 --mem=64G --gres=lscratch:400</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOBID</b>
+
+[user@cn3144 ~]$ <b>mkdir sample_bclconvert_output</b>
+
+[user@cn3144 ~]$ <b>module load bcl-convert</b>
+
+[user@cn3144 ~]$ <b>bcl-convert --bcl-input-directory /data/$USER/sample-run \
+                          --output-directory sample_bclconvert_output</b>
+Index Read 2 is marked as Reverse Complement in RunInfo.xml: The barcode and UMI outputs will be output in Reverse Complement of Sample Sheet inputs.
+Sample sheet being processed by common lib? Yes
+SampleSheet Settings:
+  AdapterRead1 = CAAGCAGAAGACGGCATACGAGAT
+  AdapterRead2 = CAAGCAGAAGACGGCATACGAGAT
+  FastqCompressionFormat = gzip
+  SoftwareVersion = 3.7.4
+
+shared-thread-linux-native-asio output is disabled
+bcl-convert Version 00.000.000.3.9.3
+Copyright (c) 2014-2018 Illumina, Inc.
+...
+[user@cn3144 ~]$ <b>mv sample_bclconvert_output /data/$USER/</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bcl-convert.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+mkdir -p /lscratch/$SLURM_JOBID/sample-output
+module load bcl-convert
+bcl-convert --bcl-input-directory sample-run --output-directory /lscratch/$SLURM_JOBID/sample-output
+mv /lscratch/$SLURM_JOBID/sample-output /data/$USER/
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --exclusive --constraint=cpu32 --cpus-per-task=32 --mem=64G --gres=lscratch:400 bcl-convert.sh</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

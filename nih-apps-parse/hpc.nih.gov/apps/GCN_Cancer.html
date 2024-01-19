@@ -1,0 +1,546 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GCN_Cancer: classification of cancer types using  Graph Convolutional Networks';</script>
+<div class="title"><b>GCN_Cancer: classification of cancer types using <br /> Graph Convolutional Networks</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The GCN_Cancer application employs graph convolutional network (GCN) models
+to classify the gene expression data samples from The Cancer Genonme Atlas (TCAG) 
+as 33 designated tumor types or as normal. It has been trained on  10,340
+cancer samples and 731 normal tissue samples from TCGA dataset. <br /> <br />
+This application, reimplemented in Keras from the original version developed in Tensorflow, <br />
+will be used as a biological example 
+by class #6 of the course "Deep Learning by Example on Biowulf".
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Ricardo Ramirez, Yu-Chiao Chiu, Allen Hererra, Milad Mostavi, Joshua Ramirez,
+Yidong Chen, Yufei Huang and Yu-Fang Jin
+<i> Classification of Cancer Types Using Graph Convolutional Neural Networks </i><br />
+<a href="https://www.frontiersin.org/articles/10.3389/fphy.2020.00203/full">Frontiers in Physics, </a>June 2020 | Volume 8 | Article 203 <br/>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/RicardoRamirez2020/GCN_Cancer">GCN_Cancer on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>GCN_Cancer</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>GCN_CANCER_HOME</b>&nbsp; installation directory</li>
+    <li><b>GCN_CANCER_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>GCN_CANCER_SRC </b>&nbsp; &nbsp; source code directory</li>
+    <li><b>GCN_CANCER_DATA</b>&nbsp; &nbsp; data folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive  --mem=240g --gres=gpu:a100:1,lscratch:100 -c24</b>
+[user@cn4466 ~]$<b>module load GCN_Cancer </b>
+[+] Loading singularity  3.10.3  on cn0830
+[+] Loading cuDNN/8.1.0.77/CUDA-11.2.2 libraries...
+[+] Loading CUDA Toolkit  11.2.2  ...
+[+] Loading GCN_Cancer  20220825
+</pre>
+(a lower-case name, gcn_cancer, will also work). <br /> <br />
+After reimplementation in Keras, the code involves four executables:<br />
+- <b>preprocess.py</b> <br />
+&nbsp; &nbsp;  - takes as input a data matrix in MAT format, i.e. *.mat file <br />
+&nbsp; &nbsp;  - outputs a customized/balanced data matrix and/or customized adjacency matrix, in MAT format <br />
+- <b>train.py </b><br />
+&nbsp; &nbsp;  - takes as input a data matrix and an adjacency matrix, both in MAT format<br />
+&nbsp; &nbsp;  - outputs a checkpoint file in HDF5 format, i.e. *.h5 <br />
+- <b>predict.py </b><br />
+&nbsp; &nbsp;  - takes as input a data matrix, an adjacency matrix and a checkpoint file <br />
+&nbsp; &nbsp;  - outputs a results file in the TSV format, i.e. *.tsv <br />
+- <b>visualize.R </b><br />
+&nbsp; &nbsp;  - takes as input a results file <br />
+&nbsp; &nbsp;  - outputs an image file in PNG format, i.e. *.png <br /><br />
+
+To display a usage message for each executable, type its name, followed by the option "-h".  <br /> <br />
+
+The full names of the output files will be determined based on the command line options -m, -d, -D, -K, -L, -t, -B, -S, -C, etc. <br /><br />
+
+Before using the executables, create a local folder "data" and copy one or more original data files into that folder:
+<pre class="term">
+[user@cn4466 ~]$<b> mkdir -p data </b>
+[user@cn4466 ~]$<b> cp $GCN_CANCER_DATA/{Block_,Adj_}{GCE,GCES,PPI,PPIS}.mat data</b>
+</pre>
+Here, the following abbreviations have been used:
+<pre class="term">
+<b>GCE</b>  - (gene expression) dataset with <b>gene co-expression</b> type of association between genes
+<b>GCES</b> - same as <b>GCE</b>, but additionally includes <b>singleton</b> genes
+<b>PPI</b>  - (gene expression) dataset with <b>protein-protein interaction</b> type of association between genes
+<b>PPIS</b> - same as <b>PPI</b>, but additionally includes <b>singleton</b> genes
+</pre>
+The use of the executable preprocess.py is optional. With proper command line options, it will produce
+a customized/balanced data matrix and/or a customized adjacency matrix, any or both of which can be 
+(optionally) used as input by the executables train.py and predict.py instead of the original 
+matrices of data samples Block_{GCE,GCES,PPI,PPIS}.mat and/or original adjacency matrices Adj_{GCE,PPI}.mat. 
+that are provided together with the GCN_Cancer code. <br />
+The usage of the executable preprocess.py is as follows:<br />
+<pre class="term">
+user@cn4466 ~]$<b> preprocess.py -h </b>
+usage: preprocess.py [-h] [-A] [-B] [-d data_type] [-f fold] [-N num_elements]
+                     [-S smote_variant] [-t threshold] [-v]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -A, --custom_adjacency
+                        compute the custom adjacency matrix
+  -B, --balance_data    balance training data
+  -f fold, --fold fold  id of the portion of input data to be used for prediction:
+                        0 | 1 | 2 | 3 | 4; default=4
+  -N num_elements, --num_elements num_elements
+                        target number of nonzero elements in a custom
+                        adjacency matrix
+  -S smote_variant, --smote_variant smote_variant
+                        smote alrorithm to be used for data balancing: SMOTE |
+                        SMOTE_TomekLinks | SMOTE_ENN | Borderline_SMOTE1 |
+                        Borderline_SMOTE1 | Borderline_SMOTE2 | ADASYN | AHC |
+                        LLE_SMOTE | distance_SMOTE | SMMO | polynom_fit_SMOTE
+                        | Stefanowski | ADOMS | Safe_Level_SMOTE | MSMOTE |
+                        DE_oversampling | SMOBD | SUNDO | MSYN | SVM_balance |
+                        TRIM_SMOTE | SMOTE_RSB | ProWSyn | SL_graph_SMOTE |
+                        NRSBoundary_SMOTE | LVQ_SMOTE | SOI_CJ | ROSE |
+                        SMOTE_OUT | SMOTE_Cosine | Selected_SMOTE | LN_SMOTE |
+                        MWMOTE | PDFOS | IPADE_ID | RWO_sampling | NEATER |
+                        DEAGO | Gazzah | MCT | ADG | SMOTE_IPF | KernelADASYN
+                        | MOT2LD | V_SYNTH | OUPS | SMOTE_D | SMOTE_PSO |
+                        CURE_SMOTE | SOMO | ISOMAP_Hybrid | CE_SMOTE |
+                        Edge_Det_SMOTE | CBSO | E_SMOTE | DBSMOTE | ASMOBD |
+                        Assembled_SMOTE | SDSMOTE | DSMOTE | G_SMOTE |
+                        NT_SMOTE | Lee | SPY | SMOTE_PSOBAT | MDO |
+                        Random_SMOTE | ISMOTE | VIS_RST | GASMOTE | A_SUWO |
+                        SMOTE_FRST_2T | AND_SMOTE | NRAS | AMSCO | SSO |
+                        NDO_sampling | DSRBF | Gaussian_SMOTE | kmeans_SMOTE |
+                        Supervised_SMOTE | SN_SMOTE | CCR | ANS |
+                        cluster_SMOTE | SYMPROD
+  -t threshold, --threshold threshold
+                        threshold to be used when generating adjacency matrix;
+                        default=None
+  -v, --verbose         increase the verbosity level of output
+
+required arguments:
+  -d data_type, --data_type data_type
+                        data type: gce | gces | ppi | ppis
+</pre>
+For example, in order to generate a custom data matrix Block_GCE.B.mat balanced using the naive balancing algoritm, run the command:
+<pre class="term">
+[user@cn4466 ~]$<b> preprocess.py -d gce -B </b>
+</pre>
+In order to generate a custom data matrix balanced using one of the SMOTE variant algorithms, additionally pass the name of that algorith with option -S. We recommend using either MWMOTE or LLE_SMOTE algorithm. For example, in order to produce the custom data matrix Block_GCE.B.S_MWMOTE.mat, which is balanced using the SMOTE variant algorithm MWMOTE, run the command:
+<pre class="term">
+[user@cn4466 ~]$<b> preprocess.py -d gce -B -S MWMOTE</b>
+</pre>
+To generate a custom adjacency matrix, specify the option -A and either the target threshold or target number of nonzero elements in the adjacency matrix. For example:
+<pre class="term">
+[user@cn4466 ~]$<b> preprocess.py -d gce -A -t 0.7</b>
+...
+[user@cn4466 ~]$<b> preprocess.py -d gce -A -N 10000</b>
+...
+</pre>
+The usage of the training executable train.py is as follows:
+<pre class="term">
+[user@cn4466 ~]$<b> train.py -h</b>
+usage: train.py [-h] [-A] [-b batch_size] [-B] [-d data_type]
+                [-D dropout_fraction] [--debug DEBUG] [-f fold] [-g num_gpus]
+                [-i input_checkpoint_file] [-I initializer] [-k num_kernels]
+                [-l learning_rate] [-L num_levels] [-e num_epochs] [-K K]
+                [-m model_name] [-N num_elements] [-O optimizer]
+                [-p pooling_layer] [-r ratio] [-S smote_variant]
+                [-t threshold] [-v] [-w]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -A, --custom_adjacency
+                        use custom adjacency matrix
+  -b batch_size, --bs batch_size
+                        batch size; default=50
+  -B, --use_balanced_data
+                        use balanced data
+  -D dropout_fraction, --dropout_fraction dropout_fraction
+                        dropout_fraction; default = 0.0
+  --debug DEBUG         use a small subset of data for training
+  -f fold, --fold fold  -f fold, --fold fold  id of the portion of input data to be used for prediction:
+                        0 | 1 | 2 | 3 | 4; default=4
+  -g num_gpus, --num_gpus num_gpus
+                        number of gpus to use; default=1
+  -i input_checkpoint_file, --input_checkpoint_file input_checkpoint_file
+                        input checkpoint file name; default: None
+  -I initializer, --initializer initializer
+                        Keras weight initializer: glorot_uniform |
+                        glorot_normal | he_uniform | he_normal |
+                        truncated_unifirmn | truncated_normal| random_unifoirm
+                        | random_normal | constant | zeros | ones | orthogonal
+                        | variance_scaling ; default = glorot_uniform
+  -k num_kernels, --num_kernels num_kernels
+                        num. of kernals to be used by Graph Conv layer;
+                        default=64
+  -l learning_rate, --lr learning_rate
+                        learning rate; default=1.e-4
+  -L num_levels, --num_levels num_levels
+                        # of in the gc/pooling levels in the model: &gt;= 1;
+                        default=1
+  -e num_epochs, --num_epochs num_epochs
+                        num # of epochs; default=10
+  -K K                  The hyperparameter K in ChebConv layer; default=1
+  -m model_name, --model_name model_name
+                        model name: chebnet | gcnnet | densenet | gatnet;
+                        default = chebnet
+  -N num_elements, --num_elements num_elements
+                        target number of nonzero elements in a custom
+                        adjacency matrix
+  -O optimizer, --optimizer optimizer
+                        optimizer: adam | rmsprop
+  -p pooling_layer, --pooling_layer pooling_layer
+                        pooling layer: DiffPool | MinCutPool; default=DiffPool
+  -r ratio, --ratio ratio
+                        pooling ratio; default=1.0
+  -S smote_variant, --smote_variant smote_variant
+                        smote alrorithm: OUPS | SMOTE_D | NT_SMOTE | Gazzah |
+                        ROSE; default = OUPS
+  -t threshold, --threshold threshold
+                        threshold to be used when generating adjacency matrix;
+                        default=None
+  -v, --verbose         increase the verbosity level of output
+  -w, --load_weights    read weights from a checkpoint file
+
+required arguments:
+  -d data_type, --data_type data_type
+                        data type: gce | gces | ppi | ppis
+</pre>
+For example, the simplest command to train the (default) model chebnet on the original data GCE would be:
+<pre class="term">
+[user@cn4466 ~]$<b> train.py -d gce</b>
+...
+Epoch 1/50
+74/74 [==============================] - 103s 1s/step - loss: 1.7426
+Epoch 2/50
+74/74 [==============================] - 102s 1s/step - loss: 0.6460
+Epoch 3/50
+74/74 [==============================] - 102s 1s/step - loss: 0.4303
+Epoch 4/50
+74/74 [==============================] - 102s 1s/step - loss: 0.3378
+Epoch 5/50
+74/74 [==============================] - 102s 1s/step - loss: 0.2936
+Epoch 6/50
+74/74 [==============================] - 102s 1s/step - loss: 0.2584
+...
+...
+</pre>
+The result of the training (i.e. network weights) will be stored in the checkpoint file
+located in the folder "checkpoints", in this particular case, the file <br />
+<pre class="term">
+<b> checkpoints/chebnet.gce.D_0.1.h5 </b>
+</pre>
+(here, 0.1 is the default dropout rate used by the models)
+To train another model on the same data, specify the model name with command line option -m
+<pre class="term">
+[user@cn4466 ~]$<b> train.py -d gce -m gcnnet </b>
+...
+</pre>
+whcich will produce a checkpoint file checkpoints/gcnnet.gce.D_0.1.h5
+In order to train a model on custom data generated by the executable preprocess.py, use additionally the options that match the options used by that executable. For example:
+<pre class="term">
+[user@cn4466 ~]$<b> train.py -d gce -B -S MWMOTE -A -t 0.7 </b>
+...
+[user@cn4466 ~]$<b> train.py -d gce -B -S MWMOTE -A -N 10000 </b>
+</pre>
+The command line options for the executable predict.py are similar to, and shoulkd be consistent with, the options that were used by the training command:
+<pre class="term">
+[user@cn4466 ~]$<b> predict.py -h</b>
+[user@cn4338 6_GCNs]$ predict.py -h
+usage: predict.py [-h] [-A] [-b batch_size] [-B] [-d data_type]
+                  [-D dropout_fraction] [--debug DEBUG] [-f fold]
+                  [-g num_gpus] [-i input_checkpoint_file] [-I initializer]
+                  [-k num_kernels] [-l learning_rate] [-L num_levels]
+                  [-e num_epochs] [-K K] [-m model_name] [-N num_elements]
+                  [-O optimizer] [-p pooling_layer] [-r ratio]
+                  [-S smote_variant] [-t threshold] [-v] [-w]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -A, --custom_adjacency
+                        use custom adjacency matrix
+  -b batch_size, --bs batch_size
+                        batch size; default=50
+  -B, --use_balanced_data
+                        use balanced data
+  -D dropout_fraction, --dropout_fraction dropout_fraction
+                        dropout_fraction; default = 0.0
+  --debug DEBUG         use a small subset of data for training
+  -f fold, --fold fold  id of the input data subset to be used for prediction:
+                        0 | 1| 2 | 3 | 4; default=4
+  -g num_gpus, --num_gpus num_gpus
+                        number of gpus to use; default=1
+  -i input_checkpoint_file, --input_checkpoint_file input_checkpoint_file
+                        input checkpoint file name; default: None
+  -I initializer, --initializer initializer
+                        Keras weight initializer: glorot_uniform |
+                        glorot_normal | he_uniform | he_normal |
+                        truncated_unifirmn | truncated_normal| random_unifoirm
+                        | random_normal | constant | zeros | ones | orthogonal
+                        | variance_scaling ; default = glorot_uniform
+  -k num_kernels, --num_kernels num_kernels
+                        num. of kernals to be used by Graph Conv layer;
+                        default=64
+  -l learning_rate, --lr learning_rate
+                        learning rate; default=1.e-4
+  -L num_levels, --num_levels num_levels
+                        # of in the gc/pooling levels in the model: >= 1;
+                        default=1
+  -e num_epochs, --num_epochs num_epochs
+                        num # of epochs; default=10
+  -K K                  The hyperparameter K in ChebConv layer; default=1
+  -m model_name, --model_name model_name
+                        model name: chebnet | gcnnet | densenet | gatnet;
+                        default = chebnet
+  -N num_elements, --num_elements num_elements
+                        target number of nonzero elements in a custom
+                        adjacency matrix
+  -O optimizer, --optimizer optimizer
+                        optimizer: adam | rmsprop
+  -p pooling_layer, --pooling_layer pooling_layer
+                        pooling layer: DiffPool | MinCutPool; default=DiffPool
+  -r ratio, --ratio ratio
+                        pooling ratio; default=1.0
+  -S smote_variant, --smote_variant smote_variant
+                        smote alrorithm: OUPS | SMOTE_D | NT_SMOTE | Gazzah |
+                        ROSE; default = OUPS
+  -t threshold, --threshold threshold
+                        threshold to be used when generating adjacency matrix;
+                        default=0.6
+  -v, --verbose         increase the verbosity level of output
+  -w, --load_weights    read weights from a checkpoint file
+
+required arguments:
+  -d data_type, --data_type data_type
+                        data type: gce | gces | ppi | ppis
+</pre>
+For example, the command 
+<pre class="term">
+[user@cn4466 ~]$<b> predict.py -d gce -D 0.1 </b>
+...
+</pre>
+will use pre-trained weights stored in the checkpoint file checkpoints/chebnet.gce.D_0.1.h5 
+to make predictions of the class labels for the "testing" portion of the input data file 
+Block_GCE.matR. By default, the last of the five available data portions ("folds") will
+be used for testing/prediction, while the ramining four portions - for training the model. 
+The predict.py command shown above will output the results file results/chebnet.gce.D_0.1.tsv. 
+In order to use a different way of splitting of the input data into the training and testing dataset, 
+specify the id of the portion/fold of the data to be used for prediction, with option -f. <br /> <br />
+
+An example of the results file: <br />
+<pre class="term">
+[user@cn4466 ~]$<b> cat results/chebnet.gce.D_0.1.tsv </b>
+#class incorr  total    %err    type 
+0       5       146     3.425   0_Normal
+1       2       19      10.526  1_ACC
+2       5       84      5.952   2_BLCA
+3       1       226     0.442   3_BRCA
+4       3       67      4.478   4_CESC
+5       0       5       0.000   5_CHOL
+6       2       77      2.597   6_COAD
+7       0       7       0.000   7_DLBC
+8       5       30      16.667  8_ESCA
+9       0       33      0.000   9_GBM
+10      6       92      6.522   10_HNSC
+11      2       12      16.667  11_KICH
+12      8       115     6.957   12_KIRC
+13      3       51      5.882   13_KIRP
+14      0       43      0.000   14_LAML
+15      0       107     0.000   15_LGG
+16      2       76      2.632   16_LIHC
+17      3       109     2.752   17_LUAD
+18      7       103     6.796   18_LUSC
+19      1       25      4.000   19_MESO
+20      0       83      0.000   20_OV
+21      1       23      4.348   21_PAAD
+22      2       46      4.348   22_PCPG
+23      1       86      1.163   23_PRAD
+24      21      36      58.333  24_READ
+25      2       44      4.545   25_SARC
+26      0       93      0.000   26_SKCM
+27      5       78      6.410   27_STAD
+28      1       18      5.556   28_TGCT
+29      0       109     0.000   29_THCA
+30      1       20      5.000   30_THYM
+31      3       122     2.459   31_UCEC
+32      1       14      7.143   32_UCS
+33      0       21      0.000   33_UVM
+
+
+# Finally: num_corr=2127 / 2220, error= 4.189189 %
+#
+# 0_Normal -&gt; 2_BLCA: 1 (0.045045 %)
+# 0_Normal -&gt; 12_KIRC: 1 (0.045045 %)
+# 0_Normal -&gt; 15_LGG: 1 (0.045045 %)
+# 0_Normal -&gt; 23_PRAD: 1 (0.045045 %)
+# 0_Normal -&gt; 27_STAD: 1 (0.045045 %)
+# 1_ACC -&gt; 2_BLCA: 2 (0.090090 %)
+# 2_BLCA -&gt; 4_CESC: 3 (0.135135 %)
+# 2_BLCA -&gt; 10_HNSC: 1 (0.045045 %)
+# 2_BLCA -&gt; 18_LUSC: 1 (0.045045 %)
+# 3_BRCA -&gt; 0_Normal: 1 (0.045045 %)
+# 4_CESC -&gt; 6_COAD: 1 (0.045045 %)
+# 4_CESC -&gt; 31_UCEC: 2 (0.090090 %)
+# 6_COAD -&gt; 24_READ: 2 (0.090090 %)
+# 8_ESCA -&gt; 27_STAD: 5 (0.225225 %)
+# 10_HNSC -&gt; 0_Normal: 1 (0.045045 %)
+# 10_HNSC -&gt; 4_CESC: 3 (0.135135 %)
+# 10_HNSC -&gt; 18_LUSC: 1 (0.045045 %)
+# 10_HNSC -&gt; 25_SARC: 1 (0.045045 %)
+# 11_KICH -&gt; 12_KIRC: 1 (0.045045 %)
+# 11_KICH -&gt; 13_KIRP: 1 (0.045045 %)
+# 12_KIRC -&gt; 0_Normal: 1 (0.045045 %)
+# 12_KIRC -&gt; 2_BLCA: 1 (0.045045 %)
+# 12_KIRC -&gt; 11_KICH: 1 (0.045045 %)
+# 12_KIRC -&gt; 13_KIRP: 3 (0.135135 %)
+# 12_KIRC -&gt; 16_LIHC: 1 (0.045045 %)
+# 12_KIRC -&gt; 25_SARC: 1 (0.045045 %)
+# 13_KIRP -&gt; 2_BLCA: 2 (0.090090 %)
+# 13_KIRP -&gt; 12_KIRC: 1 (0.045045 %)
+# 16_LIHC -&gt; 0_Normal: 1 (0.045045 %)
+# 16_LIHC -&gt; 5_CHOL: 1 (0.045045 %)
+# 17_LUAD -&gt; 18_LUSC: 2 (0.090090 %)
+# 17_LUAD -&gt; 31_UCEC: 1 (0.045045 %)
+# 18_LUSC -&gt; 2_BLCA: 1 (0.045045 %)
+# 18_LUSC -&gt; 10_HNSC: 2 (0.090090 %)
+# 18_LUSC -&gt; 17_LUAD: 3 (0.135135 %)
+# 18_LUSC -&gt; 21_PAAD: 1 (0.045045 %)
+# 19_MESO -&gt; 25_SARC: 1 (0.045045 %)
+# 21_PAAD -&gt; 25_SARC: 1 (0.045045 %)
+# 22_PCPG -&gt; 0_Normal: 1 (0.045045 %)
+# 22_PCPG -&gt; 21_PAAD: 1 (0.045045 %)
+# 23_PRAD -&gt; 0_Normal: 1 (0.045045 %)
+# 24_READ -&gt; 6_COAD: 21 (0.945946 %)
+# 25_SARC -&gt; 16_LIHC: 1 (0.045045 %)
+# 25_SARC -&gt; 32_UCS: 1 (0.045045 %)
+# 27_STAD -&gt; 8_ESCA: 4 (0.180180 %)
+# 27_STAD -&gt; 28_TGCT: 1 (0.045045 %)
+# 28_TGCT -&gt; 29_THCA: 1 (0.045045 %)
+# 30_THYM -&gt; 10_HNSC: 1 (0.045045 %)
+# 31_UCEC -&gt; 12_KIRC: 1 (0.045045 %)
+# 31_UCEC -&gt; 20_OV: 1 (0.045045 %)
+# 31_UCEC -&gt; 32_UCS: 1 (0.045045 %)
+# 32_UCS -&gt; 31_UCEC: 1 (0.045045 %)
+# 33_UVM -&gt; 26_SKCM: 1 (0.045998 %)
+</pre>
+Here, the label 0 corresponds to the Normal samples, and the following abbreviations have been used to designate the 33 tumor types, with labels 1 to 33:
+<pre class="term">
+<b>ACC</b>     Adrenocortical carcinoma
+<b>BLCA</b>    Bladder Urothelial Carcinoma
+<b>BRCA</b>    Breast invasive carcinoma
+<b>CESC</b>    Cervical squamous cell carcinoma and endocervical adenocarcinoma
+<b>CHOL</b>    Cholangiocarcinoma
+<b>COAD</b>    Colon adenocarcinoma
+<b>DLBC</b>    Lymphoid Neoplasm Diffuse Large B-cell Lymphoma
+<b>ESCA</b>    Esophageal carcinoma
+<b>GBM</b>     Glioblastoma multiforme
+<b>HNSC</b>    Head and Neck squamous cell carcinoma
+<b>KICH</b>    Kidney Chromophobe
+<b>KIRC</b>    Kidney renal clear cell carcinoma
+<b>KIRP</b>    Kidney renal papillary cell carcinoma
+<b>LAML</b>    Acute Myeloid Leukemia
+<b>LGG</b>     Brain Lower Grade Glioma
+<b>LIHC</b>    Liver hepatocellular carcinoma
+<b>LUAD</b>    Lung adenocarcinoma
+<b>LUSC</b>    Lung squamous cell carcinoma
+<b>MESO</b>    Mesothelioma
+<b>OV</b>      Ovarian serous cystadenocarcinoma
+<b>PAAD</b>    Pancreatic adenocarcinoma
+<b>PCPG</b>    Pheochromocytoma and Paraganglioma
+<b>PRAD</b>    Prostate adenocarcinoma
+<b>READ</b>    Rectum adenocarcinoma
+<b>SARC</b>    Sarcoma
+<b>SKCM</b>    Skin Cutaneous Melanoma
+<b>STAD</b>    Stomach adenocarcinoma
+<b>TGCT</b>    Testicular Germ Cell Tumors
+<b>THCA</b>    Thyroid carcinoma
+<b>THYM</b>    Thymoma
+<b>UCEC</b>    Uterine Corpus Endometrial Carcinoma
+<b>UCS</b>     Uterine Carcinosarcoma
+<b>UVM</b>     Uveal Melanoma
+</pre>
+Finally, in order to visualize the summary provided in the results file, run the executable visualize.R: <br/>
+<pre class="term">
+[user@cn4466 ~]$<b> visualize.R results/chebnet.gce.D_0.1.tsv </b>
+</pre>
+
+<img src="gcn_cancer/barplot_high_error.png" width="850" border="0" alt="">
+<br />
+The total error is comparable to that reported in the original publication (
+<a href="https://www.frontiersin.org/articles/10.3389/fphy.2020.00203/full">R.Ramirez et al., Frontiers in Physics, 2020</a> ).
+<br /> <br />
+
+Using preprocessed/balanced input data together with Graph Convolutional Network model where the ChebConv layer employs Chebyshev polynomials of higher order K (K &gt;= 10) allows a <b>dramatic reduction in the classification error </b>: 
+<pre class="term">
+[user@cn4466 ~]$<b> visualize.R results/chebnet.K_10.gces.D_0.1.B.S_MWMOTE.tsv</b>
+</pre>
+<img src="gcn_cancer/barplot_low_error.png" width="850" border="0" alt="">
+<br />
+Moreover, the following commands
+<pre class="term">
+[user@cn4466 ~]$<b> train.py   -d gce -K 20 -B -S MWMOTE -l 1.e-6</b>
+[user@cn4466 ~]$<b> predict.py -d gce -K 20 -B -S MWMOTE </b>
+</pre>
+will result in the <b>error-free classification </b> (!). <br /> <br />
+
+To train the GCN_Cancer code using <b>multiple GPUs</b>, rather than a single GPU,<br />
+- allocate a session with appropriate number of GPUs (you are allowed to use up to 4 GPUs per interactive session), <br />
+- specify how many GPUs you want to use, through the command line option -g num_gpus, and <br />
+- specify a batch size, which should be a multiple of the number of GPUs to be used. <br />
+For example:
+<pre class="term">
+[user@cn4471 ~]$ <b>exit</b>
+[user@biowulf ~] <b>sinteractive --mem=240g --gres=gpu:a100:4,lscratch:100 --cpus-per-task=14 </b>
+[user@cn4471 ~]$ <b>mkdir -p data </b>
+[user@cn4471 ~]$ <b>module load gcn_cancer </b>
+[user@cn4471 ~]$ <b>cp $GCN_CANCER_DATA/{Block_,Adj_}{GCE,GCES,PPI,PPIS}.mat data</b>
+[user@cn4471 ~]$ <b>train.py -d gces -g 4 -b 2000 </b>
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn4466 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <a href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gcn_cancer.sh). For example:</p>
+<pre class="term">
+#!/bin/bash
+module load GCN_Cancer
+mkdir -p data
+cp $GCN_CANCER_DATA/{Block_,Adj_}{GCE,GCES,PPI,PPIS}.mat data</b>
+train.py  -d gce 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] gcn_cancer.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

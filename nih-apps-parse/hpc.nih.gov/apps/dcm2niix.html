@@ -1,0 +1,143 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'dcm2niix on Biowulf';</script>
+<div class="title">dcm2niix on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> dcm2niix is a designed to convert neuroimaging data from the DICOM format
+to the NIfTI format.  </p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>dcm2niix <a href="https://www.nitrc.org/plugins/mwiki/index.php/dcm2nii:MainPage">Manual</a></li>
+<li>dcm2niix <a href="https://github.com/rordenlab/dcm2niix">GitHub</a> </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: dcm2niix (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>The developer of dcm2niix, Chris Rorden, has provided the Biowulf group with the following comments to help HPC users of dmc2nix:
+   <ul>
+   <li>If you want nii.gz compressed output, note that you have two options:
+      <ul>
+      <li>"-z y" will write the raw data to disk and then compress with the parallel pigz (assuming pigz is found)
+      <li>"-z i" will use the internal zip compressor: this writes uses a single thread to write compressed data directly to disk.
+      </ul>
+In general, "-z y" is faster for single user computers that have fast SSD drives. However, clusters often have slow disk IO and the user may only want to allocate a single thread so that other tasks can run concurrently. For this reason, it may be faster to use "-z i" in a cluster situation.
+   </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load dcm2niix/1.0.20171017</b>
+[user@cn3144 ~]$ <b>dcm2niix -h</b>
+
+Chris Rorden's dcm2niiX version v1.0.20171017 (OpenJPEG build) GCC7.2.0 (64-bit Linux)
+usage: dcm2niix [options] <in_folder>
+ Options :
+  -1..-9 : gz compression level (1=fastest..9=smallest, default 6)
+  -b : BIDS sidecar (y/n/o(o=only: no NIfTI), default y)
+   -ba : anonymize BIDS (y/n, default y)
+  -c : comment stored as NIfTI aux_file (up to 24 characters)
+  -d : diffusion volumes sorted by b-value (y/n, default n)
+  -f : filename (%a=antenna  (coil) number, %c=comments, %d=description, %e echo number, %f=folder name, %i ID of patient, %j seriesInstanceUID, %k studyInstanceUID, %m=manufacturer, %n=name of patient, %p=protocol, %s=series number, %t=time, %u=acquisition number, %v=vendor, %x=study ID; %z sequence name; default '%f_%p_%t_%s')
+  -h : show help
+  -i : ignore derived, localizer and 2D images (y/n, default n)
+  -m : merge 2D slices from same series regardless of study time, echo, coil, orientation, etc. (y/n, default n)
+  -o : output directory (omit to save to input folder)
+  -p : Philips precise float (not display) scaling (y/n, default y)
+  -s : single file mode, do not convert other images in folder (y/n, default n)
+  -t : text notes includes private patient details (y/n, default n)
+  -v : verbose (n/y or 0/1/2 [no, yes, logorrheic], default 0)
+  -x : crop (y/n, default n)
+  -z : gz compress images (y/i/n/3, default n) [y=pigz, i=internal, n=no, 3=no,3D]
+ Defaults file : /home/user/.dcm2nii.ini
+ Examples :
+  dcm2niix /Users/chris/dir
+  dcm2niix -c "my comment" /Users/chris/dir
+  dcm2niix -o /users/cr/outdir/ -z y ~/dicomdir
+  dcm2niix -f %p_%s -b y -ba n ~/dicomdir
+  dcm2niix -f mystudy%s ~/dicomdir
+  dcm2niix -o "~/dir with spaces/dir" ~/dicomdir
+Example output filename: '/myFolder_MPRAGE_19770703150928_1.nii'
+
+[user@cn3144 ~]$ <b>cp $DCM2NIIX_TEST_DATA/CR-MONO1-10-chest.gz .</b>
+[user@cn3144 ~]$ <b>gunzip CR-MONO1-10-chest.gz</b>
+[user@cn3144 ~]$ <b>dcm2niix /CR-MONO1-10-chest</b>
+Chris Rorden's dcm2niiX version v1.0.20171017 (OpenJPEG build) GCC7.2.0 (64-bit Linux)
+Found 1 DICOM image(s)
+Convert 1 DICOM as /home/user/notes/software/dcm2niix/dcm2niix__0_1a (440x440x1x1)
+Warning: Check that 2D images are not mirrored.
+Conversion required 0.047990 seconds (0.020000 for core code).
+
+# or for a whole folder
+[user@cn3144 ~]$ <b>dcm2niix -o ./my_nifty -z y ./my_dicom</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. dcm2niix.sh), which uses the input file 'dcm2niix.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load dcm2niix/1.0.20171017
+dcm2niix  -o ./my_nifty -z y ./my_dicom
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] dcm2niix.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. dcm2niix.swarm). For example:</p>
+
+<pre class="term">
+dcm2niix  -o ./my_nifty1 -z y ./my_dicom1
+dcm2niix  -o ./my_nifty2 -z y ./my_dicom2
+dcm2niix  -o ./my_nifty3 -z y ./my_dicom3
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f dcm2niix.swarm [-g #] [-t #] --module dcm2niix</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module dcm2niix <td>Loads the dcm2niix module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

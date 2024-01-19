@@ -1,0 +1,272 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MoChA on Biowulf';</script>
+<div class="title">MoChA on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MoChA is a bcftools extension to call mosaic chromosomal alterations 
+starting from phased VCF files 
+with either B Allele Frequency (BAF) and Log R Ratio (LRR) or allelic depth (AD).
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Loh P., Genovese G., McCarroll S., Price A. et al. <br />
+<i>Insights about clonal expansions from 8,342 mosaic chromosomal alterations. </i> <br />
+<a href="https://www.nature.com/articles/s41586-018-0321-x">Nature <b>559</b> (2018), 350–355. </a>
+PMID: 29995854; DOI: 10.1038/s41586-018-0321-x
+<li>Loh P., Genovese G. and McCarroll S. <br /> 
+<i>Monogenic and polygenic inheritance become instruments for clonal selection</i>
+<a href="https://www.nature.com/articles/s41586-020-2430-6?elqTrackId=57c8cccc30f54cb182de08a725693b0d"> Nature <b>584</b> ((2020), 136–141.</a> PMID: 32581363; DOI: 10.1038/s41586-020-2430-6.
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://software.broadinstitute.org/software/mocha">MoChA Home page</a></li>
+<li><a href="https://github.com/freeseek/mocha">MoChA Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>mocha</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded app (set --threads $SLURM_CPUS_PER_TASK)
+<li>Reference data in <tt>/fdb/mocha/GRCh37</tt>
+<li>Unusual environment variables set
+  <ul>
+    <li><b>MOCHA_HOME</b>&nbsp; installation directory</li>
+    <li><b>MOCHA_BIN</b>&nbsp; executable   directory</li>
+    <li><b>MOCHA_WDL</b>&nbsp; WDL pipeline scripts folder</li>
+    <li><b>MOCHA_REF</b>&nbsp; reference data directory</li>
+    <li><b>MOCHA_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 8 --mem 20g --gres=lscratch:20 --time=2:00:00</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+<pre class="term">
+[user@cn3144 ~]$ <b>module load mocha</b>
++] Loading samtools 1.16  ...
+[+] Loading zlib 1.2.11  ...
+[+] Loading bedtools  2.29.2
+[+] Loading gcc  9.2.0  ...
+[+] Loading GSL 2.6 for GCC 9.2.0 ...
+[+] Loading openmpi 3.1.4  for GCC 9.2.0
+[+] Loading ImageMagick  7.0.8  on cn2385
+[+] Loading HDF5  1.10.4
+[+] Loading NetCDF 4.7.4_gcc9.2.0
+[+] Loading pandoc  2.10.1  on cn2385
+[+] Loading pcre2 10.21  ...
+[+] Loading R 4.0.0
+[+] Loading mocha  1.16
+</pre>
+Available executables are in stored in the folder pointed to by the environment variable MOCHA_BIN:
+<pre class="term">
+[user@cn3144 ~]$ <b>ls $MOCHA_BIN</b>
+extendFMT  mocha  mochatools  trio-phase
+</pre>
+To print the usage message for an executable, type its name without arguments. For example:
+<pre class="term">
+[user@cn3144 ~]$ <b>mocha</b>
+Genome reference assembly was not specified with --rules or --rules-file
+
+About:   MOsaic CHromosomal Alterations caller, requires phased genotypes (GT)
+         and either B-allele frequency (BAF) and Log R Ratio intensity (LRR)
+         or allelic depth coverage (AD). (version 2020-09-01 https://github.com/freeseek/mocha)
+Usage:   mocha [OPTIONS] &lt;in.vcf&gt;
+
+Required options:
+    -r, --rules &lt;assembly&gt;[?]      predefined genome reference rules, 'list' to print available settings, append '?' for details
+    -R, --rules-file &lt;file&gt;        genome reference rules, space/tab-delimited CHROM:FROM-TO,TYPE
+
+General Options:
+    -x, --sex &lt;file&gt;               file including information about the gender of the samples
+        --call-rate &lt;file&gt;         file including information about the call_rate of the samples
+    -s, --samples [^]&lt;list&gt;        comma separated list of samples to include (or exclude with "^" prefix)
+    -S, --samples-file [^]&lt;file&gt;   file of samples to include (or exclude with "^" prefix)
+        --force-samples            only warn about unknown subset samples
+    -v, --variants [^]&lt;file&gt;       tabix-indexed [compressed] VCF/BCF file containing variants
+    -t, --targets [^]&lt;region&gt;      restrict to comma-separated list of regions. Exclude regions with "^" prefix
+    -T, --targets-file [^]&lt;file&gt;   restrict to regions listed in a file. Exclude regions with "^" prefix
+    -f, --apply-filters &lt;list&gt;     require at least one of the listed FILTER strings (e.g. "PASS,.")
+                                   to include (or exclude with "^" prefix) in the analysis
+    -p  --cnp &lt;file&gt;               list of regions to genotype in BED format
+        --mhc &lt;region&gt;             MHC region to exclude from analysis (will be retained in the output)
+        --kir &lt;region&gt;             KIR region to exclude from analysis (will be retained in the output)
+        --threads &lt;int&gt;            number of extra output compression threads [0]
+
+Output Options:
+    -o, --output &lt;file&gt;            write output to a file [no output]
+    -O, --output-type &lt;b|u|z|v&gt;    b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v: uncompressed VCF [v]
+        --no-version               do not append version and command line to the header
+    -a  --no-annotations           omit Ldev and Bdev FORMAT from output VCF (requires --output)
+        --no-log                   suppress progress report on standard error
+    -l  --log &lt;file&gt;               write log to file [standard error]
+    -m, --mosaic-calls &lt;file&gt;      write mosaic chromosomal alterations to a file [standard output]
+    -g, --genome-stats &lt;file&gt;      write sample genome-wide statistics to a file [no output]
+    -u, --ucsc-bed &lt;file&gt;          write UCSC bed track to a file [no output]
+
+HMM Options:
+        --bdev-LRR-BAF &lt;list&gt;      comma separated list of inverse BAF deviations for LRR+BAF model [-2.0,-4.0,-6.0,10.0,6.0,4.0]
+        --bdev-BAF-phase &lt;list&gt;    comma separated list of inverse BAF deviations for BAF+phase model
+                                   [6.0,8.0,10.0,15.0,20.0,30.0,50.0,80.0,100.0,150.0,200.0]
+        --min-dist &lt;int&gt;           minimum base pair distance between consecutive sites for WGS data [400]
+        --adjust-BAF-LRR &lt;int&gt;     minimum number of genotypes for a cluster to median adjust BAF and LRR (-1 for no adjustment) [5]
+        --regress-BAF-LRR &lt;int&gt;    minimum number of genotypes for a cluster to regress BAF against LRR (-1 for no regression) [15]
+        --LRR-GC-order &lt;int&gt;       order of polynomial to regress LRR against local GC content (-1 for no regression) [2]
+        --xy-prob &lt;float&gt;          transition probability [1e-06]
+        --err-prob &lt;float&gt;         uniform error probability [1e-02]
+        --flip-prob &lt;float&gt;        phase flip probability [1e-02]
+        --centromere-loss &lt;float&gt;  penalty to avoid calls spanning centromeres [1e-04]
+        --telomere-gain &lt;float&gt;    telomere advantage to prioritize CN-LOHs [1e-02]
+        --x-telomere-gain &lt;float&gt;  X telomere advantage to prioritize mLOX [1e-04]
+        --y-telomere-gain &lt;float&gt;  Y telomere advantage to prioritize mLOY [1e-05]
+        --short-arm-chrs &lt;list&gt;    list of chromosomes with short arms [13,14,15,21,22,chr13,chr14,chr15,chr21,chr22]
+        --use-short-arms           use variants in short arms [FALSE]
+        --use-centromeres          use variants in centromeres [FALSE]
+        --use-no-rules-chrs        use chromosomes without centromere rules  [FALSE]
+        --LRR-weight &lt;float&gt;       relative contribution from LRR for LRR+BAF  model [0.2]
+        --LRR-hap2dip &lt;float&gt;      difference between LRR for haploid and diploid [0.45]
+        --LRR-cutoff &lt;float&gt;       cutoff between LRR for haploid and diploid used to infer gender [estimated from X nonPAR]
+...
+</pre>
+In order to run the mocha executable on sample data, first download the data to your current directory ( <b> about 3.5GB </b> ), then run the sample command below to output results  to the compressed BCF file ( <b> about 3.5GB,uncompressed VCF file about 14GB </b> ):
+<pre class="term">
+[user@cn3144 ~]$ <b>cp $MOCHA_DATA/* .</b>
+[user@cn3144 ~]$ <b>mocha -g GRCh37 -p $MOCHA_REF/cnp.grch37.bed.gz --LRR-GC-order 0 -c calls.tsv -z stats.tsv -u ucsc.bed -Ob --threads 7 -o output.bcf kgp_om25.8v1-1.as.bcf</b>
+MoChA 2020-09-01 https://github.com/freeseek/mocha
+Genome reference: GRCh37
+Regions to genotype: /fdb/mocha/GRCh37/cnp.grch37.bed.gz
+BAF deviations for LRR+BAF model: -2.0,-4.0,-6.0,10.0,6.0,4.0
+BAF deviations for BAF+phase model: 6.0,8.0,10.0,15.0,20.0,30.0,50.0,80.0,100.0,150.0,200.0
+Minimum base pair distance between consecutive sites: 400
+Order of polynomial in local GC content to be used to regress LRR against GC: 0
+Transition probability: 1e-06
+Uniform error probability: 0.01
+Phase flip probability: 0.01
+Centromere penalty: 0.0001
+Telomere advantage: 0.01
+X telomere advantage: 0.0001
+Y telomere advantage: 1e-05
+List of short arms: 13,14,15,21,22,chr13,chr14,chr15,chr21,chr22
+Use variants in short arms: FALSE
+Use variants in centromeres: FALSE
+Use chromosomes without centromere rules: FALSE
+Relative contribution from LRR for LRR+BAF model: 0.20
+Difference between LRR for haploid and diploid: 0.69
+Using genome assembly from GRCh37
+Loading 2 sample(s) from the VCF file
+Read 38 variants from contig 1
+Read 18 variants from contig 2
+Read 22 variants from contig 3
+Read 12 variants from contig 4
+Read 10 variants from contig 5
+Read 13 variants from contig 6
+Read 13 variants from contig 7
+Read 7 variants from contig 8
+Read 11 variants from contig 9
+Read 15 variants from contig 10
+...
+[user@cn3144 ~]$ <b>more output.vcf</b>
+##fileformat=VCFv4.2
+##FILTER=&lt;ID=PASS,Description="All filters passed"&gt;
+##FORMAT=&lt;ID=GT,Number=1,Type=String,Description="Genotype"&gt;
+##FORMAT=&lt;ID=AD,Number=G,Type=Integer,Description="Allelic Depths of REF and ALT(s) in the order listed"&gt;
+##FORMAT=&lt;ID=DP,Number=1,Type=Integer,Description="Read Depth"&gt;
+##contig=&lt;ID=1&gt;
+##contig=&lt;ID=2&gt;
+##contig=&lt;ID=3&gt;
+##contig=&lt;ID=4&gt;
+##contig=&lt;ID=5&gt;
+##contig=&lt;ID=6&gt;
+##contig=&lt;ID=7&gt;
+...
+##FORMAT=&lt;ID=Bdev_Phase,Number=1,Type=Integer,Description="BAF deviation phase, if available"&gt;
+##bcftools_pluginVersion=1.10+htslib-1.10
+##bcftools_pluginCommand=/usr/local/apps/mocha/1.10.2/lib/mocha.so --LRR-GC-order -1 -r GRCh37 -p /fdb/moc
+ha/GRCh37/cnp.grch37.bed.gz -o output.vcf input.vcf.gz; Date=Mon Sep 28 09:51:10 2020
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  TCGA-B5-A0JV-01A-11D-A10B-09     TC
+GA-B5-A0JV-10A-01W-A10C-09
+1       3703493 .       G       A       .       .       .       GT:AD:DP:Ldev:Bdev:Bdev_Phase   0/1:57,9:.
+:0:0:0  0/0:24,0:.:0:0:0
+1       19433445        .       C       T       .       .       .       GT:AD:DP:Ldev:Bdev:Bdev_Phase    0/
+1:63,13:.:0:0:0 0/0:115,0:.:0:0:0
+1       21804793        .       C       T       .       .       .       GT:AD:DP:Ldev:Bdev:Bdev_Phase    0/
+1:181,47:.:0:0:0        0/0:347,0:.:0:0:0
+1       21952879        .       C       T       .       .       .       GT:AD:DP:Ldev:Bdev:Bdev_Phase    0/
+...
+</pre>
+Exit the mocha application:
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mocha.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load mocha
+export TMPDIR=/lscratch/$SLURM_JOBID
+mocha  -g GRCh37 -p $MOCHA_REF/cnp.grch37.bed.gz -o output1.vcf input1.vcf.gz
+mocha  -g GRCh37 -p $MOCHA_REF/cnp.grch37.bed.gz -o output2.vcf input2.vcf.gz
+...
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=30g --gres=lscratch:20 mocha.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mocha.swarm). For example:</p>
+
+<pre class="term">
+mocha  -g GRCh37 -p $MOCHA_REF/cnp.grch37.bed.gz -o output1.vcf input1.vcf.gz
+mocha  -g GRCh37 -p $MOCHA_REF/cnp.grch37.bed.gz -o output2.vcf input2.vcf.gz
+...
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mocha.swarm [-g 30] [-t 16] --module mocha</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module TEMPLATE</tt> <td>Loads the TEMPLATE module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,81 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GLIMPSE: Genotype Likelihoods IMputation and PhaSing mEthod ';</script>
+<div class="title"><b>GLIMPSE: Genotype Likelihoods IMputation and PhaSing mEthod </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+GLIMPSE is a phasing and imputation method for large-scale low-coverage sequencing studies.
+It perform accurate imputed genotype calls and outperforms SNP arrays.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>S. Rubinacci, D.M. Ribeiro, R. Hofmeister,  O. Delaneau  <br />
+ <i>Efficient phasing and imputation of low-coverage sequencing data using large reference panels</i> <br />
+<a href="https://www.biorxiv.org/content/10.1101/2020.04.14.040329v1">bioRxiv preprint doi: https://doi.org/10.1101/2020.04.14.040329;</a>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://odelaneau.github.io/GLIMPSE/index.html">GLIMPSE Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>GLIMPSE</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>GLIMPSE_HOME</b>&nbsp; installation directory</li>
+    <li><b>GLIMPSE_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>GLIMPSE_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16g --cpus-per-task=16</b>
+[user@cn3335 ~]$<b>module load GLIMPSE</b>
+[+] Loading GLIMPSE  1.1.1
+</pre>
+<pre class="term">
+[user@biowulf]$ <b>GLIMPSE_chunk </b>
+
+[GLIMPSE] Split chromosomes into chunks
+  * Author        : Simone RUBINACCI &amp; Olivier DELANEAU, University of Lausanne
+  * Contact       : simone.rubinacci@unil.ch &amp; olivier.delaneau@unil.ch
+  * Version       : 1.1.1
+  * Run date      : 21/11/2022 - 17:25:19
+...
+[user@biowulf]$ <b>GLIMPSE_ligate </b>
+...
+[user@biowulf]$ <b>GLIMPSE_sample</b>
+...
+[user@biowulf]$ <b>GLIMPSE_concordance</b>
+...
+[user@biowulf]$ <b>GLIMPSE_phase</b>
+...
+[user@biowulf]$ <b>GLIMPSE_snparray</b>
+...
+</pre>
+[user@cn3335 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

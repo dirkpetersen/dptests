@@ -1,0 +1,118 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'coverageMaster: CNV detection and visualization from NGS short reads';</script>
+<div class="title">coverageMaster: CNV detection and visualization from NGS short reads</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CoverageMaster (CoM) is a copy number variation (CNV) calling algorithm i
+ased on depth-of-coverage maps designed to detect CNVs of any size i
+n exome [whole exome sequencing (WES)] and genome [whole genome sequencing (WGS)] data. 
+The core of the algorithm is the compression of sequencing coverage data 
+in a multiscale Wavelet space and the analysis through an iterative Hidden Markov Model. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Melivoia Rapti, Yassine Zouaghi, Jenny Meylan, Emmanuelle Ranza, Stylianos E Antonarakis, Federico A Santoni <br />
+<i>CoverageMaster: comprehensive CNV detection and visualization from NGS short reads for genetic medicine applications </i> <br />
+<a href="https://academic.oup.com/bib/article/23/2/bbac049/6537346?login=true">Briefings in Bioinformatics, Volume 23, Issue 2, March 2022, bbac049, https://doi.org/10.1093/bib/bbac049</a> Published: 26 February 2022
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/fredsanto/coverageMaster">coverageMaster github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>coverageMaster</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set
+  <ul>
+    <li><b>COM_HOME</b>&nbsp; installation directory</li>
+    <li><b>COM_BIN</b>&nbsp; executable   directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 16 --mem 45g --gres=lscratch:20</b>
+[user@cn3144 ~]$ <b>module load coverageMaster</b>
+[+] Loading singularity  3.8.5-1  on cn3144
+[+]  Loading coverageMaster 20220706  ...
+[user@cn3144 ~]$ <b> coverageMaster.py -h </b>
+Usage: coverageMaster.py [options] &lt;cov_file&gt; &lt;stats_file&gt; &lt;gene list(file or comma separated gene names)|region(chr:start-end)&gt; -r &lt;reference.cov&gt; -o &lt;output_px&gt;
+
+Options:
+  -h, --help            show this help message and exit
+  -c CONTROL, --control=CONTROL
+                        &lt;optional&gt; txt file with a control file per line (.cov
+                        with .report.txt in same folder)
+  -s SINGLE_CONTROL, --single-control=SINGLE_CONTROL
+                        &lt;optional&gt; single control file (.cov with .report.txt
+                        in same folder)
+  -r REF, --ref=REF     reference file
+  -o OUTPUT_PX, --out=OUTPUT_PX
+                        output prefix
+  -g CGD, --cgd=CGD     &lt;optional&gt; clinical genomic database
+  -f, --force           &lt;optional&gt; force output
+  -e EXONS, --exons=EXONS
+                         &lt;optional&gt; n. of extra exons
+  -x OFFSET, --offset=OFFSET
+                         &lt;optional&gt; offset to ref
+  -d WID, --width=WID    &lt;optional&gt; d*std
+  -l LEV, --level=LEV    &lt;optional&gt; max wavelet level
+  -m MINLEV, --minlevel=MINLEV
+                         &lt;optional&gt; min wavelet level
+  -w, --wig              &lt;optional&gt; write wig
+  -b, --bed              &lt;optional&gt; BED input
+  -k DGV, --dgv=DGV      &lt;optional&gt; DGV file
+[user@cn3144 ~]$ <b>git clone https://github.com/fredsanto/coverageMaster</b>
+[user@cn3144 ~]$ <b>cd coverageMaster/DEMO</b>
+[user@cn3144 ~]$ <b>gene=PGM1 && co=control.PGM1.cov && python ../coverageMaster.py test.PGM1.cov test.PGM1.report.txt $gene -s $co -r ref.PGM1 -o test.PGM1</b>
+Fri Sep  9 04:04:48 2022 - --------------------------------------------------------------------------------
+CoverageMaster is warming up
+Fri Sep  9 04:04:48 2022 - Query index created
+Fri Sep  9 04:04:48 2022 - Reference index created
+Fri Sep  9 04:04:48 2022 - Processing Gene: XIST - Region chrX:73040485-73072588
+chrX not in my list - skipped
+/opt/conda/envs/coveragemaster/lib/python3.6/site-packages/numpy/core/fromnumeric.py:3118: RuntimeWarning: Mean of empty slice.
+  out=out, **kwargs)
+/opt/conda/envs/coveragemaster/lib/python3.6/site-packages/numpy/core/_methods.py:85: RuntimeWarning: invalid value encountered in double_scalars
+  ret = ret.dtype.type(ret / rcount)
+Fri Sep  9 04:04:48 2022 - Control index created
+Fri Sep  9 04:04:48 2022 - Processing Gene: XIST - Region chrX:73040485-73072588
+chrX not in my list - skipped
+Fri Sep  9 04:04:48 2022 - Loop with control control.PGM1.cov
+Fri Sep  9 04:04:48 2022 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Fri Sep  9 04:04:48 2022 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Fri Sep  9 04:04:48 2022 - PGM1:Zooming 4
+Fri Sep  9 04:04:48 2022 - PGM1:Zooming 3
+Fri Sep  9 04:04:48 2022 - PGM1:Zooming 2
+Fri Sep  9 04:04:48 2022 - PGM1:Zooming 1
+user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Fast and efficient QTL mapping';</script>
+<div class="title"><b>Fast and efficient QTL mapping</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+In order to discover quantitative trait loci (QTLs), 
+multi-dimensional genomic datasets combining
+DNA-seq and ChiP-/RNA-seq require methods that rapidly correlate tens of thousands of
+molecular phenotypes with millions of genetic variants while appropriately controlling for multiple testing. FastQTL implements a popular cis-QTL mapping strategy
+in a user- and cluster-friendly tool. FastQTL also proposes an efficient 
+permutation procedure to control for multiple testing. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Halit Ongen, Alfonso Buil, Andrew Anand Brown,
+Emmanouil T. Dermitzakis and Olivier Delaneau,
+"Fast and efficient QTL mapper for thousands of
+molecular phenotypes", <i> Bioinformatics</i>, <b>32</b>(10), 2016, 1479–1485 </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://fastqtl.sourceforge.net/">FastQTL SourceForge page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>FastQTL</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Fast; with a permutation scheme relying on Beta approximation.
+<li>Flexible; association testing is implemented w/o qualitative/quantitative covariates.
+<li>User-friendly; only standard file formats are used and easy-to-use options implemented.
+<li>Cluster-friendly; parallelization is easy to set up for large deployment on compute clusters.
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>FASTQTL_HOME</b>&nbsp; installation directory</li>
+    <li><b>FASTQTL_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>FASTQTL_SRC</b>&nbsp;  &nbsp; &nbsp; source code directory</li>
+    <li><b>FASTQTL_TEST</b>&nbsp; &nbsp; sample data directory </li>
+  </ul>
+
+<P>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@@cn3316 ~]$ <b>module load FastQTL</b>
+[user@@cn3316 ~]$ <b>cp ${FASTQTL_TEST}/* . </b>
+[user@@cn3316 ~]$ <b>fastQTL -V genotypes.vcf.gz -B  phenotypes.bed.gz -O res -L res.log --chunk 1 10 </b>
+Fast QTL
+  * Authors : Olivier DELANEAU, Halit ONGEN, Alfonso BUIL & Manolis DERMITZAKIS
+  * Contact : olivier.delaneau@gmail.com
+  * Webpage : http://fastqtl.sourceforge.net/
+  * Version : v2.0
+
+Perform nominal analysis (used to get raw p-values of association)
+  * Using p-value threshold = 1.0000000000
+  * Random number generator is seeded with 1525965118
+  * Considering variants within 1e+06 bp of the MPs
+  * Chunk processed 1 / 10
+
+Scanning phenotype data in [phenotypes.bed.gz]
+  * 364 phenotypes
+
+Reading phenotype data in [phenotypes.bed.gz]
+  * region = 22:17517460-20748405
+  * 373 samples included
+  * 45 phenotypes included
+Reading genotype data in [genotypes.vcf.gz] in VCF format
+  * region = 22:16517460-21748405
+  * 373 samples included
+  * 18602 sites included
+
+Imputing missing genotypes
+
+Imputing missing phenotypes
+
+Initialize covariate 
+
+Processing gene [ENSG00000237438.1]
+  * Number of variants in cis = 7966
+  * Progress = 2.2%
+
+Processing gene [ENSG00000177663.8]
+  * Number of variants in cis = 8165
+  * Progress = 4.4%
+
+Processing gene [ENSG00000183307.3]
+  * Number of variants in cis = 8279
+  * Progress = 6.7%
+
+Processing gene [ENSG00000069998.8]
+  * Number of variants in cis = 8466
+  * Progress = 8.9%
+...
+...
+Processing gene [ENSG00000206176.5]
+  * Number of variants in cis = 7031
+  * Progress = 93.3%
+
+Processing gene [ENSG00000196622.5]
+  * Number of variants in cis = 7212
+  * Progress = 95.6%
+
+Processing gene [ENSG00000161133.12]
+  * Number of variants in cis = 6103
+  * Progress = 97.8%
+
+Processing gene [ENSG00000185252.13]
+  * Number of variants in cis = 6090
+  * Progress = 100.0%
+
+Running time: 97 seconds
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. FastQTL.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load FastQTL
+fastQTL -V genotypes.vcf.gz -B  phenotypes.bed.gz -O res -L res.log --chunk 7 10
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] FastQTL.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

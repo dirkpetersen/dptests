@@ -1,0 +1,157 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Rosetta on Biowulf';</script>
+<div class="title">Rosetta on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#multithreaded">Multithreaded job </a></div>
+        <div class="tocItem"><a href="#mpi">MPI job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The Rosetta++ software suite focuses on the prediction and design of protein structures, protein folding mechanisms, and protein-protein interactions. The Rosetta codes have been repeatedly successful in the Critical Assessment of Techniques for Protein Structure Prediction (CASP) competition as well as the CAPRI competition and have been modified to address additional aspects of protein design, docking and structure.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Rosetta Main Site: <a href="http://www.rosettacommons.org/">http://www.rosettacommons.org/</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: rosetta (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded/MPI
+<li>Unusual environment variables set:
+  <ul>
+    <li><b>ROSETTA3_HOME</b> -- path to the Rosetta installation directory</li>
+    <li><b>ROSETTA3_DB</b> -- path to the Rosetta database directory</li>
+    <li><b>ROSETTA_DATABASE</b> -- ditto</li>
+    <li><b>ROSETTA_TOOLS</b> -- path to miscellaneous scripts and wrappers</li>
+
+  </ul>
+<li>Example script in $ROSETTA3_HOME/../rosetta3_demos.tgz
+</ul>
+
+<p class="alert"><b>NOTE FOR LARGE ROSETTA JOBS:</b> When running jobs &gt; 50 cpus, it is best practice to copy the Rosetta database to local scratch, using the following command:</p>
+
+<pre class="term">
+sbcast ${ROSETTA3_DB}.tgz /lscratch/$SLURM_JOB_ID/database.tgz && srun tar -C /lscratch/$SLURM_JOB_ID/ -xzf /lscratch/$SLURM_JOB_ID/database.tgz
+export ROSETTA3_DB=/lscratch/$SLURM_JOB_ID/database
+export ROSETTA_DATABASE=/lscratch/$SLURM_JOB_ID/database
+</pre>
+
+<p>If the -database is used as an option, you must specify the location as <tt>-database /lscratch/$SLURM_JOB_ID/database</tt>. In addition, you must allocate at least 10 GB of local scratch space with <tt>--gres=lscratch:10</tt>.</p>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ module load rosetta
+[user@cn3144 ~]$ tar xzvf $ROSETTA3_HOME/../rosetta3_demos.tgz
+[user@cn3144 ~]$ ./run_demo.sh
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. rosetta.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load rosetta
+relax @flags &gt; relax.log
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--mem=#] rosetta.sh</pre>
+
+
+<!-- multithreaded -->
+<a Name="multithreaded"></a><div class="heading">Multithreaded job</div>
+<p>A small fraction of Rosetta commands can be accelerated using multithreading.  This requires an extra option:</p>
+
+<pre class="term">-multithreading:total_threads <b><em>#</em></b></pre>
+
+<p>where <b><em>#</em></b> is the number of threads.</p>
+
+<p>The easiest way to handle this is to supply a slurm-created environment variable <b><tt>$SLURM_CPUS_ON_NODE</tt></b> in a job with multiple cpus allocated.  Here is an example sbatch submission script:</p>
+
+<pre class="term">#!/bin/bash
+module load rosetta
+relax @flags -multithreading:total_threads $SLURM_CPUS_ON_NODE &gt; relax.log
+</pre>
+
+<p>The multiple cpus are allocated like so:</p>
+
+<pre class="term">[user@biowulf ~]$ sbatch <b>--cpus-per-task=#</b> rosetta.sh</pre>
+
+<p>where # is a number between 2 and 8.</p>
+
+<p class="alert"><b>NOTE:</b> There are very few rosetta commands that benefit from multithreading.  Make sure your jobs actually utilize the excess cpus using <tt><a href="https://hpc.nih.gov/docs/biowulf_tools.html#jobload"><b>jobload</b></a></tt> or the <a href="https://hpc.nih.gov/dashboard"><b>HPC dashboard</b></a>.</p>
+
+<!-- mpi -->
+
+<a Name="mpi"></a><div class="heading">MPI job</div>
+<p>Certain Rosetta commands can be distributed using MPI.  This requires the MPI module for Rosetta be loaded, e.g.</p>
+
+<pre class="term">module load rosetta/2018.21.mpi</pre>
+
+<p>The Rosetta commands are launched using <b>mpirun</b>, passing the number of tasks with <b>-np</b>:</p>
+
+<pre class="term">mpirun -np ${SLURM_NTASKS} AbinitioRelax @flags</pre>
+
+<p>Then, tasks must be allocated instead of CPUs:</p>
+
+<pre class="term">sbatch [--ntasks=#] [--ntasks-per-core=1] rosetta.sh</pre>
+
+<p class="alert">Not all Rosetta commands are MPI-enabled.  Check the <a href="https://www.rosettacommons.org/docs/latest/rosetta_basics/MPI">Rosetta Commons documentation</a> to learn more about running Rosetta with MPI.</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. rosetta.swarm). For example:</p>
+
+<pre class="term">AbinitioRelax @flags -out:file:silent abinito1.out &gt; abinitio1.log
+AbinitioRelax @flags -out:file:silent abinito2.out &gt; abinitio2.log
+AbinitioRelax @flags -out:file:silent abinito3.out &gt; abinitio3.log
+AbinitioRelax @flags -out:file:silent abinito4.out &gt; abinitio4.log
+AbinitioRelax @flags -out:file:silent abinito5.out &gt; abinitio5.log
+AbinitioRelax @flags -out:file:silent abinito6.out &gt; abinitio6.log
+AbinitioRelax @flags -out:file:silent abinito7.out &gt; abinitio7.log
+AbinitioRelax @flags -out:file:silent abinito8.out &gt; abinitio8.log
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f rosetta.swarm [-g #] [-t #] --module rosetta</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module rosetta <td>Loads the rosetta module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

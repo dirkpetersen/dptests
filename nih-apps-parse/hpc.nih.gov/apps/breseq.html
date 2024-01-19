@@ -1,0 +1,167 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'breseq on Biowulf';</script>
+<div class="title">breseq on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width:70%;">
+
+<p>
+From the breseq documentation:
+</p>
+<blockquote>
+
+    breseq is a computational pipeline for the analysis of short-read
+    re-sequencing data (e.g. Illumina, 454, IonTorrent, etc.). It uses
+    reference-based alignment approaches to predict mutations in a sample
+    relative to an already sequenced genome. breseq is intended for microbial
+    genomes (&lt;10 Mb) and re-sequenced samples that are only slightly diverged
+    from the reference sequence (&lt;1 mutation per 1000 bp).
+
+    breseq‘s primary advantages over other software programs are that it can:
+    <ol>
+        <li>Accurately predict new sequence junctions, such as those associated with 
+            mobile element insertions.</li>
+        <li>Integrate multiple sources of evidence for genetic changes into mutation predictions.</li>
+        <li>Produce annotated output describing biologically relevant mutational events.</li>
+    </ol>
+
+    breseq was initially developed to analyze data from the Lenski long-term evolution 
+    experiment with E. coli. However, breseq may be generally useful to researchers who are:
+
+    <ol>
+        <li>Tracking mutations over time in microbial evolution experiments.</li>
+        <li>Checking strains for unwanted second-site mutations after genetic manipulations.</li>
+        <li>Identifying mutations that occur during strain improvement or after 
+            long-term culture of engineered strains.</li>
+        <li>Discovering what mutations arise in pathogens during infection or cause antibiotic resistance.</li>
+    </ol>
+</blockquote>
+
+<h3>References:</h3>
+<ul>
+    <li>D. E. Deatherage and J. E. Barrick. 
+    <em>Identification of mutations in laboratory-evolved microbes from next-generation sequencing 
+        data using breseq</em>. Methods Mol. Biol. 1151: 165–188 (2014)
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/24838886">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4239701/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://link.springer.com/protocol/10.1007%2F978-1-4939-0554-6_12">Journal</a>
+    </li>
+</ul>
+    
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>breseq <a href="http://barricklab.org/twiki/pub/Lab/ToolsBacterialGenomeResequencing/documentation/index.html">manual</a></li>
+<li>breseq <a href="https://github.com/barricklab/breseq">GitHub repo</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: breseq (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>breseq can use multiple threads. Please allocate one CPU for each thread</li>
+    <li>Example files in <code>BRESEQ_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. 
+In this sample session we will analyze an E. coli strain that evolved for 20000 generations
+in the <a href="http://myxo.css.msu.edu/ecoli/">long term evolution experiment</a>.</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g --cpus-per-task=4 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load breseq</b>
+[user@cn3144]$ <b>cp -L ${BRESEQ_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>ls -lh</b>
+total 275M
+-rw-r--r-- 1 user group  11M Aug  8 13:46 NC_012967.gbk
+-rw-r--r-- 1 user group 133M Aug  8 13:46 SRR030257_1.fastq.gz
+-rw-r--r-- 1 user group 132M Aug  8 13:46 SRR030257_2.fastq.gz
+
+[user@cn3144]$ <b>breseq -j $SLURM_CPUS_PER_TASK -r NC_012967.gbk \
+                     SRR030257_1.fastq.gz SRR030257_2.fastq.gz</b>
+...
+---&gt; bowtie2  :: version 2.3.4.1 [/usr/local/apps/bowtie/2-2.3.4.1/bin/bowtie2]
+---&gt; R        :: version 3.5.0 [/usr/local/apps/R/3.5/3.5.0_build2/bin/R]
++++   NOW PROCESSING Read and reference sequence file input
+  READ FILE::SRR030257_1
+...
+[user@cn3144]$ <b>cp -r output data /path/to/where/you/would/like/the/output</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>The output directory contains summary html files.</p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. breseq.sh), which uses the input file 'breseq.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load breseq/0.36.1 || exit 1
+wd=$PWD
+cd /lscratch/$SLURM_JOB_ID || exit 1
+cp -L $BRESEQ_TEST_DATA/* .
+breseq -j $SLURM_CPUS_PER_TASK -r NC_012967.gbk \
+    SRR030257_1.fastq.gz SRR030257_2.fastq.gz
+cp -r output $wd
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --gres=lscratch:10 --cpus-per-task=6 --mem=5g breseq.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. breseq.swarm). For example:</p>
+
+<pre class="term">
+breseq -j $SLURM_CPUS_PER_TASK -r ref.gbk sample1_reads.fastq.gz
+breseq -j $SLURM_CPUS_PER_TASK -r ref.gbk sample2_reads.fastq.gz
+breseq -j $SLURM_CPUS_PER_TASK -r ref.gbk sample3_reads_R1.fastq.gz sample3_reads_R2.fastq.gz
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f breseq.swarm -g 5 -t 4 --module breseq/0.33.0</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module breseq <td>Loads the breseq module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

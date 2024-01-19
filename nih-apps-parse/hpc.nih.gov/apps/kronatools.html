@@ -1,0 +1,90 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'KronaTools';</script>
+<div class="title">KronaTools</div>
+
+<P>
+<!-- ======================================================================= -->
+<!-- Quick links  -->
+<table border=0 cellpadding=10 align=right width=25%> 
+<tr><td>
+&nbsp; &nbsp;&nbsp; &nbsp;
+<A href="https://github.com/marbl/Krona/wiki"><img src="/images/krona_logo.png" alt="" align="center" width=125 height=39></a></p>
+<br>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#helix">Creating Krona Graphs</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</table>
+<!-- ======================================================================= -->
+
+<i>A set of scripts to create Krona charts from several Bioinformatics tools as well as from text and XML files</i>
+
+<P>
+Krona allows hierarchical data to be explored with zooming, multi-layered pie charts. KronaTools can be used to create Krona charts from several bioinformatics tools and raw data formats. The resulting interactive charts are self-contained and can be viewed with any modern web browser.
+
+<div class="subheading"><b>Web sites</b></div>
+<ul>
+<li><a href="https://github.com/marbl/Krona/wiki">Krona GitHub Wiki</a></li>
+<li><a href="https://github.com/marbl/Krona/wiki/KronaTools">KronaTools GitHub Wiki</a></li>
+</ul>
+<div class="subheading"><b>Reference</b></div>
+<ul>
+<li><a href="https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-385">Ondov, Brian D., Nicholas H. Bergman, and Adam M. Phillippy. "Interactive metagenomic visualization in a Web browser." <i>BMC bioinformatics</i> 12.1 (2011): 385.</a></li>
+</ul>
+
+<P>
+<a Name="helix"></a><div class="heading">Creating Krona Graphs</div>
+<a href="kronatools.html" style="font-size:12px">back to top</a><br/>
+
+<P>
+KronaTools can be used to generate Krona charts using data from many different sources.  See <a href="https://github.com/marbl/Krona/wiki">the Krona GitHub Wiki</a> for ideas.
+<P>
+Although there are many uses for KronaTools, Krona was designed to visualize metagenomic data.  In the following example, we will generate a Krona chart based on a simulated dataset processed using <a href="https://hpc.nih.gov/apps/clark.html">CLARK</a>.  First, we'll allocate an interactive session and copy some test data to our data directory.  
+
+<div class="term"><pre>
+[user@cn0123 ~]$ <b>module load clark</b>
+[+] Loading clark 1.2.3
+[user@cn0123 ~]$ <b>cd /data/$USER</b>
+[user@cn0123 user]$ <b>mkdir -p dbd2/Custom</b>
+[user@cn0123 user]$ <b>cp $CLARK_TEST_DATA/complex_targets/*.fna dbd2/Custom</b>
+[user@cn0123 user]$ <b>cp $CLARK_TEST_DATA/complex_reads.fa .</b>
+</pre></div>
+
+<P>
+Now we'll build a custom bacteria database, run a classification on it, and estimate abundance. 
+
+<div class="term"><pre>
+[user@cn0123 user]$ <b>set_targets.sh dbd2 bacteria --species</b>
+[...snip...]
+[user@cn0123 user]$ <b>classify_metagenome.sh -O complex_reads.fa -R complex \
+             -n $SLURM_CPUS_PER_TASK</b>
+[...snip...]
+[user@cn0123] <b>estimate_abundance.sh -F complex.csv -D dbd2 --krona</b>
+[...snip...]
+</pre></div>
+
+<P>
+Finally, we'll use <tt>ktImportTaxonomy</tt> from the KronaTools suite to generate a Krona chart in <tt>.html</tt>.
+
+<div class="term"><pre>
+[user@cn0123 user]$ <b>module load kronatools</b>
+[+] Loading kronatools 2.7 on cn0123
+
+[user@cn0123 user]$ <b>ktImportTaxonomy -i -m 3 -o krona_taxonomy.html results.krn</b>
+</pre></div>
+
+<P>
+You can view the resulting Krona chart <a href="/examples/krona_taxonomy.html">here</a>.
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<a href="kronatools.html" style="font-size:12px">back to top</a><br/>
+<P>
+<ul>
+<li><a href="https://github.com/marbl/Krona/wiki">Krona GitHub Wiki</a></li>
+<li><a href="https://github.com/marbl/Krona/wiki/KronaTools">KronaTools GitHub Wiki</a></li>
+</ul>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

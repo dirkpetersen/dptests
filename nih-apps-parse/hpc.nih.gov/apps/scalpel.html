@@ -1,0 +1,114 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Scalpel on HPC';</script>
+    <div class="title">Scalpel on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> Scalpel is a software package for detecting INDELs (INsertions and DELetions) 
+      mutations in a reference genome which has been sequenced with next-generation 
+      sequencing technology (e.g., <a href="http://www.illumina.com/">Illumina</a>). 
+      Scalpel is designed to perform localized micro-assembly of specific regions 
+      of interest with the goal of detecting mutations with high accuracy and 
+      increased power. It is based on the de Bruijn graph assembly paradigm and 
+      implements an on-the-fly repeat composition analysis coupled with a self-tuning 
+      k-mer strategy to increase specificity in regions characterized by complex 
+      repeat structures. It supports three different modes of operation:</p>
+    <ul>
+      <li> Single: in single mode scalpel detects INDELs in one single dataset 
+        (e.g., one individual exome). </li>
+      <li> Denovo: in denovo mode scalpel detects de novo INDELs in one family 
+        of four individuals (mom, dad, aff, sib). </li>
+      <li> Somatic: in somatic mode scalpel detects somatic INDELs for a tumor/sample 
+        pair. </li>
+    </ul>
+    <p> For all the modes of operation, scalpel requires that the raw reads have 
+      been previously aligned with BWA using default parameters. See BWA description 
+      for more info.</p>
+    <h3>&nbsp;</h3>
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="https://github.com/mjafin/scalpel">https://github.com/mjafin/scalpel</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>scalpel</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) </li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load scalpel</strong>
+[user@cn3144 ~]$ <b>scalpel-discovery --single --bam file.bam --bed regions.bed --ref genome.fa</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load scalpel
+scalpel-discovery --single --bam file.bam --bed regions.bed --ref genome.fa</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch [--mem=#] batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; scalpel-discovery --single --bam file.bam --bed regions.bed --ref genome.fa
+cd dir2; scalpel-discovery --single --bam file.bam --bed regions.bed --ref genome.fa
+cd dir3; scalpel-discovery --single --bam file.bam --bed regions.bed --ref genome.fa
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module scalpel</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process 
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

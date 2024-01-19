@@ -1,0 +1,67 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "TEMPLATE";</script>
+
+<div class="title">MeGit on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+Egit is a plug-in for the Eclipse IDE to manage git repositories. Minimal Egit (MeGit) is a standalone version of Egit. MeGit is a graphical front-end for handling git repositories, git branch operations, analyzing git history, etc.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/eclipsesource/megit">MeGit Main Site</a></li>
+<li><a href="https://wiki.eclipse.org/EGit/User_Guide">EGit User Guide</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application requires a <a href="/docs/connect.html#nx">graphical connection using NX</a></p>
+
+<ul>
+    <li>Module Name: <tt>megit</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>This module is available in interactive jobs and on Helix. 
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load megit</b>
+[+] Loading java 17.0.3.1  ...
+[+] Loading megit 0.4.0
+
+[user@cn3144 ~]$ <b>megit</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,253 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'STAR and STAR-Fusion on Biowulf';</script>
+<div class="title">STAR and STAR-Fusion on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>STAR aligns RNA-Seq data to reference genomes.  It is designed to be fast and
+accurate for known and novel splice junctions. In addition, it has no limit on
+the read size and can align reads with multiple splice junctions.  This is
+becoming more important as read lengths increase. As a result of the alignment
+algorithm, poor quality tails and poly-A tails are clipped in the alignment.</p>
+
+<p>Starting with version 2.4.1a, annotations can be included at the mapping stage
+instead/in addition to the indexing stage.</p>
+
+<p>STAR-Fusion uses the STAR aligner to identify candidate fusion transcripts.</p>
+
+<p>There are now separate modules for STAR and STAR-Fusion.</p>
+
+<h3>References:</h3>
+<ul>
+<li>Alexander Dobin <em>et al.</em>
+  <em>STAR: ultrafast universal RNA-seq aligner</em>.
+  Bioinformatics 2013, 29:15-21.
+  <a href="http://www.ncbi.nlm.nih.gov/pubmed/23104886">Pubmed</a>&nbsp;|&nbsp;
+  <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3530905/">PMC</a>&nbsp;|&nbsp;
+  <a href="http://bioinformatics.oxfordjournals.org/content/29/1/15.long">Journal</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/alexdobin/STAR">STAR Home page</a></li>
+<li><a href="https://github.com/alexdobin/STAR/blob/master/doc/STARmanual.pdf">STAR Manual</a></li>
+<li><a href="https://groups.google.com/forum/#!forum/rna-star">STAR Google group</a></li>
+<li><a href="https://github.com/STAR-Fusion/STAR-Fusion/wiki">STAR-Fusion wiki</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: STAR (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>STAR is a multithreaded application. Please match the number of allocated CPUs with the
+number of threads</li>
+<li>Example files in <code>$STAR_TEST_DATA</code></li>
+</ul>
+<P>
+
+<div class="heading">STAR Indices</div>
+<p class="alert">STAR made a backwards incompatible change to it's index structure 
+with version 2.4.2.</p>
+
+<p>STAR indices can be found in</p>
+<p> <b> <code>/fdb/STAR_indices/[STAR VERSION]</code></b></p>
+<p>For historical reasons there are also three symlinks pointing to 
+the versioned subdirectories in <code>/fdb/STAR_indices</code>:</p>
+<ul>
+    <li> <code><b>/fdb/STAR</b> &rarr; /fdb/STAR_indices/2.4.0d</code></li>
+    <li> <code><b>/fdb/STAR_2.4.2a</b> &rarr; /fdb/STAR_indices/2.4.2a</code></li>
+    <li> <code><b>/fdb/STAR_current</b> &rarr; /fdb/STAR_indices/[newest STAR]</code></li>
+</ul>
+
+<div class="heading">STAR-Fusion</div>
+
+<p>Various CTAT libraries are available at <b><code>/fdb/CTAT</code></b>. Some of
+the libraries are directly at the top level. Starting from STAR-Fusion 1.7, CTAT libraries
+in the correct format are available in version specific subdirectories such as</p>
+
+<pre class="term">
+/fdb/CTAT/__genome_libs_StarFv1.7
+/fdb/CTAT/__genome_libs_StarFv1.9
+/fdb/CTAT/__genome_libs_StarFv1.10
+</pre>
+
+<p>Note that 1.11.0 and 1.12.0 are still compatible with __genome_libs_StarFv1.10</p>
+
+<p>The following table shows the minimum version of STAR for recent versions of STAR-Fusion:</p>
+
+<table class="horztable">
+    <tr><th class="softBottom"><b>STAR-Fusion</b></th><th class="softBottom"><b>Minumum STAR version</b></th></tr>
+    <tr><td>1.12.0</td><td>2.7.8a</td></tr>
+    <tr><td>1.11.0</td><td>2.7.8a</td></tr>
+    <tr><td>1.10.0</td><td>2.7.8a</td></tr>
+    <tr><td>1.9.1</td><td>2.7.2b</td></tr>
+    <tr><td>1.7.0</td><td>2.7.2a</td></tr>
+    <tr><td>1.6.0</td><td>2.7.0f</td></tr>
+    <tr><td>1.5.0</td><td>2.6.1</td></tr>
+</table>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>STAR is used to create genome indices as well as to align and map short reads
+to the indexed genome. A GTF format annotation of transcripts can be provided
+during indexing or, since version 2.4.1a, on the fly during mapping.</p>
+
+<p>A simple example of indexing a small genome with annotation. If annotation is
+provided, a overhang depending on the readlength to be used has to be provided
+as well. In this example we use a small genome, so 30g is more than enough
+memory. For example, for 100nt reads:</p>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=12 --mem=30g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load STAR</b>
+[user@cn3144 ~]$ <b>mkdir -p indices/star100-EF4</b>
+[user@cn3144 ~]$ <b>GENOME=/fdb/igenomes/Saccharomyces_cerevisiae/Ensembl/EF4</b>
+[user@cn3144 ~]$ <b>STAR \
+    --runThreadN 2 \
+    --runMode genomeGenerate \
+    --genomeDir indices/star100-EF4 \
+    --genomeFastaFiles $GENOME/Sequence/WholeGenomeFasta/genome.fa \
+    --sjdbGTFfile $GENOME/Annotation/Genes/genes.gtf \
+    --sjdbOverhang 99 \
+    --genomeSAindexNbases 10</b>
+</pre>
+
+<p>However, a default value of 100 will work well in many cases. Note that
+for the output of sorted bam files, the temp directory should be placed in lscratch.</p>
+<p>Align single end 50nt RNA-Seq data to the mouse genome:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>mkdir -p bam/rnaseq_STAR</b>
+[user@cn3144 ~]$ <b>GENOME=/fdb/STAR_current/UCSC/mm10/genes-50</b>
+[user@cn3144 ~]$ <b>STAR \
+    --runThreadN 12 \
+    --genomeDir $GENOME \
+    --sjdbOverhang 50 \
+    --readFilesIn $STAR_TEST_DATA/ENCFF138LJO_1M.fastq.gz \
+    --readFilesCommand zcat \
+    --outSAMtype BAM SortedByCoordinate \
+    --outTmpDir=/lscratch/$SLURM_JOB_ID/STARtmp \
+    --outFileNamePrefix bam/rnaseq_STAR/test</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>To use STAR-Fusion, please load the separately available STAR-Fusion module</p>
+
+<pre class="term">
+[user@3144 ~]$ <b>module load STAR-Fusion</b>
+</pre>
+
+<p>For more details on STAR-Fusion see the <a href="https://github.com/STAR-Fusion/STAR-Fusion/wiki">STAR-Fusion wiki</a>.</p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Batch scripts should use the <code>$SLURM_CPUS_PER_TASK</code> environment
+variable to determine the number of threads to use. This variable is set by
+slurm according to the number of requested cores. An example script for
+aligning single end RNA-Seq data with STAR might look like the following:</p>
+
+<pre class="term">
+#! /bin/bash
+# this file is STAR.sh
+set -o pipefail
+set -e
+
+function fail {
+    echo "$@" &gt;&amp;2
+    exit 1
+}
+
+module load samtools/1.6 || fail "could not load samtools module"
+module load STAR         || fail "could not load STAR module"
+cd /data/$USER/test_data || fail "no such directory"
+mkdir -p bam/rnaseq_STAR
+GENOME=/fdb/STAR_current/UCSC/mm10/genes-50
+STAR \
+    --runThreadN $SLURM_CPUS_PER_TASK \
+    --genomeDir $GENOME \
+    --sjdbOverhang 50 \
+    --readFilesIn fastq/rnaseq_500k.fastq.gz \
+    --readFilesCommand zcat \
+    --outSAMtype BAM SortedByCoordinate \
+    --outTmpDir=/lscratch/$SLURM_JOB_ID/STARtmp \
+    --outFileNamePrefix bam/rnaseq_STAR/test
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command. STAR requires
+30-45g for mammalian genomes. Human genomes generally require about 45GB.</p>
+
+<pre class="term">sbatch --cpus-per-task=12 --mem=38g --gres=lscratch:20 STAR.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. STAR.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/test_data \
+  &amp;&amp; mkdir -p bam/rnaseq_STAR \
+  &amp;&amp; STAR \
+    --runThreadN $SLURM_CPUS_PER_TASK \
+    --genomeDir /fdb/STAR_current/UCSC/mm10/genes-50 \
+    --sjdbOverhang 50 \
+    --readFilesIn fastq/rnaseq_500k.fastq.gz \
+    --readFilesCommand zcat \
+    --outSAMtype BAM SortedByCoordinate \
+    --outTmpDir=/lscratch/$SLURM_JOB_ID/STARtmp \
+    --outFileNamePrefix bam/rnaseq_STAR/test
+cd /data/$USER/test_data \
+  &amp;&amp; mkdir -p bam/rnaseq_STAR2 \
+  &amp;&amp; STAR \
+    --runThreadN $SLURM_CPUS_PER_TASK \
+    --genomeDir /fdb/STAR_current/UCSC/mm10/genes-50 \
+    --sjdbOverhang 50 \
+    --readFilesIn fastq/rnaseq_250k.fastq.gz \
+    --readFilesCommand zcat \
+    --outSAMtype BAM SortedByCoordinate \
+    --outTmpDir=/lscratch/$SLURM_JOB_ID/STARtmp \
+    --outFileNamePrefix bam/rnaseq_STAR2/test
+</pre>
+
+<p>Note the use of line continuation. Submit this job using the 
+<a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f STAR.swarm -t 12 -g 38 --module STAR</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module STAR <td>Loads the STAR module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,121 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Samblaster on Biowulf';</script>
+<div class="title">Samblaster on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+samblaster is a program for marking duplicates and finding
+discordant/split read pairs in read-id grouped paired-end SAM files. When
+marking duplicates, samblaster will use about 20MB per 1M read pairs.
+
+In a read-id grouped SAM file all alignments for a read-id (QNAME) are
+continuous. Aligners naturally produce such files. They can also be created
+by sorting a SAM file by read-id.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Gregory G. Faust and Ira M. Hall, <em>SAMBLASTER: fast duplicate marking and
+        structural variant read extraction</em>, Bioinformatics 2014, 30:
+    2503-2505.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/24812344">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/pmid/24812344/">PMC</a>&nbsp;|&nbsp;
+    <a href="http://bioinformatics.oxfordjournals.org/content/30/17/2503">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/GregoryFaust/samblaster">Samblaster Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>samblaster</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded app
+<li>Example files in <tt>/usr/local/apps/samblaster/TEST_DATA</tt>
+</ul>
+<P>
+
+<p>Run samblaster on a bam file sorted by read name with duplicates already
+marked. Save discordant pairs to <code>disc.sam</code> and split reads
+to <code>split.sam</code></p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load samblaster</b>
+[+] Loading samblaster 0.1.22
+
+[user@cn3144 ~]$ <b>samtools view -h /usr/local/apps/samblaster/TEST_DATA/test.bam \</b>
+  <b>| samblaster --ignoreUnmated -a -e -d disc.sam -s split.sam -o /dev/null</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. samblaster.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+
+module load samtools samblaster || exit 1
+samtools view -h /path/to/input.bam \
+  | samblaster -e -d disc.sam -s split.sam -o /dev/null
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch samblaster.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. samblaster.swarm). For example:</p>
+
+<pre class="term">
+samtools view -h /path/to/input1.bam \
+  | samblaster -e -d disc1.sam -s split1.sam -o /dev/null
+samtools view -h /path/to/input2.bam \
+  | samblaster -e -d disc2.sam -s split2.sam -o /dev/null
+samtools view -h /path/to/input3.bam \
+  | samblaster -e -d disc3.sam -s split3.sam -o /dev/null
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f samblaster.swarm --module samblaster</pre>
+where
+<table border=0>
+  <tr><td><tt>--module samblaster</tt> <td>Loads the samblaster module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

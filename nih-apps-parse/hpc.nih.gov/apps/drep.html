@@ -1,0 +1,191 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'drep on Biowulf';</script>
+<div class="title">drep on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+dRep is a python program for rapidly comparing large numbers of genomes. dRep can also "de-replicate" a genome set by identifying groups of highly similar genomes and choosing the best representative genome for each genome set.
+</p>
+<p>
+<ul>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>Matthew R Olm et al.<b>dRep: a tool for fast and accurate genomic comparisons that enables improved genome recovery from metagenomes through de-replication</b>
+<em> The ISME Journal volume 11, pages2864–2868 (2017) </em><a href="https://www.nature.com/articles/ismej2017126">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>drep Github:<a href="https://github.com/MrOlm/drep">Github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+	<li>drep can be run as:
+	<pre class="term">
+	dRep --help
+	</pre>
+        <li> Figures are located within the work directory under figures folder:
+	<pre class="term">
+	ls out/figures/
+	Clustering_scatterplots.pdf
+	Cluster_scoring.pdf
+	Primary_clustering_dendrogram.pdf
+	Secondary_clustering_dendrograms.pdf
+	Winning_genomes.pdf
+	</pre>
+<div style="width:60%; margin: 0 auto">
+    <img src="/images/Primary_clustering_dendrogramK.png" width="90%"/>
+</div>
+
+</ul>
+</a>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=10 --mem=20G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load drep</b>
+[user@cn3144]$ <b>mkdir /data/$USER/drep_test/</b>
+[user@cn3144]$ <b>cd /data/$USER/drep_test/</b>
+[user@cn3144]$ <b>cp -r ${DREP_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>dRep --help</b>
+...::: dRep v3.2.2 :::...
+
+  Matt Olm. MIT License. Banfield Lab, UC Berkeley. 2017 (last updated 2020)
+
+  See https://drep.readthedocs.io/en/latest/index.html for documentation
+  Choose one of the operations below for more detailed help.
+
+  Example: dRep dereplicate -h
+
+  Commands:
+    compare            -> Compare and cluster a set of genomes
+    dereplicate        -> De-replicate a set of genomes
+    check_dependencies -> Check which dependencies are properly installed
+
+
+[user@cn3144]$ <b>dRep dereplicate out3 -g ./test/*fasta</b>
+***************************************************
+    ..:: dRep dereplicate Step 1. Filter ::..
+***************************************************
+
+Will filter the genome list
+2 genomes were input to dRep
+Calculating genome info of genomes
+100.00% of genomes passed length filtering
+Running prodigal
+Running checkM
+GenomeInfo has no values over 1 for contamination- these should be 0-100, not 0-1!
+100.00% of genomes passed checkM filtering
+***************************************************
+    ..:: dRep dereplicate Step 2. Cluster ::..
+***************************************************
+
+Running primary clustering
+Running pair-wise MASH clustering
+2 primary clusters made
+Running secondary clustering
+Running 2 ANImf comparisons- should take ~ 0.2 min
+Step 4. Return output
+***************************************************
+    ..:: dRep dereplicate Step 3. Choose ::..
+***************************************************
+
+Loading work directory
+GenomeInfo has no values over 1 for contamination- these should be 0-100, not 0-1!
+***************************************************
+    ..:: dRep dereplicate Step 4. Evaluate ::..
+***************************************************
+
+will provide warnings about clusters
+0 warnings generated: saved to /spin1/home/linux/apptest1/out3/log/warnings.txt
+will produce Widb (winner information db)
+Winner database saved to /spin1/home/linux/apptest1/out3data_tables/Widb.csv
+***************************************************
+    ..:: dRep dereplicate Step 5. Analyze ::..
+***************************************************
+
+making plots 1, 2, 3, 4, 5, 6
+Plotting primary dendrogram
+Plotting secondary dendrograms
+Plotting MDS plot
+Plotting scatterplots
+GenomeInfo has no values over 1 for contamination- these should be 0-100, not 0-1!
+Plotting bin scorring plot
+GenomeInfo has no values over 1 for contamination- these should be 0-100, not 0-1!
+Plotting winning genomes plot...
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+    ..:: dRep dereplicate finished ::..
+
+Dereplicated genomes................. /spin1/home/linux/apptest1/out3/dereplicated_genomes/
+Dereplicated genomes information..... /spin1/home/linux/apptest1/out3/data_tables/Widb.csv
+Figures.............................. /spin1/home/linux/apptest1/out3/figures/
+Warnings............................. /spin1/home/linux/apptest1/out3/log/warnings.txt
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. drep.sh). For example:</p>
+
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+
+#SBATCH --job-name=drep_run
+#SBATCH --time=2:00:00
+
+#SBATCH --partition=norm
+#SBATCH --nodes=1
+#SBATCH --mem=20g
+#SBATCH --cpus-per-task=4
+
+cd /data/$USER/drep_test
+module load drep
+dRep dereplicate out2 -g ./test/*fasta 
+
+
+</code>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch drep.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

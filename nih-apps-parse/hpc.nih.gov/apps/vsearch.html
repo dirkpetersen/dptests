@@ -1,0 +1,103 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'VSEARCH on Biowulf';</script>
+<div class="title">VSEARCH on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+VSEARCH supports de novo and reference based chimera detection, clustering, full-length and prefix dereplication, rereplication, reverse complementation, masking, all-vs-all pairwise global alignment, exact and global alignment searching, shuffling, subsampling and sorting. It also supports FASTQ file analysis, filtering, conversion and merging of paired-end reads.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>
+  Rognes T, Flouri T, Nichols B, Quince C, Mahé F.
+  <a href="https://www.ncbi.nlm.nih.gov/pubmed/27781170"><u><b>VSEARCH: a versatile open source tool for metagenomics.</b></u></a>
+  <em>PeerJ. 2016 Oct 18;4</em>
+</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/torognes/vsearch">VSEARCH Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>vsearch</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>Example files in <tt>$VSEARCH_EXAMPLES</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load vsearch</b>
+[user@cn3144 ~]$ <b>ln -s /usr/local/apps/vsearch/vsearch-data/BioMarKs50k.fsa .</b>
+[user@cn3144 ~]$ <b>vsearch --cluster_fast BioMarKs50k.fsa --id 0.97 --centroids vsearch.out</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. vsearch.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load vsearch
+vsearch --usearch_global queries.fsa --db database.fsa --id 0.9 --alnout alnout.txt
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] vsearch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. vsearch.swarm). For example:</p>
+
+<pre class="term">
+vsearch --usearch_global queries1.fsa --db database.fsa --id 0.9 --alnout alnout1.txt
+vsearch --usearch_global queries2.fsa --db database.fsa --id 0.9 --alnout alnout2.txt
+vsearch --usearch_global queries3.fsa --db database.fsa --id 0.9 --alnout alnout3.txt
+vsearch --usearch_global queries4.fsa --db database.fsa --id 0.9 --alnout alnout4.txt
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f vsearch.swarm [-g #] [-t #] --module vsearch</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module vsearch</tt> <td>Loads the VSEARCH module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

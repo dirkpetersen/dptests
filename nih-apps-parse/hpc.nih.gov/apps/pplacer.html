@@ -1,0 +1,156 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pplacer on Biowulf';</script>
+<div class="title">pplacer on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Pplacer places query sequences on a fixed reference phylogenetic tree to maximize phylogenetic likelihood or posterior probability 
+according to a reference alignment. Pplacer is designed to be fast, to give useful information about uncertainty, and to offer advanced 
+visualization and downstream analysis.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>pplacer was developed by the Matsen group at the Fred Hutchinson Cancer Research Center.  See the <a href="http://matsen.fhcrc.org/pplacer/">pplacer website</a> 
+for references.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://matsen.fhcrc.org/pplacer/">Pplacer documentation</a> at the Matsen lab, FHCC</li>
+
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>pplacer</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Example files in <tt>/usr/local/apps/pplacer/tutorial.tar.gz</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>mkdir /data/$USER/pplacer; cd /data/$USER/pplacer</b>
+
+[user@cn3144 pplacer]$ <b>tar xvzf /usr/local/apps/pplacer/tutorial.tar.gz</b>
+[...]
+
+[user@cn3144 pplacer]$ <b>cd fhcrc-microbiome-demo-730d268</b>
+
+[user@cn3144 pplacer]$ <b>module avail pplacer</b>
+
+----------------------------------------- /usr/local/lmod/modulefiles --------------------------
+   pplacer/1.1
+
+[user@cn3144 pplacer]$ <b>module load pplacer</b>
+[+] Loading pplacer 1.1
+
+[user@cn3144 pplacer]$ <b>sh pplacer_demo.sh</b>
+# Phylogenetic placement
+# ----------------------
+
+# This makes p4z1r2.jplace, which is a "place" file in JSON format.  Place files
+# contain information about collections of phylogenetic placements on a tree.
+# You may notice that one of the arguments to this command is
+# `vaginal_16s.refpkg`, which is a "reference package". Reference packages are
+# simply an organized collection of files including a reference tree, reference
+# alignment, and taxonomic information. We have the beginnings of a
+# [database](http://microbiome.fhcrc.org/apps/refpkg/) of reference packages
+# and some [software](http://github.com/fhcrc/taxtastic) for putting them
+# together.
+pplacer -c vaginal_16s.refpkg src/p4z1r36.fasta
+Running pplacer v1.1.alpha19-0-g807f6f3 analysis on src/p4z1r36.fasta...
+Found reference sequences in given alignment file. Using those for reference alignment.
+Pre-masking sequences... sequence length cut from 2196 to 275.
+Determining figs... figs disabled.
+Allocating memory for internal nodes... done.
+Caching likelihood information on reference tree... done.
+Pulling exponents... done.
+Preparing the edges for baseball... done.
+warning: rank below_species not represented in the lineage of any sequence in reference package vaginal_16s.
+[...]
+pause
+Please press return to continue...
+
+<img src="/images/pplacer.jpg">
+
+# That's it for the demo. For further information, please consult the
+# [pplacer documentation](http://matsen.github.com/pplacer/).
+echo "Thanks!"
+Thanks!
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pplacer.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load pplacer
+mkdir /data/$USER/pplacer
+cd /data/$USER/pplacer
+tar xvzf /usr/local/apps/pplacer/tutorial.tar.gz
+cd fhcrc-microbiome-demo-730d268
+
+pplacer -c vaginal_16s.refpkg src/p4z1r36.fasta
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  [--mem=#] pplacer.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. pplacer.swarm). For example:</p>
+
+<pre class="term">
+guppy kr_heat -c vaginal_16s.refpkg/ file1a.jplace file2a.jplace
+guppy kr_heat -c vaginal_16s.refpkg/ file1b.jplace file2b.jplace
+guppy kr_heat -c vaginal_16s.refpkg/ file1c.jplace file2c.jplace
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f pplacer.swarm [-g #]  --module pplacer</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module pplacer</tt> <td>Loads the pplacer module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

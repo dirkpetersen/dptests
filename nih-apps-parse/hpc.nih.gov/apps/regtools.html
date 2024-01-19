@@ -1,0 +1,118 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "Regtools";</script>
+
+<div class="title">Regtools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+  RegTools is a set of tools that integrate DNA-seq and RNA-seq data to help interpret mutations in a regulatory and splicing context. 
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Cotto, K.C., Feng, YY., Ramu, A. et al.
+    <a href="https://www.nature.com/articles/s41467-023-37266-6"><b><u>RegTools: Integrated analysis of genomic and transcriptomic data for the discovery of splice-associated variants in cancer</u></b></a>
+    <em> Nat Commun 14, 1589 (2023)</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://regtools.readthedocs.io/en/latest/">Regtools Main Site</a></li>
+<li><a href="https://regtools.readthedocs.io/en/latest/">Regtools Github Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>regtools</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>REGTOOLS_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>/usr/local/apps/regtools/1.0.0/regtools/test-data</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn4338 ~]$ <b>module load regtools</b>
+[+] Loading regtools 1.0.0  on cn4338 
+[+] Loading singularity  3.10.5  on cn4338
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Example</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Running help command:</p>
+<pre class="term">
+[user@cn4338] <b>cp -a /usr/local/apps/regtools/1.0.0/regtools/test-data .</b>
+[user@cn4338 test-data]$ <b>regtools --help</b>
+Program:        regtools
+Version:        1.0.0
+Usage:          regtools <command> [options]
+Command:        junctions               Tools that operate on feature junctions (e.g. exon-exon junctions from RNA-seq).
+                cis-ase                 Tools related to allele specific expression in cis.
+                cis-splice-effects      Tools related to splicing effects of variants.
+                variants                Tools that operate on variants.
+
+</pre>
+<p>Create a batch input file (e.g. regtools.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load regtools
+
+regtools cis-splice-effects identify -s FR variants.vcf alignments.bam ref.fa annotations.gtf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] regtools.sh</pre>
+
+<p>cis-splice-effects:</p>
+<pre class="term">
+[user@cn4338 test-data]$<b>
+  regtools cis-splice-effects identify -s RF \
+   test4.vcf.gz \
+   test_hcc1395.bam \
+   test_chr22.fa \
+   test_ensemble_chr22.gtf</b>
+
+  Program:        regtools
+  Version:        1.0.0
+  Variant file: test4.vcf.gz
+  Alignment file: test_hcc1395.bam
+  Reference fasta file: test_chr22.fa
+  Annotation file: test_ensemble_chr22.gtf
+  
+  exonic_min_distance_ is 3
+  
+  chrom   start   end     name    score   strand  splice_site     acceptors_skipped       exons_skipped   donors_skipped  anchor  known_donor     known_acceptor  known_junction  gene_names      gene_ids transcripts      variant_info
+
+</pre>
+
+<table border=0>
+<tr><td><td>For more examples, please visit the <a href="https://regtools.readthedocs.io/en/latest/"></u></b>Regtools Documentation Page</a>
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

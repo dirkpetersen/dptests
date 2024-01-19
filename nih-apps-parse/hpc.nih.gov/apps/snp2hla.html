@@ -1,0 +1,103 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' SNP2HLA on Biowulf';</script>
+  <div class="title"> SNP2HLA on Biowulf</div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+          <div class="tocItem"><a href="#int">Interactive Job on Biowulf</a></div>
+          <div class="tocItem"><a href="#serial">Single Batch Job on Biowulf</a></div>
+          <div class="tocItem"><a href="#swarm">Swarm of Jobs</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+
+  <P>SNP2HLA is a tool to impute amino acid polymorphisms and single nucleotide polymorphisms in human luekocyte antigenes (HLA) within the major histocompatibility complex (MHC) region in chromosome 6.
+  <P>The unique feature of SNP2HLA is that it imputes not only the classical HLA alleles but also the amino acid sequences of those classical alleles, so that individual amino acid sites can be directly tested for association. This allows for facile amino-acid focused downstream analysis.
+  <P>SNP2HLA also provides a companion package, MakeReference. This is software that builds the reference panel that can be used for SNP2HLA. This package is used for the situation that the provided reference panel is inappropriate (e.g. different populations), and the user wants to build the reference panel by him(her)self, e.g. typing the HLA alleles in a subset of individuals.
+  <p>SNP2HLA is developed by Sherman Jia and Buhm Han in the labs of <a href="http://www.broadinstitute.org/personal/soumya/">Soumya Raychaudhuri </a>and <a href="http://www.broadinstitute.org/personal/debakker/">Paul de Bakker </a>at the <a href="http://www.broadinstitute.org/mpg/snp2hla/www.brighamandwomens.org/">Brigham and Women's Hospital</a> and<a href="http://hms.harvard.edu/"> Harvard Medical School</a>, and the Broad Institute.  </p>
+  <ul>
+    <li>Example files for SNP2HLA can be copied from<em>/usr/local/apps/SNP2HLA/1.0.3/SNP2HLA/Example</em><br />
+    </li>
+    <li>Example files for MakeReference can be copied from<em>/usr/local/apps/SNP2HLA/1.0.3/MakeReference/Example</em><br />
+      
+      <a class="navbar-safe-anchor"  Name="int"></a>
+    </li>
+  </ul>
+  <div class="heading"> Interactive job </div>
+ <p> 
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+ <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load snp2hla</b>
+
+[user@cn3144 ~]$ <b>cd /data/$USER/</b>
+
+[user@cn3144 ~]$ <b>mkdir snp2hla; cp -r /usr/local/apps/snp2HLA/1.0.3/SNP2HLA/Example ./snp2hla</b>
+
+[user@cn3144 ~]$ <b>cd /data/$USER/snp2hla/Example</b>
+
+[user@cn3144 ~]$ <b>SNP2HLA.csh 1958BC HM_CEU_REF 1958BC_IMPUTED plink 2000 1000</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P><strong>Please Note, the above example uses '2000' in the command which will be passed into the SNP2HLA.csh, and therefore -Xmx2000m. If user needs more memory for analysis, please modify the commands in the scripts accordingly.</strong> <a class="navbar-safe-anchor"  Name="serial"></a>
+<div class="heading">
+    <p>Running a single batch job on Biowulf</p>
+  </div>
+  <p> 1. Create a script file similar to the 
+    lines below.</p>
+  <pre class="term">
+#!/bin/bash
+
+module load snp2hla
+cd /data/$USER/Examples
+SNP2HLA.csh 1958BC HM_CEU_REF 1958BC_IMPUTED plink 4000 1000</pre>
+
+  <p>2. Submit the script on biowulf:</p>
+  <pre class="term">$ sbatch jobscript</pre>
+  <p>
+  For more memory requirement (default 4gb), use --mem flag: 
+  <pre class="term">$ sbatch --mem=10g jobscript</pre>
+  
+
+  <P>Please Note, the above example uses '4000' in the command which will be passed into the SNP2HLA.csh, and therefore -Xmx4000m. If user needs more memory for analysis, please modify the commands in the scripts accordingly.
+  <a class="navbar-safe-anchor"  Name="swarm"></a> 
+  <div class="heading">Running a swarm of jobs on Biowulf</div>
+  <P>Setup a swarm command file:
+  <pre class="term">
+  cd /data/$USER/dir1; SNP2HLA.csh 1958BC HM_CEU_REF 1958BC_IMPUTED plink 1500 1000
+  cd /data/$USER/dir2; SNP2HLA.csh 1958BC HM_CEU_REF 1958BC_IMPUTED plink 1500 1000
+  cd /data/$USER/dir3; SNP2HLA.csh 1958BC HM_CEU_REF 1958BC_IMPUTED plink 1500 1000
+	[......]</pre>
+  <p>Submit the swarm file:
+  <pre class="term">
+  $ swarm -f swarmfile --module snp2hla</pre>
+  <p>    
+  -f: specify the swarmfile name <br>
+  --module: set environmental variables for each command line in the file
+<p>To allocate more memory, use -g flag:  
+<pre class="term">  $ swarm -f swarmfile -g 4 --module snp2hla</pre>
+  <p>-g: allocate more memory</p>
+  
+  <p> For more information regarding running swarm, see <a href="http://hpc.cit.nih.gov/apps/swarm.html"><b>swarm.html</b></a> 
+  <p><strong>Please Note, the above example uses '1500' in the command which will be passed into the SNP2HLA.csh, and therefore -Xmx1500m. If user needs more memory for analysis, please modify the commands in the scripts accordingly.</strong>    
+
+<P>Please Note, the above example uses '4000' in the command which will be passed into the SNP2HLA.csh, and therefore -Xmx4000m. If user needs more memory for analysis, please modify the commands in the scripts accordingly.<p>
+<a class="navbar-safe-anchor"  Name="doc"></a><div class="heading">Documentation</div>
+    
+  <P><a href="http://www.broadinstitute.org/mpg/snp2hla/">http://www.broadinstitute.org/mpg/snp2hla/</a> 
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,591 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'alphafold2 on Biowulf';</script>
+<style>
+    .hl { background-color: #ffff99; }
+    code {background-color: #eeeeee; border: 1px solid #bbbbbb; padding: 0;}
+    dt {font-weight: bold; margin-top: 5px;}
+    dd {padding-left: 2px; border-left: 1px solid #bbbbbb;}
+    .btt {border: 1px solid silver;
+          background-color: white;
+          padding: 5px;
+          position: relative;
+          margin: 5px 0px 10px 10px;
+          float: right;
+          top: -25px;
+          left: 10px;
+          }
+</style>
+<div class="title">alphafold2 on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><a href="#changes">Changelog</a></div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job</a></div>
+                <div class="tocItem"><a href="#bench">Benchmarking</a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#colabfold">ColabFold</a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width: 70%">
+<p>
+From the official documentation
+</p>
+
+<blockquote>This package provides an implementation of the inference pipeline
+    of AlphaFold v2.0. This is a completely new model that was entered in
+    CASP14 and published in Nature. For simplicity, we refer to this model as
+    AlphaFold throughout the rest of this document.</blockquote>
+
+<h3>References:</h3>
+<ul>
+    <li>Jumper et al. <em>Highly accurate protein structure prediction with AlphaFold.</em>
+        Nature 2021. <a href="https://pubmed.ncbi.nlm.nih.gov/34265844/">PubMed</a> &nbsp;|&nbsp;
+        <a href="https://www.nature.com/articles/s41586-021-03819-2">Journal</a>
+    </li>
+</ul>
+</div>
+
+<a Name="changes"></a><div class="heading">Changelog</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<dl>
+    <dt>2023-05-23: alphafold 2.3.2 becomes the default version.</dt>
+    <dd><ul>
+            <li>No changes to model parameters or databases.</li>
+            <li><code>--run_relax</code> has been replaced with <code>--models_to_relax</code> with a default
+                of <code>best</code>. That means that only the best model (ranked_0.pdb) will be relaxed.</li>
+            <li>The <code>jax</code> python module is no loger required to read the pickled results files</li>
+        </ul></dd>
+    <dt>2023-05-10: updated mgnify to 2023-02</dt>
+    <dt>2023-02-13: alphafold 2.3.1 becomes the default version.</dt>
+    <dt>2023-02-10: alphafold 2.3.1 available.</dt>
+    <dd>Some notable changes (See <a href="https://github.com/deepmind/alphafold/releases">release page</a> for full details):<ul>
+            <li>Added new AlphaFold-Multimer models with better accuracy on large protein complexes.</li>
+            <li>Added early stopping to recycling.</li>
+            <li>Used bf16 in multimer inference – reduces GPU memory usage.</li>
+            <li>Relaxation metrics are now saved in relax_metrics.json.</li>
+        </ul></dd>
+    <dt>2023-02-09: In place database update. This will apply to all alphafold version with the exception
+        of the parameters which are version specific.</dt>
+    <dd><ul>
+            <li>uniref90 - 2022_05</li>
+            <li>mgnify - 2022_05</li>
+            <li>uniref30 - 2021_06 (unchanged since last update; this used to be called uniclast30)</li>
+            <li>bfd - casp14 (unchanged since last update)</li>
+            <li>uniprot - 2022_05</li>
+            <li>pdb70 - 220313</li>
+            <li>pdb mmcif - 230208</li>
+            <li>pdb_seqres - 230208</li>
+        </ul>
+    </dd>
+    <dt>2022-09-21: the <code>--hhblits_extra_opts</code> option was ported from msa to run_singularity</dt>
+    <dd>In a small number of cases hhblits fails to create alignments. This option can be used
+        to fine tune the hhblits run (see below). Example: <code>run_singularity --hhblits_extra_opts="-maxres 80000 -prepre_smax_thresh 50" ...</code></dd>
+    <dt>2022-07-11: the <code>msa</code> utility script has been disabled</dt>
+    <dd>Large scale use of the <code>msa</code> script may have been implicated in file system problems.
+        The script has been removed until futher notice.</dd>
+    <dt>2022-06-02: added alphapickle to alphafold 2.2.0.</dt>
+    <dd><a href="https://github.com/mattarnoldbio/alphapickle">alphapickle</a> will be included in alphafold
+        installs &ge; 2.2.0</dd>
+    <dt>2022-04-22: Version 2.2.0 becomes the default</dt>
+    <dd><ul>
+            <li>See <a href="https://github.com/deepmind/alphafold/releases/tag/v2.2.0">official announcement</a></li>
+
+            <li>Switched to new AlphaFold-Multimer models with reduced numbers of clashes on average
+                and slightly increased accuracy.</li>
+
+            <li>removed <code>--is_prokaryote_list</code> option from <code>run_singularity</code>
+                and <code>msa</code> as the prokaryotic pairing algorithm did not actually improve
+                accuracy on average</li>
+
+            <li>Added <code>--num_multimer_predictions_per_model=N</code> option to
+                <code>run_singularity</code>. Runs N predictions per <em>multimer</em> model - each
+                with different seeds. Defaults to 5 and will increase runtime</li>
+
+            <li>Added <code>--model_config</code> option to <code>run_singularity</code>. This
+                allows users to use a customized <code>alphafold/model/config.py</code> to alphafold
+                for tuning certain parameters</li>
+        </ul>
+    </dd>
+
+    <dt>2022-02-22: Version 2.1.2 becomes the default</dt>
+    <dd><ul>
+        <li>No changes to network weights</li>
+        <li>Relaxation now defaults to using GPU</li>
+        <li>Added options for controlling relaxation: <code>--[no]run_relax</code> and <code>--[no]enable_gpu_relax</code></li>
+        <li>New script to generate the multiple sequence alignments (MSAs) only (<code>msa</code>). This is 
+            <span class="hl">highly recommended</span> as MSA generation consumes 
+            about 60% of runtime and does not make use of GPU. The workflow is to run msa generation on CPU nodes
+            and then run model prediction on a GPU node with <code>run_singularity --use_precomputed_msas ...</code>.
+            This script also supports adding extra options to hhblits or overriding some alphafold defaults with option
+            <code>--hhblits_extra_opts</code>.
+            Note that this script cannot run on x2650 nodes because it depends on an AVX2 hhblits build.</li>
+    </ul></dd>
+
+    <dt>2021-11-15: Version 2.1.1 becomes the default</dt>
+    <dd><ul>
+        <li>the <code>--preset</code> option was renamed to </code>--model_preset</code></li>
+        <li>the <code>--db_preset=reduced_dbs</code> option is now supported for all alphafold versions</li>
+        <li>The inofficial <code>--use_ptm</code> option became obsolete with introduction of the official <code>--model_preset</code>
+            option and was removed</li>
+        <li>This version uses the new model parameters (2021-10-27) released with 2.1.1. This includes
+        the parameters for the multimer model. The 2.0.X modules will continue to use the previous parameters.</li>
+    </ul></dd>
+
+    <dt>2021-11-14: Database update</dt>
+    <dd>Databases were updated in place: pdb mmcif and pdb70 (211110). New databases only used by multimer model: pdb_seqres,
+    uniprot</dd>
+
+    <dt>2021-10-19: Added <code>--use_ptm</code> option to run_singularity</dt>
+    <dd>Use the pTM models, which were fine-tuned to produce pTM (predicted TM-score) and predicted 
+    aligned error values alongside their structure predictions.</dd>
+
+    <dt>2021-10-18: Adaptation of the alphafold_advanced notebook from <a href="https://github.com/sokrypton/ColabFold">ColabFold</a>
+    available in version 2.0.1.</dt>
+    <dd>Allows prediction of protein complexes with unmodified alphafold network weights. So far only an interactive notebook is available. See
+    <a href="#colabfold">below</a> for more details</dd>
+
+    <dt>2021-10-01: Version 2.0.0-24-g1d43aaf was tagged as 2.0.1</dt>
+    <dd>The modules for 2.0.0-24-g1d43aaf and 2.0.1 point to the same installation since
+        the release was tagged after this revision was installed.</dd>
+
+    <dt>2021-09-21: Version 2.0.0-24-g1d43aaf becomes the default version on biowulf</dt>
+    <dd>Most noticable change should be the inclusion of pLDDT in the PDB B-factor column</dd>
+
+    <dt>2021-09-16: Database update (in place)</dt>
+    <dd>The following databases used by alphafold were updated in place: mgnify (2018_12 to 2019_05),
+    pdb70 (200401 to 210901), pdb mmcif (210717 to 210915, 1969 additional structures), uniclust30 (2018_08 to
+    2021_06 from <a href="http://gwdu111.gwdg.de/~compbiol/uniclust/2021_06/">http://gwdu111.gwdg.de/~compbiol/uniclust/2021_06/</a>).
+    Uniref90 and BFD are unchanged.</dd>
+</dl>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<div class="btt"><a href="#top">top</a></div>
+<ul>
+<li>alphafold2 on <a href="https://github.com/deepmind/alphafold">GitHub</a></li>
+<li><a href="https://deepmind.com/blog/article/alphafold-a-solution-to-a-50-year-old-grand-challenge-in-biology">Blog post</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: alphafold2 (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Alphafold2 first runs some multithreaded analyses using up to 8 CPUs before running
+    model inference on the GPU. At this point these steps can't be separated and therefore
+    for the first step of the job the GPU will remain idle.</li>
+<li>Example files in <code>$ALPHAFOLD2_TEST_DATA</code></li>
+<li>Reference data in <code>/fdb/alphafold2/</code></li>
+<li>Alphafold2 expects input to be <em>upper case</em> amino acid sequences</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<!--<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>-->
+<div class="btt"><a href="#top">top</a></div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. In this example the whole pipeline
+including multiple sequence alignment and model predictions are run with <code>run_singularity</code> on a GPU node.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=60g --cpus-per-task=8 --gres=lscratch:100,gpu:v100x:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load alphafold2/2.3.1</b>
+</pre>
+
+<p>To predict the structure of a protein already in PDB without using its
+experimental structure as a template set <code>max_template_date</code> to
+before the release date of the structure. For example, to reproduce the T1049
+CASP14 target with 144 aa. On a V100x this prediction runs for about 1h.</p>
+
+<pre class="term">
+[user@cn3144]$ <b>run_singularity --helpfull</b>  # use --help for shorter help message
+Singularity launch script for Alphafold.
+flags:
+/usr/local/apps/alphafold2/2.3.1/bin/run_singularity:
+  --[no]benchmark: Run multiple JAX model evaluations to obtain a timing that excludes the compilation time,
+    which should be more indicative of the time required for inferencing many proteins.
+    (default: 'false')
+  --db_preset: &lt;full_dbs|reduced_dbs&gt;: Choose preset MSA database configuration - smaller genetic
+    database config (reduced_dbs) or full genetic database config (full_dbs)
+    (default: 'full_dbs')
+  --[no]dry_run: Print command that would have been executed and exit.
+    (default: 'false')
+  --[no]enable_gpu_relax: Run relax on GPU if GPU is enabled.
+    (default: 'true')
+  --fasta_paths: Paths to FASTA files, each containing a prediction target that will be folded one after
+    another. If a FASTA file contains multiple sequences, then it will be folded as a multimer. Paths should
+    be separated by commas. All FASTA paths must have a unique basename as the basename is used to name the
+    output directories for each prediction. (a comma separated list)
+  --gpu_devices: Comma separated list of devices to pass to NVIDIA_VISIBLE_DEVICES.
+    (default: 'all')
+  --max_template_date: Maximum template release date to consider (ISO-8601 format: YYYY-MM-DD). Important
+    if folding historical test sets.
+  --model_config: Use this file instead of default alphafold/model/config.py
+  --model_preset: &lt;monomer|monomer_casp14|monomer_ptm|multimer&gt;: Choose preset model configuration -
+    the monomer model, the monomer model with extra ensembling, monomer model with pTM head, or multimer model
+    (default: 'monomer')
+  --num_multimer_predictions_per_model: How many predictions (each with a different random seed) will be
+    generated per model. E.g. if this is 2 and there are 5 models then there will be 10 predictions per
+    input. Note: this FLAG only applies if model_preset=multimer
+    (default: '5')
+    (an integer)
+  --output_dir: Path to a directory that will store the results.
+  --[no]run_relax: Whether to run the final relaxation step on the predicted models. Turning relax off might
+    result in predictions with distracting stereochemical violations but might help in case you are having
+    issues with the relaxation stage.
+    (default: 'true')
+  --[no]use_gpu: Enable NVIDIA runtime to run with GPUs.
+    (default: 'true')
+  --[no]use_precomputed_msas: Whether to read MSAs that have been written to disk instead of running the
+    MSA tools. The MSA files are looked up in the output directory, so it must stay the same between multiple
+    runs that are to reuse the MSAs. WARNING: This will not check if the sequence, database or configuration
+    have changed.
+    (default: 'false')
+...
+absl.logging:
+  --[no]alsologtostderr: also log to stderr?
+    (default: 'false')
+  --log_dir: directory to write logfiles into
+    (default: '')
+  --logger_levels: Specify log level of loggers. The format is a CSV list of `name:level`. Where `name` is the
+    logger name used with `logging.getLogger()`, and `level` is a level name  (INFO, DEBUG, etc). e.g.
+    `myapp.foo:INFO,other.logger:DEBUG`
+    (default: '')
+  --[no]logtostderr: Should only log to stderr?
+    (default: 'false')
+  --[no]showprefixforinfo: If False, do not prepend prefix to info messages when it's logged to stderr, --verbosity
+    is set to INFO level, and python logging is used.
+    (default: 'true')
+  --stderrthreshold: log messages at this level, or more severe, to stderr in addition to the logfile.
+    Possible values are 'debug', 'info', 'warning', 'error', and 'fatal'.  Obsoletes --alsologtostderr.
+    Using --alsologtostderr cancels the effect of this flag. Please also note that this flag is
+    subject to --verbosity and requires logfile not be stderr.
+    (default: 'fatal')
+  -v,--verbosity: Logging verbosity level. Messages logged at this level or lower will be included. Set to 1
+    for debug logging. If the flag was not set or supplied, the value will be changed from the default of
+    -1 (warning) to 0 (info) after flags are parsed.
+    (default: '-1')
+    (an integer)
+...
+
+
+[user@cn3144]$ <b>run_singularity \
+    --model_preset=monomer \
+    --fasta_paths=$ALPHAFOLD2_TEST_DATA/T1049.fasta \
+    --max_template_date=2022-12-31 \
+    --output_dir=$PWD</b>
+[user@cn3144]$ <b>tree T1049</b>
+T1049/
+├── [user   1.1M]  features.pkl
+├── [user   4.0K]  msas
+│   ├── [user    33K]  bfd_uniclust_hits.a3m
+│   ├── [user    18K]  mgnify_hits.sto
+│   └── [user   121K]  uniref90_hits.sto
+├── [user   170K]  ranked_0.pdb               # &lt;-- shown below
+├── [user   170K]  ranked_1.pdb
+├── [user   170K]  ranked_2.pdb
+├── [user   171K]  ranked_3.pdb
+├── [user   170K]  ranked_4.pdb
+├── [user    330]  ranking_debug.json
+├── [user   170K]  relaxed_model_1.pdb
+├── [user   170K]  relaxed_model_2.pdb
+├── [user   170K]  relaxed_model_3.pdb
+├── [user   170K]  relaxed_model_4.pdb
+├── [user   171K]  relaxed_model_5.pdb
+├── [user    11M]  result_model_1.pkl
+├── [user    11M]  result_model_2.pkl
+├── [user    11M]  result_model_3.pkl
+├── [user    11M]  result_model_4.pkl
+├── [user    11M]  result_model_5.pkl
+├── [user    771]  timings.json
+├── [user    87K]  unrelaxed_model_1.pdb
+├── [user    87K]  unrelaxed_model_2.pdb
+├── [user    87K]  unrelaxed_model_3.pdb
+├── [user    87K]  unrelaxed_model_4.pdb
+└── [user    87K]  unrelaxed_model_5.pdb
+
+</pre>
+
+<p>The processes prior to model inference on the GPU consumed up to 40 GB of
+memory for this protein. Memory requirements will vary with different size
+proteins.</p>
+
+
+<div style="width:60% margin:0 auto;">
+<figure>
+    <img src="/images/alphafold_T1049.gif" style="display: block; margin: 0 auto;"
+        alt="alignment for T1049 predicted and experimental structures">
+
+    <figcaption><strong>Figure 1</strong>. This is the highest confidence
+        prediction (<code>ranked_0.pdb</code>, blue) aligned with the actual
+        structure for this protein
+        (<a href="https://www.rcsb.org/structure/6y4f">6Y4F</a>, green)</figcaption>
+</figure>
+</div>
+
+<p>Note that the model .pkl files which, unlike the .pdb files, are not
+re-ordered into ranked_ files contain a lot of information about the models. These are
+python pickle files and python can be used to explore and visualize them. For example:</p>
+
+<pre class="term">
+[user@cn3144]$ <b>conda activate my_py39</b> # needs jupyter and the packages imported below
+[user@cn3144]$ <b>cd T1049</b>
+[user@cn3144]$ <b>jupyter console</b>
+In [1]: import pickle
+In [2]: import json
+In [3]: import pprint
+In [4]: import jax   # only needed for version 2.3.1
+In [5]: pprint.pprint(json.load(open("ranking_debug.json", encoding="ascii")))
+{'order': ['model_2_pred_0',
+           'model_3_pred_0',
+           'model_1_pred_0',
+           'model_5_pred_0',
+           'model_4_pred_0'],
+ 'plddts': {'model_1_pred_0': 88.44386138278787,
+            'model_2_pred_0': 91.83564104655056,
+            'model_3_pred_0': 88.49961929441032,
+            'model_4_pred_0': 86.73066329994059,
+            'model_5_pred_0': 87.4009420322368}}
+### so model 2 is the best model in this run and corresponds to ranked_0.pdf
+In [6]: best_model = pickle.load(open("result_model_2_pred_0.pkl", "rb"))
+In [7]: list(best_model.keys())
+Out[7]:
+['distogram',
+ 'experimentally_resolved',
+ 'masked_msa',
+ 'predicted_lddt',
+ 'structure_module',
+ 'plddt',
+ 'ranking_confidence']
+In [8]: best_model['plddt'].shape
+Out[8]: (141,)
+</pre>
+
+<p>The predicted alignment error (PAE) is only produced by the monomer_ptm and
+multimer models. Since version 2.2.0 we also include <a href="https://github.com/mattarnoldbio/alphapickle">alphapickle</a>
+with alphafold to create plots, csv files, and chimera attribute files for each ranked model. By default output
+will be saved to the same folder. See <code>-h</code> for more options.</p>
+
+<pre class="term">
+[user@cn3144]$ <b>alphapickle -od T1049</b>
+</pre>
+
+<p>If the model above was created with the monomer_ptm model the following two plots are generated for each model:</p>
+
+
+<div style="width: 90%; margin: 0 auto">
+  <img src="/images/alphafold_t1049_ptm_alphapickle.png" width="100%"/>
+</div>
+
+
+<p>The next example shows how to run a multimer model (available from version
+2.1.1). The example used is a recently published <a
+href="https://www.rcsb.org/structure/7MYN">PI3K structure</a>.</p>
+
+
+<pre class="term">
+[user@cn3144]$ <b>cat $ALPHAFOLD2_TEST_DATA/pi3k.fa</b>
+&gt;sp|P27986|P85A_HUMAN Phosphatidylinositol 3-kinase regulatory subunit alpha OS=Homo sapiens OX=9606 GN=PIK3R1 PE=1 SV=2
+MSAEGYQYRALYDYKKEREEDIDLHLGDILTVNKGSLVALGFSDGQEARPEEIGWLNGYN
+ETTGERGDFPGTYVEYIGRKKISPPTPKPRPPRPLPVAPGSSKTEADVEQQALTLPDLAE
+QFAPPDIAPPLLIKLVEAIEKKGLECSTLYRTQSSSNLAELRQLLDCDTPSVDLEMIDVH
+VLADAFKRYLLDLPNPVIPAAVYSEMISLAPEVQSSEEYIQLLKKLIRSPSIPHQYWLTL
+QYLLKHFFKLSQTSSKNLLNARVLSEIFSPMLFRFSAASSDNTENLIKVIEILISTEWNE
+RQPAPALPPKPPKPTTVANNGMNNNMSLQDAEWYWGDISREEVNEKLRDTADGTFLVRDA
+STKMHGDYTLTLRKGGNNKLIKIFHRDGKYGFSDPLTFSSVVELINHYRNESLAQYNPKL
+DVKLLYPVSKYQQDQVVKEDNIEAVGKKLHEYNTQFQEKSREYDRLYEEYTRTSQEIQMK
+RTAIEAFNETIKIFEEQCQTQERYSKEYIEKFKREGNEKEIQRIMHNYDKLKSRISEIID
+SRRRLEEDLKKQAAEYREIDKRMNSIKPDLIQLRKTRDQYLMWLTQKGVRQKKLNEWLGN
+ENTEDQYSLVEDDEDLPHHDEKTWNVGSSNRNKAENLLRGKRDGTFLVRESSKQGCYACS
+VVVDGEVKHCVINKTATGYGFAEPYNLYSSLKELVLHYQHTSLVQHNDSLNVTLAYPVYA
+QQRR
+&gt;sp|P42336|PK3CA_HUMAN Phosphatidylinositol 4,5-bisphosphate 3-kinase catalytic subunit alpha isoform OS=Homo sapiens OX=9606 GN=PIK3CA PE=1 SV=2
+MPPRPSSGELWGIHLMPPRILVECLLPNGMIVTLECLREATLITIKHELFKEARKYPLHQ
+LLQDESSYIFVSVTQEAEREEFFDETRRLCDLRLFQPFLKVIEPVGNREEKILNREIGFA
+IGMPVCEFDMVKDPEVQDFRRNILNVCKEAVDLRDLNSPHSRAMYVYPPNVESSPELPKH
+IYNKLDKGQIIVVIWVIVSPNNDKQKYTLKINHDCVPEQVIAEAIRKKTRSMLLSSEQLK
+LCVLEYQGKYILKVCGCDEYFLEKYPLSQYKYIRSCIMLGRMPNLMLMAKESLYSQLPMD
+CFTMPSYSRRISTATPYMNGETSTKSLWVINSALRIKILCATYVNVNIRDIDKIYVRTGI
+YHGGEPLCDNVNTQRVPCSNPRWNEWLNYDIYIPDLPRAARLCLSICSVKGRKGAKEEHC
+PLAWGNINLFDYTDTLVSGKMALNLWPVPHGLEDLLNPIGVTGSNPNKETPCLELEFDWF
+SSVVKFPDMSVIEEHANWSVSREAGFSYSHAGLSNRLARDNELRENDKEQLKAISTRDPL
+SEITEQEKDFLWSHRHYCVTIPEILPKLLLSVKWNSRDEVAQMYCLVKDWPPIKPEQAME
+LLDCNYPDPMVRGFAVRCLEKYLTDDKLSQYLIQLVQVLKYEQYLDNLLVRFLLKKALTN
+QRIGHFFFWHLKSEMHNKTVSQRFGLLLESYCRACGMYLKHLNRQVEAMEKLINLTDILK
+QEKKDETQKVQMKFLVEQMRRPDFMDALQGFLSPLNPAHQLGNLRLEECRIMSSAKRPLW
+LNWENPDIMSELLFQNNEIIFKNGDDLRQDMLTLQIIRIMENIWQNQGLDLRMLPYGCLS
+IGDCVGLIEVVRNSHTIMQIQCKGGLKGALQFNSHTLHQWLKDKNKGEIYDAAIDLFTRS
+CAGYCVATFILGIGDRHNSNIMVKDDGQLFHIDFGHFLDHKKKKFGYKRERVPFVLTQDF
+LIVISKGAQECTKTREFERFQEMCYKAYLAIRQHANLFINLFSMMLGSGMPELQSFDDIA
+YIRKTLALDKTEQEALEYFMKQMNDAHHGGWTTKMDWIFHTIKQHALN
+
+[user@cn3144]$ <b>run_singularity \
+    --fasta_paths=$ALPHAFOLD2_TEST_DATA/pi3k.fa \
+    --max_template_date=2021-11-01 \
+    --model_preset multimer \
+    --num_multimer_predictions_per_model=2 \
+    --output_dir=$PWD</b>
+...snip...
+[user@cn3144]$ <b>exit</b>
+</pre>
+
+<div style="width:60% margin:0 auto;">
+<figure>
+    <img src="/images/alphafold_pi3k.gif" style="display: block; margin:0 auto"
+        alt="PI3K heterodimer model animation">
+
+    <figcaption><strong>Figure 2</strong>. Best alphafold
+        model for Phosphoinositide 3-kinase alpha (PI3K&alpha;) model obtained
+        in the example above.  The two subunits are shown in blue (catalytic
+        subunit, p110) and green (regulatory subunit, p85), respectively and
+        shaded by pLDDT from light (low) to dark (high). Comparision with the
+        Cryo-EM structure (<a href="https://www.rcsb.org/structure/7MYN">7MYN</a>)
+        showed close agreement and some high confidence
+        predicitons for areas that did not resolve in the
+        published structure.  </figcaption>
+
+</figure>
+</div>
+
+
+
+<a Name="bench"></a><div class="heading">Benchmarking</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>To get an idea of runtimes of alphafold2 we first ran 4 individual proteins
+on all our available GPUs. The proteins ranged in size from 144 aa to 622 aa. Note
+that for all but the smallest protein, K80 GPUs were not suitable and should not
+be considered for alphafold2. These tests were run with default settings except for
+a fixed <code>--max_template_date=2021-07-31</code></p>
+
+
+<div style="width:60% margin:0 auto;">
+<figure>
+    <img src="/images/alphafold2_benchmarks.png" style="display:block; margin: 0 auto;"
+         alt="alphafold2 benchmark plots">
+    <figcaption><strong>Figure 3</strong>. Alphafold runtimes for 4 proteins with 8 CPUs and 60GB of
+        memory. T1049: CASP14 target,
+        144 aa. D10R: Vaccinia virus WR protein D10R, 248 aa. A11R: Vaccinia virus WR protein A11R,
+        318 aa. T1036s1: CASP14 target, 622 aa. Note that (1) k80 GPUs are not suitable (2)
+        2 GPUs for single proteins don't reduce runtime (3) p100s are about as good as the more modern
+        GPUs for these examples (4) Runtimes were quite variable. (5) The degree
+    to which the 8 CPUs were overloaded depended on protein size and overloading
+    appeared to be most severe during the relaxation phase.</figcaption>
+</figure>
+</div>
+
+<p>The runtime to run all 4 protein on a V100x GPU with 8 CPUs and 60GB of memory was 3.2h, 
+slightly less than the individual runtimes of the 4 proteins run separately. For this one job we also
+increased the number of CPUs to 16 or the number of GPUs to 2, neither of which appeared to shorted
+the runtime</p>
+
+<p>The resource usage profile of the combined alphafold2 pipeline in our testing thus far
+is suboptimal and variable. Steps probably should be segregated into individual jobs with
+proper resources. We hope to optimize this in the future</p>
+
+
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<!--<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>-->
+<div class="btt"><a href="#top">top</a></div>
+
+<p>Note: when running multiple alphafold predictions please use the msa script available for
+alphafold &gt;=2.1.2 to precompute the multiple sequence alignments on CPU nodes and use GPU only for
+model predictions. This is shown in the example below as 2 batch jobs.</p>
+
+<pre class="term">
+#!/bin/bash
+module load alphafold2/2.2.0
+run_singularity \
+    --model_preset=monomer \
+    --fasta_paths=$ALPHAFOLD2_TEST_DATA/T1049.fasta \
+    --max_template_date=2020-05-14 \
+    --output_dir=$PWD
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --partition=gpu --mem=40g --gres=gpu:v100x:1,lscratch:100 alphafold2_model.sh</pre>
+
+
+<a Name="colabfold"></a><div class="heading">ColabFold alphafold2_advanced notebook</div>
+<!--<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>-->
+<div class="btt"><a href="#top">top</a></div>
+
+<p>This is an adaptation of the Alphafold2_advanced
+<a href="https://github.com/sokrypton/ColabFold">Colabfold</a> notebook to
+biowulf. Currently only the notebook is available but a batch wrapper is
+in development.</p>
+
+<p>Notes</p>
+<ul>
+    <li>Currently only available for version alphafold 2.0.1</li>
+    <li>jackhmmer is not yet implemented. The notebook currently only
+    uses mmseqs2 via the online API to create the input MAS</li>
+    <li>Like the colabfold notebook this does <em>not</em> use templates
+    and uses unmodified alphafold weights trained on single proteins.</li>
+    <li>Colab specific input forms had to be removed. Instead, input has
+    to be provided in normal cells with options described in the text</li>
+</ul>
+
+<p>The jupyter function will use an existing tunnel if it has been set up
+with the <code>--tunnel</code> option to <code>sinteractive</code>. If there is no pre-existing tunnel, it will attempt to
+set one up itself. That means it is possible to start the jupyter server in a
+batch job and obtain the command to set up the tunnel from your computer to
+the login node from the batch output. See our <a href="/docs/tunneling/">
+    tunneling documentation</a> for more information</p>
+
+<p>Example use</p>
+
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --gres=lscratch:20,gpu:v100x:1 -c16 --mem=60g --tunnel</b>
+salloc.exe: Pending job allocation 25316671
+salloc.exe: job 25316671 queued and waiting for resources
+salloc.exe: job 25316671 has been allocated resources
+salloc.exe: Granted job allocation 25316671
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3299 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.25316671.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+Created 1 generic SSH tunnel(s) from this compute node to
+biowulf for your use at port numbers defined
+in the $PORTn ($PORT1, ...) environment variables.
+
+
+Please create a SSH tunnel from your workstation to these ports on biowulf.
+On Linux/MacOS, open a terminal and run:
+
+    ssh  -L 46243:localhost:46243 user@biowulf.nih.gov
+
+    For Windows instructions, see https://hpc.nih.gov/docs/tunneling
+
+[user@cn3144]$ <b>module load alphafold2/2.0.1</b>
+[user@cn3144]$ <b>af_colabfold_advanced jupyter name_of_notebook_copy.ipynb</b>
+
+</pre>
+
+<p>The <code>af_colabfold_advanced</code> script creates a copy of the notebook
+in your current directory that you can work with and starts the jupyter server
+up. Once the provided ssh command is used to establish a tunnel to the login node
+exactly as when using regular jupyter notebooks, the notebook can be visited
+at the address provided by jupyter during startup</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

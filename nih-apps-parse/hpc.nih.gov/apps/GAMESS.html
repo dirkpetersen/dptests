@@ -1,0 +1,96 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GAMESS on Biowulf';</script>
+<div class="title">GAMESS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>The General Atomic and Molecular Electronic Structure System (<a href=
+"http://www.msg.ameslab.gov/GAMESS/">GAMESS</a>) is a general ab initio quantum
+chemistry package. GAMESS is maintained by the members of the Gordon research
+group at Iowa State University.</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    M.W.Schmidt, K.K.Baldridge, J.A.Boatz, S.T.Elbert, M.S.Gordon, J.H.Jensen, S.Koseki, N.Matsunaga, K.A.Nguyen, S.J.Su, T.L.Windus, M.Dupuis, J.A.Montgomery
+    <u><b>General Atomic and Molecular Electronic Structure System</b></u>
+    <em>J. Comput. Chem. 14, 1347-1363 (1993).</em>
+  </li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="https://www.msg.chem.iastate.edu/gamess/documentation.html">https://www.msg.chem.iastate.edu/gamess/documentation.html</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>GAMESS</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>GAMESS_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$GAMESS_HOME/tests</tt>
+</ul>
+<P>
+
+<p>The arguments to the <strong>rungms</strong> command are:</p>
+<p><i>rungms inp [version] [nprocs]</i></p>
+<p>where,</p>
+<ul>
+<li><i>inp</i> - input file name (.inp extension assumed)</li>
+<li><i>version</i> - GAMESS version number (optional, defaults to system
+default which is always 00)</li>
+<li><i>nprocs</i> - total number of processes to run (optional, defaults to 1)</li>
+</ul>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16 --mem-per-cpu=1024</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ module load GAMESS
+[user@cn3144 ~]$ rungms mystuff 00 16
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. GAMESS.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load GAMESS
+rungms scf_44 00 $SLURM_CPUS_PER_TASK</pre>
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] GAMESS.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,195 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'megalodon on Biowulf';</script>
+<div class="title">megalodon on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Megalodon is a research command line tool to extract high accuracy modified base and sequence variant calls from raw nanopore reads by anchoring the information rich basecalling neural network output to a reference genome/transcriptome.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+        <a href="https://portlandpress.com/essaysbiochem/article/63/6/639/221208/Latest-techniques-to-study-DNA-methylation">Gouil, Quentin, and Andrew Keniry. "Latest techniques to study DNA methylation." <i>Essays in Biochemistry</i> 63.6 (2019): 639-648.</a>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/nanoporetech/megalodon">megalodon on GitHub</a></li>
+<li><a href="https://nanoporetech.github.io/megalodon/">megalodon Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>megalodon</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>This is a GPU-only application and it will only run on Pascal or higher architecture. It will NOT run on Kepler (k20 or k80) GPUs.  
+    <li>Example files in <tt>/usr/local/apps/megalodon/&lt;ver&gt;/example</tt>
+    <li>Use <tt>--guppy-server-path ${MEGALODON_GUPPY_PATH}</tt> in your megalodon call. It points to the correct executable <i>within the container</i>.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. The data in this example do not produce useful results but are for illustrative purposes only. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c12 --mem=32g --gres=lscratch:10,gpu:p100:1</b>
+salloc.exe: Pending job allocation 5091510
+salloc.exe: job 5091510 queued and waiting for resources
+salloc.exe: job 5091510 has been allocated resources
+salloc.exe: Granted job allocation 5091510
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn2369 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn2369 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn2369 5091510]$ <b>module load megalodon</b>
+[+] Loading megalodon  2.5.0  on cn2369
+[+] Loading singularity  3.8.1-1  on cn2369
+
+[user@cn2369 5091510]$ <b>cp -r /usr/local/apps/megalodon/2.5.0/TEST_DATA/ .</b>
+
+[user@cn2369 5091510]$ <b>cd TEST_DATA/</b>
+
+[user@cn2369 example]$ <b>megalodon fast5/ \
+     --guppy-server-path ${MEGALODON_GUPPY_PATH} \
+     --outputs basecalls mappings mod_mappings mods \
+     --output-directory mega_out \
+     --reference /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa \
+     --devices ${CUDA_VISIBLE_DEVICES} \
+     --processes ${SLURM_CPUS_PER_TASK} \
+     --overwrite \
+     --guppy-config res_dna_r941_min_modbases_5mC_CpG_v001.cfg</b>
+******************** WARNING: "mods" output requested, so "per_read_mods" will be added to outputs. ********************
+[12:27:45] Loading guppy basecalling backend
+[2022-07-12 12:27:49.969485] [0x00002aaaf57a0700] [info]    Connecting to server as ''
+[2022-07-12 12:27:49.972970] [0x00002aaaf57a0700] [info]    Connected to server as ''. Connection id: e96656bc-1a2a-4e39-8ea3-0dccc1f0757a
+[12:27:50] Loading reference
+[12:29:32] Loaded model calls canonical alphabet ACGT and modified bases m=5mC (alt to C)
+[12:29:33] Preparing workers to process reads
+[12:29:34] Processing reads
+Full output or empty input queues indicate I/O bottleneck
+3 most common unsuccessful processing stages:
+    -----
+[2022-07-12 12:29:34.642849] [0x00002aaaed59f700] [info]    Connecting to server as ''
+[2022-07-12 12:29:34.646135] [0x00002aaaed59f700] [info]    Connected to server as ''. Connection id: 4b6bae96-7baa-44a2-84fa-a8ab743d4efa, ?reads/s]
+...
+[2022-07-12 12:29:37.269726] [0x00002aaaed59f700] [info]    Connecting to server as ''
+[2022-07-12 12:29:37.286846] [0x00002aaaed59f700] [info]    Connected to server as ''. Connection id: 03633509-8c2e-45a1-b4a9-feda7170a5ca
+    99.6% (   7871 reads) : No alignment
+    -----
+    -----
+Read Processing: 100%|██████████████████████████████| 8000/8000 [02:03<00:00, 64.97reads/s, samples/s=2.4e+6]
+ input queue capacity extract_signal      :   0%|                                                   | 0/10000
+output queue capacity basecalls           :   0%|                                                   | 0/10000
+output queue capacity mappings            :   0%|                                                   | 0/10000
+output queue capacity per_read_mods       :   0%|                                                   | 0/10000
+[12:31:37] Unsuccessful processing types:
+    99.7% (   7972 reads) : No alignment
+[12:31:38] Spawning modified base aggregation processes
+[12:31:40] Aggregating 5946 per-read modified base statistics
+[12:31:40] NOTE: If this step is very slow, ensure the output directory is located on a fast read disk (e.g. local SSD). Aggregation can be restarted using the `megalodon_extras aggregate run` command
+Mods: 100%|███████████████████████████████████████████████| 5946/5946 [00:00<00:00, 27328.23 per-read calls/s][12:31:41] Mega Done
+
+[user@cn2369 example]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 5091510
+
+[user@biowulf ~]$ 
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. megalodon.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load megalodon
+megalodon fast5/ \
+     --guppy-server-path ${MEGALODON_GUPPY_PATH} \
+     --outputs basecalls mappings mod_mappings mods \
+     --output-directory mega_out \
+     --reference /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa \
+     --devices ${CUDA_VISIBLE_DEVICES} \
+     --processes ${SLURM_CPUS_PER_TASK} \
+     --overwrite
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] [--gres=cpu:#] megalodon.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. megalodon.swarm). For example:</p>
+
+<pre class="term">
+megalodon dir1/ \
+     --guppy-server-path ${MEGALODON_GUPPY_PATH} \
+     --outputs basecalls mappings mod_mappings mods \
+     --output-directory out1 \
+     --reference /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa \
+     --devices ${CUDA_VISIBLE_DEVICES} \
+     --processes ${SLURM_CPUS_PER_TASK}
+megalodon dir2/ \
+     --guppy-server-path ${MEGALODON_GUPPY_PATH} \
+     --outputs basecalls mappings mod_mappings mods \
+     --output-directory out2 \
+     --reference /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa \
+     --devices ${CUDA_VISIBLE_DEVICES} \
+     --processes ${SLURM_CPUS_PER_TASK}
+megalodon dir3/ \
+     --guppy-server-path ${MEGALODON_GUPPY_PATH} \
+     --outputs basecalls mappings mod_mappings mods \
+     --output-directory out3 \
+     --reference /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa \
+     --devices ${CUDA_VISIBLE_DEVICES} \
+     --processes ${SLURM_CPUS_PER_TASK}
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f megalodon.swarm [-g #] [-t #] [--gres &lt;gpu&gt;:#] --module megalodon</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--gres <i>#</i></tt> <td>GPU type and number to use for each subjob.
+  <tr><td><tt>--module megalodon</tt> <td>Loads the megalodon module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

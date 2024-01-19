@@ -1,0 +1,115 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MINTIE: identifying novel, rare transcriptional variants in cancer RNA-seq data ';</script>
+<div class="title"><b>MINTIE: identifying novel, rare transcriptional variants in cancer RNA-seq data </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MINTIE is a tool for identifying novel, rare transcriptional variants in cancer RNA-seq data. MINTIE detects 
+gene fusions, transcribed structural variants, novel splice variants and complex variants, and annotates all novel transcriptional variants.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Marek Cmero, Breon Schmidt, Ian J. Majewski, Paul G. Ekert, Alicia Oshlack &amp; Nadia M. Davidson <br />
+ <i>MINTIE: identifying novel structural and splice variants in transcriptomes using RNAseq data</i> <br />
+<a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02507-8">Genome Biology</a>, (2021) 22:296; https://doi.org/10.1186/s13059-021-02507-8
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Oshlack/MINTIE">MINTIE Github page</a></li>
+<li><a href="https://github.com/Oshlack/MINTIE/wiki">MINTIE Wiki page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>MINTIE</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>MINTIE_HOME</b>&nbsp; installation directory</li>
+    <li><b>MINTIE_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>MINTIE_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16g -c 16 --gres=lscratch:20</b>
+[user@cn3335 ~]$<b>module load MINTIE </b>
+[+] Loading java 12.0.1  ...
+[+] Loading MINTIE 0.4.2 ...
+[user@cn3335 ~]$ <b>mkdir -p /data/$USER/MINTIE && cd /data/$USER/MINTIE </b>
+</pre>
+Produce testing data:
+<pre class="term">
+[user@cn3335 ~]$<b>mintie -t</b>
+</pre>
+and run mintie on the these data:                
+<pre class="term">
+[user@cn3335 ~]$ <b>mintie -w -p test_params.txt cases/*.fastq.gz controls/*.fastq.gz </b>  
+????????????????????????????????????????????????????????????????????????????????????????????????????
+|                              Starting Pipeline at 2022-12-02 13:05                               |
+????????????????????????????????????????????????????????????????????????????????????????????????????
+
+================================ Stage fastq_dedupe (allvars-case) =================================
+...
+==================================== Stage trim (allvars-case) =====================================
+...
+================================== Stage assemble (allvars-case) ===================================
+...
+============================= Stage create_salmon_index (allvars-case) =============================
+...
+================================= Stage run_salmon (allvars-case) ==================================
+...
+================================ Stage run_salmon (allvars-control) ================================
+...
+=========================== Stage create_ec_count_matrix (allvars-case) ============================
+...
+=================================== Stage run_de (allvars-case) ====================================
+...
+========================== Stage filter_on_significant_ecs (allvars-case) ==========================
+...
+======================== Stage align_contigs_against_genome (allvars-case) =========================
+...
+============================= Stage sort_and_index_bam (allvars-case) ==============================
+...
+============================== Stage annotate_contigs (allvars-case) ===============================
+...
+=============================== Stage refine_contigs (allvars-case) ================================
+...
+================================ Stage calculate_VAF (allvars-case) ================================
+...
+================================ Stage post_process (allvars-case) =================================
+index file allvars-case/novel_contigs.fasta.fai not found, generating...
+
+======================================== Pipeline Succeeded ========================================
+20:30:00 MSG:  Finished at Tue Jul 25 20:30:00 EDT 2023
+20:30:00 MSG:  Outputs are:
+                allvars-case/vaf_estimates.txt
+                allvars-case/allvars-case_results.tsv
+                allvars-case/novel_contigs.bam
+                allvars-case/novel_contigs.vcf
+                allvars-case/all_fasta_index/allvars-case.fasta (pre-existing)
+                ... 4 more ...
+[user@cn3335 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

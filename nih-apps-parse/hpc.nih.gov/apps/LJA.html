@@ -1,0 +1,238 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'LJA: Assembling Long and Accurate Reads Using Multiplex de Bruijn Graphs ';</script>
+<div class="title"><b>LJA: Assembling Long and Accurate Reads Using Multiplex de Bruijn Graphs </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The La Jolla Assembler (LJA) is a tool for assemblies of long and accurate reads. It reduces the error rate in
+these reads by three orders of magnitude (making them nearly error-free) and constructs the de Bruijn
+graph for large genomes and large k-mer sizes. Since the de Bruijn graph constructed for a fixed k-mer
+size is typically either too tangled or too fragmented, LJA uses a new concept of a multiplex de Bruijn
+graph with varying k-mer sizes. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Anton Bankevich, Andrey Bzikadze, Mikhail Kolmogorov, Dmitry Antipov, Pavel A. Pevzner <br />
+<i>Multiplex de Bruijn graphs enable genome assembly from long, high-fidelity reads </i><br />
+<a href="https://www.nature.com/articles/s41587-022-01220-6">Nat Biotechnol (2022). https://doi.org/10.1038/s41587-022-01220-6<br/>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/AntonBankevich/LJA">LJA on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>LJA</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>LJA_HOME</b>&nbsp; installation directory</li>
+    <li><b>LJA_BIN </b>&nbsp; &nbsp; executable directory</li>
+    <li><b>LJA_SRC </b>&nbsp; &nbsp; source code directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3107 ~]$<b>module load LJA</b>
+</pre>
+Available executables:
+<pre class="term">
+[user@biowulf]$ <b> ls $LJA_BIN </b>
+dot_bulge_stats  jumboDBG  lja  run_polishing  run_tests  sdbg_stats
+</pre>
+Basic usage:
+<pre class="term">
+[user@cn3107 ~]$<b>lja -h</b>
+LJA: genome assembler for PacBio HiFi reads based on de Bruijn graph.
+Usage: lja [options] -o &lt;output-dir&gt; --reads &lt;reads_file&gt; [--reads &lt;reads_file2&gt; ...]
+
+Basic options:
+  -o &lt;file_name&gt; (or --output-dir &lt;file_name&gt;)  Name of output folder. Resulting graph will be stored there.
+  --reads &lt;file_name&gt;                           Name of file that contains reads in fasta or fastq format. This option can be used any number of times in the same command line. In this case reads from all specified files will be used as an input.
+  -h (or --help)                                Print this help message.
+
+Advanced options:
+  -t &lt;int&gt; (or --threads &lt;int&gt;)                 Number of threads. The default value is 16.
+  -k &lt;int&gt;                                      Value of k used for initial error correction.
+  -K &lt;int&gt;                                      Value of k used for final error correction and initialization of multiDBG.
+  --diploid                                     Use this option for diploid genomes. By default LJA assumes that the genome is haploid or inbred.
+</pre>
+Running tests:
+<pre class="term">
+[user@cn3107 ~]$<b> run_tests </b>
+Running main() from /usr/local/apps/LJA/LJA/src/tests/googletest-master/googletest/src/gtest_main.cc
+[==========] Running 30 tests from 26 test suites.
+[----------] Global test environment set-up.
+[----------] 1 test from DB1
+[ RUN      ] DB1.Basic
+[       OK ] DB1.Basic (0 ms)
+[----------] 1 test from DB1 (0 ms total)
+
+[----------] 1 test from DBSingleEdge1
+[ RUN      ] DBSingleEdge1.Basic
+[       OK ] DBSingleEdge1.Basic (0 ms)
+[----------] 1 test from DBSingleEdge1 (0 ms total)
+
+[----------] 1 test from DBSingleEdge2
+[ RUN      ] DBSingleEdge2.Basic
+[       OK ] DBSingleEdge2.Basic (0 ms)
+[----------] 1 test from DBSingleEdge2 (0 ms total)
+
+[----------] 1 test from DBSingleEdge3
+[ RUN      ] DBSingleEdge3.Basic
+[       OK ] DBSingleEdge3.Basic (0 ms)
+[----------] 1 test from DBSingleEdge3 (0 ms total)
+
+[----------] 1 test from DBStVertex
+[ RUN      ] DBStVertex.Basic
+[       OK ] DBStVertex.Basic (0 ms)
+[----------] 1 test from DBStVertex (0 ms total)
+
+[----------] 1 test from DBEvVertex
+[ RUN      ] DBEvVertex.Basic
+[       OK ] DBEvVertex.Basic (0 ms)
+[----------] 1 test from DBEvVertex (0 ms total)
+
+[----------] 2 tests from DB1inVertex
+[ RUN      ] DB1inVertex.Basic
+[       OK ] DB1inVertex.Basic (1 ms)
+[ RUN      ] DB1inVertex.WithShortEdge
+[       OK ] DB1inVertex.WithShortEdge (0 ms)
+[----------] 2 tests from DB1inVertex (1 ms total)
+
+[----------] 2 tests from DB1outVertex
+[ RUN      ] DB1outVertex.Basic
+[       OK ] DB1outVertex.Basic (0 ms)
+[ RUN      ] DB1outVertex.WithShortEdge
+[       OK ] DB1outVertex.WithShortEdge (0 ms)
+[----------] 2 tests from DB1outVertex (0 ms total)
+
+[----------] 1 test from DBComplexVertex
+[ RUN      ] DBComplexVertex.Basic
+[       OK ] DBComplexVertex.Basic (0 ms)
+[----------] 1 test from DBComplexVertex (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop1
+[ RUN      ] DBComplexVertexLoop1.Basic
+[       OK ] DBComplexVertexLoop1.Basic (0 ms)
+[----------] 1 test from DBComplexVertexLoop1 (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop2
+[ RUN      ] DBComplexVertexLoop2.Basic
+[       OK ] DBComplexVertexLoop2.Basic (0 ms)
+[----------] 1 test from DBComplexVertexLoop2 (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop3
+[ RUN      ] DBComplexVertexLoop3.Basic
+[       OK ] DBComplexVertexLoop3.Basic (0 ms)
+[----------] 1 test from DBComplexVertexLoop3 (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop4
+[ RUN      ] DBComplexVertexLoop4.Basic
+[       OK ] DBComplexVertexLoop4.Basic (0 ms)
+[----------] 1 test from DBComplexVertexLoop4 (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop5
+[ RUN      ] DBComplexVertexLoop5.Basic
+[       OK ] DBComplexVertexLoop5.Basic (1 ms)
+[----------] 1 test from DBComplexVertexLoop5 (1 ms total)
+
+[----------] 1 test from DBComplexVertexConn4
+[ RUN      ] DBComplexVertexConn4.Basic
+[       OK ] DBComplexVertexConn4.Basic (0 ms)
+[----------] 1 test from DBComplexVertexConn4 (0 ms total)
+
+[----------] 1 test from DBComplexVertexConn3
+[ RUN      ] DBComplexVertexConn3.Basic
+[       OK ] DBComplexVertexConn3.Basic (0 ms)
+[----------] 1 test from DBComplexVertexConn3 (0 ms total)
+
+[----------] 1 test from DBComplexVertexConn3_2
+[ RUN      ] DBComplexVertexConn3_2.Basic
+[       OK ] DBComplexVertexConn3_2.Basic (0 ms)
+[----------] 1 test from DBComplexVertexConn3_2 (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop6
+[ RUN      ] DBComplexVertexLoop6.Basic
+[       OK ] DBComplexVertexLoop6.Basic (0 ms)
+[----------] 1 test from DBComplexVertexLoop6 (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop7
+[ RUN      ] DBComplexVertexLoop7.Basic
+[       OK ] DBComplexVertexLoop7.Basic (0 ms)
+[----------] 1 test from DBComplexVertexLoop7 (0 ms total)
+
+[----------] 1 test from DBComplexVertexLoop8
+[ RUN      ] DBComplexVertexLoop8.Basic
+[       OK ] DBComplexVertexLoop8.Basic (0 ms)
+[----------] 1 test from DBComplexVertexLoop8 (0 ms total)
+
+[----------] 1 test from DBDoubleLoopRC
+[ RUN      ] DBDoubleLoopRC.Basic
+[       OK ] DBDoubleLoopRC.Basic (1 ms)
+[----------] 1 test from DBDoubleLoopRC (1 ms total)
+
+[----------] 1 test from DBIsolate
+[ RUN      ] DBIsolate.Basic
+[       OK ] DBIsolate.Basic (0 ms)
+[----------] 1 test from DBIsolate (0 ms total)
+
+[----------] 1 test from DBEmptyGraph
+[ RUN      ] DBEmptyGraph.Basic
+[       OK ] DBEmptyGraph.Basic (0 ms)
+[----------] 1 test from DBEmptyGraph (0 ms total)
+
+[----------] 2 tests from RRPathsTest
+[ RUN      ] RRPathsTest.Basic
+[       OK ] RRPathsTest.Basic (0 ms)
+[ RUN      ] RRPathsTest.MergeIterDereference
+[       OK ] RRPathsTest.MergeIterDereference (0 ms)
+[----------] 2 tests from RRPathsTest (0 ms total)
+
+[----------] 1 test from EdgeSegment
+[ RUN      ] EdgeSegment.Basic
+[       OK ] EdgeSegment.Basic (0 ms)
+[----------] 1 test from EdgeSegment (0 ms total)
+
+[----------] 2 tests from MDBGSeq
+[ RUN      ] MDBGSeq.SingleSegment
+[       OK ] MDBGSeq.SingleSegment (0 ms)
+[ RUN      ] MDBGSeq.SeveralSegments
+[       OK ] MDBGSeq.SeveralSegments (0 ms)
+[----------] 2 tests from MDBGSeq (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 30 tests from 26 test suites ran. (3 ms total)
+[  PASSED  ] 30 tests.
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3107 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

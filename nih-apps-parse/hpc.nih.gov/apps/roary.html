@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'roary on Biowulf';</script>
+<div class="title">roary on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p> Roary is a high speed pan genome pipeline, which takes annotated assemblies
+in GFF3 format (produced by 
+<a href="https://hpc.nih.gov/apps/prokka.html">Prokka</a>) and calculates the pan
+genome.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Andrew J. Page et al., <em>Roary: Rapid large-scale prokaryote pan genome analysis</em>. 
+    Bioinformatics 2015, 31:3691-3693.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/26198102">Pubmed</a> &nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4817141/">PMC</a> &nbsp;|&nbsp;
+    <a href="http://bioinformatics.oxfordjournals.org/content/31/22/3691.long">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://sanger-pathogens.github.io/Roary/">Home page</a> </li>
+    <li><a href="https://github.com/sanger-pathogens/Roary">GitHub</a></li>
+    <li><a href="https://github.com/microgenomics/tutorials/blob/master/pangenome.md">Tutorial</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: roary (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>roary is a multithreaded application. Make sure to match the number of cpus requested with the
+    number of threads.</li>
+    <li>Example files in <code>ROARY_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>For this <a href="/docs/userguide.html#int">interactive session</a> we will follow the
+roary <a href="https://github.com/microgenomics/tutorials/blob/master/pangenome.md">Tutorial</a>. In addition
+to roary we will also need prokka for annotating the bacterial genomes</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --mem=20g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load roary prokka</b>
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>cp ${ROARY_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>ls -1</b>
+GCA_000008285.1_ASM828v1_genomic.fna
+GCA_000021185.1_ASM2118v1_genomic.fna
+GCA_000026705.1_ASM2670v1_genomic.fna
+GCA_000168635.2_ASM16863v2_genomic.fna
+GCA_000168815.1_ASM16881v1_genomic.fna
+GCA_000196035.1_ASM19603v1_genomic.fna
+</pre>
+
+<p>Annotate the genomes with prokka and create a pan genome with roary.</p>
+<pre class="term">
+[user@cn3144]$ <b>fastas=( *.fna )</b>
+[user@cn3144]$ <b>for fasta in ${fastas[@]}; do
+                      acc=${fasta:0:13}
+                      prokka --kingdom Bacteria --outdir prokka_$acc --genus Listeria \
+                        --locustag $acc --prefix $acc --cpus $SLURM_CPUS_PER_TASK $fasta
+                  done
+</b>
+[user@cn3144]$ <b>roary -p $SLURM_CPUS_PER_TASK -f ./roary_demo -e -n -v -r */*.gff</b>
+[...snip...]
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. roary.sh), which uses the input file 'roary.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+# this file is roary.batch
+
+function die {
+    echo "$@" &gt;&amp;2
+    exit 1
+}
+
+wd=$PWD
+module load roary/3.12.0 || die "Could not load modules"
+cd /lscratch/$SLURM_JOB_ID || die "no lscratch"
+roary -p ${SLURM_CPUS_PER_TASK} \
+  -f roary_out -e -n -r -v ./gff/*.gff \
+&amp;&amp; mv roary_out $wd
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --gres=lscratch:10 --cpus-per-task=6 --mem=6g roary.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. roary.swarm). For example:</p>
+
+<pre class="term">
+roary -p $SLURM_CPUS_PER_TASK -f ./roary_species1 -e -n -v -r species1/*.gff
+roary -p $SLURM_CPUS_PER_TASK -f ./roary_species2 -e -n -v -r species2/*.gff
+roary -p $SLURM_CPUS_PER_TASK -f ./roary_species3 -e -n -v -r species3/*.gff
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f roary.swarm -g 6 -t 6 --module roary/3.12.0</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module roary <td>Loads the roary module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,123 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SMR: Summary-data-based Mendelian Randomization tool on Biowulf';</script>
+<div class="title"><b>SMR: Summary-data-based Mendelian Randomization tool on Biowulf</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+SMR (Summary-based Mendelian Randomization) software 
+integrates summary-level data from genome-wide association studies (GWAS) 
+with data from expression quantitative trait locus (eQTL) studies 
+to identify genes whose expression levels are associated with a complex trait because of pleiotropy. 
+It implements the SMR & HEIDI methods to test for pleiotropic association 
+between the expression level of a gene and a complex trait of interest 
+using summary-level data from GWAS and expression quantitative trait loci (eQTL) studies (Zhu et al. 2016 Nat Genet). 
+The methodology can be interpreted as an analysis to test if the effect size of a SNP 
+on the phenotype is mediated by gene expression. 
+This tool can therefore be used to prioritize genes underlying GWAS hits for follow-up functional studies.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Zhihong Zhu, Futao Zhang, Han Hu, Andrew Bakshi, Matthew R Robinson, Joseph E Powell,
+Grant W Montgomery, Michael E Goddard, Naomi R Wray, Peter M Visscher and Jian Yang,
+"Integration of summary data from GWAS and eQTL studies predicts complex trait gene targets", Nature Genetics 2016, v.48(5), 481-489</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>SMR Main Site: <a href="http://cnsgenomics.com/software/smr">SMR</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: SMR (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded 
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SMR_DIR</b>  SMR installation directory</li>
+  </ul>
+<li>Example files in <b>$SMR_DIR</b>/TEST_DATA
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load SMR</b>
+[+] Loading SMR  1.03
+[user@cn3144 ~]$ <b>smr --beqtl-summary $SMR_DIR/TEST_DATA/westra_eqtl_hg18 --query 5.0e-8 --snp rs123</b>
+*******************************************************************
+* Summary-data-based Mendelian Randomization (SMR)
+* version 1.03
+* (C) 2015 Futao Zhang, Zhihong Zhu and Jian Yang
+* The University of Queensland
+* MIT License
+*******************************************************************
+Analysis started: 13:27:52,Tue Sep 29,2020
+
+Options:
+--beqtl-summary /usr/local/apps/SMR/TEST_DATA/westra_eqtl_hg18
+--query   5.00e-08
+--snp rs123
+
+
+Reading eQTL summary data...
+Reading eQTL probe information from [/usr/local/apps/SMR/TEST_DATA/westra_eqtl_hg18.epi].
+5967 Probes to be included from [/usr/local/apps/SMR/TEST_DATA/westra_eqtl_hg18.epi].
+Reading eQTL SNP information from [/usr/local/apps/SMR/TEST_DATA/westra_eqtl_hg18.esi].
+506193 SNPs to be included from [/usr/local/apps/SMR/TEST_DATA/westra_eqtl_hg18.esi].
+rs123 is extracted.
+Reading eQTL summary data from [/usr/local/apps/SMR/TEST_DATA/westra_eqtl_hg18.besd].
+This is an old file format. Please use --make-besd to update the file format.
+eQTL summary data of 5967 Probes and 1 SNPs to be included from [/usr/local/apps/SMR/TEST_DATA/westra_eqtl_hg18.besd].
+Extracted results of 1 SNPs have been saved in the file [smr.txt].
+
+Analysis completed: 13:27:53,Tue Sep 29,2020
+Computational time: 0:0:1
+[user@cn3144 ~]$ <b>cat smr.txt</b>
+SNP     Chr     BP      A1      A2      Freq    Probe   Probe_Chr       Probe_bp        Gene    Orientation b       SE      p
+rs123   7       24932971        A       C       NA      ILMN_1670145    7       24704613        DFNA5       -       0.117336        0.0193413       1.30632e-09
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. SMR.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load SMR       
+smr --beqtl-summary $SMR_DIR/TEST_DATA/westra_eqtl_hg18 --query 5.0e-8 --snp rs123
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] SMR.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

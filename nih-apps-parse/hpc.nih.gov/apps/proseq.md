@@ -1,0 +1,820 @@
+
+
+document.querySelector('title').textContent = 'proseq-2.0: preprocesses and alignment of Illumina sequencing data ';
+**proseq-2.0: preprocesses and alignment of Illumina sequencing data** 
+
+
+|  |
+| --- |
+| 
+Quick Links
+[Documentation](#doc)
+[Notes](#notes)
+[Interactive job](#int) 
+[Batch job](#sbatch) 
+[Swarm of jobs](#swarm) 
+ |
+
+
+
+proseq-2.0 is a pipeline for preprocesses and alignment
+of run-on sequencing (PRO/GRO/ChRO-seq) data 
+from Single-Read or Paired-End Illumina Sequencing
+
+
+
+### Useful references:
+
+
+* (GRO-seq:) Leighton J. Core, Joshua J. Waterfall, John T. Lis   
+
+*Nascent RNA Sequencing Reveals Widespread Pausing and Divergent Initiation at Human Promoters*   
+
+[Science](http://science.sciencemag.org/content/322/5909/1845.long), 19 Dec 2008: Vol. 322, Issue 5909, pp. 1845-1848. DOI: 10.1126/science.1162228   
+* (PRO-seq:) Hojoong Kwak, Nicholas J. Fuda, Leighton J. Core, and John T. Lis  
+ *Precise Maps of RNA Polymerase Reveal How Promoters Direct Initiation and Pausing*   
+
+[Science](http://science.sciencemag.org/content/339/6122/950.long), 22 Feb 2013: Vol. 339, Issue 6122, pp. 950-953. DOI: 10.1126/science.1229386   
+* (dREG:) Charles G Danko, Stephanie L Hyland, Leighton J Core, Andre L Martins, Colin T Waters, Hyung Won Lee, Vivian G Cheung, W Lee Kraus, John T Lis & Adam Siepel   
+
+*Identification of active transcriptional regulatory elements from GRO-seq data*    
+
+[Nature Methods](https://www.nature.com/articles/nmeth.3329),**12**, pages 433–438 (2015)
+
+
+Documentation
+	+ [proseq-2.0 GitHub page](https://github.com/Danko-Lab/proseq2.0)Important Notes
+	+ Module Name: proseq (see [the modules page](https://hpc.nih.gov/apps/modules.html) for more information)
+	+ Unusual environment variables set
+		- **PROSEQ\_HOME**  installation directory
+		- **PROSEQ\_BIN**       executable directory
+		- **PROSEQ\_SRC**       source code directory
+		- **PROSEQ\_DATA**  sample data directory
+Interactive job
+[Interactive jobs](/docs/userguide.html#int) should be used for debugging, graphics, or applications that cannot be run as batch jobs.
+Allocate an [interactive session](/docs/userguide.html#int) and run the program. Sample session:
+
+
+
+```
+
+[user@biowulf]$ **sinteractive**
+[user@cn3335 ~]$**module load proseq** 
+[+] Loading cutadapt  1.18 
+[+] Loading fastxtoolkit 0.0.14  ... 
+[+] Loading seqtk  1.3 
+[+] Loading bwa 0.7.17 on cn3613 
+[+] Loading samtools 1.9  ... 
+[+] Loading bedops  2.4.35 
+[+] Loading bedtools  2.27.1 
+[+] Loading prinseq, version 0.20.4... 
+[+] Loading proseq  2.0 
+
+```
+
+Download proseq sample data from a system folder to the current folder:
+
+```
+
+[user@cn3335 ~]$**cp $PROSEQ\_DATA/\* .** 
+[user@cn3335 ~]$**ls**
+mm10.chromInfo test_R1.fastq.gz test_R2.fastq.gz test_SE.fastq.gz 
+
+```
+
+Proseq is capable of processing both single-read data, as examplified by the sample file test\_SE.fastq.gz, and paired-end data, as exaified by the files test\_R1.fastq.gz and test\_R2.fastq.gz:   
+
+![](Proseq2.png)
+  
+
+
+```
+
+
+[user@cn3335 ~]$**proseq2 --help**
+
+Preprocesses and aligns PRO-seq data.
+
+Takes PREFIX.fastq.gz (SE),  PREFIX_R1.fastq.gz, PREFIX_R2.fastq.gz (PE)
+or *.fastq.gz in the current working directory as input and writes
+BAM and bigWig files as output to the user-assigned output-dir.
+
+Requirements in current working directory:
+cutadapt 1.8.3, fastx_trimmer, seqtk, prinseq-lite.pl 0.20.2, bwa, samtools, bedtools, and bedGraphToBigWig.
+
+bash proseq2.0.bsh [options]
+
+options:
+
+To get help:
+-h, --help             Show this brief help menu.
+
+Required options:
+-SE, --SEQ=SE          Single-end sequencing.
+-PE, --SEQ=PE          Paired-end sequencing.
+-i, --bwa-index=PATH   Path to the BWA index of the target genome
+                       (i.e., bwa index).
+-c, --chrom-info=PATH  Location of the chromInfo table.
+
+I/O options:
+-I, --fastq=PREFIX     Prefix for input files.
+                       Paired-end files require identical prefix
+                       and end with _R1.fastq.gz and _R2.fastq.gz
+                       eg: PREFIX_R1.fastq.gz, PREFIX_R2.fastq.gz.
+-T, --tmp=PATH         Path to a temporary storage directory.
+-O, --output-dir=DIR   Specify a directory to store output in.
+
+Required options for SE
+-G, --SE_READ=RNA_5prime Single-end sequencing from 5' end of
+                         nascent RNA, like GRO-seq.
+-P, --SE_READ=RNA_3prime Single-end sequencing from 3' end of
+                         nascent RNA, like PRO-seq.
+
+Options for PE
+--RNA5=R1_5prime    Specify the location of the 5' end of RNA
+                    [default: R1_5prime].
+--RNA3=R2_5prime    Specify the location of the 3' end of RNA
+                    [default: R2_5prime].
+                    Available options: R1_5prime: the 5' end of R1 reads
+                                       R2_5prime: the 5' end of R2 reads
+-5, --map5=TRUE     Report the 5' end of RNA [default on, --map5=TRUE].
+-3, --map5=FALSE    Report the 3' end of RNA,
+                    only available for PE [default off, --map5=TRUE].
+-s, --opposite-strand=TRUE
+                    Enable this option if the RNA are at the different strand
+                    as the reads set at RNA5 [default: disable].
+
+Optional operations:
+--ADAPT_SE=TGGAATTCTCGGGTGCCAAGG
+                    3' adapter to be removed from the 3' end of SE reads.
+                   [default:TGGAATTCTCGGGTGCCAAGG]
+--ADAPT1=GATCGTCGGACTGTAGAACTCTGAACG
+                    3' adapter to be removed from the 3' end of R2.
+                   [default:GATCGTCGGACTGTAGAACTCTGAACG]
+--ADAPT2=AGATCGGAAGAGCACACGTCTGAACTC
+                    3' adapter to be removed from the 3' end of R1.
+                   [default:AGATCGGAAGAGCACACGTCTGAACTC]
+
+--UMI1=0           The length of UMI barcode on the 5' of R1 read. 
+                   [default: 0]
+--UMI2=0           The length of UMI barcode on the 5' of R2 read. 
+                   [default: 0]
+When UMI1 or UMI2 are set > 0, the pipeline will perform PCR deduplicate.
+
+--Force_deduplicate=FALSE
+                   When --Force_deduplicate=TRUE, it will force the pipeline to
+                   perform PCR deduplicate even there is no UMI barcode
+                   (i.e. UMI1=0 and UMI2=0). [default: FALSE]
+--ADD_B1=0         The length of additional barcode that will be trimmed
+                   on the 5' of R1 read. [default: 0]
+--ADD_B2=0         The length of additional barcode that will be trimmed
+                   on the 5' of R2 read. [default: 0]
+--thread=1         Number of threads can be used [default: 1]
+
+-4DREG             Using the pre-defined parameters to get the most reads
+                   for dREG package. Please use this flag to make the bigWig
+                   files compatible with dREG algorithm. [default: off, only available to SE] 
+-aln               Use BWA-backtrack [default: SE uses BWA-backtrack (aln), PE uses BWA-MEM (mem)]
+-mem               Use BWA-MEM [default: SE uses BWA-backtrack (aln), PE uses BWA-MEM (mem)]
+
+```
+
+In order to process data with proseq, one needs to set the following environment variables:   
+   
+
+**bwaIndex** variable points to the location of the genome FASTA file (It is assumed that the genome bwa index files are located in the same folder as the genome FASTA file); and   
+  
+
+**chromInfo** variable points to the location of the .chromInfo file.   
+   
+
+For example:
+
+```
+
+[user@cn3335 ~]$**export bwaIndex=/fdb/bwa/indexes/mm10.fa**
+[user@cn3335 ~]$**export chromInfo=./mm10.chromInfo**
+
+```
+
+For prosessing of the single-read data, it is also helpful to set the PREFIX variable to the initial part of the data file name, before the ".fastq.gz" string. The commands below will perform processing of the file test\_SE.fastq.gz on the assumptuion that the data was generated according to the GRO-seq protocol, i.e. from 5' end of nascent RNA:
+
+```
+
+[user@cn3335 ~]$**PREFIX=test\_SE**
+[user@cn3335 ~]$**proseq2 -i $bwaIndex -c $chromInfo -SE -G -T myOutput1 -O myOutput1 --UMI1=6 -I $PREFIX**
+Processing PRO-seq data ...
+Command line parameters: -i /fdb/bwa/indexes/mm10.fa -c ./mm10.chromInfo -SE -G -T myOutput1 -O myOutput1 --UMI1=6 -I test_SE
+ 
+SEQ                       SE
+SE_OUTPUT                 G
+SE_READ                   RNA_5prime
+Report 5' ends            TRUE
+Report opposite strand    FALSE
+
+Input files/ paths:
+bwa index                 /fdb/bwa/indexes/mm10.fa
+chromInfo                 ./mm10.chromInfo
+input file 1              test_SE.fastq.gz
+temp folder               myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu
+output-dir                myOutput1
+ 
+Optional operations:
+ADAPT_SE                  TGGAATTCTCGGGTGCCAAGG
+ADAPT1                    GATCGTCGGACTGTAGAACTCTGAACG
+ADAPT2                    AGATCGGAAGAGCACACGTCTGAACTC
+UMI1 barcode length       6
+UMI2 barcode length       0
+ADD_B1 length             0
+ADD_B2 length             0
+number of threads         1
+Remove PCR duplicates     TRUE
+ 
+Preprocessing fastq files:
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: -a TGGAATTCTCGGGTGCCAAGG -e 0.10 --overlap 2 --output=myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/test_SE_trim.fastq --untrimmed-output=myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/test_SE_untrim.fastq test_SE.fastq.gz
+Processing reads on 1 core in single-end mode ...
+Finished in 0.23 s (12 us/read; 5.20 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  20,000
+Reads with adapters:                       481 (2.4%)
+Reads written (passing filters):           481 (2.4%)
+
+Total basepairs processed:       820,000 bp
+Total written (filtered):         18,583 bp (2.3%)
+
+=== Adapter 1 ===
+
+Sequence: TGGAATTCTCGGGTGCCAAGG; Type: regular 3'; Length: 21; Trimmed: 481 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-19 bp: 1; 20-21 bp: 2
+
+Bases preceding removed adapters:
+  A: 20.8%
+  C: 28.7%
+  G: 23.3%
+  T: 27.2%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+2	359	1250.0	0	359
+3	81	312.5	0	81
+4	31	78.1	0	31
+5	7	19.5	0	7
+6	3	4.9	0	3
+
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --minimum-length=10 myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/test_SE_untrim.fastq --output=myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/test_SE_q20trim.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --cut -0 --minimum-length=10 myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/test_SE_trim.fastq --output=myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/test_SE_trim.0Nremoved.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+Finished in 0.01 s (30 us/read; 2.00 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                     481
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:                   0 (0.0%)
+Reads written (passing filters):           481 (100.0%)
+
+Total basepairs processed:        18,583 bp
+Quality-trimmed:                       7 bp (0.0%)
+Total written (filtered):         18,576 bp (100.0%)
+
+Finished in 0.14 s (7 us/read; 8.13 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  19,519
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:                   0 (0.0%)
+Reads written (passing filters):        19,519 (100.0%)
+
+Total basepairs processed:       800,279 bp
+Quality-trimmed:                   1,070 bp (0.1%)
+Total written (filtered):        799,209 bp (99.9%)
+
+Input and filter stats:
+	Input sequences: 20,000
+	Input bases: 599,996
+	Input mean length: 30.00
+	Good sequences: 7,337 (36.69%)
+	Good bases: 220,106
+	Good mean length: 30.00
+	Bad sequences: 12,663 (63.31%)
+	Bad bases: 379,890
+	Bad mean length: 30.00
+	Sequences filtered by specified parameters:
+	derep: 12663
+Input and filter stats:
+	Input sequences: 7,337
+	Input bases: 299,331
+	Input mean length: 40.80
+	Good sequences: 7,337 (100.00%)
+	Good bases: 255,309
+	Good mean length: 34.80
+	Bad sequences: 0 (0.00%)
+	Sequences filtered by specified parameters:
+	none
+Input and filter stats:
+	Input sequences: 7,337
+	Input bases: 255,309
+	Input mean length: 34.80
+	Good sequences: 7,337 (100.00%)
+	Good bases: 255,309
+	Good mean length: 34.80
+	Bad sequences: 0 (0.00%)
+	Sequences filtered by specified parameters:
+	none
+ 
+Mapping reads:
+[bwa_aln] 17bp reads: max_diff = 2
+[bwa_aln] 38bp reads: max_diff = 3
+[bwa_aln] 64bp reads: max_diff = 4
+[bwa_aln] 93bp reads: max_diff = 5
+[bwa_aln] 124bp reads: max_diff = 6
+[bwa_aln] 157bp reads: max_diff = 7
+[bwa_aln] 190bp reads: max_diff = 8
+[bwa_aln] 225bp reads: max_diff = 9
+proseq[bwa_aln_core] calculate SA coordinate... 3.69 sec
+[bwa_aln_core] write to the disk... 0.00 sec
+[bwa_aln_core] 7337 sequences have been processed.
+[main] Version: 0.7.17-r1188
+[bwa_aln_core] convert to sequence coordinate... [main] CMD: bwa aln -t 1 /fdb/bwa/indexes/mm10.fa myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/passQC/test_SE_dedup_QC_end.fastq.gz
+[main] Real time: 10.575 sec; CPU: 5.597 sec
+2.53 sec
+[bwa_aln_core] refine gapped alignments... 0.47 sec
+[bwa_aln_core] print alignments... 0.00 sec
+[bwa_aln_core] 7337 sequences have been processed.
+[main] Version: 0.7.17-r1188
+[main] CMD: bwa samse -n 1 -f myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/passQC/test_SE_dedup_QC_end.sam /fdb/bwa/indexes/mm10.fa - myOutput1/uABGgL8Bm4K70nNZppSsTdbkzFgkmYYu/passQC/test_SE_dedup_QC_end.fastq.gz
+[main] Real time: 17.078 sec; CPU: 3.023 sec
+
+```
+
+The results will be stored in the folder myOutput1.   
+   
+
+The next set of commands will process tha same data file on the assumption it was generated according to the PRO-seq protocol (from 3' end of nascent RNA):
+
+```
+
+[user@cn3335 ~]$**PREFIX=test\_SE**
+[user@cn3335 ~]$**proseq2 -i $bwaIndex -c $chromInfo -SE -P -T myOutput2 -O myOutput2 --UMI1=6 -I $PREFIX**
+ 
+Processing PRO-seq data ...
+Command line parameters: -i /fdb/bwa/indexes/mm10.fa -c ./mm10.chromInfo -SE -P -T myOutput2 -O myOutput2 --UMI1=6 -I test_SE
+ 
+SEQ                       SE
+SE_OUTPUT                 P
+SE_READ                   RNA_3prime
+Report 5' ends            TRUE
+Report opposite strand    TRUE
+
+Input files/ paths:
+bwa index                 /fdb/bwa/indexes/mm10.fa
+chromInfo                 ./mm10.chromInfo
+input file 1              test_SE.fastq.gz
+temp folder               myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr
+output-dir                myOutput2
+ 
+Optional operations:
+ADAPT_SE                  TGGAATTCTCGGGTGCCAAGG
+ADAPT1                    GATCGTCGGACTGTAGAACTCTGAACG
+ADAPT2                    AGATCGGAAGAGCACACGTCTGAACTC
+UMI1 barcode length       6
+UMI2 barcode length       0
+ADD_B1 length             0
+ADD_B2 length             0
+number of threads         1
+Remove PCR duplicates     TRUE
+ 
+Preprocessing fastq files:
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: -a TGGAATTCTCGGGTGCCAAGG -e 0.10 --overlap 2 --output=myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/test_SE_trim.fastq --untrimmed-output=myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/test_SE_untrim.fastq test_SE.fastq.gz
+Processing reads on 1 core in single-end mode ...
+Finished in 0.23 s (11 us/read; 5.33 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  20,000
+Reads with adapters:                       481 (2.4%)
+Reads written (passing filters):           481 (2.4%)
+
+Total basepairs processed:       820,000 bp
+Total written (filtered):         18,583 bp (2.3%)
+
+=== Adapter 1 ===
+
+Sequence: TGGAATTCTCGGGTGCCAAGG; Type: regular 3'; Length: 21; Trimmed: 481 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-19 bp: 1; 20-21 bp: 2
+
+Bases preceding removed adapters:
+  A: 20.8%
+  C: 28.7%
+  G: 23.3%
+  T: 27.2%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+2	359	1250.0	0	359
+3	81	312.5	0	81
+4	31	78.1	0	31
+5	7	19.5	0	7
+6	3	4.9	0	3
+
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --minimum-length=10 myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/test_SE_untrim.fastq --output=myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/test_SE_q20trim.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --cut -0 --minimum-length=10 myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/test_SE_trim.fastq --output=myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/test_SE_trim.0Nremoved.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+Finished in 0.01 s (30 us/read; 2.03 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                     481
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:                   0 (0.0%)
+Reads written (passing filters):           481 (100.0%)
+
+Total basepairs processed:        18,583 bp
+Quality-trimmed:                       7 bp (0.0%)
+Total written (filtered):         18,576 bp (100.0%)
+
+Finished in 0.14 s (7 us/read; 8.27 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  19,519
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:                   0 (0.0%)
+Reads written (passing filters):        19,519 (100.0%)
+
+Total basepairs processed:       800,279 bp
+Quality-trimmed:                   1,070 bp (0.1%)
+Total written (filtered):        799,209 bp (99.9%)
+
+Input and filter stats:
+	Input sequences: 20,000
+	Input bases: 599,996
+	Input mean length: 30.00
+	Good sequences: 7,337 (36.69%)
+	Good bases: 220,106
+	Good mean length: 30.00
+	Bad sequences: 12,663 (63.31%)
+	Bad bases: 379,890
+	Bad mean length: 30.00
+	Sequences filtered by specified parameters:
+	derep: 12663
+Input and filter stats:
+	Input sequences: 7,337
+	Input bases: 299,331
+	Input mean length: 40.80
+	Good sequences: 7,337 (100.00%)
+	Good bases: 255,309
+	Good mean length: 34.80
+	Bad sequences: 0 (0.00%)
+	Sequences filtered by specified parameters:
+	none
+Input and filter stats:
+	Input sequences: 7,337
+	Input bases: 255,309
+	Input mean length: 34.80
+	Good sequences: 7,337 (100.00%)
+	Good bases: 255,309
+	Good mean length: 34.80
+	Bad sequences: 0 (0.00%)
+	Sequences filtered by specified parameters:
+	none
+ 
+Mapping reads:
+[bwa_aln] 17bp reads: max_diff = 2
+[bwa_aln] 38bp reads: max_diff = 3
+[bwa_aln] 64bp reads: max_diff = 4
+[bwa_aln] 93bp reads: max_diff = 5
+[bwa_aln] 124bp reads: max_diff = 6
+[bwa_aln] 157bp reads: max_diff = 7
+[bwa_aln] 190bp reads: max_diff = 8
+[bwa_aln] 225bp reads: max_diff = 9
+[bwa_aln_core] calculate SA coordinate... 3.73 sec
+[bwa_aln_core] write to the disk... 0.00 sec
+[bwa_aln_core] 7337 sequences have been processed.
+[main] Version: 0.7.17-r1188
+[bwa_aln_core] convert to sequence coordinate... [main] CMD: bwa aln -t 1 /fdb/bwa/indexes/mm10.fa myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/passQC/test_SE_dedup_QC_end.fastq.gz
+[main] Real time: 4.971 sec; CPU: 4.944 sec
+2.08 sec
+[bwa_aln_core] refine gapped alignments... 0.31 sec
+[bwa_aln_core] print alignments... 0.00 sec
+[bwa_aln_core] 7337 sequences have been processed.
+[main] Version: 0.7.17-r1188
+[main] CMD: bwa samse -n 1 -f myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/passQC/test_SE_dedup_QC_end.sam /fdb/bwa/indexes/mm10.fa - myOutput2/hmAk4XuYQ4tnRxpC4V6fToiPSGIasBRr/passQC/test_SE_dedup_QC_end.fastq.gz
+[main] Real time: 7.402 sec; CPU: 2.414 sec
+ 
+Writing bigWigs:
+...
+
+```
+
+The output will stored in the folder myOutput2.   
+  
+
+Finally, the commands below will allow processing the paired-end data. For this purpose, the PREFIX variable should be set to the initial part of the data files name, before the strings "\_R1.fastq.gz" or "\_R2.fastq.gz":
+
+```
+
+[user@cn3335 ~]$ **PREFIX=test**
+[user@cn3335 ~]$ **proseq2 -i $bwaIndex -c $chromInfo -PE --RNA3=R1\_5prime -T myOutput3 -O myOutput3 -I $PREFIX --UMI1=6 --ADAPT1=GATCGTCGGACTGTAGAACTCTGAAC --ADAPT2=TGGAATTCTCGGGTGCCAAGG**
+ 
+Processing PRO-seq data ...
+Command line parameters: -i /fdb/bwa/indexes/mm10.fa -c ./mm10.chromInfo -PE --RNA3=R1_5prime -T myOutput3 -O myOutput3 -I test --UMI1=6 --ADAPT1=GATCGTCGGACTGTAGAACTCTGAAC --ADAPT2=TGGAATTCTCGGGTGCCAAGG
+ 
+SEQ                       PE
+Location of 5' of RNA     R2_5prime
+Location of 3' of RNA     R1_5prime
+Report 5' ends            TRUE
+Report opposite strand    FALSE
+
+Input files/ paths:
+bwa index                 /fdb/bwa/indexes/mm10.fa
+chromInfo                 ./mm10.chromInfo
+input file pair 1         test_R1.fastq.gz, test_R2.fastq.gz
+temp folder               myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI
+output-dir                myOutput3
+ 
+Optional operations:
+ADAPT_SE                  TGGAATTCTCGGGTGCCAAGG
+ADAPT1                    GATCGTCGGACTGTAGAACTCTGAAC
+ADAPT2                    TGGAATTCTCGGGTGCCAAGG
+UMI1 barcode length       6
+UMI2 barcode length       0
+ADD_B1 length             0
+ADD_B2 length             0
+number of threads         1
+Remove PCR duplicates     TRUE
+ 
+Preprocessing fastq files:
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: -a GATCGTCGGACTGTAGAACTCTGAAC -e 0.10 --overlap 2 --output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_trim_R2.fastq --untrimmed-output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_untrim_R2.fastq test_R2.fastq.gz
+Processing reads on 1 core in single-end mode ...
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: -a TGGAATTCTCGGGTGCCAAGG -e 0.10 --overlap 2 --output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_trim_R1.fastq --untrimmed-output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_untrim_R1.fastq test_R1.fastq.gz
+Processing reads on 1 core in single-end mode ...
+Finished in 0.42 s (21 us/read; 2.84 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  20,000
+Reads with adapters:                       481 (2.4%)
+Reads written (passing filters):           481 (2.4%)
+
+Total basepairs processed:       820,000 bp
+Total written (filtered):         18,583 bp (2.3%)
+
+=== Adapter 1 ===
+
+Sequence: TGGAATTCTCGGGTGCCAAGG; Type: regular 3'; Length: 21; Trimmed: 481 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-19 bp: 1; 20-21 bp: 2
+
+Bases preceding removed adapters:
+  A: 20.8%
+  C: 28.7%
+  G: 23.3%
+  T: 27.2%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+2	359	1250.0	0	359
+3	81	312.5	0	81
+4	31	78.1	0	31
+5	7	19.5	0	7
+6	3	4.9	0	3
+
+Finished in 0.52 s (26 us/read; 2.33 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  20,000
+Reads with adapters:                    15,088 (75.4%)
+Reads written (passing filters):        15,088 (75.4%)
+
+Total basepairs processed:       820,000 bp
+Total written (filtered):         83,894 bp (10.2%)
+
+=== Adapter 1 ===
+
+Sequence: GATCGTCGGACTGTAGAACTCTGAAC; Type: regular 3'; Length: 26; Trimmed: 15088 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-19 bp: 1; 20-26 bp: 2
+
+Bases preceding removed adapters:
+  A: 4.1%
+  C: 4.4%
+  G: 7.6%
+  T: 6.4%
+  none/other: 77.5%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+2	357	1250.0	0	357
+3	245	312.5	0	245
+4	238	78.1	0	238
+5	209	19.5	0	209
+6	161	4.9	0	161
+7	174	1.2	0	174
+8	134	0.3	0	134
+9	94	0.1	0	94
+10	63	0.0	1	60 3
+11	33	0.0	1	32 1
+12	34	0.0	1	33 1
+13	30	0.0	1	27 3
+14	20	0.0	1	20
+15	21	0.0	1	20 1
+16	17	0.0	1	17
+17	18	0.0	1	15 3
+18	18	0.0	1	18
+19	15	0.0	1	15
+20	25	0.0	2	24 1
+21	18	0.0	2	17 0 1
+22	18	0.0	2	17 1
+23	14	0.0	2	13 1
+24	20	0.0	2	19 1
+25	13	0.0	2	10 2 1
+26	13	0.0	2	13
+27	761	0.0	2	707 41 13
+28	36	0.0	2	36
+29	10	0.0	2	9 1
+30	22	0.0	2	21 1
+31	22	0.0	2	22
+32	13	0.0	2	13
+33	434	0.0	2	403 21 10
+34	3	0.0	2	3
+35	20	0.0	2	18 2
+36	4	0.0	2	4
+37	50	0.0	2	49 1
+38	2	0.0	2	2
+39	1	0.0	2	1
+40	10	0.0	2	10
+41	11698	0.0	2	11251 312 135
+
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --minimum-length=10 myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_untrim_R1.fastq --output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_q20trim_R1.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --cut -0 --minimum-length=10 myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_trim_R1.fastq --output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_trim.0Nremoved_R1.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+Finished in 0.01 s (29 us/read; 2.07 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                     481
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:                   0 (0.0%)
+Reads written (passing filters):           481 (100.0%)
+
+Total basepairs processed:        18,583 bp
+Quality-trimmed:                       7 bp (0.0%)
+Total written (filtered):         18,576 bp (100.0%)
+
+Finished in 0.21 s (11 us/read; 5.47 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  19,519
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:                   0 (0.0%)
+Reads written (passing filters):        19,519 (100.0%)
+
+Total basepairs processed:       800,279 bp
+Quality-trimmed:                   1,070 bp (0.1%)
+Total written (filtered):        799,209 bp (99.9%)
+
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --minimum-length=10 myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_untrim_R2.fastq --output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_q20trim_R2.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+This is cutadapt 1.18 with Python 3.6.6
+Command line parameters: --cut -6 --minimum-length=10 myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_trim_R2.fastq --output=myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/test_trim.6Nremoved_R2.fastq -q 20
+Processing reads on 1 core in single-end mode ...
+Finished in 0.07 s (13 us/read; 4.52 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                   4,912
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:                 117 (2.4%)
+Reads written (passing filters):         4,795 (97.6%)
+
+Total basepairs processed:       201,392 bp
+Quality-trimmed:                   7,497 bp (3.7%)
+Total written (filtered):        193,414 bp (96.0%)
+
+Finished in 0.17 s (12 us/read; 5.21 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                  15,088
+Reads with adapters:                         0 (0.0%)
+Reads that were too short:              13,106 (86.9%)
+Reads written (passing filters):         1,982 (13.1%)
+
+Total basepairs processed:        83,894 bp
+Quality-trimmed:                     432 bp (0.5%)
+Total written (filtered):         55,714 bp (66.4%)
+
+cat: myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/noadapt/l30_nodups/test_dedup_2_singletons.fastq: No such file or directory
+rm: cannot remove ‘myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/noadapt/l30_nodups/test_dedup_2_singletons.fastq’: No such file or directory
+Input and filter stats:
+	Input sequences (file 1): 20,000
+	Input bases (file 1): 599,996
+	Input mean length (file 1): 30.00
+	Input sequences (file 2): 6,777
+	Input bases (file 2): 197,076
+	Input mean length (file 2): 29.08
+	Good sequences (pairs): 6,230
+	Good bases (pairs): 369,588
+	Good mean length (pairs): 59.32
+	Good sequences (singletons file 1): 1,404 (7.02%)
+	Good bases (singletons file 1): 42,116
+	Good mean length (singletons file 1): 30.00
+	Good sequences (singletons file 2): 0 (0.00%)
+	Bad sequences (file 1): 12,366 (61.83%)
+	Bad bases (file 1): 370,980
+	Bad mean length (file 1): 30.00
+	Bad sequences (file 2): 98 (1.45%)
+	Bad bases (file 2): 1,179
+	Bad mean length (file 2): 12.03
+	Sequences filtered by specified parameters:
+	min_len: 111
+	derep: 12366
+Input and filter stats:
+	Input sequences: 6,230
+	Input bases: 230,343
+	Input mean length: 36.97
+	Good sequences: 6,230 (100.00%)
+	Good bases: 230,343
+	Good mean length: 36.97
+	Bad sequences: 0 (0.00%)
+	Sequences filtered by specified parameters:
+	none
+Input and filter stats:
+	Input sequences: 6,230
+	Input bases: 254,025
+	Input mean length: 40.77
+	Good sequences: 6,230 (100.00%)
+	Good bases: 216,645
+	Good mean length: 34.77
+	Bad sequences: 0 (0.00%)
+	Sequences filtered by specified parameters:
+	none
+Input and filter stats:
+	Input sequences (file 1): 6,230
+	Input bases (file 1): 216,645
+	Input mean length (file 1): 34.77
+	Input sequences (file 2): 6,230
+	Input bases (file 2): 230,343
+	Input mean length (file 2): 36.97
+	Good sequences (pairs): 6,230
+	Good bases (pairs): 446,988
+	Good mean length (pairs): 71.75
+	Good sequences (singletons file 1): 0 (0.00%)
+	Good sequences (singletons file 2): 0 (0.00%)
+	Bad sequences (file 1): 0 (0.00%)
+	Bad sequences (file 2): 0 (0.00%)
+	Sequences filtered by specified parameters:
+	none
+ 
+Mapping reads:
+[M::bwa_idx_load_from_disk] read 0 ALT contigs
+[M::process] read 12460 sequences (446988 bp)...
+[M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (0, 3068, 0, 0)
+[M::mem_pestat] skip orientation FF as there are not enough pairs
+[M::mem_pestat] analyzing insert size distribution for orientation FR...
+[M::mem_pestat] (25, 50, 75) percentile: (29, 36, 49)
+[M::mem_pestat] low and high boundaries for computing mean and std.dev: (1, 89)
+[M::mem_pestat] mean and std.dev: (40.00, 14.74)
+[M::mem_pestat] low and high boundaries for proper pairs: (1, 109)
+[M::mem_pestat] skip orientation RF as there are not enough pairs
+[M::mem_pestat] skip orientation RR as there are not enough pairs
+[M::mem_process_seqs] Processed 12460 reads in 1.840 CPU sec, 1.846 real sec
+[main] Version: 0.7.17-r1188
+[main] CMD: bwa mem -k 19 -t 1 /fdb/bwa/indexes/mm10.fa myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/passQC/test_dedup_QC_end_1.fastq.gz myOutput3/DnA5iYF6dbDZRzwfLnnMjbkNubF5SMBI/passQC/test_dedup_QC_end_2.fastq.gz
+[main] Real time: 4.736 sec; CPU: 4.618 sec
+ 
+Writing bigWigs:
+...
+
+```
+
+The results will stored in the folder myOutput3.

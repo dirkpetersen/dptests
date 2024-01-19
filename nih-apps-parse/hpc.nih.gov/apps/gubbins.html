@@ -1,0 +1,141 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GUBBINS on Biowulf';</script>
+<div class="title">GUBBINS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Gubbins (Genealogies Unbiased By recomBinations In Nucleotide Sequences) is an algorithm that iteratively identifies loci containing elevated densities of base substitutions while concurrently constructing a phylogeny based on the putative point mutations outside of these regions.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://doi.org/10.1093/nar/gku1196">Rapid phylogenetic analysis of large samples of recombinant bacterial whole genome sequences using Gubbins</a>. Croucher N. J., Page A. J., Connor T. R., Delaney A. J., Keane J. A., Bentley S. D., Parkhill J., Harris S.R. Nucleic Acids Research, Volume 43, Issue 3, 18 February 2015, Page e15. </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://sanger-pathogens.github.io/gubbins/">Gubbins Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>gubbins</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load gubbins</b>
+[+] Loading singularity  3.4.2  on cn3144 
+[+] Loading gubbins 2.3.4  ... 
+
+[user@cn3144 ~]$ <b>cd /data/user/GUBBINS_TEST</b>
+
+[user@cn3144 ~]$ <b>ls</b>
+PMEN1.aln.gz  ST239.aln.gz
+
+[user@cn3144 ~]$ <b>gunzip PMEN1.aln.gz</b>
+
+[user@cn3144 ~]$ <b>gunzip ST239.aln.gz</b>
+
+[user@cn3144 ~]$ <b>ls</b>
+PMEN1.aln  ST239.aln
+
+[user@cn3144 ~]$ <b>gubbins PMEN1.aln</b>
+
+[user@cn3144 ~]$ <b>ls PMEN1.*</b>
+PMEN1.aln				PMEN1.filtered_polymorphic_sites.phylip  PMEN1.recombination_predictions.embl
+PMEN1.aln.seq.joint.txt			PMEN1.final_tree.tre			 PMEN1.recombination_predictions.gff
+PMEN1.branch_base_reconstruction.embl	PMEN1.node_labelled.final_tree.tre	 PMEN1.summary_of_snp_distribution.vcf
+PMEN1.filtered_polymorphic_sites.fasta	PMEN1.per_branch_statistics.csv
+
+[user@cn3144 ~]$ <b>gubbins ST239.aln</b>
+
+[user@cn3144 ~]$ <b>ls ST239.*</b>
+ST239.aln				ST239.filtered_polymorphic_sites.phylip  ST239.recombination_predictions.embl
+ST239.aln.seq.joint.txt			ST239.final_tree.tre			 ST239.recombination_predictions.gff
+ST239.branch_base_reconstruction.embl	ST239.node_labelled.final_tree.tre	 ST239.summary_of_snp_distribution.vcf
+ST239.filtered_polymorphic_sites.fasta	ST239.per_branch_statistics.csv
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gubbins.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load gubbins
+cd /data/user/GUBBINS_TEST
+gubbins PMEN1.aln
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] gubbins.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. gubbins.swarm). For example:</p>
+
+<pre class="term">
+cd /data/user/GUBBINS_TEST; gubbins PMEN1.aln
+cd /data/user/GUBBINS_TEST; gubbins ST239.aln
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f gubbins.swarm [-g #] [-t #] --module gubbins</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module gubbins</tt> <td>Loads the gubbins module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

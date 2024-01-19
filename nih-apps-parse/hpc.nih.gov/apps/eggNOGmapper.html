@@ -1,0 +1,99 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'eggNOG-mapper: fast genome-wide functional annotation through orthology assignment. ';</script>
+<div class="title"><b>eggNOG-mapper: fast genome-wide functional annotation through orthology assignment. </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<br />
+<p>
+eggNOG-mapper is a tool for functional annotation of large sets of sequences based on fast orthology assignments using precomputed clusters and phylogenies from the eggNOG database. 
+Orthology assignment is ideally suited for functional inference. 
+However, predicting orthology is computationally intensive at large scale, and most 
+other pipelines are relatively inaccessible (e.g., new assignments only available through database updates), so less precise homology-based functional transfer was previously the default for (meta-)genome annotation. 
+</p>
+
+<br />
+<h3>References:</h3>
+<ul>
+<li>Carlos P. Cantalapiedra, Ana Hernandez-Plaza, Ivica Letunic, Peer Bork and Jaime Huerta-Cepas. <br />
+<i> eggNOG-mapper v2: Functional Annotation, Orthology Assignments, and Domain Prediction at the Metagenomic Scale.</i> <br />
+<a href="https://academic.oup.com/mbe/article/38/12/5825/6379734"> Molecular Biology and Evolution</a> <b>38i</b>(12):5825–5829.
+<li>J.Huerta-Cepas, D.Szklarczyk, D.Heller, A.Hernández-Plaza, S.K.Forslund, H.Cook, 
+    D.R.Mende, I.Letunic, T.Rattei, L.J.Jensen, C. von Mering, P.Bork <br />
+<i> eggNOG 5.0: a hierarchical, functionally and phylogenetically annotated orthology resource based on 5090 organisms and 2502 viruses.</i> <br
+ />
+<a href="https://academic.oup.com/nar/article/47/D1/D309/5173662"> Nucleic Acids Research,</a>  Volume 47, Issue D1, 08 January 2019, Pages D309–D314.
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/eggnogdb/eggnog-mapper">eggNOG-mapper GitHub page</a></li>
+<li><a href="https://github.com/eggnogdb/eggnog-mapper/wiki">eggNOG-mapper Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>eggNOG-mapper</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>EGGNOG_HOME</b>&nbsp; installation directory</li>
+    <li><b>EGGNOG_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>EGGNOG_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>EGGNOG_TEST</b>&nbsp; sample data directory
+    <li><b>EGGNOG_DATA_DIR</b>&nbsp; database directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$<b> sinteractive --mem=16g --gres=lscratch:10</b>
+[user@cn3200 ~]$<b> module load eggnog-mapper  </b>
+[+] Loading python 3.7  ...
+[+] Loading eggnog-mapper 2.1.2  ...
+[user@cn3200 ~]$<b>ls $EGGNOG_BIN</b>
+create_dbs.py  download_eggnog_data.py  hmm_mapper.py  hmm_worker.py  shell
+diamond        emapper.py               hmm_server.py  python
+</pre>
+Download test data files:
+<pre class="term">
+[user@cn3200 ~]$<b> mkdir /data/$USER/eggnog-mapper && cd /data/$USER/eggnog-mapper</b>
+[user@cn3200 ~]$<b> cp $EGGNOG_TEST/* .</b>
+</pre>
+Run emapper.py on the test data using bacteria.dmnd diamond database:
+<pre class="term">
+[user@cn3200 ~]$<b>emapper.py --dmnd_db $EGGNOG_DATA_DIR/bacteria.dmnd -i test_queries.fa -o test</b>
+ /opt/conda/envs/eggNOGmapper/lib/python3.7/site-packages/eggnog_mapper-2.1.6-py3.7.egg/eggnogmapper/bin/diamond blastp -d /usr/local/apps/eggnog-mapper/2.1.6/data/bacteria.dmnd -q /gs7/users/user/eggnog-mapper/test_queries.fa --threads 1 -o /gs7/users/user/eggnog-mapper/test.emapper.hits  --sensitive --iterate -e 0.001 --top 3  --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovhsp scovhsp
+Functional annotation of hits...
+0 3.5762786865234375e-06 0.00 q/s (% mem usage: 3.90, % mem avail: 96.09)
+2 2.5320394039154053 0.79 q/s (% mem usage: 3.90, % mem avail: 96.08)
+Done
+   /data/user/eggnog-mapper/test.emapper.hits
+   /data/user/eggnog-mapper/test.emapper.seed_orthologs
+   /data/user/eggnog-mapper/test.emapper.annotations
+...
+</pre>
+Alternatively, you can create a diamond database on your own:
+<pre class="term">
+[user@cn3200 ~]$<b> mkdir data </b>
+[user@cn3200 ~]$<b> export  EGGNOG_DATA_DIR=./data </b>
+[user@cn3200 ~]$<b> create_dbs.py -m diamond --dbname bacteria --taxa Bacteria</b>
+</pre>
+This will create a bacteria.dmnd diamond database in the directory specified in EGGNOG_DATA_DIR environment variable.
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

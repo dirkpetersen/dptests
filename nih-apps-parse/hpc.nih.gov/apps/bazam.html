@@ -1,0 +1,206 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bazam on Biowulf';</script>
+<div class="title">bazam on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A tool to extract paired reads in FASTQ format from coordinate sorted BAM files.
+</p>
+<p>
+Features
+<ul>
+  <li>Bazam is a smarter way to realign reads from one genome to another. If you've tried to use Picard SAMtoFASTQ or samtools bam2fq before and ended up unsatisfied with complicated, long running inefficient pipelines, bazam might be what you wanted. Bazam will output FASTQ in a form that can stream directly into common aligners such as BWA or Bowtie2, so that you can quickly and easily realign reads without extraction to any intermediate format. Bazam can target a specific region of the genome, specified as a region or a gene name if you prefer.
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Sadedin SP, Oshlack A. <em>Bazam: a rapid method for read extraction and realignment of high-throughput sequencing data. </em>Genome Biol. 2019;20(1):78. Published 2019 Apr 18. doi:10.1186/s13059-019-1688-1
+PubMed PMID: 30999943; PubMed Central PMCID:PMC6472072.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/30999943">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6472072/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1688-1">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>bazam Main Site:<a href="https://github.com/ssadedin/bazam">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>bazam</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Current bazam command lines could be run in two ways:
+	<pre class="term">
+	java -jar $BAZAMPATH/bazam.jar --help
+	bazam --help</pre>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$BAZAMPATH</tt></li>
+  </ul>
+<li>Example files in $BAZAM_TEST_DATA<tt></tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load bazam</b>
+[user@cn3144 ~]$ <b>cp $BAZAM_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>bazam --help</b>
+================================================================================
+
+Bazam
+
+================================================================================
+
+error: Missing required option: bam
+usage: java -jar bazam.jar -bam <bam> -L <regions>
+ -bam <arg>           BAM file to extract read pairs from
+ -dr <arg>            Specify a read name to debug: processing of the read
+                      will be verbosey printed
+ -f,--filter <arg>    Filter using specified groovy expression
+ -gene <arg>          Extract region of given gene
+ -h,--help            Show help
+ -L,--regions <arg>   Regions to include reads (and mates of reads) from
+ -n <arg>             Concurrency parameter (4)
+ -namepos             Add original position to the read names
+ -o <arg>             Output file
+ -pad <arg>           Amount to pad regions by (0)
+ -r1 <arg>            Output for R1 if extracting FASTQ in separate files
+ -r2 <arg>            Output for R2 if extracting FASTQ in separate files
+ -s <arg>             Sharding factor: format <n>,<N>: output only reads
+                      belonging to shard n of N
+
+This tool is built with Groovy NGS - the Groovy way to work with NGS data.
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+Realigning a genome to a new reference using bwa
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --mem=8g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load bazam bwa samtools</b>
+[user@cn3144 ~]$ <b>cp $BAZAM_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>bazam -bam test.bam | \
+bwa mem -t 6 /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/BWAIndex/genome.fa - | \
+samtools view -bhS - | \
+samtools sort - -o out.bam -T /lscratch/$SLURM_JOB_ID/ -@ 6 </b>
+================================================================================
+
+Bazam
+
+================================================================================
+
+gngs.ToolBase	[1]	INFO	|10:19:19 Auto detected proxy host=dtn05-e0, proxy port=3128
+bazam.Bazam	[1]	INFO	|10:19:19 Extracting read pairs from test.bam
+bazam.Bazam	[1]	INFO	|10:19:19 Initialising regions to scan from false
+gngs.pair.PairScanner	[1]	INFO	|10:19:19 Beginning scan of test.bam
+gngs.pair.PairScanner	[1]	INFO	|10:19:19 Created 4 read pair locators
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping parallel threads ...
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping Locator 0
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping Locator 1
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping Locator 2
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping Locator 3
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping Chimeric Locator
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping Formatter
+gngs.pair.PairScanner	[1]	INFO	|10:19:20 Stopping Writer
+[M::bwa_idx_load_from_disk] read 0 ALT contigs
+gngs.pair.PairScanner	[1]	INFO	|10:19:28 Processed 16670 in 9.040 seconds  @ 1843.62/s   (chrX:153649427, loc: 16.7k,16.7k,0 chimeric: 0 formatted: 16.7k, written: 16.7k)
+[M::process] read 16670 sequences (1643855 bp)...
+[M::mem_process_seqs] Processed 16670 reads in 3.638 CPU sec, 0.612 real sec
+[main] Version: 0.7.17-r1188
+[main] CMD: bwa mem -t 6 /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/BWAIndex/genome.fa -
+[main] Real time: 12.340 sec; CPU: 14.019 sec
+[bam_sort_core] merging from 0 files and 6 in-memory blocks...
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bazam.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load bazam
+java -Xmx12g -Dsamjdk.reference_fasta=cram_ref.fasta \
+-jar $BAZAMPATH/bazam.jar test.cram >test.fastq.gz</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=12g bazam.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. bazam.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;bazam -bam test1.bam >test1.fastq
+cd dir2;bazam -bam test2.bam >test2.fastq
+cd dir3;bazam -bam test3.bam >test3.fastq
+cd dir4;bazam -bam test4.bam >test4.fastq
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f bazam.swarm [-g #] [-t #] --module bazam</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module bazam</tt> <td>Loads the bazam module for each subjob in the swarm
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

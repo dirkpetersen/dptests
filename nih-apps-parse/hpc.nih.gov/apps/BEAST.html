@@ -1,0 +1,129 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BEAST on Biowulf';</script>
+<div class="title">BEAST on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job</a></div>
+        <div class="tocItem"><a href="#gpu">Running on GPUs</a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+      </div>
+</table>
+
+<p>
+  <a href="http://beast2.org/">BEAST</a> (Bayesian Evolutionary Analysis
+  Sampling Trees) is a cross-platform program for Bayesian MCMC analysis of
+  molecular sequences. It is entirely orientated towards rooted, time-measured
+  phylogenies inferred using strict or relaxed molecular clock models. It can be
+  used as a method of reconstructing phylogenies but is also a framework for
+  testing evolutionary hypotheses without conditioning on a single tree topology.
+  BEAST uses MCMC to average over tree space, so that each tree is weighted
+  proportional to its posterior probability. It includes a simple to use
+  user-interface program for setting up standard analyses and a suit of programs
+  for analysing the results.
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>If you use this application in your research, the recommended citation is <a href="http://mbe.oxfordjournals.org/content/29/8/1969">Drummond AJ, Suchard MA, Xie D & Rambaut A (2012) Bayesian phylogenetics with BEAUti and the BEAST 1.7 Molecular Biology And Evolution 29: 1969-1973</a></li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li>Type <tt><b>beast -help</b></tt> at the prompt</li>
+  <li><a href="http://beast.community/">BEAST1</a></li>
+  <li><a href="http://beast2.org/">BEAST2</a></li>
+  <li><a href="https://www.beast2.org/features/">BEAST2 vs 1 Comparison</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>BEAST</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded and GPU capable
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>BEAST_LIB</tt></li>
+    <li><tt>LD_LIBRARY_PATH</tt></li>
+    <li><tt>BEAST_EXAMPLES</tt></li>
+  </ul>
+<li>Example files in <tt>$BEAST_EXAMPLES</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ mkdir /data/$USER/BEAST; cd /data/$USER/BEAST
+[user@cn3144 BEAST]$ module load BEAST
+[user@cn3144 BEAST]$ cp $BEAST_EXAMPLES/benchmark1.xml .
+[user@cn3144 BEAST]$ beast benchmark1.xml
+
+[user@cn3144 BEAST]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. BEAST.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load BEAST
+beast -threads $SLURM_CPUS_PER_TASK myinput.xml
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] BEAST.sh</pre>
+
+<a Name="gpu"></a><div class="heading">Running on GPUs</div>
+<p>Under some circumstances, GPUs can greatly accelerate computation. Include -beagle_GPU -beagle_order 2,1,0 with the beast commandline:</p>
+
+<pre class="term">beast -beagle_GPU -beagle_order 2,1,0 myinput.xml</pre>
+
+<p>and be sure to allocate GPUs:</p>
+
+<pre class="term">sbatch --constraint=gpuk80 --gres=gpu:k80:2 sbatch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. BEAST.swarm). For example:</p>
+
+<pre class="term">
+beast -threads $SLURM_CPUS_PER_TASK -prefix input1 input1.xml
+beast -threads $SLURM_CPUS_PER_TASK -prefix input2 input2.xml
+beast -threads $SLURM_CPUS_PER_TASK -prefix input3 input3.xml
+beast -threads $SLURM_CPUS_PER_TASK -prefix input4 input4.xml
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f BEAST.swarm [-g #] [-t #] --module BEAST</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module BEAST</tt> <td>Loads the BEAST module for each subjob in the swarm 
+</table>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

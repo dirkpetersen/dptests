@@ -1,0 +1,190 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RevBayes on Biowulf';</script>
+<div class="title">RevBayes on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+	<div class="tocItem"><a href="#MPI">MPI Parallel job</a></div>
+      </div>
+</table>
+
+<p>
+  Revbayes is an application for Bayesian phylogenetic inference, and includes an MPI implementation. According to the authors:
+  <blockquote>
+    RevBayes provides an interactive environment for statistical computation in phylogenetics. It is primarily intended for modeling, simulation, and Bayesian inference in evolutionary biology, particularly phylogenetics. However, the environment is quite general and can be useful for many complex modeling tasks.
+  </blockquote>
+  <blockquote>
+    RevBayes uses its own language, Rev, which is a probabilistic programming language like JAGS, STAN, Edward, PyMC3, and related software. However, phylogenetic models require inference machinery and distributions that are unavailable in these other tools.
+  </blockquote>
+  <blockquote>
+    The Rev language is similar to the language used in R. Like the R language, Rev is designed to support interactive analysis. It supports both functional and procedural programming models, and makes a clear distinction between the two. Rev is also more strongly typed than R.
+  </blockquote>
+</p>
+<h3>References:</h3>
+<ul>
+  <li>
+    Höhna, Landis, Heath, Boussau, Lartillot, Moore, Huelsenbeck, Ronquist. 2016 
+    <a href="http://sysbio.oxfordjournals.org/content/65/4/726">RevBayes: Bayesian phylogenetic inference using graphical models and an interactive model-specification language</a>
+    <em>Systematic Biology</em>, 65:726-736.
+  </li>
+  <li>
+    Höhna, Heath, Boussau, Landis, Ronquist, Huelsenbeck. 2014.
+    <a href="http://sysbio.oxfordjournals.org/content/63/5/753">Probabilistic graphical model representation in phylogenetics.</a>
+    <em>Systematic Biology</em>, 63:753–771.
+  </li>
+</ul>
+<P>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://revbayes.github.io/">Revbayes main site</a></li>
+<li><A href="https://revbayes.github.io/tutorials/">RevBayes Tutorials</a>. 
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>revbayes</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Singlethreaded and MPI</li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>RB_EXAMPLE_DATA</tt> set to <tt>/usr/local/apps/revabyes/example-data</tt> which includes tutorial data <a href="https://github.com/revbayes/revbayes_tutorial">available here</a></li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load revabyes</b>
+
+[user@cn3144 ~]$ <b>cp -r $RB_EXAMPLE_DATA/RB_Partition_Tutorial .</b>
+
+[user@cn3144 ~]$ <b>cd RB_Partition_Tutorial</b>
+
+[user@cn3144 ~]$ <b>rb scripts/mcmc_Partition_uniform.Rev</b>
+
+RevBayes version (1.1.1)
+Build from development (rapture-641-g7d4aab) on Tue Mar  9 13:42:53 EST 2021
+
+Visit the website www.RevBayes.com for more information about RevBayes.
+
+RevBayes is free software released under the GPL license, version 3. Type 'license()' for details.
+
+To quit RevBayes type 'quit()' or 'q()'.
+
+
+> source("scripts/mcmc_Partition_uniform.Rev")
+   Processing file "scripts/mcmc_Partition_uniform.Rev"
+   Successfully read one character matrix from file 'data/primates_and_galeopterus_cox2.nex'
+   Successfully read one character matrix from file 'data/primates_and_galeopterus_cytb.nex'
+
+   Running burn-in phase of Monte Carlo sampler for 10000 iterations.
+   This simulation runs 2 independent replicates.
+   The simulator uses 52 different moves in a random move schedule with 62 moves per iteration
+
+Progress:
+0---------------25---------------50---------------75--------------100
+********************************************************************
+
+
+   Running MCMC simulation
+   This simulation runs 2 independent replicates.
+   The simulator uses 52 different moves in a random move schedule with 62 moves per iteration
+
+Iter        |      Posterior   |     Likelihood   | ...
+----------------------------------------------------...
+0           |       -21259.5   |       -21227.8   | ...
+1000        |       -21273.7   |       -21241.1   | ...
+[...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. revbayes.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load revbayes
+cd /data/$USER/analysis_dir/
+rb scripts/full_analysis.Rev
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command. Since this is the singlethreaded version, you do not need to update the number of CPUs allocated.</p>
+
+<pre class="term">sbatch [--mem=#] revbayes.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. revbayes.swarm). For example:</p>
+
+<pre class="term">
+rb script/mcmc_model1.Rev
+rb script/mcmc_model2.Rev
+rb script/mcmc_model3.Rev
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f revbayes.swarm [-g #] --module revbayes</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module revbayes</tt> <td>Loads the revbayes module for each subjob in the swarm 
+</table>
+<P>
+
+<a Name="MPI"></a><div class="heading"> MPI Revbayes batch job</div>
+<P>
+An MPI job can run in parallel across multiple nodes. We highly recommend reading our <a href="https://hpc.nih.gov/policies/multinode.html">guidelines on multinode jobs</a>.
+Set up a batch script, e.g. revbayes-mpi.sh, along the following lines:
+<pre class="term">
+  #!/bin/bash
+  #SBATCH --partition=multinode
+  #SBATCH --constraint=x2695
+  #SBATCH --ntasks=8
+  #SBATCH --ntasks-per-core=1
+  #SBATCH --mem-per-cpu=1G
+  #SBATCH --time=2:00:00
+  
+  module load revbayes
+  
+  WDIR=/data/$USER/analysis_dir
+  
+  cd $WDIR
+  
+  mpirun -np $SLURM_NTASKS rb-mpi scripts/full_analysis.Rev
+</pre>
+Submit the job with:
+<pre class="term">
+sbatch revbayes-mpi.sh
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,460 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Rclone on Helix and Biowulf';</script>
+<!-- ======================================================================== -->
+
+<div class="title">Rclone on Helix and Biowulf</div>
+
+<table width=25% align=right> <tr><td>
+    <div class="toc">
+    <div class="tocHeading">Quick Links</div>
+    <div class="tocItem"><a href="#config">Configuring Rclone</a></div>
+    <div class="tocItem"><a href="#helix">Interactive shell on Helix</a></div>
+    <div class="tocItem"><a href="#int">Interactive job on Biowulf</a></div>
+    <div class="tocItem"><a href="#serial">Batch job on Biowulf</a></div>
+</div></table>
+
+
+<!-- ======================================================================= -->
+<div class="heading">Description</div>
+
+<p>Rclone is a utility for syncing directories between object storage systems (such as 
+Amazon S3 or the <a href="/storage/object.html">NIH HPC object storage system</a>) and 
+<a href="/storage/index.html">file based storage</a> (e.g. /home
+or /data).</p>
+
+<p>Rclone should be loaded via <a href="/apps/modules.html">modules</a>.  To see the modules
+available, type</p>
+<pre class="term">
+module avail rclone 
+</pre>
+
+<p>To select a module use</p>
+<pre class="term">
+module load rclone/[version]
+</pre>
+<p>where <code>[version]</code> is the version of choice.</p>
+
+<h3>Environment variables set</h3>
+<ul>
+<li> <code>$PATH</code></li>
+<li> <code>$MANPATH</code></li>
+</ul>
+
+<h3>Documentation</h3>
+
+<ul>
+    <li><a href="https://rclone.org/">Home page</a></li>
+    <li><a href="https://rclone.org/docs/">User documentation</a></li>
+    <li>Typing <tt>man rclone</tt> or <tt>rclone --help</tt> with the module
+        loaded will provide usage instructions.</li>
+</ul>
+
+<!-- ======================================================================== -->
+
+<a class="navbar-safe-anchor"  name="config"></a>
+<div class="heading">Configuring Rclone</div>
+
+<p>Before you can use Rclone, you must configure it. This configuration step will
+set up access for the remote object storage system that you want to transfer data
+to and from.</p>
+
+<p>For older versions of Rclone the configuration is stored in <tt>~/.rclone.conf</tt>,
+while newer versions put it in <tt>~/.config/rclone/rclone.conf</tt>.</p>
+
+<p>To begin the configuration process, load the rclone module and type:</p>
+
+<pre class="term">
+rclone config
+</pre>
+
+<p>If you do not have an existing configuration (i.e. this is your first time running
+rclone, you will see a message like the following:</p>
+
+<pre class="term">
+2016/11/21 16:16:25 Failed to load config file "/home/xxxx/.rclone.conf" - using defaults: open /home/xxxx/.rclone.conf: no such file or directory
+No remotes found - make a new one
+n) New remote
+s) Set configuration password
+q) Quit config
+</pre>
+
+<p>Type &quot;n&quot; to set up a new object storage system with which to synchronize 
+data.
+
+<p>You'll be prompted for the name of the remote object storage system, I use &quot;my-object-store&quot;
+as an example here:</p>
+
+<pre class="term">
+name> my-object-store
+Type of storage to configure.
+Choose a number from below, or type in your own value
+ 1 / Amazon Drive
+   \ "amazon cloud drive"
+ 2 / Amazon S3 (also Dreamhost, Ceph, Minio)
+   \ "s3"
+ 3 / Backblaze B2
+   \ "b2"
+ 4 / Dropbox
+   \ "dropbox"
+ 5 / Encrypt/Decrypt a remote
+   \ "crypt"
+ 6 / Google Cloud Storage (this is not Google Drive)
+   \ "google cloud storage"
+ 7 / Google Drive
+   \ "drive"
+ 8 / Hubic
+   \ "hubic"
+ 9 / Local Disk
+   \ "local"
+10 / Microsoft OneDrive
+   \ "onedrive"
+11 / Openstack Swift (Rackspace Cloud Files, Memset Memstore, OVH)
+   \ "swift"
+12 / Yandex Disk
+   \ "yandex"
+Storage>
+</pre>
+
+<p>The next question relates to what kind of storage system you wish to connect
+to. <b>Note:</b> if you are connecting to the NIH HPC object storage system, please
+follow the example below. Otherwise, you will need to choose the response that is
+appropriate for the system that you are connecting to.</p>
+
+<p>After you have selected a system type. you will be prompted for credentials to
+access your account on that system and possibly other system-specific configuration
+parameters. Once you have entered them, you can test your access with:</p>
+
+<pre class="term">
+rclone lsd my-object-store:my-path
+</pre>
+
+<p><b>Note 1:</b> Replace my-object-store will the name you gave your remote storage
+system in the configuration and my-path with the path to the data on the object
+store that you want to list. For Amazon S3 and similar systems, the path is the name
+of the bucket to be accessed.</p>
+
+<p><b>Note 2:</b> If this command fails with an SSL error or hangs, try adding the
+<tt>--no-check-certificate</tt> option to disable SSL certificate checking. This is
+generally a bad idea, but it is necessary for some systems (like the NIH HPC object
+store) that used self-signed SSL certificates.</p>
+
+<h3>Configuring up Access to the NIH HPC object store</h3>
+
+<p>The following example shows how to configure Rclone to access the NIH HPC object
+store
+
+<pre class="term">To configure for a NIH HPC vault, use the following:
+
+- Choose Amazon S3 storage
+- Enter object key and secret key
+- For region, choose S3 clone that understands v2 signatures (12)
+- Enter os1naccess2 as the endpoint (can use os{1,2}naccess{1,2,3})
+- Leave other items as default
+</pre>
+
+<pre class="term">
+No remotes found - make a new one
+n) New remote
+s) Set configuration password
+q) Quit config
+n/s/q> n
+name> nihhpc-obj
+Type of storage to configure.
+Choose a number from below, or type in your own value
+ 1 / Amazon Drive
+   \ "amazon cloud drive"
+ 2 / Amazon S3 (also Dreamhost, Ceph, Minio)
+   \ "s3"
+ 3 / Backblaze B2
+   \ "b2"
+ 4 / Dropbox
+   \ "dropbox"
+ 5 / Encrypt/Decrypt a remote
+   \ "crypt"
+ 6 / Google Cloud Storage (this is not Google Drive)
+   \ "google cloud storage"
+ 7 / Google Drive
+   \ "drive"
+ 8 / Hubic
+   \ "hubic"
+ 9 / Local Disk
+   \ "local"
+10 / Microsoft OneDrive
+   \ "onedrive"
+11 / Openstack Swift (Rackspace Cloud Files, Memset Memstore, OVH)
+   \ "swift"
+12 / Yandex Disk
+   \ "yandex"
+<b>Storage> 2</b>
+Get AWS credentials from runtime (environment variables or EC2 meta data if no env vars). Only applies if access_key_id and secret_access_key is blank.
+Choose a number from below, or type in your own value
+ 1 / Enter AWS credentials in the next step
+   \ "false"
+ 2 / Get AWS credentials from the environment (env vars or IAM)
+   \ "true"
+<b>env_auth> 1</b>
+AWS Access Key ID - leave blank for anonymous access or runtime credentials.
+<b>access_key_id> ENTER YOUR ASSIGNED ACCESS KEY HERE!</b>
+AWS Secret Access Key (password) - leave blank for anonymous access or runtime credentials.
+<b>secret_access_key> ENTER YOUR ASSIGNED SECRET ACCESS KEY HERE!</b>
+Region to connect to.
+Choose a number from below, or type in your own value
+   / The default endpoint - a good choice if you are unsure.
+ 1 | US Region, Northern Virginia or Pacific Northwest.
+   | Leave location constraint empty.
+   \ "us-east-1"
+   / US West (Oregon) Region
+ 2 | Needs location constraint us-west-2.
+   \ "us-west-2"
+   / US West (Northern California) Region
+ 3 | Needs location constraint us-west-1.
+   \ "us-west-1"
+   / EU (Ireland) Region Region
+ 4 | Needs location constraint EU or eu-west-1.
+   \ "eu-west-1"
+   / EU (Frankfurt) Region
+ 5 | Needs location constraint eu-central-1.
+   \ "eu-central-1"
+   / Asia Pacific (Singapore) Region
+ 6 | Needs location constraint ap-southeast-1.
+   \ "ap-southeast-1"
+   / Asia Pacific (Sydney) Region
+ 7 | Needs location constraint ap-southeast-2.
+   \ "ap-southeast-2"
+   / Asia Pacific (Tokyo) Region
+ 8 | Needs location constraint ap-northeast-1.
+   \ "ap-northeast-1"
+   / Asia Pacific (Seoul)
+ 9 | Needs location constraint ap-northeast-2.
+   \ "ap-northeast-2"
+   / Asia Pacific (Mumbai)
+10 | Needs location constraint ap-south-1.
+   \ "ap-south-1"
+   / South America (Sao Paulo) Region
+11 | Needs location constraint sa-east-1.
+   \ "sa-east-1"
+   / If using an S3 clone that only understands v2 signatures
+12 | eg Ceph/Dreamhost
+   | set this and make sure you set the endpoint.
+   \ "other-v2-signature"
+   / If using an S3 clone that understands v4 signatures set this
+13 | and make sure you set the endpoint.
+   \ "other-v4-signature"
+<b>region> 12</b>
+Endpoint for S3 API.
+Leave blank if using AWS to use the default endpoint for the region.
+Specify if using an S3 clone such as Ceph.
+<b>endpoint> os3access1</b>
+Location constraint - must be set to match the Region. Used when creating buckets only.
+Choose a number from below, or type in your own value
+ 1 / Empty for US Region, Northern Virginia or Pacific Northwest.
+   \ ""
+ 2 / US West (Oregon) Region.
+   \ "us-west-2"
+ 3 / US West (Northern California) Region.
+   \ "us-west-1"
+ 4 / EU (Ireland) Region.
+   \ "eu-west-1"
+ 5 / EU Region.
+   \ "EU"
+ 6 / Asia Pacific (Singapore) Region.
+   \ "ap-southeast-1"
+ 7 / Asia Pacific (Sydney) Region.
+   \ "ap-southeast-2"
+ 8 / Asia Pacific (Tokyo) Region.
+   \ "ap-northeast-1"
+ 9 / Asia Pacific (Seoul)
+   \ "ap-northeast-2"
+10 / Asia Pacific (Mumbai)
+   \ "ap-south-1"
+11 / South America (Sao Paulo) Region.
+   \ "sa-east-1"
+<b>location_constraint> 1</b>
+Canned ACL used when creating buckets and/or storing objects in S3.
+For more info visit http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+Choose a number from below, or type in your own value
+ 1 / Owner gets FULL_CONTROL. No one else has access rights (default).
+   \ "private"
+ 2 / Owner gets FULL_CONTROL. The AllUsers group gets READ access.
+   \ "public-read"
+   / Owner gets FULL_CONTROL. The AllUsers group gets READ and WRITE access.
+ 3 | Granting this on a bucket is generally not recommended.
+   \ "public-read-write"
+ 4 / Owner gets FULL_CONTROL. The AuthenticatedUsers group gets READ access.
+   \ "authenticated-read"
+   / Object owner gets FULL_CONTROL. Bucket owner gets READ access.
+ 5 | If you specify this canned ACL when creating a bucket, Amazon S3 ignores it.
+   \ "bucket-owner-read"
+   / Both the object owner and the bucket owner get FULL_CONTROL over the object.
+ 6 | If you specify this canned ACL when creating a bucket, Amazon S3 ignores it.
+   \ "bucket-owner-full-control"
+<b>acl> 1</b>
+The server-side encryption algorithm used when storing this object in S3.
+Choose a number from below, or type in your own value
+ 1 / None
+   \ ""
+ 2 / AES256
+   \ "AES256"
+<b>server_side_encryption> 1</b>
+Remote config
+--------------------
+[nihhpc-obj]
+env_auth = false
+access_key_id = Redacted
+secret_access_key = Redacted
+region = other-v2-signature
+endpoint = os3access1
+location_constraint = 
+acl = private
+server_side_encryption = 
+--------------------
+y) Yes this is OK
+e) Edit this remote
+d) Delete this remote
+<b>y/e/d> y</b>
+Current remotes:
+
+Name                 Type
+====                 ====
+nihhpc-obj           s3
+
+e) Edit existing remote
+n) New remote
+d) Delete remote
+s) Set configuration password
+q) Quit config
+<b>e/n/d/s/q> q</b>
+</pre>
+
+<!-- ======================================================================== -->
+
+<a class="navbar-safe-anchor"  name="helix"></a>
+<div class="heading">Running Rclone interactively on Helix</div>
+
+<p>Helix is a dedicated interactive data transfer node. Therefore, if you wish
+to use Rclone interactively, it is recommended that you do so on helix.</p>
+
+<p>To run Rclone on Helix, please make sure that you have followed
+the instructions described in the <a href="#config">Configuring Rclone</a> section of
+this Web page. Then you can follow the instructions for <a href="#int">running an
+interactive Biowulf job</a> without the step of actually requesting an interactive
+node (i.e. just log in to Helix and run the command directly).</p>
+
+<!-- ======================================================================== -->
+
+<a class="navbar-safe-anchor"  name="int"></a>
+<div class="heading">Running an interactive job on Biowulf</div>
+
+<p>To request an interactive node on Biowulf, type:</p>
+
+<pre class="term">
+sinteractive
+</pre>
+
+<p>at the command prompt. Please note that interactive jobs are, by default, limited
+to 2 CPUs, 1.5 GB of RAM, and 8 hours of wall clock time. Since transferring files 
+is not especially compute or memory intensive, those limits are unlikely to be a problem.
+However, transferring a very large amount of data could take more than eight hours,
+depending on the transfer speed. In that case, you must request additional time (up to
+the limit for an interactive job: 36 hours), e.g.</p>
+
+<pre class="term">
+sinteractive --time=1-12:00:00
+</pre>
+
+<p>to request 1 day and 12 hours - the maximum permitted for an interactive job.</p>
+
+<p>Once you have an interactive session, you can load the rclone module and then use 
+rclone commands to copy data back and forth to an object store. The following example
+shows copying data from the NIH HPC object storage system to local scratch (lscratch)
+on a compute node and then synchronizing the local scratch space back with the
+object store:</p>
+
+<pre class="term">
+biowulf:~ 545$ sinteractive --gres=lscratch:20
+salloc.exe: Pending job allocation 27090209
+salloc.exe: job 27090209 queued and waiting for resources
+salloc.exe: job 27090209 has been allocated resources
+salloc.exe: Granted job allocation 27090209
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn2667 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+cn2667:~ 1$ cd /lscratch/$SLURM_JOBID
+cn2667:/lscratch/27090209 2$ module load rclone
+[+] Loading rclone 1.33 ...
+
+# check the contents of a path on the object store
+cn2667:/lscratch/27090209 3$ rclone --no-check-certificate ls nihhpc-obj:xxxx/rcloned
+   125876 hg18.fa.amb
+388459684 hg18.fa.sa
+     1958 hg18.fa.ann
+1165379020 hg18.fa.bwt
+776919320 hg18.fa.pac
+1165379020 hg18.fa.rbwt
+776919320 hg18.fa.rpac
+388459684 hg18.fa.rsa
+2016/11/22 12:43:35 
+Transferred:      0 Bytes (0 Bytes/s)
+Errors:                 0
+Checks:                 0
+Transferred:            0
+Elapsed time:          0s
+
+# copy the whole directory to the local scratch
+# Note that copy works in either direction, i.e. either *TO* the
+# object store or *FROM* the object store.
+
+cn2667:/lscratch/27090209 8$ rclone --no-check-certificate copy nihhpc-obj:xxxx/rcloned /lscratch/$SLURM_JOBID
+2016/11/22 12:47:29 Local file system at /lscratch/27090209: Waiting for checks to finish
+2016/11/22 12:47:29 Local file system at /lscratch/27090209: Waiting for transfers to finish
+2016/11/22 12:48:29 
+Transferred:   2.705 GBytes (46.105 MBytes/s)
+Errors:                 0
+Checks:                 0
+Transferred:            3
+Elapsed time:        1m0s
+Transferring:
+ *                                   hg18.fa.bwt: 62% done. avg: 11983.5, cur: 10909.6 kByte/s. ETA: 38s
+ *                                   hg18.fa.rsa:  5% done. avg: 18079.4, cur: 17879.5 kByte/s. ETA: 20s
+ *                                  hg18.fa.rbwt: 57% done. avg: 11031.2, cur: 9185.4 kByte/s. ETA: 52s
+ *                                  hg18.fa.rpac: 89% done. avg: 11445.7, cur: 10562.5 kByte/s. ETA: 7s
+
+2016/11/22 12:49:16 
+Transferred:   4.341 GBytes (41.380 MBytes/s)
+Errors:                 0
+Checks:                 0
+Transferred:            8
+Elapsed time:     1m47.4s
+
+# let's say we have to edit one of the annotations
+
+cn2667:/lscratch/27090209 13$ vi hg18.fa.ann
+
+# sync our local copy back to the object store
+
+cn2667:/lscratch/27090209 16$ rclone --no-check-certificate sync /lscratch/$SLURM_JOBID nihhpc-obj:xxxx/rcloned
+2016/11/22 13:05:43 S3 bucket xxxx path rcloned/: Waiting for checks to finish
+2016/11/22 13:05:43 S3 bucket xxxx path rcloned/: Waiting for transfers to finish
+2016/11/22 13:05:43 Waiting for deletions to finish
+2016/11/22 13:05:43 
+Transferred:   1.912 kBytes (6.322 kBytes/s)
+Errors:                 0
+Checks:                16
+Transferred:            1
+Elapsed time:       300ms
+
+# note that only the data that we changed was synchronized back.
+
+</pre>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="serial"></a>
+<div class="heading">Batch job on Biowulf</div>
+
+<p>Running a batch job uses the exact same rclone commands, except that they would be wrapped in a batch script rather
+than being run interactively in the terminal.</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

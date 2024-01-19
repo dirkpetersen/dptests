@@ -1,0 +1,146 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RSEM on Biowulf';</script>
+    <div class="title">RSEM on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>    <p> RSEM is a software package for estimating gene and isoform expression levels 
+      from RNA-Seq data. The RSEM package provides an user-friendly interface, 
+      supports threads for parallel computation of the EM algorithm, single-end 
+      and paired-end read data, quality scores, variable-length reads and RSPD 
+      estimation. In addition, it provides posterior mean and 95% credibility 
+      interval estimates for expression levels. For visualization, It can generate 
+      BAM and Wiggle files in both transcript-coordinate and genomic-coordinate. 
+      Genomic-coordinate files can be visualized by both UCSC Genome browser and 
+      Broad Institute&rsquo;s Integrative Genomics Viewer (IGV). Transcript-coordinate 
+      files can be visualized by IGV. RSEM also has its own scripts to generate 
+      transcript read depth plots in pdf format. The unique feature of RSEM is, 
+      the read depth plots can be stacked, with read depth contributed to unique 
+      reads shown in black and contributed to multi-reads shown in red. In addition, 
+      models learned from data can also be visualized. Last but not least, RSEM 
+      contains a simulator.</p>
+
+<h3>References:</h3>    <ul>
+      <li><a href="http://bli25ucb.github.io/">Bo Li</a> and <a href="https://www.biostat.wisc.edu/%7Ecdewey/">Colin 
+        Dewey</a> designed the RSEM algorithm. Bo Li implemented the RSEM software. 
+        <a href="https://www.biostat.wisc.edu/%7Ecdewey/group.html">Peng Liu</a> 
+        contributed the STAR aligner options</li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+    <ul>
+      <li><a href="https://github.com/bli25ucb/RSEM_tutorial">https://github.com/bli25ucb/RSEM_tutorial</a></li>
+    </ul>
+
+<div class="heading">Important Notes</div>
+<p class="alert">December 2020: While RSEM v1.3.3 is available as a module, version 1.3.2 is set as default because of a bug in version 1.3.3, documented <a href="https://github.com/deweylab/RSEM/issues/152">here</a>. Running <tt>rsem-calculate-expression</tt> with temporary directory set to /lscratch (as recommended below) throws an error. As a result, we suggest using RSEM v1.3.2.</p>
+    <ul>
+      <li>Module Name: <tt>rsem</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) 
+      <li>Multithreaded and singlethreaded
+      <li>Rsem has shown to use quite a bit of temporary directory space. Please 
+        make sure to use "-temporary-folder" flag in "rsem-run-prsem-testing-procedure" 
+        and "rsem-calculate-expression" when submit batch job. See example below. 
+      <li>Reference data in <tt>/fdb/rsem/</tt> 
+    </ul>
+<P>
+Based on the tutorial <a href="https://github.com/bli25ucb/RSEM_tutorial">https://github.com/bli25ucb/RSEM_tutorial</a></P>
+  <P>The following steps were already finished on our systems. User can use the index files in the shared area. Some of the steps can not be run by users due to permission setting.</P>
+  <P>Biowulf &gt; $ mkdir /fdb/rsem  ##  users do now have permission to do the following steps in /fdb/rsem but can  create directory under personal space such as /data/$USER and replace the following /fdb/rsem with the directory created.</P>
+  <P>    Biowulf &gt; $ sinteractive --mem=10g<br />
+      cn1234 &gt; $ module load rsem<br />
+    cn1234 &gt; $ cd /fdb/rsem<br />
+    cn1234 &gt; $ ln -s  /fdb/ensembl/pub/release-82/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.toplevel.fa  Mus_musculus.GRCm38.dna.toplevel.fa<br />
+    cn1234 &gt; $ ln -s /fdb/ensembl/pub/release-82/gtf/mus_musculus/Mus_musculus.GRCm38.82.chr.gtf  Mus_musculus.GRCm38.82.chr.gtf</P>
+  <p>Build reference from genome (Users can use the reference directly without building) :<br />
+    cn1234 &gt; $ rsem-prepare-reference --bowtie2 --gtf  Mus_musculus.GRCm38.82.chr.gtf Mus_musculus.GRCm38.dna.toplevel.fa ref_from_genome/mouse_ref<br /></p>
+  <p>Build reference from ensemble transcripts (Users can use the reference directly without building) :<br />
+    Downloade mouse_ref_building_from_transcripts.tar.gz from  https://www.dropbox.com/s/ie67okalzaw8zzj/mouse_ref_building_from_transcripts.tar.gz?dl=0<br />
+    cn1234 &gt; $ tar xvfz mouse_ref_building_from_transcripts.tar.gz<br />
+    This created  two files: mouse_ref.fa and  mouse_ref_mapping.txt</p>
+  <p>cn1234 &gt; $ rsem-prepare-reference --transcript-to-gene-map  mouse_ref_mapping.txt --bowtie2 mouse_ref.fa ref_from_transcripts/mouse_ref</p>
+  <p>&nbsp;
+<p>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>    
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load rsem</strong> bowtie STAR
+[user@cn3144 ~]$ <strong>rsem-calculate-expression -p 2 --paired-end --bowtie2 \
+				 --estimate-rspd --append-names --output-genome-bam \
+				/data/user/rsem/SRR937564_1.fastq /data/user/rsem/SRR937564_2.fastq \
+				/fdb/rsem/ref_from_genome/mouse_ref_CRCh38.82 LPS_6h</strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. rsem.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+
+module load rsem  bowtie  STAR
+cd /data/$USER/dir
+rsem-calculate-expression -p $SLURM_CPUS_PER_TASK --temporary-folder /lscratch/$SLURM_JOBID/tempdir \
+--paired-end --bowtie2 --estimate-rspd --append-names --output-genome-bam SRR937564_1.fastq SRR937564_2.fastq \
+/fdb/rsem/ref_from_genome/mouse_ref LPS_6h
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>    
+    <pre class="term">sbatch --cpus-per-task=4 --mem=10g --gres=lscratch:100 rsem.sh</pre>
+	<p>For multiple threaded job, such as -p used in rsem-calculate-expression, 
+      use '--cpus-per-task' on the command line and the $SLURM_CPUS_PER_TASK will 
+      be assigned automatically to the number user assigned (4 in this case).</p>
+    <p> To use temporary local space, use "--gres=lscratch:XXX" which will allocate 
+      XXX gb of space for the job. The space can be accessed by using "/lscratch/$SLURM_JOBID/directoryNameYouChoose" 
+      as shown in the script. </p>
+    <p>For more memory requirement (default 2xcpus=8gb in this case), use --mem 
+      flag</p>
+    <p><a Name="swarm"></a> </p>
+    <div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>    <p>Create a swarmfile (e.g. rsem.swarm). For example:</p>
+
+<pre class="term">
+
+  cd /data/$USER/dir1; rsem command1; rsem command2
+  cd /data/$USER/dir2; rsem command1; rsem command2
+  cd /data/$USER/dir3; rsem command1; rsem command2</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f swarmfile -t 4 --module rsem,bowtie,STAR</pre>
+where
+<table width="65%" border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr>
+        <td><tt>--module rsem</tt> 
+        <td>Loads the rsem module for each subjob in the swarm </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

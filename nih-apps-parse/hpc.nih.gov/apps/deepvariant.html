@@ -1,0 +1,377 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'deepvariant on Biowulf';</script>
+<div class="title">deepvariant on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#int-trio">Interactive job - deeptrio</a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> DeepVariant is an analysis pipeline that uses a deep neural network to call
+genetic variants from next-generation DNA sequencing data <em>by converting
+pileups from bam files to images and feeding them to a DNN based model</em>.  </p>
+
+<p>Starting with version 1.5.0 a variant module with the <code>-deeptrio</code> is provided.
+This variant is targeted at analyzing trios and duos. An example is provieded below</p>
+
+<h3>References:</h3>
+<ul>
+<li>R. Poplin, D. Newburger, J. Dijamco, N. Nguyen, D. Loy, S. S. Gross, C. Y. McLean, M. A. DePristo.
+<em>Creating a universal SNP and small indel variant caller with deep neural networks</em>.
+ BioRxiv, Dec 2017 <a href="https://www.biorxiv.org/content/early/2017/12/16/092890">doi.org/10.1101/092890</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>deepvariant Main Site: <a href="https://github.com/google/deepvariant">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: deepvariant (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Test data can be found in <code>${DEEPVARIANT_TEST_DATA}</code> (or <code>${DEEPTRIO_TEST_DATA}</code> for
+        the deeptrio variant</li>
+    <li>Please use GPU nodes only for step 2 of the Deepvariant pipeline (calling variants). The other
+    steps don't benefit from GPU acceleration.</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Note that for the purposes of this
+demonstration a GPU node is used for all three steps of the pipeline. For real applications, please only use GPU nodes for the <code>call_variant</code> step and
+make sure to parallelize the <code>make_examples</code> step. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1,lscratch:50 --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4224 are ready for job
+
+[user@cn4224 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn4224 ~]$ <b>module load deepvariant/1.5.0</b>
+[user@cn4224 ~]$ <b>cp -r ${DEEPVARIANT_TEST_DATA:-none} input</b>
+[user@cn4224 ~]$ <b>tree input</b>
+input
+|-- [user   3.7M]  NA12878_S1.chr20.10_10p1mb.bam
+|-- [user   5.3K]  NA12878_S1.chr20.10_10p1mb.bam.bai
+|-- [user    264]  test_nist.b37_chr20_100kbp_at_10mb.bed
+|-- [user   5.6K]  test_nist.b37_chr20_100kbp_at_10mb.vcf.gz
+|-- [user    197]  test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi
+|-- [user    61M]  ucsc.hg19.chr20.unittest.fasta
+|-- [user     23]  ucsc.hg19.chr20.unittest.fasta.fai
+|-- [user   593K]  ucsc.hg19.chr20.unittest.fasta.gz
+|-- [user     23]  ucsc.hg19.chr20.unittest.fasta.gz.fai
+`-- [user    15K]  ucsc.hg19.chr20.unittest.fasta.gz.gzi
+
+[user@cn4224 ~]$ <b>mkdir output</b>
+[user@cn4224 ~]$ <b>REF=input/ucsc.hg19.chr20.unittest.fasta</b>
+[user@cn4224 ~]$ <b>BAM=input/NA12878_S1.chr20.10_10p1mb.bam</b>
+</pre>
+
+<p>Extract images of pileups from the input bam file with <code>make_examples</code>, which
+is single threaded and consumes 1-2GB of memory. Note that starting with version 1.1.0
+it is necessary to specify <code>--channels insert_size</code> to make_examples for WGS and
+WES models. For other models other channels are needed.</p>
+<pre class="term">
+[user@cn4224 ~]$ <b>make_examples --mode calling \
+                      --ref "${REF}" \
+                      --reads "${BAM}" \
+                      --regions "chr20:10,000,000-10,010,000" \
+                      --channels insert_size \
+                      --examples output/examples.tfrecord.gz</b>
+</pre>
+
+<p>Please note, that <code>make_examples</code> must be called with <code>--norealign_reads
+--vsc_min_fraction_indels 0.12</code> flag for PacBio long reads.</p>
+
+<p>This step can be parallelized with gnu parallel on a single machine, in which case multiple output files
+are generated. Let's clean up the serial results and re-produce them in parallel.</p>
+<pre class="term">
+[user@cn4224 ~]$ <b>rm output/examples.tfrecord.gz</b> # discard the output from the non-parallel run above
+[user@cn4224 ~]$ <b>module load parallel</b>
+[user@cn4224 ~]$ <b>N_SHARDS=3</b>
+[user@cn4224 ~]$ <b>mkdir -p logs</b>
+[user@cn4224 ~]$ <b>seq 0 $((N_SHARDS-1)) \
+                      | parallel -j ${SLURM_CPUS_PER_TASK} --eta --halt 2 --joblog "logs/log" --res "logs" \
+                        make_examples --mode calling \
+                          --ref "${REF}" \
+                          --reads "${BAM}" \
+                          --regions "chr20:10,000,000-10,010,000" \
+                          --examples "output/examples.tfrecord@${N_SHARDS}.gz" \
+                          --channels insert_size \
+                          --task {}</b>
+[user@cn4224 ~]$ <b>tree output</b>
+output
+|-- [user   180K]  examples.tfrecord-00000-of-00003.gz
+|-- [user   151K]  examples.tfrecord-00000-of-00003.gz.run_info.pbtxt
+|-- [user   167K]  examples.tfrecord-00001-of-00003.gz
+|-- [user   151K]  examples.tfrecord-00001-of-00003.gz.run_info.pbtxt
+|-- [user   174K]  examples.tfrecord-00002-of-00003.gz
+`-- [user   151K]  examples.tfrecord-00002-of-00003.gz.run_info.pbtxt
+</pre>
+
+<p>Call variants on the sharded output. The module is stored at /opt/models/model.chpt in
+the singularity image containing deepvariant. To parallelize this step, multiple separate
+jobs would have to be run. Note that since version 0.5.1, there are two models - one
+for WGS data, one for WES. They are <b><tt>/opt/wes/model.ckpt</tt></b> and
+<b><tt>/opt/wes/model.ckpt</tt></b>. For backwards compatibility with version 0.4.1,
+<b><tt>/opt/models/model.ckpt</tt></b> points to the WGS model as well.</p>
+<pre class="term">
+[user@cn4224 ~]$ <b>CALL_VARIANTS_OUTPUT="output/call_variants_output.tfrecord.gz"</b>
+[user@cn4224 ~]$ <b>#&lt; 0.9.0 MODEL="/opt/wgs/model.ckpt"</b>
+[user@cn4224 ~]$ <b>MODEL="/opt/models/wgs/model.ckpt"</b>
+[user@cn4224 ~]$ <b>call_variants \
+                     --outfile "${CALL_VARIANTS_OUTPUT}" \
+                     --examples "output/examples.tfrecord@${N_SHARDS}.gz" \
+                     --checkpoint "${MODEL}"</b>
+</pre>
+<p>Finally, convert the output to VCF format</p>
+<pre class="term">
+[user@cn4224 ~]$ <b>postprocess_variants \
+                      --ref "${REF}" \
+                      --infile "${CALL_VARIANTS_OUTPUT}" \
+                      --outfile "output/example.vcf.gz"</b>
+[user@cn4224 ~]$ <b>tree output</b>
+output
+|-- [user   4.1K]  call_variants_output.tfrecord.gz
+|-- [user   180K]  examples.tfrecord-00000-of-00003.gz
+|-- [user   151K]  examples.tfrecord-00000-of-00003.gz.run_info.pbtxt
+|-- [user   166K]  examples.tfrecord-00001-of-00003.gz
+|-- [user   151K]  examples.tfrecord-00001-of-00003.gz.run_info.pbtxt
+|-- [user   174K]  examples.tfrecord-00002-of-00003.gz
+|-- [user   151K]  examples.tfrecord-00002-of-00003.gz.run_info.pbtxt
+`-- [user   2.2K]  example.vcf.gz
+
+[user@cn4224 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>With version 0.5.1, deepvariant gained the ability to generate gVCF output.</p>
+<p>In version 0.9.0 deepvariant added a single command (<code>run_deepvariant</code>) to
+run the whole pipeline. However, since step 1 and 3 can be run without GPU it is more efficient
+to run the steps separately</p>
+
+<a Name="int-trio"></a><div class="heading">Interactive job - deeptrio</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Deeptrio is build on top of deepvariant and follows the same steps. Deeptrio considers genetic inheritance 
+when calling variants and produces joint examples from all samples to ensure that variant calls are made
+for the same sites in all samples. It is available as a variant version starting with 1.5.0.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1,lscratch:50 --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4224 are ready for job
+
+[user@cn4224 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn4224 ~]$ <b>module load deepvariant/1.5.0-deeptrio</b>
+[user@cn4224 ~]$ <b>cp -r ${DEEPTRIO_TEST_DATA:-none} input</b>
+[user@cn4224 ~]$ <b>tree input</b>
+input
+|-- [user   2.9G]  GRCh38_no_alt_analysis_set.fasta
+|-- [user   7.6K]  GRCh38_no_alt_analysis_set.fasta.fai
+|-- [user   1.3M]  HG002.chr20.10_10p1mb.bam
+|-- [user   6.7K]  HG002.chr20.10_10p1mb.bam.bai
+|-- [user    11M]  HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+|-- [user   149M]  HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+|-- [user   1.6M]  HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|-- [user   1.4M]  HG003.chr20.10_10p1mb.bam
+|-- [user   6.7K]  HG003.chr20.10_10p1mb.bam.bai
+|-- [user    13M]  HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+|-- [user   140M]  HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+|-- [user   1.6M]  HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|-- [user   1.3M]  HG004.chr20.10_10p1mb.bam
+|-- [user   6.7K]  HG004.chr20.10_10p1mb.bam.bai
+|-- [user    12M]  HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+|-- [user   142M]  HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+`-- [user   1.6M]  HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+
+[user@cn4224 ~]$ <b>mkdir output</b>
+</pre>
+
+Make examples
+<pre class="term">
+[user@cn4224 ~]$ <b>module load parallel</b>
+[user@cn4224 ~]$ <b>N_SHARDS=$SLURM_CPUS_PER_TASK</b>
+[user@cn4224 ~]$ <b>mkdir -p logs output</b>
+[user@cn4224 ~]$ <b>seq 0 $((N_SHARDS-1)) \
+                      | parallel -j ${SLURM_CPUS_PER_TASK} --eta --halt 2 --joblog "logs/log" --res "logs" \
+                        make_examples --mode calling \
+                          --ref input/GRCh38_no_alt_analysis_set.fasta \
+                          --reads_parent1 "input/HG003.chr20.10_10p1mb.bam" \
+                          --sample_name_parent1 "HG003" \
+                          --reads_parent2 "input/HG004.chr20.10_10p1mb.bam" \
+                          --sample_name_parent2 "HG004" \
+                          --reads "input/HG002.chr20.10_10p1mb.bam" \
+                          --sample_name "HG002" \
+                          --regions "chr20:10,000,000-10,010,000" \
+                          --examples "output/intermediate_results_dir/make_examples.tfrecord@${N_SHARDS}.gz" \
+                          --channels insert_size \
+                          --gvcf "output/intermediate_results_dir/gvcf.tfrecord@6.gz" \
+                          --pileup_image_height_child "60" \
+                          --pileup_image_height_parent "40" \
+                          --task {}</b>
+</pre>
+
+<p>Call variants on the sharded output. The module is stored at /opt/models/model.chpt in
+the singularity image containing deepvariant. To parallelize this step, multiple separate
+jobs would have to be run - for example a job for each member of the trio</p>
+
+<pre class="term">
+[user@cn4224 ~]$ <b>for n in parent1 parent2 child ; do
+        call_variants \
+            --outfile output/intermediate_results_dir/call_variants_output_${n}.tfrecord.gz \
+            --examples output/intermediate_results_dir/make_examples_${n}.tfrecord@${N_SHARDS}.gz \
+            --checkpoint "/opt/models/deeptrio/wgs/parent/model.ckpt"
+    done</b>
+</pre>
+<p>Finally, convert the output to VCF format</p>
+<pre class="term">
+[user@cn4224 ~]$ <b>declare -Asamples=( [parent1]=HG003 [parent2]=HG004 [child]=HG002 )</b>
+[user@cn4224 ~]$ <b>for n in parent1 parent2 child ; do
+        postprocess_variants \
+            --ref input/GRCh38_no_alt_analysis_set.fasta \
+            --infile output/intermediate_results_dir/call_variants_output_${n}.tfrecord.gz \
+            --outfile output/${samples[$n]}.output.vcf.gz \
+            --nonvariant_site_tfrecord_path output/intermediate_results_dir/gvcf_${n}.tfrecord@${N_SHARDS}.gz \
+            --gvcf_outfile output/${samples[$n]}.g.vcf.gz
+    done</b>
+[user@cn4224 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file for each step (e.g. deepvariant_step[123].sh) similar to the following. Note
+that for simplicity there is little error checking in the example scripts. Note also that only step2
+makes use of a GPU and that the current version of DeepVariant cannot scale to more than 1 GPU.</p>
+
+<pre class="term">
+#! /bin/bash
+# this is deepvariant_step1.sh
+
+module load deepvariant/1.4.0 || exit 1
+module load parallel
+
+wd=$PWD
+
+[[ -d /lscratch/${SLURM_JOB_ID} ]] &amp;&amp; cd /lscratch/${SLURM_JOB_ID} || exit 1
+rm -rf input output
+mkdir input output $wd/logs-parallel-$SLURM_JOB_ID
+cp "${DEEPVARIANT_TEST_DATA}"/* input || exit 1
+
+REF=input/ucsc.hg19.chr20.unittest.fasta
+BAM=input/NA12878_S1.chr20.10_10p1mb.bam
+N_SHARDS=12
+
+seq 0 $((N_SHARDS-1)) \
+    | parallel -P ${SLURM_CPUS_PER_TASK} --halt 2 \
+        --joblog "$wd/logs-parallel-$SLURM_JOB_ID/log" --res "$wd/logs-parallel-$SLURM_JOB_ID" \
+      make_examples --mode calling \
+        --ref "${REF}" \
+        --reads "${BAM}" \
+        --regions "chr20:10,000,000-10,010,000" \
+        --examples output/examples.tfrecord@${N_SHARDS}.gz\
+        --channels insert_size \
+        --task {} \
+|| exit 1
+
+cp -r output $wd
+</pre>
+
+<pre class="term">
+#! /bin/bash
+# this is deepvariant_step2.sh
+
+module load deepvariant/1.4.0 || exit 1
+
+#&lt; 0.9.0 MODEL="/opt/wgs/model.ckpt"
+MODEL="/opt/models/wgs/model.ckpt"
+N_SHARDS=12
+CALL_VARIANTS_OUTPUT="output/call_variants_output.tfrecord.gz"
+
+call_variants \
+ --outfile "${CALL_VARIANTS_OUTPUT}" \
+ --examples "output/examples.tfrecord@${N_SHARDS}.gz" \
+ --checkpoint "${MODEL}" \
+|| exit 1
+</pre>
+
+<pre class="term">
+#! /bin/bash
+# this is deepvariant_step3.sh
+
+module load deepvariant/1.4.0 || exit 1
+
+REF=input/ucsc.hg19.chr20.unittest.fasta
+CALL_VARIANTS_OUTPUT="output/call_variants_output.tfrecord.gz"
+
+postprocess_variants \
+  --ref "${REF}" \
+  --infile "${CALL_VARIANTS_OUTPUT}" \
+  --outfile "output/example.vcf.gz" \
+|| exit 1
+</pre>
+
+<p>Submit these jobs using the Slurm <a href="/docs/userguide.html">sbatch</a> command. In
+this example, job dependencies are used to tie the jobs together.</p>
+
+<pre class="term">
+biowulf$ <b>sbatch --cpus-per-task=6 --mem-per-cpu=2g --gres=lscratch:10 deepvariant_step1.sh</b>
+1111
+biowulf$ <b>sbatch --dependency=afterany:1111 --cpus-per-task=6 \
+               --gres=lscratch:10,gpu:k80:1 --partition=gpu deepvariant_step2.sh</b>
+1112
+biowulf$ <b>sbatch --dependency=afterany:1112 deepvariant_step3.sh</b>
+1113
+</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile for the first step of the pipeline (e.g. deepvariant.swarm). For example:</p>
+
+<pre class="term">
+make_examples --mode calling --ref /path/to/genome.fa --reads "sample1.bam" \
+    --regions "chr1" --examples sample1_chr1.tfrecord.gz --channels insert_size
+make_examples --mode calling --ref /path/to/genome.fa --reads "sample1.bam" \
+    --regions "chr2" --examples sample1_chr2.tfrecord.gz --channels insert_size
+make_examples --mode calling --ref /path/to/genome.fa --reads "sample1.bam" \
+    --regions "chr3" --examples sample1_chr3.tfrecord.gz --channels insert_size
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f deepvariant.swarm [-g #] --module deepvariant</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>--module deepvariant <td>Loads the deepvariant module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

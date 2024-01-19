@@ -1,0 +1,178 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Cambridge Structural Database/WebCSD';</script>
+<div class="title">Cambridge Structural Database/WebCSD</div>
+<img align=right style="margin:2em;" src="/images/csd.jpg" alt="CCDC logo" width=300>
+
+<!-- Content -->
+<P>The Cambridge Structural Database is the world repository of small molecule crystal structures.  The database holds bibliographic, 2D chemical and 3D structural results from crystallographic analyses of organics, organometallics and metal complexes. Both X-ray and neutron diffraction studies are included for compounds containing up to ca.  500 atoms (including hydrogens). NOTE: The database is NOW available on the biowulf cluster.</p>
+
+<p>Along with the database are tools for search, retreival, analysis, and display of the CSD contents.  These include ConQuest (for text, numeric, 2D substructure and 3D geometric searching) and VISTA (statistical analysis and display of geometric and other data). </p>
+
+<P>
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#web">Web CSD</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#pint">Python API - interactive</a></div>
+        <div class="tocItem"><a href="#pbatch">Python API - batch job </a></div>
+      </div>
+</table>
+
+<p>Installers for Windows, Mac and Linux OSes, are also available for all NIH employees interested in using the software. If you would like to use CSD from your local desktop, please contact staff@hpc.nih.gov, for a link to the download.</p>
+
+<div class="heading">Documentation</div>
+<P>
+<ul>
+<li><a href="http://www.ccdc.cam.ac.uk/support/documentation/#csds">CSD and Conquest documentation</a> at the CSD website.
+<li> <a href="http://www.ccdc.cam.ac.uk/products/csd_system/webcsd/">What is WebCSD</a>
+<li> <a href="http://webcsd.ccdc.cam.ac.uk/teaching_database_demo.php">Interactve WebCSD Demo</a></p>
+</ul>
+
+<div class="heading">WebCSD</div>
+<P>
+NIH users can access the CSD directly via the <A href="https://www.ccdc.cam.ac.uk/structures/">WebCSD portal</a>. New structures are added weekly for up-to-date searches. Users can perform searches - Similarity, Substructure, Text and Numerical - as well as browse the database.
+
+The portal is restricted to NIH IP addresses only. If you are at home, you must connect to the NIH VPN before using.
+
+
+<a Name="int"></a><div class="heading">Interactive Quest <table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+on Biowulf</div>
+<p>CSD requires an X-windows, or preferably NX, session. <a href="/docs/connect.html">Click here for more information about X-Windows and NX</a>.</p>
+
+<p>To use, type <em class="cmd">module load CSD</em>, then <em class="cmd">quest&</em>, at the prompt.</p>
+
+Sample session: (replace 'username' with your own Helix/Biowulf username).
+<P>
+You cannot run Conquest on the Biowulf login node. You will first need to allocate an interactive session with 'sinteractive'.
+
+<div class="term"><Pre>
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load CSD</b>
+
+[user@cn3144 ~]$  <b>quest &</b>
+Starting ConQuest. Use questv5 for QUEST.
+Running ConQuest with glibc version 2.5
+2.5
+</pre></div>
+<p><center>
+<img src="/images/conquest1.jpg" alt="">
+<P>
+
+<P><img src="/images/Conquest2.png" alt="">
+<P>
+</center>
+<P>
+<a Name="pint"></a>
+<div class="heading">Python API on Biowulf</div>
+<P>
+Loading the CSD module will also set up the paths for the CSD python API installation. Sample interactive session:
+<pre class="term">
+biowulf% <b>sinteractive --mem=20g </b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load CSD</b>
+[+] Loading Cambridge Structural Database 2020  on cn0931
+
+# Note: the following is required to run without an Xwindows display
+# but will prevent diagram generation and other graphics-oriented
+# pieces of the CSD from running
+[user@cn3144 ~]$ <b>export CCDC_PYTHON_API_NO_QAPPLICATION=True</b>
+
+
+[user@cn3144 ~]$ <b>python</b>
+Python 3.7.6 | packaged by conda-forge | (default, Jan  7 2020, 22:33:48)
+[GCC 7.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <b>from ccdc import io</b>
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-user'
+>>> <b>csd_reader = io.EntryReader('CSD')</b>
+>>> c<b>ryst_abebuf = csd_reader.crystal('ABEBUF')</b>
+>>> <b>mol_abebuf = csd_reader.molecule('ABEBUF')</b>
+>>> <b>round(mol_abebuf.molecular_weight, 3)</b>
+317.341
+>>> <b>mol_abebuf.is_organic</b>
+True
+>>> <b>print(mol_abebuf.heaviest_component.smiles)</b>
+O=C1Nc2ccccc2C(=O)Nc2ccccc12
+>>> <b>quit()</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+biowulf% 
+</pre>
+<P>
+<a Name="pbatch"></a>
+<div class="heading">Python API in batch job</div>
+<P>
+Set up a batch script along the following lines:
+<pre class="term">
+#!/bin/bash
+
+module load CSD
+
+# Note: the following is required to run without an Xwindows display
+# but will prevent diagram generation and other graphics-oriented
+# pieces of the CSD from running
+export CCDC_PYTHON_API_NO_QAPPLICATION=True
+
+python &lt;&lt; EOF
+
+from ccdc import io
+from ccdc.search import TextNumericSearch
+csd_reader = io.EntryReader('CSD')
+text_numeric_search = TextNumericSearch()
+text_numeric_search.add_compound_name('aspirin')
+identifiers = [h.identifier for h in text_numeric_search.search()]
+for identifier in sorted(set(identifiers)):	
+      e = csd_reader.entry(identifier)
+      if e.melting_point:
+	    print('%-8s http://dx.doi.org/%-25s %s' % (e.identifier,e.publication.doi,e.melting_point))
+
+EOF
+</pre>
+
+Submit with:
+<pre class="term">
+sbatch myscript
+</pre>
+The script should produce an output file containing the following:
+<pre class="term">
+[+] Loading Cambridge Structural Database 2020  on cn####
+ACMEBZ   http://dx.doi.org/10.1107/S0567740881006729 385K
+ACSALA13 http://dx.doi.org/10.1021/ja056455b         135.5deg.C
+BEHWOA   http://dx.doi.org/10.1107/S0567740882005731 401K
+CUASPR01 http://dx.doi.org/10.1107/S1600536803026126 above 573 K
+HUPPOX   http://dx.doi.org/10.1039/b208574g          91-96 deg.C
+HUPPOX01 http://dx.doi.org/None                      91-96 deg.C
+NUWTOP01 http://dx.doi.org/10.1039/c2ce06313a        147 deg.C
+PIKYUG   http://dx.doi.org/10.1021/acs.cgd.8b00718   502 K
+</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

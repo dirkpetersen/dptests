@@ -1,0 +1,114 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FLAIR: Full-Length Alternative Isoform analysis of RNA ';</script>
+<div class="title"><b>FLAIR: Full-Length Alternative Isoform analysis of RNA </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+FLAIR (Full-Length Alternative Isoform analysis of RNA) is a tool for the correction, 
+isoform definition, and alternative splicing analysis of noisy reads. 
+It is a computational workflow to identify high-confidence transcripts, 
+perform differential splicing event analysis, and differential
+isoform analysis. 
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/BrooksLabUCSC/flair">FLAIR GitHub page</a></li>
+<li><a href="https://flair.readthedocs.io/en/latest/">FLAIR Manual</a></li>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>A.D.Tang, C.M.Soulette, M.J.van Baren, K.Hart, E.Hrabeta-Robinson1, C.J.Wu &amp; A.N.Brooks <br />
+<i> Full-length transcript characterization of SF3B1 mutation in chronic lymphocytic leukemia reveals
+downregulation of retained introns </i><br />
+<a href="https://www.nature.com/articles/s41467-020-15171-6">Nature Communications volume 11, Article number: 1438 (2020) </a> <br/>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>FLAIR</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>FLAIR_HOME</b>&nbsp; installation directory</li>
+    <li><b>FLAIR_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>FLAIR_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>FLAIR_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=4g --gres=lscratch:10</b>
+[user@cn3200 ~]$ <b>module load FLAIR/1.6.1</b>
+[+] Loading singularity  3.8.5-1  on cn0883
+[+] Loading FLAIR  1.6.1
+[user@cn3200 ~]$ <b>flair.py</b>
+usage: python flair.py <mode> --help
+modes: align, correct, collapse, quantify, diffExp, diffSplice
+Multiple modules can be run when specified using numbers, e.g.:
+python flair.py 1234 ...
+[user@cn3200 ~]$ <b>flair.py align -h</b>
+usage: python flair.py align -g genome.fa -r <reads.fq>|<reads.fa> [options]
+
+flair-align parse options
+
+positional arguments:
+  align
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o O, --output O      output file name base (default: flair.aligned)
+  -t T, --threads T     minimap2 number of threads (4)
+  --junction_bed JUNCTION_BED
+                        annotated isoforms/junctions bed file for splice site-
+                        guided minimap2 genomic alignment
+  --pychopper PYCHOPPER
+                        specify cdna_classifier.py here to trim reads prior to
+                        aligning
+  -m M, --minimap2 M    path to minimap2 if not in $PATH
+  --nvrna               specify this flag to use native-RNA specific alignment
+                        parameters for minimap2
+  -sam SAM, --samtools SAM
+                        samtools executable path if not in $PATH
+  -c C, --chromsizes C  chromosome sizes tab-separated file, used for
+                        converting sam to genome-browser compatible psl file
+  --psl                 also output sam-converted psl
+  --quality QUALITY     minimum MAPQ of read alignment to the genome (1)
+  -N N                  retain at most INT secondary alignments from minimap2
+                        alignment (0)
+  --quiet               Suppress progress statements from being printed
+
+required named arguments:
+  -r R [R ...], --reads R [R ...]
+                        FastA/FastQ files of raw reads
+
+Either one of the following arguments is required:
+  -g G, --genome G      FastA of reference genome, can be minimap2 indexed
+  --mm_index MM_INDEX   minimap2 index .mmi file
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

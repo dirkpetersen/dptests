@@ -1,0 +1,127 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Tractseg on Biowulf';</script>
+<div class="title">Tractseg on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Wasserthal J, Neher P, Maier-Hein KH
+  <a href="https://pubmed.ncbi.nlm.nih.gov/30086412/">
+  <em>TractSeg - Fast and accurate white matter tract segmentation</em></a> 
+  Neuroimage. 2018 Dec;183:239-253.</li>
+</ul>
+
+<br>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/MIC-DKFZ/TractSeg">Github page</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>tractseg</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables: <tt>TRACTSEG_HOME</tt> (application directory), <tt>TRACTSEG_TESTDATA</tt> (test dataset).
+<li>Limit I/O with central Biowulf directories (e.g., /data, /home) by making use of local disk (/lscratch).
+<li>Estimate memory usage. Determine how much memory your jobs will need by benchmarking. Allocate some extra memory for your jobs as described in the resources described below. 
+<li>Profile/benchmark <tt>tractseg</tt> jobs: We recommend making sure a given <tt>tractseg</tt> job can scale before launching a large number of jobs. You can do this by profiling/benchmarking small jobs (e.g., a swarm of 3 <tt>tractseg</tt> commands), then monitoring the jobs by using either the <a href="https://hpcnihapps.cit.nih.gov/auth/dashboard/">user dashboard</a> or the commands jobhist, sjobs, squeue, and jobload (see <a href="https://hpc.nih.gov/docs/biowulf_tools.html">biowulf utilities</a>). There are resources prepared by the HPC staff that go over how to monitor your jobs for benchmarking and profiling (<a href="https://youtu.be/fLMJ8-t5bm4">video</a>, and <a href="https://hpc.nih.gov/training/handouts/Effective_batch_system.pdf">slides</a>). Once you have profiled a swarm with a few jobs and you have refined the memory, and walltime requirements, it is probably safe to (gradually) increase the number of <tt>tractseg</tt> jobs. For many analyses pipelines one has no way of knowing in advance how much memory will be actually required in an HPC environment. This is why it is very important to profile/benchmark.
+</ol>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load tractseg</b>
+
+[user@cn3144 ~]$ <b>TractSeg --help</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. tractseg.sh). For example (using test data below):</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --job-name=tractseg
+#SBATCH --gres=lscratch:20
+#SBATCH --exclusive
+#SBATCH --mem=32g
+#SBATCH --time=72:00:00
+
+module load fmriprep/20.2.1
+
+tar -C /lscratch/${SLURM_JOB_ID} -xf /usr/local/apps/fmriprep/TEST_DATA/ds001.tar.gz
+
+fmriprep /lscratch/${SLURM_JOB_ID}/ds001 /lscratch/${SLURM_JOB_ID}/fmriprep.out.ds001 \
+         participant --participant_label sub-01 -w /lscratch/${SLURM_JOB_ID} \
+         --notrack --use-aroma
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch fmriprep.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. fmriprep.swarm). For example:</p>
+
+<pre class="term">
+fmriprep /data/${USER}/BIDS-dataset/ds001/ /data/$USER/BIDS-dataset/fmriprep.out.ds001 \
+         participant --participant_label sub-01 -w /lscratch/${SLURM_JOB_ID} \
+         --use-aroma --notrack
+fmriprep /data/${USER}/BIDS-dataset/ds002/ /data/$USER/BIDS-dataset/fmriprep.out.ds002 \
+         participant --participant_label sub-02 -w /lscratch/${SLURM_JOB_ID} \
+         --use-aroma --notrack
+fmriprep /data/${USER}/BIDS-dataset/ds003/ /data/$USER/BIDS-dataset/fmriprep.out.ds003 \
+         participant --participant_label sub-03 -w /lscratch/${SLURM_JOB_ID} \
+         --use-aroma --notrack 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fmriprep.swarm [--gres=lscratch:#] [-g #] -t auto --module fmriprep</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-gres=lscratch:<i>#</i> </tt><td>Number of Gigabytes of local disk space allocated per process (1 line in the swarm command file)
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file). We set this to <code>auto</code> to allocate all CPUs in each node.
+  <tr><td><tt>--module fmriprep</tt> <td>Loads the fmriprep module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

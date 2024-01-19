@@ -1,0 +1,157 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pymc on Biowulf';</script>
+<div class="title">pymc on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> PyMC is a new open source Probabilistic Programming framework written in Python that uses Theano to compute gradients via automatic differentiation as well as compile probabilistic programs on-the-fly to C for increased speed. Contrary to other Probabilistic Programming languages, PyMC3 allows model specification directly in Python code. 
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/pymc-devs/pymc">pymc Github</a></li>
+<li><a href="https://www.pymc.io/welcome.html">pymc_main_site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>pymc</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Cluster/distibuted computing
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 16 --mem 40g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ]$ <b>module load pymc/3</b>
+[+] Loading singularity on cn3344 
+[+] Loading pymc 3.11.5  on cn3344 
+
+[user@cn3144 ]$ <b>python-pymc</b>
+Python 3.9.13 | packaged by conda-forge | (main, May 27 2022, 16:56:21) 
+[GCC 10.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pymc3 as pm
+>>> import theano
+
+[user@cn3144 ]$ <b>module load pymc/4</b>
+[+] Loading singularity on cn3344
+[+] Loading pymc 4.1.3  on cn3344
+
+[user@cn3144 ]$ <b>python-pymc</b>
+Python 3.10.5 | packaged by conda-forge | (main, Jun 14 2022, 07:04:59) [GCC 10.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pymc as pm
+>>> import aesara
+[user@cn3144 ]$ <b>module load pymc/5</b>
+[+] Loading singularity on cn3344
+[+] Loading pymc 5  on cn3344
+
+[user@cn3144 ]$ <b>python-pymc</b>
+Python 3.10.5 | packaged by conda-forge | (main, Jun 14 2022, 07:04:59) [GCC 10.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pymc as pm
+>>> import jax
+
+[user@cn3144 ]$ <b>exit</b>
+
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+<p> Run pymc4 with JAX:
+<pre class="term">
+[user@biowulf ]$<b>sinteractive --gres=gpu:p100:1</b>
+[user@cn3144 ]$ <b>module load pymc/4</b>
+[+] Loading singularity on cn3344
+[+] Loading pymc 4.1.3  on cn3344
+
+[user@cn3144 ]$ <b>python-pymc</b>
+Python 3.10.5 | packaged by conda-forge | (main, Jun 14 2022, 07:04:59) [GCC 10.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pymc.sampling_jax as pmjax
+[user@cn3144 ]$ <b>exit</b>
+</pre>
+<p> Run pymc with jupyter notebook:
+<pre class="term">
+[user@biowulf ]$<b>sinteractive -c 16 --mem 40g --tunnel</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+Created 1 generic SSH tunnel(s) from this compute node to                  
+biowulf for your use at port numbers defined                               
+in the $PORTn ($PORT1, ...) environment variables.                         
+                                                                           
+                                                                           
+Please create a SSH tunnel from your workstation to these ports on biowulf.
+On Linux/MacOS, open a terminal and run:                                   
+                                                                           
+    ssh  -L 33327:localhost:33327 biowulf.nih.gov                          
+                                                                           
+For Windows instructions, see https://hpc.nih.gov/docs/tunneling          
+[user@cn3144]$ <b>module load pymc/3</b>
+[user@cn3144]$ <b>jupyter notebook --ip localhost --port $PORT1 --no-browser</b>
+[I 17:11:40.505 NotebookApp] Serving notebooks from local directory
+[I 17:11:40.505 NotebookApp] Jupyter Notebook 6.4.10 is running at:
+[I 17:11:40.505 NotebookApp] http://localhost:37859/?token=xxxxxxxx
+[I 17:11:40.506 NotebookApp]  or http://127.0.0.1:37859/?token=xxxxxxx
+[I 17:11:40.506 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 17:11:40.512 NotebookApp]
+
+    To access the notebook, open this file in a browser:
+        file:///home/apptest1/.local/share/jupyter/runtime/nbserver-29841-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:37859/?token=xxxxxxx
+     or http://127.0.0.1:37859/?token=xxxxxxx
+
+</pre>
+<p> Then you can open a browser from your computer to connect to the jupyter notebook.
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a python script (e.g. pymc-script.py). For example:</p>
+
+<pre class="term">
+import pymc3 as pm
+</pre>
+
+<p>Create a batch input file (e.g. pymc.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load pymc/3
+python-pymc pymc-script.py 
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch -c 16 --mem 40g pymc.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,174 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'locuszoom on Biowulf';</script>
+<div class="title">locuszoom on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+LocusZoom is a tool for visualizing results of genome wide association studies
+at an individual locus along with other relevant information like gene models,
+linkage disequillibrium coefficients, and estimated local recombination rates.
+</p>
+<p>LocusZoom uses association results in METAL or EPACTS formatted files along
+with it's own source of supporting data (see below) to generate graphs.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Randall J. Pruim et al.<em>LocusZoom: regional visualization of 
+        genome-wide association scan results</em>. Bioinformatics 2010, 26:2336-2337.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/20634204">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2935401/">PMC</a>&nbsp;|&nbsp;
+    <a href="http://bioinformatics.oxfordjournals.org/content/26/18/2336.abstract?keytype=ref&ijkey=IZbX3XuU1KUZXYZ">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://locuszoom.sph.umich.edu/locuszoom/">Home page</a></li>
+    <li><a href="http://locuszoom.sph.umich.edu/locuszoom/genform.php?type=yourdata">
+        Web service</a> [hosted at UMich]</li>
+    <li><a href="http://genome.sph.umich.edu/wiki/LocusZoom_Documentation">Documentation</a></li>
+    <li><a href="http://genome.sph.umich.edu/wiki/LocusZoom_Standalone#Download">LocusZoom
+        command line documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: locuszoom (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$LOCUSZOOM_TEST_DATA</code></li>
+
+<h3>Supporting data </h3>
+
+<p>LocusZoom contains a number of data files used in generating graph annotations:</p>
+<ul>
+    <li>Linkage disequillibrium</li>
+    <li>SNP, gene, exon positions</li>
+    <li>recombination rates</li>
+</ul>
+<p>All data for LocusZoom is stored in <b><tt>/fdb/locuszoom/[version]</tt></b>. 
+LocusZoom has been configured to automatically find all required information.</p>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load locuszoom</b>
+[user@cn3144]$ <b>locuszoom -h</b>
+locuszoom -h
++---------------------------------------------+
+| LocusZoom 1.3 (06/20/2014)                  |
+| Plot regional association results           |
+| from GWA scans or candidate gene studies    |
++---------------------------------------------+
+
+usage: locuszoom [options]
+
+  -h, --help
+    show this help message and exit
+
+  --metal &lt;string&gt;
+    Metal file.
+[...snip...]
+</pre>
+
+<p>Draw a diagram of the associations between SNPs and HDL observed in <a
+    href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2881676/">Kathiresan et al, 2009</a>
+around the FADS1 gene</p>
+<pre class="term">
+[user@cn3144]$ <b>locuszoom \
+    --metal /usr/local/apps/locuszoom/TEST_DATA/examples/Kathiresan_2009_HDL.txt \
+    --refgene FADS1</b>
+</pre>
+<div style="width: 75%; margin: 0 auto">
+    <img src="/images/locuszoom_chr11_61303672-61361105.png" 
+    alt="LocusZoom output" width="100%"/>
+</div>
+
+<p>Exit the interactive session</p>
+<pre class="term">
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. locuszoom.sh), which uses the input file 'locuszoom.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+#SBATCH --mail-type=END
+# this is locuszoom.sh
+set -e
+function fail {
+  echo "$@" &gt;&amp;2
+  exit 1
+}
+
+module load locuszoom/1.3 || fail "Could not load locuszoom module"
+
+
+mf=$LOCUSZOOM_TEST_DATA/examples/Kathiresan_2009_HDL.txt
+locuszoom --metal=$mf --refgene FADS1 --pop EUR --build hg19 \
+  --source 1000G_March2012 \
+  --gwas-cat whole-cat_significant-only
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] locuszoom.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. locuszoom.swarm). For example:</p>
+
+<pre class="term">
+locuszoom --metal=$LOCUSZOOM_TEST_DATA/examples/Kathiresan_2009_HDL.txt \
+  --refgene FADS1
+locuszoom --metal=$LOCUSZOOM_TEST_DATA/examples/Kathiresan_2009_HDL.txt \
+  --refgene PLTP
+locuszoom --metal=$LOCUSZOOM_TEST_DATA/examples/Kathiresan_2009_HDL.txt \
+  --refgene ANGPTL4
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f locuszoom.swarm [-g #] [-t #] --module locuszoom</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module locuszoom <td>Loads the locuszoom module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

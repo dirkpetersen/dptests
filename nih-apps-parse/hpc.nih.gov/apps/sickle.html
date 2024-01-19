@@ -1,0 +1,102 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Sickle on Biowulf';</script>
+<div class="title"> Sickle on Biowulf</div>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#int">Interactive Jobs</a></div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Using Swarm</a></div>
+</div></table>
+
+<p>Sickle is a windowed adaptive trimming tool for FASTQ files using quality. Most modern sequencing technologies produce reads that have deteriorating quality towards the 3'-end and some towards the 5'-end as well. Incorrectly called bases in both regions negatively impact assembles, mapping, and downstream bioinformatics analyses. Sickle is a tool that uses sliding windows along with quality and length thresholds to determine when quality is sufficiently low to trim the 3'-end of reads and also determines when the quality is sufficiently high enough to trim the 5'-end of reads. It will also discard reads based upon the length threshold. It takes the quality values and slides a window across them whose length is 0.1 times the length of the read. If this length is less than 1, then the window is set to be equal to the length of the read. Otherwise, the window slides along the quality values until the average quality in the window rises above the threshold, at which point the algorithm determines where within the window the rise occurs and cuts the read and quality there for the 5'-end cut. Then when the average quality in the window drops below the threshold, the algorithm determines where in the window the drop occurs and cuts both the read and quality strings there for the 3'-end cut. However, if the length of the remaining sequence is less than the minimum length threshold, then the read is discarded entirely. 5'-end trimming can be disabled.</p>
+
+<P>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<p><a href="https://github.com/najoshi/sickle/">https://github.com/najoshi/sickle/</a></p>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>sickle</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Example files are under <tt>/usr/local/apps/sickle/1.33/TEST_DATA</tt> or <tt>$SICKLE_TEST_DATA</tt></li>
+</ul>
+
+<a Name="int"></a><div class="heading">Submitting an interactive job</div>
+<P>
+Allocate an interactive session  and run the interactive job there.</p>
+
+<pre class="term">
+[biowulf]$ <b>sinteractive  --mem=5g</b>
+salloc.exe: Granted job allocation 789523
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0135 are ready for job
+
+[cn0135]$ <b>cd /data/$USER/</b>
+
+[cn0135]$ <b>module load sickle</b>
+
+[cn0135]$ <b>cp -r $SICKLE_TEST_DATA .</b>
+
+[cn0135]$ <b>cd TEST_DATA</b>
+
+[cn0135]$ <b>sickle pe -f test.f.fastq -r test.r.fastq -t sanger -o output1.fastq -p output2.fastq -s trimmed_singles_file.fastq</b>
+
+[cn0135]$ <b>exit</b>
+salloc.exe: Job allocation 789523 has been revoked.
+[biowulf]$
+</pre>
+<p>
+
+<a Name="batch"></a><div class="heading">Submitting a single batch job</div>
+    
+<p>1. Create a script file (myscript) similar to the one below
+<pre class="term">
+#! /bin/bash
+# myscript
+set -e
+
+module load sickle || exit 1
+cd /data/$USER/test/
+sickle pe -f test.f.fastq \
+          -r test.r.fastq \
+          -t sanger \
+          -o output1.fastq \
+          -p output2.fastq \
+          -s trimmed_singles_file.fastq
+</pre>
+
+<p>2. Submit the script on biowulf:   
+      
+  <pre class="term">[biowulf]$ sbatch --mem=5g myscript</pre>
+
+<p>
+
+<a Name="swarm"></a><div class="heading">Using Swarm</div>
+<P>
+Using the 'swarm' utility, one can submit many jobs to the cluster to run concurrently. </p>
+
+  <p>Set up a swarm command file (eg /data/$USER/cmdfile). </p>
+
+  <pre class="term">
+cd /data/$USER/dir1; sickle ...
+cd /data/$USER/dir2; sickle ...
+cd /data/$USER/dir3; sickle ...
+...
+cd /data/$USER/dir20; sickle ...
+</pre>
+<P>
+
+<p> submit the swarm job:
+  <pre class="term">$ swarm -f cmdfile --module sickle -g 5</pre>
+
+<p>For more information regarding running swarm, see <a href="swarm.html">swarm.html</a></p>
+
+
+</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

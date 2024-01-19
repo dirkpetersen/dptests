@@ -1,0 +1,111 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'intogen: dentifies cancer genes and pinpoints their putative mechanism of action across tumor types';</script>
+<div class="title"><b>intogen: dentifies cancer genes and pinpoints their putative mechanism of action across tumor types</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+<li>IntOGen is a framework for automatic and comprehensive knowledge extraction based on mutational data from sequenced tumor samples from patients. The framework identifies cancer genes and pinpoints their putative mechanism of action across tumor types. </li> 
+<li>Given a dataset of somatic point mutations from a cohort of tumor samples, intOGen first pre-processes the input mutations, next it runs seven different methods for cancer driver gene identification and, finally, it combines the output of these methods to produce a compendium of driver genes and a repository of the mutational features that can be used to explain their mechanisms of action. </li>
+<li>They have manually downloaded and annotated tumor samples from different sources. Specifically, we have used cBioPortal, pediatric cBioPortal, ICGC, TCGA, PCAWG, Hartwig Medical Foundation, TARGET, St. Jude and literature gathered sequencing projects projects. 
+</li>
+
+<h3>References:</h3>
+<ul>
+Francisco Martínez-Jiménez, Ferran Muiños, Inés Sentís, Jordi Deu-Pons, Iker Reyes-Salazar, Claudia Arnedo-Pac, Loris Mularoni, Oriol Pich, Jose Bonet, Hanna Kranas, Abel Gonzalez-Perez & Nuria Lopez-Bigas 
+<br />
+<i>A compendium of mutational cancer driver gene</i> <br />
+<a href="https://pubmed.ncbi.nlm.nih.gov/32778778/">PubMed</a>
+ <a href="https://www.nature.com/articles/s41568-020-0290-x">Nature Reviews Caner</a> 2020
+
+</ul>
+
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://bitbucket.org/intogen/intogen-plus/src/master/">intogen bitbucket Page</a></li>
+<li><a href="https://intogen.readthedocs.io/en/latest/index.html">intogen doc</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: intogen (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>INTOGEN_TEST_DATA</b> sample data for running intogen </li>
+  </ul>
+</ul>
+<P>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 14 --mem=20g --gres=lscratch:10 </b>
+[user@cn3144 ~]$ <b>module load intogen </b>
+[+] Loading singularity  3.10.5  on cn4304
+[+] Loading java 17.0.2  ...
+[+] Loading nextflow 22.10.2
+[+] Loading intogen  2023.1
+</pre>
+<pre class="term">
+[user@cn3144 ]$ <b>cp -r $INTOGEN_TEST_DATA/* . </b>
+[user@cn3144 ]$ <b>cp -r $INTOGEN_CONF/* .</b>
+[user@cn3144 ]$ <b>nextflow run intogen.nf -profile local --input test/ --output ./output</b>
+N E X T F L O W  ~  version 22.10.4
+Launching `intogen.nf` [curious_ride] DSL1 - revision: eb5992f5c0
+executor >  local (33)
+[3a/3b8d38] process > ParseInput (Parse input test)                                                       [100%] 1 of 1 ✔
+[4e/dfea6a] process > LoadCancer (Load cancer type CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                       [100%] 1 of 1 ✔
+[9d/ba5144] process > LoadPlatform (Load sequencing platform CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)             [100%] 1 of 1 ✔
+[81/c96e65] process > LoadGenome (Load reference genome CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                  [100%] 1 of 1 ✔
+[7b/fd10a2] process > ProcessVariants (Process variants CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                  [100%] 1 of 1 ✔
+[de/4a398e] process > FormatSignature (Prepare for signatures CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)            [100%] 1 of 1 ✔
+[d5/b8a0e0] process > Signature (Signatures CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                              [100%] 1 of 1 ✔
+[2a/da6345] process > FormatFML (Prepare for FML CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                         [100%] 1 of 1 ✔
+[42/77362b] process > OncodriveFML (OncodriveFML CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                         [100%] 1 of 1 ✔
+[4c/143f72] process > FormatCLUSTL (Prepare for CLUSTL CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                   [100%] 1 of 1 ✔
+[8e/9258f2] process > OncodriveCLUSTL (OncodriveCLUSTL CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                   [100%] 1 of 1 ✔
+[11/038f2f] process > FormatDNDSCV (Prepare for DNDSCV CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                   [100%] 1 of 1 ✔
+[11/79a963] process > dNdScv (dNdScv CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                                     [100%] 1 of 1 ✔
+[5c/e60332] process > FormatVEP (Prepare for VEP CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                         [100%] 1 of 1 ✔
+[40/34e5f0] process > VEP (VEP CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                                           [100%] 1 of 1 ✔
+[98/cdc7c0] process > ProcessVEPoutput (Process vep output CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)               [100%] 1 of 1 ✔
+[10/43e0de] process > FilterNonSynonymous (Filter non synonymus CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)          [100%] 1 of 1 ✔
+[b2/3725ce] process > FormatSMRegions (Prepare for SMRegions CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)             [100%] 1 of 1 ✔
+[21/c1f73f] process > SMRegions (SMRegions CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                               [100%] 1 of 1 ✔
+[d2/2a5cf1] process > FormatCBaSE (Prepare for CBaSE CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                     [100%] 1 of 1 ✔
+[70/232727] process > CBaSE (CBaSE CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                                       [100%] 1 of 1 ✔
+[2e/5fec7b] process > FormatMutPanning (Prepare for MutPanning CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)           [100%] 1 of 1 ✔
+[4e/7fbafe] process > MutPanning (MutPanning CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                             [100%] 1 of 1 ✔
+[87/a65c42] process > FormatHotMAPS (Prepare for HotMAPS CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                 [100%] 1 of 1 ✔
+[a8/96f071] process > HotMAPS (HotMAPS CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                                   [100%] 1 of 1 ✔
+[4d/1c88d2] process > Combination (Combination CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                           [100%] 1 of 1 ✔
+[da/7d1615] process > FormatdeconstructSigs (Prepare for deconstructSigs CBIOP_WXS_CBIOPORTAL_PRAD_BROAD) [100%] 1 of 1 ✔
+[48/a23b2d] process > deconstructSigs (deconstructSigs CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                   [100%] 1 of 1 ✔
+[8f/07cd96] process > CohortCounts (Count variants CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                       [100%] 1 of 1 ✔
+[d5/c8d224] process > CohortSummary (Count variants null)                                                 [100%] 1 of 1 ✔
+[63/0f19ec] process > MutationsSummary (Mutations)                                                        [100%] 1 of 1 ✔
+[f6/aebe60] process > DriverDiscovery (Driver discovery CBIOP_WXS_CBIOPORTAL_PRAD_BROAD)                  [100%] 1 of 1 ✔
+[69/a1269d] process > DriverSummary (Driver summary)                                                      [100%] 1 of 1 ✔
+Completed at: 22-Feb-2023 15:53:34
+Duration    : 3h 36m 50s
+CPU hours   : 15.6
+Succeeded   : 33
+
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

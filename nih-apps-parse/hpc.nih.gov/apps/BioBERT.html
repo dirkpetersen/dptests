@@ -1,0 +1,167 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BioBERT: a biomedical language representation model designed for biomedical text mining tasks';</script>
+<div class="title"><b>BioBERT: a biomedical language representation model <br />designed for biomedical text mining tasks</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+BioBERT is a biomedical language representation model 
+designed for biomedical text mining tasks 
+such as biomedical named entity recognition, relation extraction, question answering, etc. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Jinhyuk Lee, Wonjin Yoon, Sungdong Kim, Donghyeon Kim, Sunkyu Kim, Chan Ho So and Jaewoo Kang, <br />
+<i>BioBERT: a pre-trained biomedical language representation model for biomedical text mining</i> <br />
+<a href="https://academic.oup.com/bioinformatics/article/36/4/1234/5566506">Bioinformatics</a> (2020),
+<b>36</b>(4), 1234–1240. doi: 10.1093/bioinformatics/btz682.              
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/dmis-lab/biobert">BioBERT Github page</a></li>
+<li><a href="https://towardsdatascience.com/tagging-genes-and-proteins-with-biobert-c7b04fc6eb4f">BioBERT Tutorial</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>BioBERT</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>BIOBERT_HOME</b>&nbsp; installation directory</li>
+    <li><b>BIOBERT_BIN</b>&nbsp; executable   directory</li>
+    <li><b>BIOBERT_DIR</b>&nbsp; source code  directory</li>
+    <li><b>BIOBERT_DATA</b>&nbsp; configuration files and models directory</li>
+    <li><b>BIOBERT_BENCHMARKS</b>&nbsp; benchmark datasets directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16g  --gres=gpu:p100:1,lscratch:10 -c4 </b>
+[user@cn3104 ~]$ <b>module load biobert</b>
+[+] Loading singularity  3.10.5  on cn3104
+[+] Loading BioBERT v20200409
+</pre>
+Copy sample data to your current folder: and run one of BioBert scripts:
+<pre class="term">
+[user@cn3104 ~]$ <b>cp $BIOBERT_DATA/* .</b>
+[user@cn3104 ~]$ <b>export BIOBERT_DIR=. </b>
+[user@cn3104 ~]$ <b>cp -r $BIOBERT_BENCHMARKS/NCBI-disease .</b>
+[user@cn3104 ~]$ <b>export NER_DIR=./NCBI-disease </b>
+[user@cn3104 ~]$ <b>export OUTPUT_DIR=./ner_outputs </b>
+[user@cn3104 ~]$ <b>mkdir -p $OUTPUT_DIR </b>
+
+[user@cn3104 ~]$ <b>python $BIOBERT_SRC/run_ner.py --do_train=true --do_eval=true --vocab_file=$BIOBERT_DIR/vocab.txt --bert_config_file=$BIOBERT_DIR/bert_config.json --init_checkpoint=$BIOBERT_DIR/model.ckpt-1000000 --num_train_epochs=10.0 --data_dir=$NER_DIR --output_dir=$OUTPUT_DIR</b>
+...
+INFO:tensorflow:Writing example 0 of 8230
+I1012 11:53:03.600488 23456244467520 run_ner.py:303] Writing example 0 of 8230
+INFO:tensorflow:*** Example ***
+I1012 11:53:03.601105 23456244467520 run_ner.py:276] *** Example ***
+INFO:tensorflow:guid: train-0
+I1012 11:53:03.601165 23456244467520 run_ner.py:277] guid: train-0
+INFO:tensorflow:tokens: I ##dent ##ification of AP ##C ##2 , a ho ##mo ##logue of the ad ##eno ##mat ##ous p ##oly ##po ##sis co ##li t ##umour suppress ##or .
+I1012 11:53:03.601217 23456244467520 run_ner.py:279] tokens: I ##dent ##ification of AP ##C ##2 , a ho ##mo ##logue of the ad ##eno ##mat ##ous p ##oly ##po ##sis co ##li t ##umour suppress ##or .
+INFO:tensorflow:input_ids: 101 146 11951 5783 1104 10997 1658 1477 117 170 16358 3702 12733 1104 1103 8050 26601 21943 2285 185 23415 5674 4863 1884 2646 189 27226 17203 1766 119 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.601279 23456244467520 run_ner.py:280] input_ids: 101 146 11951 5783 1104 10997 1658 1477 117 170 16358 3702 12733 1104 1103 8050 26601 21943 2285 185 23415 5674 4863 1884 2646 189 27226 17203 1766 119 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.601342 23456244467520 run_ner.py:281] input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.601401 23456244467520 run_ner.py:282] segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:label_ids: 5 3 4 4 3 3 4 4 3 3 3 4 4 3 3 1 4 4 4 2 4 4 4 2 4 2 4 3 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.601460 23456244467520 run_ner.py:283] label_ids: 5 3 4 4 3 3 4 4 3 3 3 4 4 3 3 1 4 4 4 2 4 4 4 2 4 2 4 3 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:*** Example ***
+I1012 11:53:03.602299 23456244467520 run_ner.py:276] *** Example ***
+INFO:tensorflow:guid: train-1
+I1012 11:53:03.602358 23456244467520 run_ner.py:277] guid: train-1
+INFO:tensorflow:tokens: The ad ##eno ##mat ##ous p ##oly ##po ##sis co ##li ( AP ##C ) t ##umour - suppress ##or protein controls the W ##nt signalling pathway by forming a complex with g ##ly ##co ##gen s ##ynth ##ase kinase 3 ##bet ##a ( G ##S ##K - 3 ##bet ##a )
+I1012 11:53:03.602412 23456244467520 run_ner.py:279] tokens: The ad ##eno ##mat ##ous p ##oly ##po ##sis co ##li ( AP ##C ) t ##umour - suppress ##or protein controls the W ##nt signalling pathway by forming a complex with g ##ly ##co ##gen s ##ynth ##ase kinase 3 ##bet ##a ( G ##S ##K - 3 ##bet ##a )
+INFO:tensorflow:input_ids: 101 1109 8050 26601 21943 2285 185 23415 5674 4863 1884 2646 113 10997 1658 114 189 27226 118 17203 1766 4592 7451 1103 160 2227 25498 13548 1118 5071 170 2703 1114 176 1193 2528 4915 188 26588 6530 24779 124 16632 1161 113 144 1708 2428 118 124 16632 1161 114 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.602473 23456244467520 run_ner.py:280] input_ids: 101 1109 8050 26601 21943 2285 185 23415 5674 4863 1884 2646 113 10997 1658 114 189 27226 118 17203 1766 4592 7451 1103 160 2227 25498 13548 1118 5071 170 2703 1114 176 1193 2528 4915 188 26588 6530 24779 124 16632 1161 113 144 1708 2428 118 124 16632 1161 114 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.602534 23456244467520 run_ner.py:281] input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.602594 23456244467520 run_ner.py:282] segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:label_ids: 5 3 1 4 4 4 2 4 4 4 2 4 2 2 4 2 2 4 3 3 4 3 3 3 3 4 3 3 3 3 3 3 3 3 4 4 4 3 4 4 3 3 4 4 3 3 4 4 3 3 4 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.602653 23456244467520 run_ner.py:283] label_ids: 5 3 1 4 4 4 2 4 4 4 2 4 2 2 4 2 2 4 3 3 4 3 3 3 3 4 3 3 3 3 3 3 3 3 4 4 4 3 4 4 3 3 4 4 3 3 4 4 3 3 4 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:*** Example ***
+I1012 11:53:03.603083 23456244467520 run_ner.py:276] *** Example ***
+INFO:tensorflow:guid: train-2
+I1012 11:53:03.603142 23456244467520 run_ner.py:277] guid: train-2
+INFO:tensorflow:tokens: , a ##xin / conduct ##in and beta ##cate ##nin .
+I1012 11:53:03.603189 23456244467520 run_ner.py:279] tokens: , a ##xin / conduct ##in and beta ##cate ##nin .
+INFO:tensorflow:input_ids: 101 117 170 16594 120 5880 1394 1105 11933 20127 10430 119 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.603248 23456244467520 run_ner.py:280] input_ids: 101 117 170 16594 120 5880 1394 1105 11933 20127 10430 119 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.603308 23456244467520 run_ner.py:281] input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.603368 23456244467520 run_ner.py:282] segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:label_ids: 5 3 3 4 3 3 4 3 3 4 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.603425 23456244467520 run_ner.py:283] label_ids: 5 3 3 4 3 3 4 3 3 4 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:*** Example ***
+I1012 11:53:03.603892 23456244467520 run_ner.py:276] *** Example ***
+INFO:tensorflow:guid: train-3
+I1012 11:53:03.603949 23456244467520 run_ner.py:277] guid: train-3
+INFO:tensorflow:tokens: Complex formation induce ##s the rapid degradation of beta ##cate ##nin .
+I1012 11:53:03.603994 23456244467520 run_ner.py:279] tokens: Complex formation induce ##s the rapid degradation of beta ##cate ##nin .
+INFO:tensorflow:input_ids: 101 9974 3855 21497 1116 1103 6099 18126 1104 11933 20127 10430 119 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.604052 23456244467520 run_ner.py:280] input_ids: 101 9974 3855 21497 1116 1103 6099 18126 1104 11933 20127 10430 119 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.604111 23456244467520 run_ner.py:281] input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.604169 23456244467520 run_ner.py:282] segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:label_ids: 5 3 3 3 4 3 3 3 3 3 4 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.604226 23456244467520 run_ner.py:283] label_ids: 5 3 3 3 4 3 3 3 3 3 4 4 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:*** Example ***
+I1012 11:53:03.604921 23456244467520 run_ner.py:276] *** Example ***
+INFO:tensorflow:guid: train-4
+I1012 11:53:03.604977 23456244467520 run_ner.py:277] guid: train-4
+INFO:tensorflow:tokens: In co ##lon car ##cin ##oma cells , loss of AP ##C leads to the accumulation of beta ##cate ##nin in the nucleus , where it binds to and activate ##s the T ##c ##f - 4 transcription factor
+I1012 11:53:03.605027 23456244467520 run_ner.py:279] tokens: In co ##lon car ##cin ##oma cells , loss of AP ##C leads to the accumulation of beta ##cate ##nin in the nucleus , where it binds to and activate ##s the T ##c ##f - 4 transcription factor
+INFO:tensorflow:input_ids: 101 1130 1884 4934 1610 16430 7903 3652 117 2445 1104 10997 1658 4501 1106 1103 23168 1104 11933 20127 10430 1107 1103 14297 117 1187 1122 23126 1106 1105 23162 1116 1103 157 1665 2087 118 125 15416 5318 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.605087 23456244467520 run_ner.py:280] input_ids: 101 1130 1884 4934 1610 16430 7903 3652 117 2445 1104 10997 1658 4501 1106 1103 23168 1104 11933 20127 10430 1107 1103 14297 117 1187 1122 23126 1106 1105 23162 1116 1103 157 1665 2087 118 125 15416 5318 102 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.605145 23456244467520 run_ner.py:281] input_mask: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.605203 23456244467520 run_ner.py:282] segment_ids: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:label_ids: 5 3 1 4 2 4 4 3 3 3 3 3 4 3 3 3 3 3 3 4 4 3 3 3 3 3 3 3 3 3 3 4 3 3 4 4 3 3 3 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+I1012 11:53:03.605262 23456244467520 run_ner.py:283] label_ids: 5 3 1 4 2 4 4 3 3 3 3 3 4 3 3 3 3 3 3 4 4 3 3 3 3 3 3 3 3 3 3 4 3 3 4 4 3 3 3 3 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+INFO:tensorflow:Writing example 5000 of 8230
+...
+</pre>
+Run BioBERT on the QA dataset:
+<pre class="term">
+[user@cn3104 ~]$ <b>cp $BIOBERT_DATA/* .</b>
+[user@cn3104 ~]$ <b>export BIOBERT_DIR=. </b>
+[user@cn3104 ~]$ <b>cp -r $BIOBERT_BENCHMARKS/BioASQ .</b>
+[user@cn3104 ~]$ <b>export QA_DIR=BioASQ</b>
+[user@cn3104 ~]$ <b>export OUTPUT_DIR=./qa_outputs</b>
+[user@cn3104 ~]$ <b>mkdir -p $OUTPUT_DIR</b>
+[user@cn3104 ~]$ <b>python $BIOBERT_SRC/run_qa.py --do_train=True --do_predict=True --vocab_file=$BIOBERT_DIR/vocab.txt --bert_config_file=$BIOBERT_DIR/bert_config.json --init_checkpoint=$BIOBERT_DIR/model.ckpt-1000000 --max_seq_length=384 --train_batch_size=12 --learning_rate=5e-6 --doc_stride=128 --num_train_epochs=5.0 --do_lower_case=False --train_file=$QA_DIR/BioASQ-train-factoid-4b.json --predict_file=$QA_DIR/BioASQ-test-factoid-4b-1.json --output_dir=$OUTPUT_DIR </b>
+...
+
+Exit the application: <br />      
+<pre class="term">
+[user@cn3104 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

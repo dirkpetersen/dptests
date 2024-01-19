@@ -1,0 +1,196 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pangolin on Biowulf';</script>
+<div class="title">pangolin on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Phylogenetic Assignment of Named Global Outbreak LINeages. pangolin was developed to implement the dynamic nomenclature of SARS-CoV-2 lineages, known as the Pango nomenclature. It allows a user to assign a SARS-CoV-2 genome sequence the most likely lineage (Pango lineage) to SARS-CoV-2 query sequences.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://cov-lineages.org/pangolin.html">pangolin Main Site</a></li>
+<li><a href="https://github.com/cov-lineages/pangolin">pangolin on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>pangolin</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>pangolin should be run with lscratch and the <tt>--tempdir</tt> option should be used to make sure that temporary data is written to the correct location. See example below.
+    <li>Environment variables set <!--for ones users should be aware of -->
+    <ul>
+      <li><tt>PATH</tt></li>
+      <li><tt>PANGOLIN_TESTDATA</tt></li>
+    </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c4 --mem=8g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 12440727
+salloc.exe: job 12440727 queued and waiting for resources
+salloc.exe: job 12440727 has been allocated resources
+salloc.exe: Granted job allocation 12440727
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0913 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.12440727.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0913 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0913 12440727]$ <b>module load pangolin</b>
+[+] Loading pangolin  2.3.6  on cn0913
+[+] Loading singularity  3.7.3  on cn0913
+
+[user@cn0913 12440727]$ <b>cp $PANGOLIN_TESTDATA/* .</b>
+
+[user@cn0913 12440727]$ <b>mkdir tempdir</b>
+
+[user@cn0913 12440727]$ <b>pangolin --tempdir=./tempdir cluster.fasta</b>
+Found the snakefile
+The query file is:/lscratch/12440727/cluster.fasta
+EDB003  sequence too short
+EDB004  has an N content of 0.98
+Looking in /opt/conda/envs/pangolin/lib/python3.7/site-packages/pangoLEARN/data for data files...
+
+Data files found
+Trained model:  /opt/conda/envs/pangolin/lib/python3.7/site-packages/pangoLEARN/data/decisionTree_v1.joblib
+Header file:    /opt/conda/envs/pangolin/lib/python3.7/site-packages/pangoLEARN/data/decisionTreeHeaders_v1.joblib
+Lineages csv:   /opt/conda/envs/pangolin/lib/python3.7/site-packages/pangoLEARN/data/lineages.metadata.csv
+Job counts:
+        count   jobs
+        1       add_failed_seqs
+        1       align_to_reference
+        1       all
+        1       minimap2_check_distance
+        1       overwrite
+        1       pangolearn
+        1       parse_paf
+        1       type_variants_b117
+        1       type_variants_b12142
+        1       type_variants_b1351
+        1       type_variants_p1
+        1       type_variants_p2
+        1       type_variants_p3
+        13
+Job counts:
+        count   jobs
+        1       parse_paf
+        1
+[M::mm_idx_gen::0.003*1.49] collected minimizers
+[M::mm_idx_gen::0.004*1.33] sorted minimizers
+[M::main::0.004*1.33] loaded/built the index for 1 target sequence(s)
+[M::mm_mapopt_update::0.004*1.30] mid_occ = 100
+[M::mm_idx_stat] kmer size: 19; skip: 19; is_hpc: 0; #seq: 1
+[M::mm_idx_stat::0.004*1.28] distinct minimizers: 2952 (100.00% are singletons); average occurrences: 1.000; average spacing: 10.130
+warning: using --pad without --trim has no effect
+[M::worker_pipeline::0.095*1.00] mapped 8 sequences
+[M::main] Version: 2.17-r941
+[M::main] CMD: minimap2 -a -x asm5 -t 1 /opt/conda/envs/pangolin/lib/python3.7/site-packages/pangolin-2.3.6-py3.7.egg/pangolin/data/reference.fasta /lscratch/12440727/./tempdir/tmpat6kcm3p/mappable.fasta
+[M::main] Real time: 0.096 sec; CPU: 0.096 sec; Peak RSS: 0.003 GB
+loading model 04/09/2021, 13:23:32
+processing block of 8 sequences 04/09/2021, 13:23:33
+complete 04/09/2021, 13:23:34
+Job counts:
+        count   jobs
+        1       add_failed_seqs
+        1
+Job counts:
+        count   jobs
+        1       overwrite
+        1
+Output file written to: /lscratch/12440727/lineage_report.csv
+
+[user@cn0913 12440727]$ <b>cat lineage_report.csv</b>
+taxon,lineage,probability,pangoLEARN_version,status,note
+EDB001,B.1.1.26,1.0,2021-03-29,passed_qc,
+EDB002,B.1.1.26,1.0,2021-03-29,passed_qc,
+EDB005,B,1.0,2021-03-29,passed_qc,
+EDB006,B.1.1.26,1.0,2021-03-29,passed_qc,
+EDB007,B.1.1.26,1.0,2021-03-29,passed_qc,
+EDB008,B.1.1.26,1.0,2021-03-29,passed_qc,
+EDB009,B.1.1.26,1.0,2021-03-29,passed_qc,
+EDB010,B,1.0,2021-03-29,passed_qc,
+EDB003,None,0,2021-03-29,fail,seq_len:2997
+EDB004,None,0,2021-03-29,fail,N_content:0.98
+
+[user@cn0913 12440727]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 12440727
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pangolin.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load pangolin
+pagolin --tempdir=/lscratch/$SLURM_JOB_ID my.fasta
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] [--gres=lscratch:#] pangolin.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. pangolin.swarm). For example:</p>
+
+<pre class="term">
+pagolin --tempdir=/lscratch/$SLURM_JOB_ID A.fasta
+pagolin --tempdir=/lscratch/$SLURM_JOB_ID B.fasta
+pagolin --tempdir=/lscratch/$SLURM_JOB_ID C.fasta
+pagolin --tempdir=/lscratch/$SLURM_JOB_ID D.fasta
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f pangolin.swarm [-g #] [-t #] [--gres=lscratch:#] --module pangolin</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module pangolin</tt> <td>Loads the pangolin module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

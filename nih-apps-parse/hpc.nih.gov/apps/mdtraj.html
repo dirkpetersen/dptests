@@ -1,0 +1,137 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mdtraj on Biowulf';</script>
+<div class="title">mdtraj on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MDTraj is a python library that allows users to manipulate molecular dynamics (MD) trajectories and perform a variety of analyses, including fast RMSD, solvent accessible surface area, hydrogen bonding, etc. A highlight of MDTraj is the wide variety of molecular dynamics trajectory file formats which are supported, including RCSB pdb, GROMACS xtc and trr, CHARMM / NAMD dcd, AMBER binpos, AMBER NetCDF, AMBER mdcrd, TINKER arc and MDTraj HDF5. 
+</p>
+<p>
+The installation of MDTraj on Helix &amp; Biowulf also contains MDAnalysis, another python package for analyzing MD trajectories. 
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    McGibbon RT, Beauchamp KA, Harrigan MP, Klein C, Swails JM, Hernández CX, Schwantes CR, Wang LP, Lane TJ, Pande VS.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/26488642"><u><b>MDTraj: A Modern Open Library for the Analysis of Molecular Dynamics Trajectories.</b></u></a>
+    <em>Biophys J. 2015 Oct 20;109(8):1528-32.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://mdtraj.org">MDTraj Documentation</a></li>
+  <li><a href="http://www.mdanalysis.org//">MDAnalysis Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>mdtraj</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>MDTRAJ_EXAMPLES</tt></li>
+  </ul>
+<li>Example files in <tt>$MDTRAJ_EXAMPLES</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ module load mdtraj
+[user@cn3144 ~]$ python
+&gt;&gt;&gt; import mdtraj as md
+&gt;&gt;&gt; t = md.load('trajectory.xtc', top='trajectory.pdb')
+&gt;&gt;&gt; print t
+&lt;mdtraj.Trajectory with 100 frames, 22 atoms at 0x109f0a3d0&gt;
+&gt;&gt;&gt; quit()
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a python input script <b><tt>mdtraj.py</tt></b>.  This is an example lifted from the
+<a href="http://mdtraj.org/latest/examples/introduction.html">MDTraj Introduction</a> page.</p>
+
+<pre class="term">
+#!/usr/bin/env python
+import mdtraj as md
+t = md.load('trajectory.xtc', top='trajectory.pdb')
+print t
+print t[1:10]
+print t[-1]
+print t.xyz.shape
+print np.mean(t.xyz)
+print t.time[0:10]
+t.unitcell_lengths[-1]
+t[::2].save('halftraj.h5')
+t[0:10].save_dcd('first-ten-frames.dcd')
+atom_to_keep = [a.index for a in t.topology.atoms if a.name == 'CA']
+t.restrict_atoms(atoms_to_keep)  # this acts inplace on the trajectory
+t.save('CA-only.h5')
+</pre>
+
+<p>Create a batch script <b><tt>mdtraj.sh</tt></b>:</p>
+<pre class="term">#!/bin/bash
+module load mdtraj
+python mdtraj.py</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] mdtraj.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mdtraj.swarm). For example:</p>
+
+<pre class="term">
+python mdtraj_1.py
+python mdtraj_2.py
+python mdtraj_3.py
+python mdtraj_4.py
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mdtraj.swarm [-g #] [-t #] --module mdtraj</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module mdtraj</tt> <td>Loads the mdtraj module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

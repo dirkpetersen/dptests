@@ -1,0 +1,160 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'fqtools on Biowulf';</script>
+<div class="title">fqtools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+fqtools are used for manipulating fastq and unaligned bam files. See below for an overview of which tools
+are available.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>A. P. Droop, <em>fqtools: An efficient software suite for modern FASTQ file manipulation.</em> 
+    Bioinformatics 2016, 32:1883-1884.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/27153699">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4908325/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btw088">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>fqtools Main Site: <a href="https://github.com/alastair-droop/fqtools">alastair-droop/fqtools</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: fqtools (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables: $FQTOOLS_TEST_DATA
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fqtools</b>
+[user@cn3144 ~]$ <b>fqtools -h</b>
+...
+COMMAND:
+view      View FASTQ files
+head      View the first reads in FASTQ files
+count     Count FASTQ file reads
+header    View FASTQ file header data
+sequence  View FASTQ file sequence data
+quality   View FASTQ file quality data
+header2   View FASTQ file secondary header data
+fasta     Convert FASTQ files to FASTA format
+basetab   Tabulate FASTQ base frequencies
+qualtab   Tabulate FASTQ quality character frequencies
+lengthtab Tabulate FASTQ read lengths
+type      Attempt to guess the FASTQ quality encoding type
+validate  Validate FASTQ files
+find      Find FASTQ reads containing specific sequences
+trim      Trim reads in a FASTQ file
+qualmap   Translate quality values using a mapping file
+
+[user@cn3144 ~]$ <b>cp $FQTOOLS_TEST_DATA/test.fastq.gz .</b>
+
+[user@cn3144 ~]$ <b>fqtools head test.fastq.gz</b>
+@DFXGT8Q1:221:C1F6PACXX:3:1101:1229:2136 1:N:0:
+TGTGTTGTCACGCTGCTAATGTCTGCTCTCTCTCGTTTCTTTTTGGAGGC
++
+???DDADBC=28AEEEIEDFFI&lt;F@EFIIEEII*??DDEDEIED8@/?;C
+...
+[user@cn3144 ~]$ <b>fqtools validate test.fastq.gz</b>
+OK
+[user@cn3144 ~]$ <b>fqtools head -n 20 test.fastq.gz | fqtools quality</b>
+...
+[user@cn3144 ~]$ <b>fqtools type test.fastq.gz</b>
+fastq-sanger
+[user@cn3144 ~]$ <b>fqtools qualtab test.fastq.gz</b>
+!       0
+"       0
+#       4330007
+$       0
+%       0
+&amp;   59273
+'       9373
+(       12313
+)       79433
+...
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fqtools.sh), which uses the input file 'fqtools.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+# this file is fqtools.sh
+module load fqtools
+cp $FQTOOLS_TEST_DATA/test.fastq.gz .
+fqtools qualtab test.fastq.gz &gt; test.qualtab
+fqtools basetab test.fastq.gz &gt; test.basetab
+fqtools lengthtab test.fastq.gz &gt; test.lengthtab
+fqtools type test.fastq.gz &gt; test.qual
+if [[ "$(fqtools validate test.fastq.gz)" == "OK" ]]; then
+    touch test.OK
+else
+    touch test.FAIL
+fi
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] fqtools.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. fqtools.swarm). For example:</p>
+
+<pre class="term">
+fqtools type sample1.fastq.gz &gt; sample1.qualtype
+fqtools type sample2.fastq.gz &gt; sample2.qualtype
+fqtools type sample3.fastq.gz &gt; sample3.qualtype
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fqtools.swarm [-g #] [-t #] --module fqtools</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module fqtools <td>Loads the fqtools module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

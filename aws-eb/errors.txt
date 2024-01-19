@@ -1,0 +1,14 @@
+
+0T090124Z is now earlier than 20231220T155120Z (20231220T160620Z - 15 min.)
+Client Error: An error occurred (SignatureDoesNotMatch) when calling the AttachRolePolicy operation: Signature expired: 20231220T090124Z is now earlier than 20231220T155120Z (20231220T160620Z - 15 min.)
+Client Error: An error occurred (SignatureDoesNotMatch) when calling the CreateInstanceProfile operation: Signature expired: 20231220T090124Z is now earlier than 20231220T155120Z (20231220T160620Z - 15 min.)
+No suitable instance type found!
+Traceback (most recent call last):
+  File "/home/dp/gh/dptests/aws-eb/aws-eb.py", line 4132, in <module>
+    if main():
+  File "/home/dp/gh/dptests/aws-eb/aws-eb.py", line 53, in main
+    subcmd_launch(args, cfg, bld, aws)
+  File "/home/dp/gh/dptests/aws-eb/aws-eb.py", line 237, in subcmd_launch
+    aws.ec2_deploy(768, instance_type) # 768GB disk for the build instance
+  File "/home/dp/gh/dptests/aws-eb/aws-eb.py", line 1636, in ec2_deploy
+    iid, ip = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)

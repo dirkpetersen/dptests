@@ -1,0 +1,175 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'fastq_screen on Biowulf';</script>
+<div class="title">fastq_screen on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A tool for multi-genome mapping and quality control. It allows you to screen a library of sequences in FastQ format against a set of sequence databases so you can see if the composition of the library matches with what you expect. 
+</p>
+<p>
+Features
+<ul>
+  <li>It supports multiple threads.
+  <li>MultiQC can parse it's output.
+</p>
+<p>fastq_screen generates the following graphs demonstrating the proportion of your library was able to map:</p>
+   <img src="/images/good_sequence_screen.png" width="640"; alt="good output graph"/>
+<p>In contrast, poor sequencing results will include results from one or more unexpected species. </p>
+    <img src="/images/bad_sequence_screen.png" width="640"; alt="bad output graph"/>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Wingett SW and Andrews S.<em> FastQ Screen: A tool for multi-genome mapping and quality control</em> [version 2; referees: 4 approved]. F1000Research 2018, 7:1338; doi:10.12688/f1000research.15931.2;  PubMed PMID: 30254741; PubMed Central PMCID:PMC6124377
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/30254741">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6124377/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://f1000research.com/articles/7-1338/v2">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>fastq_screen Main Site:<a href="https://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>fastq_screen</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded
+	<li>This application produces HTML reports. You can use <a href="/docs/hpcdrive.html">hpcdrive</a> to view these reports on your local workstation.</li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$FASTQ_SCREEN_TEST_DATA</tt></li>
+  </ul>
+<li>Example files in $FASTQ_SCREEN_TEST_DATA<tt></tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fastq_screen</b>
+[user@cn3144 ~]$ <b>mkdir /data/$USER/fastq_screen</b>
+[user@cn3144 ~]$ <b>cd /data/$USER/fastq_screen</b>
+[user@cn3144 ~]$ <b>cp $FASTQ_SCREEN_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>fastq_screen --tag fqs_test_dataset.fastq.gz</b>
+Using fastq_screen v0.14.0
+Reading configuration from '/usr/local/apps/fastq_screen/0.14.0/bin/fastq_screen_v0.14.0/fastq_screen.conf'
+Aligner (--aligner) not specified, but Bowtie2 path and index files found: mapping with Bowtie2
+Using '/usr/local/apps/bowtie/2-2.4.1/bin/bowtie2' as Bowtie 2 path
+Adding database Human
+Adding database Mouse
+Adding database Rat
+Adding database Drosophila
+Adding database Worm
+Adding database Yeast
+Adding database Arabidopsis
+Adding database Ecoli
+Adding database rRNA
+Adding database MT
+Adding database PhiX
+Adding database Lambda
+Adding database Vectors
+Adding database Adapters
+Using 8 threads for searches
+Option --subset set to 0: processing all reads in FASTQ files
+Processing fqs_test_dataset.fastq.gz
+Not making data subset
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Human
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Mouse
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Rat
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Drosophila
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Worm
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Yeast
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Arabidopsis
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Ecoli
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against rRNA
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against MT
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against PhiX
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Lambda
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Vectors
+Searching fqs_test_dataset.fastq.gz_temp_subset.fastq against Adapters
+Processing complete
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fastq_screen.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load fastq_screen
+fastq_screen --tag fqs_test_dataset.fastq.gz
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=2g fastq_screen.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. fastq_screen.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;fastq_screen --tag R1.fq
+cd dir2;fastq_screen --tag R2.fq
+cd dir3;fastq_screen --tag R3.fq
+cd dir4;fastq_screen --tag R4.fq
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fastq_screen.swarm [-g #] [-t 8] --module fastq_screen</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module fastq_screen</tt> <td>Loads the fastq_screen module for each subjob in the swarm
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,118 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "REMORA";</script>
+
+<div class="title">REMORA on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Methylation/modified base calling separated from basecalling. Remora primarily provides an API to call modified bases for basecaller programs such as Bonito. Remora also provides the tools to prepare datasets, train modified base models and run simple inference.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Please see:
+    <a href="https://github.com/nanoporetech/remora"><b><u>Original documentation</u></b></a>
+    <em>Oxford Nanopore Technologies</em>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/nanoporetech/remora">REMORA Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>remora</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>REMORA_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>/usr/local/apps/remora/2.1.1/tests/data</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn4338 ~]$ <b>module load remora</b>
+[+] Loading remora  2.1.1  on cn4338 
+[+] Loading singularity  3.10.5  on cn4338
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Example</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Running help command:</p>
+<pre class="term">
+[user@cn4338] <b>cp -a /usr/local/apps/remora/2.1.1/tests/data .</b>
+[user@cn4338 data]$ <b>remora --help</b>
+remora --help
+usage: remora [-h] [-v] {dataset,model,infer,validate,analyze} ...
+  
+********** Remora *********
+  
+Modified base model training and application.
+  
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         Show Remora version and exit.
+  
+sub-commands:
+  dataset             Create or perform operations on a Remora dataset
+  model               Train or perform operations on Remora models
+  infer               Perform Remora model inference
+  validate            Validate modified base predictions
+  analyze             Analyze nanopore data including raw signal
+</pre>
+
+<p>Generate Training Data:</p>
+<pre class="term">
+[apptest1@cn4338 data]$<b> remora \
+  dataset prepare \
+  can_reads.pod5 \
+  can_mappings.bam \
+  --output-remora-training-file can_chunks.npz \
+  --log-filename prep_can.log \
+  --refine-kmer-level-table levels.txt \
+  --refine-rough-rescale \
+  --motif CG 0 \
+  --mod-base-control </b>
+Indexing BAM by read id: 14 Reads [00:00, 10146.93 Reads/s]
+[14:30:14] Extracting read IDs from POD5
+[14:30:14] Found 14 BAM records, 14 POD5 reads, and 14 in common
+[14:30:14] Making reference-anchored training data
+[14:30:14] Allocating memory for output tensors
+[14:30:14] Processing reads
+Extracting chunks: 100%|█████████████████████████| 14/14 [00:00<00:00, 163.20 Reads/s]
+[14:30:14] Extracted 205 chunks from 14 reads.
+[14:30:14] Label distribution: Counter({0: 205})
+</pre>
+
+<table border=0>
+<tr><td><td>For more examples, please visit the <a href="https://github.com/nanoporetech/remora"></u></b>Remora Github Page</a>
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,156 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'rosettafold on Biowulf';</script>
+<div class="title">rosettafold on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Accurate prediction of protein structures and interactions using a three-track neural network,  in which information at the 1D sequence level, the 2D distance map level, and the 3D coordinate level is successively transformed and integrated. 
+</p>
+<p>
+<ul>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Baek M et al.<em>Accurate prediction of protein structures and interactions using a three-track neural network</em> Science. 2021 Jul 15
+    <a href="https://pubmed.ncbi.nlm.nih.gov/34282049/">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://science.sciencemag.org/content/early/2021/07/19/science.abj8754.long">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>RoseTTAFold Github:<a href="https://github.com/RosettaCommons/RoseTTAFold">Github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>RoseTTAFold</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>RoseTTAFold needs write permission to the model, so please save a local copy of network at your home directory after you load the module the first time.
+	<pre class="term">
+	module load RoseTTAFold
+	cp -r ${ROSETTAFOLD_NETWORK:-none} ~/
+	</pre>
+	<li>To run complex modeling, you also needs to save a local copy of weights at your home directory. 
+	<pre class="term">
+	cp -r ${ROSETTAFOLD_WEIGHTS:-none} ~/
+	</pre>
+	<li>For PPI screening using faster 2-track version (only available for RoseTTAFold/1.1.0), you need to copy a different network to home directory.
+	<pre class="term">
+	cp -r ${ROSETTAFOLD_NETWORK_2TRACK:-none} ~/
+	</pre>
+	<li>Since only the last step of run_e2e_ver.sh and run_pyrosetta_ver.sh can use GPU, we strongly suggest to run the edited pipeline which was spited to part1(CPUs and memory heavy) and part2(GPU), see the examples in interactive job. 
+</ul>
+</a>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=10 --mem=60G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load RoseTTAFold</b>
+[user@cn3144]$ <b>mkdir /data/$USER/rosettafold_test/</b>
+[user@cn3144]$ <b>cd /data/$USER/rosettafold_test/</b>
+[user@cn3144]$ <b>cp -r ${ROSETTAFOLD_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>run_e2e_ver_part1.sh input.fa e2e_out</b>
+Running HHblits
+Running PSIPRED
+Running hhsearch
+Running end-to-end prediction
+Done with part1, please run part2 on GPU node
+
+[user@cn3144]$ <b>run_pyrosetta_ver_part1.sh input.fa pyrosetta_out</b>
+Running HHblits
+Running PSIPRED
+Running hhsearch
+Predicting distance and orientations
+Running parallel RosettaTR.py
+Done with part1, please run part2 at GPU node
+
+[user@cn3144 ]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=10g --gres=gpu:p100:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load RoseTTAFold</b>
+[user@cn3144]$ <b>cd /data/$USER/rosettafold_test/</b>
+[user@cn3144]$ <b>run_e2e_ver_part2.sh input.fa e2e_out</b>
+run_e2e_ver_part2.sh input.fa e2e_out
+Running end-to-end prediction
+Done with part2 (prediction)
+
+[user@cn3144]$ <b>run_pyrosetta_ver_part2.sh input.fa pyrosetta_out</b>
+Picking final models
+Final models saved in: pyrosetta_out/model
+Done with part2 (pick final models)
+</pre>
+<p> For PPI screening using faster 2-track version:
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=10g --gres=gpu:p100:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load RoseTTAFold</b>
+[user@cn3144]$ <b>mkdir /data/$USER/rosettafold_test/</b>
+[user@cn3144]$ <b>cd /data/$USER/rosettafold_test/</b>
+[user@cn3144]$ <b>cp -r ${ROSETTAFOLD_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>cd complex_2track</b>
+[user@cn3144]$ <b>python ~/network_2track/predict_msa.py -msa input.a3m -npz complex_2track.npz -L1 218</b>
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. rosettafold.sh). For example:</p>
+
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+set -e
+module load RoseTTAFold
+cd /data/$USER/rosettafold_test/
+cp -r ${ROSETTAFOLD_TEST_DATA:-none}/* .
+cd complex_modeling
+python ~/network/predict_complex.py -i paired.a3m -o complex3 -Ls 218 310
+</code>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=10g --partition=gpu --gres=gpu:v100x:1 rosettafold.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

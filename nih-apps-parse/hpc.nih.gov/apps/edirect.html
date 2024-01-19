@@ -1,0 +1,55 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Entrez Direct E-utilites';</script>
+<div class="title">Entrez Direct E-utilites</div>
+
+<h2>Description</h2>
+<p>
+Entrez Direct (EDirect) is an advanced method for accessing the NCBI's set of interconnected databases (publication, sequence, structure, gene, variation, expression, etc.) from a UNIX terminal window. Functions take search terms from command-line arguments. Individual operations are combined to build multi-step queries. Record retrieval and formatting normally complete the process.
+</p>
+
+<p>
+EDirect also provides an argument-driven function that simplifies the extraction of data from document summaries or other results that are returned in structured XML format. This can eliminate the need for writing custom software to answer ad hoc questions. Queries can move seamlessly between EDirect commands and UNIX utilities or scripts to perform actions that cannot be accomplished entirely within Entrez.
+</p>
+
+<h2>How to Use</h2>
+<p>Entrez Direct uses <a href="modules.html">environment modules</a>.  Type</p>
+<pre class="term">module load edirect</pre>
+<p>at the prompt.</p>
+
+<p>To see the help menu, type</p>
+<pre class="term">efetch -help</pre>
+<p>at the prompt.</p>
+
+<p><b>NOTE:</b> The Entrez Direct utilities will work on Helix, the Biowulf login node, or the Biowulf compute nodes.</b>
+
+<h2>Examples</h2>
+Find the Pubmed entries relating to "Opsin Gene Conversion", then look for all related neighbours of the original papers.
+
+<pre class="term">esearch -db pubmed -query "opsin gene conversion" | elink -related</pre>
+<P>
+Find all protein sequences for 'lycopene cyclase' and then fetch those sequences in Fasta format.
+<pre class="term">esearch -db protein -query "lycopene cyclase" | efetch -format fasta</pre>
+
+<p>And a more complicated example:</p>
+<pre class="term">esearch -db pubmed -query "Beadle AND Tatum AND Neurospora" | \
+  elink -related | \
+  efilter -query "NOT historical article [FILT]" | \
+  efetch -format docsum | \
+  xtract -pattern DocumentSummary -present Author -and Title \
+    -element Id -first "Author/Name" -element Title | \
+  grep -i -e enzyme -e synthesis | \
+  sort -t $'\t' -k 2,3f | \
+  column -s $'\t' -t | \
+  head -n 10 | \
+  cut -c 1-80</pre>
+
+<h2>Documentation</h2>
+
+<ul>
+  <li><a href="http://www.ncbi.nlm.nih.gov/books/NBK179288/">Entrez Direct E-utilities Home</a>
+</ul>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,194 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CutRunTools: a flexible pipeline for CUT&RUN processing and footprint analysis ';</script>
+<div class="title"><b>CutRunTools: a flexible pipeline for CUT&RUN processing and footprint
+analysis </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CutRunTools is a pipeline for analysis of data produced by the CUT&ampRUN (Cleavage Under Targets and Release Using Nuclease) technology for high-resolution mapping of DNA binding sites.
+It is a flexible, general pipeline that facilitates identification of
+chromatin-associated protein binding 
+and performs genomic footprinting analysis from antibody-targeted
+CutRun primary cleavage data. CutRunTools extracts endonuclease cut site information from
+sequences of short read fragments and produces single-locus binding estimates, aggregate motif
+footprints, and informative visualizations to support the high-resolution mapping capability of
+CutRun
+</p>
+
+<h3>Reference:</h3>
+<ul>
+<li>Qian Zhu, Nan Liu, Stuart H. Orkin, Guo-Cheng Yuan <br /> 
+<i>CUT&RUNTools: a flexible pipeline for CUT&RUN processing and footprint analysis</i> <br />
+<a href="https://www.biorxiv.org/content/10.1101/529081v1.abstract">bioRxiv</a>,  doi: https://doi.org/10.1101/529081.
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://bitbucket.org/qzhudfci/cutruntools/overview">CutRunTools Overview and Usage</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>CutRunTools</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>CUTRUNTOOLS_HOME</b>&nbsp; installation directory</li>
+    <li><b>CUTRUNTOOLS_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>CUTRUNTOOLS_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>CUTRUNTOOLS_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=12g -c5 --gres=lscratch:10</b>
+[user@cn3335 ~]$ <b>module load CutRunTools/20200629 </b>
+[+] Loading bedops  2.4.35
+[+] Loading bedtools  2.27.1
+[+] Loading bowtie  2-2.3.4.3
+[+] Loading macs  2.1.2
+[+] Loading meme  4.12.0  on cn2382
+[+] Loading HDF5  1.10.4
+[+] Loading NetCDF 4.7.4_gcc9.2.0
+[+] Loading picard  2.22.2
+[+] Loading gcc  7.3.0  ...
+[+] Loading GSL 2.4 for GCC 7.2.0 ...
+[+] Loading openmpi 3.0.2  for GCC 7.3.0
+[+] Loading ImageMagick  7.0.8  on cn2382
+[+] Loading pandoc  2.9.2.1  on cn2382
+[+] Loading R 3.5.2
+[+] Loading samtools 1.9  ...
+[+] Loading trimmomatic  0.36  on cn2382
+[+] Loading CutRunTools  20200629
+[user@cn3335 ~]$<b>mkdir -p /data/$USER/CutRunTools && cd /data/$USER/CutRunTools</b>
+</pre>
+The processing described below involves both interactive and batch submission steps
+and follows the outline presented in the CutRunTools Usage documentation (see above).<br />
+First copy the source code and sample data from a system folder to your current folder:
+<pre class="term">
+[user@cn3335 ~]$ <b>cp -r $CUTRUNTOOLS_SRC/*  .</b>
+[user@cn3335 ~]$ <b>cp -P $CUTRUNTOOLS_DATA/* .</b>
+</pre>
+<p class="alert">
+Then customize the configuration file config.json for your needs 
+by editing/replacing  the lines   containing the string "user". The current configuration assumes that the input/output directory  for your data processing will be a folder "workdir" in your currecvt directory.
+</p>
+<br /><br />
+
+Now edit properly / customize the configuration file config.json and then validate it by running the command:
+<pre class="term">
+[user@cn3335 ~]$ <b>./validate.py config.json</b>
+</pre>
+If no error messages are produced, run the command:
+<pre class="term">
+[user@cn3335 ~]$ <b>./create_scripts.py config.json</b>
+</pre>
+A folder workdir with a number of subfolders and files in it will be created. <br />
+Change your current working directory to that folder:
+<pre class="term">
+[user@cn3335 ~]$ <b>cd workdir</b>
+</pre>
+The CutRunTools data processing involves four steps. <br /><br />
+<b>STEP 1: Read trimming and alignment.</b> <br />
+Run either one of the following commands:
+<pre class="term">
+[user@cn3335 ~]$ <b>sbatch ./integrated.sh GATA1_D7_30min_chr11_R1_001.fastq.gz</b>
+</pre>
+or
+<pre class="term">
+[user@cn3335 ~]$ <b>       ./integrated.sh GATA1_D7_30min_chr11_R1_001.fastq.gz</b>
+</pre>
+Even though the commands specify the *_R1_001.fastq.gz file as the only input, CutRunTools will actually check that both forward and reverse fastq files are present.
+<br /><br />
+The following new files will be produced in the subfolders of workdir: 
+<pre class="term">
+aligned.aug10
+└──GATA1_D7_30min_chr11_aligned_reads.bam
+
+trimmed
+├── GATA1_D7_30min_chr11_1.paired.fastq.gz
+├── GATA1_D7_30min_chr11_1.unpaired.fastq.gz
+├── GATA1_D7_30min_chr11_2.paired.fastq.gz
+└── GATA1_D7_30min_chr11_2.unpaired.fastq.gz
+
+trimmed3
+├── GATA1_D7_30min_chr11_1.paired.fastq.gz
+└── GATA1_D7_30min_chr11_2.paired.fastq.gz
+</pre>
+<b>STEP 2: BAM processing and peak calling.</b>
+<pre class="term">
+[user@cn3335 ~]$ <b>cd aligned.aug10 </b>
+</pre>
+Run either one of the following commands:
+<pre class="term">
+[user@cn3335 ~]$ <b>sbatch ./integrated.step2.sh GATA1_D7_30min_chr11_aligned_reads.bam </b>
+</pre>
+or
+<pre class="term">
+[user@cn3335 ~]$ <b>       ./integrated.step2.sh GATA1_D7_30min_chr11_aligned_reads.bam </b>
+</pre>
+A number of output files will be produced, inclusing the peak files *broadPeak and *narrowPeak in folders ../macs2.* and files .stringent.sort.bed in folders ../seacr.*, as you can see by running the command:
+<pre class="term">
+[user@cn3335 ~]$ <b> ls ../macs2.*/*Peak ../seacr*/*.stringent.sort.bed </b>
+</pre>
+<br />
+
+<b>STEP 3: Motif finding.</b> <br />
+Run the following commands:
+<pre class="term">
+[user@cn3335 ~]$ <b>cd .. </b>
+[user@cn3335 ~]$ <b>./run_step3.sh </b>
+</pre>
+This command will submit 12 jobs to the compute cluster. Upon completion of the jobs, 
+a number of new files and subfolders inside of the folders macs2.* and seacr.* will be produced. 
+Alternatively, you can run any of these jobs interactively. For example:
+<pre class="term">
+[user@cn3335 ~]$ <b>cd macs2.broad.aug18</b>
+[user@cn3335 ~]$ <b>./integrate.motif.find.sh GATA1_D7_30min_chr11_aligned_reads_peaks.broadPeak</b>
+[user@cn3335 ~]$ <b>cd ../macs2.narrow.aug18</b>
+[user@cn3335 ~]$ <b>./integrate.motif.find.sh GATA1_D7_30min_chr11_aligned_reads_peaks.narrowPeak</b>
+[user@cn3335 ~]$ <b>cd ../seacr.aug12</b>
+[user@cn3335 ~]$ <b>./integrate.motif.find.sh GATA1_D7_30min_chr11_aligned_reads_treat.stringent.sort.bed</b>
+</pre>
+etc. <br /> <br />
+<b>STEP 4: Motif footprinting.</b> <br />
+Run the following commands:
+<pre class="term">
+[user@cn3335 ~]$ <b>cd /data/$USER/CutRunTools/workdir</b>
+[user@cn3335 ~]$ <b>./run_step4.sh </b>
+</pre>
+This command will submit 12 jobs to the compute cluster. Upon completion of the jobs, a number of new files and subfolders inside of the folders macs2.* and seacr.* will be produced. 
+Alternatively, you can run any of these jobs interactively. For example: <br />
+<pre class="term">
+[user@cn3335 ~]$ <b>cd macs2.broad.aug18</b>
+[user@cn3335 ~]$ <b>./integrate.footprinting.sh GATA1_D7_30min_chr11_aligned_reads_peaks.broadPeak</b>
+[user@cn3335 ~]$ <b>cd ../macs2.narrow.aug18</b>
+[user@cn3335 ~]$ <b>./integrate.footprinting.sh GATA1_D7_30min_chr11_aligned_reads_peaks.narrowPeak</b>
+[user@cn3335 ~]$ <b>cd ../seacr.aug12</b>
+[user@cn3335 ~]$ <b>./integrate.footprinting.sh GATA1_D7_30min_chr11_aligned_reads_treat.stringent.sort.bed</b>
+</pre>
+etc. <br /> <br />
+End the interactive session:
+<pre class="term">
+[user@cn3335 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

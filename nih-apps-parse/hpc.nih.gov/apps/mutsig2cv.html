@@ -1,0 +1,96 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MutSig2CV on Biowulf';</script>
+<div class="title">MutSig2CV on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+mutsig2cv analyzes somatic point mutations discovered in DNA sequencing, identifying genes mutated more often than expected by chance.
+</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g --gres=lscratch:100</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>cd /lscratch/${SLURM_JOB_ID}</b>
+[user@cn3144 ~]$ <b>module load mutsig2cv</b>
+[user@cn3144 ~]$ <b>cp /usr/local/apps/mutsig2cv/TEST_DATA/MutSigCV_example_data.1.0.1.zip .</b>
+[user@cn3144 ~]$ <b>unzip MutSigCV_example_data.1.0.1.zip</b>
+[user@cn3144 ~]$ <b>cd MutSigCV_example_data.1.0.1</b>
+[user@cn3144 ~]$ <b>cp /usr/local/matlab-compiler/v81.tar.gz .</b>
+[user@cn3144 ~]$ <b>tar -xzf v81.tar.gz</b>
+[user@cn3144 ~]$ <b>cp /usr/local/apps/mutsig2cv/3.11/reference.tar.gz .</b>
+[user@cn3144 ~]$ <b>tar -xzf reference.tar.gz</b>
+[user@cn3144 ~]$ <b>run_MutSig2CV.sh v81 LUSC.mutations.maf TEST_OUTPUT</b>
+[...]
+16:16:47  16:41:52  8187/18862 ITGA9       3       1000  CV 0.617212 CL 1.000000 FN 0.326000  [625  81   10   1    0    1]
+16:16:47  16:41:53  8188/18862 ITGAD       9       1000  CV 0.470805 CL 1.000000 FN 0.349000  [625  81   10   1    0    1]
+16:16:48  16:41:53  8189/18862 ITGAE       4       1000  CV 0.918407 CL 1.000000 FN 0.731000  [625  81   10   1    0    1]
+16:16:48  16:41:53  8190/18862 ITGAL       1          0  CV 0.998619 CL 1.000000 FN 1.000000  [625  81   10   1    0    1]
+16:16:48  16:41:53  8191/18862 ITGAM       7       1000  CV 0.653397 CL 1.000000 FN 0.068000  [625  81   10   1    0    1]
+16:16:48  16:41:54  8192/18862 ITGAV       4       1000  CV 0.849691 CL 1.000000 FN 0.100000  [626  81   10   1    0    1]
+16:16:48  16:41:54  8193/18862 ITGAX       8       1000  CV 0.410713 CL 1.000000 FN 0.885000  [627  81   10   1    0    1]
+16:16:52  16:41:56  8210/18862 ITIH4       2       1000  CV 0.872721 CL 1.000000 FN 0.698000  [629  82   10   1    0    1]
+16:16:52  16:41:56  8211/18862 ITIH5       5       1000  CV 0.717304 CL 1.000000 FN 0.729000  [629  82   10   1    0    1]
+[...]
+16:44:08  16:44:08 18860/18862 ZYX         1          0  CV 0.817634 CL 1.000000 FN 1.000000  [1591 184  19   4    1    7]
+16:44:08  16:44:08 18861/18862 ZZEF1       2       1000  CV 0.980706 CL 1.000000 FN 0.500000  [1591 184  19   4    1    7]
+16:44:08  16:44:08 18862/18862 ZZZ3        6       1000  CV 0.302995 CL 0.055000 FN 0.507000  [1591 184  19   4    1    7]
+
+9 genes with q<=0.1
+Saving results...   [save_struct] 38/70 39/70 40/70 41/70 42/70 43/70 44/70 45/70 46/70 47/70 48/70 49/70 50/70 51/70 52/70 
+53/70 54/70 55/70 56/70 57/70 58/70 59/70 60/70 61/70 62/70 63/70 64/70 65/70 66/70 67/70 68/70 69/70 70/70  [collapse] [write]
+Done.
+
+[user@cn3144 ~]$ <b></b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mutsig2cv.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load mutsig2cv
+cd /lscratch/${SLURM_JOB_ID}
+cp /usr/local/apps/mutsig2cv/TEST_DATA/MutSigCV_example_data.1.0.1.zip .
+unzip MutSigCV_example_data.1.0.1.zip
+cd MutSigCV_example_data.1.0.1
+cp /usr/local/matlab-compiler/v81.tar.gz .
+tar -xzf v81.tar.gz
+cp /usr/local/apps/mutsig2cv/3.11/reference.tar.gz .
+tar -xzf reference.tar.gz
+run_MutSig2CV.sh v81 LUSC.mutations.maf TEST_OUTPUT
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=10g --gres=lscratch:100 mutsig2cv.sh</pre>
+
+10 GB memory is sufficient for this example job. You may need to increase the memory allocation for your own jobs. 
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

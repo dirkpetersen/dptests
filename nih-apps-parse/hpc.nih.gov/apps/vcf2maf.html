@@ -1,0 +1,132 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'vcf2maf on Biowulf';</script>
+<div class="title">vcf2maf on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+To convert a VCF into a MAF, each variant must be mapped to only one of all possible gene transcripts/isoforms that it might affect. This selection of a single effect per variant, is often subjective. So this project is an attempt to make the selection criteria smarter, reproducible, and more configurable. And the default criteria must lean towards best practices.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li>vcf2maf Main Site: <a href="https://github.com/mskcc/vcf2maf">vcf2maf on GitHub</a></li>
+  <li>Type <tt><b>vcf2maf.pl --man</b></tt> to see a brief summary of the options</li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>vcf2maf</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Multithreaded
+  <li>Environment variables set <!--for ones users should be aware of -->
+    <ul>
+      <li><tt>VCF2MAF_HOME</tt></li>
+    </ul>
+  <li>Example files in <tt>$VCF2MAF_HOME/tests</tt>
+  <li>Reference data in <tt>/fdb/VEP/*/cache</tt> -- depends on version of VEP loaded
+  <li>vcf2maf.pl depends heavily on <a href="VEP.html">VEP</a>.  At present, only versions of VEP &lt; 107 are compatible.
+  <li>Typically vcf2maf.pl requires at least 20g of memory and minimally 4 cpus.
+  <li>While VEP is tolerant of chromosome format mismatches (when the input .vcf file uses the <a href="https://hpc.nih.gov/refdb/dbview.php?id=920">UCSC</a> format <tt>chr<em>N</em></tt> and the reference fasta uses <a href="https://hpc.nih.gov/refdb/dbview.php?id=408">Ensembl/NCBI</a> format <tt><em>N</em></tt>), vcf2maf is not.  Make sure the reference fasta chromosome format matches that of your input.</li>
+</ul>
+
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=20g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load VEP/106 vcf2maf</b>
+
+[user@cn3144 ~]$ <b>rm -rf test_{vcf2maf,maf2maf,maf2vcf}</b>
+[user@cn3144 ~]$ <b>mkdir test_vcf2maf && cd $_</b>
+[user@cn3144 ~]$ <b>cp  $VCF2MAF_EXAMPLES/test.vcf .</b>
+[user@cn3144 ~]$ <b>vcf2maf.pl \
+  --input-vcf test.vcf \
+  --output-maf test.maf \
+  --vep-path $VEP_HOME/bin \
+  --vep-data $VEP_CACHEDIR \
+  --ref-fasta $VEP_CACHEDIR/GRCh38.fa \
+  --ncbi-build GRCh38 \
+  --cache-version $VEP_VERSION \
+  --vep-forks ${SLURM_CPUS_ON_NODE:-2} \
+  --verbose</b>
+[user@cn3144 ~]$ <b>cd ..</b>
+
+[user@cn3144 ~]$ <b>mkdir test_maf2maf && cd $_</b>
+[user@cn3144 ~]$ <b>cp $VCF2MAF_EXAMPLES/test.maf .</b>
+[user@cn3144 ~]$ <b>maf2maf.pl \
+  --input-maf test.maf \
+  --output-maf test.vep.maf \
+  --ref-fasta $VEP_CACHEDIR/GRCh37.fa \
+  --vep-path $VEP_HOME/bin \
+  --vep-data $VEP_CACHEDIR</b>
+[user@cn3144 ~]$ <b>cd ..</b>
+
+[user@cn3144 ~]$ <b>mkdir test_maf2vcf && cd $_</b>
+[user@cn3144 ~]$ <b>cp $VCF2MAF_EXAMPLES/test.maf .</b>
+[user@cn3144 ~]$ <b>maf2vcf.pl \
+  --input-maf test.maf \
+  --output-dir vcfs \
+  --ref-fasta $VEP_CACHEDIR/GRCh37.fa</b>
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. vcf2maf.sh). For example:</p>
+
+<pre class="term">#!/bin/bash
+module load VEP/106 vcf2maf
+vcf2maf.pl --input-vcf /path/to/data/test.vcf --output-maf test.maf --vep-path $VEP_HOME/bin --vep-data $VEP_CACHEDIR --cache-version $VEP_VERSION \
+  --ref-fasta $VEP_CACHEDIR/GRCh38.fa --ncbi-build GRCh38 --vep-forks $SLURM_CPUS_ON_NODE
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] vcf2maf.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. vcf2maf.swarm). For example:</p>
+
+<pre class="term">vcf2maf.pl --input-vcf data/test1.vcf --output-maf data/test1.maf --vep-path $VEP_HOME/bin --vep-data $VEP_CACHEDIR --cache-version $VEP_VERSION --ref-fasta $VEP_CACHEDIR/GRCh38.fa --ncbi-build GRCh38 --vep-forks $SLURM_CPUS_ON_NODE
+vcf2maf.pl --input-vcf data/test2.vcf --output-maf data/test2.maf --vep-path $VEP_HOME/bin --vep-data $VEP_CACHEDIR --cache-version $VEP_VERSION --ref-fasta $VEP_CACHEDIR/GRCh38.fa --ncbi-build GRCh38 --vep-forks $SLURM_CPUS_ON_NODE
+vcf2maf.pl --input-vcf data/test3.vcf --output-maf data/test3.maf --vep-path $VEP_HOME/bin --vep-data $VEP_CACHEDIR --cache-version $VEP_VERSION --ref-fasta $VEP_CACHEDIR/GRCh38.fa --ncbi-build GRCh38 --vep-forks $SLURM_CPUS_ON_NODE
+vcf2maf.pl --input-vcf data/test4.vcf --output-maf data/test4.maf --vep-path $VEP_HOME/bin --vep-data $VEP_CACHEDIR --cache-version $VEP_VERSION --ref-fasta $VEP_CACHEDIR/GRCh38.fa --ncbi-build GRCh38 --vep-forks $SLURM_CPUS_ON_NODE</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f vcf2maf.swarm [-g #] [-t #] --module vcf2maf VEP/106</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module vcf2maf</tt> <td>Loads the vcf2maf module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

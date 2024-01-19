@@ -1,0 +1,353 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BioGANs: GANs for Biological Image Synthesis ';</script>
+<div class="title"><b>BioGANs: GANs for Biological Image Synthesis
+ </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+BioGANs is a novel application of Generative Adversarial Networks (GANs) to the synthesis of 
+fluorescence microscopy images of living cells. It allows to infer and visualize the correlated 
+localization patterns of different fluorescent proteins. These patterns reflect important biological 
+functions, but cannot be visualized experimentally for multiple proteins at the 
+same stage of cell growth cycle. <br /> <br />
+This application, reimplemented in Keras from the original version devreloped in PyTorch,
+ is being used as a biological example in class #4 of the course
+"Deep Learning by Example on Biowulf".
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Anton Osokin, Anatole Chessel, Rafael E. Carazo Salas and Federico Vaggi <br />
+<i>GANs for Biological Image Synthesis</i><br />
+<a href="http://openaccess.thecvf.com/content_iccv_2017/html/Osokin_GANs_for_Biological_ICCV_2017_paper.html">ICCV 2017 </a> p.2233–2242 <br/>
+<li>James Dodgson, Anatole Chessel, Federico Vaggi, Marco Giordan, Miki Yamamoto, Kunio Arai, 
+   Marisa Madrid, Marco Geymonat, Juan Francisco Abenza, José Cansado, Masamitsu Sato, 
+   Attila Csikasz-Nagy, Rafael Edgardo Carazo Salas<br />
+<i>Reconstructing regulatory pathways by systematically mapping
+protein localization interdependency networks</i><br />
+<a href="https://www.biorxiv.org/content/10.1101/116749v1.full">bioRxiv</a> doi: https://doi.org/10.1101/116749.
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/aosokin/biogans">BioGANs github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>BioGANs</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>BG_HOME</b>&nbsp; installation directory</li>
+    <li><b>BG_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>BG_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>BG_DATA</b>&nbsp; sample data and checkpoints directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=40g --gres=gpu:p100,lscratch:10 -c8</b>
+[user@cn3200 ~]$<b>module load biogans  </b>
+[+] Loading singularity  3.8.4  on cn4225
+[+] Loading biogans  20220825
+</pre>
+The BioGANs application, as it is implemented on Biowulf, comprises the following three executables: 
+<b>train.py</b>, <b>predict.py</b> and <b>visualize.py</b>. <br /><br />
+<b>train.py</b> takes as input two-channel fluorescence microscopy images from the Localization Interdeoendency Network (LIN) dataset <br />
+&nbsp;&nbsp;and performs training of any one of the three available neural network architrectures, <br />
+&nbsp;&nbsp;&nbsp;  (1) DCGAN, <br />
+&nbsp;&nbsp;&nbsp;  (2) DCGAN-separable, or <br /> 
+&nbsp;&nbsp;&nbsp;  (3) DCGAN-starshaped (default), <br />
+&nbsp;&nbsp; using any one of the three available GAN algorithms:  <br />
+&nbsp;&nbsp;&nbsp;  (1) (vanilla) GAN , <br />
+&nbsp;&nbsp;&nbsp;  (2) Wasserstein GAN (WGAN), or <br />
+&nbsp;&nbsp;&nbsp;  (3) WGAN with gradient penalty (WGAN-GP, default).<br /> <br />
+<b>predict.py</b> takes as input a file of weights or a trained model in the HDF5 format and generates an image stack 
+in HDF5 format, with one "red" channel and up to six "green" channels 
+that represent localization of different polarity factors in a cell at a randomly selected stage of a cell growth cycle; <br /><br />
+<b>visualize.py</b> takes as input either HDF5 stack or an individual image file and visualizes the data stored in the input file. <br /> <br />
+To see the entire list of source files and copy it to your current folder, type:
+<pre class="term">
+[user@cn3200]$ <b>ls $BG_SRC </b>
+predic.py  visualize.py    dataloader.py  models.py       utils.py
+train.py   dataloaders.py  gan.py         options.py  
+[user@cn3200]$ <b>cp $BG_SRC/* . </b>
+</pre>
+To list the executable files, type:
+<pre class="term">
+[user@cn3200]$ <b>ls $BG_BIN </b>
+predict.py  train.py  visualize.py
+</pre>
+To copy sample data and checkpoints to your current directory, enter the command:
+<pre class="term">
+[user@cn3200]$ <b>cp -r $BG_DATA_48-80/* .</b>
+</pre>
+This command will create the subfolders <b>data</b> and <b>checkpoints</b>, as well as an empty folder  <b>images</b> in your current directory. 
+<pre class="term">
+[user@cn3200]$ <b>tree -l data</b>
+data
+├ LIN_Normalized_WT_size-48-80_test -&gt; /fdb/BioGANs/data/LIN_Normalized_WT_size-48-80_test
+│   ├ Alp14
+│   │   ├ cell1006.png
+│   │   ├ cell10118.png
+│   │   ...
+│   ├ Arp3
+│   │   ├ cell10056.png
+│   │   ├ cell10177.png
+│   │   ...
+│   ├ Cki2
+│   │   ├ cell1005.png
+│   │   ├ cell10114.png
+│   │   ...
+│   ├ Mkh1
+│   │   ├ cell10075.png
+│   │   ├ cell10106.png
+│   │   ...
+│   ├ Sid2
+│   │   ├ cell10009.png
+│   │   ├ cell10098.png
+│   │   ...
+│   └ Tea1
+│       ├ cell10058.png
+│       ├ cell10071.png
+│       ...
+└ LIN_Normalized_WT_size-48-80_train -&gt; /fdb/BioGANs/data/LIN_Normalized_WT_size-48-80_train
+    ├ Alp14
+    │   ├ cell100005.png
+    │   ├ cell100087.png
+    │   ...
+    ├ Arp3
+    │   ├ cell100057.png
+    │   ├ cell100079.png
+    │   ...
+    ├ Cki2
+    │   ├ cell100026.png
+    │   ├ cell100044.png
+    │   ...
+    ├ Mkh1
+    │   ├ cell100015.png
+    │   ├ cell100242.png
+    │   ...
+    ├ Sid2
+    │   ├ cell100002.png
+    │   ├ cell100014.png
+    │   ...
+    └ Tea1
+        ├ cell100077.png
+        ├ cell100081.png
+        ...
+</pre>
+The BioGANs implementation on Biowulf includes only a part of the entire LIN dataset, comprising
+26,909 images. <br />
+To list available command line options for the script <b>train.py</b>R, type:
+<pre class="term">
+[user@cn3200]$ <b>train.py -h </b>
+usage: train.py [-h] [-a GAN_ALGORITHM] [-b BATCH_SIZE] [-c CHECKPOINTS_DIR] -d DATAROOT [--epochs EPOCHS]
+                [-g num_gpus] [--lrD LRD] [--lrG LRG] [-m NETWORK_MODEL] [-M MONITOR_STEP] [--num_D_iters NUM_D_ITERS]
+                [--num_G_iters NUM_G_ITERS] [--ngf NGF] [--ndf NDF] [-o OPTIMIZER] [-p POLARITY_FACTORS]
+                [-s RANDOM_SEED] [-w] [-z NZ] [--wgan_clip_value WGAN_CLIP_VALUE] [--wgangp_lambda WGANGP_LAMBDA] [-v]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -a GAN_ALGORITHM, --gan_algorithm GAN_ALGORITHM
+                        training algorithm: GAN | WGAN | WGAN-GP, default=WGAN-GP
+  -b BATCH_SIZE, --batch_size BATCH_SIZE
+                        input batch size; default=64
+  -c CHECKPOINTS_DIR, --checkpoints_dir CHECKPOINTS_DIR
+                        checkpoints folder name, default='checkpoints'
+  --epochs EPOCHS, -e EPOCHS
+                        number of iterations to train for
+  -g num_gpus, --num_gpus num_gpus
+                        number of gpus to use; default=1
+  --lrD LRD             learning rate for discriminator/critic, default: depends on gan_algorithm and optimizer
+  --lrG LRG             learning rate for Generator, default: 0.0002
+  -m NETWORK_MODEL, --network_model NETWORK_MODEL
+                        network model architecture: DCGAN | DCGAN-separable | DCGAN-starshaped, default = DCGAN-
+                        starshaped
+  -M MONITOR_STEP, --monitor_progress MONITOR_STEP
+                        store samples of generated images after each monitor_step epochs
+  --num_D_iters NUM_D_ITERS
+                        Number of D/C iterations per one step of training GAN/WGAN/WGAN-GP
+  --num_G_iters NUM_G_ITERS
+                        Number of G iterations per one step of training GAN/WGAN/WGAN-GP
+  --ngf NGF             number of generator filters
+  --ndf NDF             number of discriminator filters
+  -o OPTIMIZER, --optimizer OPTIMIZER
+                        Optimizer to use for training: default (depends on gan_algorithm) | adam | rmsprop
+  -p POLARITY_FACTORS, --polarity_factors POLARITY_FACTORS
+                        Comma-separated names of polarity factors data to be used, empty if all
+  -s RANDOM_SEED, --seed RANDOM_SEED
+                        Random seed, default - the answer to the ultimate question
+  -w, --use_pretrained_weights
+                        load pre-trained model weights
+  -z NZ, --nz NZ        size of the latent z vector
+  --wgan_clip_value WGAN_CLIP_VALUE
+                        for WGAN
+  --wgangp_lambda WGANGP_LAMBDA
+                        for WGAN-GP
+  -v, --verbose         increase the verbosity level of output
+
+required arguments:
+  -d DATAROOT, --data DATAROOT
+                        Path to the training dataset
+</pre>
+Here are examples of the training commands:
+<pre class="term">
+[user@cn3200]$ <b>train.py -d data </b>
+...
+</pre>
+(this command will train the default network model, DCGAN-starshaped, using the default gan algorithm, WGAN-GP, on image data corresponding to all the polarity factors available in the folder data/LIN_Normalized_WT_size-48-80_train)
+<pre class="term">
+[user@cn3200]$ <b>train.py -d data/LIN_Normalized_WT_size-48-80_train -e 2000 -a WGAN -m DCGAN-separable </b>
+...
+</pre>
+(note that running of both the commands takes long, so they would normally be submitted as a batch job.)
+<pre class="term">
+[user@cn3200]$ <b>train.py -d data/LIN_Normalized_WT_size-48-80_train/Alp14 -m DCGAN -a GAN  </b>
+...
+</pre>
+(this command will train a model on the data for only one of the polarity factors). <br /> <br />
+The following options, passed to the train.py executable, are equivalent:
+<pre class="term">
+-d data
+-d data/LIN_Normalized_WT_size-48-80_train
+-d data/LIN_Normalized_WT_size-48-80_train -p Alp14,Arp3,Cki2,Mkh1,Sid2,Tea1
+</pre>
+These options are also equivalent:
+<pre class="term">
+-d data/LIN_Normalized_WT_size-48-80_train/Alp14
+-d data/LIN_Normalized_WT_size-48-80_train -p Alp14
+-d data -p Alp14
+</pre>
+During the training procedure, the following output foolders will be created (if they did not exist previously) in the  current working directory:
+
+<pre class="term">
+checkpoints   images
+</pre>
+Stored in the first of the folders will be files in HDF5 format:<br />
+(1) weights of the generator, discriminatori/critic and combined models, 
+<pre class="term">
+weights.&lt;model type&gt;.&lt;network_architecture&gt;.&lt;gan_algorithm&gt;.h5
+</pre>
+which can be used by the executable <b>train.py</b> to continue the training procedure from the stored checkpiont. <br />
+(2) generator model(s), which can be used as input by the executable <b>predict.py</b>. <br />
+<pre class="term">
+model.generator.&lt;model type&gt;.&lt;network_architecture&gt;.&lt;gan_algorithm&gt;.h5
+</pre>
+For example:
+<pre class="term"> 
+[user@cn3200]$ <b>ls checkpoints</b>      
+model.generator.DCGAN-separable.GAN.1.h5             weights.discriminator[1].DCGAN-starshaped.GAN.6.h5
+model.generator.DCGAN-separable.WGAN.1.h5            weights.discriminator[2].DCGAN-starshaped.GAN.6.h5
+weights.combined_model[0].DCGAN-separable.WGAN.1.h5  weights.discriminator[3].DCGAN-starshaped.GAN.6.h5
+weights.critic[0].DCGAN-starshaped.WGAN-GP.6.h5      weights.discriminator[4].DCGAN-starshaped.GAN.6.h5
+weights.critic[1].DCGAN-starshaped.WGAN-GP.6.h5      weights.discriminator[5].DCGAN-starshaped.GAN.6.h5
+weights.critic[2].DCGAN-starshaped.WGAN-GP.6.h5      weights.discriminator.DCGAN-separable.GAN.1.h5
+weights.critic[3].DCGAN-starshaped.WGAN-GP.6.h5      weights.generator.DCGAN-separable.GAN.1.h5
+weights.critic[4].DCGAN-starshaped.WGAN-GP.6.h5      weights.generator.DCGAN-separable.WGAN.1.h5
+weights.critic[5].DCGAN-starshaped.WGAN-GP.6.h5      weights.generator.DCGAN-starshaped.GAN.6.h5
+weights.critic.DCGAN-separable.WGAN.1.h5             weights.generator.DCGAN-starshaped.WGAN-GP.6.h5
+weights.critic.DCGAN.WGAN-GP.1.h5                    weights.generator.DCGAN.WGAN-GP.1.h5
+weights.discriminator[0].DCGAN-starshaped.GAN.6.h5
+...
+</pre>
+The <b>predict.py</b> executable supports the following command line options:
+<pre class="term">
+[user@cn3200]$ <b>predict.py -h</b>
+usage: predict.py [-h] [-b BATCH_SIZE] [-c CHECKPOINTS_DIR] [-d DATAROOT] [-D] [-e] -i input_file [--lrD LRD]
+                  [--lrG LRG] [-m NETWORK_MODEL] [--ndf NDF] [--ngf NGF] [-o OPTIMIZER] [-p POLARITY_FACTORS]
+                  [-s RANDOM_SEED] [-v] [-w] [--wgan_clip_value WGAN_CLIP_VALUE] [--wgangp_lambda WGANGP_LAMBDA]
+                  [-z NZ]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b BATCH_SIZE, --batch_size BATCH_SIZE
+                        input batch size; default=64
+  -c CHECKPOINTS_DIR, --checkpoints_dir CHECKPOINTS_DIR
+                        checkpoints folder name, default='checkpoints'
+  -d DATAROOT, --data DATAROOT
+                        Path to the training dataset
+  -D, --debug           output debugging info
+  -e, --evaluate        evaluate predicted images by comparing with real data
+  --lrD LRD             learning rate for discriminator/critic, default: depends on gan_algorithm and optimizer
+  --lrG LRG             learning rate for Generator, default: 0.0002
+  -m NETWORK_MODEL, --network_model NETWORK_MODEL
+                        network model architecture: DCGAN | DCGAN-separable | DCGAN-starshaped, default = DCGAN-
+                        starshaped
+  --ndf NDF             number of discriminator filters
+  --ngf NGF             number of generator filters
+  -o OPTIMIZER, --optimizer OPTIMIZER
+                        Optimizer to use for training: default (depends on gan_algorithm) | adam | rmsprop
+  -p POLARITY_FACTORS, --polarity_factors POLARITY_FACTORS
+                        Comma-separated names of polarity factors data to be used, empty if all
+  -s RANDOM_SEED, --seed RANDOM_SEED
+                        Random seed, default - the answer to the ultimate question
+  -v, --verbose         increase the verbosity level of output
+  -w, --use_pretrained_weights
+                        load pre-trained model weights
+  --wgan_clip_value WGAN_CLIP_VALUE
+                        for WGAN
+  --wgangp_lambda WGANGP_LAMBDA
+                        for WGAN-GP
+  -z NZ, --nz NZ        size of the latent z vector
+
+required arguments:
+  -i input_file, --input_file input_file
+                        Saved generator model or weights file
+</pre>
+Example of runing this executable on a saved checkpoint files: <br /> <br />
+<pre class="term">
+[user@cn3200]$ <b>predict.py -i checkpoints/weights.generator.DCGAN-starshaped.WGAN-GP.48_80.1.6.h5</b> 
+...
+Output image stack to file: images/stack7.DCGAN-starshaped.WGAN-GP.h5           
+</pre>
+Now visualize the predicted images:
+<pre class="term">
+[user@cn3200]$ <b>visualize.py -h</b>
+usage: visualize.py [-h] -i input_file [-v]
+                                                                                                                        optional arguments:
+  -h, --help     show this help message and exit
+  -v             output debugging info
+
+required arguments:                                                                                                       -i input_file  The file to be visualized
+[user@cn3200]$ <b>visualize.py -i images/stack7.DCGAN-starshaped.WGAN-GP.h5</b>
+</pre>
+<img src="biogans/biogans_7.png" width="800" border="0" alt=""> <br />
+You can combine the predict.py and visualize.py commands:
+<pre class="term">
+[user@cn3200]$ <b>predict.py -i checkpoints/model.generator.DCGAN-separable.GAN.1.h5; visualize.py -i images/stack7.DCGAN-starshaped.GAN.h5  </b>
+</pre>
+<img src="biogans/biogans_7v2.png" width="800" border="0" alt=""> <br />
+<pre class="term">
+[user@cn3200]$ <b>predict.py -i checkpoints/model.generator.DCGAN-separable.GAN.1.h5; visualize.py -i images/stack7.DCGAN-starshaped.GAN.h5  </b>
+</pre>
+<img src="biogans/biogans_7v3.png" width="800" border="0" alt=""> <br />
+Note that every run of the predict.py command generates synthetic images 
+corresponding to a particular stage of a cell growth cycle, which is selected randomly. <br /> <br />
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

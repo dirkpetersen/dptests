@@ -1,0 +1,80 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ITK-SNAP-BS: segmentation of structures in 3D and 4D biomedical images.';</script>
+<div class="title"><b>ITK-SNAP-BS: segmentation of structures in 3D and 4D biomedical images. </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+ITK-SNAP brings active contour
+segmentation to the fingertips of clinical researchers.
+This application fulfills a specific and pressing need of biomedical
+imaging research by providing a combination of manual and
+semiautomatic tools for extracting structures in 3D image data of
+different modalities and from different anatomical regions.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Paul A. Yushkevich, Joseph Piven, Heather Cody Hazlett, Rachel Gimpel Smith, Sean Ho,
+James C. Gee and Guido Gerig <br />
+<i>User-guided 3D active contour segmentation of anatomical structures:
+Significantly improved efficiency and reliability.</i> <br />
+<a href="https://www.sciencedirect.com/science/article/pii/S1053811906000632">NeuroImage 31 (2006) 1116 – 1128</a>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/alexsodt/ITK-SNAP-Burgess-Sodt">ITK-SNAP-Burgess-Sodt Github page</a></li>
+<li><a href="https://github.com/bsandbro/ITK-snap-builder/">ITK-snap-builder Github page</a></li>
+<li><a href="http://www.itksnap.org/pmwiki/pmwiki.php?n=Documentation.SNAP3">ITK-SNAP Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>ITK-SNAP-BS</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>IS_HOME</b>&nbsp; home folder</li>
+    <li><b>IS_BIN </b>&nbsp; executable folder</li>
+    <li><b>IS_SRC </b>&nbsp; source folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+<p> As the first step, please allocate an <a href="/docs/userguide.html#int">interactive session</a>:</p>
+
+
+<p class="alert">The use of ITK-SNAP-BS GUI requires a 
+<a href="https://hpc.nih.gov/docs/connect.html">graphical X11 connection</a>. <br />
+Both NX and MobaXterm work well for Windows users, <br /> while XQuartz works well for Mac users.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1,lscratch:10 --mem=20g -c14</b>
+[user@cn4469 ~]$ <b>module load DeepLabCut/2.2.2 </b>
+[+] Loading singularity  3.10.5  on cn0825
+[+] Loading ITK-SNAP-BS  20131007
+</pre>
+Invoke the ITK-SNAP-BS GUI:
+<pre class="term">
+[user@cn4469 user]$ <b>itksnap</b>
+</pre>
+<img src="ITK-SNAP-BS/GUI.png" width="800" border="0" alt="">
+<br /><br />...
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

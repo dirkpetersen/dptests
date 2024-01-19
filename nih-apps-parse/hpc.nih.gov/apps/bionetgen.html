@@ -1,0 +1,249 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BioNetGen: specification and simulation of rule-based models of biochemical systems';</script>
+<div class="title">BioNetGen: specification and simulation of rule-based models of biochemical systems</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+BioNetGen is software for the specification and simulation of rule-based models of biochemical systems, including signal transduction, metabolic, and genetic regulatory networks.  BioNetGen is presently a mixture of Perl, C++, and Python. 
+<br />
+<br />
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>James R. Faeder , Michael L. Blinov , and William S. Hlavacek <br />
+<i>Rule-Based Modeling of Biochemical Systems with BioNetGen </i> <br />
+<a href="https://link.springer.com/protocol/10.1007/978-1-59745-525-1_5">Systems biology, 2009 - Springer, <b>Ch 5,</b> pp 113–167.
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/RuleWorld/bionetgen">bionetgen Github page</a></li>
+<li><a href="https://bionetgen.org/">BioNetGen Home page</a></li>
+<li><a href="https://bionetgen.readthedocs.io/en/latest/pybng_tutorials.html">BioNetGen Tutorials </a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>bionetgen</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<br />
+<li>Unusual environment variables set
+  <ul>
+    <li><b>BIONETGEN_HOME</b>&nbsp; installation directory</li>
+    <li><b>BIONETGEN_BIN</b>&nbsp; executable   directory</li>
+    <li><b>BIONETGEN_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn3144 ~]$ <b>module load bionetgen</b>
+[+] Loading singularity  3.10.5  on cn4172
+[+] Loading git 2.39.2  ...
+[+] Loading jupyter
+[+] Loading bionetgen 0.7.9  ...
+</pre>
+<br />
+The basdic usage of the bionetgen application is as follows:
+<pre class="term">
+[user@cn3144 ~]$ <b>sinteractive</b>
+[user@cn3144 ~]$ <b>bionetgen -h</b>
+usage: bionetgen [-h] [-d] [-q] [-v] [-req REQUIRE] [-ll LOG_LEVEL]
+                 {atomize,graphdiff,info,notebook,plot,run,visualize} ...
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d, --debug           full application debug mode
+  -q, --quiet           suppress all console output
+  -v, --version         show program's version number and exit
+  -req REQUIRE, --require REQUIRE
+  -ll LOG_LEVEL, --log-level LOG_LEVEL
+                        This option allows you to select a logging level, from quietest to loudest
+                        options are: "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG". Default is
+                        set to INFO
+
+sub-commands:
+  {atomize,graphdiff,info,notebook,plot,run,visualize}
+    atomize             SBML to BNGL translator
+    graphdiff           A subcommand to compare two contact maps made by BioNetGen. The default
+                        mode is "matrix" mode and will generate 4 graphs, two for each individual
+                        input recolored, one for input 1 - input 2 and one for input 2 - input 1.
+                        This can be used to find differences and communalities between two BNGL
+                        models of the same process.
+    info                Provides version information for BNG and dependencies
+    notebook            Starts a Jupyter notebook to help run and analyze bionetgen models
+    plot                Rudimentary plotting of gdat/cdat/scan files
+    run                 Runs a given model using BNG2.pl
+    visualize           Provides a simple way to get various visualizations of the model.
+[user@cn3144 ~]$ <b>cp $BIONETGEN_TESTS/* .</b>
+[user@cn3144 ~]$ <b>bionetgen run  -o output_folder -i BP.bngl</b>
+BioNetGen version 2.8.4
+Reading from file /data/$USER/BioNetGen/test_dir/BP.bngl (level 0)
+Read 17 parameters.
+Read 4 molecule types.
+Read 4 species.
+Read 2 observable(s).
+Read 2 functions.
+Read 4 reaction rule(s).
+ACTION: simulate( method=&gt;"nf" )
+NetworkFree simulation using nf
+ACTION: simulate_nf( )
+Wrote model in xml format to ./BP.xml.
+Running NFsim on cn4172
+full command: /opt/conda/envs/bionetgen/lib/python3.8/site-packages/bionetgen/bng-linux/bin/NFsim -xml ./BP.xml -o ./BP.gdat -sim 10 -oSteps 100 -cb -gml 1000000 -seed 2123193053
+[simulation PID is: 25365]
+starting NFsim v1.2.2...
+
+Seeding random number generator with: 2123193053
+reading xml file (./BP.xml)
+[-------]
+preparing simulation...
+
+
+
+Equilibrating for :0s.  Please wait.
+
+simulating system for: 1.000000e+01 second(s).
+
+Sim time: 0.000000e+00  CPU time (total): 4.400000e-05s  events (step): 0
+Sim time: 1.000000e-01  CPU time (total): 2.315000e-03s  events (step): 127
+Sim time: 2.000000e-01  CPU time (total): 4.583000e-03s  events (step): 133
+Sim time: 3.000000e-01  CPU time (total): 7.367000e-03s  events (step): 174
+Sim time: 4.000000e-01  CPU time (total): 1.054300e-02s  events (step): 197
+Sim time: 5.000000e-01  CPU time (total): 1.416000e-02s  events (step): 217
+Sim time: 6.000000e-01  CPU time (total): 1.698200e-02s  events (step): 182
+Sim time: 7.000000e-01  CPU time (total): 2.073700e-02s  events (step): 226
+Sim time: 8.000000e-01  CPU time (total): 2.422700e-02s  events (step): 224
+Sim time: 9.000000e-01  CPU time (total): 2.793900e-02s  events (step): 245
+Sim time: 1.000000e+00  CPU time (total): 3.218600e-02s  events (step): 249
+Sim time: 1.100000e+00  CPU time (total): 3.649500e-02s  events (step): 239
+Sim time: 1.200000e+00  CPU time (total): 4.071200e-02s  events (step): 264
+Sim time: 1.300000e+00  CPU time (total): 4.510700e-02s  events (step): 280
+Sim time: 1.400000e+00  CPU time (total): 5.074200e-02s  events (step): 306
+Sim time: 1.500000e+00  CPU time (total): 5.536500e-02s  events (step): 282
+Sim time: 1.600000e+00  CPU time (total): 6.066200e-02s  events (step): 312
+Sim time: 1.700000e+00  CPU time (total): 6.646600e-02s  events (step): 308
+Sim time: 1.800000e+00  CPU time (total): 7.121000e-02s  events (step): 289
+Sim time: 1.900000e+00  CPU time (total): 7.703300e-02s  events (step): 343
+Sim time: 2.000000e+00  CPU time (total): 8.162400e-02s  events (step): 278
+Sim time: 2.100000e+00  CPU time (total): 8.675400e-02s  events (step): 306
+Sim time: 2.200000e+00  CPU time (total): 9.190200e-02s  events (step): 311
+Sim time: 2.300000e+00  CPU time (total): 9.690300e-02s  events (step): 296
+Sim time: 2.400000e+00  CPU time (total): 1.024550e-01s  events (step): 302
+Sim time: 2.500000e+00  CPU time (total): 1.076970e-01s  events (step): 311
+Sim time: 2.600000e+00  CPU time (total): 1.133530e-01s  events (step): 330
+Sim time: 2.700000e+00  CPU time (total): 1.192420e-01s  events (step): 324
+Sim time: 2.800000e+00  CPU time (total): 1.257900e-01s  events (step): 332
+Sim time: 2.900000e+00  CPU time (total): 1.316910e-01s  events (step): 332
+Sim time: 3.000000e+00  CPU time (total): 1.370890e-01s  events (step): 322
+Sim time: 3.100000e+00  CPU time (total): 1.434410e-01s  events (step): 342
+Sim time: 3.200000e+00  CPU time (total): 1.495110e-01s  events (step): 346
+Sim time: 3.300000e+00  CPU time (total): 1.554070e-01s  events (step): 348
+Sim time: 3.400000e+00  CPU time (total): 1.609340e-01s  events (step): 333
+Sim time: 3.500000e+00  CPU time (total): 1.664330e-01s  events (step): 321
+Sim time: 3.600000e+00  CPU time (total): 1.725980e-01s  events (step): 335
+Sim time: 3.700000e+00  CPU time (total): 1.780160e-01s  events (step): 310
+Sim time: 3.800000e+00  CPU time (total): 1.846630e-01s  events (step): 386
+Sim time: 3.900000e+00  CPU time (total): 1.903410e-01s  events (step): 336
+Sim time: 4.000000e+00  CPU time (total): 1.965280e-01s  events (step): 355
+Sim time: 4.100000e+00  CPU time (total): 2.027070e-01s  events (step): 360
+Sim time: 4.200000e+00  CPU time (total): 2.089880e-01s  events (step): 365
+Sim time: 4.300000e+00  CPU time (total): 2.156030e-01s  events (step): 370
+Sim time: 4.400000e+00  CPU time (total): 2.218300e-01s  events (step): 356
+Sim time: 4.500000e+00  CPU time (total): 2.283790e-01s  events (step): 366
+Sim time: 4.600000e+00  CPU time (total): 2.348940e-01s  events (step): 369
+Sim time: 4.700000e+00  CPU time (total): 2.413920e-01s  events (step): 366
+Sim time: 4.800000e+00  CPU time (total): 2.510530e-01s  events (step): 388
+Sim time: 4.900000e+00  CPU time (total): 2.584140e-01s  events (step): 387
+Sim time: 5.000000e+00  CPU time (total): 2.658810e-01s  events (step): 402
+Sim time: 5.100000e+00  CPU time (total): 2.740150e-01s  events (step): 403
+Sim time: 5.200000e+00  CPU time (total): 2.814910e-01s  events (step): 366
+Sim time: 5.300000e+00  CPU time (total): 2.910690e-01s  events (step): 394
+Sim time: 5.400000e+00  CPU time (total): 2.975890e-01s  events (step): 338
+Sim time: 5.500000e+00  CPU time (total): 3.049480e-01s  events (step): 389
+Sim time: 5.600000e+00  CPU time (total): 3.122370e-01s  events (step): 394
+Sim time: 5.700000e+00  CPU time (total): 3.188870e-01s  events (step): 357
+Sim time: 5.800000e+00  CPU time (total): 3.263640e-01s  events (step): 399
+Sim time: 5.900000e+00  CPU time (total): 3.344340e-01s  events (step): 425
+Sim time: 6.000000e+00  CPU time (total): 3.431630e-01s  events (step): 421
+Sim time: 6.100000e+00  CPU time (total): 3.514830e-01s  events (step): 407
+Sim time: 6.200000e+00  CPU time (total): 3.595950e-01s  events (step): 416
+Sim time: 6.300000e+00  CPU time (total): 3.667240e-01s  events (step): 365
+Sim time: 6.400000e+00  CPU time (total): 3.742360e-01s  events (step): 392
+Sim time: 6.500000e+00  CPU time (total): 3.812160e-01s  events (step): 358
+Sim time: 6.600000e+00  CPU time (total): 3.881510e-01s  events (step): 363
+Sim time: 6.700000e+00  CPU time (total): 3.960040e-01s  events (step): 401
+Sim time: 6.800000e+00  CPU time (total): 4.033710e-01s  events (step): 397
+Sim time: 6.900000e+00  CPU time (total): 4.130930e-01s  events (step): 418
+Sim time: 7.000000e+00  CPU time (total): 4.206520e-01s  events (step): 391
+Sim time: 7.100000e+00  CPU time (total): 4.283760e-01s  events (step): 393
+Sim time: 7.200000e+00  CPU time (total): 4.361200e-01s  events (step): 410
+Sim time: 7.300000e+00  CPU time (total): 4.436140e-01s  events (step): 399
+Sim time: 7.400000e+00  CPU time (total): 4.512750e-01s  events (step): 400
+Sim time: 7.500000e+00  CPU time (total): 4.611030e-01s  events (step): 446
+Sim time: 7.600000e+00  CPU time (total): 4.694120e-01s  events (step): 432
+Sim time: 7.700000e+00  CPU time (total): 4.777980e-01s  events (step): 426
+Sim time: 7.800000e+00  CPU time (total): 4.868270e-01s  events (step): 379
+Sim time: 7.900000e+00  CPU time (total): 4.947890e-01s  events (step): 381
+Sim time: 8.000000e+00  CPU time (total): 5.030150e-01s  events (step): 405
+Sim time: 8.100000e+00  CPU time (total): 5.114370e-01s  events (step): 436
+Sim time: 8.200000e+00  CPU time (total): 5.207430e-01s  events (step): 453
+Sim time: 8.300000e+00  CPU time (total): 5.285080e-01s  events (step): 418
+Sim time: 8.400000e+00  CPU time (total): 5.366710e-01s  events (step): 416
+Sim time: 8.500000e+00  CPU time (total): 5.446180e-01s  events (step): 406
+Sim time: 8.600000e+00  CPU time (total): 5.531540e-01s  events (step): 435
+Sim time: 8.700000e+00  CPU time (total): 5.608180e-01s  events (step): 397
+Sim time: 8.800000e+00  CPU time (total): 5.686940e-01s  events (step): 404
+Sim time: 8.900000e+00  CPU time (total): 5.764850e-01s  events (step): 414
+Sim time: 9.000000e+00  CPU time (total): 5.858260e-01s  events (step): 413
+Sim time: 9.100000e+00  CPU time (total): 5.947840e-01s  events (step): 448
+Sim time: 9.200000e+00  CPU time (total): 6.038400e-01s  events (step): 426
+Sim time: 9.300000e+00  CPU time (total): 6.127030e-01s  events (step): 412
+Sim time: 9.400000e+00  CPU time (total): 6.222660e-01s  events (step): 483
+Sim time: 9.500000e+00  CPU time (total): 6.310190e-01s  events (step): 454
+Sim time: 9.600000e+00  CPU time (total): 6.406940e-01s  events (step): 463
+Sim time: 9.700000e+00  CPU time (total): 6.496990e-01s  events (step): 439
+Sim time: 9.800000e+00  CPU time (total): 6.576430e-01s  events (step): 403
+Sim time: 9.900000e+00  CPU time (total): 6.661630e-01s  events (step): 435
+Sim time: 1.000000e+01  CPU time (total): 6.748340e-01s  events (step): 435
+
+You just simulated 35638 reactions in 6.748580e-01s
+( 5.280815e+04 reactions/sec, 1.893647e-05 CPU seconds/event )
+Null events: 1   (1.893700e-05 CPU seconds/non-null event )
+
+done.  Total CPU time: 2.25732s
+
+WARNING: system state was not retrieved following simulate_nf. To retreive system state, call simulate_nf with option: get_final_state=&gt;1.
+CPU TIME: simulate 2.34 s.
+Finished processing file /data/$USER/BioNetGen/test_dir/BP.bngl.
+CPU TIME: total 2.35 s.
+</pre>
+<br />
+End the interactive session:
+<pre class="term">
+[user@cn3111 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

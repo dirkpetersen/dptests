@@ -1,0 +1,192 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PRIMUS on Biowulf';</script>
+<div class="title">PRIMUS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+PRIMUS stands for Pedigree Reconstruction (PR) and Identification of a Maximum Unrelated Set (IMUS).
+<blockquote>
+  The IMUS method is an algorithm adapted from graph theory that always identifies the maximum set of unrelated individuals
+  in any dataset, and allows weighting parameters to be utilized in unrelated sample selection. PRIMUS reads in user-generated
+  IBD estimates and outputs the maximum possible set of unrelated individuals, given a specified threshold of relatedness.
+  Additional information for preferential selection of individuals may also be utilized.
+</blockquote>
+<blockquote>
+  The PR algorithm is a method to reconstruct pedigrees within a genetic dataset. PRIMUS can verify expected pedigree structures
+  from genetic data, and it can identify and incorporate novel, cryptic relationships into pedigrees.
+</blockquote>
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Jeffrey Staples, Dandi Qiao, Michael H. Cho, Edwin K. Silverman, University of Washington Center for Mendelian Genomics,
+    Deborah A. Nickerson, and Jennifer E. Below. 
+    <a href="https://doi.org/10.1016/j.ajhg.2014.10.005">
+      <b><u>PRIMUS: Rapid reconstruction of pedigrees from genome-wide estimates of identity by descent.</u></b>
+    </a>
+    <em>The American Journal of Human Genetics, Volume 95, Issue 5, 2014, Pages 553-564</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://primus.gs.washington.edu/primusweb/index.html">PRIMUS Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>PRIMUS</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+	<li>Singlethreaded</li>
+  <li>For example data, see the environment variable, <tt>PRIMUS_TEST_DATA</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load PRIMUS</b>
+[+] Loading plink  2.3-alpha
+[+] Loading PRIMUS  1.9.0
+[user@cn3144 ~]$ <b>cp $PRIMUS_TEST_DATA/complete.genome .</b>
+[user@cn3144 ~]$ <b>run_PRIMUS.pl --plink complete.genome</b>
+
+FILES AND COLUMNS
+LOG FILE: complete.genome_PRIMUS/PRIMUS_output.log
+IBD file: complete.genome (FID1=1; IID1=2; FID2=3; IID2=4; IBD0=7; IBD1=8; IBD2=9; PI_HAT/RELATEDNESS=10)
+Dataset results dir: complete.genome_PRIMUS
+Age file: none
+Sex file: none
+Affection file: none
+Trait weighting:
+        size (size)
+
+SETTINGS
+Get PLINK IBD ESTIMATES with prePRIMUS: 0
+Automatic reference population selection: 1
+Verbose: 1
+Relatedness threshold: 0.09375
+Initial likelihood cutoff: 0.3
+Max generations: none
+Max generational mating gap: 0
+Get max unrelated set: 1
+Reconstruct pedigrees: 1
+Relatedness_file: complete.genome
+Threshold: 0.09375
+Selection criteria are based on the following:
+        size (size)
+
+IDENTFYING FAMILY NETWORKS IN DATA
+Writing network files to complete.genome_PRIMUS/
+Loading data...
+done.
+done.
+
+IDENTIFYING A MAXIMUM UNRELATED SET
+Checking for large networks...
+done.
+# of family networks: 1
+Writing out unrelated set
+done.
+Testing alternative methods...
+done.
+unrelated_file: complete.genome_maximum_independent_set
+unrelated_set size: 6
+RECONSTRUCTING complete.genome_network1
+Output directory: complete.genome_PRIMUS/complete.genome_network1
+Use mito non-match: 0
+Use mito match: 0
+Use Y non-match: 0
+Use Y match: 0
+Entering Resolve PC trios. # of possible pedigrees: 1
+Entering Phase 1. # of possible pedigrees: 1
+Entering Phase 2. # of possible pedigrees: 1
+Entering Phase 3. # of possible pedigrees: 1
+networks pre-prune: 1
+networks post-prune: 1
+Writing summary file
+Writing .fam file for complete.genome_network1_1
+Writing dataset Summary file complete.genome_PRIMUS/Summary_complete.genome.txt
+done.
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. PRIMUS.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load PRIMUS
+run_PRIMUS.pl --plink input.genome
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--mem=#] PRIMUS.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. PRIMUS.swarm). For example:</p>
+
+<pre class="term">
+run_PRIMUS.pl --plink input1.genome
+run_PRIMUS.pl --plink input2.genome
+run_PRIMUS.pl --plink input3.genome
+run_PRIMUS.pl --plink input4.genome
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f PRIMUS.swarm [-g #] --module PRIMUS</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module PRIMUS</tt> <td>Loads the PRIMUS module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

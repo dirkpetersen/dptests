@@ -1,0 +1,105 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Infernal on Biowulf';</script>
+<div class="title"> Infernal on Biowulf</div>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#int">Interactive Jobs</a></div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Using Swarm</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+<p>Infernal is used to search sequence databases for homologs of structural RNA sequences, and to make
+sequence- and structure-based RNA sequence alignments. Infernal builds a profile from a structurally
+annotated multiple sequence alignment of an RNA family with a position-specific scoring system for substitutions, insertions, and deletions. Positions in the profile that are basepaired in the h consensus secondary
+structure of the alignment are modeled as dependent on one another, allowing Infernal’s scoring system to
+consider the secondary structure, in addition to the primary sequence, of the family being modeled. Infernal
+profiles are probabilistic models called “covariance models”, a specialized type of stochastic context-free
+grammar (SCFG) (Lari and Young, 1990).
+Compared to other alignment and database search tools based only on sequence comparison, Infernal
+aims to be significantly more accurate and more able to detect remote homologs because it models sequence and structure. But modeling structure comes at a high computational cost, and the slow speed of
+CM homology searches has been a serious limitation of previous versions. With version 1.1, typical homology searches are now about 100x faster, thanks to the incorporation of accelerated HMM methods from the
+HMMER3 software package (http://hmmer.org), making Infernal a much more practical tool for RNA
+sequence analysis.
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<p><a href="http://eddylab.org/infernal/">http://eddylab.org/infernal/</a></p>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>epic2</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Example files are under <tt>/usr/local/apps/infernal/1.1.3/tutorial</tt></li>
+<li>Multithreaded</li>
+</ul>
+
+<a Name="batch"></a><div class="heading">Submitting an interactive job</div>
+<P>
+Allocate an interactive session  and run the interactive job there.</p>
+
+salloc.exe: Granted job allocation 789523<pre class="term">[biowulf]$ <b>sinteractive  --mem=10g -cpus-per-task=4</b>
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0135 are ready for job
+
+[cn0135]$ <b>cd /data/$USER/</b>
+
+[cn0135]$ <b>module load infernal</b>
+
+[cn0135]$ <b>cat /usr/local/apps/infernal/1.1.3/tutorial/tRNA5.c.cm \
+/usr/local/apps/infernal/1.1.3/tutorial/5S_rRNA.c.cm \
+/usr/local/apps/infernal/1.1.3/tutorial/Cobalamin.c.cm > minifam.cm</b>
+[cn0135]$ <b>cmpress minifam.cm</b>
+[cn0135]$ <b>cmscan --cpu 4 minifam.cm /usr/local/apps/infernal/1.1.3/tutorial/metag-example.fa</b>
+
+[cn0135]$ <b>exit</b>
+salloc.exe: Job allocation 789523 has been revoked.
+
+[biowulf]$</pre>
+<p>The programs in infernal do not recognize $SLURM_CPUS_PER_TASK variable.
+<p>
+
+<a Name="batch"></a><div class="heading">Submitting a single batch job</div>
+    
+<p>1. Create a script file (myscript) similar to the one below
+<pre>#! /bin/bash
+# myscript
+set -e
+
+module load infernal || exit 1
+cd /data/$USER/
+cmscan --cpu 4 minifam.cm /usr/local/apps/infernal/1.1.3/tutorial/metag-example.fa
+</pre>
+  <p>2. Submit the script on biowulf:   
+      
+  <pre class="term">[biowulf]$ sbatch --mem=10g --cpus-per-task=4 myscript</pre>
+
+<p>
+
+<a Name="swarm"></a><div class="heading">Using Swarm</div>
+<P>
+Using the 'swarm' utility, one can submit many jobs to the cluster to run concurrently. </p>
+
+  <p>Set up a swarm command file (eg /data/$USER/cmdfile). </p>
+
+  <pre class="term">
+cd /data/$USER/dir1; cmscan ...
+cd /data/$USER/dir2; cmscan ...
+cd /data/$USER/dir3; cmscan ...
+...
+cd /data/$USER/dir20; cmscan ...
+</pre>
+<P>
+
+<p> submit the swarm job:
+  <pre class="term">$ swarm -f cmdfile --module cmscan -g 10 -t 4</pre>
+
+<p>For more information regarding running swarm, see <a href="swarm.html">swarm.html</a></p>
+
+
+</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

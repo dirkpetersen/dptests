@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Plink on Biowulf';</script>
+<div class="title">Plink on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>Plink is a whole genome association analysis toolset, designed to perform a
+range of basic, large-scale analyses in a computationally efficient manner.</p>
+<p>The focus of PLINK is purely on analysis of genotype/phenotype data, so
+there is no support for steps prior to this (e.g. study design and planning,
+generating genotype calls from raw data). Through integration with <a href=
+"http://zzz.bwh.harvard.edu/plink/gplink.shtml">gPLINK</a> and
+<a href="http://www.broad.mit.edu/mpg/haploview/">Haploview</a>, there is some
+support for the subsequent visualization, annotation and storage of
+results.</p>
+<p>PLINK (one syllable) is being developed by Shaun Purcell at the Center for
+Human Genetic Research (<a href="http://massgeneral.org/chgr/">CHGR</a>),
+Massachusetts General Hospital (<a href="http://www.mgh.harvard.edu/">MGH</a>),
+and the <a href="http://www.broad.mit.edu/">Broad Institute</a> of Harvard
+&amp; MIT, with the <a href=
+"http://zzz.bwh.harvard.edu/plink/contact.shtml#cite">support of
+others</a>.</p>
+
+<!-- deleted by Susan 4/21/2021 for lack of use 
+<p>The utility FCgene, a format converting tool for genotyped data (e.g. PLINK-MACH, MACH-PLINK) is also available. Type 'module load fcgene' to add the binary to your path, and then 'fcgene' to run it.</p>
+-->
+
+<h3>References:</h3>
+<ul>
+<li>Purcell et al., PLINK: A Tool Set for Whole-Genome Association and Population-Based Linkage Analyses. 2007. <a href="https://www.sciencedirect.com/science/article/pii/S0002929707613524">Link</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://zzz.bwh.harvard.edu/plink/">Plink Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>plink</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded app
+<li>Example files in <tt>/usr/local/apps/plink/TEST_DATA</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load plink</b>
+[+] Loading plink  3.6-alpha
+
+[user@cn3144 ~]$ <b>cp /usr/local/apps/plink/TEST_DATA/* .</b>
+
+[user@cn3144 ~]$ <b>plink2  --dummy 2 2 --freq --make-bed --out toy_data</b>
+PLINK v2.00a3.6LM 64-bit Intel (14 Aug 2022)   www.cog-genomics.org/plink/2.0/
+(C) 2005-2022 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to toy_data.log.
+Options in effect:
+  --dummy 2 2
+  --freq
+  --make-bed
+  --out toy_data
+
+Start time: Wed Sep 21 09:35:39 2022
+233597 MiB RAM detected; reserving 116798 MiB for main workspace.
+Allocated 65698 MiB successfully, after larger attempt(s) failed.
+Using up to 14 threads (change this with --threads).
+Dummy data (2 samples, 2 SNPs) written to toy_data-temporary.pgen +
+toy_data-temporary.pvar + toy_data-temporary.psam .
+2 samples (2 females, 0 males; 2 founders) loaded from toy_data-temporary.psam.
+2 variants loaded from toy_data-temporary.pvar.
+1 binary phenotype loaded (2 cases, 0 controls).
+Calculating allele frequencies... done.
+--freq: Allele frequencies (founders only) written to toy_data.afreq .
+Writing toy_data.fam ... done.
+Writing toy_data.bim ... done.
+Writing toy_data.bed ... done.
+End time: Wed Sep 21 09:35:39 2022
+
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. plink.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+cd /data/$USER/plink/t1
+plink2  --dummy 2 2 --freq --make-bed --out toy_data
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem=6g plink.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. plink.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/myseqs; plink2 --noweb --ped file1.ped --map file2.map --assoc
+cd /data/$USER/myseqs; plink2 --noweb --ped file2.ped --map file2.map --assoc
+cd /data/$USER/myseqs; plink2 --noweb --ped file3.ped --map file3.map --assoc
+[...etc...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f plink.swarm [-g #] --module plink</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module plink</tt> <td>Loads the plink module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

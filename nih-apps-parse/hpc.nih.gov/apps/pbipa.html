@@ -1,0 +1,150 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pbipa on Biowulf';</script>
+<div class="title">pbipa on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+pbipa is a genome assembler for PacBio HiFi reads.
+<blockquote>
+  Improved Phased Assembler (IPA) is the official PacBio software for
+  HiFi genome assembly. IPA was designed to utilize the accuracy of 
+  PacBio HiFi reads to produce high-quality phased genome assemblies.
+  IPA is an end-to-end solution, starting with input reads and resulting
+  in a polished assembly. IPA is fast, providing an easy to use local
+  run mode or a distributed pipeline for a cluster.
+</blockquote>
+Under the hood, pbipa uses snakemake to accomplish the various assembly
+steps from phasing and filtering to contig construction and read polishing.
+
+The installation on Biowulf also provides the following applications:
+<ul>
+  <li><a href="https://bioconda.github.io/recipes/pb-falconc/README.html">falconc</a></li>
+  <li><a href="https://github.com/lbcb-sci/racon">racon</a></li>
+  <li><a href="https://www.pacb.com/blog/direct-phased-genome-assembly-using-nighthawk-on-hifi-reads/">nighthawk</a></li>
+</ul
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/PacificBiosciences/pbbioconda/wiki/Improved-Phased-Assembler">GitHub Wiki</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+  <li>Module Name: <tt>pbipa</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+  <li>Please refrain from loading snakemake and other python modules when running pbipa</li>
+	<li>Multithreaded</li>
+</ul>
+<p class="alert">We do not currently support pbipa to be run in distributed (dist) mode. Please only run in local mode.</p>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run ipa. Here we show how to run in IPA's local mode. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=12G --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load pbipa</b>
+
+[user@cn3144 ~]$ <b>ipa local --nthreads 8 --njobs 1 -i hifi.fasta.gz</b>
+
+INFO: /opt/conda/envs/ipa/bin/ipa local --nthreads 8 --njobs 1 -i hifi.fasta.gz
+INFO: ipa.py ipa (wrapper) version=1.5.0 ... Checking dependencies ...
+INFO: Dependencies
+/opt/conda/envs/ipa/bin/python3
+/opt/conda/envs/ipa/bin/ipa2-task
+/opt/conda/envs/ipa/bin/falconc
+/opt/conda/envs/ipa/bin/minimap2
+/opt/conda/envs/ipa/bin/nighthawk
+/opt/conda/envs/ipa/bin/pancake
+/opt/conda/envs/ipa/bin/pblayout
+/opt/conda/envs/ipa/bin/racon
+/opt/conda/envs/ipa/bin/samtools
+/opt/conda/envs/ipa/bin/ipa_purge_dups
+/opt/conda/envs/ipa/bin/ipa_purge_dups_split_fa
+snakemake version=6.8.1
+ipa2-task 1.5.0 (commit c875fce13bdacbafc2f4f750c6438f4453e1354d)
+ Machine name: 'Linux'
+Copyright (C) 2004-2021     Pacific Biosciences of California, Inc.
+This program comes with ABSOLUTELY NO WARRANTY; it is intended for
+Research Use Only and not for use in diagnostic procedures.
+
+falconc version=1.13.1+git.f9d1b5651e891efe379bd9727a0fa0931b875d7b, nim-version=1.5.1
+minimap2 version=2.22-r1101
+Nighthawk 0.1.0 (commit SL-release-10.1.0-7-gbe5dfb1*)
+pancake 1.3.0 (commit SEQII-release-10.1.0-432-gf2693fd*)
+pblayout 1.0.0 (commit SL-release-10.1.0-152-g66936d1*)
+racon version=v1.4.20
+samtools 1.12
+Using htslib 1.12
+ipa_purge_dups Version: 1.2.5
+...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. ipa.sh). Again, this shows how to setup a job in 'local' mode. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load pbipa
+ipa local --nthreads $SLURM_CPUS_PER_TASK --njobs 1 -i input.fasta
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] ipa.sh</pre>
+
+<!--
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. ipa.swarm). For example:</p>
+
+<pre class="term">
+ipa local --nthreads $SLURM_CPUS_PER_TASK --njobs 1 -i input1.fasta
+ipa local --nthreads $SLURM_CPUS_PER_TASK --njobs 1 -i input2.fasta
+ipa local --nthreads $SLURM_CPUS_PER_TASK --njobs 1 -i input3.fasta
+ipa local --nthreads $SLURM_CPUS_PER_TASK --njobs 1 -i input4.fasta
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f ipa.swarm [-g #] [-t #] --module pbipa</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module pbipa</tt> <td>Loads the pbipa module for each subjob in the swarm 
+</table>
+-->
+<!--<a Name="dist"></a><div class="heading">IPA dist Mode</div>-->
+<!-- <p>pbipa allows jobs to run in distributed mode. Behind the scenes, snakemake takes care of the job submission to the cluster.-->
+<!-- However, cluster arguments must be set carefully.</p> -->
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

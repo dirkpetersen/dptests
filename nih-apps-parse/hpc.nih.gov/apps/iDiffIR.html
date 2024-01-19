@@ -1,0 +1,202 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DiffIR: Identifying differential intron retention from RNA-seq ';</script>
+<div class="title"><b>DiffIR: Identifying differential intron retention from RNA-seq </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+iDiffIR is a tool for identifying differential IR from RNA-seq data. 
+It accepts any sorted, indexed BAM file for single- or paired-end reads.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/bio-comp/idiffir">iDiffIR Github paage</a></li>
+<li><a href="https://combi.cs.colostate.edu/idiffir/tutorial.html ">iDiffIR Tutorial</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>iDiffIR</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Implemented as a Singularity container
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>IDIFFIR_HOME</b>&nbsp; installation directory</li>
+    <li><b>IDIFFIR_BIN</b>&nbsp; &nbsp; executables directory</li>
+    <li><b>IDIFFIR_SRC</b>&nbsp; &nbsp; source directory</li>
+    <li><b>IDIFFIR_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn3316 ~]$ <b>module load iDiffIR </b>
+[+] Loading singularity  3.8.5-1  on cn4193
+[+] Loading iDiffIR  20220121
+</pre>
+The iDiffIR application involves a number of executables:
+[user@biowulf]$ <b>ls $IDIFFIR_BIN</b> 
+build_classifiers.py             getDepths.py               realignment_pipeline.py
+classify_sites.py                get_gene_expression.py     run_miso_ir.py
+convert_models.py                get_good_pairs.py          sam_collate.py
+convertSam.py                    gtf2gff.py                 sam_filter.py
+ests_to_splicegraph.py           idiffir_plotter.py         sam_split.py
+f2py                             idiffir.py                 sam_to_depths.py
+find_splice_forms.py             isolasso_pipeline.py       select_model_parameters.py
+fix_unresolved.py                isolasso_update_graphs.py  shell
+gene_model_to_splicegraph.py     make_MISO_AS_GFF.py        simulate_IR.py
+generate_known_junctions.py      make_MISO_IR_GFF.py        smtpd.py
+generate_predicted_junctions.py  plotter.py                 splicegraph_statistics.py
+generate_putative_sequences.py   predict_graphs.py          splice_junction_pipeline.py
+generate_roc.py                  predict_splicegraph.py     view_splicegraph_multiplot.py
+generate_splice_site_data.py     psginfer_pipeline.py
+genewise_statistics.py           psginfer_update_graphs.py
+</pre>
+Their basic usage is as follows: 
+<pre class="term">
+[user@cn3123 user]$ <b>idiffir.py -h</b>
+usage: idiffir.py [-h] [-v] [-n] [-l FACTORLABEL FACTORLABEL] [-o OUTDIR] [-s]
+                  [-k KRANGE KRANGE] [-c COVERAGE] [-d DEXPTHRESH] [-p PROCS]
+                  [-f FDRLEVEL] [-g GRAPHDIRS] [-G GRAPHDIRSONLY]
+                  [-m {BF,BH,QV}] [-e {IR,SE}]
+                  genemodel factor1bamfiles factor2bamfiles
+
+Identify differentially expressed introns.
+
+positional arguments:
+  genemodel             gene model file: NAME.gtf[.gz] | NAME.gff[.gz]
+  factor1bamfiles       colon-separated list of bamfiles: PATH-TO-REPLICATE_1
+                        [:PATH-TO-REPLICATE_2,...]
+  factor2bamfiles       colon-separated list of bamfiles: PATH-TO-REPLICATE_1
+                        [:PATH-TO-REPLICATE_2,...]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --verbose         verbose output [default is quiet running]
+  -n, --noplot          Do not plot figures [default is to make figures]
+  -l FACTORLABEL FACTORLABEL, --factorlabel FACTORLABEL FACTORLABEL
+                        factor labels, example: -f Mutant Wildtype
+  -o OUTDIR, --output-dir OUTDIR
+                        output file directory name
+  -s, --shrink_introns  shrink introns for depth plots [default is no
+                        shrinking]
+  -k KRANGE KRANGE, --krange KRANGE KRANGE
+                        kmin kmax; [default is to search for kmax]
+  -c COVERAGE, --coverage COVERAGE
+                        coverage cutoff, default = 0.99
+  -d DEXPTHRESH, --dexpThresh DEXPTHRESH
+                        differential gene expression threshold, [default = 10]
+  -p PROCS, --procs PROCS
+                        Number of processing cores to use, [default = 1]
+  -f FDRLEVEL, --fdrlevel FDRLEVEL
+                        FDR test level, [default = 0.05]
+  -g GRAPHDIRS, --graph-dirs GRAPHDIRS
+                        colon-separated list of directories to recursively
+                        search for SpliceGrapher predictions
+  -G GRAPHDIRSONLY, --graph-dirs-only GRAPHDIRSONLY
+                        colon-separated list of directories to recursively
+                        search for SpliceGrapher predictions. In this case
+                        only the predicted graphs are used. i.e. the gene
+                        models are only used in plots and not for building
+                        reduced gene models. Useful for poorly annotated
+                        genomes.
+  -m {BF,BH,QV}, --multTest {BF,BH,QV}
+                        Multiple testing adjustment method BF: Bonferroni, BH:
+                        Benjamini-Hochberg, QV: q-values [default = QV]
+  -e {IR,SE}, --event {IR,SE}
+                        AS event to test, IR: Intron Retention, SE: Exon
+                        Skipping [default = IR] [default is IR]
+
+[user@cn3123 user]$ <b>idiffir_plotter.py -h</b>
+usage: idiffir_plotter.py [-h] [-v] [-l FACTORLABEL FACTORLABEL] [-o OUTDIR]
+                          [-s] [-g GRAPHDIRS] [-p PROCS]
+                          genemodel genelist factor1bamfiles factor2bamfiles
+
+Plot highlighted regions between two factors.
+
+positional arguments:
+  genemodel             gene model file: NAME.gtf[.gz] | NAME.gff[.gz]
+  genelist              File containing gene records to plot. Format for lines
+                        is geneID start_1,end_1;...start_n,end_n.
+  factor1bamfiles       colon-separated list of bamfiles: PATH-TO-REPLICATE_1
+                        [:PATH-TO-REPLICATE_2,...]
+  factor2bamfiles       colon-separated list of bamfiles: PATH-TO-REPLICATE_1
+                        [:PATH-TO-REPLICATE_2,...]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --verbose         verbose output [default is quiet running]
+  -l FACTORLABEL FACTORLABEL, --factorlabel FACTORLABEL FACTORLABEL
+                        factor labels, example: -f Mutant Wildtype
+  -o OUTDIR, --output-dir OUTDIR
+                        output file directory name
+  -s, --shrink_introns  shrink introns for depth plots [default is no
+                        shrinking]
+  -g GRAPHDIRS, --graph-dirs GRAPHDIRS
+                        colon-separated list of directories to recursively
+                        search for SpliceGrapher predictions
+  -p PROCS, --procs PROCS
+                        Number of processing cores to use, [default = 1]
+
+[user@cn3123 user]$ <b>getDepths.py -h</b>
+usage: getDepths.py [-h] [-o OUTDIR] [-v] bamfile_in
+
+Get chromosomal read depths and junctions
+
+positional arguments:
+  bamfile_in            Name of sorted, indexed BAM file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTDIR, --output-dir OUTDIR
+                        output file directory name
+  -v, --verbose         verbose output
+
+[user@cn3123 user]$ <b>convertSam.py -h</b>
+usage: convertSam.py [-h] [-o BAMFILE] [-p PROCS] [-m MEMORY] [-v] samfile
+
+Generate sorted BAM and index files for given SAM file
+
+positional arguments:
+  samfile               Samfile to convert
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o BAMFILE, --outfile BAMFILE
+                        Name of converted BAM file [default=<sambase>.bam]
+  -p PROCS, --procs PROCS
+                        Number of processors to use for BAM sorting (default
+                        1)
+  -m MEMORY, --memory MEMORY
+                        Max memory (in GBs) for each processor used for BAM
+                        sorting (default 2)
+  -v, --verbose         Print verbose output
+
+
+etc.
+
+</pre>
+<pre class="term">
+[user@cn3316 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

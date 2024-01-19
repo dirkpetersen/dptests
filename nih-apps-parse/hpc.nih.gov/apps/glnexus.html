@@ -1,0 +1,180 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GLNEXUS on Biowulf';</script>
+<div class="title">GLNEXUS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Scalable gVCF merging and joint variant calling for population sequencing projects.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://doi.org/10.1101/343970">GLnexus: joint variant calling for large cohort sequencing.</a> 
+Michael F. Lin, Ohad Rodeh, John Penn, Xiaodong Bai, Jeffrey G. Reid, Olga Krasheninina, William J. Salerno.
+bioRxiv 343970.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/dnanexus-rnd/GLnexus">GLnexus Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>glnexus</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>Note that as of version 1.4.1, the <tt>glnexus</tt> command has been changed to <tt>glnexus_cli</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>cp ${GLNEXUS_TEST_DATA}/* .</b>
+[user@cn3144 ~]$ <b>tar -xvf dv_platinum6_chr21_gvcf.tar</b>
+dv_platinum6_chr21_gvcf/
+dv_platinum6_chr21_gvcf/NA12890.chr21.gvcf.gz
+dv_platinum6_chr21_gvcf/NA12892.chr21.gvcf.gz
+dv_platinum6_chr21_gvcf/NA12891.chr21.gvcf.gz
+dv_platinum6_chr21_gvcf/NA12889.chr21.gvcf.gz
+dv_platinum6_chr21_gvcf/NA12877.chr21.gvcf.gz
+dv_platinum6_chr21_gvcf/NA12878.chr21.gvcf.gz
+
+[user@cn3144 ~]$ <b>rm dv_platinum6_chr21_gvcf.tar</b>
+[user@cn3144 ~]$ <b>ls</b>
+dv_platinum6_chr21_gvcf
+
+[user@cn3144 ~]$ <b>module load glnexus</b>
+[user@cn3144 ~]$ <b>echo -e "chr21\t0\t48129895" &gt; hg19_chr21.bed</b>
+[user@cn3144 ~]$ <b>glnexus_cli --config DeepVariant --bed hg19_chr21.bed dv_platinum6_chr21_gvcf/*.gvcf.gz > dv_platinum6_chr21.bcf</b>
+[1485789] [2023-09-08 12:31:07.444] [GLnexus] [info] glnexus_cli release v1.4.1-0-g68e25e5 Aug 13 2021
+[1485789] [2023-09-08 12:31:07.445] [GLnexus] [info] detected jemalloc 5.2.1-0-gea6b3e973b477b8061e0076bb257dbd7f3faa756
+[1485789] [2023-09-08 12:31:07.446] [GLnexus] [info] Loading config preset DeepVariant
+[1485789] [2023-09-08 12:31:07.449] [GLnexus] [info] config:
+unifier_config:
+  drop_filtered: false
+  min_allele_copy_number: 1
+  min_AQ1: 10
+  min_AQ2: 10
+  min_GQ: 0
+  max_alleles_per_site: 32
+  monoallelic_sites_for_lost_alleles: true
+  preference: common
+genotyper_config:
+  revise_genotypes: true
+  min_assumed_allele_frequency: 9.99999975e-05
+  snv_prior_calibration: 0.600000024
+  indel_prior_calibration: 0.449999988
+  required_dp: 0
+  allow_partial_data: true
+  allele_dp_format: AD
+  ref_dp_format: MIN_DP
+  output_residuals: false
+  more_PL: true
+  squeeze: false
+  trim_uncalled_alleles: true
+  top_two_half_calls: false
+  output_format: BCF
+  liftover_fields:
+
+[...]
+
+[1485789] [2023-09-08 12:31:07.605] [GLnexus] [info] db_get_contigs GLnexus.DB
+[1485789] [2023-09-08 12:31:07.674] [GLnexus] [info] Beginning bulk load with no range filter.
+[1485789] [2023-09-08 12:31:10.919] [GLnexus] [info] Loaded 6 datasets with 6 samples; 239726128 bytes in 2572592 BCF records (10 duplicate) in 7062 buckets. Bucket max 551480 bytes, 5645 records. 0 BCF records skipped due to caller-specific exceptions
+[1485789] [2023-09-08 12:31:10.919] [GLnexus] [info] Created sample set *@6
+[1485789] [2023-09-08 12:31:10.919] [GLnexus] [info] Flushing database...
+[1485789] [2023-09-08 12:31:11.545] [GLnexus] [info] Bulk load complete!
+[1485789] [2023-09-08 12:31:11.558] [GLnexus] [info] found sample set *@6
+[1485789] [2023-09-08 12:31:11.558] [GLnexus] [info] discovering alleles in 1 range(s) on 126 threads
+[1485789] [2023-09-08 12:31:14.064] [GLnexus] [info] discovered 258742 alleles
+[1485789] [2023-09-08 12:31:14.469] [GLnexus] [info] unified to 117841 sites cleanly with 122084 ALT alleles. 66 ALT alleles were additionally included in monoallelic sites and 8061 were filtered out on quality thresholds.
+[1485789] [2023-09-08 12:31:14.469] [GLnexus] [info] Finishing database compaction...
+[1485789] [2023-09-08 12:31:14.498] [GLnexus] [info] genotyping 117841 sites; sample set = *@6 mem_budget = 0 threads = 128
+[1485789] [2023-09-08 12:31:20.343] [GLnexus] [info] genotyping complete!
+[1485789] [2023-09-08 12:31:20.343] [GLnexus] [info] worker threads were cumulatively stalled for 456500ms
+[1485789] [2023-09-08 12:31:20.343] [GLnexus] [info] Num BCF records read 4574092  query hits 727711
+
+[user@cn3144 ~]$ <b>ls</b>
+dv_platinum6_chr21.bcf	dv_platinum6_chr21_gvcf  GLnexus.DB  hg19_chr21.bed
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. glnexus.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load glnexus
+cd /data/user
+glnexus_cli --config DeepVariant --bed hg19_chr21.bed dv_platinum6_chr21_gvcf/*.gvcf.gz > dv_platinum6_chr21.bcf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] glnexus.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. glnexus.swarm). For example:</p>
+
+<pre class="term">
+glnexus_cli --config DeepVariant --bed genomic_range1.bed dv_platinum6_chr21_gvcf/*.gvcf.gz > output1.bcf
+glnexus_cli --config DeepVariant --bed genomic_range2.bed dv_platinum6_chr21_gvcf/*.gvcf.gz > output2.bcf
+glnexus_cli --config DeepVariant --bed genomic_range3.bed dv_platinum6_chr21_gvcf/*.gvcf.gz > output3.bcf
+glnexus_cli --config DeepVariant --bed genomic_range4.bed dv_platinum6_chr21_gvcf/*.gvcf.gz > output4.bcf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f glnexus.swarm [-g #] [-t #] --module glnexus</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module glnexus</tt> <td>Loads the glnexus module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

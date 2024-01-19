@@ -1,0 +1,198 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SAIGE on Biowulf';</script>
+<div class="title">SAIGE on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+
+<p class=alert>SAIGE is installed as a container with it's own R environment on the Biowulf Cluster, please do not load R module when running SAIGE.
+If there are conflicts/errors about R, please check the loaded modules with 'module list'.
+</p>
+<p>
+SAIGE is an R package developed with Rcpp for genome-wide association tests in large-scale data sets and biobanks. The method:
+</p>
+<ul>
+<li>    accounts for sample relatedness based on the generalized mixed models
+<li>    allows for model fitting with either full or sparse genetic relationship matrix (GRM)
+<li>    works for quantitative and binary traits
+<li>    handles case-control imbalance of binary traits
+<li>    computationally efficient for large data sets
+<li>    performs single-variant association tests
+<li>    provides effect size estimation through Firth's Bias-Reduced Logistic Regression
+<li>    performs conditional association analysis
+</ul>
+<p>
+SAIGE-GENE (now known as SAIGE-GENE+) are new method extension in the R package for testing rare variant in set-based tests.
+</p>
+<ul>
+<li>    performs BURDEN, SKAT, and SKAT-O tests
+<li>    allows for tests on multiple minor allele frequencies cutoffs and functional annotations
+<li>    allows for specifying weights for markers in the set-based tests
+<li>    performs conditional analysis to identify associations independent from nearly GWAS signals
+</ul>
+<p>
+The package takes genotype file input in the following formats
+</p>
+<ul>
+<li>    PLINK (bed, bim, fam), BGEN, VCF, BCF, SAV
+</ul>
+  
+
+<h3>References:</h3>
+<ul>
+<li>
+Zhou W et.al.<em> Efficiently controlling for case-control imbalance and sample relatedness in large-scale genetic association studies. 
+</em>
+ Nat Genet. 2018 Sep;50(9):1335-1341.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/30104761">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.nature.com/articles/s41588-018-0184-y">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>SAIGE Main Site:<a href="https://github.com/saigegit/SAIGE">Main Site</a></li>
+<li>SAIGE documentation: <a href="https://saigegit.github.io//SAIGE-doc/">SAIGE-doc</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>SAIGE</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<pre class="term">
+step1_fitNULLGLMM.R --help
+	
+</pre>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li>$SAIGE_TEST_DATA
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --mem=4G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load SAIGE</b>
+[user@cn3144 ~]$ <b>cp -r ${SAIGE_TEST_DATA:-none}/extdata .</b>
+[user@cn3144 ~]$ <b>cd extdata</b>
+[user@cn3144 ~]$ <b>step1_fitNULLGLMM.R     \
+        --plinkFile=./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly \
+        --phenoFile=./input/pheno_1000samples.txt_withdosages_withBothTraitTypes.txt \
+        --phenoCol=y_binary \
+        --covarColList=a9 \
+        --sampleIDColinphenoFile=IID \
+        --traitType=binary        \
+        --outputPrefix=./output/example_binary_includenonAutoforvarRatio \
+        --nThreads=4    \
+        --LOCO=FALSE    \
+        --relatednessCutoff=0.0 \
+        --FemaleCode=2 \
+        --MaleCode=1 \
+        --IsOverwriteVarianceRatioFile=TRUE
+
+		</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. SAIGE.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --cpus-per-task=6
+#SBATCH --mem=4G
+#SBATCH --time=2:00:00
+#SBATCH --partition=norm
+
+set -e
+module load SAIGE
+step1_fitNULLGLMM.R     \
+        --plinkFile=./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly \
+        --phenoFile=./input/pheno_1000samples.txt_withdosages_withBothTraitTypes.txt \
+        --phenoCol=y_binary \
+        --covarColList=a9 \
+        --sampleIDColinphenoFile=IID \
+        --traitType=binary        \
+        --outputPrefix=./output/example_binary_includenonAutoforvarRatio \
+        --nThreads=4    \
+        --LOCO=FALSE    \
+        --relatednessCutoff=0.0 \
+        --FemaleCode=2 \
+        --MaleCode=1 \
+        --IsOverwriteVarianceRatioFile=TRUE
+
+</pre>
+<p> Submit the job:
+<pre class="term">sbatch SAIGE.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+    <pre class="term">
+
+cd dir1; step1_fitNULLGLMM.R --help 
+cd dir2; step1_fitNULLGLMM.R --help
+
+    </pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module SAIGE</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

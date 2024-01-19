@@ -1,0 +1,158 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'kmc on Biowulf';</script>
+<div class="title">kmc on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+KMC is a program to create and access databases for counting k-mers from
+fastq or fasta files.
+</p>
+
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://sun.aei.polsl.pl/kmc">Home page</a> </li>
+    <li><a href="https://github.com/marekkokot/KMC">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: kmc (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>kmc is a multithreaded application. Make sure to match allocated CPUs with the number of threads</li>
+    <li>Example files in <code>$KMC_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 --mem=10g --cpus-per-task=2</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load kmc</b>
+[user@cn3144]$ <b>kmc</b>
+K-Mer Counter (KMC) ver. 3.0.0 (2017-01-28)
+Usage:
+ kmc [options] &lt;input_file_name&gt; &lt;output_file_name&gt; &lt;working_directory&gt;
+ kmc [options] &lt;@input_file_names&gt; &lt;output_file_name&gt; &lt;working_directory&gt;
+Parameters:
+  input_file_name - single file in FASTQ format (gziped or not)
+  @input_file_names - file name with list of input files in FASTQ format (gziped or not)
+Options:
+  -v - verbose mode (shows all parameter settings); default: false
+  -k&lt;len&gt; - k-mer length (k from 1 to 256; default: 25)
+  -m&lt;size&gt; - max amount of RAM in GB (from 1 to 1024); default: 12
+  -sm - use strict memory mode (memory limit from -m&lt;n&gt; switch will not be exceeded)
+  -p&lt;par&gt; - signature length (5, 6, 7, 8, 9, 10, 11); default: 9
+  -f&lt;a/q/m&gt; - input in FASTA format (-fa), FASTQ format (-fq) or multi FASTA (-fm); default: FASTQ
+  -ci&lt;value&gt; - exclude k-mers occurring less than &lt;value&gt; times (default: 2)
+  -cs&lt;value&gt; - maximal value of a counter (default: 255)
+  -cx&lt;value&gt; - exclude k-mers occurring more of than &lt;value&gt; times (default: 1e9)
+  -b - turn off transformation of k-mers into canonical form
+  -r - turn on RAM-only mode
+  -n&lt;value&gt; - number of bins
+  -t&lt;value&gt; - total number of threads (default: no. of CPU cores)
+  -sf&lt;value&gt; - number of FASTQ reading threads
+  -sp&lt;value&gt; - number of splitting threads
+  -sr&lt;value&gt; - number of threads for 2nd stage
+Example:
+kmc -k27 -m24 NA19238.fastq NA.res \data\kmc_tmp_dir\
+kmc -k27 -m24 @files.lst NA.res \data\kmc_tmp_dir\
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>cp $KMC_TEST_DATA/ENCFF001KPB.fastq.gz .</b>
+[user@cn3144]$ <b>mkdir ENCFF001KPB.tmp</b>
+[user@cn3144]$ <b>kmc -t2 ENCFF001KPB.fastq.gz ENCFF001KPB.kmc ENCFF001KPB.tmp</b>
+*****************
+Stage 1: 100%
+Stage 2: 100%
+1st stage: 8.87882s
+2nd stage: 6.6567s
+Total    : 15.5355s
+Tmp size : 173MB
+
+Stats:
+   No. of k-mers below min. threshold :     66106376
+   No. of k-mers above max. threshold :            0
+   No. of unique k-mers               :     79254698
+   No. of unique counted k-mers       :     13148322
+   Total no. of k-mers                :    108850013
+   Total no. of reads                 :      9157799
+   Total no. of super-k-mers          :     19752822
+
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. kmc.sh) similar to the following example:</p>
+
+<pre class="term">
+#! /bin/bash
+set -e
+
+tmp=/lscratch/${SLURM_JOB_ID}
+module load kmc/3.0.0 || exit 1
+
+kmc -t$(( SLURM_CPUS_PER_TASK - 2 )) -m15 -sm \
+  $KMC_TEST_DATA/ENCFF001KPB.fastq.gz \
+  ENCFF001KPB.kmer \
+  ${tmp}
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=10g --gres=lscratch:10 kmc.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. kmc.swarm). For example:</p>
+
+<pre class="term">
+tmp=/lscratch/${SLURM_JOB_ID} \
+  &amp;&amp; kmc -t$(( SLURM_CPUS_PER_TASK - 2 )) -m15 -sm 1.fastq.gz 1.kmer ${tmp}
+tmp=/lscratch/${SLURM_JOB_ID} \
+  &amp;&amp; kmc -t$(( SLURM_CPUS_PER_TASK - 2 )) -m15 -sm 2.fastq.gz 2.kmer ${tmp}
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f kmc.swarm [-g #] [-t #] --module kmc/3.0.0 --gres=lscratch:10</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module kmc <td>Loads the kmc module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

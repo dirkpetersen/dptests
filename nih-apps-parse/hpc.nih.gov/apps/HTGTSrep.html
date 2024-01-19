@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'HTGTSrep on Biowulf';</script>
+<div class="title">HTGTSrep on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A pipeline for comprehensive analysis of HTGTS-Rep-seq.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Yyx2626/HTGTSrep">HTGTSrep on GitHub</a></li>
+<li><a href="https://bitbucket.org/adugduzhou/htgtsrep/src/master/">HTGTSrep on BitBucket</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>HTGTSrep</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>This application is run on Biowulf using a staff-written wrapper script. Simply run the command <tt>htgtsrep</tt> after loading the module. Do not try to invoke the <tt>HTGTSrep.py</tt> script using python.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --cpus-per-task=4 --mem=8g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 51996182
+salloc.exe: job 51996182 queued and waiting for resources
+salloc.exe: job 51996182 has been allocated resources
+salloc.exe: Granted job allocation 51996182
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0861 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn0861 ~]$ <b>git clone https://github.com/Yyx2626/HTGTSrep.git /lscratch/$SLURM_JOB_ID</b>
+Cloning into '/lscratch/51996182'...
+remote: Enumerating objects: 4, done.
+remote: Counting objects: 100% (4/4), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 1203 (delta 0), reused 0 (delta 0), pack-reused 1199
+Receiving objects: 100% (1203/1203), 485.90 MiB | 51.51 MiB/s, done.
+Resolving deltas: 100% (324/324), done.
+Checking out files: 100% (1226/1226), done.
+
+[user@cn0861 ~]$ <b>cd /lscratch/$SLURM_JOB_ID/HTGTSrep/test</b>
+
+[user@cn0861 test]$ <b>module load HTGTSrep</b>
+[+] Loading HTGTSrep  9fe74ff  on cn0861
+[+] Loading singularity  3.5.3  on cn0861
+
+[user@cn0861 test]$ <b>htgtsrep run -m metadata.txt -r1 r1.fq.gz -r2 r2.fq.gz -o out</b>
+Welcome to HTGTSrep pipeline!!!
+INFO  @ Fri, 13 Mar 2020 16:40:31: Parameters: /opt/HTGTSrep/HTGTSrep/HTGTSrep.py run -m metadata.txt -r1 r1.fq.gz -r2 r2.fq.gz -o out
+INFO  @ Fri, 13 Mar 2020 16:40:31: Parsing meta files.....
+INFO  @ Fri, 13 Mar 2020 16:40:31: Preprocessing read files.....
+INFO  @ Fri, 13 Mar 2020 16:40:32: fastq-multx -m 0 -x -b -d 0 -B out/barcodes.txt out/raw.r1.fq out/raw.r2.fq -o out/%_R1.fq out/%_R2.fq
+Using Barcode File: out/barcodes.txt
+Id      Count   File(s)
+HC091_Alt231    16333   out/HC091_Alt231_R1.fq  out/HC091_Alt231_R2.fq
+HC092_Alt231    13145   out/HC092_Alt231_R1.fq  out/HC092_Alt231_R2.fq
+unmatched       0       out/unmatched_R1.fq     out/unmatched_R2.fq
+total   29478
+INFO  @ Fri, 13 Mar 2020 16:40:32: Joining reads......
+[snip...]
+
+[user@cn0861 test]$ <b>ls out/</b>
+barcodes.txt  HC091_Alt231  HC092_Alt231  logs  metadata.txt  stat
+
+[user@cn0861 test]$ <b>cp -r out/ /data/$USER/</b>
+
+[user@cn0861 test]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 51996182
+salloc.exe: Job allocation 51996182 has been revoked.
+
+[user@biowulf ~]$ 
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. HTGTSrep.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load HTGTSrep
+cd /data/$USER/HTGTSrep/test
+htgtsrep run -m metadata.txt -r1 r1.fq.gz -r2 r2.fq.gz -o /data/$USER/out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] HTGTSrep.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. HTGTSrep.swarm). For example:</p>
+
+<pre class="term">
+htgtsrep run -m metadata.txt -r1 r1A.fq.gz -r2 r2A.fq.gz -o /data/$USER/outA
+htgtsrep run -m metadata.txt -r1 r1B.fq.gz -r2 r2B.fq.gz -o /data/$USER/outB
+htgtsrep run -m metadata.txt -r1 r1C.fq.gz -r2 r2C.fq.gz -o /data/$USER/outC
+htgtsrep run -m metadata.txt -r1 r1D.fq.gz -r2 r2D.fq.gz -o /data/$USER/outD
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f HTGTSrep.swarm [-g #] [-t #] --module HTGTSrep</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module HTGTSrep</tt> <td>Loads the HTGTSrep module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

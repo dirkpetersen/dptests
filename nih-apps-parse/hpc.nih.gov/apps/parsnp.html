@@ -1,0 +1,155 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'parsnp: efficient microbial core genome alignment and SNP detection ';</script>
+<div class="title"><b>parsnp: efficient microbial core genome alignment and SNP detection </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Parsnp is a command-line-tool for efficient microbial core genome alignment and SNP detection. 
+Parsnp was designed to work in tandem with Gingr, a flexible platform for visualizing genome alignments and phylogenetic trees
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Todd J Treangen, Brian D Ondov, Sergey Koren and Adam M Phillippy <br />
+ <i>The Harvest suite for rapid core-genome alignment and visualization of thousands of intraspecific microbial genomes</i> <br />
+<a href="https://link.springer.com/article/10.1186/s13059-014-0524-x">Genome Biology</a>, 2014, 15:524.  http://genomebiology.com/2014/15/11/524
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/marbl/parsnp">Parsnp Github page</a></li>
+<li><a href="https://harvest.readthedocs.io/en/latest/">Harvest Project page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>parsnp</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded</li>
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PARSNP_HOME</b>&nbsp; installation directory</li>
+    <li><b>PARSNP_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>PARSNP_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16g --cpus-per-task=16</b>
+[user@cn3335 ~]$<b>module load parsnp </b>
+[+] Loading singularity  3.10.3  on cn3335
+[+] Loading parsnp 1.7.4  ...
+user@cn3335 ~]$<b> parsnp -h </b>
+|--Parsnp v1.2--|
+For detailed documentation please see --&gt; http://harvest.readthedocs.org/en/latest
+usage: parsnp [options] [-g|-r|-q](see below) -d &lt;genome_dir&gt; -p &lt;threads&gt;
+
+Parsnp quick start for three example scenarios:
+1) With reference & genbank file:
+ &gt;parsnp -g &lt;reference_genbank_file1,reference_genbank_file2,..&gt; -d &lt;genome_dir&gt; -p &lt;threads&gt;
+
+2) With reference but without genbank file:
+ &gt;parsnp -r &lt;reference_genome&gt; -d &lt;genome_dir&gt; -p &lt;threads&gt;
+
+3) Autorecruit reference to a draft assembly:
+ &gt;parsnp -q &lt;draft_assembly&gt; -d &lt;genome_db&gt; -p &lt;threads&gt;
+
+[Input parameters]
+&lt;&lt;input/output&gt;&gt;
+ -c = &lt;flag&gt;: (c)urated genome directory, use all genomes in dir and ignore MUMi? (default = NO)
+ -d = &lt;path&gt;: (d)irectory containing genomes/contigs/scaffolds
+ -r = &lt;path&gt;: (r)eference genome (set to ! to pick random one from genome dir)
+ -g = &lt;string&gt;: Gen(b)ank file(s) (gbk), comma separated list (default = None)
+ -o = &lt;string&gt;: output directory? default [./P_CURRDATE_CURRTIME]
+ -q = &lt;path&gt;: (optional) specify (assembled) query genome to use, in addition to genomes found in genome dir (default = NONE)
+
+&lt;&lt;MUMi&gt;&gt;
+ -U = &lt;float&gt;: max MUMi distance value for MUMi distribution
+ -M = &lt;flag&gt;: calculate MUMi and exit? overrides all other choices! (default: NO)
+ -i = &lt;float&gt;: max MUM(i) distance (default: autocutoff based on distribution of MUMi values)
+
+&lt;&lt;MUM search&gt;&gt;
+ -a = &lt;int&gt;: min (a)NCHOR length (default = 1.1*Log(S))
+ -C = &lt;int&gt;: maximal cluster D value? (default=100)
+ -z = &lt;path&gt;: min LCB si(z)e? (default = 25)
+
+&lt;&lt;LCB alignment&gt;&gt;
+ -D = &lt;float&gt;: maximal diagonal difference? Either percentage (e.g. 0.2) or bp (e.g. 100bp) (default = 0.12)
+ -e = &lt;flag&gt; greedily extend LCBs? experimental! (default = NO)
+ -n = &lt;string&gt;: alignment program (default: libMUSCLE)
+ -u = &lt;flag&gt;: output unaligned regions? .unaligned (default: NO)
+
+&lt;&lt;Recombination filtration&gt;&gt;
+ -x = &lt;flag&gt;: enable filtering of SNPs located in PhiPack identified regions of recombination? (default: NO)
+
+&lt;&lt;Misc&gt;&gt;
+ -h = &lt;flag&gt;: (h)elp: print this message and exit
+ -p = &lt;int&gt;: number of threads to use? (default= 1)
+ -P = &lt;int&gt;: max partition size? limits memory usage (default= 15000000)
+ -v = &lt;flag&gt;: (v)erbose output? (default = NO)
+ -V = &lt;flag&gt;: output (V)ersion and exit
+</pre>
+Download sample data to the current folder:
+<pre class="term">
+[user@cn3335 ~]$<b>cp -r $PARSNP_DATA/* .</b>
+</pre>
+Run parsnp on the sample data:                
+<pre class="term">
+[user@cn3335 ~]$ <b>parsnp -g ref/England1.gbk -d genomes -c</b>
+|--Parsnp v1.2--|
+For detailed documentation please see --&gt; http://harvest.readthedocs.org/en/latest
+*****************************************************************************
+SETTINGS:
+|-refgenome:    ref/England1.gbk.fna
+|-aligner:      libMUSCLE
+|-seqdir:       genomes
+|-outdir:       /data/user/parsnp/P_2022_10_20_091716517037
+|-OS:           Linux
+|-threads:      32
+*****************************************************************************
+
+&lt;&lt;Parsnp started&gt;&gt;
+
+--&gt;Reading Genome (asm, fasta) files from genomes..
+  |-&gt;[OK]
+--&gt;Reading Genbank file(s) for reference (.gbk) ref/England1.gbk..
+  |-&gt;[OK]
+--&gt;Running Parsnp multi-MUM search and libMUSCLE aligner..
+  |-&gt;[OK]
+--&gt;Running PhiPack on LCBs to detect recombination..
+  |-&gt;[SKIP]
+--&gt;Reconstructing core genome phylogeny..
+  |-&gt;[OK]
+--&gt;Creating Gingr input file..
+  |-&gt;[OK]
+--&gt;Calculating wall clock time..
+  |-&gt;Aligned 47 genomes in 0.65 seconds
+
+&lt;&lt;Parsnp finished! All output available in /data/user/parsnp/P_2022_10_20_091716517037&gt;&gt;
+
+Validating output directory contents...
+        1)parsnp.tree:          newick format tree                      [OK]
+        2)parsnp.ggr:           harvest input file for gingr (GUI)      [OK]
+        3)parsnp.xmfa:          XMFA formatted multi-alignment          [OK]
+[user@cn3335 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

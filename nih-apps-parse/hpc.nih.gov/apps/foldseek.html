@@ -1,0 +1,160 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'foldseek on Biowulf';</script>
+<div class="title">foldseek on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<figure>
+    <blockquote cite="https://github.com/steineggerlab/foldseek">
+        Foldseek enables fast and sensitive comparisons of large structure
+        sets. It reaches sensitivities similar to state-of-the-art structural
+        aligners while being at least 20,000 times faster.
+    </blockquote>
+    <figcaption><cite>Foldseek documentation</cite></figcaption>
+</figure>
+
+<h3>References:</h3>
+<ul>
+    <li>M. van Kempen, S. Kim, C. Tumescheit, M. Mirdita, J. Söding, and M. Steinegger.
+        <em>Foldseek: fast and accurate protein structure search.</em> BioRxiv, 2022
+        <a href=https://www.biorxiv.org/content/10.1101/2022.02.07.479398">doi:10.1101/2022.02.07.479398</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>foldseek on<a href="https://github.com/steineggerlab/foldseek">GitHub</a></li>
+<li>foldseek on the web at <a href="https://search.foldseek.com/">search.foldseek.com</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: foldseek (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>foldseek is multithreaded and not slurm aware. Please specify threads to match the number of allocated CPUs
+        to avoid overloaded jobs</li>
+    <li>Example files in <code>$FOLDSEEK_TEST_DATA</code></li>
+    <li>Reference data in $FOLDSEEK_DB/</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p style="padding: 20px 0 0 0 ;">Allocate an <a href="/docs/userguide.html#int">interactive session</a> for a short tutorial:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=24g --cpus-per-task=12 --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load foldseek/5-53465f0</b>
+</pre>
+
+<p>Create a database from PDB or mmCif files to speed up repeated searches</p>
+
+<pre class="term">
+[user@cn3144]$ <b>foldseek createdb --threads $SLURM_CPUS_PER_TASK $FOLDSEEK_TEST_DATA testDB</b>
+MMseqs Version:         3c64211f59830702e2a369d6e6f0d8a7492c27fa
+Chain name mode         0
+Write lookup file       1
+Threads                 12
+Verbosity               3
+
+Output file: testDB
+[=================================================================] 100.00% 26 0s 57ms
+Time for merging to testDB_ss: 0h 0m 0s 0ms
+Time for merging to testDB_h: 0h 0m 0s 0ms
+Time for merging to testDB_ca: 0h 0m 0s 0ms
+Time for merging to testDB: 0h 0m 0s 0ms
+Ignore 0 out of 26.
+Too short: 0, incorrect  0.
+Time for processing: 0h 0m 0s 94ms
+
+[user@cn3144]$ <b>foldseek easy-search --threads $SLURM_CPUS_PER_TASK \
+    $FOLDSEEK_TEST_DATA/d1asha_ testDB aln.m8 /lscratch/$SLURM_JOB_ID/tmp</b>
+...
+[user@cn3144]$ <b>head aln.m8</b>
+d1asha_ d1asha_ 1.000   147     0       0       1       147     1       147     2.859E-22       1061
+d1asha_ d1x9fd_ 0.173   143     111     0       3       145     5       139     2.716E-05       265
+d1asha_ d2w72b_ 0.182   145     112     0       1       145     4       141     4.463E-04       208
+d1asha_ d1itha_ 0.131   145     119     0       1       145     3       140     6.611E-04       200
+d1asha_ d1mbaa_ 0.118   143     120     0       4       146     6       142     6.611E-04       200
+</pre>
+
+<p>There are also pre-build foldseek databases for AlphafoldDB and PDB in $FOLDSEEK_DB.</p>
+
+<pre class="term">
+[user@cn3144]$ <b>foldseek easy-search --threads $SLURM_CPUS_PER_TASK \
+    --format-mode 4 \
+    --format-output query,target,taxid,taxname,fident,alnlen,mismatch,qstart,qend,tstart,tend,evalue \
+    $FOLDSEEK_TEST_DATA/d1asha_ $FOLDSEEK_DB/Alphafold-SwissProt aln_afdb.tsv /lscratch/$SLURM_JOB_ID/tmp</b>
+[user@cn3144]$
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p>In the following example individual steps are carried out separately and
+hits are re-aligned with TM-align. As an alternative <code>--alignment-type
+1</code> for easy-search uses TM-align and write the TMscore into the evalue
+field. TM-score is in the range of (0,1]. 1 indicates a perfect match between
+two structures. Scores below 0.17 correspond to randomly chosen unrelated
+proteins whereas structures with a score higher than 0.5 assume generally the
+same fold. The .tsv formatted outputs below can be merged to combine results.</p>
+
+<pre class="term">
+[user@cn3144]$ <b>foldseek createdb --threads $SLURM_CPUS_PER_TASK $FOLDSEEK_TEST_DATA queryDB</b>
+[user@cn3144]$ <b>foldseek search -s 9.5 -a --threads $SLURM_CPUS_PER_TASK queryDB $FOLDSEEK_DB/PDB alnDB /lscratch/$SLURM_JOB_ID/tmp</b>
+[user@cn3144]$ <b>foldseek convertalis --threads $SLURM_CPUS_PER_TASK queryDB $FOLDSEEK_DB/PDB alnDB aln.tsv</b>
+[user@cn3144]$ <b>foldseek aln2tmscore --threads $SLURM_CPUS_PER_TASK queryDB $FOLDSEEK_DB/PDB alnDB alntmDB</b>
+[user@cn3144]$ <b>foldseek createtsv --threads $SLURM_CPUS_PER_TASK queryDB $FOLDSEEK_DB/PDB alntmDB aln_tm.tsv</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. foldseek.sh), which uses the input file 'foldseek.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load foldseek/1-2dd3b2f
+foldseek easy-search --threads $SLURM_CPUS_PER_TASK \
+    --format-mode 4 \
+    --format-output query,target,taxid,taxname,fident,alnlen,mismatch,qstart,qend,tstart,tend,evalue
+    $FOLDSEEK_TEST_DATA/d1asha_ $FOLDSEEK_DB/Alphafold-SwissProt aln_afdb.tsv /lscratch/$SLURM_JOB_ID/tmp</b>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=6G foldseek.sh</pre>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

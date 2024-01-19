@@ -1,0 +1,123 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "pdb2pqr";</script>
+<div class="title">pdb2pqr on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+From the documentation
+</p>
+
+<blockquote>
+    The use of continuum solvation methods such as APBS requires
+    accurate and complete structural data as well as force field parameters
+    such as atomic charges and radii. Unfortunately, the limiting step in
+    continuum electrostatics calculations is often the addition of missing
+    atomic coordinates to molecular structures from the Protein Data Bank and
+    the assignment of parameters to these structures. To address this problem,
+    we have developed PDB2PQR. This software automates many of the common tasks
+    of preparing structures for continuum solvation calculations as well as
+    many other types of biomolecular structure modeling, analysis, and
+    simulation.
+</blockquote>
+
+<h3>References:</h3>
+<ul>
+    <li>E. Jurrus, et al. <em>Improvements to the APBS biomolecular solvation software suite</em>. 
+        Protein Sci. 2018
+        <a href="https://pubmed.ncbi.nlm.nih.gov/28836357/">PubMed</a> &nbsp;|&nbsp;
+        <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/28836357/">PMC</a> &nbsp;|&nbsp;
+        <a href="https://onlinelibrary.wiley.com/doi/10.1002/pro.3280">Journal</a>
+    </li>
+    <li>T. J. Dolinsky, et al. <em>PDB2PQR: expanding and upgrading automated preparation of biomolecular structures for molecular simulations</em>. Nucleic Acids Res 2007
+        <a href="https://pubmed.ncbi.nlm.nih.gov/17488841/">PubMed</a> &nbsp;|&nbsp;
+        <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/17488841/">PMC</a> &nbsp;|&nbsp;
+        <a href="https://academic.oup.com/nar/article/35/suppl_2/W522/2920806">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>pdb2pqr on <a href="https://github.com/Electrostatics/pdb2pqr">GitHub</a></li>
+<li><a href="http://www.poissonboltzmann.org">Home page</a></li>
+<li><a href="http://pdb2pqr.readthedocs.io">Manual</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: pdb2pqr (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=2g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>pdb2pqr --include-header --ff PARSE --with-ph=7.4 --drop-water 1FAS 1FAS.pqr</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pdb2pqr.sh), which uses the input file 'pdb2pqr.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load pdb2pqr/3.6.1
+pdb2pqr --include-header --ff PARSE --with-ph=7.4 --drop-water 1FAS 1FAS.pqr
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=2g --time 2 --partition=quick pdb2pqr.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. pdb2pqr.swarm). For example:</p>
+
+<pre class="term">
+pdb2pqr --include-header --ff PARSE --with-ph=7.4 --drop-water 1FAS 1FAS.pqr
+pdb2pqr --include-header --ff PARSE --with-ph=7.4 --drop-water 5EDU 5EDU.pqr
+pdb2pqr --include-header --ff PARSE --with-ph=7.4 --drop-water 3C10 3C10.pqr
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f pdb2pqr.swarm -g 2 -t 1 -b3 --time 2 --partition=quick --module pdb2pqr/3.6.1</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module pdb2pqr <td>Loads the pdb2pqr module for each subjob in the swarm 
+</table>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

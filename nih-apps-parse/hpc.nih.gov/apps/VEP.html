@@ -1,0 +1,305 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'VEP on Biowulf';</script>
+<div class="title">VEP on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#plugins">Plugins </a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+VEP (Variant Effect Predictor) determines the effect of your variants (SNPs, insertions, deletions, CNVs or structural variants) on genes, transcripts, and protein sequence, as well as regulatory regions.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://www.ncbi.nlm.nih.gov/pubmed/27268795">McLaren W, Gil L, Hunt SE, Riat HS, Ritchie GR, Thormann A, Flicek P, Cunningham F. <u>The Ensembl Variant Effect Predictor</u>. <em>Genome Biol.</em> 2016 Jun 6;17(1):122.</a></li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://useast.ensembl.org/info/docs/tools/vep/script/index.html">VEP Main Page</a></li>
+  <li><a href="http://useast.ensembl.org/info/docs/tools/vep/script/vep_tutorial.html">VEP Tutorial</a></li>
+  <li><a href="https://github.com/Ensembl/ensembl-vep">ensembl-vep Git Page</a></li>
+  <li style="width:100px;">
+    <ul class="quicklinks-dropdown-list">
+      <li class="quicklinks-dropdown-item quicklinks-dropdown-has-children quicklinks-dropdown-allow-hover" style="margin:-14px; top:-8px; font-size:14px; height:14px;"><a href="#" class="quicklinks-dropdown-link">Old VEP versions</a>
+        <ul class="quicklinks-dropdown-children">
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://jul2023.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 110)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://feb2023.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 109)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://oct2022.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 108)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://jul2022.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 107)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://apr2022.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 106)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://dec2021.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 105)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://may2021.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 104)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://feb2021.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 103)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://nov2020.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 102)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://aug2020.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 101)</a></li>
+          <li class="quicklinks-dropdown-item" style="margin:-5px"><a href="http://apr2020.archive.ensembl.org/info/docs/tools/vep/script/index.html" class="quicklinks-dropdown-link" target="_7Y6Y5T4">VEP Main Page (version 100)</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>VEP</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>VEP_HOME</tt></li>
+    <li><tt>VEP_EXAMPLES</tt></li>
+    <li><tt>VEP_CACHEDIR</tt> -- reference data and plugins</li>
+    <li><tt>GS</tt> -- location of the GeneSplicer application</li>
+    <li><tt>PERL5LIB</tt></li>
+  </ul>
+<li>Example files in <tt>$VEP_EXAMPLES</tt>
+<li>Reference data in <tt>$VEP_CACHEDIR</tt>
+</ul>
+
+<p class="alert">
+By default VEP requires internet connectivity to the Ensembl databases. <b>THIS IS NOT POSSIBLE ON THE BIOWULF CLUSTER!</b> Instead, the databases have been locally cached into a version-specific directory <b><tt>$VEP_CACHEDIR</tt></b>, as set by the VEP module, allowing for offline analysis.
+</p>
+
+<p class="alert">
+Without supplying <b><tt>--dir $VEP_CACHEDIR</tt></b>, VEP will attempt to create a cache directory in your home directory as ~/.vep.  <b>This may cause your /home directory to fill up</b>, causing unexpected failures to your jobs.  Make sure to include <b><tt>--cache --dir $VEP_CACHEDIR</tt></b> with all VEP commands.</p>
+
+<p class="alert">Older versions of VEP used <b><tt>--dir_cache $VEP_CACHEDIR</tt></b> rather than <b><tt>--dir $VEP_CACHEDIR</tt></b>.  Both are valid.</p>
+
+<h3>Commands</h3>
+<ul>
+  <li>convert_cache.pl</li>
+  <li>filter_vep: filter the output of VEP</li>
+  <li><a href="https://github.com/Ensembl/ensembl-vep#vep">vep</a>: predict effect of variants</li>
+  <li><a href="https://github.com/Ensembl/ensembl-vep#haplo">haplo</a>: Ensembl transcript haplotypes view</li>
+  <li><a href="https://github.com/Ensembl/ensembl-vep#recoder">variant_recoder</a>: translating between different variant encodings</li>
+</ul>
+
+<h3>Reference Files</h3>
+<p><b>--assembly</b> is needed for human sequences because there are two available (GRCh37 and GRCh38).  For cat, dog, and mouse, no assembly required.</p>
+<ul>
+  <li><b>--fasta $VEP_CACHEDIR/cat.fa --species cat</b></li>
+  <li><b>--fasta $VEP_CACHEDIR/dog.fa --species dog</b></li>
+  <li><b>--fasta $VEP_CACHEDIR/mouse.fa --species mouse</b></li>
+  <li><b>--fasta $VEP_CACHEDIR/zebrafish.fa --species zebrafish</b></li>
+  <li><b>--fasta $VEP_CACHEDIR/GRCh38.fa --species human --assembly GRCh38</b></li>
+  <li><b>--fasta $VEP_CACHEDIR/GRCh37.fa --species human --assembly GRCh37</b></li>
+</ul>
+
+<a name="plugins"></a><h3>Plugins</h3>
+<p>There are a large number of plugins available for use with VEP.  Some of these plugins require third-party reference data.  Most of this data is available within $VEP_CACHEDIR, but some are available in
+the /fdb tree.  Here is an example for using plugins:</p>
+
+<pre class="term">
+module load VEP/109
+vep \
+ -i ${VEP_EXAMPLES}/homo_sapiens_GRCh38.vcf \
+ -o example.out \
+ --offline \
+ --cache \
+ --force_overwrite \
+ --dir ${VEP_CACHEDIR} \
+ --species human \
+ --assembly GRCh38 \
+ --fasta ${VEP_CACHEDIR}/GRCh38.fa \
+ --everything \
+ --plugin CSN \
+ --plugin Blosum62 \
+ --plugin Carol \
+ --plugin Condel,$VEP_CACHEDIR/Plugins/config/Condel/config,b \
+ --plugin Phenotypes,file=${VEP_CACHEDIR}/Plugins/Phenotypes.pm_human_109_GRCh38.gvf.gz \
+ --plugin ExAC,$VEP_CACHEDIR/ExAC.r0.3.sites.vep.vcf.gz \
+ --plugin GeneSplicer,$GS/bin/genesplicer,$GS/human,context=200 \
+ --plugin CADD,${VEP_CACHEDIR}/CADD_1.4_GRCh38_whole_genome_SNVs.tsv.gz,${VEP_CACHEDIR}/CADD_1.4_GRCh38_InDels.tsv.gz \
+ --plugin Downstream \
+ --plugin LoFtool \
+ --plugin FATHMM,"python ${VEP_CACHEDIR}/fathmm.py"
+</pre>
+
+<p>Here is a synopsis of --plugin examples using GRCh38:</p>
+
+<ul>
+  <li><b>AlphaMissense</b>:<br />
+    <pre class="term">--plugin AlphaMissense,file=${VEP_CACHEDIR}/AlphaMissense_hg38.tsv.gz,cols=all</pre>
+  </li>
+  <li><b>Blosum62</b>:<br />
+    <pre class="term">--plugin Blosum62</pre>
+  </li>
+  <li><b>CADD</b>:<br />
+    <pre class="term">--plugin CADD,${VEP_CACHEDIR}/CADD_1.4_GRCh38_whole_genome_SNVs.tsv.gz,${VEP_CACHEDIR}/CADD_1.4_GRCh38_InDels.tsv.gz</pre>
+  </li>
+  <li><b>Carol</b>:<br />
+    <pre class="term">--plugin Carol</pre>
+  </li>
+  <li><b>Condel</b>:<br />
+    <pre class="term">--plugin Condel,${VEP_CACHEDIR}/Plugins/Condel/config,b</pre>
+  </li>
+  <li><b>CSN</b><br />
+    <pre class="term">--plugin CSN</pre>
+  </li>
+  <li><b>dbNSFP</b>:<br />
+    <pre class="term">--plugin dbNSFP,${VEP_CACHEDIR}/dbNSFP4.2a_hg38.txt.gz,LRT_score,GERP++_RS</pre>
+  </li>
+  <li><b>dbscSNV</b>:<br />
+    <pre class="term">--plugin dbscSNV,${VEP_CACHEDIR}/dbscSNV1.1.txt.gz</pre>
+  </li>
+  <li><b>DisGeNET</b>:<br />
+    <pre class="term">--plugin DisGeNET,file=${VEP_CACHEDIR}/all_variant_disease_pmid_associations_sorted.tsv.gz,disease=1,filter_source=GWASDB&GWASCAT</pre>
+  </li>
+  <li><b>Downstream</b>:<br />
+    <pre class="term">--plugin Downstream</pre>
+  </li>
+  <li><b>ExAC</b>:<br />
+    <pre class="term">--plugin ExAC,${VEP_CACHEDIR}/ExAC.r0.3.1.sites.vep.vcf.gz</pre>
+  </li>
+  <li><b>FATHMM</b>:<br />
+    <pre class="term">--plugin FATHMM,"python ${VEP_CACHEDIR}/fathmm.py"</pre>
+  </li>
+  <li><b>G2P</b>:<br />
+    <pre class="term">--plugin G2P,file=${VEP_CACHEDIR}/SkinG2P.csv</pre>
+  </li>
+  <li><b>GeneSplicer</b>:<br />
+    <pre class="term">--plugin GeneSplicer,$GS/bin/genesplicer,$GS/human,context=200</pre>
+  </li>
+  <li><b>HGVSReferenceBase</b>:<br />
+    <pre class="term">--hgvs --plugin HGVSReferenceBase</pre>
+  </li>
+  <li><b>Lof</b>:<br />
+    <pre class="term">--plugin LoF,loftee_path:${VEP_CACHEDIR}/Plugins/loftee_GRCh38, \
+human_ancestor_fa:${VEP_CACHEDIR}/Plugins/loftee_GRCh38/human_ancestor.fa.gz, \
+conservation_file:${VEP_CACHEDIR}/Plugins/loftee_GRCh38/loftee.sql, \
+gerp_bigwig:${VEP_CACHEDIR}/Plugins/loftee_GRCh38/gerp_conservation_scores.homo_sapiens.GRCh38.bw</pre>
+  </li>
+  <li><b>LoFtool</b>:<br />
+    <pre class="term">--plugin LoFtool</pre>
+  </li>
+  <li><b>MTR</b>:<br />
+    <pre class="term">--plugin MTR,${VEP_CACHEDIR}/mtrflatfile_2.0.txt.gz</pre>
+  </li>
+  <li><b>Phenotypes</b>:<br />
+    <pre class="term">--plugin Phenotypes,file=${VEP_CACHEDIR}/Plugins/Phenotypes.pm_human_109_GRCh38.gvf.gz</pre>
+  </li>
+  <li><b>REVEL</b>:<br />
+    <pre class="term">--plugin REVEL,${VEP_CACHEDIR}/revel_GRCh38_1.3.tsv.gz</pre>
+  </li>
+  <li><b>SpliceAI</b>:<br />
+    <pre class="term">--plugin SpliceAI,snv=${VEP_CACHEDIR}/spliceai_scores.masked.snv.hg38.vcf.gz,indel=${VEP_CACHEDIR}/spliceai_scores.masked.indel.hg38.vcf.gz</pre>
+  </li>
+  <li><b>StructuralVariantOverlap</b>:<br />
+    <pre class="term">--plugin StructuralVariantOverlap,file=${VEP_CACHEDIR}/gnomad_v2_sv.sites.vcf.gz</pre>
+  </li>
+</ul>
+
+<p>Some of the plugins have multiple versions of reference files.</p>
+
+<p class="alert"><b>NOTE:</b> The name of the variation file for the Phenotypes plugin depends on the version of VEP being used.  In the above example, VEP/<b>109</b> is being used, and the variation file is ${VEP_CACHEDIR}/Plugins/Phenotypes.pm_homo_sapiens_<b>109</b>_GRCh38.gvf.gz.  Please run the command <tt><b>ls -l ${VEP_CACHEDIR}</b></tt> to see all the reference files available.</p>
+
+<p>For more information about plugins, type</p>
+<pre class="term">perldoc $VEP_CACHEDIR/Plugins/<b>[name]</b>.pm</pre>
+
+<p>where <tt><b>[name]</b></tt> is the name of the plugin.</p>
+
+<h3>LOFTEE Plugin</h3>
+<p>The <a href="https://github.com/konradjk/loftee">LOFTEE (Loss-Of-Function Transcript Effect Estimator) plugin</a> is a bit trickier than others, and is not well documented.  It is available for VEP versions &gt;= 101. Here are examples for annotating GRCh37 and GRCh38 aligned VCF files:</p>
+
+<pre class="term">
+<b>ml VEP/101</b>
+
+export PERL5LIB=$PERL5LIB:${VEP_CACHEDIR}/Plugins/loftee_GRCh37
+vep \
+  --offline --cache --dir ${VEP_CACHEDIR} \
+  --input_file ${VEP_EXAMPLES}/homo_sapiens_GRCh37.vcf \
+  --species human --assembly GRCh37 --fasta ${VEP_CACHEDIR}/GRCh37.fa \
+  --output_file GRCh37.txt --stats_file GRCh37_summary.txt \
+  --plugin LoF,loftee_path:${VEP_CACHEDIR}/Plugins/loftee_GRCh37,\
+conservation_file:${VEP_CACHEDIR}/Plugins/loftee_GRCh37/phylocsf_gerp.sql,\
+human_ancestor_fa:${VEP_CACHEDIR}/Plugins/loftee_GRCh37/human_ancestor.fa.gz &gt;&amp; GRCh37.out
+
+export PERL5LIB=$PERL5LIB:${VEP_CACHEDIR}/Plugins/loftee_GRCh38
+vep \
+  --offline --cache --dir ${VEP_CACHEDIR} \
+  --input_file ${VEP_EXAMPLES}/homo_sapiens_GRCh38.vcf \
+  --species human --assembly GRCh38 --fasta ${VEP_CACHEDIR}/GRCh38.fa \
+  --output_file GRCh38.txt --stats_file GRCh38_summary.txt \
+  --plugin LoF,loftee_path:${VEP_CACHEDIR}/Plugins/loftee_GRCh38,\
+human_ancestor_fa:${VEP_CACHEDIR}/Plugins/loftee_GRCh38/human_ancestor.fa.gz,\
+conservation_file:${VEP_CACHEDIR}/Plugins/loftee_GRCh38/loftee.sql,\
+gerp_bigwig:${VEP_CACHEDIR}/Plugins/loftee_GRCh38/gerp_conservation_scores.homo_sapiens.GRCh38.bw &gt;&amp; GRCh38.out
+</pre>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ module load VEP
+[user@cn3144 ~]$ ln -s $VEP_EXAMPLES/homo_sapiens_GRCh38.vcf .
+[user@cn3144 ~]$ vep -i homo_sapiens_GRCh38.vcf -o test.out --offline --cache --dir $VEP_CACHEDIR --species human --assembly GRCh38 --fasta $VEP_CACHEDIR/GRCh38.fa 
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. VEP.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load VEP
+vep -i trial1.vcf --offline --cache --dir $VEP_CACHEDIR --fasta $VEP_CACHEDIR/GRCh38.fa --output trial1.out
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] VEP.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. VEP.swarm). For example:</p>
+
+<pre class="term">
+vep -i trial1.vcf --offline --cache --dir $VEP_CACHEDIR --fasta $VEP_CACHEDIR/GRCh38.fa --output trial1.out
+vep -i trial2.vcf --offline --cache --dir $VEP_CACHEDIR --fasta $VEP_CACHEDIR/GRCh38.fa --output trial2.out
+vep -i trial3.vcf --offline --cache --dir $VEP_CACHEDIR --fasta $VEP_CACHEDIR/GRCh38.fa --output trial3.out
+vep -i trial4.vcf --offline --cache --dir $VEP_CACHEDIR --fasta $VEP_CACHEDIR/GRCh38.fa --output trial4.out
+</pre>
+
+<p class="alert">By default, vep will write to the same output file ("variant_effect_output.txt") unless directed to do otherwise using the <tt>--output</tt> option.  For swarms of multiple runs, be sure to include this option.</p>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f VEP.swarm [-g #] [-t #] --module VEP</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module VEP</tt> <td>Loads the VEP module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

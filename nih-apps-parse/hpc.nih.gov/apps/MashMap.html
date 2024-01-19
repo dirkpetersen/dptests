@@ -1,0 +1,146 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MashMap: a fast adaptive algorithm for computing whole-genome homology maps ';</script>
+<div class="title"><b>MashMap: a fast adaptive algorithm for computing whole-genome homology maps </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MashMap is an approximate algorithm for computing local alignment boundaries between long
+DNA sequences. Given a minimum alignment length and an identity threshold, it computes the
+desired alignment boundaries and identity estimates using kmer-based statistics, 
+and maintains sufficient probabilistic guarantees on the output sensitivity.
+</p>
+
+<h3>Reference:</h3>
+<ul>
+<li>Chirag Jain, Sergey Koren, Alexander Dilthey, Adam M. Phillippy, Srinivas Aluru  <br />
+<i> A Fast Adaptive Algorithm for Computing Whole-Genome Homology Maps </i><br />
+<a href="https://academic.oup.com/bioinformatics/article/34/17/i748/5093242">Bioinformatics</a>,
+2018, <b>34</b>(17): i748-i756; doi: 10.1093/bioinformatics/bty597
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/marbl/MashMap">MashMap GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>MashMap</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>MASHMAP_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>MASHMAP_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g --cpus-per-task=16</b>
+[user@cn3200 ~]$<b>module load MashMap </b>
+[+] Loading GSL 2.5 for GCC 7.2.0 ... 
+[+] Loading MashMap  2.0 
+[user@cn3200 ~]$ <b>mashmap -h</b>
+-----------------
+Mashmap is an approximate long read or contig mapper based on Jaccard
+similarity
+-----------------
+Example usage:
+$ mashmap -r ref.fa -q seq.fq [OPTIONS]
+$ mashmap --rl reference_files_list.txt -q seq.fq [OPTIONS]
+
+Available options
+-----------------
+-h, --help
+    Print this help page
+
+-r <value>, --ref <value>
+    an input reference file (fasta/fastq)[.gz]
+
+--refList <value>, --rl <value>
+    a file containing list of reference files, one per line
+
+-q <value>, --query <value>
+    an input query file (fasta/fastq)[.gz]
+
+--ql <value>, --queryList <value>
+    a file containing list of query files, one per line
+
+...
+
+-t <value>, --threads <value>
+    count of threads for parallel execution [default : 1]
+
+-o <value>, --output <value>
+    output file name [default : mashmap.out]
+...
+</pre>
+Download testing data from the PacBio's release of Human 54x long-read coverage dataset <br />
+(<a href="http://datasets.pacb.com/2014/Human54x/fastq.html">http://datasets.pacb.com/2014/Human54x/fastq.html </a>):
+<pre class="term">
+[user@cn3200 ~]$ <b>wget http://datasets.pacb.com/2013/Human10x/READS/2530572/0001/Analysis_Results/m130929_024849_42213_c100518541910000001823079209281311_s1_p0.1.subreads.fastq -O test_seq.fq</b>
+
+--2019-01-10 12:08:07--  http://datasets.pacb.com/2013/Human10x/READS/2530572/0001/Analysis_Results/m130929_024849_42213_c100518541910000001823079209281311_s1_p0.1.subreads.fastq
+Resolving dtn04-e0 (dtn04-e0)... 10.1.200.240
+Connecting to dtn04-e0 (dtn04-e0)|10.1.200.240|:3128... connected.
+Proxy request sent, awaiting response... 200 OK
+Length: 361764079 (345M) [application/octet-stream]
+Saving to: ‘test_seq.fq’
+
+100%[===============================================================>] 361,764,079 96.8MB/s   in 3.6s
+
+2019-01-10 12:08:11 (96.2 MB/s) - ‘test_seq.fq’ saved [361764079/361764079]
+</pre>
+Specify a human reference GRCh38 sequence:
+<pre class="term">
+[user@cn3200 ~]$ <b>ln -s /fdb/igenomes/Homo_sapiens/NCBI/GRCh38/Sequence/WholeGenomeFasta/genome.fa human_GRCh38.fa</b>
+</pre>
+Run the software on these data with 16 threads:
+<pre class="term">
+[user@cn3200 ~]$ <b>mashmap -r human_GRCh38.fa -q test_seq.fq -t 16</b>
+>>>>>>>>>>>>>>>>>>
+Reference = [human_GRCh38.fa]
+Query = [test_seq.fq]
+Kmer size = 16
+Window size = 111
+Segment length = 5000 (read split allowed)
+Alphabet = DNA
+Percentage identity threshold = 85%
+Mapping output file = mashmap.out
+Filter mode = 1 (1 = map, 2 = one-to-one, 3 = none)
+Execution threads  = 16
+>>>>>>>>>>>>>>>>>>
+INFO, skch::Sketch::build, minimizers picked from reference = 52513331
+INFO, skch::Sketch::index, unique minimizers = 17607584
+INFO, skch::Sketch::computeFreqHist, Frequency histogram of minimizers = (1, 9361370) ... (116827, 1)
+INFO, skch::Sketch::computeFreqHist, With threshold 0.001%, ignore minimizers occurring >= 5534 times during lookup.
+INFO, skch::main, Time spent computing the reference index: 58.0907 sec
+INFO, skch::Map::mapQuery, [count of mapped reads, reads qualified for mapping, total input reads] = [11978, 13497, 25249]
+INFO, skch::main, Time spent mapping the query : 21.6042 sec
+INFO, skch::main, mapping results saved in : mashmap.out
+</pre>
+The result will be stored in the file 'mashmap.out'. <br /><br />
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

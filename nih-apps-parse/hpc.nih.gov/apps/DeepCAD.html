@@ -1,0 +1,202 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DeepCAD: Deep self-supervised learning for calcium imaging denoising..';</script>
+<div class="title"><b>DeepCAD: Deep self-supervised learning for calcium imaging denoising..</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+DeepCAD is a self-supervised deep-learning method 
+for spatiotemporal enhancement of calcium imaging data 
+that does not require any high signal-to-noise ratio (SNR) observations. 
+DeepCAD suppresses detection noise and improves the SNR more than tenfold, 
+which reinforces the accuracy of neuron extraction and spike inference 
+and facilitates the functional analysis of neural circuits.
+</p>
+<h3>References:</h3>
+<ul> Xinyang Li, Guoxun Zhang, Jiamin Wu, Yuanlong Zhang, Zhifeng Zhao,
+Xing Lin, Hui Qiao, Hao Xie, Haoqian Wang, Lu Fang and Qionghai Dai <br />
+<i>Reinforcing neuron extraction and spike inference
+in calcium imaging using deep self-supervised denoising </i> <br />
+<a href="https://www.nature.com/articles/s41592-021-01225-0">Nature Methods (2021)</a>, VOL 18, pp. 1395–1400.
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/cabooster/DeepCAD">DeepCAD Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>DeepCAD</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>DEEPCAD_HOME</b>&nbsp; installation directory</li>
+    <li><b>DEEPCAD_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>DEEPCAD_DATA</b>&nbsp; &nbsp; sample data folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. 
+<br />Sample session on a GPU node:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --mem=48g -c4 --gres=gpu:k80:1,lscratch:10</b>
+[user@cn4219 ~]$ <b>module load deepcad</b>
+[+] Loading singularity  3.8.4  on cn4219
+[+] Loading cuDNN 7.0  libraries...
+[+] Loading CUDA Toolkit  9.0.176 ...
+[+] Loading deepcad  20210826
+</pre>
+Basic usage:
+<pre class="term">
+[user@cn4219 ~]$ <b> main.py -h</b>
+...
+usage: main.py [-h] [--img_h IMG_H] [--img_w IMG_W] [--img_s IMG_S]
+               [--img_c IMG_C] [--gap_h GAP_H] [--gap_w GAP_W] [--gap_s GAP_S]
+               [--normalize_factor NORMALIZE_FACTOR]
+               [--train_epochs TRAIN_EPOCHS] [--datasets_path DATASETS_PATH]
+               [--datasets_folder DATASETS_FOLDER]
+               [--DeepCAD_model_folder DEEPCAD_MODEL_FOLDER]
+               [--results_folder RESULTS_FOLDER] [--GPU GPU]
+               [--is_training IS_TRAINING] [--lr LR]
+               [--train_datasets_size TRAIN_DATASETS_SIZE]
+               [--select_img_num SELECT_IMG_NUM]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --img_h IMG_H         the height of patch stack
+  --img_w IMG_W         the width of patch stack
+  --img_s IMG_S         the image number of patch stack
+  --img_c IMG_C         the channel of image
+  --gap_h GAP_H         the height of patch gap
+  --gap_w GAP_W         the width of patch gap
+  --gap_s GAP_S         the image number of patch gap
+  --normalize_factor NORMALIZE_FACTOR
+                        Image normalization factor
+  --train_epochs TRAIN_EPOCHS
+                        train epochs
+  --datasets_path DATASETS_PATH
+                        the name of your project
+  --datasets_folder DATASETS_FOLDER
+                        the folders for datasets
+  --DeepCAD_model_folder DEEPCAD_MODEL_FOLDER
+                        the folders for DeepCAD(pb) model
+  --results_folder RESULTS_FOLDER
+                        the folders for results
+  --GPU GPU             the index of GPU you will use for computation
+  --is_training IS_TRAINING
+                        train or test
+  --lr LR               initial learning rate
+  --train_datasets_size TRAIN_DATASETS_SIZE
+                        actions: train or predict
+  --select_img_num SELECT_IMG_NUM
+                        actions: train or predict
+</pre>
+Create an input data folder and run DeepCAD on the data in that folder:
+<pre class="term">
+[user@cn4219 ~]$ <b> mkdir -p datasets/my_data</b>
+[user@cn4219 ~]$ <b> cp $DEEPCAD_DATA/* datasets/my_data</b>
+[user@cn4219 ~]$ <b> main.py --GPU 0 --img_h 64 --img_w 64 --img_s 320 --train_epochs 30 --datasets_folder my_data --normalize_factor 1 --lr 0.00005 --train_datasets_size 100 &</b>
+list(os.walk(im_folder, topdown=False)) -----&gt;  [('datasets//my_data', [], ['ForTestPlugin_256x256x1000.tif'])]
+stack_num -----&gt;  1
+
+TiffPage 0: TypeError: read_bytes() missing 3 required positional arguments: 'dtype', 'count', and 'offsetsize'
+whole_w -----&gt;  256
+whole_h -----&gt;  256
+whole_s -----&gt;  1000
+w_num -----&gt;  4
+h_num -----&gt;  4
+s_num -----&gt;  7
+gap_s -----&gt;  60
+2021-11-19 15:37:52.507610: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2021-11-19 15:37:52.507957: E tensorflow/stream_executor/cuda/cuda_driver.cc:406] failed call to cuInit: CUresult(-1)
+2021-11-19 15:37:52.508015: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:158] retrieving CUDA diagnostic information for host: cn4219
+2021-11-19 15:37:52.508042: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:165] hostname: cn4219
+2021-11-19 15:37:52.508197: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:189] libcuda reported version is: Not found: was unable to find libcuda.so DSO loaded into this program
+2021-11-19 15:37:52.508245: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:369] driver version file contents: """NVRM version: NVIDIA UNIX x86_64 Kernel Module  470.82.01  Wed Oct 27 21:21:55 UTC 2021
+GCC version:  gcc version 4.8.5 20150623 (Red Hat 4.8.5-28) (GCC)
+"""
+2021-11-19 15:37:52.508289: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:193] kernel reported version is: 470.82.1
+--- Epoch  0  --- Step  0 / 112  --- L1_loss  382.85928  --- L2_loss  362411.6  --- Time  1013.0063416957855
+train_input ---&gt;  14906.737 ---&gt;  0.0
+output_img ---&gt;  1.1468295 ---&gt;  -0.42850912
+/usr/local/apps/deepcad/20210826/src/main.py:89: UserWarning: results//unet3d_my_data_20211119-1537//0_0_my_data_ForTestPlugin_256x256x1000_x1_y2_z3_output.tif is a low contrast image
+  io.imsave(result_name, output_img.transpose(2,0,1))
+/usr/local/apps/deepcad/20210826/src/main.py:90: UserWarning: results//unet3d_my_data_20211119-1537//0_0_my_data_ForTestPlugin_256x256x1000_x1_y2_z3_noise1.tif is a low contrast image
+  io.imsave(noise_img1_name, train_input.transpose(2,0,1))
+/usr/local/apps/deepcad/20210826/src/main.py:91: UserWarning: results//unet3d_my_data_20211119-1537//0_0_my_data_ForTestPlugin_256x256x1000_x1_y2_z3_noise2.tif is a low contrast image
+  io.imsave(noise_img2_name, train_GT.transpose(2,0,1))
+...
+[user@cn4219 ~]$ <b> nvidia-smi</b>
+Fri Nov 19 15:37:53 2021
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 470.82.01    Driver Version: 470.82.01    CUDA Version: 11.4     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla K80           On   | 00000000:8A:00.0 Off |                    0 |
+| N/A   79C    P0   140W / 149W |  10955MiB / 11441MiB |    100%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A     21956      C   ...a/envs/deepcad/bin/python    10950MiB |
++-----------------------------------------------------------------------------+
+...
+--- Epoch  1  --- Step  0 / 112  --- L1_loss  335.09457  --- L2_loss  224135.25  --- Time  1144.084424495697
+train_input ---&gt;  6691.333 ---&gt;  0.0
+output_img ---&gt;  1.9556417 ---&gt;  0.14389074
+/usr/local/apps/deepcad/20210826/src/main.py:89: UserWarning: results//unet3d_my_data_20211120-0843//1_0_my_data_ForTestPlugin_256x256x1000_x0_y3_z4_output.tif is a low contrast image
+  io.imsave(result_name, output_img.transpose(2,0,1))
+/usr/local/apps/deepcad/20210826/src/main.py:90: UserWarning: results//unet3d_my_data_20211120-0843//1_0_my_data_ForTestPlugin_256x256x1000_x0_y3_z4_noise1.tif is a low contrast image
+  io.imsave(noise_img1_name, train_input.transpose(2,0,1))
+/usr/local/apps/deepcad/20210826/src/main.py:91: UserWarning: results//unet3d_my_data_20211120-0843//1_0_my_data_ForTestPlugin_256x256x1000_x0_y3_z4_noise2.tif is a low contrast image
+  io.imsave(noise_img2_name, train_GT.transpose(2,0,1))
+...
+--- Epoch  20  --- Step  0 / 112  --- L1_loss  281.3424  --- L2_loss  174512.05  --- Time  21978.92845606804
+train_input ---&gt;  7301.258 ---&gt;  0.0
+output_img ---&gt;  25.690779 ---&gt;  6.511296
+/usr/local/apps/deepcad/20210826/src/main.py:89: UserWarning: results//unet3d_my_data_20211120-0843//20_0_my_data_ForTestPlugin_256x256x1000_x1_y0_z3_output.tif is a low contrast image
+  io.imsave(result_name, output_img.transpose(2,0,1))
+/usr/local/apps/deepcad/20210826/src/main.py:90: UserWarning: results//unet3d_my_data_20211120-0843//20_0_my_data_ForTestPlugin_256x256x1000_x1_y0_z3_noise1.tif is a low contrast image
+  io.imsave(noise_img1_name, train_input.transpose(2,0,1))
+/usr/local/apps/deepcad/20210826/src/main.py:91: UserWarning: results//unet3d_my_data_20211120-0843//20_0_my_data_ForTestPlugin_256x256x1000_x1_y0_z3_noise2.tif is a low contrast image
+  io.imsave(noise_img2_name, train_GT.transpose(2,0,1))
+...
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. deepcad.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load deepcad 
+mddir datasets/my_data 
+cp $DEEPCAD_DATA/* datasets/my_data
+main.py --GPU 0 --img_h 64 --img_w 64 --img_s 320 --train_epochs 30 --datasets_folder my_data --normalize_factor 1 --lr 0.00005 --train_datasets_size 100
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+<pre class="term"><b>sbatch deepcad.sh</b></pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

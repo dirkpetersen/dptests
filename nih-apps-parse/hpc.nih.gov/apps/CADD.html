@@ -1,0 +1,128 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CADD: scoring the deleteriousness of SNPs and indels in the Human Genome.';</script>
+<div class="title">CADD: scoring the deleteriousness of SNPs and indels in the Human Genome.</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CADD (Combined Annotation Dependent Depletion) is a tool for scoring the deleteriousness of single nucleotide variants as well as insertion/deletions variants in the human genome. Currently, it supports the builds: GRCh37/hg19 and GRCh38/hg38.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Martin Kircher, Daniela M Witten, Preti Jain, Brian J O'Roak, Gregory M Cooper &amp; Jay Shendure  <br />
+<i> A general framework for estimating the relative pathogenicity of human genetic variants.</i><br />
+<a href="https://www.nature.com/articles/ng.2892?message-global=remove&page=18">Nature Genetics </a> 2014 Feb 2. doi: 10.1038/ng.2892.
+<li>Rentzsch P, Witten D, Cooper GM, Shendure J, Kircher M. <br />
+<i> CADD: predicting the deleteriousness of variants throughout the human genome.</i><br />
+<a href="https://academic.oup.com/nar/article/47/D1/D886/5146191?login=true">Nucleic Acids Res.  </a> 2018 Oct 29. doi: 10.1093/nar/gky1016.
+ <br/>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/kircherlab/CADD-scripts">CADD Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>CADD</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>CADD_HOME</b>&nbsp; CADD installation directory</li>
+    <li><b>CADD_BIN </b>&nbsp; &nbsp; &nbsp; CADD executable directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn4206 ~]$ <b>module load cadd </b>
+[+] Loading snakemake  6.5.3
+[+] Loading CADD 1.6.post1 on cn4206
+[user@cn4206 ~]$ <b>which CADD</b>
+/usr/local/apps/CADD/1.6.post1/bin/CADD
+user@cn4206 ~]$ <b>CADD -h</b>
+CADD [-o <outfile>] [-g <genomebuild>] [-v <caddversion>] [-a] <infile>  -- CADD version 1.6
+
+where:
+    -h  show this help text
+    -o  out tsv.gz file (generated from input file name if not set)
+    -g  genome build (supported are GRCh37 and GRCh38 [default: GRCh38])
+    -v  CADD version (only v1.6 possible with this set of scripts [default: v1.6])
+    -a  include annotation in output
+        input vcf of vcf.gz file (required)
+    -q  print basic information about snakemake run
+    -p  print full information about the snakemake run
+    -c  number of cores that snakemake is allowed to use [default: 1]
+[user@cn4206 ~]$ <b>CADD -o my_out.tsv.gz -g GRCh38 $CADD_TEST/input.vcf</b>
+CADD-v1.6 (c) University of Washington, Hudson-Alpha Institute for Biotechnology and Berlin Institute of Health 2013-2020. All rights reserved.
+OUTFILE=my_out.tsv.gz
+Running snakemake pipeline:
+snakemake /tmp/tmp.jfNNBZaoNk/input.tsv.gz --use-conda --conda-prefix /vf/db/CADD/1.6.post1/envs --cores 1
+--configfile /vf/db/CADD/1.6.post1/config/config_GRCh38_v1.6_noanno.yml --snakefile /vf/db/CADD/1.6.post1/Snakefile -q
+Job stats:
+job           count    min threads    max threads
+----------  -------  -------------  -------------
+annotation        1              1              1
+imputation        1              1              1
+join              1              1              1
+prepare           1              1              1
+prescore          1              1              1
+score             1              1              1
+total             6              1              1
+
+Opening /vf/db/CADD/1.6.post1/data/prescored/GRCh38_v1.6/no_anno/gnomad.genomes.r3.0.indel.tsv.gz...
+Opening /vf/db/CADD/1.6.post1/data/prescored/GRCh38_v1.6/no_anno/whole_genome_SNVs.tsv.gz...
+Possible precedence issue with control flow operator at /vf/db/CADD/1.6.post1/envs/e507b9d6fe0a5d0ae12148a5d819bc0e/lib/site_perl/5.26.2/Bio/DB/IndexedBase.pm line 805.
+
+CADD scored variants written to file: my_out.tsv.gz
+
+[user@cn4206 ~]$ <b>CADD -o my_out.tsv.gz -g GRCh38 $CADD_TEST/input.vcf</b>
+CADD-v1.6 (c) University of Washington, Hudson-Alpha Institute for Biotechnology and Berlin Institute of Health 2013-2020. All rights reserved.
+Running snakemake pipeline:
+snakemake /tmp/tmp.scK9I9hCpe/input.tsv.gz --use-conda --conda-prefix /vf/db/CADD/1.6.post1/envs --cores 1
+--configfile /vf/db/CADD/1.6.post1/config/config_GRCh37_v1.6_noanno.yml --snakefile /vf/db/CADD/1.6.post1/Snakefile -q
+Job stats:
+job           count    min threads    max threads
+----------  -------  -------------  -------------
+annotation        1              1              1
+imputation        1              1              1
+join              1              1              1
+prepare           1              1              1
+prescore          1              1              1
+score             1              1              1
+total             6              1              1
+
+Opening /vf/db/CADD/1.6.post1/data/prescored/GRCh37_v1.6/no_anno/InDels.tsv.gz...
+Opening /vf/db/CADD/1.6.post1/data/prescored/GRCh37_v1.6/no_anno/whole_genome_SNVs.tsv.gz...
+Possible precedence issue with control flow operator at /vf/db/CADD/1.6.post1/envs/e507b9d6fe0a5d0ae12148a5d819bc0e/lib/site_perl/5.26.2/Bio/DB/IndexedBase.pm line 805.
+
+CADD scored variants written to file: my_out.tsv.gz
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn4206 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

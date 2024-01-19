@@ -1,0 +1,1822 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RELION on Biowulf';</script>
+<div class="title">RELION on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+
+<div class="tocItem"><a href="#gui_int">GUI Interactive jobs</a></div>
+<div class="tocItem"><a href="#gui_batch">GUI Batch jobs</a></div>
+<div class="tocItem"><a href="#parameters">Recommended parameters</a></div>
+<div class="tocItem"><a href="#template">Sbatch template files</a></div>
+<div class="tocItem"><a href="#int">Command line interactive jobs</a></div>
+<div class="tocItem"><a href="#sbatch">Command line batch jobs</a></div>
+<div class="tocItem"><a href="#mpi">Understanding MPI task distribution</a></div>
+<div class="tocItem"><a href="#motioncorr">Motion correction</a></div>
+<div class="tocItem"><a href="#ctffind">CTF estimation</a></div>
+<div class="tocItem"><a href="#topaz">Using Topaz</a></div>
+<div class="tocItem"><a href="#lscratch">Local scratch space</a></div>
+<div class="tocItem"><a href="#multinode">Multinode use</a></div>
+<div class="tocItem"><a href="#threads">MPI tasks versus threads</a></div>
+<div class="tocItem"><a href="#gpu">Using GPUs</a></div>
+<div class="tocItem"><a href="#x11">X11 display</a></div>
+<div class="tocItem"><a href="#login">Running on the login node</a></div>
+<div class="tocItem"><a href="#sbatchopt">Extra sbatch option</a></div>
+<div class="tocItem"><a href="#exclusive">Running with --exclusive</a></div>
+<div class="tocItem"><a href="#prereading">Pre-reading particles into memory</a></div>
+<div class="tocItem"><a href="#samples">Sample files</a></div>
+<div class="tocItem"><a href="#problems">Known problems</a></div>
+
+      </div>
+</table>
+
+<p>
+    RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class averages in electron cryo-microscopy (cryo-EM).
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    Scheres SH
+    <a href="https://pubmed.ncbi.nlm.nih.gov/22100448/"><b><u>A Bayesian view on cryo-EM structure determination</u></b></a>
+    <em>J Mol Biol. 2012 Jan 13;415(2):406-18.</em>
+  </li>
+  <li>
+    Scheres SH
+    <a href="https://pubmed.ncbi.nlm.nih.gov/23000701/"><b><u>RELION: implementation of a Bayesian approach to cryo-EM structure determination</u></b></a>
+    <em>J Struct Biol. 2012 Dec;180(3):519-30.</em>
+  </li>
+  <li>
+    Kimanius D, Forsberg BO, Scheres SH, Lindahl E
+    <a href="https://pubmed.ncbi.nlm.nih.gov/27845625/"><b><u>Accelerated cryo-EM structure determination with parallelisation using GPUs in RELION-2</u></b></a>
+    <em>Elife 2016 Nov 15;5.  pii: e18722.</em>
+  </li>
+  <li>
+    Zivanov J, Nakane T, Forsberg BO, Kimanius D, Hagen WJH, Lindahl E, Scheres SHW
+    <a href="https://pubmed.ncbi.nlm.nih.gov/30412051/"><b><u>New tools for automated high-resolution cryo-EM structure determination in RELION-3</u></b></a>
+    <em>Elife 2018 Nov 9;7:e42166.</em>
+  </li>
+  <li>
+    Kimanius D, Dong L, Sharov G, Nakane T, Scheres SHW
+    <a href="https://pubmed.ncbi.nlm.nih.gov/34783343/"><b><u>New tools for automated cryo-EM single-particle analysis in RELION-4.0</u></b></a>
+    <em>Biochem J. 2021 Dec 22;478(24):4169-4185.</em>
+  </li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li>RELION main site: <a href="http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page">http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page</a></li>
+  <li>RELION github: <a href="https://github.com/3dem/relion">https://github.com/3dem/relion</a></li>
+  <li>RELION readthedocs: <a href="https://relion.readthedocs.io/en/latest/">https://relion.readthedocs.io/en/latest/</a></li>
+  <li>Tutorial (v3.0): <a href="relion30_tutorial.pdf" target="_blank">relion30_tutorial.pdf</a></li>
+  <li>Tutorial (v3.1): <a href="relion31_tutorial.pdf" target="_blank">relion31_tutorial.pdf</a></li>
+  <li>Single Particle Tutorial (v4.0): <a href="https://relion.readthedocs.io/en/release-4.0/SPA_tutorial/index.html" target="_blank">SPA_tutorial</a></li>
+  <li>Subtomogram Tutorial (v4.0): <a href="https://relion.readthedocs.io/en/release-4.0/STA_tutorial/index.html" target="_blank">STA_tutorial</a></li>
+</ul>
+
+<br />
+<br />
+<br />
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+
+<p class='alert'>RELION jobs <b>MUST</b> utilize local scratch in order to prevent filesystem performance degradation.  If submitting through the GUI, <b>PLEASE SET THE 'Copy particles to scratch directory' input to <tt>/lscratch/$SLURM_JOB_ID</tt> in the Compute tab</b>:</p> 
+
+    <div><center><img src="RELION_3.1.2_compute_lscratch.png" border=1 alt="compute tab with lscratch" /></div>
+
+<p class='alert'>Do not leave the Gres input empty.  Minimally allocate 5 GB of lscratch in each job.</p></p>
+
+    <div><center><img src="RELION_3.1.3_gres.png" border=1 alt="gres can't be empty" /></div>
+
+<p class='alert'>If submitting from a batch script, local scratch can be utilized by including the option <tt>--scratch_dir /lscratch/$SLURM_JOB_ID</tt> in the command line.</p>
+
+<p class='alert'><b>NOTE:</b> Do not include <tt><b>--mem</b></tt> in batch allocations.  The Slurm batch system cannot accept both <tt><b>--mem-per-cpu</b></tt> and <tt><b>--mem</b></tt> in submissions.  RELION is best run with <b><tt>--mem-per-cpu</tt></b> only.</p>
+
+<ul>
+  <li>Module Name: <tt>relion</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Multithreaded/Singlethreaded/MPI
+  <li>Environment variables set <!--for ones users should be aware of -->
+
+    <tt><table width=100% style="margin: 4px;">
+<tr><td>PATH                        </td><td>RELION_QSUB_EXTRA1_DEFAULT</td><td>RELION_QSUB_EXTRA6_DEFAULT</td> </tr>
+<tr><td>RELION_CTFFIND_EXECUTABLE   </td><td>RELION_QSUB_EXTRA2        </td><td>RELION_QSUB_EXTRA_COUNT</td>    </tr>
+<tr><td>RELION_ERROR_LOCAL_MPI      </td><td>RELION_QSUB_EXTRA2_DEFAULT</td><td>RELION_QSUB_NRMPI</td>          </tr>
+<tr><td>RELION_GCTF_EXECUTABLE      </td><td>RELION_QSUB_EXTRA3        </td><td>RELION_QSUB_NRTHREADS</td>      </tr>
+<tr><td>RELION_HOME                 </td><td>RELION_QSUB_EXTRA3_DEFAULT</td><td>RELION_QSUB_TEMPLATE</td>       </tr>
+<tr><td>RELION_MINIMUM_DEDICATED    </td><td>RELION_QSUB_EXTRA4        </td><td>RELION_QUEUE_NAME</td>          </tr>
+<tr><td>RELION_MOTIONCOR2_EXECUTABLE</td><td>RELION_QSUB_EXTRA4_DEFAULT</td><td>RELION_QUEUE_USE</td>           </tr>
+<tr><td>RELION_MOTIONCORR_EXECUTABLE</td><td>RELION_QSUB_EXTRA5        </td><td>RELION_RESMAP_EXECUTABLE</td>   </tr>
+<tr><td>RELION_MPI_MAX              </td><td>RELION_QSUB_EXTRA5_DEFAULT</td><td>RELION_THREAD_MAX</td>          </tr>
+<tr><td>RELION_QSUB_COMMAND         </td><td>RELION_QSUB_EXTRA6        </td><td>RELION_VERSION</td>             </tr>
+<tr><td>RELION_QSUB_EXTRA1          </td><td>RELION_STD_LAUNCHER       </td><td>RELION_MPIRUN</td>              </tr>
+    </table></tt>
+
+  <li>Example files in <tt>/fdb/app_testdata/cryoEM</tt>
+  <li>The 2D class selection step for Topaz training in the v4.0 tutorial must use the following python, or else it will fail:<br>
+  <pre class="term">/usr/local/apps/RELION/mamba/envs/torch1.10/bin/python</pre></li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul>
+  <li>ctffind
+  <li>Gctf
+  <li><a href="MotionCor2-UserManual-05-31-2022.pdf">MotionCor2</a>
+  <li>ResMap
+  <li>CUDA
+  <li>OpenMPI
+  <li>FFTW
+  <li>FLTK
+  <li>Topaz
+</ul>
+
+<!-- =================================================== -->
+<!-- GUI interactive -->
+<!-- =================================================== -->
+
+<a name="gui_int"></a><div class="heading">GUI Interactive jobs</div>
+
+<p class="alert">Interactive use of RELION via the GUI requires an <a href="https://hpc.nih.gov/docs/connect.html">graphical X11 connection</a>.  NX works well, while XQuartz sometimes works for Mac users.</p>
+
+<p>Start an interactive session on the Biowulf cluster. For example, this allocates 16 CPUs, 32GB of memory, 200GB of local scratch space, and 16 hours of time:</p>
+<pre class="term">sinteractive --cpus-per-task=16 --mem-per-cpu=2g --gres=lscratch:200 --time=16:00:00</pre>
+<p>load the RELION module and start up the GUI:</p>
+
+<pre class="term">[user@cn1234 ~]$ <b>cd /path/to/your/RELION/project/</b>
+[user@cn1234 project]$ <b>module load RELION</b>
+[user@cn1234 project]$ <b>relion</b></pre>
+
+<p>This should start the main GUI window:</p>
+<div><center><img src="RELION_3.1.2_main.png" border=1 alt="main" width="800px"/></div>
+
+<p>Jobs that are suitable for running on the interactive host can be run directly from the GUI.  For example, running CTF:</p>
+<div><center><img src="RELION_3.1.2_single_local.png" border=1 alt="direct_run" width="800px"/></div>
+<p>Once the job parameters are defined, just click 'Run now!'.</p>
+
+<p class="alert">If the RELION process run on the local host of an interactive session is MPI-enabled, the number of MPI procs set
+in the GUI <b>must match</b> the number of tasks allocated for the job.</p>
+
+<p>By default, an interactive session allocates a single task. This means that by default, only a single MPI proc can be run
+from the GUI. To start an interactive session with the capability of handling
+multiple MPI procs, add <tt><b>--ntasks</b></tt> and <tt><b>--nodes=1</b></tt> to the
+sinteractive command, and adjust <tt><b>--cpus-per-task</b></tt> accordingly:</b>
+
+<pre class="term">sinteractive <b>--cpus-per-task=1 --nodes=1 --ntasks=16</b> --mem-per-cpu=2g --gres=lscratch:200 --time=16:00:00</pre>
+
+<!-- =================================================== -->
+<!-- GUI batch -->
+<!-- =================================================== -->
+
+<a name="gui_batch"></a><div class="heading">GUI Batch jobs</div>
+
+<p>Jobs that should be run on different host(s) can be launched from a generic interactive session and run on the batch system by choosing the appropriate parameters.  The interactive session does not need elaborate resources, although it must be submitted from within a <a href="https://hpc.nih.gov/docs/connect.html">graphical X11 session on the login node</a>.</p>
+
+<pre class="term">sinteractive</pre>
+
+<p>Once the interactive session has started, the GUI can be launched from the project directory like so:</p>
+
+<pre class="term">[user@cn1234 ~]$ <b>cd /path/to/your/RELION/project/</b>
+[user@cn1234 project]$ <b>module load RELION</b>
+[user@cn1234 project]$ <b>relion</b></pre>
+
+
+<p>Here is a job that will allocate 512 MPI tasks, each with 8 CPUs per task, for
+a total of 4096 CPUs.  The CPUs will have the x2695 property, meaning they will be Intel E5-2695v3 processors.  Each CPU will have access to 4 GB of RAM memory.  Each node will have 400 GB of local
+scratch space available to the job, and the total time alloted for the job to complete is 2 days.</p>
+
+  <div><center><img src="RELION_3.1.2_run_cpu.png" border=1 alt="batch_submit" width="800px"/></div>
+
+<p>See <a href="#parameters">Recommended parameters</a> for a set of recommended parameters for each job type.</p>
+
+<p>Alternatively, there are <a href=#template>pre-made template scripts</a> for most jobtypes available.</p>
+
+<!-- =================================================== -->
+<!-- parameters -->
+<!-- =================================================== -->
+
+<a Name="parameters"></a><div class="heading">Recommended parameters</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+          <div class="tocItem"><a href="#motioncor2">MotionCor2 with GPUs</a></div>
+          <div class="tocItem"><a href="#motcorcpu">MotCorRel on CPUs</a></div>
+          <div class="tocItem"><a href="#ctfcpu">CTFRefinement using cttfind4</a></div>
+          <div class="tocItem"><a href="#gctfgpu">GCTF with GPU:</a></div>
+          <div class="tocItem"><a href="#bonusgpu">Class2D & Class3D on GPUs</a></div>
+          <div class="tocItem"><a href="#classcpu">Class2D & Class3D on CPUs</a></div>
+          <div class="tocItem"><a href="#refinecpu">3D auto-refine and Bayesian polishing</a></div>
+          <div class="tocItem"><a href="#vdam">VDAM optimization</a></div>
+          <div class="tocItem"><a href="#make_pseudo_subtomo">Make Pseudo-Subtomograms</a></div>
+          <div class="tocItem"><a href="#subtomo_model">Subtomogram De novo 3D Model</a></div>
+      </div>
+</table>
+
+<p>Choosing the appropriate parameters for GUI batch jobs on HPC Biowulf can be very complicated.  Below is a relatively straightforward guide to those parameters based on job type.</p>
+<p>In all cases below the amount of walltime allocated is an estimate.  Your time may vary depending mainly on the number of particles and the number of MPI procs.  More particles and fewer MPI procs means more time required.</p>
+<p>Also, in all cases please set <b>'Queue submit command'</b> to <b>sbatch</b> in the running tab.  This is required for the batch job to be submitted to the biowulf cluster.</p>
+<p>Listed below are recommended parameters for all nodetypes availble for RELION.  It is usually best to allocate a single nodetype for a multinode job, as the processor speeds will be matched. The nodetypes are listed in order of increasing performance, but alas the faster the node, the more in demand it is and the longer you may need to wait.</p>
+
+<style>
+  table.guide {
+      width:650px;
+      border-collapse: collapse;
+      position: relative;
+      left: 50px;
+  }
+  .guide td:first-child   {
+      width:250px;
+  }
+  .guide td:nth-child(2n) {
+      width:400px;
+  }
+  table.table, .guide th, .guide td {
+      border: 1px solid black;
+      border-collapse: collapse;
+  }
+  table.guide, .guide th, .guide td {
+      padding: 5px;
+      text-align: left;
+  }
+  table.guide, .guide tr:nth-child(even) {
+      background-color: #ddd;
+      color: black;
+  }
+  table.guide, .guide tr:nth-child(odd) {
+      background-color:#fff;
+      color: black;
+  }
+
+</style>
+
+<a name="motioncor2"></a><h3>MotionCor2 with GPUs:</h3>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="motioncor2-k80"><i class="fa fa-caret-right"></i> k80:</div>
+    <div class="toggle-content">
+    <p><b>Motion tab:</b></p>
+      <table class="guide">
+        <tr><td>Use RELION's own implementation?</td><td>no</td></tr>
+        <tr><td>MOTIONCOR2 executable:</td><td>/usr/local/apps/MotionCor2/1.3.0/MotionCor2</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+      </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+        <tr><td>Gres:</td><td>gpu:k80:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="motioncor2-p100"><i class="fa fa-caret-right"></i> p100:</div>
+    <div class="toggle-content">
+      <p><b>Motion tab:</b></p>
+        <table class="guide">
+          <tr><td>Use RELION's own implementation?</td><td>no</td></tr>
+          <tr><td>MOTIONCOR2 executable:</td><td>/usr/local/apps/MotionCor2/1.3.0/MotionCor2</td></tr>
+          <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+          <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+        </table>
+      <p><b>Running tab:</b></p>
+        <table class="guide">
+          <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+          <tr><td>Number of threads:</td><td>1</td></tr>
+          <tr><td>Submit to queue?</td><td>yes</td></tr>
+          <tr><td>Queue name:</td><td>gpu</td></tr>
+          <tr><td>Walltime:</td><td>8:00:00</td></tr>
+          <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+          <tr><td>Gres:</td><td>gpu:p100:4</td></tr>
+          <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+        </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="motioncor2-v100"><i class="fa fa-caret-right"></i> v100:</div>
+    <div class="toggle-content">
+      <p><b>Motion tab:</b></p>
+        <table class="guide">
+          <tr><td>Use RELION's own implementation?</td><td>no</td></tr>
+          <tr><td>MOTIONCOR2 executable:</td><td>/usr/local/apps/MotionCor2/1.3.0/MotionCor2</td></tr>
+          <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+          <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+        </table>
+      <p><b>Running tab:</b></p>
+        <table class="guide">
+          <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+          <tr><td>Number of threads:</td><td>1</td></tr>
+          <tr><td>Submit to queue?</td><td>yes</td></tr>
+          <tr><td>Queue name:</td><td>gpu</td></tr>
+          <tr><td>Walltime:</td><td>8:00:00</td></tr>
+          <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+          <tr><td>Gres:</td><td>gpu:v100:4</td></tr>
+          <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+        </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="motioncor2-v100x"><i class="fa fa-caret-right"></i> v100x:</div>
+    <div class="toggle-content">
+      <p><b>Motion tab:</b></p>
+        <table class="guide">
+          <tr><td>Use RELION's own implementation?</td><td>no</td></tr>
+          <tr><td>MOTIONCOR2 executable:</td><td>/usr/local/apps/MotionCor2/1.3.0/MotionCor2</td></tr>
+          <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+          <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+        </table>
+      <p><b>Running tab:</b></p>
+        <table class="guide">
+          <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+          <tr><td>Number of threads:</td><td>1</td></tr>
+          <tr><td>Submit to queue?</td><td>yes</td></tr>
+          <tr><td>Queue name:</td><td>gpu</td></tr>
+          <tr><td>Walltime:</td><td>8:00:00</td></tr>
+          <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+          <tr><td>Gres:</td><td>gpu:v100x:4</td></tr>
+          <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+        </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="motioncor2-a100"><i class="fa fa-caret-right"></i> a100:</div>
+    <div class="toggle-content">
+      <p><b>Motion tab:</b></p>
+        <table class="guide">
+          <tr><td>Use RELION's own implementation?</td><td>no</td></tr>
+          <tr><td>MOTIONCOR2 executable:</td><td>/usr/local/apps/MotionCor2/1.3.0/MotionCor2</td></tr>
+          <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+          <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+        </table>
+      <p><b>Running tab:</b></p>
+        <table class="guide">
+          <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+          <tr><td>Number of threads:</td><td>1</td></tr>
+          <tr><td>Submit to queue?</td><td>yes</td></tr>
+          <tr><td>Queue name:</td><td>gpu</td></tr>
+          <tr><td>Walltime:</td><td>8:00:00</td></tr>
+          <tr><td>Memory Per Thread:</td><td>15g</td></tr>
+          <tr><td>Gres:</td><td>gpu:a100:4</td></tr>
+          <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+        </table>
+    </div>
+  </div>
+
+  <p><b>NOTE 1:</b> Consider using RELION's own motion correction implementation (below).  On the average, it takes ~10x longer to allocate 8 GPUs than it does 512 CPUs.</p>
+  <p><b>NOTE 2:</b> There are <a href="/apps/MotionCor2.html">other versions of MotionCor2</a>.  To use these, load the different MotionCor2 module <em>after</em> loading the RELION module, but <em>before</em> running the <b>relion</b> command.</p>
+
+  <a name="motcorcpu"></a><h3>MotCorRel on CPUs only:</h3>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="motioncorr-x2695"><i class="fa fa-caret-right"></i> x2695:</div>
+    <div class="toggle-content">
+    <p><b>Motion tab:</b></p>
+    <table class="guide">
+      <tr><td>Use RELION's own implementation?</td><td>yes</td></tr>
+      <tr><td>Use GPU acceleration?</td><td>no</td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td><em>128-2048</em></td></tr>
+        <tr><td>Number of threads:</td><td>8</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>multinode</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>16g</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--constraint=x2695</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="motioncorr-x2680"><i class="fa fa-caret-right"></i> x2680:</div>
+    <div class="toggle-content">
+    <p><b>Motion tab:</b></p>
+    <table class="guide">
+      <tr><td>Use RELION's own implementation?</td><td>yes</td></tr>
+      <tr><td>Use GPU acceleration?</td><td>no</td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td><em>128-2048</em></td></tr>
+        <tr><td>Number of threads:</td><td>8</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>multinode</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>16g</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--constraint=x2680</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <p><b>NOTE 1:</b> RELION's own implementation can require a large amount of memory per thread.  If the job fails with memory errors, likely you will need to increase the amount beyond what is given above.  However, the number of threads may need to be decreased.  Memory usage can be monitored in the <a href="/dashboard">dashboard</a>.</p>
+
+  <p><b>NOTE 2:</b> Likely the job will complete in a few hours.  If you want it to complete sooner, you can increase the number of MPI procs.  However, the more you request, the longer the job will sit waiting for resources to become available.</p>
+
+<a name="ctfcpu"></a><h3>CTFRefinement using cttfind4:</h3>
+
+  <p><b>CTFFIND-4.1 tab:</b></p>
+    <table class="guide">
+      <tr><td>Use CTFFIND-4.1? </td><td>yes</td></tr>
+      <tr><td>CTFFIND-4.1 executable: </td><td>/usr/local/apps/ctffind/4.1.14/ctffind</td></tr>
+    </table>
+  <p><b>Gctf tab:</b></p>
+    <table class="guide">
+      <tr><td>Use Gctf instead? </td><td>no</td></tr>
+    </table>
+  <p><b>Running tab:</b></p>
+    <table class="guide">
+      <tr><td>Number of MPI procs: </td><td>128</td></tr>
+      <tr><td>Submit to queue?    </td><td> yes</td></tr>
+      <tr><td>Queue name:         </td><td> multinode</td></tr>
+      <tr><td>Walltime:           </td><td> 2:00:00</td></tr>
+      <tr><td>Memory Per Thread: </td><td>  1g</td></tr>
+    </table>
+
+<a name="gctfgpu"></a><h3>GCTF with GPU:</h3>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="gctf-k80"><i class="fa fa-caret-right"></i> k80:</div>
+    <div class="toggle-content">
+      <p><b>CTFFIND-4.1 tab:</b></p>
+      <table class="guide">
+        <tr><td>Use CTFFIND-4.1? </td><td>no</td></tr>
+      </table>
+    <p><b>Gctf tab:</b></p>
+      <table class="guide">
+        <tr><td>Use Gctf instead? </td><td>no</td></tr>
+        <tr><td>Gctf executable: </td><td>/usr/local/apps/Gctf/1.06/bin/Gctf</td></tr>
+        <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+      </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+        <tr><td>Gres:</td><td>gpu:k80:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="gctf-p100"><i class="fa fa-caret-right"></i> p100:</div>
+    <div class="toggle-content">
+      <p><b>CTFFIND-4.1 tab:</b></p>
+      <table class="guide">
+        <tr><td>Use CTFFIND-4.1? </td><td>no</td></tr>
+      </table>
+    <p><b>Gctf tab:</b></p>
+      <table class="guide">
+        <tr><td>Use Gctf instead? </td><td>no</td></tr>
+        <tr><td>Gctf executable: </td><td>/usr/local/apps/Gctf/1.06/bin/Gctf</td></tr>
+        <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+      </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+        <tr><td>Gres:</td><td>gpu:p100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="gctf-v100"><i class="fa fa-caret-right"></i> v100:</div>
+    <div class="toggle-content">
+      <p><b>CTFFIND-4.1 tab:</b></p>
+      <table class="guide">
+        <tr><td>Use CTFFIND-4.1? </td><td>no</td></tr>
+      </table>
+    <p><b>Gctf tab:</b></p>
+      <table class="guide">
+        <tr><td>Use Gctf instead? </td><td>no</td></tr>
+        <tr><td>Gctf executable: </td><td>/usr/local/apps/Gctf/1.06/bin/Gctf</td></tr>
+        <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+      </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+        <tr><td>Gres:</td><td>gpu:v100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="gctf-v100x"><i class="fa fa-caret-right"></i> v100x:</div>
+    <div class="toggle-content">
+      <p><b>CTFFIND-4.1 tab:</b></p>
+      <table class="guide">
+        <tr><td>Use CTFFIND-4.1? </td><td>no</td></tr>
+      </table>
+    <p><b>Gctf tab:</b></p>
+      <table class="guide">
+        <tr><td>Use Gctf instead? </td><td>no</td></tr>
+        <tr><td>Gctf executable: </td><td>/usr/local/apps/Gctf/1.06/bin/Gctf</td></tr>
+        <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+      </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td> <em>4, 8, 12, 16, </em><b>OR</b></em> 20 (multiple of 4)</em></td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+        <tr><td>Gres:</td><td>gpu:v100x:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=4</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="gctf-a100"><i class="fa fa-caret-right"></i> a100:</div>
+    <div class="toggle-content">
+      <p><b>CTFFIND-4.1 tab:</b></p>
+      <table class="guide">
+        <tr><td>Use CTFFIND-4.1? </td><td>no</td></tr>
+      </table>
+    <p><b>Gctf tab:</b></p>
+      <table class="guide">
+        <tr><td>Use Gctf instead? </td><td>no</td></tr>
+        <tr><td>Gctf executable: </td><td>/usr/local/apps/Gctf/1.06/bin/Gctf</td></tr>
+        <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+      </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td> <em>16, 32, 48, 64, </em><b>OR</b></em> 72 (multiple of 16)</em></td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>15g</td></tr>
+        <tr><td>Gres:</td><td>gpu:a100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--ntasks-per-node=16</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <p><b>NOTE 1:</b> Consider using RELION's own motion correction implementation (below).  On the average, it takes ~10x longer to allocate 8 GPUs than it does 512 CPUs.</p>
+
+<a name="bonusgpu"></a><h3>Class2D & Class3D on GPUs:</h3>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="class-k80"><i class="fa fa-caret-right"></i> k80:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>20</td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:800,gpu:k80:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--nodes=4 --ntasks-per-node=5 --exlusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="class-p100"><i class="fa fa-caret-right"></i> p100:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>20</td></tr>
+        <tr><td>Number of threads:</td><td>2</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:650,gpu:p100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--nodes=4 --ntasks-per-node=5 --exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="class-v100"><i class="fa fa-caret-right"></i> v100:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>20</td></tr>
+        <tr><td>Number of threads:</td><td>4</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:800,gpu:v100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--nodes=4 --ntasks-per-node=5 --exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="class-v100x"><i class="fa fa-caret-right"></i> v100x:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>20</td></tr>
+        <tr><td>Number of threads:</td><td>4</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:1600,gpu:v100x:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--nodes=4 --ntasks-per-node=5 --exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="class-a100"><i class="fa fa-caret-right"></i> a100:</div>
+    <div class="toggle-content">
+    <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+      <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+      <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>20</td></tr>
+        <tr><td>Number of threads:</td><td>4</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:3200,gpu:a100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--nodes=4 --ntasks-per-node=5 --exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <p><b>NOTE 1:</b> The number of MPI procs = (ntasks-per-node X nodes).  See <a href="#gpu">here</a> for more details.</p>
+  <p><b>NOTE 2:</b> It is critical that enough local scratch is allocated to accomodate the particle data.  400 GB is the minimum, it can be larger.</p>
+  <p><b>NOTE 3:</b> Increasing the number of threads might lower the amount of time required, but at the risk of overloading the GPUs and causing the job the stall.  See <a href="#gpu">here</a> for more information.</p>
+  <p><b>NOTE 4:</b> If the value of <tt><b>--ntasks-per-node</b></tt> is <em>odd</em>, greater than 2, and GPUs are allocated across multiple nodes, then the template script will manually override the distribution of MPI tasks across the allocated cpus (see below).</p>
+  <p><b>NOTE 5:</b> Setting <b>Memory Per Thread</b> to 0 (zero) and including <tt><b>--exclusive</b></tt> will cause slurm to allocate <b>all memory</b> on the node to the job.</p>
+
+<a name="classcpu"></a><h3>Class2D & Class3D on CPUs:</h3>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="class-x2695"><i class="fa fa-caret-right"></i> x2695:</div>
+    <div class="toggle-content">
+    <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+      <tr><td>Use GPU acceleration?</td><td>no</td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td><em>128-2048</em></td></tr>
+        <tr><td>Number of threads:</td><td>8</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>multinode</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>4200m</td></tr>
+        <tr><td>Gres:</td><td>lscratch:400</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--constraint=x2695</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="class-x2680"><i class="fa fa-caret-right"></i> x2680:</div>
+    <div class="toggle-content">
+    <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+      <tr><td>Use GPU acceleration?</td><td>no</td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td><em>128-2048</em></td></tr>
+        <tr><td>Number of threads:</td><td>8</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>multinode</td></tr>
+        <tr><td>Walltime:</td><td>8:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>4200m</td></tr>
+        <tr><td>Gres:</td><td>lscratch:800</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--constraint=x2680</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <p><b>NOTE 1:</b> The amount of memory per thread may need to be larger, depending on the size of particle.  Memory usage can be monitored in the <a href="/dashboard">dashboard</a>.</p>
+  <p><b>NOTE 2:</b> The larger the number of MPI procs, the sooner the job will complete.  However, the more you request, the longer the job will sit waiting for resources to become available.</p>
+  <p><b>NOTE 3:</b> In tests, increasing the number of threads per MPI proc above 8 has not shown to significantly decrease running time.</p>
+
+<a name="refinecpu"></a><h3>3D auto-refine and Bayesian polishing:</h3>
+
+  <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+      <tr><td>Use GPU acceleration?</td><td> no</td></tr>
+    </table>
+  <p><b>Running tab:</b></p>
+    <table class="guide">
+      <tr><td>Number of MPI procs:</td><td>  65</td></tr>
+      <tr><td>Number of threads: </td><td>   16</td></tr>
+      <tr><td>Submit to queue?   </td><td>   yes</td></tr>
+      <tr><td>Queue name:        </td><td>   multinode</td></tr>
+      <tr><td>Walltime:          </td><td>   2-00:00:00</td></tr>
+      <tr><td>Memory Per Thread: </td><td>   4g</td></tr>
+      <tr><td>Gres:              </td><td>   lscratch:400</td></tr>
+    </table>
+
+  <p><b>NOTE 1:</b>The amount of time required and memory needed is greatly reduced by increasing the number of threads per MPI proc.  16 is likely the highest possible number before complications occur.</p>
+  <p><b>NOTE 2:</b>The number of MPI procs can be increased, but it must be an odd number.</p>
+
+<a name="vdam"></a><h3>VDAM optimization:</h3>
+
+  <p>Version 4 of RELION introduces <a href="https://www.biorxiv.org/content/10.1101/2021.09.30.462538v1.full.pdf">VDAM (Variable-metric gradient Descent algorithm with Adaptive Moments estimation)</a> optimization
+  for use within 2D classification and initial model generation.  This methodology requires a different set of parameters than with the old SAGD optimization.  Principally VDAM does not rely upon MPI for 
+  compute acceleration, but instead makes use of single node multithreading.</p>
+
+  <p>Because VDAM requires GPUs, there are alternative sets of recommended parameters, depending on the node type:</p>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="vdam-k80"><i class="fa fa-caret-right"></i> k80:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>4</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>2-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:800,gpu:k80:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exlusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="vdam-p100"><i class="fa fa-caret-right"></i> p100:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>8</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>2-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:650,gpu:p100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="vdam-v100"><i class="fa fa-caret-right"></i> v100:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>16</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>2-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:800,gpu:v100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="vdam-v100x"><i class="fa fa-caret-right"></i> v100x:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>16</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>2-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:1600,gpu:v100x:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="vdam-a100"><i class="fa fa-caret-right"></i> a100:</div>
+    <div class="toggle-content">
+    <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+      <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+      <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>16</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>2-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:3200,gpu:a100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+<a name="make_pseudo_subtomo"></a><h3>Make pseudo-subtomograms:</h3>
+
+  <p>For subtomogram analysis, it is required to construct the individual pseudo-subtomogram particles, equivalent to the particle extraction process in the SPA workflow.  This process can be acclerated by distributing the work across nodes using MPI.  This does not require GPUs.</p>
+
+  <p><b>Running tab:</b></p>
+  <table class="guide">
+    <tr><td>Number of MPI procs:</td><td><em>2-32</em></td></tr>
+    <tr><td>Number of threads:</td><td>16</td></tr>
+    <tr><td>Submit to queue?</td><td>yes</td></tr>
+    <tr><td>Queue name:</td><td>multinode</td></tr>
+    <tr><td>Walltime:</td><td>1:00:00</td></tr>
+    <tr><td>Memory Per Thread:</td><td>4g</td></tr>
+    <tr><td>Gres:</td><td>lscratch:400</td></tr>
+  </table>
+
+  <p><b>NOTE 1:</b>The number of MPI procs should not exceed the number of tomograms.</p>
+
+<a name="subtomo_model"></a><h3>Subtomogram <i>de novo</i> 3D Model Generation:</h3>
+
+  <p>This step generates a <i>de novo</i> model without any prior knowledge.  It does not use MPI, but can utilize GPUs with multiple threads on a single node.</p>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="smodel-k80"><i class="fa fa-caret-right"></i> k80:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>16</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>1-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:800,gpu:k80:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exlusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="smodel-p100"><i class="fa fa-caret-right"></i> p100:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>16</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>1-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:650,gpu:p100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="smodel-v100"><i class="fa fa-caret-right"></i> v100:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>32</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>1-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:800,gpu:v100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="smodel-v100x"><i class="fa fa-caret-right"></i> v100x:</div>
+    <div class="toggle-content">
+      <p><b>Compute tab:</b></p>
+      <table class="guide">
+        <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+        <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+        <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+      </table>
+      <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>32</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>1-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:1600,gpu:v100x:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="toggle-tag" title="click to toggle visibility" id="smodel-a100"><i class="fa fa-caret-right"></i> a100:</div>
+    <div class="toggle-content">
+    <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Copy particles to scratch directory:</td><td>/lscratch/$SLURM_JOB_ID</td></tr>
+      <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+      <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>64</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>1-00:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>0</td></tr>
+        <tr><td>Gres:</td><td>lscratch:3200,gpu:a100:4</td></tr>
+        <tr><td>SBATCH Directives:</td><td>--exclusive</td></tr>
+      </table>
+    </div>
+  </div>
+
+
+<!-- =================================================== -->
+<!-- Sbatch template files -->
+<!-- =================================================== -->
+<a Name="template"></a><div class="heading">Sbatch template files</div>
+
+<h3>Default template script</h3>
+
+<p>There is one pre-made sbatch template file, <b><tt>/usr/local/apps/RELION/templates/common.sh</tt></b>, as set by the environment variable <tt><b>$RELION_QSUB_TEMPLATE</b></tt>.</p>
+<pre class="term">#!/bin/bash
+#SBATCH --ntasks=XXXmpinodesXXX
+#SBATCH --partition=XXXqueueXXX
+#SBATCH --cpus-per-task=XXXthreadsXXX
+#SBATCH --error=XXXerrfileXXX
+#SBATCH --output=XXXoutfileXXX
+#SBATCH --open-mode=append
+#SBATCH --time=XXXextra1XXX
+#SBATCH --mem-per-cpu=XXXextra2XXX
+#SBATCH --gres=XXXextra3XXX
+#SBATCH XXXextra4XXX
+#SBATCH XXXextra5XXX
+#SBATCH XXXextra6XXX
+source add_extra_MPI_task.sh
+env | sort
+${RELION_STD_LAUNCHER} --mem-per-cpu=XXXextra2XXX XXXcommandXXX
+</pre>
+
+<p>By including SBATCH directives in the GUI, all combinations of resources are possible with the single script.</p>
+
+<h3>Pre-made, fully filled template scripts</h3>
+
+<p><b>Additionally, there are template scripts for most job types available.</b>  These are located within subdirectories of the main template directory:</p>
+
+<pre class="term">$ ls /usr/local/apps/RELION/templates/
+AutoPick_gpu  Class3D_cpu  CtfFind    InitialModel     MotCorRel   Refine3D_cpu        x2680_exclusive.sh
+Class2D_cpu   Class3D_gpu  CtfRefine  LocalRes         MotionCor2  Refine3D_gpu        x2695_exclusive.sh
+Class2D_gpu   common.sh    GCTF       lscratch_mon.sh  Polish</pre>
+
+<p>Each job type subdirectory has a set of template scripts that correspond to a particular scale of the job:</p>
+
+<pre class="term">$ ls /usr/local/apps/RELION/templates/Class2D_cpu/
+01_tiny.sh  02_small.sh  03_medium.sh  04_large.sh  05_xlarge.sh</pre>
+
+<p>If one of these pre-made template scripts are used, the only input box in the Running tab of the RELION GUI that needs to be set is "Queue submit command".</p>
+
+<p>There are also three template scripts for running CPU-only jobs exclusively (x2680_exclusive.sh, x2695_exclusive.sh). These scripts set memory and lscratch, and allow MPI and thread changes.</p>
+
+<h3>User-created template scripts</h3>
+
+<p>User-created template scripts can be substituted into the 'Standard submission script' box under the Running tab.</p>
+    <div><center><img src="RELION_3.1.2_script.png" border=1 alt="script"/></div></li>
+    <p>Alternatively, other templates can be browsed by clicking the 'Browse' button:</p>
+    <div><center><img src="RELION_3.1.2_browse.png" border=1 alt="browse"/></div></li>
+
+<p>If the value of <tt><b>--ntasks-per-node</b></tt> is <em>odd</em> and greater than 2, and GPUs are allocated across multiple nodes, then the <tt><b>add_extra_MPI_task.sh</b></tt> script will
+generate a file (<tt><b>$SLURM_HOSTFILE</b></tt>) and change the distribution mode to <b>arbitrary</b>, manually overriding the distribution of MPI tasks across the allocated cpus:</p>
+<pre class="term">#!/bin/bash
+# Don't bother unless nodes have been allocated
+if [[ -z $SLURM_JOB_NODELIST ]]; then
+  [[ -n $SLURM_HOSTFILE ]] &amp;&amp; unset SLURM_HOSTFILE
+  return
+fi
+
+# Don't bother unless nodes have GPUs
+if [[ -z $SLURM_JOB_GPUS ]]; then
+  [[ -n $SLURM_HOSTFILE ]] &amp;&amp; unset SLURM_HOSTFILE
+  return
+fi
+
+# Don't bother unless multiple tasks have been allocated, and the number is odd
+if [[ -z $SLURM_NTASKS_PER_NODE ]]; then
+  [[ -n $SLURM_HOSTFILE ]] &amp;&amp; unset SLURM_HOSTFILE
+  return
+elif [[ ${SLURM_NTASKS_PER_NODE} -lt 2 ]]; then
+  [[ -n $SLURM_HOSTFILE ]] &amp;&amp; unset SLURM_HOSTFILE
+  return
+elif [[ $((SLURM_NTASKS_PER_NODE%2)) == 0 ]]; then
+  [[ -n $SLURM_HOSTFILE ]] &amp;&amp; unset SLURM_HOSTFILE
+  return
+fi
+
+# Don't bother unless there is more than one node
+array=( $( scontrol show hostname $SLURM_JOB_NODELIST) )
+file=$(mktemp --suffix .SLURM_JOB_NODELIST)
+
+if [[ ${#array[@]} -eq 1 ]]; then
+  for ((j=0;j&lt;$((SLURM_NTASKS_PER_NODE));j++)); do
+    echo ${array[0]} &gt;&gt; $file
+  done
+else
+  echo ${array[0]} &gt; $file
+  for ((i=0;i&lt;${SLURM_JOB_NUM_NODES};i++)); do
+    for ((j=0;j&lt;$((SLURM_NTASKS_PER_NODE-1));j++)); do
+      echo ${array[${i}]} &gt;&gt; $file
+    done
+  done
+fi
+
+# All conditions met, set hostfile and distribution, unset ntasks per node
+export SLURM_HOSTFILE=$file
+export SLURM_DISTRIBUTION=arbitrary
+unset SLURM_NTASKS_PER_NODE
+</pre>
+
+<!-- =================================================== -->
+<!-- interactive -->
+<!-- =================================================== -->
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:4 --ntasks=4 --nodes=1 --ntasks-per-node=4 --mem-per-cpu=4g --cpus-per-task=2</b>
+salloc.exe: Pending job allocation 123457890
+salloc.exe: job 1234567890 queued and waiting for resources
+salloc.exe: job 1234567890 has been allocated resources
+salloc.exe: Granted job allocation 1234567890
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1234 are ready for job
+
+[user@cn1234 ~]$ <b>module load RELION</b>
+[user@cn1234 ~]$ <b>ln -s /fdb/app_testdata/cryoEM/RELION/tutorials/relion31_tutorial_precalculated_results/Movies .</b>
+[user@cn1234 ~]$ <b>mkdir import</b>
+[user@cn1234 ~]$ <b>relion_import  --do_movies  --optics_group_name "opticsGroup1" --angpix 0.885 --kV 200 \
+  --Cs 1.4 --Q0 0.1 --beamtilt_x 0 --beamtilt_y 0 --i "Movies/*.tif" --odir Import --ofile movies.star</b>
+[user@cn1234 ~]$ <b>mkdir output</b>
+[user@cn1234 ~]$ <b>$RELION_MPIRUN relion_run_motioncorr_mpi --i Import/job001/movies.star --first_frame_sum 1 \
+  --last_frame_sum 0 --use_motioncor2 --motioncor2_exe ${RELION_MOTIONCOR2_EXECUTABLE} --bin_factor 1 \
+  --bfactor 150 --dose_per_frame 1.277 --preexposure 0 --patch_x 5 --patch_y 5 --gainref Movies/gain.mrc \
+  --gain_rot 0 --gain_flip 0 --dose_weighting --gpu '' --o output/</b>
+...
+...
+[user@cn1234 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 1234567890
+[user@biowulf ~]$
+</pre>
+
+<p><b>Please note:</b></p>
+<ul>
+  <li>A single node was allocated</li>
+  <li>4 tasks were allocated, allowing at most 4 MPI procs</li>
+  <li>2 cpus-per-task were allocated, allowing at most 2 threads per MPI proc</li>
+  <li>The RELION process was launched using the environment variable <b><tt>$RELION_MPIRUN</tt></b></li>
+</ul>
+
+<p class="alert">Allocating more than one node for an interactive, command-line driven RELION process will NOT run.  Multi-node jobs must be submitted to the batch system.</p>
+
+<!-- =================================================== -->
+<!-- batch -->
+<!-- =================================================== -->
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<p>Typically RELION batch jobs are <a href="#gui_batch">submitted from the GUI</a>.  However, for those who insist on doing it themselves, here is an example of a batch input file (e.g. RELION.sh).</p>
+
+<pre class="term">
+#!/bin/bash
+
+#SBATCH --ntasks=20
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=5
+#SBATCH --cpus-per-task=2
+#SBATCH --mem-per-cpu=6g
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:p100:4,lscratch:200
+#SBATCH --error=run.err
+#SBATCH --output=run.out
+#SBATCH --time=1-00:00:00
+
+module load RELION
+source add_extra_MPI_task.sh
+
+mkdir output
+ln -s /fdb/app_testdata/cryoEM/plasmodium_ribosome/Particles .
+ln -s /fdb/app_testdata/cryoEM/plasmodium_ribosome/emd_2660.map .
+
+${RELION_STD_LAUNCHER} relion_refine_mpi \
+  --i Particles/shiny_2sets.star \
+  --o output/run \
+  --ref emd_2660.map:mrc \
+  --ini_high 60 \
+  --pool 100 \
+  --pad 2  \
+  --ctf \
+  --ctf_corrected_ref \
+  --iter 25 \
+  --tau2_fudge 4 \
+  --particle_diameter 360 \
+  --K 4 \
+  --flatten_solvent \
+  --zero_mask \
+  --oversampling 1 \
+  --healpix_order 2 \
+  --offset_range 5 \
+  --offset_step 2 \
+  --sym C1 \
+  --norm \
+  --scale \
+  --j 1  
+  --gpu "" \
+  --dont_combine_weights_via_disc \
+  --scratch_dir /lscratch/${SLURM_JOB_ID}
+
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch RELION.sh</pre>
+
+<!-- =================================================== -->
+<!-- Run mode -->
+<!-- =================================================== -->
+
+<a Name="runmode"></a><div class="heading">Running Modes</div>
+<p>In order to understand how RELION accelerates its computation, we must understand two different concepts.</p>
+
+<p><b>Multi-threading</b> is when an executing process spawns multiple <b>threads</b>, or subprocesses, which share the same common memory space, but occupy
+independent CPUs.</p>
+
+<p><b>Distributed tasks</b> is the coordination of multiple independent processes by a single "leader" process via a communication protocol.  MPI, or message passing interface, is
+the protocol by which these independent tasks are coordinated within RELION.</p>
+
+<p>An MPI task can <b>multi-thread</b>, since each task is itself an independent process.</p>
+
+<p>While all RELION job types can run with a single task in single-threaded mode, some can distribute their tasks via MPI.  And a subset of those job types can further
+accelerate their computation by running those MPI tasks in multi-threaded mode.</p>
+
+<p>For example, the Import job type can only run single task, single-threaded:</p>
+
+    <div><center><img src="RELION_3.1.2_running_Import.png" border=1 alt="import"/></div></li>
+
+<p>The CTF job type can run with multiple, distributed tasks, but each single-threaded:</p>
+
+    <div><center><img src="RELION_3.1.2_running_CTF.png" border=1 alt="CTF"/></div></li>
+
+<p>The MotionCor2 job type can run with multiple distributed tasks, each of which can run multi-threaded:</p>
+
+    <div><center><img src="RELION_3.1.2_running_MotionCor2.png" border=1 alt="MotionCor2"/></div></li>
+
+<p><b>There are separate, distinct executables for running single-task and multi-task mode!</b> If the "Number of MPI procs" value is left as one, then the single-task
+executable will be used:</p>
+
+<pre class="term"> relion_run_motioncorr --i import/movies.star --o output/ ...  </pre>
+
+<p>If the value of "Number of MPI procs" is set to a value greater than one, then the MPI-enabled, distributed task executable will be used:</p>
+
+<pre class="term"> relion_run_motioncorr_mpi --i import/movies.star --o output/ ...  </pre>
+
+<p><b>MPI-enabled executables must be launched properly to ensure proper distribution!</b> When running in batch on the HPC cluster, the MPI-enabled executable should be launched with
+<b>srun</b>.  This allows the MPI-enabled executable to discover what CPUs and nodes are available for tasks based on the Slurm environment:</p>
+
+<pre class="term"> srun relion_run_motioncorr_mpi --i import/movies.star --o output/ ...  </pre>
+
+<!-- =================================================== -->
+<!-- Task distribution -->
+<!-- =================================================== -->
+
+<a Name="mpi"></a><div class="heading">Understanding MPI Task Distribution</div>
+<p>RELION jobs using MPI-enabled executables can distribute their MPI tasks in one of three modes:</p>
+<ul>
+  <li><b>Hetergeneous distribution</b> -- multiple MPI tasks distributed higgledy-piggledy across nodes</li>
+  <li><b>Homogenous distribution</b> -- a fixed number of MPI tasks per node, with node count known beforehand</li>
+  <li><b>Homogeneous+1 distribution</b> -- homogeneous distribution, with an extra MPI task on the first node</li>
+</ul>
+
+<p>Certain job types benefit from these distributions.  Classification jobs run on GPU nodes should use homogenous+1 distribution, while
+motion correction using MotionCor2 or GCTF should use homogenous distribution.  Jobs run on CPU-only nodes can use heterogeneous
+distribution.</p>
+
+<p>The distribution mode is dictated by additional SBATCH directives set in the 'Running' tab.</p>
+
+
+<h3>Heterogeneous distribution: has no special requirements, and is the default.</h3><a name="heterogeneous"></a>
+
+<p>Because the number of nodes and the distribution of MPI tasks on those nodes is not known prior to submission, it is best to
+set the amount of memory allocated as <b>Memory Per Thread</b>, or <b>--mem-per-cpu</b> in the batch script.</p>
+
+    <div><center><img src="RELION_3.1.2_hetero.png" border=1 alt="heterogeneous distribution"/></div></li>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --ntasks=257
+#SBATCH <b>--partition=multinode</b>
+#SBATCH --cpus-per-task=4
+#SBATCH --error=run.err
+#SBATCH --output=run.out
+#SBATCH --time=1-00:00:00
+#SBATCH --mem-per-cpu=8g
+#SBATCH --gres=lscratch:200
+
+... RELION command here ...
+</pre>
+
+<p>Visually, this distribution would look something like this:</p>
+
+    <div><center><img src="slurm_hetero_no_master.png" width=100% height=auto border=1 alt="heterogeneous distribution model"/></div></li>
+
+<p>The white boxes represent MPI tasks, the yellow dots represent CPUs allocated to the MPI tasks, and the black dots are CPUs not allocated to the job.
+Because no constraints are placed on where tasks can be allocated via the <b>--ntasks-per-node</b> option, the MPI tasks distribute themselves wherever
+the slurm batch system finds room.</p> 
+
+<h3>Homogeneous distribution requires:</h3><a name="homogeneous"></a>
+<ul>
+  <li><b><tt>--nodes</tt></b> or <b><tt>-N</tt></b> to allocate a fixed number of nodes.</li>
+  <li><b><tt>--ntasks-per-node</tt></b> to fix the number of MPI tasks per node.</li>
+</ul>
+<p>Obviously the number of MPI procs <b>MUST</b> equal <b>--nodes</b> times <b>--ntasks-per-node</b>.  In this case 8 nodes, each with 4 MPI tasks per node,
+gives 32 MPI tasks total.</p>
+
+<p><b>GPU-only:</b></p>
+<ul>
+  <li><b><tt>partition</tt></b> is changed to <b><tt>gpu</tt></b></li>
+  <li>an additional <b><tt>gres</tt></b> is added, to tell slurm how many GPUs we want (e.g. 4 GPUs per node)</li>
+  <li><b>Memory Per Thread</b> is set to 0 (zero)</li>
+  <li><b><tt>--exclusive</tt></b> is added to sbatch directives</li>
+</ul>
+
+<p>In this case, because we are allocating all 4 GPUs on the gpu node with <b><tt>gpu:p100:4</tt></b>, it is probably
+best to allocate all the memory on the node as well, using <b>--mem-per-cpu</b>.
+
+    <div><center><img src="RELION_3.1.4_homo.png" width="600px" height=auto border=1 alt="homogeneous distribution"/></div></li>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --ntasks=32
+#SBATCH <b>--partition=gpu</b>
+#SBATCH --cpus-per-task=2
+#SBATCH --error=run.err
+#SBATCH --output=run.out
+#SBATCH --time=1-00:00:00
+#SBATCH --mem-per-cpu=0
+#SBATCH --gres=lscratch:200,gpu:p100:4
+#SBATCH <b>--nodes=8 --ntasks-per-node=4 --exclusive</b>
+
+... RELION command here ...
+</pre>
+
+<p>A visual representation of this distribution would be:</p>
+
+    <div><center><img src="slurm_homo_no_master.png" width=100% height=auto border=1 alt="homogeneous distribution model"/></div></li>
+
+<p>The white boxes represent MPI tasks, the yellow dots represent CPUs allocated to the MPI tasks, and the black dots are CPUs not allocated to the job.
+In this case, the GPU devices are represented by blue boxes, and each MPI task is explicitly mapped to a given GPU device.
+When running MotionCor2, only a single CPU of each MPI task actually generates load, so only a single CPU of the 4 allocated to each MPI task is
+active. </p>
+
+<h3>Homogeneous+1 distribution requires:</h3><a name="homogeneous+1"></a>
+<ul>
+  <li><b><tt>--nodes</tt></b> or <b><tt>-N</tt></b> to allocate a fixed number of nodes</li>
+  <li><b><tt>--ntasks-per-node</tt></b> <em>plus one</em> to allocate one additional task per node</b></li>
+</ul>
+
+<p><b>GPU-only:</b></p>
+<ul>
+  <li><b><tt>partition</tt></b> is changed to <b><tt>gpu</tt></b></li>
+  <li>an additional <b><tt>gres</tt></b> is added, to tell slurm how many GPUs we want (e.g. 4 GPUs per node)</li>
+</ul>
+
+<p>For <b>homogeneous+1</b> distribution, the total number of MPI procs is more than necessary, and <b>must</b> equal to the number of nodes times the number of tasks per node. <b>--ntasks-per-node</b> is set to 5, and <b>--nodes</b> is set to 8, so the total number of tasks is set to 40.</p>
+
+    <div><center><img src="RELION_3.1.4_homo+1.png" width="600px" height=auto border=1 alt="homogeneous+1 distribution"/></div></li>
+
+<p>The batch script now contains a special source file, <b><a href ="add_extra_MPI_task">add_extra_MPI_task.sh</a></b>, which creates the $SLURM_HOSTFILE and distributes the MPI tasks in
+an arbitrary fashion.</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH <b>--ntasks=40</b>
+#SBATCH <b>--partition=gpu</b>
+#SBATCH --cpus-per-task=2
+#SBATCH --error=run.err
+#SBATCH --output=run.out
+#SBATCH --time=1-00:00:00
+#SBATCH --mem-per-cpu=0
+#SBATCH --gres=lscratch:200,gpu:p100:4
+#SBATCH <b>--nodes=8 --ntasks-per-node=5 --exclusive</b>
+
+<b>source add_extra_MPI_task.sh</b>
+... RELION command here ...
+</pre>
+
+<p>Visually, this distribution would look something like this:</p>
+
+    <div><center><img src="slurm_homo_master.png" width=100% height=auto border=1 alt="homogeneous distribution model with leader"/></div></li>
+
+<p>The white boxes represent MPI tasks, the yellow dots represent CPUs allocated to the MPI tasks, and the black dots are CPUs not allocated to the job.
+Again, the GPU devices are represented by blue boxes, and each MPI task is explicitly mapped to a given GPU device.  However, in this case, the leader
+MPI task (as part of a RELION job) is allocated an MPI task, but does not do much and does not utilize a GPU device, so its CPUs are colored red.</p>
+
+<!-- =================================================== -->
+<!-- GPU use -->
+<!-- =================================================== -->
+<a Name="gpu"></a><div class="heading">Using GPUs</div>
+<p>Certain job-types (2D classification, 3D classification, and refinement) can benefit tremendously by using GPUs.  Under the <b>Compute</b> tab, set 'Use GPU acceleration?' to 'Yes', and leave 'Which GPUs to use' blank:</p>
+<div><center><img src="RELION_3.1.2_compute_gpu.png" border=1 alt="using GPUs" /></div>
+
+<p>The job must be configured to allocate GPUs.  This can be done by setting input in the 'Running tab'.</p>
+
+<ul>
+  <li>Make sure the "Queue name" corresponds to a Slurm partition that contains GPUs (e.g. <b><tt>gpu</tt></b>).</li>
+  <li>The "Gres" value must include a GPU resource allocation string, of the form gpu:<em>type</em>:<em>num</em>, where
+    <ul>
+      <li><em>type</em> is one of the following: <tt><b>k80 p100 v100 v100x a100</b></tt></li>
+      <li><em>num</em> is the number of GPUs needed <em>per node</em>.</li>
+    </ul>
+  </li>
+  <li><b>Example:</b> <tt>gpu:p100:4</tt> allocates 4 NVIDIA P100 GPU devices per node </li>
+  <li>Set "Number of threads" to 1 for older gpus (k80), 2 (p100), or 4 for newer gpus (v100, v100x, a100). Increasing threads per GPU will help, but if too many threads are used, <b>IT WILL HANG THE NODE!</b></li>
+</ul>
+
+    <div><center><img src="RELION_3.1.4_run_gpu_even.png" border=1 alt="gpu_even"/></div></li>
+
+<p>For <a href="#homogeneous">homogeneous distribution</a>, the total number of MPI tasks should equal:</p>
+
+<pre align=center>&lt;number of GPUs per node&gt; X &lt;number of nodes&gt;</pre>
+
+<p>and the value of <tt>--ntasks-per-node</tt> should be equal to <tt>&lt;number of GPUs per node&gt;</tt></p>
+
+<p>For <a href="#homogeneous+1">homogeneous+1 distribution</a> (requires <tt>--ntasks-per-node</tt> to be odd), the total number of MPI tasks should equal:</p>
+
+<pre align=center>(&lt;number of GPUs per node + 1&gt;) X &lt;number of nodes&gt;</pre>
+
+<p>and the value of <tt>--ntasks-per-node</tt> should be equal to <tt>&lt;number of GPUs per node + 1&gt;</tt></p>
+
+<p>For more information about the GPUs available on the HPC/Biowulf cluster, <a href="https://hpc.nih.gov/systems/">see https://hpc.nih.gov/systems/</a>.</p>
+
+<!-- ============================================================================================================================================= -->
+<!-- Motion correction -->
+<!-- ============================================================================================================================================= -->
+
+<a Name="motioncorr"></a><div class="heading">Motion correction</div>
+
+<h3>RELION's own CPU-only implementation</h3>
+
+<p>By default, RELION comes supplied with a built-in motion correction tool:</p>
+
+  <div><center><img src="RELION_3.1.2_builtin_motioncor.png" border=1 alt="MotCorRelion" width="800px"/></div></li>
+
+<p>This tool <b>does not require GPUs</b>, but can run multi-threaded.</p>
+
+<p>CPU-only motion correction can require a lot of memory, minimally 8g per cpu.</p>
+
+<p>Each MPI process <em>minimally</em> needs:</p>
+
+<center><p><em>width * height * (frame + 2 + X) * 4</em> bytes <b>per MPI task</b>.</p></center>
+
+<p>where <em>X</em> is at least the number of threads per MPI process.  For example, using <b>relion_image_handler --stats --i</b> to display the statistics of a in input .tif file,</p>
+
+<pre class="term">049@EMPIAR-10204/Movies/20170630_3_00029_frameImage.tif : (x,y,z,n)= 3710 x 3838 x 1 x 1 ; avg= 1.0305 stddev= 1.01565 minval= 0 maxval= 75; angpix = 1</pre>
+
+<p>the MPI process would minimally require</p>
+
+<center><p><em>3710 * 3838 * (49 + 2 + 1) * 4</em>, or ~ 2.7 GB.</p></center>
+
+<p>However, due to other factors, this can be multiplied by 4-10 times.</p>
+
+<h3>MotionCor2</h3>
+
+<p>There is also an external application that can be used, <a href="http://msg.ucsf.edu/em/software/motioncor2.html">
+    MotionCor2 from Shawn Zheng of UCSF</a>.  This requires GPUs to run.  Several steps must be done to ensure success.
+    If running MotionCor2 within an interactive session, there must be at least one GPU allocated.  Otherwise, GPUs must be allocated within a batch job from the GUI.</p>
+    <ul>
+      <li>The default version of MotionCor2 is v1.3.0.</li>
+      <li>Make sure that the path to MotionCor2 is correct, and the answer to 'Is this MOTIONCOR2?' is 'Yes':</li>
+      <li>Make sure that "Which GPUs to use" is blank under the 'Motiocorr' tab.</li>
+      <li>Set all the other parameters as required.</li>
+    </ul>
+    <div><center><img src="RELION_3.1.2_motioncor2.png" border=1 alt="MotionCor2" width="800px"/></div>
+    
+<!-- ============================================================================================================================================= -->
+<!-- CTF estimation -->
+<!-- ============================================================================================================================================= -->
+
+<a Name="ctffind"></a><div class="heading">CTF estimation</div>
+<p>There are multiple applications and versions available for doing CTF estimation.</p>
+
+<h3>CTFFIND-4</h3>
+
+    <p>Under the CTFFIND-4.1 tab, change the answer to 'Use CTFFIND-4.1?' to 'Yes'.</p>
+    <div><center><img src="RELION_3.1.2_ctffind.png" border=1 alt="CTFFIND4.1" width="800px"/></div></li>
+
+<h3>Gctf</h3>
+
+    <p>Under the CTFFIND-4.1 tab, change the answer to 'Use CTFFIND-4.1?' to 'No'.</p>
+    <div><center><img src="RELION_3.1.2_gctf_1.png" border=1 alt="GCTF" width="350px"/></div></li>
+    <p>Under the Gctf tab, change the answer to 'Use Gctf instead?' to 'Yes'.  Keep in mind that GCTF requires GPUs.</p>
+    <div><center><img src="RELION_3.1.2_gctf_2.png" border=1 alt="GCTF" width="800px"/></div></li>
+
+<!-- ============================================================================================================================================= -->
+<!-- Using Topaz -->
+<!-- ============================================================================================================================================= -->
+
+<a Name="topaz"></a><div class="heading">Using Topaz</div>
+<p>Topaz v0.2.5 is available for autopicking particles in RELION v4.  Its location is determined by the environment variable <b><tt>RELION_TOPAZ_EXECUTABLE</tt></b> after
+loading the RELION module.  It's path should appear in the "Topaz executable:" input box of the Topaz tab.</p>
+
+    <div><center><img src="RELION_4.0.0_topaz.jpg" border=1 alt="Topaz" width="350px"/></div></li>
+
+<p class="alert"><b>PLEASE NOTE:</b> Topaz can <i>only run on a single gpu</i>.  Allocating more than one gpu to the job will cause the Topaz job to fail!<br \><br \>
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ERROR: AutoPicker::readTopazCoordinate</tt><br \><br \>
+</p>
+
+
+<p>Topaz can run with multiple MPI processors.  Here is an example of how to submit a Topaz job:</p>
+
+  <h3>Training with Topaz:</h3>
+
+    <p><b>Topaz tab:</b></p>
+    <table class="guide">
+      <tr><td>Topaz executable</td><td><em>/path/to/topaz</em></td></tr>
+      <tr><td>Perform topaz picking?</td><td>No</td></tr>
+      <tr><td>Trained topaz model:</td><td><em>-- leave blank --</em></td></tr>
+      <tr><td>Perform topaz training?</td><td>Yes</td></tr>
+      <tr><td>Particles STAR file for training:</td><td><em>/path/to/star</em></td></tr>
+    </table>
+    <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+      <tr><td>Which GPUs to use:</td><td><em>-- leave blank --</em></td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>1</td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>24:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+        <tr><td>Gres:</td><td>gpu:p100:1</td></tr>
+      </table>
+
+  <h3>Picking with Topaz:</h3>
+
+    <p><b>Topaz tab:</b></p>
+    <table class="guide">
+      <tr><td>Topaz executable </td><td><em>/path/to/topaz</em></td></tr>
+      <tr><td>Perform topaz picking? </td><td>Yes</td></tr>
+      <tr><td>Trained topaz model: </td><td><em>/path/to/model</em></td></tr>
+      <tr><td>Perform topaz training? </td><td>No</td></tr>
+      <tr><td>Particles STAR file for training:</td><td><em>-- leave blank --</em></td></tr>
+    </table>
+    <p><b>Compute tab:</b></p>
+    <table class="guide">
+      <tr><td>Use GPU acceleration?</td><td>yes</td></tr>
+      <tr><td>Which GPUs to use:  </td><td><em>-- leave blank --</em></td></tr>
+    </table>
+    <p><b>Running tab:</b></p>
+      <table class="guide">
+        <tr><td>Number of MPI procs:</td><td>4</td></tr>
+        <tr><td>Number of threads:</td><td>1</td></tr>
+        <tr><td>Submit to queue?</td><td>yes</td></tr>
+        <tr><td>Queue name:</td><td>gpu</td></tr>
+        <tr><td>Walltime:</td><td>24:00:00</td></tr>
+        <tr><td>Memory Per Thread:</td><td>20g</td></tr>
+        <tr><td>Gres:</td><td>gpu:p100:1</td></tr>
+      </table>
+
+
+<!-- ============================================================================================================================================= -->
+<!-- Local scratch (lscratch) space -->
+<!-- ============================================================================================================================================= -->
+
+<a Name="lscratch"></a><div class="heading">Local scratch space</div>
+<p>Long-running multi-node jobs can benefit from copying input data into local scratch space.  The benefits stem from both increased I/O performance and the prevention of disruptions due to unforseen traffic on shared filesystems.  Under the <b>Compute</b> tab, insert <tt><b>/lscratch/$SLURM_JOB_ID</b></tt> into the 'Copy particles to scratch directory' input:</p>
+
+    <div><center><img src="RELION_3.1.2_compute_lscratch.png" border=1 alt="compute tab with lscratch" /></div>
+
+<p>Make sure that the total size of your particles can fit within the allocated local scratch space, as set in the 'Gres' input under the <b>Running</b> tab.</p>
+
+    <div><center><img src="RELION_3.1.2_running_lscratch.png" border=1 alt="running tab with lscratch" /></div>
+
+<p>The batch script should contain the option <b><tt>--scratch_dir /lscratch/$SLURM_JOB_ID</tt></b>.</p>
+
+<!-- =================================================== -->
+<!-- Multi-node use -->
+<!-- =================================================== -->
+<a Name="multinode"></a><div class="heading">Multinode use</div>
+<p>When running RELION on multiple CPUs, keep in mind both the partition (queue) and the nodes within that partition.
+Several of the partitions have subsets of nodetypes.  Having a large RELION job running across different nodetypes may
+be detrimental.  To select a specific nodetype, include <b><tt>--constraint</tt></b> in the "Additional SBATCH Directives" input.  For example,
+<b><tt>--constraint x2680</tt></b> would be a good choice for the multinode partition.</p>
+r
+    <div><center><img src="RELION_3.1.2_sbatch_constraint.png" border=1 alt="running tab with constraint" /></div>
+
+<p>Please read <a href="https://hpc.nih.gov/policies/multinode.html">https://hpc.nih.gov/policies/multinode.html</a> for a
+discussion on making efficient use of multinode partition.</p>
+<!-- =================================================== -->
+<!-- MPI tasks versus threads  -->
+<!-- =================================================== -->
+<a Name="threads"></a><div class="heading">MPI tasks versus threads</div>
+<p>In benchmarking tests, RELION classification (2D &amp; 3D) MPI jobs scale about the same as the number of CPUs increase, regardless of the combination of MPI procs and threads per MPI process.  That is, a 3D classification job with 512 MPI procs and 2 threads per MPI proc runs about the same as with 128 MPI procs and 8 threads per MPI proc.  Both utilize 1024 CPUs.  However, refinement MPI jobs run dramatically faster with 16 threads per MPI proc than with 1.</p>
+<!-- =================================================== -->
+<!-- X-windows display -->
+<!-- =================================================== -->
+<a Name="x11"></a><div class="heading">X11 display</div>
+<p>The RELION GUI requires an X11 server to display, as well as X11 Fowarding.  We recommend using either <a href="https://hpc.nih.gov/docs/connect.html">NX (Windows) or XQuartz (Mac)</a> as X11 servers.</p>
+<!-- =================================================== -->
+<!-- Running on the login node -->
+<!-- =================================================== -->
+<a Name="login"></a><div class="heading">Running on the login node</div>
+<p class="alert">Running RELION on the login node is <b>not allowed</b>.  Please allocate an interactive node instead.</p>
+<!-- =================================================== -->
+<!-- Extra sbatch options -->
+<!-- =================================================== -->
+<a Name="sbatchopt"></a><div class="heading">Extra sbatch options</div>
+<p>Additional sbatch options can be placed in the <b>Additional SBATCH Directives:</b> text boxes.</p>
+<div><center><img src="RELION_3.1.2_sbatch_mailtype.png" border=1 alt="addl sbatch options" /></div>
+<p>RELION allows additional options to be added to the command line as well:</p>
+<div><center><img src="RELION_3.1.2_addl_relion.png" border=1 alt="addl RELION options" /></div>
+<!-- =================================================== -->
+<!-- Running with exclusive -->
+<!-- =================================================== -->
+<a Name="exclusive"></a><div class="heading">Running with <b><tt>--exclusive</tt></b></div>
+<p>While batch jobs running on the same node do not share CPUs, memory or local scratch space, they do share network interfaces to filesystems and other nodes (and can share GPUs by mistake).  If one job on a node generates a heavy demand on these interfaces (e.g. performing lots of reads/writes to shared disk space, communicating a huge amount of packets between other nodes), then the other jobs on that node may suffer.  To alleviate this, a job can be run with the <b><tt>--exclusive</tt></b> flag.  It has been found that in general RELION jobs do best if run exclusively.</p>
+
+<p>Typically, because GPU nodes are allocated with all GPUs on the node, the nodes are allocated exclusively by default, and there is no need to use <b><tt>--exclusive</tt></b> with GPU jobs.  In fact, it adds quite a bit of complexity, and <b>should be avoided</b>.</p>
+
+<h3>Exclusive templates</h3>
+
+<p>The easiest way to run a CPU-only job exclusively is to use a special script template.  There are three that are provided, one for each nodetype:</p>
+  <ul>
+    <li>x2680_exclusive.sh</li>
+    <li>x2695_exclusive.sh</li>
+  </ul>
+<p>When using these templates, the only input parameters to be set are:</p>
+  <ul>
+    <li>Number of MPI procs</li>
+    <li>Number of threads</li>
+    <li>Walltime</li>
+  </ul>
+<p>All other input parmeters will be ignored.</p>
+
+<div><center><img src="RELION_3.1.3_exclusive_template.png" border=1 alt="using exclusive template" /></div>
+
+<h3>Including --exclusive with the common template</h3>
+
+<p>Alternatively when using the common template, exclusivity can be enabled by including <b><tt>--exclusive</tt></b> in the additional SBATCH directives boxes:</p>
+<div><center><img src="RELION_3.1.2_sbatch_exclusive.png" border=1 alt="addl RELION options" /></div>
+<p><b>NOTE: <tt>--exclusive</tt> does not automatically allocate all the memory or lscratch on the node!</b> Make sure that you designate the node resources needed, e.g.</p>
+<div><center><img src="RELION_3.1.2_exclusive_full.png" border=1 alt="addl RELION options" /></div>
+<p>In this case, 4 nodes with 56 CPUs each are allocated.  4g of memory per CPU = 224Gb of RAM per node.  To see resources available per node, type <a href="/docs/biowulf_tools.html#freen"><tt>freen</tt></a> at the commandline.</p>
+<!-- =================================================== -->
+<!-- Pre-reading particles into memory -->
+<!-- =================================================== -->
+<a Name="prereading"></a><div class="heading">Pre-reading particles into memory</div>
+<p>Under certain circumstances, for example when the total size of input particles is small, pre-reading the particles into memory can improve performance.  The amount of memory required depends on the number of particles (N) and the box_size:</p>
+
+<center><p><em>N * box_size * box_size * 4 / (1024 * 1024 * 1024)</em>, in GB <b>per MPI task</b>.</p></center>
+
+<p>Thus, 100,000 particles of box size 350 pixels would need ~43 GB of RAM <b>per MPI task</b>.  This would reasonably fit on GPU nodes (240 GB) when running 17 tasks across 4 nodes, as the first node would have 5 MPI tasks for a total of 5*43, or 215 GB.</p>
+
+<p>Under the <b>Compute</b> tab, change 'Pre-read all particles into RAM?' to 'Yes':</p>
+  <div><center><img src="RELION_3.1.2_preread.png" border=1 alt="pre-read into memory" /></div>
+
+<!-- =================================================== -->
+<!-- Sample files -->
+<!-- =================================================== -->
+<a Name="samples"></a><div class="heading">Sample files</div>
+<p>A few sample sets have been downloaded from <a href="https://www.ebi.ac.uk/pdbe/emdb/empiar/">https://www.ebi.ac.uk/pdbe/emdb/empiar/</a> for testing purposes.  They are located here:</p>
+<pre class="term">/fdb/app_testdata/cryoEM/</pre>
+
+<!-- =================================================== -->
+<!-- Known problems -->
+<!-- =================================================== -->
+<a Name="problems"></a><div class="heading">Known problems</div>
+<p>There are several known problems with RELION.</p>
+<ul>
+  <li><b>Zombification:</b> Occasionally, one of the MPI ranks in a RELION job goes south, displaying an error like this:
+
+  <pre class="term">srun: error: cn1614: task 3: Exited with exit code 1</pre>
+
+    Unfortunately, the leader MPI rank continues to run waiting for that rank to respond. It will wait forever until the slurm job times out.
+    If you see your job running forever without progression, you should cancel the job and either start over or continue from where the classification left off.
+  </li>
+
+<br>
+
+  <li><b>Not enough GPU memory:</b> If the number of particles or box size exceeds the capacity of a GPU, you may see this error:
+
+  <pre class="term">ERROR: out of memory in /usr/local/apps/RELION/git/2.1.0/src/gpu_utils/cuda_mem_utils.h at line 576 (error-code 2)
+[cn4174:27966] *** Process received signal ***
+[cn4174:27966] Signal: Segmentation fault (11)</pre>
+
+    At best, you can limit the number of classes, pool size, or box size to avoid this.  But, you may need to run on CPUs only.  See <a href="/systems/hardware.html">here for a listing of the GPU nodes and their properties, specifically VRAM</a>.
+  </li>
+
+<br>
+  <li><b>Not enough local scratch space:</b> If you run out of space on /lscratch, you might see something like this:
+
+  <pre class="term">[cn4021:mpi_rank_198][handle_cqe] Send desc error in msg to 196, wc_opcode=0
+[cn4021:mpi_rank_198][handle_cqe] Msg from 196: wc.status=12, wc.wr_id=0xc1cba80, wc.opcode=0, vbuf->phead->type=0 = MPIDI_CH3_PKT_EAGER_SEND
+[cn4021:mpi_rank_198][handle_cqe] src/mpid/ch3/channels/mrail/src/gen2/ibv_channel_manager.c:547: [] Got completion with error 12, vendor code=0x81, dest rank=196
+: No such file or directory (2)</pre>
+
+    Rerun the job, this time allocating as much /lscratch space as possible.
+  </li>
+
+<br>
+  <li><b>Corrupt or blank image:</b> Running AutoPick gives an error like this:
+
+  <pre class="term">terminate called after throwing an instance of 'std::bad_alloc'
+  what():  std::bad_alloc
+[cn3672:mpi_rank_0][error_sighandler] Caught error: Aborted (signal 6)
+srun: error: cn3672: task 0: Aborted</pre>
+
+    Likely the AutoPick step completed, and the output coordinates are available in the output job directory.  Permanently fix the problem by locating the corrupt or missing micrograph and remove it using Select or Import.
+This can be done using the <b>relion_image_handler --stats</b> command or by simply comparing the sizes of the micrograph files and finding the ones that don't belong.
+  </li>
+
+<br>
+  <li><b>Overburdening the GPUs:</b> Assigning too many threads to a GPU gives an error like this:
+
+  <pre class="term">ERROR: CudaCustomAllocator out of memory
+ [requestedSpace:             1672740864 B]
+ [largestContinuousFreeSpace: 1409897472 B]
+ [totalFreeSpace:             1577153024 B]</pre>
+
+  This occurs when either the number of MPI tasks exceeds the number of GPUs available, or then number of threads is greater than is reasonable for the gpu type.
+  </li>
+
+<br>
+  <li><b>More than 1 MPI task and/or threads per GPU with MotionCor2:</b> Assigning too many threads to a GPU gives an error like this:
+
+  <pre class="term">ERROR in removing non-dose weighted image: MotionCorr/job005/Movies/20170630_3_00443_frameImage.mrc</pre>
+
+  Looking more closely at the .err files in the <b>Movies</b> subdirectory (MotionCorr/job005/Movies/20170630_3_00443_frameImage.err):
+
+  <pre class="term">Error: All GPUs are in use, quit.</pre>
+
+  Only assign a single thread per GPU.   This occurs when either the number of MPI tasks exceeds the number of GPUs available, or then number of threads is unreasonable for the gpu type.
+  <br />
+  <br />
+  Another reason for this to occur is that the slurm batch job is running with <tt><b>--distribution=cyclic</b></tt>.  Make sure that <tt><b>SLURM_DISTRIBUTION=block</b></tt> or that <b><tt>--distribution=block</tt></b> is given as an extra sbatch directive.
+  </li>
+
+<br>
+  <li><b>Running multiple instances of the RELION GUI simultaneously in the same project directory:</b> This results in this error:
+
+  <pre class="term">WARNING: trying to read pipeline.star, but directory .relion_lock exists.</pre>
+
+  Hunt down and stop all instances of the RELION GUI, then remove the lock directory if it still exists:
+
+  <pre class="term">rm -rf .relion_lock</pre>
+
+  </li>
+
+  <li><b>Corrupted default_pipeline.star file:</b> This can happen in multiple ways, such as running different versions of RELION in the same project directory or by bad luck with a prematurely ended executable.  The error message looks like this:
+
+  <pre class="term">ERROR: PipeLine::read: cannot find name or type in pipeline_nodes table</pre>
+
+  Copying a default_pipeline.star file from the latest run job into the project directory should fix this.
+  </li>
+
+
+  <li><b>Corrupted micrographs:</b> This results in this error:
+
+  <pre class="term">ERROR: FFTW plans cannot be created</pre>
+
+  Likely one or more of the input micrographs is empty or corrupted, possibly from data transfer errors.  Have a look at the micrographs, looking for those whose sizes are abnormal:
+
+  <pre class="term">ls -l *.mrc
+...
+-rw-r-----. 1 user user 1342214144 Sep 15 03:08 Data_9999999_9999999_000021.mrc
+-rw-r-----. 1 user user 1342214144 Sep 14 23:55 Data_9999999_9999999_000022.mrc
+-rw-r-----. 1 user user          0 Sep 15 00:20 Data_9999999_9999999_000023.mrc
+-rw-r-----. 1 user user 1342214144 Sep 14 23:51 Data_9999999_9999999_000024.mrc
+-rw-r-----. 1 user user  555008000 Sep 14 14:29 Data_9999999_9999999_000025.mrc
+-rw-r-----. 1 user user 1342214144 Sep 14 16:22 Data_9999999_9999999_000026.mrc
+-rw-r-----. 1 user user 1342214144 Sep 14 22:53 Data_9999999_9999999_000027.mrc
+... </pre>
+
+  or run the <b>relion_image_handler --stats</b> command on each file (this can take quite a while).
+  </li>
+
+
+</ul>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

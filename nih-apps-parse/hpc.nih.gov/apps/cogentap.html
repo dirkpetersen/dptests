@@ -1,0 +1,200 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Cogent NGS Analysis Pipeline on Biowulf';</script>
+<style>
+    .hl { background-color: #ffff99; }
+</style>
+
+<div class="title">Cogent NGS Analysis Pipeline on Biowulf</div>
+
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width: 70%">
+    <p>From the TaKaRa manual page:</p>
+    <blockquote>
+
+        Cogent NGS Analysis Pipeline (CogentAP) is bioinformatic software for analyzing
+        RNA-seq NGS data generated using the following systems or kits:
+
+        <ul>
+            <li>ICELL8 cx Single-Cell System or the ICELL8 Single-Cell System on the single-cell full-length transcriptome (SMART-Seq ICELL8 workflow)</li>
+            <li>ICELL8 cx Single-Cell System or the ICELL8 Single-Cell System on the single-cell differential expression (3′ DE or 5′ DE) workflows (ICELL8 3′ DE or ICELL8 TCR)</li>
+            <li>SMARTer Stranded Total RNA-Seq Kit v3 - Pico Input Mammalian</li>
+        </ul>
+
+        The program takes input data from sequencing and outputs an HTML
+        report, with results typical to single-cell analysis, plus other
+        files, such as a gene matrix, to continue further analysis. R data
+        object with pre-computed results based on recommended parameters
+        are also output. Either the standard output files or the R data
+        object can serve as input for Cogent NGS Discovery Software
+        (CogentDS), another bioinformatic software package provided by
+        Takara Bio.
+
+        CogentAP software is written in Python and can be run either via a
+        GUI or command-line interface.
+
+    </blockquote>
+
+</div>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>CogentAP <a href="https://www.takarabio.com/learning-centers/next-generation-sequencing/bioinformatics-resources/cogent-ngs-analysis-pipeline/cogent-ngs-analysis-pipeline-v10-user-manual">manual</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: cogentap (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Multithreaded/singlethreaded/MPI...</li>
+    <li>Example files in <code>$COGENTAP_TEST_DATA</code></li>
+    <li>Reference data is stored in <code>/fdb/cogentap</code> and linked into the
+        install directory at the expected path</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=45g --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load cogentap</b>
+[user@cn3144]$ <b>cogent --help</b>
+usage: cogent
+
+Script to perform NGS analysis. Please see helps of each command for details.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         Show version number
+
+commands:
+  {add_genome,demux,analyze}
+    add_genome          Build a genome with preferred STAR parameters.
+    demux               De-multiplex barcoded reads from sequence data stored in FASTQ files.
+    analyze             Perform counting analysis for exons and genes by fastq input data.
+
+[user@cn3144]$ <b>cp -r ${COGENTAP_TEST_DATA} .</b>
+[user@cn3144]$ <b>cogent demux \
+        -i test/test_FL_R1.fastq.gz \
+        -p test/test_FL_R2.fastq.gz \
+        --barcodes_file test/99999_CogentAP_test_selected_WellList.TXT \
+        -t ICELL8_FLA \
+        -o out \
+        -n $SLURM_CPUS_PER_TASK</b>
+###
+### <span class="hl">cogent 1.0</span>
+###
+[user@cn3144]$ <b>cogent analyze \
+        -i out/out_demuxed_R1.fastq \
+        -p out/out_demuxed_R2.fastq \
+        -g hg38 \
+        -o out/analysis \
+        -n $SLURM_CPUS_PER_TASK \
+        -d out/out_counts_all.csv \
+        -t ICELL8_FLA</b>
+
+###
+### <span class="hl">cogent &ge;1.5.0</span> - see the official manual for more differences
+###
+[user@cn3144]$ <b>cogent analyze \
+        -i out \
+        -g hg38 \
+        -o out/analysis \
+        --threads $SLURM_CPUS_PER_TASK \
+        -t ICELL8_FLA</b>
+
+[user@cn3144]$ <b>tree out</b>
+out
+├ [user   4.0K]  analysis
+│   ├ [user   5.2K]  analysis_analyzer.log
+│   ├ [user   2.1M]  analysis_genematrix.csv
+│   ├ [user   1.0K]  analysis_stats.csv
+│   ├ [user   4.0K]  cogent_ds
+│   │   ├ [user   1.8M]  CogentDS.analysis.rda
+│   │   ├ [user   214K]  CogentDS.boxplot.png
+│   │   ├ [user   3.4K]  CogentDS.cogent_ds.log
+│   │   ├ [user     70]  CogentDS.cor_stats.csv
+│   │   ├ [user   164K]  CogentDS.heatmap.png
+│   │   ├ [user   1.7M]  CogentDS.report.html
+│   │   └ [user   157K]  CogentDS.UMAP.png
+│   ├ [user   4.0K]  extras
+│   │   ├ [user   2.1M]  analysis_incl_introns_genematrix.csv
+│   │   ├ [user   1.0K]  analysis_incl_introns_stats.csv
+│   │   └ [user   3.9M]  gene_info_incl_introns.csv
+│   ├ [user   3.8M]  gene_info.csv
+│   └ [user   4.0K]  work
+│       ├ [user    14M]  analysis.Aligned.out.bam
+│       ├ [user   2.0K]  analysis.Log.final.out
+│       ├ [user   488K]  analysis.SJ.out.tab
+│       └ [user     39]  mito.gtf
+├ [user    257]  out_counts_all.csv
+├ [user    20M]  out_demuxed_R1.fastq
+├ [user    20M]  out_demuxed_R2.fastq
+└ [user   1.3K]  out_demuxer.log
+
+[user@cn3144]$ <b>mv out /data/$USER/</b>
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. cogentap.sh) similar to the following:</p>
+
+<pre class="term">
+#!/bin/bash
+module load cogentap/1.0
+cd /lscratch/$SLURM_JOB_ID || exit 1
+module load cogentap
+cp -r ${COGENTAP_TEST_DATA:-none} .
+cogent demux \
+        -i test/test_FL_R1.fastq.gz \
+        -p test/test_FL_R2.fastq.gz \
+        --barcodes_file test/99999_CogentAP_test_selected_WellList.TXT \
+        -t ICELL8_FLA \
+        -o out \
+        -n $SLURM_CPUS_PER_TASK
+cogent analyze \
+        -i out/out_demuxed_R1.fastq \
+        -p out/out_demuxed_R2.fastq \
+        -g hg38 \
+        -o out/analysis \
+        -n $SLURM_CPUS_PER_TASK \
+        -d out/out_counts_all.csv \
+        -t ICELL8_FLA
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=30g cogentap.sh</pre>
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

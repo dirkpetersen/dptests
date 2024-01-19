@@ -1,0 +1,144 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Muscle on Biowulf';</script>
+<div class="title">Muscle on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+        <div class="tocItem"><a href="#bench">Benchmarks</a></div>
+       </div>
+</table>
+
+<p>
+MUSCLE is a popular multiple alignment program with good performance and accuracy. 
+It can align hundreds of sequences quickly and has a simple command line interface with few options.
+?Compared to previous versions, Muscle v5 is much more accurate, is often faster, and scales to much larger datasets. At the time of writing (late 2021), Muscle v5 has the highest scores on multiple alignment benchmarks including Balibase, Bralibase, Prefab and Balifam. It can align tens of thousands of sequences with high accuracy on a low-cost commodity computer (say, an 8-core Intel CPU with 32 Gb RAM). On large datasets, Muscle v5 is 20-30% more accurate than MAFFT and Clustal-Omega.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Robert C. Edgar. <em>MUSCLE: multiple sequence alignment with high accuracy 
+  and high throughput</em>. 
+  <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC390337/">Nucleic Acids Res. 2004, 32:1792-1797</a>
+<li>Robert C. Edgar. <em>MUSCLE: a multiple sequence alignment method with reduced 
+  time and space complexity</em>.
+  <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC517706/">BMC Bioinformatics 2014, 113</a>
+ </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.drive5.com/muscle/">Home page</a></li>
+<li><a href="http://www.drive5.com/muscle/manual/">Manual</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>muscle</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multi-threaded: will use all allocated CPUs on a single node.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load muscle</b>
+[+] Loading muscle  5.0.1428
+
+[user@cn3144 ~]$ <b>cp /usr/local/apps/muscle/sample_data/globins13.fa .</b>
+
+[user@cn3144 ~]$ <b>muscle -threads $SLURM_CPUS_PER_TASK -align globins25.fa -output globins25.muscle.out</b>
+
+
+muscle 5.0.1428_linux64  396Gb RAM, 72 cores
+(C) Copyright 2004-2021 Robert C. Edgar.
+https://drive5.com
+
+00:00 24Mb   CPU has 72 cores, defaulting to 20 threads
+
+WARNING: Max OMP threads 16
+
+02:00 1.6Gb   100.0% Calc posteriors
+05:44 2.6Gb   100.0% Consistency (1/2)
+09:30 2.6Gb   100.0% Consistency (2/2)
+09:30 2.6Gb   100.0% UPGMA5
+10:01 2.6Gb   100.0% Refining
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. Muscle.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load muscle
+cd /data/$USER/somedir
+muscle -threads $SLURM_CPUS_PER_TASK -align inputseqs.fa -output muscle_output
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  [--mem=#] --cpus-per-task=20 Muscle.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. Muscle.swarm). For example:</p>
+
+<pre class="term">
+muscle -threads $SLURM_CPUS_PER_TASK -align file1.fa -output file1.out
+muscle -threads $SLURM_CPUS_PER_TASK -align file2.fa -output file2.out
+[....]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f Muscle.swarm [-g #] -t 16 --module muscle</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t 16</tt><td>Number of CPUs to use for a single muscle command
+  <tr><td><tt>--module Muscle</tt> <td>Loads the Muscle module for each subjob in the swarm 
+</table>
+
+<a Name="bench"></a><div class="heading">Benchmarks </div>
+<P>
+Benchmarks were run with input sequence file globins630.fa (available in /usr/local/apps/muscle/sample_data on Biowulf, and 
+<a href="http://gensoft.pasteur.fr/docs/hmmer/2.3.2/tutorial/globins630.fa">from the Hmmer tutorial</a>) on Intel(R) Xeon(R) Gold 6140 CPU @ 2.30GHz
+('x6140' nodes on Biowulf norm partition). This job requires about 2 GB memory. 
+<P>
+Based on the benchmarks below, it is appropriate to submit to 20 or 24 CPUs for this muscle alignment. Increasing the 
+allocated CPUs beyond 24 results in very little performance improvement, and is therefore inefficient. 
+
+
+<center>
+<img src="/images/muscle_alignment_globins630.png">
+</center>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

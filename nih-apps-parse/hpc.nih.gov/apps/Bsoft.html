@@ -1,0 +1,101 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Bsoft on Biowulf ';</script>
+<div class="title">
+Bsoft on Biowulf </div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#batch">Batch job on Biowulf</a></div>
+<div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+<div class="tocItem"><a href="#int">Interactive job on Biowulf</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+<a href="http://bsoft.ws"><img src="/images/Bsoft.jpg" alt=""  align=right hspace=10 vspace=10></a>Bsoft is a collection of programs and a platform for development of software for image and molecular processing in structural biology. Problems in structural biology are approached with a highly modular design, allowing fast development of new algorithms without the burden of issues such as file I/O. It provides an easily accessible interface, a resource that can be and has been used in other packages.
+<p>
+Bsoft was developed by groups at the University of Basel, NIAMS, and Caltech. <br>
+<A href="http://bsoft.ws">Bsoft website</a>
+<P>
+<P>
+<a Name="batch"></a><div class="heading">Batch job on Biowulf</div>
+<P>
+The Bsoft programs have standard Unix command-line syntax, and so are ideally suited to running as a batch job or as a swarm of batch jobs. 
+<P>
+Sample Bsoft batch script:
+<div class="term"><pre>
+#!/bin/bash
+
+module load Bsoft
+
+cd /data/user/myjob
+bimg -verbose 7 -truncate 0,100 input.img output.img
+</pre></div>
+<P>
+This job would be submitted with
+<div class="term"><pre>
+sbatch  jobscript
+</pre></div>
+<P>
+
+This job would be submitted to a single core (2 hyperthreaded CPUs) and 4 GB of memory. If more than the default 4 GB of 
+memory is required, you would submit with:
+<pre class='term'>
+sbatch --mem=#g  jobscript
+</pre>
+where '#' is the number of GigaBytes of memory required. 
+<P>
+<a Name="swarm"></a><div class="heading">Swarm of jobs</div>
+<P>
+Biowulf users will typically want to process large numbers of image files via Bsoft. This is most easily done using the swarm utility. 
+<p>
+<P>
+Now set up a swarm command file along the following lines:
+<div class="term"><pre>
+# this file is called swarmfile
+
+bimg -verbose 7 -truncate 0,100 input1.img output1.img
+bimg -verbose 7 -truncate 0,100 input2.img output2.img
+bimg -verbose 7 -truncate 0,100 input3.img output3.img
+bimg -verbose 7 -truncate 0,100 input4.img output4.img
+bimg -verbose 7 -truncate 0,100 input5.img output5.img
+[...]
+</pre></div>
+<P>
+Submit this with
+<div class="term"><pre>
+biowulf% swarm -f swarmfile --module Bsoft/2.0.0
+</pre></div>
+<P>
+If each Bsoft process in the swarm command file requires more than 4 GB of memory, use
+<div class="term"><pre>
+biowulf% swarm -g # -f swarmfile --module Bsoft/1.9.0
+</pre></div>
+where # is the number of Gigabytes required by each process.
+
+<P>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<P>
+To run Bsoft interactively on Biowulf, allocate an interactive session and run the process there.
+<P>
+Sample session:
+<pre class="term">
+biowulf% sinteractive
+
+cn0203% module load bsoft
+
+cn0203% ...bsoft commands ...
+
+cn0203% exit
+</pre>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<P>
+<a href="http://lsbr.niams.nih.gov/Bsoft/bsoft.html">Bsoft website</a>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

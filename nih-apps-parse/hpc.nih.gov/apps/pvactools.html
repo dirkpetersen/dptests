@@ -1,0 +1,178 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pvactools on Biowulf';</script>
+<div class="title">pvactools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+pVACtools is a cancer immunotherapy suite consisting of the following tools:
+<dl>
+<dh>pVACseq</dh>
+<dd>A cancer immunotherapy pipeline for identifying and prioritizing neoantigens from a list of tumor mutations.</dd>
+<dh>pVACfuse</dh>
+<dd>A tool for detecting neoantigens resulting from gene fusions.</dd>
+<dh>pVACvector</dh>
+<dd>A tool designed to aid specifically in the construction of DNA vector-based cancer vaccines.</dd>
+<dh>pVACbind</dh>
+<dd>A cancer immunotherapy pipeline for identifying and prioritizing neoantigens from a FASTA file.</dd>
+</dl>
+</p>
+
+<h3>References:</h3>
+<ul>
+Jasreet Hundal, Susanna Kiwala, Joshua McMichael, Christopher A Miller, Alexander T Wollam, Huiming Xia, Connor J Liu, Sidi Zhao, Yang-Yang Feng, Aaron P Graubert, Amber Z Wollam, Jonas Neichin, Megan Neveau, Jason Walker, William E Gillanders, Elaine R Mardis, Obi L Griffith, Malachi Griffith. <a href="https://www.ncbi.nlm.nih.gov/pubmed/31907209">pVACtools: a computational toolkit to select and visualize cancer neoantigens</a>. <em>Cancer Immunology Research</em>. 2020 Mar;8(3):409-420. DOI: 10.1158/2326-6066.
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><A href="https://pvactools.readthedocs.io/en/latest/index.html">pVACtools documentation</a> at readthedocs.io</li>
+<li><a href="http://www.pvactools.org">pvactools website</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>pvactools</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded</li>
+<li>pvactools on Biowulf is installed inside a <a href="singularity.html">Singularity container</a>. For the user, this should not make any difference, as the pvactools commands will be run exactly as before. 
+<li>The IEDB (Immune Epitope Database and Analysis Resource) MHC Class I and Class II archives are in <tt>/opt/iedb</tt> within the container. 
+<li>For older versions of pvactools, the IEDB archives are also in <tt>/usr/local/apps/pvactools/IEDB</tt> on Biowulf.
+<li>Note that the pVACviz utility cannot be used directly on Biowulf. Jobs must be submitted using <tt>sinteractive</tt>, <tt>sbatch</tt>, or <tt>swarm</tt>.
+<li>We highly recommend <a href="https://hpc.nih.gov/docs/userguide.html#local">allocating lscratch</a> for pvacseq. If possible, run your analysis in <tt>/lscratch/$SLURM_JOB_ID/</tt> itself and move the output directory to <tt>/data</tt> when the run completes</li>
+</ul>
+
+<p class="alert">The default module version as of March 2021 is 2.0 or greater. The newer versions <a href="https://pvactools.readthedocs.io/en/latest/releases/2_0.html#breaking-changes">break compatibility</a> with previous versions. Please update your workflow or explicitly load older modules, for example <tt>module load pvactools/1.5.5</tt></p>
+
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load pvactools</b>
+/lscratch/46116226 exists
+[+] Loading singularity  3.7.1  on cn3144
+[+] Loading pvactools  2.0.1
+
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3144 ~]$ <b>pvacseq download_example_data .</b>
+
+[user@cn3144 ~]$ <b>pvacseq run \
+ pvacseq_example_data/input.vcf \
+ Test \
+ HLA-A*02:01,HLA-B*35:01,DRB1*11:01 \
+ MHCflurry MHCnuggetsI MHCnuggetsII NNalign NetMHC PickPocket SMM SMMPMBEC SMMalign \
+ pvacseq_example_output \
+ -e1 8,9,10 \
+ -e2 15</b>
+Executing MHC Class I predictions
+Converting .vcf to TSV
+Completed
+Converting VCF to TSV
+Completed
+Generating Variant Peptide FASTA and Key File
+Completed
+Parsing the Variant Peptide FASTA and Key File
+Completed
+Calculating Manufacturability Metrics
+Completed
+Splitting TSV into smaller chunks
+Splitting TSV into smaller chunks - Entries 1-24
+Completed
+Generating Variant Peptide FASTA and Key Files
+Generating Variant Peptide FASTA and Key Files - Epitope Length 8 - Entries 1-48
+Generating Variant Peptide FASTA and Key Files - Epitope Length 9 - Entries 1-48
+Generating Variant Peptide FASTA and Key Files - Epitope Length 10 - Entries 1-48
+Completed
+[...]
+Creating combined reports
+Creating aggregated report
+Completed
+Running Binding Filters
+Completed
+Running Coverage Filters
+Completed
+Running Transcript Support Level Filter
+Complete
+Running Top Score Filter
+Completed
+
+Done: Pipeline finished successfully. File /lscratch/46116226//pvacseq_example_output/combined/Test.filtered.tsv contains list of filtered putative neoantigens
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pvactools.sh). For example:</p>
+
+<pre class="term">
+#! /bin/bash
+set -e
+
+cd /data/$USER/somedir
+
+module load pvactools
+allele="HLA-A*23:01,HLA-A*68:02,HLA-B*07:17,HLA-B*08:01,HLA-C*02:02,HLA-C*17:01"
+algorithms="MHCflurry MHCnuggetsI MHCnuggetsII NNalign NetMHC PickPocket SMM SMMPMBEC SMMalign"
+pvacseq run input.vcf \
+        Test \
+        $allele \
+        $algorithms \
+        output_dir \
+        -e1 8,9,10 \
+        -e2 15
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--mem=#G] [--time=##:##:##] [--gres=lscratch:#] pvactools.sh</pre>
+<P>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. pvactools.swarm). For example:</p>
+
+<pre class="term">
+pvacseq run -e1 8,9,10 -e2 15 input1.vcf Test1 HLA-C*17:01 MHCflurry MHCnuggetsI MHCnuggetsII output1
+pvacseq run -e1 8,9,10 -e2 15 input2.vcf Test2 HLA-C*17:01 MHCflurry MHCnuggetsI MHCnuggetsII output2
+pvacseq run -e1 8,9,10 -e2 15 input3.vcf Test3 HLA-C*17:01 MHCflurry MHCnuggetsI MHCnuggetsII output3
+pvacseq run -e1 8,9,10 -e2 15 input4.vcf Test4 HLA-C*17:01 MHCflurry MHCnuggetsI MHCnuggetsII output4
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f pvactools.swarm [-g #] --module pvactools --export=</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module pvactools</tt> <td>Loads the pvactools module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,167 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'GISTIC on Biowulf';</script>
+<div class="title">GISTIC on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+GISTIC, or  Genomic Identification of Significant Targets in Cancer, identifies regions of the genome that are significantly amplified or deleted across a set of samples.  Each aberration is assigned a G-score that considers the amplitude of the aberration as well as the frequency of its occurrence across samples.  False Discovery Rate q-values are then calculated for the aberrant regions, and regions with q-values below a user-defined threshold are considered significant.  For each significant region, a “peak region” is identified, which is the part of the aberrant region with greatest amplitude and frequency of alteration.  In addition, a “wide peak” is determined using a leave-one-out algorithm to allow for errors in the boundaries in a single sample. The “wide peak” boundaries are more robust for identifying the most likely gene targets in the region. Each significantly aberrant region is also tested to determine whether it results primarily from broad events (longer than half a chromosome arm), focal events, or significant levels of both.  The GISTIC module reports the genomic locations and calculated q-values for the aberrant regions.  It identifies the samples that exhibit each significant amplification or deletion, and it lists genes found in each “wide peak” region.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Mermel C, Schumacher S, et al. (2011). "GISTIC2.0 facilitates sensitive and confident localization of the targets of focal somatic copy-number alteration in human cancers." Genome Biology, 12:R41. <a href="https://doi.org/10.1186/gb-2011-12-4-r41">doi:10.1186/gb-2011-12-4-r41</a></li>
+<li>Beroukhim R, Mermel C, et al. (2010). "The landscape of somatic copy -number alteration across human cancers." Nature, 463:899-905. <a href="https://doi.org/10.1038/nature08822">doi:10.1038/nature08822</a></li>
+<li>Beroukhim R, Getz G, et al. (2007).  “Assessing the significance of chromosomal abberations in cancer: Methodology and application to glioma.”  Proc Natl Acad Sci, 104:20007-20012. <a href="https://doi.org/10.1073/pnas.0710052104">doi:10.1073/pnas.0710052104</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://software.broadinstitute.org/cancer/cga/gistic">GISTIC homepage</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>gistic</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>environment variables set
+<ul>
+  <li><tt>GISTIC_HOME</tt></li>
+</ul>
+<li>Example files in <tt>$GISTIC_HOME/examplefiles</tt>
+<!--
+<li>Multithreaded/singlethreaded/MPI...
+<li>Reference data in /fdb/TEMPLATE/
+-->
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session based on <tt>$GISTIC_HOME/run_gistic_example</tt>:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load gistic</b>
+[user@cn3144 ~]$ <b>cd /data/$USER</b>
+[user@cn3144 user]$ <b>basedir=$PWD/example_results</b>
+[user@cn3144 user]$ <b>mkdir $basedir</b>
+[user@cn3144 user]$ <b>segfile=$GISTIC_HOME/examplefiles/segmentationfile.txt</b>
+[user@cn3144 user]$ <b>markersfile=$GISTIC_HOME/examplefiles/markersfile.txt</b>
+[user@cn3144 user]$ <b>refgenefile=$GISTIC_HOME/refgenefiles/hg16.mat</b>
+[user@cn3144 user]$ <b>alf=$GISTIC_HOME/examplefiles/arraylistfile.txt</b>
+[user@cn3144 user]$ <b>cnvfile=$GISTIC_HOME/examplefiles/cnvfile.txt</b>
+[user@cn3144 user]$ <b>gistic2 \
+ -b $basedir \
+ -seg $segfile \
+ -mk $markersfile \
+ -refgene $refgenefile \
+ -alf $alf \
+ -cnv $cnvfile \
+ -genegistic 1 \
+ -smallmem 1 \
+ -broad 1 \
+ -brlen 0.5 \
+ -conf 0.90 \
+ -armpeel 1 \
+ -savegene 1 \
+ -gcm extreme
+</b>
+[user@cn3144 user]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gistic.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+set -e
+
+module load gistic
+
+basedir=$PWD/example_results
+mkdir $basedir
+
+segfile=$GISTIC_HOME/examplefiles/segmentationfile.txt
+markersfile=$GISTIC_HOME/examplefiles/markersfile.txt
+refgenefile=$GISTIC_HOME/refgenefiles/hg16.mat
+alf=$GISTIC_HOME/examplefiles/arraylistfile.txt
+cnvfile=$GISTIC_HOME/examplefiles/cnvfile.txt
+
+## call script that sets MCR environment and calls GISTIC executable 
+gistic2 \
+ -b $basedir \
+ -seg $segfile \
+ -mk $markersfile \
+ -refgene $refgenefile \
+ -alf $alf \
+ -cnv $cnvfile \
+ -genegistic 1 \
+ -smallmem 0 \
+ -broad 1 \
+ -brlen 0.5 \
+ -conf 0.90 \
+ -armpeel 1 \
+ -savegene 1 \
+ -gcm extreme
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] gistic.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+<p>Create a swarmfile (e.g. gistic.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/gistic/set1 \
+ && mkdir results \
+ && gistic2 -b results -seg segfile.txt -mk markersfile.txt -refgene $GISTIC_HOME/refgenefiles/hg38.UCSC.add_miR.160920.refgene.mat -alf arraylistfile.txt -cnv cnvfile.txt -genegistic 1 -smallmem 0 -broad 1 -brlen 0.5 -conf 0.90 -armpeel 1 -savegene 1 -gcm extreme
+cd /data/$USER/gistic/set2 \
+ && mkdir results \
+ && gistic2 -b results -seg segfile.txt -mk markersfile.txt -refgene $GISTIC_HOME/refgenefiles/hg38.UCSC.add_miR.160920.refgene.mat -alf arraylistfile.txt -cnv cnvfile.txt -genegistic 1 -smallmem 0 -broad 1 -brlen 0.5 -conf 0.90 -armpeel 1 -savegene 1 -gcm extreme
+cd /data/$USER/gistic/set3 \
+ && mkdir results \
+ && gistic2 -b results -seg segfile.txt -mk markersfile.txt -refgene $GISTIC_HOME/refgenefiles/hg38.UCSC.add_miR.160920.refgene.mat -alf arraylistfile.txt -cnv cnvfile.txt -genegistic 1 -smallmem 0 -broad 1 -brlen 0.5 -conf 0.90 -armpeel 1 -savegene 1 -gcm extreme
+cd /data/$USER/gistic/set4 \
+ && mkdir results \
+ && gistic2 -b results -seg segfile.txt -mk markersfile.txt -refgene $GISTIC_HOME/refgenefiles/hg38.UCSC.add_miR.160920.refgene.mat -alf arraylistfile.txt -cnv cnvfile.txt -genegistic 1 -smallmem 0 -broad 1 -brlen 0.5 -conf 0.90 -armpeel 1 -savegene 1 -gcm extreme
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f gistic.swarm [-g #] [-t #] --module gistic</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module gistic <td>Loads the GISTIC module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

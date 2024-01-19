@@ -1,0 +1,171 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'autoreject on Biowulf';</script>
+<div class="title">autoreject on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+This is a library to automatically reject bad trials and repair bad sensors in magneto-/electroencephalography (M/EEG) data.
+</p>
+<p>
+<ul>
+   <img src="/images/autoreject.png" width="400"; alt="autoreject"/>
+  
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Mainak Jas et.al.<em>Autoreject: Automated artifact rejection for MEG and EEG data</em>
+NeuroImage, 2017 159, 417-429.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/28645840">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.sciencedirect.com/science/article/pii/S1053811917305013">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>autoreject Main Site:<a href="https://autoreject.github.io/stable/index.html">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>autoreject</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+      <ul>
+       <p><tt>autoreject</tt> is installed as a singularity container, which means it came with it's own python environment. </p>
+       <p>It could be run as command line or through jupyter notebook. 
+       </p>
+     </ul>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$AUTOREJECT_TEST_DATA</tt>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=10 --mem=10G --gres=lscratch:200 --tunnel</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+Created 1 generic SSH tunnel(s) from this compute node to                  
+biowulf for your use at port numbers defined                               
+in the $PORTn ($PORT1, ...) environment variables.                         
+                                                                           
+                                                                           
+Please create a SSH tunnel from your workstation to these ports on biowulf.
+On Linux/MacOS, open a terminal and run:                                   
+                                                                           
+    ssh  -L 33327:localhost:33327 biowulf.nih.gov                          
+                                                                           
+For Windows instructions, see https://hpc.nih.gov/docs/tunneling          
+[user@cn3144]$ <b>module load autoreject</b>
+[user@cn3144]$ <b>python -c "import autoreject"</b>
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>cp -r ${AUTOREJECT_TEST_DATA:-none}/mne_data .</b>
+[user@cn3144]$ <b>jupyter notebook --ip localhost --port $PORT1 --no-browser </b>
+[I 17:11:40.505 NotebookApp] Serving notebooks from local directory
+[I 17:11:40.505 NotebookApp] Jupyter Notebook 6.4.10 is running at:
+[I 17:11:40.505 NotebookApp] http://localhost:37859/?token=xxxxxxxx
+[I 17:11:40.506 NotebookApp]  or http://127.0.0.1:37859/?token=xxxxxxx
+[I 17:11:40.506 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 17:11:40.512 NotebookApp]
+
+    To access the notebook, open this file in a browser:
+        file:///home/apptest1/.local/share/jupyter/runtime/nbserver-29841-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:37859/?token=xxxxxxx
+     or http://127.0.0.1:37859/?token=xxxxxxx
+</pre>
+<p> Then you can open a browser from your computer to connect to the jupyter notebook:
+<p> <img src="/images/autoreject_jupyter.png" width="840"; alt="autoreject_jupyter"/></p>
+ <pre class="term">
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. autoreject.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --cpus-per-task=10
+#SBATCH --mem=10G
+#SBATCH --time=2:00:00
+#SBATCH --partition=norm
+
+set -e
+module load autoreject
+# command 
+</pre>
+<p> Submit the job:
+<pre class="term">sbatch autoreject.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+    <pre class="term">
+cmd1
+cmd2
+cmd3
+
+    </pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module autoreject</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

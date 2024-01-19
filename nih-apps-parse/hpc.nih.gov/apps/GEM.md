@@ -1,0 +1,276 @@
+
+
+document.querySelector('title').textContent = 'GEM: Gene-Environment interaction analysis for Millions of samples ';
+**GEM: Gene-Environment interaction analysis for Millions of samples** 
+
+
+|  |
+| --- |
+| 
+Quick Links
+[Documentation](#doc)
+[Notes](#notes)
+[Interactive job](#int) 
+[Batch job](#sbatch) 
+[Swarm of jobs](#swarm) 
+ |
+
+
+
+GEM (Gene-Environment interaction analysis for Millions of samples) 
+is a software program for large-scale gene-environment interaction testing 
+in samples from unrelated individuals. 
+It enables genome-wide association studies in up to millions of samples 
+while allowing for multiple exposures, control for genotype-covariate interactions, and robust inference.
+
+
+
+### References:
+
+
+* Kenneth E.Westerman, Duy T. Pham, Liang Hong, Ye Chen, Magdalena Sevilla-Gonzalez, Yun Ju Sung, Yan V. Sun, Alanna C. Morrison,
+Han Chen, and Alisa K. Manning   
+
+*GEM: scalable and flexible gene–environment interaction analysis in millions of samples*   
+
+[Bioinformatics, Volume 37, Issue 20, 15 October 2021, Pages 3514–3520, https://doi.org/10.1093/bioinformatics/btab223](https://academic.oup.com/bioinformatics/article/37/20/3514/6284130)
+
+
+Documentation
+* [GEM on GitHub](https://github.com/large-scale-gxe-methods/GEM)
+
+
+Important Notes
+* Module Name: GEM (see [the modules page](https://hpc.nih.gov/apps/modules.html) for more information)
+* Unusual environment variables set
+	+ **GEM\_HOME**  installation directory
+	+ **GEM\_BIN**     executable directory
+	+ **GEM\_SRC**     source code directory
+
+
+
+Interactive job
+[Interactive jobs](/docs/userguide.html#int) should be used for debugging, graphics, or applications that cannot be run as batch jobs.
+Allocate an [interactive session](/docs/userguide.html#int) and run the program. Sample session:
+
+
+
+```
+
+[user@biowulf]$ **sinteractive** 
+[user@cn3107 ~]$**module load GEM**
+
+```
+
+Basic usage: 
+
+```
+
+[user@biowulf]$  **GEM -h** 
+
+*********************************************************
+Welcome to GEM v1.4.3
+(C) 2018-2021 Liang Hong, Han Chen, Duy Pham, Cong Pan
+GNU General Public License v3
+*********************************************************
+General Options:
+   --help                Prints available options and exits.
+   --version             Prints the version of GEM and exits.
+
+
+Input/Output File Options:
+   --pheno-file          Path to the phenotype file.
+   --bgen                Path to the BGEN file.
+   --sample              Path to the sample file. Required when the BGEN file does not contain sample identifiers.
+   --pfile               Path and prefix to the .pgen, .pvar, and .psam files.
+   --pgen                Path to the pgen file.
+   --pvar                Path to the pvar file.
+   --psam                Path to the psam file.
+   --bfile               Path and prefix to the .bed, .bim and .fam files.
+   --bed                 Path to the bed file.
+   --bim                 Path to the bim file.
+   --fam                 Path to the fam file.
+   --out                 Full path and extension to where GEM output results.
+                            Default: gem.out
+   --output-style        Modifies the output of GEM. Must be one of the following:
+                            minimum: Output the summary statistics for only the GxE and marginal G terms.
+                            meta: 'minimum' output plus additional fields for the main G and any GxCovariate terms
+                                  For a robust analysis, additional columns for the model-based summary statistics will be included.
+                            full: 'meta' output plus additional fields needed for re-analyses of a subset of interactions
+                            Default: minimum
+
+
+Phenotype File Options:
+   --sampleid-name       Column name in the phenotype file that contains sample identifiers.
+   --pheno-name          Column name in the phenotype file that contains the phenotype of interest.
+                           If the number of levels (unique observations) is 2, the phenotype is treated as binary;
+                           otherwise it is assumed to be continuous.
+   --exposure-names      One or more column names in the phenotype file naming the exposure(s) to be included in interaction tests.
+   --int-covar-names     Any column names in the phenotype file naming the covariate(s) for which interactions should
+                           be included for adjustment (mutually exclusive with --exposure-names).
+   --covar-names         Any column names in the phenotype file naming the covariates for which only main effects should
+                           be included for adjustment (mutually exclusive with both --exposure-names and --int-covar-names).
+   --robust              0 for model-based standard errors and 1 for robust standard errors.
+                            Default: 0
+   --tol                 Convergence tolerance for logistic regression.
+                            Default: 0.0000001
+   --delim               Delimiter separating values in the phenotype file.
+                         Tab delimiter should be represented as \t and space delimiter as \0.
+                            Default: , (comma-separated)
+   --missing-value       Indicates how missing values in the phenotype file are stored.
+                            Default: NA
+   --center              0 for no centering to be done and 1 to center ALL exposures and covariates.
+                            Default: 1
+   --scale               0 for no scaling to be done and 1 to scale ALL exposures and covariates by the standard deviation.
+                            Default: 0
+   --categorical-names   Names of the exposure or interaction covariate that should be treated as categorical.
+                            Default: None
+   --cat-threshold       A cut-off to determine which exposure or interaction covariate not specified using --categorical-names
+                            should be automatically treated as categorical based on the number of levels (unique observations).
+                            Default: 20
+
+
+Filtering Options:
+   --maf                 Threshold to filter variants based on the minor allele frequency.
+                            Default: 0.001
+   --miss-geno-cutoff    Threshold to filter variants based on the missing genotype rate.
+                            Default: 0.05
+   --include-snp-file    Path to file containing a subset of variants in the specified genotype file to be used for analysis. The first
+                           line in this file is the header that specifies which variant identifier in the genotype file is used for ID
+                           matching. This must be 'snpid' (PLINK or BGEN) or 'rsid' (BGEN only).
+                           There should be one variant identifier per line after the header.
+
+
+Performance Options:
+   --threads             Set number of compute threads
+                            Default: ceiling(detected threads / 2)
+   --stream-snps         Number of SNPs to analyze in a batch. Memory consumption will increase for larger values of stream-snps.
+                            Default: 1
+
+```
+
+Test example: 
+
+```
+
+[user@cn3107 ~]$**cp -r $GEM\_DATA/\* .**
+[user@cn3107 ~]$**GEM --bgen example.bgen --sample example.sample --pheno-file example.pheno --sampleid-name sampleid --pheno-name pheno2 --covar-names cov2 cov3 --exposure-names cov1 --robust 1 --missing-value NaN --out my\_example.out**
+
+
+*********************************************************
+Welcome to GEM v1.4.3
+(C) 2018-2021 Liang Hong, Han Chen, Duy Pham, Cong Pan
+GNU General Public License v3
+*********************************************************
+The Phenotype File is: example.pheno
+The Genotype File is: example.bgen
+Model-based or Robust: Robust
+
+The Total Number of Selected Covariates is: 2
+The Selected Covariates are:  cov2   cov3
+No Interaction Covariates Selected
+The Total Number of Exposures is: 1
+The Selected Exposures are:  cov1
+
+Categorical Threshold: 20
+Minor Allele Frequency Threshold: 0.001
+Number of SNPS in batch: 1
+Number of Threads: 36
+Output File: my_example.out
+*********************************************************
+Before ID Matching and checking missing values...
+Size of the phenotype vector is: 500 X 1
+Size of the selected covariate matrix (including first column for intercept values) is: 500 X 4
+End of reading phenotype and covariate data.
+*********************************************************
+General information of BGEN file:
+Number of variants: 1000
+Number of samples: 500
+Genotype Block Compression Type: Zlib
+Layout: 2
+Sample Identifiers Present: False
+****************************************************************************
+After processes of sample IDMatching and checking missing values, the sample size changes from 500 to 250.
+
+Sample IDMatching and checking missing values processes have been completed.
+New pheno and covariate data vectors with the same order of sample ID sequence of geno data are updated.
+****************************************************************************
+Phenotype detected: Binary
+Logistic convergence threshold: 1e-06
+Number of categorical variables: 1
+*********************************************************
+Centering ALL exposures and covariates...
+Starting GWAS...
+
+Precalculations and fitting null model...
+Logistic regression reaches convergence after 5 steps...
+
+Coefficients:
+                           Estimate          Std. Error             Z-value             P-value
+      Intercept       -3.240268e-02        1.276722e-01       -2.537959e-01        7.996533e-01
+           cov1        1.979139e-01        3.325579e-01        5.951262e-01        5.517591e-01
+           cov2        4.443473e-01        3.155722e-01        1.408068e+00        1.591108e-01
+           cov3       -2.004775e-01        1.420288e-01       -1.411527e+00        1.580893e-01
+
+Variance-Covariance Matrix:
+                          Intercept                cov1                cov2                cov3
+      Intercept        1.630020e-02       -4.075880e-04       -7.012002e-05        4.771804e-04
+           cov1       -4.075880e-04        1.105947e-01        5.858074e-02       -1.499078e-03
+           cov2       -7.012002e-05        5.858074e-02        9.958583e-02        3.797484e-03
+           cov3        4.771804e-04       -1.499078e-03        3.797484e-03        2.017218e-02
+
+Execution time... 241 ms
+Done.
+*********************************************************
+Detected 72 available thread(s)...
+Using 36 for multithreading...
+
+Dividing BGEN file into 36 block(s)...
+Execution time... 303 ms
+Done.
+*********************************************************
+The second allele in the BGEN file will be used for association testing.
+Running multithreading...
+Joining threads...
+Thread 0 finished in 762 ms
+Thread 1 finished in 683 ms
+Thread 2 finished in 740 ms
+Thread 3 finished in 871 ms
+Thread 4 finished in 72 ms
+Thread 5 finished in 425 ms
+Thread 6 finished in 482 ms
+Thread 7 finished in 601 ms
+...
+Thread 30 finished in 682 ms
+Thread 31 finished in 46 ms
+Thread 32 finished in 226 ms
+Thread 33 finished in 243 ms
+Thread 34 finished in 510 ms
+Thread 35 finished in 508 ms
+Execution time... 446 ms
+Done.
+*********************************************************
+Combining results...
+Execution time... 306 ms
+Done.
+*********************************************************
+Total Wall Time = 0.383886  Seconds
+Total CPU Time  = 0.05428  Seconds
+*********************************************************
+
+```
+
+End the interactive session:
+
+```
+
+[user@cn3107 ~]$ **exit**
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+
+```
+
+
+
+
+

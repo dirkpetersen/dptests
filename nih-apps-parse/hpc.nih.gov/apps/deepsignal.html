@@ -1,0 +1,198 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'deepsignal on Biowulf';</script>
+<div class="title">deepsignal on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div width="70%">
+    <p>From the deepsignal home page</p>
+    <blockquote>A deep-learning method for detecting DNA methylation state from Oxford
+        Nanopore sequencing reads.</blockquote> 
+
+    <h3>References:</h3>
+    <ul>
+        <li>P. Ni, N. Huang, Z. Zhang, D. Wang, F. Liang, Y. Miao, C. Xiao, F. Luo, and J. Wang. 
+        <em>DeepSignal: detecting DNA methylation state from Nanopore sequencing reads using 
+            deep-learning.</em>, Bioinformatics 2019, 35:4586-4595.
+        <a href="https://pubmed.ncbi.nlm.nih.gov/30994904/">PubMed</a>&nbsp;|&nbsp;
+        <a href="https://academic.oup.com/bioinformatics/article/35/22/4586/5474907">Journal</a>
+        </li>
+    </ul>
+</div>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>deepsignal <a href="https://github.com/bioinfomaticsCSU/deepsignal">on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: deepsignal (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>guppy used in the example and deepsignal make use of GPUs</li>
+<li>Example files in <code>$DEEPSIGNAL_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g -c6 --gres=lscratch:50,gpu:p100:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load guppy deepsignal/2-0.1.3</b>
+[+] Loading singularity  3.7.1  on cn2384
+[+] Loading guppy 4.2.2  ...
+[+] Loading deepsignal  0.1.8
+
+[user@cn3144]$ <b>tar -xzf ${DEEPSIGNAL_TEST_DATA:-none}/fast5s.sample.tar.gz</b>
+[user@cn3144]$ <b>ll</b>
+total 13M
+drwxr-xr-x 3 user group 548K Dec 17  2018 fast5s.al
+-rw-r--r-- 1 user group  12M Dec 17  2018 GCF_000146045.2_R64_genomic.fna
+</pre>
+
+<p>To call modifications, the raw fast5 files should be basecalled (Guppy or
+Albacore) and then be re-squiggled by tombo. At last, modifications of
+specified motifs can be called by deepsignal. The following are commands to
+call 5mC in CG contexts from the example data:</p>
+
+<pre class="term">
+[user@cn3144]$ <b>guppy_basecaller -x cuda:all \
+    -i fast5s.al -r -s fast5s.al.guppy --config dna_r9.4.1_450bps_hac_prom.cfg</b>
+ONT Guppy basecalling software version 4.2.2+effbaf8
+config file:        /opt/ont/guppy/data/dna_r9.4.1_450bps_hac_prom.cfg
+model file:         /opt/ont/guppy/data/template_r9.4.1_450bps_hac_prom.jsn
+input path:         fast5s.al
+save path:          fast5s.al.guppy
+chunk size:         2000
+chunks per runner:  1248
+records per file:   4000
+num basecallers:    4
+gpu device:         cuda:all
+kernel path:
+runners per device: 12
+
+Found 3621 fast5 files to process.
+Init time: 6689 ms
+
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+Caller time: 23257 ms, Samples called: 53658471, samples/s: 2.3072e+06
+Finishing up any open output files.
+Basecalling completed successfully.
+
+[user@cn3144]$ <b>tombo preprocess annotate_raw_with_fastqs \
+    --fast5-basedir fast5s.al \
+    --fastq-filenames fast5s.al.guppy/{pass,fail}/*.fastq \
+    --overwrite \
+    --processes 6 \
+    --sequencing-summary-filenames fast5s.al.guppy/sequencing_summary.txt</b>
+[14:45:09] Getting read filenames.
+[14:45:09] Parsing sequencing summary files.
+[14:45:09] Annotating FAST5s with sequence from FASTQs.
+100%|███████████████████████████████████████████████████████████████| 3621/3621 
+[14:45:11] Added sequences to a total of 3621 reads.
+
+[user@cn3144]$ <b>tombo resquiggle fast5s.al \
+    GCF_000146045.2_R64_genomic.fna \
+    --processes 6 \
+    --corrected-group RawGenomeCorrected_001  \
+    --overwrite</b>
+[14:47:15] Loading minimap2 reference.
+[14:47:16] Getting file list.
+[14:47:16] Loading default canonical ***** DNA ***** model.
+[14:47:16] Re-squiggling reads (raw signal to genomic sequence alignment).
+100%|█████████████████████████████████████████████████████████████████| 3621/3621
+[14:49:08] Final unsuccessful reads summary (4.7% reads unsuccessfully processed; 169 total reads):
+     3.2% (115 reads) : Alignment not produced
+     1.2% ( 44 reads) : Poor raw to expected signal matching (revert with `tombo filter clear_filters`)
+     0.3% ( 10 reads) : Read event to sequence alignment extends beyond bandwidth
+
+[14:49:08] Saving Tombo reads index to file.
+</pre>
+
+<p>Notes:</p>
+<ul>
+    <li>Some versions of deepsignal on biowulf include their own tombo. Others use the
+    tombo module.</li>
+    <li>Tombo does not take advantage of GPU. In the example above tombo is run in the same
+        session as deepsignal only for convenience. For real data please run tombo
+        as a separate job without GPU for efficiency.</li>
+</ul>
+
+<p>The available models can be checked with <code>ls /usr/local/apps/deepsignal/VER/model</code> or <code>/usr/local/apps/deepsignal/VER/share/model</code>. Because deepsignal is installed as a container the path used for deepsignal is <code>/model/NAME</code>.</p>
+
+<pre class="term">
+[user@cn3144]$ <b>deepsignal2 call_mods \
+    --nproc $SLURM_CPUS_PER_TASK \
+    --input_path fast5s.al/ \
+    --model_path /model/model.dp2.CG.R9.4_1D.human_hx1.bn17_sn16.both_bilstm.b17_s16_epoch4.ckpt \
+    --result_file fast5s.al.CpG.call_mods.tsv \
+    --reference_path GCF_000146045.2_R64_genomic.fna \
+    --corrected_group RawGenomeCorrected_001</b>
+[...snip...]
+
+[user@cn3144]$ <b>call_modification_frequency.py \
+   --input_path fast5s.al.CpG.call_mods.tsv \
+   --result_file fast5s.al.CpG.call_mods.frequency.tsv</b>
+get 1 input file(s)..
+reading the input files..
+162916 of 162916 samples used..
+writing the result..
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. deepsignal.sh). In this example we assume
+that the base calling and resquiggle has already been completed and we just run
+the call_mods step</p>
+
+<pre class="term">
+#!/bin/bash
+module load deepsignal/2-0.1.3
+deepsignal2 call_mods \
+    --nproc $SLURM_CPUS_PER_TASK \
+    --input_path fast5s.al/ \
+    --model_path /model/model.dp2.CG.R9.4_1D.human_hx1.bn17_sn16.both_bilstm.b17_s16_epoch4.ckpt \
+    --result_file fast5s.al.CpG.call_mods.tsv \
+    --reference_path GCF_000146045.2_R64_genomic.fna \
+    --corrected_group RawGenomeCorrected_001
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=20g --gres=gpu:p100:1,lscratch:10 deepsignal.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

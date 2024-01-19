@@ -1,0 +1,216 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'poretools on Biowulf';</script>
+<div class="title">poretools on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>Poretools is a toolkit for manipulating and exploring nanopore sequencing
+data sets. Poretools operates on individual FAST5 files, directory of FAST5 files,
+and <em>tar archives of FAST5 files</em>.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>N. Loman and A. Quinlan. <em>Poretools: a toolkit for analyzing nanopore sequence data</em>.
+    <a href="http://www.biorxiv.org/content/early/2014/07/23/007401">bioRxiv</a>. Also published
+    in Bioinformatics 2014, 30:3399-3401. 
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/25143291">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4296151/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btu555">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://poretools.readthedocs.io/en/latest/">Manual</a> </li>
+    <li><a href="https://github.com/arq5x/poretools">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: poretools (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$PORETOOLS_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=6g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load poretools</b>
+[user@cn3144]$ <b>poretools --help</b>
+usage: poretools [-h] [-v]
+                 {combine,fastq,fasta,...,yield_plot,occupancy,organise}
+                 ...
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         Installed poretools version
+
+[sub-commands]:
+  {combine,fastq,fasta,...,yield_plot,occupancy,organise}
+    combine             Combine a set of FAST5 files in a TAR achive
+    fastq               Extract FASTQ sequences from a set of FAST5 files
+    fasta               Extract FASTA sequences from a set of FAST5 files
+    stats               Get read size stats for a set of FAST5 files
+    hist                Plot read size histogram for a set of FAST5 files
+    events              Extract each nanopore event for each read.
+    readstats           Extract signal information for each read over time.
+    tabular             Extract the lengths and name/seq/quals from a set of
+                        FAST5 files in TAB delimited format
+    nucdist             Get the nucl. composition of a set of FAST5 files
+    metadata            Return run metadata such as ASIC ID and temperature
+                        from a set of FAST5 files
+    index               Tabulate all file location info and metadata such as
+                        ASIC ID and temperature from a set of FAST5 files
+    qualdist            Get the qual score composition of a set of FAST5 files
+    qualpos             Get the qual score distribution over positions in
+                        reads
+    winner              Get the longest read from a set of FAST5 files
+    squiggle            Plot the observed signals for FAST5 reads.
+    times               Return the start times from a set of FAST5 files in
+                        tabular format
+    yield_plot          Plot the yield over time for a set of FAST5 files
+    occupancy           Inspect pore activity over time for a set of FAST5
+                        files
+    organise            Move FAST5 files into a useful folder hierarchy
+
+
+[user@cn3144]$ <b>cp ${PORETOOLS_TEST_DATA}/ERA484348_014370_subset.tar .</b>
+[user@cn3144]$ <b>ls -lh ERA484348_014370_subset.tar</b>
+-rw-r--r-- 1 user group 2.1G Jun 30 08:42 ERA484348_014370_subset.tar
+</pre>
+
+<p>Extract fastq format sequences from all the pass reads in the example data set.
+Note that poretools can work on a tar archive directly - no need to extract
+the archive and create large numbers of small files that can degrade file
+system performance.</p>
+<pre class="term">
+[user@cn3144]$ <b>poretools fastq ERA484348_014370_subset.tar | gzip -c - > 014370.fastq.gz</b>
+[user@cn3144]$ <b>ls -lh 014370.fastq.gz</b>
+-rw-r--r-- 1 user group 13M Jun 30 08:51 014370.fastq.gz
+</pre>
+
+<p>Create a collector's curve of yield</p>
+<pre class="term">
+[user@cn3144]$ <b>poretools yield_plot --plot-type reads --saveas yield.png \
+            ERA484348_014370_subset.tar</b>
+</pre>
+<div style="width:75%; margin: 0 auto;">
+  <img src="/images/poretools_yield.png", alt="poretools yield curve" width="100%">
+</div>
+
+<p>Read size information</p>
+<pre class="term">
+[user@cn3144]$ <b>poretools stats ERA484348_014370_subset.tar</b>
+total reads     11787
+total base pairs        12470421
+mean    1057.98
+median  1013
+min     320
+max     2877
+N25     1060
+N50     1019
+N75     981
+
+[user@cn3144]$ <b>poretools stats --type fwd ERA484348_014370_subset.tar</b>
+total reads     3929
+total base pairs        4112608
+mean    1046.73
+median  1001
+min     320
+max     2833
+N25     1044
+N50     1007
+N75     973
+
+[user@cn3144]$ <b>poretools hist --saveas size.png --theme-bw ERA484348_014370_subset.tar</b>
+</pre>
+
+<div style="width:75%; margin: 0 auto;">
+  <img src="/images/poretools_hist.png", alt="poretools size histogram" width="100%">
+</div>
+
+<p>Quality score distribution by position</p>
+<pre class="term">
+[user@cn3144]$ <b>poretools qualpos --saveas qual.pdf \
+  --bin-width 100 ERA484348_014370_subset.tar</b>
+</pre>
+
+<div style="width:75%; margin: 0 auto;">
+  <img src="/images/poretools_qual.png", alt="poretools quality vs pos" width="100%">
+</div>
+
+<p>Exit the interactive session</p>
+<pre class="term">
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. poretools.sh), which uses the input file 'poretools.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+# this file is poretools.batch
+
+module load poretools/0.6.1a1 || exit 1
+poretools stats ERA484348_014370_subset.tar &gt; stats
+poretools qualpos --saveas qual.png --bin-width 100 ERA484348_014370_subset.tar
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --time=20 --cpus-per-task=2 --mem=6g poretools.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. poretools.swarm). For example:</p>
+
+<pre class="term">
+poretools qualpos --saveas qual_s1.png --bin-width 100 s1.tar
+poretools qualpos --saveas qual_s2.png --bin-width 100 s2.tar
+poretools qualpos --saveas qual_s3.png --bin-width 100 s3.tar
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f poretools.swarm [-g #] [-t #] --module poretools</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module poretools <td>Loads the poretools module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

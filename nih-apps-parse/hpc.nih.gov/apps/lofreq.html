@@ -1,0 +1,113 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Lofreq on HPC';</script>
+    <div class="title">Lofreq on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> LoFreq (i.e. LoFreq version 2) is a fast and sensitive variant-caller for 
+      inferring SNVs and indels from next-generation sequencing data. It makes 
+      full use of base-call qualities and other sources of errors inherent in 
+      sequencing (e.g. mapping or base/indel alignment uncertainty), which are 
+      usually ignored by other methods or only used for filtering. </p>
+    <p>LoFreq can run on almost any type of aligned sequencing data (e.g. Illumina, 
+      IonTorrent or Pacbio) since no machine- or sequencing-technology dependent 
+      thresholds are used. It automatically adapts to changes in coverage and 
+      sequencing quality and can therefore be applied to a variety of data-sets 
+      e.g. viral/quasispecies, bacterial, metagenomics or somatic data.</p>
+    <p>LoFreq is very sensitive; most notably, it is able to predict variants 
+      below the average base-call quality (i.e. sequencing error rate). Each variant 
+      call is assigned a p-value which allows for rigorous false positive control. 
+      Even though it uses no approximations or heuristics, it is very efficient 
+      due to several runtime optimizations and also provides a (pseudo-)parallel 
+      implementation. LoFreq* is generic and fast enough to be applied to high-coverage 
+      data and large genomes. On a single processor it takes a minute to analyze 
+      Dengue genome sequencing data with nearly 4000X coverage, roughly one hour 
+      to call SNVs on a 600X coverage E.coli genome and also roughly an hour to 
+      run on a 100X coverage human exome dataset.</p>
+    <h3>References:</h3>    <ul>
+      <li><a href="http://www.ncbi.nlm.nih.gov/pubmed/23066108">http://www.ncbi.nlm.nih.gov/pubmed/23066108</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="http://csb5.github.io/lofreq/commands/">http://csb5.github.io/lofreq/commands/</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>lofreq</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information)</li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load lofreq</strong>
+[user@cn3144 ~]$ <strong>lofreq call -f ref.fa -o vars.vcf aln.bam</strong>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>    <pre class="term">
+#!/bin/bash
+set -e
+module load lofreq
+lofreq call -f ref.fa -o vars.vcf aln.bam</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch [--mem=#] batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+    <pre class="term">cd dir1; lofreq call -f ref.fa -o vars.vcf aln.bam
+cd dir2; lofreq call -f ref.fa -o vars.vcf aln.bam
+cd dir3; lofreq call -f ref.fa -o vars.vcf aln.bam</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module lofreq</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process 
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

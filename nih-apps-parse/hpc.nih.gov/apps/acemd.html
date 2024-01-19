@@ -1,0 +1,135 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Acemd on Biowulf';</script>
+<div class="title">Acemd on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+        <div class="tocItem"><A href="/apps/acemd/benchmarks.html">Benchmarks</a></div>
+      </div>
+</table>
+
+<p>
+HTMD is a molecular-specific programmable environment to prepare, handle, simulate, visualize and analyse molecular systems. HTMD includes the Acemd software. 
+</p>
+HTMD/Acemd is produced by Acellera. [<a href="https://www.acellera.com">Acellera website</a>]
+<P>
+<div class='alert'>The Acemd license has expired, and usage of the program on Biowulf is not sufficient
+to justify the cost of a license.  Acemd will run only in 'Basic' mode, which limits you to a single GPU. If you need 
+higher performance on multiple GPUs, please migrate your work to <a href="https://hpc.nih.gov/apps/#compchem">using
+other MD programs on Biowulf</a> instead of Acemd</div>
+<P>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://software.acellera.com/acemd/index.html">HTMD/Acemd Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>acemd</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Acemd is designed to run on GPUs. It will run on the the p100s, but is not yet supported on the v100 GPUs.
+<li>There are 256 floating Acemd licenses available on Biowulf by courtesy of NIAID. You can check the status of the acemd licenses by typing 'licenses'.
+<li> Sample files for Acemd3 are in <tt>/usr/local/apps/acemd/acemd3_examples/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive  --gres=gpu:p100:1 </b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load acemd   </b>
+[+] Loading acemd  3.5  ...
+
+[user@cn3144 ~]$ <b> cd mydir</b>
+
+[user@cn3144 ~]$ <b>cp -r  $(dirname $(which acemd3))/../share/acemd3/dhfr_charmm .</b>
+[user@cn3144 ~]$ <b>cd dhfr_charmm   </b>
+[user@cn3144 ~]$ <b>acemd3 input</b>
+#
+# ACEMD version 3.5
+#
+# Copyright (C) 2017-2019 Acellera (www.acellera.com)
+#
+# When publishing, please cite:
+#   ACEMD: Accelerating Biomolecular Dynamics in the Microsecond Time Scale
+#   M. J. Harvey, G. Giupponi and G. De Fabritiis,
+#   J Chem. Theory. Comput. 2009 5(6), pp1632-1639
+#   DOI: 10.1021/ct9000685
+#
+# Licence:
+#   Check floating licence:
+# Licence:
+#   Check floating licence:
+#     ACELLERA_LICENCE_SERVER -- not defined
+#     ACELLERA_LICENSE_SERVER -- not defined
+#   Check node-locked licence:
+#     ACELLERA_LICENCE_FILE -- not defined
+#     ACELLERA_LICENSE_FILE -- not defined
+#     /opt/acellera/licence.dat -- DENIED (Unable to locate target file)
+#     /opt/acellera/license.dat -- DENIED (Unable to locate target file)
+#     /home/user/.acellera/licence.dat -- DENIED (Unable to locate target file)
+#     /home/user/.acellera/license.dat -- DENIED (Unable to locate target file)
+#
+# ACEMD is running with a basic licence!
+#
+# Contact Acellera (info@acellera.com) for licensing.
+#
+# WARNING: ACEMD is limited to run on the GPU device 0 only!
+# Read input file: input
+# Parse input file
+[...]
+# Step       Time         Bond         Angle        Urey-Bradley Dihedral     Improper     CMAP         Non-bonded   Implicit
+ External     Potential    Kinetic      Total        Temperature  Volume
+#            [ps]         [kcal/mol]   [kcal/mol]   [kcal/mol]   [kcal/mol]   [kcal/mol]   [kcal/mol]   [kcal/mol]   [kcal/mol]
+ [kcal/mol]   [kcal/mol]   [kcal/mol]   [kcal/mol]   [K]          [A^3]
+       25000       100.00     537.7867    1281.4603     155.2703    1634.3376      95.5368     -66.3912  -74851.6306       0.0000
+       0.0000  -71213.6300   14366.8914  -56846.7386      298.867    240990.21
+# Speed: average  204.99 ns/day, current  204.99 ns/day
+# Progress: 0.4%, remaining time: 3:15:59, ETA: Thu May  7 18:03:31 2020
+[...]
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. Acemd.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+cd /data/$USER/somedir
+module load acemd
+acemd3 input
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --partition=gpu --gres=gpu:p100:1  jobscript</pre>
+
+<P>
+<div class="heading">Benchmarks</div>
+<P>
+Please see the <a href="/apps/acemd/benchmarks.html">Acemd benchmarks page</a>.
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

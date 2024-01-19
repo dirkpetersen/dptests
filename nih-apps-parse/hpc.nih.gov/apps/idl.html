@@ -1,0 +1,83 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'IDL/ENVI on Biowulf';</script>
+<div class="title">IDL/ENVI on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+<p>IDL provides powerful, core visualization and analysis functionality, and capabilities that allow data analysts and developers to leverage IDL's power in multiple software environments.</p>
+
+<p>ENVI image analysis software is used  to extract meaningful information from imagery to make better decisions. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Paper</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.harrisgeospatial.com/docs/">IDL and ENVI documentation</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>IDL</tt> or <tt>ENVI</tt>(see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>IDL and ENVI cannot be run on the Biowulf login node. Instead, allocate an interactive session as described, and run IDL/ENVI there.
+<li>Licenses: There are 20 IDL licenses on Biowulf. Any single job requires 6 licenses, so at most 3 sessions can be run simultaneously with the Biowulf IDL licenses. 
+<li>Example files available in /usr/local/apps/Exelis/8.5_5.3/idl/examples
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+To run the IDL GUI, you should have connected to Biowulf with an Xwindows session. (see the <a href="/docs/connect.html">Connect to Biowulf</a> page for more info)
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --license=idl:6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load IDL</b>
+
+[user@cn3144 ~]$ <b> idl</b>    #command-line session
+IDL> x = FINDGEN(41)/10 - 2
+IDL> gauss = EXP(-x^2)
+IDL> myPlot = BARPLOT(x, gauss, TITLE='Gaussian Distribution', XTITLE='$\it x$', YTITLE='$\it f(x)$', YRANGE=[0,1.1])
+IDL> myText = TEXT(0.75,0.85,'$\it f(x)=exp(-x^2)$', /DATA, FONT_SIZE=24)
+IDL>myPlot.Save, "gaussian.png", BORDER=10, RESOLUTION=300, /TRANSPARENT
+IDL> exit
+
+<center><img src="/images/idl_gaussian.png"></center>
+
+[user@cn3144 ~]$ <b>idlde</b> # GUI interface
+<center>
+<img src="/images/idl1.jpg" width=200><br>
+<img src="/images/idl2.jpg" width=600>
+</center>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

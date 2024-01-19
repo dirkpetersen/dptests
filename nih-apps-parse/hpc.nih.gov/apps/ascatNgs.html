@@ -1,0 +1,184 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Ascat NGS on Biowulf';</script>
+<div class="title">Ascat NGS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+AscatNGS contains the Cancer Genome Projects workflow implementation of the ASCAT copy number algorithm for paired end sequencing.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://currentprotocols.onlinelibrary.wiley.com/doi/full/10.1002/cpbi.17">Raine, Keiran M., et al. "ascatNgs: Identifying somatically acquired copy‐number alterations from whole‐genome sequencing data." <i>Current protocols in bioinformatics</i> 56.1 (2016): 15-9.</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/cancerit/ascatNgs">Ascat NGS Main Site</a></li>
+<li><a href="https://github.com/cancerit/ascatNgs/wiki">Ascat NGS Wiki</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>ascatngs</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Ascat NGS is part of the Cancer Genome Project and is closely related to the programs <a href="/apps/BRASS.html">BRASS</a> and <a href="/apps/cgpBattenberg.html">cgpBattenberg</a> as well as the utilites <a href="https://github.com/cancerit/VAGrENT">VAGrENT</a> and <a href="https://github.com/cancerit/PCAP-core">PCAP-core</a>. All of these programs can be added to your path using the <tt>cancerit-wgs</tt> module. To get the most recent versions of all of these, use the <tt>cancerit-wgs/latest</tt> module version.   
+<li>Multithreaded app (use -c option)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive -c4 --mem=8g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 11188180
+salloc.exe: job 11188180 queued and waiting for resources
+salloc.exe: job 11188180 has been allocated resources
+salloc.exe: Granted job allocation 11188180
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0880 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.11188180.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0880 ~]$ <b>module load ascatngs</b>
+[+] Loading ascatngs  4.5.0  on cn0880
+[+] Loading singularity  3.7.2  on cn0880
+
+[user@cn0880 ~]$ <b>ascat.pl</b>
+
+ERROR: Option must be defined.
+
+Usage:
+    ascat.pl [options]
+
+      Please define as many of the parameters as possible
+
+      Required parameters
+
+        -outdir       -o    Folder to output result to.
+        -tumour       -t    Tumour BAM/CRAM/counts file (counts must be .gz)
+        -normal       -n    Normal BAM/CRAM/counts file (counts must be .gz)
+        -reference    -r    Reference fasta
+        -snp_gc       -sg   Snp GC correction file
+        -protocol     -pr   Sequencing protocol (e.g. WGS, WXS)
+        -gender       -g    Sample gender (XX, XY, L, FILE)
+                              For XX/XY see '-gc'
+                              When 'L' see '-l'
+                              FILE - matched normal is_male.txt from ascatCounts.pl
+
+      Targeted processing (further detail under OPTIONS):
+        -process      -p    Only process this step then exit, optionally set -index
+        -index        -i    Optionally restrict '-p' to single job
+        -limit        -x    Specifying 2 will balance processing between '-i 1 & 2'
+                            Must be paired with '-p allele_count'
+
+      Optional parameters
+        -genderChr    -gc   Specify the 'Male' sex chromosome: Y,chrY...
+        -species      -rs   Reference species [BAM HEADER]
+        -assembly     -ra   Reference assembly [BAM HEADER]
+        -platform     -pl   Seqeuncing platform [BAM HEADER]
+        -minbasequal  -q    Minimum base quality required before allele is used. [20]
+        -cpus         -c    Number of cores to use. [1]
+                            - recommend max 2 during 'input' process.
+        -locus        -l    Using a list of loci, default when '-L' [share/gender/GRCh37d5_Y.loci]
+                            - these are loci that will not be present at all in a female sample
+        -force        -f    Force completion - solution not possible
+                            - adding this will result in successful completion of analysis even
+                              when ASCAT can't generate a solution.  A default copynumber of 5/2
+                              (tumour/normal) and contamination of 30% will be set along with a
+                              comment in '*.samplestatistics.csv' to indicate this has occurred.
+        -purity       -pu   Purity (rho) setting for manual setting of sunrise plot location
+        -ploidy       -pi   Ploidy (psi) setting for manual setting of sunrise plot location
+        -noclean      -nc   Finalise results but don't clean up the tmp directory.
+                            - Useful when including a manual check and restarting ascat with new pu and pi params.
+        -nobigwig     -nb   Don't generate BigWig files.
+        -t_name       -tn   Tumour name to use when using count files as input
+        -n_name       -nn   Noraml name to use when using count files as input
+
+      Other
+        -help         -h    Brief help message
+        -man          -m    Full documentation.
+        -version      -v    Ascat version number
+
+
+[user@cn0880 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0880 11188180]$ <b>cp /path/to/tumor.bam .</b>
+
+[user@cn0880 11188180]$ <b>cp /path/to/normal.bam .</b>
+
+[user@cn0880 11188180]$ <b>ascat.pl -o output -t tumor.bam -n normal.bam \
+     -r /fdb/igenomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa \
+     -snp_gc SnpGcCorrections.tsv -pr wgs -g XX -c $SLURM_CPUS_PER_TASK</b>
+[snip...]
+
+[user@cn0880 11188180]$ <b>exit</b>
+exit
+srun: error: cn0880: task 0: Exited with exit code 2
+salloc.exe: Relinquishing job allocation 11188180
+
+[user@biowulf ~]$
+</pre>
+
+<p>
+Note: You need to generate the SnpGcCorrections.tsv (as can be found in: https://github.com/cancerit/ascatNgs/wiki/Convert-SnpPositions.tsv-to-SnpGcCorrections.tsv) or downloaded (https://github.com/cancerit/ascatNgs/wiki/Human-reference-files-from-1000-genomes-VCFs).
+
+Generates LogR.txt and BAF.txt, which can be used to generate non-segmented plots (see https://www.crick.ac.uk/peter-van-loo/software/ASCAT)
+</p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. AscatNGS.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load ascatngs
+export GENOME=/fdb/igenomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/
+ascat.pl -o output -t tumor.bam -n normal.bam -r $GENOME/genome.fa -snp_gc SnpGcCorrections.tsv -pr wgs -g XX -c $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=30g AscatNGS.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. AscatNGS.swarm). For example:</p>
+
+<pre class="term">
+ascat.pl -o output1 -t tumor1.bam -n normal1.bam ... -c $SLURM_CPUS_PER_TASK
+ascat.pl -o output2 -t tumor2.bam -n normal2.bam ... -c $SLURM_CPUS_PER_TASK
+ascat.pl -o output3 -t tumor3.bam -n normal3.bam ... -c $SLURM_CPUS_PER_TASK
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f AscatNGS.swarm -g 30 -t 16 --module ascatngs</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module ascatngs</tt> <td>Loads the Ascat NGS module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

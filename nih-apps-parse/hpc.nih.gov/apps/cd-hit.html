@@ -1,0 +1,156 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'cd-hit on Biowulf';</script>
+<div class="title">cd-hit on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CD-HIT is a very widely used program for clustering and comparing protein or nucleotide sequences. CD-HIT is very fast and can handle extremely large databases. CD-HIT helps to significantly reduce the computational and manual efforts in many sequence analysis tasks and aids in understanding the data structure and correct the bias within a dataset. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>CD-HIT was originally developed
+by <a href="mailto:liwz@sdsc.edu">Dr. Weizhong Li</a> at
+<a href="http://bioinformatics.burnham.org/">Dr. Adam Godzik's Lab</A> at 
+<a href="http://www.sanfordburnham.org/">the Burnham Institute (now Sanford-Burnham Medical Research Institute)</A>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://weizhongli-lab.org/cd-hit/">cd-hit website</a></li>
+<li><a href="https://github.com/weizhongli/cdhit/wiki">Documentation at CD-HIT wiki</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>cd-hit</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load cd-hit</b>
+
+[user@cn3144 ~]$ <b>cd-hit -i /fdb/fastadb/drosoph.aa.fas  -o drosoph100 -c 1.00 -n 5 -M 16000 -d 0  -T $SLURM_CPUS_PER_TASK</b>
+================================================================
+Program: CD-HIT, V4.7 (+OpenMP), May 10 2018, 13:51:01
+Command: cd-hit -i /fdb/fastadb/drosoph.aa.fas -o drosoph100
+         -c 1.00 -n 5 -M 16000 -d 0 -T 4
+
+Started: Thu May 10 13:55:50 2018
+================================================================
+                            Output
+----------------------------------------------------------------
+Warning: total number of CPUs in the system is 2
+Actual number of CPUs to be used: 2
+
+total seq: 14329
+longest and shortest : 8805 and 11
+Total letters: 7178839
+Sequences have been sorted
+
+Approximated minimal memory consumption:
+Sequence        : 9M
+Buffer          : 2 X 12M = 25M
+Table           : 2 X 65M = 131M
+Miscellaneous   : 0M
+Total           : 165M
+
+Table limit with the given memory limit:
+Max number of representatives: 4000000
+Max number of word counting entries: 1979299596
+
+# comparing sequences from          0  to       3582
+...---------- new table with     3409 representatives
+# comparing sequences from       3582  to       6268
+99.9%---------- new table with     2559 representatives
+# comparing sequences from       6268  to       8283
+----------    265 remaining sequences to the next cycle
+---------- new table with     1680 representatives
+# comparing sequences from       8018  to       9595
+----------    317 remaining sequences to the next cycle
+---------- new table with     1215 representatives
+# comparing sequences from       9278  to      10540
+..........    10000  finished       9566  clusters
+----------    446 remaining sequences to the next cycle
+---------- new table with      794 representatives
+# comparing sequences from      10094  to      11152
+----------    269 remaining sequences to the next cycle
+---------- new table with      769 representatives
+# comparing sequences from      10883  to      11744
+----------    207 remaining sequences to the next cycle
+---------- new table with      625 representatives
+# comparing sequences from      11537  to      12235
+----------    169 remaining sequences to the next cycle
+---------- new table with      516 representatives
+# comparing sequences from      12066  to      12631
+----------    121 remaining sequences to the next cycle
+---------- new table with      430 representatives
+# comparing sequences from      12510  to      12964
+----------    103 remaining sequences to the next cycle
+---------- new table with      346 representatives
+# comparing sequences from      12861  to      13228
+----------     76 remaining sequences to the next cycle
+---------- new table with      284 representatives
+# comparing sequences from      13152  to      13446
+----------     60 remaining sequences to the next cycle
+---------- new table with      227 representatives
+# comparing sequences from      13386  to      14329
+.....................---------- new table with      924 representatives
+
+    14329  finished      13778  clusters
+
+Apprixmated maximum memory consumption: 205M
+writing new database
+writing clustering information
+program completed !
+
+Total CPU time 3.83
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. cd-hit.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load cd-hit
+cd-hit -i /fdb/fastadb/drosoph.aa.fas  -o drosoph100 -c 1.00 -n 5 -M 16000 -d 0  -T $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] cd-hit.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,111 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "Duphold";</script>
+
+<div class="title">DUPHOLD on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Duphold: scalable, depth-based annotation and curation of high-confidence structural variant calls.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Pedersen BS, Quinlan AR.
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6479422/"><b><u>Duphold: scalable, depth-based annotation and curation of high-confidence structural variant calls.</u></b></a>
+    <em>Gigascience. 2019 Apr 1;8(4):giz040. doi: 10.1093/gigascience/giz040. PMID: 31222198; PMCID: PMC6479422.</em>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/brentp/duphold">DUPHOLD Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>duphold</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>DUPHOLD_HOME</tt></li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn4338 ~]$ <b>module load duphold</b>
+[+] Loading duphold  0.2.3  on cn4338 
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Example</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Running help command:</p>
+<pre class="term">
+[user@cn4338 data]$ <b>duphold --help</b>
+version: 0.2.3
+
+  Usage: duphold [options]
+
+Options:
+  -v --vcf <path>           path to sorted SV VCF/BCF
+  -b --bam <path>           path to indexed BAM/CRAM
+  -f --fasta <path>         indexed fasta reference.
+  -s --snp <path>           optional path to snp/indel VCF/BCF with which to annotate SVs. BCF is highly recommended as it's much faster to parse.
+  -t --threads <int>        number of decompression threads. [default: 4]
+  -o --output <string>      output VCF/BCF (default is VCF to stdout) [default: -]
+  -d --drop                 drop all samples from a multi-sample --vcf *except* the sample in --bam. useful for parallelization by sample followed by merge.
+  -h --help                 show help
+</pre>
+
+<p>Annotate an SV:</p>
+<pre class="term">
+[user@cn4338] <b>cp -a /usr/local/apps/duphold/0.2.3/test_data .</b>
+[user@cn4338 test_data]$<b> duphold \
+ --threads 4 \
+ --vcf sparse_in.vcf \
+ --bam sparse.cram \
+ --fasta sparse.fa \
+ --output output.bcf </b>
+#To view output, load samtools and view with bcftools
+[user@cn4338 test_data] <b>module load samtools</b>
+[user@cn4338 test_data] <b>bcftools view test-out.bcf</b>
+##fileformat=VCFv4.2
+...
+##bcftools_viewVersion=1.4-19-g1802ff3+htslib-1.4-29-g42bfe70
+##bcftools_viewCommand=view CHM1_CHM13/full.37d5.vcf.gz; Date=Mon Sep 24 13:48:04 2018
+...
+##bcftools_viewVersion=1.17+htslib-1.17
+##bcftools_viewCommand=view test-out.bcf; Date=Thu May 25 12:49:34 2023
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  Eluc-CR2.F
+NW_017858824.1  135118  72454   N       DEL   5875.46 .       SVTYPE=DEL;END=135332;CIPOS=0,0;CIEND=0,0;CIPOS95=0,0;CIEND95=0,0;GCF=0.306977  GT:DP:DHFC:DHFFC:DHBFC:DHSP     0/1:200:1.91667:0.597403:1.76923:0
+</pre>
+
+<table border=0>
+<tr><td><td>For more information on pre and post processing, please visit the <a href="https://github.com/brentp/duphold"></u></b>Duphold Github Page</a>
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

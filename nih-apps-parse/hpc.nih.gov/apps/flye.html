@@ -1,0 +1,158 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'flye on Biowulf';</script>
+<div class="title">flye on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<blockquote>
+Flye is a de novo assembler for long and noisy reads, such as those produced by
+PacBio and Oxford Nanopore Technologies. The algorithm uses an A-Bruijn graph
+to find the overlaps between reads and does not require them to be
+error-corrected. After the initial assembly, Flye performs an extra repeat
+classification and analysis step to improve the structural accuracy of the
+resulting sequence. The package also includes a polisher module, which produces
+the final assembly of high nucleotide-level quality.
+</blockquote>
+
+<p>Flye replaces abruijn and does provide a <code>abruijn</code> script for
+backwards compatibility.</p>
+
+<p>
+A 5Mb bacterial genome with ~80x coverage was assembled on
+one of our compute nodes (6GB memory; 16 CPUs) in about 30min. A ~150 Mb D.
+melanogaster genome was assembled in 13h (100GB memory; 32 CPUs).
+</p>
+
+
+<h3>References:</h3>
+<ul>
+    <li>Yu Lina, Jeffrey Yuana, Mikhail Kolmogorova, Max W. Shena, Mark Chaissonb, and Pavel A. Pevzner.
+    <em>Assembly of long error-prone reads using de Bruijn graphs</em> PNAS 2016, 27:E8396-E8405
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/27956617">PubMed</a>&nbsp;|&nbsp;
+    PMC &nbsp;|&nbsp;
+    <a href="http://www.pnas.org/content/113/52/E8396">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/fenderglass/ABruijn">GitHub</a>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: flye (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>flye is a multithreaded application</li>
+    <li>Example files can be found in <code>$FLYE_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+
+<p>Note that <code>--genome-size</code> is optional since version 2.8</code></p>
+<pre class="term">
+
+[user@biowulf]$ <b>sinteractive --mem=14g --cpus-per-task=16 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load flye</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>zcat $FLYE_TEST_DATA/SRR1284073_gt10k.fasta.gz > SRR1284073_gt10k.fasta</b>
+[user@cn3144 ~]$ <b>flye -t $SLURM_CPUS_PER_TASK --pacbio-raw SRR1284073_gt10k.fasta \
+                     -o assembly_ecoli --genome-size 5m</b>
+[2018-04-03 16:08:46] INFO: Running Flye 2.3.3-g0fc9012
+[2018-04-03 16:08:46] INFO: Assembling reads
+[2018-04-03 16:08:46] INFO: Running with k-mer size: 15
+[2018-04-03 16:08:46] INFO: Reading sequences
+[2018-04-03 16:08:53] INFO: Reads N50/90: 17480 / 11579
+[2018-04-03 16:08:53] INFO: Selected minimum overlap 5000
+[2018-04-03 16:08:53] INFO: Expected read coverage: 80
+[...snip...]
+[2018-04-03 16:31:44] INFO: Correcting bubbles
+0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+[2018-04-03 16:36:05] INFO: Assembly statistics:
+
+        Total length:   4636855
+        Contigs:        1
+        Scaffolds:      1
+        Scaffolds N50:  4636855
+        Largest scf:    4636855
+        Mean coverage:  52
+
+[2018-04-03 16:36:05] INFO: Final assembly: /lscratch/46116226/assembly_ecoli/scaffolds.fasta
+
+[user@cn3144 ~]$ <b>ll assembly_ecoli</b>
+total 9.1M
+drwxrwxr-x 2 user group 4.0K Apr  3 12:13 0-assembly
+drwxrwxr-x 2 user group 4.0K Apr  3 12:21 1-consensus
+drwxrwxr-x 2 user group 4.0K Apr  3 12:23 2-repeat
+drwxrwxr-x 2 user group 4.0K Apr  3 12:36 3-polishing
+-rw-rw-r-- 1 user group  193 Apr  3 12:23 assembly_graph.dot
+-rw-rw-r-- 1 user group   79 Apr  3 12:36 assembly_info.txt
+-rw-rw-r-- 1 user group 4.5M Apr  3 12:36 contigs.fasta
+-rw-rw-r-- 1 user group  21K Apr  3 12:36 flye.log
+-rw-rw-r-- 1 user group   26 Apr  3 12:36 flye.save
+-rw-rw-r-- 1 user group 4.5M Apr  3 12:36 scaffolds.fasta
+
+
+[user@cn3144 ~]$ # copy back to data
+[user@cn3144 ~]$ <b>cp -r assembly_ecoli /data/$USER/badbadproject</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. flye.sh) similar to the following:</p>
+
+<pre class="term">
+#! /bin/bash
+ml flye || exit 1
+
+cd /lscratch/$SLURM_JOB_ID
+cp /data/users/some/where/reads.fa.gz .
+flye -t $SLURM_CPUS_PER_TASK --pacbio-raw reads.fasta.gz -o assembly_dmelanogaster --genome-size 150m
+mv assembly_dmelanogaster /data/$USER/badbadproject
+</pre>
+<p>This particular example made use of data set
+<a href="https://www.ncbi.nlm.nih.gov/sra/SRX499318[accn]">SRX499318</a> filtered
+to reads &gt;14k length resulting in a 90x coverage of the ~150Mb <em>D. melanogaster</em> genome.</p>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">
+sbatch --mem=120g --cpus-per-task=32 --gres=lscratch:300 flye.batch --time=1-00:00:00
+</pre>
+
+<p>This job ran for ~13h and used up to 100GB of memory. Here is the
+profile of memory and running threads for this assembly:</p>
+<div style="margin: 0 auto; width: 80%;">
+   <img src="/images/flye_dmelanogaster.png"
+        width="640px"
+        alt="resource usage profile"/>
+</div>
+
+<p>The final result was an assembly of 137Mb with 357 contigs and a scaffold N50 of 6.34Mb.</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

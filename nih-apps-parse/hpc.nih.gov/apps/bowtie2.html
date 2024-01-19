@@ -1,0 +1,195 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bowtie2 on Biowulf';</script>
+<div class="title">bowtie2 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Bowtie2 is a fast, multi-threaded, and memory efficient aligner
+for short read sequences. It uses an FM index to achieve a moderate
+memory footprint of 2 - 4 GB, depending on genome size and alignment
+parameters.  Performance scales well with thread count.
+</p>
+
+<p>
+Note that this page only describes bowtie2. Bowtie1 is described on a
+<a href="https://hpc.nih.gov/apps/bowtie.html">separate page</a>. Unlike
+bowtie1, bowtie2 supports local alignments and gapped alignments, amongst
+other enhancements and new features. It
+is also more suited for longer reads and calculates a more informative
+MAPQ than bowtie1.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Langmead B, Salzberg S. <em>Fast gapped-read alignment with Bowtie 2</em>.
+  Nature Methods. 2012, 9:357-359. <a href="http://www.ncbi.nlm.nih.gov/pubmed/22388286">Pubmed</a>|
+  <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3322381/">PMC</a>|
+  <a href="http://www.nature.com/nmeth/journal/v9/n4/full/nmeth.1923.html">Journal</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Home page</a></li>
+    <li><a href="http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml">Manual</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: bowtie/2-* (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>bowtie2 is a multithreaded application</li>
+<li>Test data can be found in <code>$BOWTIE_TEST_DATA</code></li>
+</ul>
+<p><a class="navbar-safe-anchor"></a><div class="heading">Index files</div></p>
+<p>Bowtie2 indices are available as part of the igenomes package
+under</p>
+<p><b><code>/fdb/igenomes/[organism]/[source]/[build]/Sequence/Bowtie2Index/*</code></b></p>
+<ul>
+<li><b><code>[organism]</code></b> is the specific organism of interest
+  (Gallus_gallus, Rattus_norvegicus, etc.)</li>
+<li><b><code>[source]</code></b> is the source for the sequence (NCBI,
+  Ensembl, UCSC)</li>
+<li><b><code>[build]</code></b> is the specific genome build of interest
+  (hg19, build37.2, GRCh37)</li>
+</ul>
+<p>More information on the locally available igenomes builds/organisms
+is available from our <a href="/refdb">scientific database index</a>.
+For more information about igenomes in general,
+<a href="http://igenomes.illumina.com.s3-website-us-east-1.amazonaws.com/README.txt">iGenomes readme</a>.</p>
+
+<!-- ======================================================================  -->
+<div class="heading">Performance considerations</div></p>
+
+<p>Bowtie2 is a multithreaded application. To determine how well its performace
+scales with the number of threads, the same input file (the first 25M ChIP-Seq reads
+from mouse heart tissue, <a
+href="https://www.encodeproject.org/experiments/ENCSR699XHY/">ENCSR699XHY,
+replicate 2</a>) was aligned with different numbers of threads. Note that some versions of bowtie2
+,in addition to the alignment threads, also starts some supporting processes such
+as a process to expand compressed input. These processes can lead to reduced
+efficiency due to frequent context switches (i.e. job overloading). To measure 
+the effect of this, the same experiment was carried out in two differnet conditions:
+(1) In one case, bowtie2 was allowed to run as many threads as there were allocated
+CPUs (<code>--threads=$SLURM_CPUS_PER_TASK</code>), which lead to a mild overload.
+(2) In the other case, two extra CPUs were allocated (i.e. 
+<code>threads=$(( SLURM_CPUS_PER_TASK - 2 ))</code>) to account for the extra processes.
+</p>
+<p>Local alignments were approximately 20% slower than end-to-end alignments. Both
+were done in sensitive mode for several versions of bowtie2.</p>
+
+<div style="width: 75%; margin: 0 auto">
+  <img src="/images/bowtie2_benchmark.png" width="100%"/>
+</div>
+
+<p>From this we can see that allocating 2 CPUs more than there are bowtie2 threads
+can have a modest performance benefit. Also, bowtie2 scales linearly with
+the number of threads up to 32. However, the slope is less than 1 and therefore it is 
+inefficient to run with more than 8-16 threads.</p>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>The following example aligns single ended data, creating bam output
+directly and uncompressing gziped fastq on the fly. In this case, the
+alignment mode is set to <code>sensitive-local</code>.  ALignments are filtered to
+remove any with <code>MAPQ &lt; 30</code>.</p>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$
+[user@cn3144 ~]$ <b>module load bowtie/2</b>
+[user@cn3144 ~]$ <b>module load samtools</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>export BOWTIE2_INDEXES=/fdb/igenomes/Mus_musculus/UCSC/mm9/Sequence/Bowtie2Index/</b>
+[user@cn3144 ~]$ <b>bowtie2 --phred64 -x genome --threads=$SLURM_CPUS_PER_TASK \
+                      --no-unal --end-to-end --sensitive \
+                      -U $BOWTIE_TEST_DATA/ENCFF001KPB.fastq.gz \
+                    | samtools view -q30 -Sb - &gt; ENCFF001KPB.bam</b>
+9157799 reads; of these:
+  9157799 (100.00%) were unpaired; of these:
+    772509 (8.44%) aligned 0 times
+    7080210 (77.31%) aligned exactly 1 time
+    1305080 (14.25%) aligned &gt;1 times
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bowtie2.sh), which uses the input file 'bowtie2.in'. For example:</p>
+
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+module load bowtie/2 || exit 1
+module load samtools || exit 1
+export BOWTIE2_INDEXES=/fdb/igenomes/Mus_musculus/UCSC/mm9/Sequence/Bowtie2Index/
+bowtie2 --phred64 -x genome --threads=$(( SLURM_CPUS_PER_TASK - 4 )) \
+    --no-unal --end-to-end --sensitive \
+    -U $BOWTIE_TEST_DATA/ENCFF001KPB.fastq.gz \
+ | samtools view -q30 -u - \
+ | samtools sort -O BAM -@3 -T /lscratch/$SLURM_JOB_ID/ENCFF001KPB -m 2g -o ENCFF001KPB.bam
+</code>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=10 --mem=14g --gres=lscratch:10 bowtie2.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. bowtie2.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/test_data \
+   &amp;&amp; export BOWTIE2_INDEXES=/fdb/igenomes/Mus_musculus/UCSC/mm9/Sequence/Bowtie2Index \
+   &amp;&amp; bowtie2 --sensitive-local -p $(( SLURM_CPUS_PER_TASK - 2 )) --no-unal -x genome \
+         -U /usr/local/apps/bowtie/TEST_DATA/ENCFF001KPB.fastq.gz \
+       | samtools view -q30 -Sb - &gt; ENCFF001KPB.bam
+cd /data/$USER/test_data \
+   &amp;&amp; export BOWTIE2_INDEXES=/fdb/igenomes/Mus_musculus/UCSC/mm9/Sequence/Bowtie2Index \
+   &amp;&amp; bowtie2 --sensitive-local -p $(( SLURM_CPUS_PER_TASK - 2 )) --no-unal -x genome \
+         -U /usr/local/apps/bowtie/TEST_DATA/ENCFF322WUF.fastq.gz \
+       | samtools view -q30 -Sb - &gt; ENCFF322WUF.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f bowtie2.swarm -g 14 -t 10 --module bowtie/2,samtools</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module bowtie2 <td>Loads the bowtie2 module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

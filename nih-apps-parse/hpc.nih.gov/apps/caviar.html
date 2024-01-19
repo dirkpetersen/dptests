@@ -1,0 +1,133 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CAVIAR on Biowulf';</script>
+<div class="title">CAVIAR on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CAVIAR (CAusal Variants Identication in Associated Regions), is a statistical framework that quantifies the probability of each variant to be causal while allowing with arbitrary number of causal variants.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Farhad Hormozdiari, Ayellet V. Segre, Martijn van de Bunt, Xiao Li, Jong Wha J Joo, Michael Bilow, Jae Hoon Sul, Bogdan Pasaniuc and Eleazar Eski. Joint Fine Mapping of GWAS and eQTL Detects Target Gene and Relevant Tissue. The American Journal of Human Genetics (AJHG). <a href="https://dx.doi.org/10.1016/j.ajhg.2016.10.003">doi:10.1016/j.ajhg.2016.10.003 </a></li>
+<li>Farhad Hormozdiari, Emrah Kostem, Eun Yong Kang, Bogdan Pasaniuc and Eleazar Eskin. Identifying Causal Variants at Loci with Multiple Signals of Association. Genetics, 44, 725–731 (2014). <a href="https://doi.org/10.1534/genetics.114.167908">doi:10.1534/genetics.114.167908</a>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://genetics.cs.ucla.edu/caviar/index.html">CAVIAR Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>caviar</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded/MPI...
+<li>environment variables set
+  <ul>
+    <li><tt>CAVIAR_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$CAVIAR_HOME/sample_data</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres lscratch:1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load caviar</b>
+[+] Loading caviar, version a97e614...
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOBID</b>
+[user@cn3144 46116226]$ <b>cp -r $CAVIAR_HOME/sample_data/* .</b>
+[user@cn3144 46116226]$ <b>CAVIAR -l DDB1.top100.sig.SNPs.ld -z DDB1.top100.sig.SNPs.ZScores -o outfile</b>
+@-------------------------------------------------------------@
+| CAVIAR!|    v2.0         |  01/Aug/2017 | 
+|-------------------------------------------------------------|
+| (C) 2017 Farhad Hormozdiari, GNU General Public License, v2 |
+|-------------------------------------------------------------|
+| For documentation, citation & bug-report instructions:      |
+| http://genetics.cs.ucla.edu/caviar/            |
+@-------------------------------------------------------------@
+00
+add
+1.73212e-750.1
+FINISH
+reach=100
+100
+Max Causal=2
+Total=5051
+0 1.36408e-06
+Total Likelihood= 4.552733e+48 SNP=100 
+
+56 5.000000e-01
+53 9.999984e-01
+
+[user@cn3144 46116226]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. caviar.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+
+set -e
+
+module load caviar
+cp -r $CAVIAR_HOME/sample_data/* .
+CAVIAR -l DDB1.top100.sig.SNPs.ld -z DDB1.top100.sig.SNPs.ZScores -o outfile
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] caviar.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. caviar.swarm). For example:</p>
+
+<pre class="term">
+CAVIAR -l ldfile1 -z zfile1 -o outfile1
+CAVIAR -l ldfile2 -z zfile2 -o outfile2
+CAVIAR -l ldfile3 -z zfile3 -o outfile3
+CAVIAR -l ldfile4 -z zfile4 -o outfile4
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f caviar.swarm [-g #] [-t #] --module caviar</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module caviar <td>Loads the TEMPLATE module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

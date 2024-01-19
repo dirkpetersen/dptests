@@ -1,0 +1,126 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "hifiasm";</script>
+
+<div class="title">hifiasm on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+    Hifiasm is a fast haplotype-resolved de novo assembler initially designed for PacBio HiFi reads.
+    Its latest release supports telomere-to-telomere assembly by utilizing ultralong Oxford Nanopore reads.
+    It can produce better haplotype-resolved assemblies when given parental short reads or Hi-C data.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+    <li>
+	Cheng, H., Concepcion, G.T., Feng, X., Zhang, H., Li H. (2021)
+	<a href="https://doi.org/10.1038/s41592-020-01056-5"><b><u>Haplotype-resolved de novo assembly using phased assembly graphs with hifiasm.</u></b></a>
+	Nat Methods, 18:170-175. doi:10.1038/s41592-020-01056-5
+    </li>
+    <li>
+	Cheng, H., Jarvis, E.D., Fedrigo, O., Koepfli, K.P., Urban, L., Gemmell, N.J., Li, H. (2022)
+	<a href="https://doi.org/10.1038/s41587-022-01261-x"><b><u>Haplotype-resolved assembly of diploid genomes without parental data.</u></b></a>
+	Nature Biotechnology, 40:1332–1335. doi:10.1038/s41587-022-01261-x
+    </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://hifiasm.readthedocs.io/en/latest/index.html">hifiasm Main Site</a></li>
+    <li><a href="https://github.com/chhylp123/hifiasm">hifiasm on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>hifiasm</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Multithreaded. Set number of threads with the <tt>-t</tt> flag</li>
+    <!--  
+    <li>This application produces HTML reports. You can use <a href="/docs/hpcdrive.html">hpcdrive</a> to view these reports on your local workstation.</li>
+
+<li>Environment variables set <!--for ones users should be aware of --
+  <ul>
+    <li><tt>TEMPLATE_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>???</tt>
+    <li>Reference data in <tt>/fdb/TEMPLATE/</tt>
+	-->
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task 32</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load hifiasm</b>
+
+[user@cn3144 ~]$ <b>hifiasm -t $SLURM_CPUS_PER_TASK -o NA24385_180901_0113427.asm /fdb/app_testdata/fastq/Homo_sapiens/HG002_NA24385_son-PacBio_CCS_15kb/m54238_180901_011437.Q20.fastq.gz</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. hifiasm.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load hifiasm
+hifiasm -t $SLURM_CPUS_PER_TASK -o NA24385_180901_0113427.asm /fdb/app_testdata/fastq/Homo_sapiens/HG002_NA24385_son-PacBio_CCS_15kb/m54238_180901_011437.Q20.fastq.gz
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=# [--mem=#] hifiasm.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. hifiasm.swarm). For example:</p>
+
+<pre class="term">
+hifiasm -t $SLURM_CPUS_PER_TASK -o sample1.asm sample1.fq.gz
+hifiasm -t $SLURM_CPUS_PER_TASK -o sample2.asm sample2.fq.gz
+hifiasm -t $SLURM_CPUS_PER_TASK -o sample3.asm sample3.fq.gz
+hifiasm -t $SLURM_CPUS_PER_TASK -o sample4.asm sample4.fq.gz
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f hifiasm.swarm [-g #] -t # --module hifiasm</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module hifiasm</tt> <td>Loads the hifiasm module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

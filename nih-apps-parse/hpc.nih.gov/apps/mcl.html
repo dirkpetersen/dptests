@@ -1,0 +1,99 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Markov Clustering (MCL): a cluster algorithm for graphs ';</script>
+<div class="title"><b>Markov Clustering (MCL): a cluster algorithm for graphs </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MCL implements Markov cluster algorithm. Among its applications 
+is the assignment of proteins into families based on precomputed sequence 
+similarity information. This approach 
+does not suffer from the problems that normally hinder other protein sequence 
+clustering algorithms, such as the presence of multi-domain proteins, 
+promiscuous domains and fragmented proteins.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Stijn van Dongen<br />
+<i> Graph Clustering by Flow Simulation</i><br />
+<a href="http://www.library.uu.nl/digiarchief/dip/diss/1895620/inhoud.htm">PhD thesis, </a> University of Utrecht, May 2000. 
+<li>Enright A.J., Van Dongen S., Ouzounis C.A.<br />
+<i>An efficient algorithm for large-scale detection of protein families,</i> <br />
+<a href="https://academic.oup.com/nar/article/30/7/1575/2376029">Nucleic Acids Research</a><b>30</b>(7):1575-1584 (2002). 
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.micans.org/mcl">MCL Home page</a></li>
+<li><a href="https://github.com/micans/mcl">MCL Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>MCL</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>MCL_HOME</b>&nbsp; installation directory</li>
+    <li><b>MCL_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>MCL_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3200 ~]$<b> module load mcl </b>
+[+] Loading MCL 14-137  ...
+[user@cn3200 ~]$ <b>cp $MCL_DATA/* .</b>
+[user@cn3200 ~]$ <b>mcl cathat  --abc -o out2.cathat </b>
+[mcl] new tab created
+[mcl] pid 10660
+ ite ------  chaos  time hom(avg,lo,hi) m-ie m-ex i-ex fmv
+  1  ......   0.47  0.00 0.87/0.80/0.95 1.33 1.33 1.33 100
+  2  ......   0.53  0.00 0.86/0.69/0.95 1.24 1.21 1.67 100
+  3  ......   0.35  0.00 0.95/0.88/1.00 1.00 0.67 1.14 100
+  4  ......   0.44  0.00 0.94/0.88/1.00 1.08 0.68 0.81 100
+  5  ......   0.24  0.00 0.89/0.78/1.00 1.17 0.67 0.57 100
+  6  ......   0.20  0.00 0.89/0.80/0.99 0.92 0.92 0.57 100
+  7  ......   0.12  0.00 0.95/0.95/0.95 0.92 0.92 0.57 100
+  8  ......   0.20  0.00 0.92/0.85/1.00 0.92 0.92 0.57 100
+  9  ......   0.25  0.00 0.88/0.76/1.00 0.92 0.69 0.43 100
+ 10  ......   0.15  0.00 0.93/0.85/1.00 0.90 0.90 0.43 100
+ 11  ......   0.02  0.00 0.99/0.98/1.00 0.90 0.90 0.43 100
+ 12  ......   0.00  0.00 1.00/1.00/1.00 0.90 0.90 0.43 100
+ 13  ......   0.00  0.00 1.00/1.00/1.00 0.90 0.60 0.29 100
+[mcl] jury pruning marks: &lt;100,99,99&gt;, out of 100
+[mcl] jury pruning synopsis: &lt;99.6 or perfect&gt; (cf -scheme, -do log)
+[mcl] output is in out.cathat
+[mcl] 2 clusters found
+[mcl] output is in out.cathat
+...
+...
+
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

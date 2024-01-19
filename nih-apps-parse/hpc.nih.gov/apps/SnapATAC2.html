@@ -1,0 +1,81 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SnapATAC2: Single Nucleus Analysis Pipeline for ATAC-seq';</script>
+<div class="title"><b>SnapATAC2: Single Nucleus Analysis Pipeline for ATAC-seq</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+SnapATAC is a software package for analyzing scATAC-seq datasets. 
+Conventional assays to map regulatory elements via open chromatin analysis of primary tissues 
+is hindered by sample heterogeneity. 
+SnapATAC dissects cellular heterogeneity in an unbiased manner and map the trajectories of cellular states.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Rongxin Fang, Sebastian Preissl, Yang Li, Xiaomeng Hou, Jacinta Lucero, Xinxin Wang, Amir Motamedi, Andrew K. Shiau, Xinzhu Zhou, Fangming Xie, Eran A. Mukamel, Kai Zhang, Yanxiao Zhang, M. Margarita Behrens, Joseph R. Ecker &amp; Bing Ren <br />
+<i> Comprehensive analysis of single cell ATAC-seq data with SnapATAC </i><br />
+<a href="https://www.nature.com/articles/s41467-021-21583-9">NATURE COMMUNICATIONS | (2021) 12:1337 | https://doi.org/10.1038/s41467-021-21583-9 | www.nature.com/naturecommunications,</a> <br/>
+<li> 
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/kaizhang/SnapATAC2">SnapATAC2 Github page</a></li>
+<li><a href="https://kzhang.org/SnapATAC2/tutorials/index.html">SnapATAC2 Tutiorials</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: SnapATAC2 (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SNAPATAC2_HOME</b> &nbsp; installation directory</li>
+    <li><b>SNAPATAC2_BIN</b>  &nbsp; &nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>SNAPATAC2_SRC</b> &nbsp; &nbsp; test data directory</li>
+    <li><b>SNAPATAC2_TESTS</b> &nbsp; &nbsp; test scripts folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn4199 ~]$ <b>module load SnapATAC2</b>
+[+] Loading singularity  3.10.3  on cn4199
+[+] Loading SnapATAC2 2.1.2  ...
+</pre>
+Running the test scripts:
+<pre class="term">
+[user@cn4199 ~]$ <b>python $SNAPATAC2_TESTS/test_func.py</b>
+[user@cn4199 ~]$ <b>python $SNAPATAC2_TESTS/test_pickle.py</b>
+[user@cn4199 ~]$ <b>python $SNAPATAC2_TESTS/test_similarity.py</b>
+[user@cn4199 ~]$ <b>python $SNAPATAC2_TESTS/test_tools.py</b>
+</pre>
+Importing the python module snapatac2:
+<pre class="term">
+[user@cn4199 ~]$ <b>python</b>
+Python 3.7.12 | packaged by conda-forge | (default, Oct 26 2021, 06:08:53)
+[GCC 9.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; import snapatac2 as snap
+&gt;&gt;&gt; snap.__version__
+'2.1.2'
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

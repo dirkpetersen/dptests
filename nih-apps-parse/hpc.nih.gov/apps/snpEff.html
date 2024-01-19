@@ -1,0 +1,154 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'snpEff on Biowulf';</script>
+<div class="title">snpEff on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+  <p>snpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of variants on genes (such as amino acid changes).</p>
+  <p>Typical usage :</p>
+  <ul>
+    <li><b>Input:</b> The inputs are predicted variants (SNPs, insertions, deletions and MNPs). The input file is usually obtained as a result of a sequencing experiment, and it is usually in variant call format (VCF).</li>
+    <li><b>Output:</b> SnpEff analyzes the input variants. It annotates the variants and calculates the effects they produce on known genes (e.g. amino acid changes). A list of effects and annotations that SnpEff can calculate can be found here.</li>
+  </ul>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://www.ncbi.nlm.nih.gov/pubmed/?term=22728672">A program for annotating and predicting the effects of single nucleotide polymorphisms, SnpEff: SNPs in the genome of Drosophila melanogaster strain w1118; iso-2; iso-3.", Cingolani P, Platts A, Wang le L, Coon M, Nguyen T, Wang L, Land SJ, Lu X, Ruden DM. Fly (Austin). 2012 Apr-Jun;6(2):80-92. PMID: 22728672</a></li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+  <ul>
+    <li><a href="http://snpeff.sourceforge.net/">snpEff Homepage</a>
+    <li><a href="http://snpeff.sourceforge.net/SnpSift.html">snpSift Homepage</a>
+    <li><a href="http://snpeff.sourceforge.net/protocol.html">snpEff Usage examples</a>
+  </ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>snpEff</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Single-threaded, java-dependent
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><b>$SNPEFF_HOME</b> -- path to the installation directory</li>
+    <li><b>$SNPEFF_JAR</b> -- the snpEff.jar file</li>
+    <li><b>$SNPEFF_JARPATH</b> -- same as SNPEFF_HOME</li>
+    <li><b>$SNPSIFT_JAR</b> -- the SnpSift.jar file</li>
+  </ul>
+<li>Example files in <tt>$SNPEFF_HOME/../protocols</tt>
+<li>Reference data in <tt>/fdb/dbNSFP2/</tt>
+</ul>
+
+  <p class="didyouknow">snpEff is a java application.  See <a href="/development/java.html">https://hpc.nih.gov/development/java.html</a> for information about running java applications.</p>
+
+  <p>To see the help menu, type</p>
+  <pre class="term">java -jar $SNPEFF_JAR</pre>
+  <p>at the prompt.</p>
+
+  <p>By default, snpEff uses 1gb of memory.  For large VCF input files, this may not be enough.
+    To allocate 20gb of memory, use:</p>
+
+  <pre class="term">java -Xmx20g -jar $SNPEFF_JAR</pre>
+
+  <p>In more detail,</p>
+
+  <pre class="term">java -Xmx20g -jar $SNPEFF_JAR -v [ database ] [ vcf file ] </pre>
+
+  <p>To see what databases are available, type:</p>
+  <pre class="term">ls $SNPEFF_HOME/data</pre>
+
+  <h3>snpSift</h3>
+
+  <p>SnpSift is a collection of tools to manipulate VCF (variant call format) files.  Here's what you can do:</p>
+  
+  <ul>
+    <li><b>Filter:</b> You can filter using arbitrary expressions, for instance "(QUAL &gt; 30) | (exists INDEL) | ( countHet() &gt; 2 )". The actual expressions can be quite complex, so it allows for a lot of flexibility.</li>
+    <li><b>Annotate:</b> You can add 'ID' from another database (e.g. variants from dbSnp)</li>
+    <li><b>CaseControl:</b> You can compare how many variants are in 'case' and in 'control' groups. Also calculates p-values (Fisher exact test).</li>
+    <li><b>Intervals:</b> Filter variants that intersect with intervals.</li>
+    <li><b>Intervals (intidx):</b> Filter variants that intersect with intervals. Index the VCF file using memory mapped I/O to speed up the search. This is intended for huge VCF files and a small number of intervals to retrieve.</li>
+    <li><b>Join:</b> Join by generic genomic regions (intersecting or closest).</li>
+    <li><b>RmRefGen:</b> Remove reference genotype (i.e. replace '0/0' genotypes by '.')</li>
+    <li><b>TsTv:</b> Calculate transiton to transversion ratio.</li>
+    <li><b>Extract fields:</b> Extract fields from a VCF file to a TXT (tab separated) format.</li>
+    <li><b>Variant type:</b> Adds SNP/MNP/INS/DEL to info field. It also adds "HOM/HET" if there is only one sample.</li>
+    <li><b>GWAS Catalog:</b> Annotate using GWAS Catalog.</li>
+    <li><b>dbNSFP:</b> Annotate using dbNSFP: The dbNSFP is an integrated database of functional predictions from multiple algorithms (SIFT, Polyphen2, LRT and MutationTaster, PhyloP and GERP++, etc.)</li>
+  </ul>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ module load snpEff
+[user@cn3144 ~]$ ln -s $SNPEFF_HOME/../protocols .
+[user@cn3144 ~]$ java -Xmx12g -jar $SNPEFF_JAR -v -lof -motif -hgvs -nextProt GRCh37.71 protocols/ex1.vcf &gt; ex1.eff.vcf
+[user@cn3144 ~]$ cat ex.eff.vcf | java -jar $SNPSIFT_JAR filter "(Cases[0] = 3) &amp; (Controls[0] = 0) &amp; ((EFF[*].IMPACT = 'HIGH') | (EFF[*].IMPACT = 'MODERATE'))"  &gt; ex1.filtered.vcf
+[user@cn3144 ~]$ java -jar $SNPSIFT_JAR dbnsfp -v -db /fdb/dbNSFP2/dbNSFP2.9.txt.gz ex1.eff.vcf &gt; file.annotated.vcf
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. snpEff.sh). For example:</p>
+
+<pre class="term">#!/bin/bash
+# -- this file is snpEff.sh --
+
+module load snpEff
+ln -s $SNPEFF_HOME/example/file.vcf .
+java -Xmx${SLURM_MEM_PER_NODE}m -jar $SNPEFF_JAR -v hg19 file.vcf &gt; file.eff.vcf
+cat file.eff.vcf | java -jar $SNPSIFT_JAR filter "( EFF[*].IMPACT = 'HIGH' )" &gt; file.filtered.vcf
+java -jar $SNPSIFT_JAR dbnsfp -v -db /fdb/dbNSFP2/dbNSFP3.2a.txt.gz file.eff.vcf &gt; file.annotated.vcf
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] snpEff.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. snpEff.swarm). For example:</p>
+
+<pre class="term">
+java -Xmx${SLURM_MEM_PER_NODE}m -jar $SNPEFF_JAR -v hg19 file1.vcf &gt; file1.eff.vcf
+java -Xmx${SLURM_MEM_PER_NODE}m -jar $SNPEFF_JAR -v hg19 file2.vcf &gt; file2.eff.vcf
+java -Xmx${SLURM_MEM_PER_NODE}m -jar $SNPEFF_JAR -v hg19 file3.vcf &gt; file3.eff.vcf
+java -Xmx${SLURM_MEM_PER_NODE}m -jar $SNPEFF_JAR -v hg19 file4.vcf &gt; file4.eff.vcf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f snpEff.swarm [-g #] --module snpEff</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module snpEff</tt> <td>Loads the snpEff module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

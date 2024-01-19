@@ -1,0 +1,142 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'tantan on Biowulf';</script>
+<div class="title">tantan on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width: 70%">
+
+<p>
+Tantan masks low complexity and short-period tandem repeats in nucleic acid and
+protein sequences. It either lower-cases the selected regions or replaces them
+with a configurable letter.
+</p>
+    
+<h3>References:</h3>
+<ul>
+    <li>M. C. Frith. <em>A new repeat-masking method enables specific detection 
+        of homologous sequences</em>. Nucleic Acids Research 2011, 39:e23.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/21109538">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3045581/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/nar/article-lookup/doi/10.1093/nar/gkq1212">Journal</a>
+    </li>
+</ul>
+
+
+</div>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://gitlab.com/mcfrith/tantan">GitLab</a> </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: tantan (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$TANTAN_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load tantan</b>
+[user@cn3144]$ # mask repetitive regions with lower case letters (DNA)
+[user@cn3144]$ <b>tantan $TANTAN_TEST_DATA/CM001971.fa > test.fa</b>
+[user@cn3144]$ <b>head -n6 test.fa</b>
+&gt;CM001971.1 Homo sapiens mitochondrion, complete sequence, whole genome shotgun sequence
+CAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCATTTGGT
+ATTTTCGTCTGGGGGGTGTGCACGCGATAGCATTGCGAGACGCTGGAGCC
+GGAGCACCCTATGTCGCAGTATCTGTCTTTGATTCCTGCCTCATCCTATT
+ATTTATCGCACCTACGTTCAATATTACAGACGAACATACTTACTAAAGCG
+TGTTAATtaattaaTGCTTGTAGGACATAATAATAACAATTGAATGTCTG
+       |-----| masked region
+[user@cn3144]$ # same, but replace with 'N' insead
+[user@cn3144]$ <b>tantan -x N $TANTAN_TEST_DATA/CM001971.fa > test.fa</b>
+[user@cn3144]$ <b>head -n6 test.fa</b>
+&gt;CM001971.1 Homo sapiens mitochondrion, complete sequence, whole genome shotgun sequence
+CAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCATTTGGT
+ATTTTCGTCTGGGGGGTGTGCACGCGATAGCATTGCGAGACGCTGGAGCC
+GGAGCACCCTATGTCGCAGTATCTGTCTTTGATTCCTGCCTCATCCTATT
+ATTTATCGCACCTACGTTCAATATTACAGACGAACATACTTACTAAAGCG
+TGTTAATNNNNNNNTGCTTGTAGGACATAATAATAACAATTGAATGTCTG
+       |-----| masked region
+
+[user@cn3144]$ # and for proteins
+[user@cn3144]$ <b>tantan -p $TANTAN_TEST_DATA/NP_002102.fa > test.fa</b>
+[user@cn3144]$ <b>head -n3 test.fa</b>
+&gt;NP_002102.4 huntingtin [Homo sapiens]
+MATLEKLMKAFESLKSFQqqqqqqqqqqqqqqqqqqqqqqpppppppppp
+pqlpqpppqaqpllpqpqppppppppppgpavaEEPLHRPKKELSATKKD
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. tantan.sh) similar to the following example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load tantan/13 || exit 1
+tantan -p human_genome.fa &gt; human_genome_masked.fa
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=4g tantan.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. tantan.swarm). For example:</p>
+
+<pre class="term">
+tantan -p seq1.fa &gt; seq1_masked.fa
+tantan -p seq2.fa &gt; seq2_masked.fa
+tantan -p seq3.fa &gt; seq3_masked.fa
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f tantan.swarm -g 2 -t 1 -p 2 --module tantan/13</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module tantan <td>Loads the tantan module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

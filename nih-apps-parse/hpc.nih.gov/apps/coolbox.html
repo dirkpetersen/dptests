@@ -1,0 +1,67 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CoolBox: a flexible toolkit for visual analysis of genomics data';</script>
+<div class="title"><b>CoolBox: a flexible toolkit for visual analysis of genomics data</b></div> 
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CoolBox is an open-source, user-friendly toolkit for visual analysis of genomics data. 
+It is highly compatible with the Python ecosystem and customizable with a well-designed user interface. 
+It can bed used, for example, to produce high-quality genome track
+plots or fetch commonly used genomic data files with a Python script or command
+line, to explore genomic data interactively within Jupyter environment or web browser.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li> Weize Xu, Quan Zhong, Da Lin, Ya Zuo, Jinxia Dai, Guoliang Li and Gang Cao, <br /> 
+<i>CoolBox: a flexible toolkit for visual analysis of genomics data</i> <br />
+<a href="https://link.springer.com/article/10.1186/s12859-021-04408-w">BMC Bioinformatics (2021) 22:489</a>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://gangcaolab.github.io/CoolBox">CoolBox Github page</a></li>
+<li><a href="https://gangcaolab.github.io/CoolBox/index.html">CoolBox Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>coolbox</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>CB_HOME</b>&nbsp; installation directory</li>
+    <li><b>CB_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>CB_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cig 3335 ~]$ <b>module load coolbox</b>
+[+] Loading singularity  3.10.5  on cn3335
+[+] Loading coolbox/0.3.8    
+[user@cn3335 ~]$ <b>mkdir /data/$USER/coolbox &amp;&iamp; cd /data/$USER/coolbox</b>
+[user@cn3335 ~]$ <b>cp $CB_DATA/* .</b>
+[user@cn3335 ~]$ <b>wget https://github.com/GangCaoLab/CoolBox/archive/refs/tags/0.3.8.tar.gz</b>
+[user@cn3335 ~]$ <b>tar -zxf 0.3.8.tar.gz &amp;&iamp; rm -f 0.3.8.tar.gz &amp;&iamp; cd CoolBox-0.3.8</b>
+[user@cn3335 ~]$ <b>scripts/coolbox add XAxis -  add Cool ../cool_chr9_4000000_6000000.mcool -  add Title "cool" -  add BAMCov ../bam_chr9_4000000_6000000.bam -  add Title "bam" -  add BigWig ../bigwig_chr9_4000000_6000000.bw -  goto "chr9:4000000-6000000" -  plot test_coolbox.png</b>
+</pre>
+<img src="coolbox/test_coolbox.png" width="800" border="0" alt="">
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

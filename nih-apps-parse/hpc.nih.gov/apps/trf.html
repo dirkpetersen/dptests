@@ -1,0 +1,165 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'TRF on Biowulf';</script>
+<div class="title">TRF on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Tandem Repeats Finder is a program to locate and display tandem repeats in DNA sequences.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>
+G. Benson,
+"Tandem repeats finder: a program to analyze DNA sequences"
+Nucleic Acids Research (1999)
+Vol. 27, No. 2, pp. 573-580. doi:<a href="https://doi.org/10.1093/nar/27.2.573">10.1093/nar/27.2.573</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://tandem.bu.edu/trf/trf.html">TRF Main Site</a></li>
+<li><a href="https://tandem.bu.edu/trf/trf.unix.help.html">TRF Program Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>trf</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<!--
+<li>Multithreaded/singlethreaded/MPI...
+<li>environment variables set <!--for ones users should be aware of --
+  <ul>
+    <li><tt>TEMPLATE_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>???</tt>
+<li>Reference data in <tt>/fdb/TEMPLATE/</tt>
+-->
+</ul>
+
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem 5g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load trf</b>
+[+] Loading trf, version 4.09...
+[user@cn3144 ~]$ <b>trf \
+ /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa \
+ 2 `# match weight` \
+ 7 `# mismatch penalty` \
+ 7 `# indel penalty` \
+ 80 `# match probability` \
+ 10 `# indel probability` \
+ 50 `# minimum alignment score to report` \
+ 500 `# maximum period size to report` \
+ -f `# record flanking sequence` \
+ -d `# produce detailed data file` \
+ -m `# generate a masked sequence file` \
+ -l 6 `# longest tandem repeat array expected (in Mbp)`
+</b>
+
+Tandem Repeats Finder, Version 4.09
+Copyright (C) Dr. Gary Benson 1999-2012. All rights reserved.
+
+Loading sequence...
+Allocating Memory...
+Initializing data structures...
+Computing TR Model Statistics...
+Scanning Sequence 1...
+Freeing Memory...
+Resolving output...
+Done.
+Loading sequence file...
+Allocating Memory...
+Initializing data structures...
+Computing TR Model Statistics...
+...
+
+....................
+
+.....................
+
+.....................
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. trf.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+
+module load trf || exit 1
+
+trf \
+ /fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa \
+ 2 `# match weight` \
+ 7 `# mismatch penalty` \
+ 7 `# indel penalty` \
+ 80 `# match probability` \
+ 10 `# indel probability` \
+ 50 `# minimum alignment score to report` \
+ 500 `# maximum period size to report` \
+ -f `# record flanking sequence` \
+ -d `# produce detailed data file` \
+ -m `# generate a masked sequence file` \
+ -l 6 `# longest tandem repeat array expected (in Mbp)`
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --mem 5g --time 4:00:00 trf.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. trf.swarm). For example:</p>
+
+<pre class="term">
+cd sample1 && trf sample1.fa 2 7 7 80 10 50 500 -f -d -m
+cd sample2 && trf sample2.fa 2 7 7 80 10 50 500 -f -d -m
+cd sample3 && trf sample3.fa 2 7 7 80 10 50 500 -f -d -m
+cd sample4 && trf sample4.fa 2 7 7 80 10 50 500 -f -d -m
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f trf.swarm [-g #] [-t #] --module trf</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module trf</tt> <td>Loads the trf module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

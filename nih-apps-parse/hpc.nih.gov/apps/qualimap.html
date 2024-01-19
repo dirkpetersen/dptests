@@ -1,0 +1,226 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Qualimap on Biowulf';</script>
+<div class="title">Qualimap on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Qualimap is a platform-independent application written in Java and R that provides both a Graphical User Inter- face (GUI) and a command-line interface to facilitate the quality control of alignment sequencing data. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Garcia-Alcalde et al.Qualimap: evaluating next-generation sequencing alignment data. 2012.<a href="https://academic.oup.com/bioinformatics/article/28/20/2678/206551">Link</a>   </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://qualimap.bioinfo.cipf.es/">Qualimap Main Site</a></li>
+<li><a href="/docs/QualimapManual.pdf">Qualimap Manual</a> (PDF)</li>
+
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>qualimap</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded/X11 needed
+<li>Example files in <tt>/fdb/app_testdata/bam/hg19/subsample.bam</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<P>
+You need to make an <a href="https://hpc.nih.gov/docs/connect.html">X-windows connection</a>
+ to Helix to allow the Qualimap GUI to display on your local desktop. Then
+type 'module load qualimap' to set up the environment, and then type 'qualimap'. 
+<P>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=8g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load qualimap</b>
+[+] Loading Perl 5.8.9 ...
+[+] Loading gcc 4.4.7 ...
+[+] Loading OpenMPI 1.8.1 for GCC 4.4.7 (ethernet) ...
+[+] Loading tcl_tk 8.6.1
+[+] Loading LAPACK 3.5.0-gcc-4.4.7 libraries...
+[+] Loading R 3.2.0 on cn3144
+
+[user@cn3144 ~]$ <b>qualimap bamqc -nt $SLURM_CPUS_PER_TASK -bam test_DNase_seq.hg19.bam -outfile result.pdf</b>
+Java memory size is set to 1200M
+Launching application...
+
+QualiMap v.2.2
+Built on 2016-01-29 12:10
+
+Selected tool: bamqc
+Available memory (Mb): 33
+Max memory (Mb): 1118
+Starting bam qc....
+Loading sam header...
+Loading locator...
+Loading reference...
+Number of windows: 400, effective number of windows: 423
+Chunk of reads size: 1000
+Number of threads: 4
+Processed 50 out of 423 windows...
+Processed 100 out of 423 windows...
+Processed 150 out of 423 windows...
+Processed 200 out of 423 windows...
+Processed 250 out of 423 windows...
+Processed 300 out of 423 windows...
+Processed 350 out of 423 windows...
+Processed 400 out of 423 windows...
+Total processed windows:423
+Number of reads: 4830586
+Number of valid reads: 4830586
+Number of correct strand reads:0
+
+Inside of regions...
+Num mapped reads: 4830586
+Num mapped first of pair: 0
+Num mapped second of pair: 0
+Num singletons: 0
+Time taken to analyze reads: 111
+Computing descriptors...
+numberOfMappedBases: 173901096
+referenceSize: 3036320417
+numberOfSequencedBases: 173854103
+numberOfAs: 46212432
+Computing per chromosome statistics...
+Computing histograms...
+Overall analysis time: 112
+end of bam qc
+Computing report...
+Writing PDF report...
+PDF file created successfully
+
+Finished
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<a Name="int"></a><div class="heading">Interactive GUI job on Biowulf</div>
+<P>
+Qualimap uses some R packages. R cannot be run on the Biowulf login node. Therefore, to run the Qualimap GUI interactively, you need to allocate an interactive node. First make an <a href="https://hpc.nih.gov/docs/connect.html">Xwindows connection</a> to Biowulf.
+<P>
+To increase the memory available to qualimap, use the '-java-mem-size' parameter. e.g.
+<pre class="term">
+qualimap --java-mem-size=8000M
+qualimap bamqc -bam very_large_alignment.bam --java-mem-size=4G
+</pre>
+
+<P>
+Sample session:
+<div class="term"><pre>
+[user@biowulf ~]$ <b>sinteractive --mem=8g</b>
+salloc.exe: Granted job allocation 143331
+
+[user@cn0124 ~]$ <b>module load qualimap</b>
+[+] Loading Perl 5.8.9 ...
+[+] Loading gcc 4.4.7 ...
+[+] Loading OpenMPI 1.8.1 for GCC 4.4.7 (ethernet) ...
+[+] Loading tcl_tk 8.6.1
+[+] Loading LAPACK 3.5.0-gcc-4.4.7 libraries...
+[+] Loading R 3.2.0 on cn0124
+
+[user@cn0124 ~]$ <b>qualimap --java-mem-size=8000M</b>
+Java memory size is set to 8000M
+Launching application...
+
+QualiMap v.2.1.1
+Built on 2015-06-15 14:19
+Qualimap home is /usr/local/apps/qualimap/qualimap_v2.1.1
+
+<img src="/images/qualimap1.png" width=700>
+<P>
+<img src="/images/qualimap2.png" width=700>
+
+[user@cn0124 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 143331
+salloc.exe: Job allocation 143331 has been revoked.
+[user@biowulf ~]$
+
+</pre></div>
+<P>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. qualimap.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+cd /data/$USER/mydir
+module load qualimap
+unset DISPLAY
+qualimap bamqc -nt $SLURM_CPUS_PER_TASK -bam test_DNase_seq.hg19.bam -outfile result.pdf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=10g qualimap.sh</pre>
+
+</pre>
+<b>Important notes:</b> 
+<ul>
+<li>By default, Qualimap's BAMQC module will auto-thread to utilize all CPUs on a node. Your job will then run multiple threads on each CPU, which is generally inefficient. Thus,
+the <tt>-nt $SLURM_CPUS_PER_TASK</tt> flag has been set in the script to ensure that the number of threads matches the number of allocated CPUs. The other Qualimap modules, 
+e.g. RNA-seq, multi-bamqc etc do not multi-thread. 
+<li>If you're getting errors about 'Can't connect to X11 server', add
+<pre class="term">
+unset DISPLAY
+</pre>
+to your batch script before the 'qualimap' command line to prevent the Java virtual machine from trying to use the X11 window system.
+</ul>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. qualimap.swarm). For example:</p>
+
+<pre class="term">
+unset DISPLAY; qualimap rnaseq -bam file1.bam -nt $SLURM_CPUS_PER_TASK -gtf Homo_sapiens.GRCh37.gtf -outdir rnaseq_qc_results
+unset DISPLAY; qualimap rnaseq -bam file2.bam -nt $SLURM_CPUS_PER_TASK -gtf Homo_sapiens.GRCh37.gtf -outdir rnaseq_qc_results
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f qualimap.swarm -g 10 -t 8 --module qualimap</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module qualimap</tt> <td>Loads the qualimap module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

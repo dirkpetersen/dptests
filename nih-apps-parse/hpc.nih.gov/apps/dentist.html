@@ -1,0 +1,125 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DENTIST on HPC';</script>
+    <div class="title">DENTIST on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p>DENTIST (Detecting Errors iN analyses of summary 
+staTISTics) is a quality control (QC) tool for summary-level data from 
+genome-wide association studies (GWASs). It leverages the difference between
+the observed GWAS test-statistic of a variant and its predicted value (using
+the neighbouring variants and linkage equilibrium (LD) data from a reference
+panel) to remove problematic variants. It can detect genotyping/imputation
+errors in either the original GWAS or the LD reference samples, allelic errors
+(i.e., the effect alleles of the variants are mislabelled) in the GWAS summary
+data, as well as heterogeneity between the GWAS and LD reference samples.</p>    <h3>&nbsp;</h3>
+<a Name="refs"></a><div class="heading">References</div> <ul>
+      <li><a href="https://www.nature.com/articles/s41467-021-27438-7">Chen, W., Wu, Y., Zheng, Z. <i>et al.</i> Improved analyses of GWAS summary statistics by reducing data heterogeneity and errors. <i>Nat Commun</i> <b>12</b>, 7117 (2021).  </li>
+    </ul>
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="https://github.com/Yves-CHEN/DENTIST">https://github.com/Yves-CHEN/DENTIST</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>dentist</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>DENTIST can be run in a multi-threaded mode by using the
+<tt>--thread-num <&lt>num<&gt></tt></li> option.  Only do this if you have
+allocated multiple processors in your <tt>sinteractive</tt> call or your job script.
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf ~]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load dentist</strong>
+[user@cn3144 ~]$ <strong>cd /data/$USER/dir</strong>
+[user@cn3144 dir]$ <strong>dentist</strong>
+*******************************************************************
+* DENTIST (Detecting Errors iN analyses of summary staTISTics)
+* Version 1.1.0.0
+* (C) 2018 Wenhan Chen, Zhihong Zhu and Jian Yang
+* The University of Queensland
+* MIT License
+*******************************************************************
+Flags include:
+--gwas-summary,--bfile,--bld,--out,
+--chrID,--thread-num,--dup-threshold,--p-value-threshold,
+--GWAS-pvalue-threshold,--delta-MAF,--maf,--extract,
+--target,--target-bp,--radius,--with-NA-geno,
+--wind-dist,--wind,--debug,--load-LD,
+--iteration-num,--LD-unit-in-byte,--SVD-trunc-prop,--check-LD,
+--write-LD,--freq,--impute,
+[user@cn3144 dir]$ <strong>dentist --gwas-summary summary_data --bfile ref --out prefix</strong>
+
+[user@cn3144 dir]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load dentist 
+dentist --gwas-summary summary_data --bfile ref --out prefix</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch [--mem=#] batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; dentist --gwas-summary summary_data --bfile ref --out prefix
+cd dir2; dentist --gwas-summary summary_data --bfile ref --out prefix
+cd dir3; dentist --gwas-summary summary_data --bfile ref --out prefix
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module dentist</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process 
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

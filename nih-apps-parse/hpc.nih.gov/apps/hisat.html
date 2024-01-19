@@ -1,0 +1,175 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Hisat on Biowulf';</script>
+<div class="title">Hisat on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+HISAT is a fast and sensitive spliced alignment program. As part of HISAT, it includes a new indexing scheme based on the Burrows-Wheeler transform (BWT) and the FM index, called hierarchical indexing, that employs two types of indexes: (1) one global FM index representing the whole genome, and (2) many separate local FM indexes for small regions collectively covering the genome. ned for mapping different types of RNA-seq reads. All these together, HISAT enables extremely fast and sensitive alignment of reads, in particular those spanning two exons or more. HISAT is distributed under theGPLv3 license.</p>
+
+<P>
+Beside the index files under <b>/fdb/hisat</b>, HISAT on Biowulf has been built with sra support. A local copy of the SRA Refseq reference data is maintained in <b>/fdb/sra/refseq</b>, and 
+the NCBI SRA toolkit has been configured on Biowulf to :
+<ol>
+<li>first check if the required reference data is available in the local copy
+<li>if not, download the required data using the Biowulf web proxy
+</ol>
+Thus, running hisat on the Biowulf compute nodes with SRA reference data should be seamless. 
+<P>
+
+<h3>References:</h3>
+<ul>
+<li>Kim et al. HISAT: a fast spliced aligner with low memory requirements. Nature Methods 12, 357-360 (2015)</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.ccb.jhu.edu/software/hisat/manual.shtml">Hisat Main Site</a></li>
+</ul>
+
+<a Name="notes"></a>
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Names: The module naming system for hisat can be confusing, so the table below is provided for clarity:
+<table width=70% cellpadding=10 class=horztable>
+<tr><td class="softBottom"><b>Version <td class="softBottom"><b>Module Name <td class="softBottom"><b>Alternate Module Name 
+<tr><td class="softBottom">Hisat2 v 2.2.1 <br>built for NCBI NGS v3.0.1<td class="softBottom">hisat/2.2.2.1-ngs3.0.1<td class="softBottom">hisat2/2.2.1 
+<tr><td class="softBottom">Hisat2 v 2.1.0 <br>built for NCBI NGS v2.10.9<td class="softBottom">hisat/2.2.1.0-ngs2.10.9 <td class="softBottom">hisat2/2.1.0 
+
+</table>
+<P>
+
+<li>Multithreaded app
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$HISAT_INDEXES</tt></li>
+    <li><tt>$HISAT_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$HISAT_HOME/example</tt>
+<li>Reference data in <tt>/fdb/hisat/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load hisat</b>
+
+[user@cn3144 ~]$ <b>cd /data/$USER/hisat</b>
+
+[user@cn3144 ~]$ <b>hisat2 -p 4 -x $HISAT_INDEXES/grch38/genome -f $HISAT_HOME/example/reads/reads_1.fa \</b>
+<b>-S /data/$USER/output.sam </b>
+
+[user@cn3144 ~]$ <b>hisat2 -p 4 -x $HISAT_INDEXES/grch38/genome -f $HISAT_HOME/example/reads/reads_1.fa \</b>
+<b>$HISAT_HOME/example/reads/reads_2.fa -S /data/$USER/output.sam</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. hisat.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+cd /data/$USER/mydir
+module load hisat
+
+hisat2 -p $SLURM_CPUS_PER_TASK -x $HISAT_INDEXES/grch38/genome -f $HISAT_HOME/example/reads/reads_1.fa \
+-S /data/$USER/output1.sam
+hisat2 -p $SLURM_CPUS_PER_TASK -x $HISAT_INDEXES/grch38/genome -f $HISAT_HOME/example/reads/reads_1.fa \
+ $HISAT_HOME/example/reads/reads_2.fa -S /data/$USER/output2.sam
+......
+......
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=10g hisat.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. hisat.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; hisat2 -p $SLURM_CPUS_PER_TASK -x $HISAT_INDEXES/grch38/genome \
+-f $HISAT_HOME/example/reads/reads_1.fa -S /data/$USER/output1.sam
+cd dir2; hisat2 -p $SLURM_CPUS_PER_TASK -x $HISAT_INDEXES/grch38/genome \
+-f $HISAT_HOME/example/reads/reads_1.fa -S /data/$USER/output1.sam
+cd dir3; hisat2 -p $SLURM_CPUS_PER_TASK -x $HISAT_INDEXES/grch38/genome \
+-f $HISAT_HOME/example/reads/reads_1.fa -S /data/$USER/output1.sam
+[...]   
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f hisat.swarm [-g 10] [-t 4] --module hisat</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module hisat</tt> <td>Loads the hisat module for each subjob in the swarm 
+</table>
+
+<div class="heading">Benchmarks</div>
+<p>This benchmarks used 3gb paired sequences. 16 cores is most efficient.</p>
+<p>&nbsp;</p>
+<table width="300" border="1">
+  <tr>
+    <th scope="col">Core</th>
+    <th scope="col">Time(hr:min)</th>
+  </tr>
+  <tr>
+    <td align="right">1</td>
+    <td align="right">1:45:00</td>
+  </tr>
+  <tr>
+    <td align="right">2</td>
+    <td align="right">1:05:00</td>
+  </tr>
+  <tr>
+    <td align="right">4</td>
+    <td align="right">39:50</td>
+  </tr>
+  <tr>
+    <td align="right">8</td>
+    <td align="right">21:51</td>
+  </tr>
+  <tr>
+    <td align="right">16</td>
+    <td align="right">12:46</td>
+  </tr>
+  <tr>
+    <td align="right">32</td>
+    <td align="right">11:39</td>
+  </tr>
+</table>
+<p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

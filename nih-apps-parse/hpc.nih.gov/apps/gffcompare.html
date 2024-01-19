@@ -1,0 +1,115 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'gffcompare on Biowulf';</script>
+<div class="title">gffcompare on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The program gffcompare can be used to compare, merge, annotate and estimate accuracy of one or more GFF files (the “query” files), when compared with a reference annotation (also provided as GFF).
+
+This program is based on the CuffCompare utility which is part of the Cufflinks/Tuxedo suite, so the various usage options and output files as documented in the CuffCompare manual apply to the gffcompare program as well.
+</p>
+
+<!--
+<h3>References:</h3>
+<ul>
+<li>Paper</li>
+</ul>
+-->
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://ccb.jhu.edu/software/stringtie/gffcompare.shtml">gffcompare Main Site</a></li>
+<li><a href="https://github.com/gpertea/gffcompare">gffcompare on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>gffcompare</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<!--
+<li>Multithreaded/singlethreaded/MPI...
+<li>Environment variables set <!--for ones users should be aware of --
+  <ul>
+    <li><tt>TEMPLATE_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>???</tt>
+<li>Reference data in <tt>/fdb/TEMPLATE/</tt>
+-->
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load gffcompare</b>
+
+[user@cn3144 ~]$ <b>gffcompare -R -r mm10.gff -o cuffcmp cufflinks_asm.gtf</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gffcompare.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load gffcompare
+gffcompare -R -r mm10.gff -o cuffcmp cufflinks_asm.gtf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] gffcompare.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. gffcompare.swarm). For example:</p>
+
+<pre class="term">
+gffcompare -R -r mm10.gff -o cuffcmp1 cufflinks_asm1.gtf
+gffcompare -R -r mm10.gff -o cuffcmp2 cufflinks_asm2.gtf
+gffcompare -R -r mm10.gff -o cuffcmp3 cufflinks_asm3.gtf
+gffcompare -R -r mm10.gff -o cuffcmp4 cufflinks_asm4.gtf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f gffcomapre.swarm [-g #] [-t #] --module gffcompare</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module gffcompare</tt> <td>Loads the gffcompare module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

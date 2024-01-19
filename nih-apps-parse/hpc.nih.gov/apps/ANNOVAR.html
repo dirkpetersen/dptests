@@ -1,0 +1,146 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'ANNOVAR on Biowulf';</script>
+<div class="title">ANNOVAR on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+ANNOVAR is an efficient software tool to utilize update-to-date information to functionally annotate genetic variants detected from diverse genomes (including human genome {hg18,hg19,hg38} as well as mouse, worm, fly, yeast and many others).
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li><a href="http://www.ncbi.nlm.nih.gov/pubmed/?term=20601685"><u>ANNOVAR: Functional annotation of genetic variants from next-generation sequencing data</u>, Nucleic Acids Research, 38:e164, 2010)</a>.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://annovar.openbioinformatics.org/">ANNOVAR Home</a></li>
+  <li><a href="http://www.ncbi.nlm.nih.gov/pubmed/20601685">Wang K, Li M, Hakonarson H. ANNOVAR: Functional annotation of genetic variants from next-generation sequencing data Nucleic Acids Research, 38:e164, 2010</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>annovar</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Multithreaded (table_annovar.pl can utilize multiple threads)
+  <li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><b><tt>ANNOVAR_HOME</tt></b></li>
+    <li><b><tt>ANNOVAR_DATA</tt></b></li>
+  </ul>
+  <li>Example files in <b><tt>$ANNOVAR_HOME/example</tt></b>
+  <li>Reference data in <b><tt>/fdb/annovar/current/</tt></b>
+</ul>
+<p>ANNOVAR takes text-based input files, where each line corresponds to one variant. On each line, the first five space- or tab- delimited columns represent chromosome, start position, end position, the reference nucleotides and the observed nucleotides.
+
+Here is the example file <b><tt>$ANNOVAR_HOME/example/ex1.avinput</tt></b></p>
+  <pre class="term">
+1	948921	948921	T	C	comments: rs15842, a SNP in 5' UTR of ISG15
+1	1404001	1404001	G	T	comments: rs149123833, a SNP in 3' UTR of ATAD3C
+1	5935162	5935162	A	T	comments: rs1287637, a splice site variant in NPHP4
+1	162736463	162736463	C	T	comments: rs1000050, a SNP in Illumina SNP arrays
+1	84875173	84875173	C	T	comments: rs6576700 or SNP_A-1780419, a SNP in Affymetrix SNP arrays
+1	13211293	13211294	TC	-	comments: rs59770105, a 2-bp deletion
+1	11403596	11403596	-	AT	comments: rs35561142, a 2-bp insertion
+1	105492231	105492231	A	ATAAA	comments: rs10552169, a block substitution
+1	67705958	67705958	G	A	comments: rs11209026 (R381Q), a SNP in IL23R associated with Crohn's disease
+2	234183368	234183368	A	G	comments: rs2241880 (T300A), a SNP in the ATG16L1 associated with Crohn's disease
+16	50745926	50745926	C	T	comments: rs2066844 (R702W), a non-synonymous SNP in NOD2
+16	50756540	50756540	G	C	comments: rs2066845 (G908R), a non-synonymous SNP in NOD2
+16	50763778	50763778	-	C	comments: rs2066847 (c.3016_3017insC), a frameshift SNP in NOD2
+13	20763686	20763686	G	-	comments: rs1801002 (del35G), a frameshift mutation in GJB2, associated with hearing loss
+13	20797176	21105944	0	-	comments: a 342kb deletion encompassing GJB6, associated with hearing loss
+</pre>
+
+<p>Reference files are pre-installed in <b><tt>$ANNOVAR_DATA/{build}</tt></b>, where <b><tt>{build}</tt></b> can be either
+  hg18, hg19 or hg38.  If other builds are needed, contact staff@hpc.nih.gov. To list all builds currently available, type
+</p>
+
+<pre class="term">ls $ANNOVAR_DATA</pre>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -t 4 --gres=lscratch:20</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load annovar</b>
+
+[user@cn3144 ~]$ <b>cp $ANNOVAR_HOME/example/ex1.avinput .</b>
+
+[user@cn3144 ~]$ <b>annotate_variation.pl --geneanno --dbtype refGene --buildver hg38 ex1.avinput $ANNOVAR_DATA/hg38</b>
+
+[user@cn3144 ~]$ <b>table_annovar.pl ex1.avinput $ANNOVAR_DATA/hg38 \
+  --tempdir /lscratch/$SLURM_JOB_ID \
+  --thread $SLURM_CPUS_ON_NODE \
+  --buildver hg38 \
+  --outfile ex1.out \
+  --remove \
+  --protocol gene,clinvar_20220320,cosmic70,ljb26_all,avsnp150,cadd_1.5 \
+  --operation g,f,f,f,f,f \
+  --nastring ''</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. annovar.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load annovar
+annotate_variation.pl --geneanno --dbtype gene --buildver hg38 ex1.avinput $ANNOVAR_DATA/hg38
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] annovar.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. annovar.swarm). For example:</p>
+
+<pre class="term">
+convert2annovar.pl -format vcf4 file1.vcf &gt; file1.inp; annotate_variation.pl --geneanno --dbtype gene --buildver hg38 file1.inp $ANNOVAR_DATA/hg38
+convert2annovar.pl -format vcf4 file2.vcf &gt; file2.inp; annotate_variation.pl --geneanno --dbtype gene --buildver hg38 file2.inp $ANNOVAR_DATA/hg38
+convert2annovar.pl -format vcf4 file3.vcf &gt; file3.inp; annotate_variation.pl --geneanno --dbtype gene --buildver hg38 file3.inp $ANNOVAR_DATA/hg38
+convert2annovar.pl -format vcf4 file4.vcf &gt; file4.inp; annotate_variation.pl --geneanno --dbtype gene --buildver hg38 file4.inp $ANNOVAR_DATA/hg38
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f annovar.swarm [-g #] [-t #] --module annovar</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module annovar</tt> <td>Loads the annovar module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,153 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'HemTools:  a collection of NGS pipelines and bioinformatic analyses.';</script>
+<div class="title"><b>bracken: estimating species abundance in metagenomics data.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Bracken is a companion program to Kraken 1, KrakenUniq, or Kraken 2 While Kraken classifies reads to multiple levels in the taxonomic tree, Bracken allows estimation of abundance at a single level using those classifications (e.g. Bracken can estimate abundance of species within a sample).
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Jennifer Lu, Florian P. Breitwieser, Peter Thielen and Steven L. Salzberg <br />
+<i>Bracken: estimating species abundance in metagenomics data</i> <br /> 
+<a href="https://peerj.com/articles/cs-104/"></a> PeerJ Comput. Sci. 3:e104; DOI 10.7717/peerj-cs.104.
+<li>Jennifer Lu, Natalia Rincon, Derrick E. Wood, Florian P. Breitwieser,
+Christopher Pockrandt, Ben Langmead, Steven L. Salzberg and Martin Steinegger  <br />
+<i>Metagenome analysis using the Kraken software suite </i> <br /> 
+<a href="https://www.nature.com/articles/s41596-022-00738-y"></a>Nature Protocols, v.17 (December 2022), 2815–2839
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://ccb.jhu.edu/software/bracken/">Bracken Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>bracken</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>BRACKEN_HOME</b>&nbsp; installation directory</li>
+    <li><b>BRACKEN_BIN</b>&nbsp; executable   directory</li>
+    <li><b>BRACKEN_DIR</b>&nbsp; source code  directory</li>
+    <li><b>BRACKEN_DATA</b>&nbsp; configuration files and models directory</li>
+    <li><b>BRACKEN_BENCHMARKS</b>&nbsp; benchmark datasets directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=64g  --gres=gpu:p100:1,lscratch:300 -c16</b>
+[user@cn3104 ~]$ <b>module load bracken</b>
+[+] Loading kraken  2.1.2                          
+[+] Loading bracken 2.8
+[user@cn3104 ~]$ <b>bracken -h</b>
+/usr/local/apps/bracken/2.8/bin/bracken: illegal option -- h
+Usage: bracken -d MY_DB -i INPUT -o OUTPUT -w OUTREPORT -r READ_LEN -l LEVEL -t THRESHOLD
+  MY_DB          location of Kraken database
+  INPUT          Kraken REPORT file to use for abundance estimation
+  OUTPUT         file name for Bracken default output
+  OUTREPORT      New Kraken REPORT output file with Bracken read estimates
+  READ_LEN       read length to get all classifications for (default: 100)
+  LEVEL          level to estimate abundance at [options: D,P,C,O,F,G,S,S1,etc] (default: S)
+  THRESHOLD      number of reads required PRIOR to abundance estimation to perform reestimation (default: 0)
+[user@cn3104 ~]$ <b>bracken-build -h</b>
+/usr/local/apps/bracken/2.8/bin/bracken-build: illegal option -- h
+Usage: bracken_build -k KMER_LEN -l READ_LEN -d MY_DB -x K_INSTALLATION -t THREADS
+  KMER_LEN       kmer length used to build the kraken database (default: 35)
+  THREADS        the number of threads to use when running kraken classification and the bracken scripts
+  READ_LEN       read length to get all classifications for (default: 100)
+  MY_DB          location of Kraken database
+  K_INSTALLATION location of the installed kraken/kraken-build scripts (default assumes scripts can be run from the user path)
+[user@cn3104 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3104 ~]$ <b>mkdir fa && ca fa</b>
+[user@cn3104 ~]$ <b>wget --quiet --input-file $KRAKEN_TEST_DATA/genomes_for_custom_db.urls</b>
+[user@cn3104 ~]$ <b>ls</b>
+GCA_000006745.1_ASM674v1_genomic.fna.gz
+GCA_000006885.1_ASM688v1_genomic.fna.gz
+GCA_000007045.1_ASM704v1_genomic.fna.gz
+GCA_000007825.1_ASM782v1_genomic.fna.gz
+GCA_000008005.1_ASM800v1_genomic.fna.gz
+GCA_000009005.1_ASM900v1_genomic.fna.gz
+GCA_000009585.1_ASM958v1_genomic.fna.gz
+...
+[user@cn3104 ~]$ <b>gunzip *.gz</b>
+[user@cn3104 ~]$ <b>ls</b>
+GCA_000006745.1_ASM674v1_genomic.fna
+GCA_000006885.1_ASM688v1_genomic.fna
+GCA_000007045.1_ASM704v1_genomic.fna
+GCA_000007825.1_ASM782v1_genomic.fna
+GCA_000008005.1_ASM800v1_genomic.fna
+GCA_000009005.1_ASM900v1_genomic.fna
+...
+[user@cn3104 ~]$ <b>kraken2-build --download-taxonomy --db custom_db  -t 16</b>
+Downloading nucleotide gb accession to taxon map... done.
+Downloading nucleotide wgs accession to taxon map... done.
+Downloaded accession to taxon map(s)
+Downloading taxonomy tree data... done.
+Uncompressing taxonomy data...
+</pre>
+A folder custom_db with subfolder taxonomy has been be created.</b>
+<pre class="term">
+[user@cn3104 ~]$ <b>ls -t</b>
+custom_db
+GCA_002000745.1_ASM200074v1_genomic.fna
+GCA_001641045.1_ASM164104v1_genomic.fna
+GCA_001518875.1_ASM151887v1_genomic.fna
+GCA_001518775.1_ASM151877v1_genomic.fna
+GCA_001975045.1_ASM197504v1_genomic.fna
+...
+[user@cn3104 ~]$ <b>cd ..</b>
+[user@cn3104 ~]$ <b>for f in fa/*.fna; do
+    kraken2-build --add-to-library $f --db custom_db;
+done</b>
+Masking low-complexity regions of new file... done.
+Added "fa/GCA_000006745.1_ASM674v1_genomic.fna" to library (custom_db)
+Masking low-complexity regions of new file... done.
+Added "fa/GCA_000006885.1_ASM688v1_genomic.fna" to library (custom_db)
+Masking low-complexity regions of new file... done.
+...
+</pre>
+The folder custom_db  with subfolder library has been be created.. <br />
+<pre class="term">
+[user@cn3104 ~]$ <b>cd custom_db</b>
+[user@cn3104 ~]$ <b>ln -s ../fa/custom_db/taxonomy</b>
+[user@cn3104 ~]$ <b>cd ..</b>
+[user@cn3104 ~]$ <b>kraken2-build --download-library bacteria --db custom_db -t 16</b>
+Step 1/2: Performing rsync file transfer of requested files
+
+Rsync file transfer complete.
+Step 2/2: Assigning taxonomic IDs to sequences
+...
+Processed 38595 projects (91046 sequences, 161.35 Gbp)... done.
+All files processed, cleaning up extra sequence files... done, library complete.
+Masking low-complexity regions of downloaded library...
+
+[user@cn3104 ~]$ <b>bracken-build -d custom_db -t 10 -k 50 -l 500 -x ${KRAKEN_DB} -t 16</b>
+</pre>
+Exit the application: <br />      
+<pre class="term">
+[user@cn3104 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

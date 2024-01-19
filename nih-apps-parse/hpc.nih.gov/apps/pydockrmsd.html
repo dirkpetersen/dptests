@@ -1,0 +1,123 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'pyDockRMSD on Biowulf';</script>
+<div class="title">pyDockRMSD on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+Description
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Eric W. Bell &amp; Yang Zhang 
+    <a href="https://jcheminf.biomedcentral.com/articles/10.1186/s13321-019-0362-7"><b><u>DockRMSD: an open-source tool for atom mapping and RMSD calculation of symmetric molecules through graph isomorphism.</u></b></a>
+    <em>Journal of Cheminformatics volume 11, Article number: 40 (2019) </em>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/neudinger/pyDockRMSD">pyDockRMSD Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+  <li>Module Name: <tt>pydockrmsd</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>singlethreaded
+  <li>Example files in <tt>$PYDOCKRMSD_EXAMPLES</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load pydockrmsd</b>
+
+[user@cn3144 ~]$ <b> </b>
+
+[user@cn3144 ~]$ <b>mkdir test && cd test</b>
+[user@cn3144 ~]$ <b>cp -Rp ../github/pyDockRMSD/examples/data .</b>
+[user@cn3144 ~]$ <b>cat << EOF > z.py
+from pydockrmsd.dockrmsd import PyDockRMSD
+import pydockrmsd.hungarian as hungarian
+dockrmsd = PyDockRMSD("./data/targets/1a8i/crystal.mol2",
+                      "./data/targets/1a8i/vina1.mol2")
+print(dockrmsd.rmsd)
+print(dockrmsd.total_of_possible_mappings)
+print(dockrmsd.optimal_mapping)
+print(dockrmsd.error)
+print(hungarian("./data/targets/1a8i/crystal.mol2",
+                "./data/targets/1a8i/vina1.mol2"))
+EOF</b>
+[user@cn3144 ~]$ <b>python z.py</b>
+0.692337048145839
+108.0
+Optimal mapping (First file -> Second file, * indicates correspondence is not one-to-one):
+C  1 -> C  1
+C  2 -> C  2
+O  3 -> O 15 *
+C  4 -> C  3 *
+O  5 -> O 17 *
+C  6 -> C  4 *
+O  7 -> O 22 *
+C  8 -> C  5 *
+C  9 -> C 19 *
+O 10 -> O 20 *
+O 11 -> O  6 *
+N 12 -> N  7 *
+C 13 -> C  8 *
+O 14 -> O  9 *
+N 15 -> N 10 *
+C 16 -> C 11 *
+O 17 -> O 12 *
+
+0.6923022121452281
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. pydockrmsd.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load pydockrmsd
+python my_pydockrmsd_script.py
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch pydockrmsd.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

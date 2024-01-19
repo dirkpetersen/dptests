@@ -1,0 +1,255 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'defuse on Biowulf';</script>
+<div class="title">defuse on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+deFuse uses clusters of discordant paired end reads to guide split read
+alignments across gene-gene fusion boundaries in RNA-Seq data. Filters are
+applied to reduce false positives and results are annotated.
+</p>
+
+<p>
+Reference data sets required by deFuse are stored under
+</p>
+<tt><b>/fdb/defuse</b></tt>
+
+<p> Note that the versions of gmap/gsnap available on biowulf make use of a
+new index format. Only reference data sets ending in <code>_newgmap</code> are
+compatible with these versions of gmap.</p>
+
+<p>deFuse runs are set up using a configuration file which may change
+between defuse versions. Use the configuration file included with the 
+version you are using as a starting point for your analysis. They can
+be found under</p>
+
+<tt> <b>/usr/local/apps/defuse/[version]/config_*.txt</b> </tt>
+
+<p>
+deFuse is a pipeline that makes use of internal and external tools. Pipeline
+steps can be run on the same machine as the main driver script 
+(<code>defuse.pl -s direct ...</code>) or submitted to compute nodes (<code>
+    defuse.pl -s slurm ...</code>). The -p option determines how many jobs
+are run in parallel. <p style="background-color: #ffff99"> We do not recommend to use "-s slurm" on biowulf because it will submit multiple short
+subjobs, which will take longer queue time.</p>
+</p>
+
+<p><code>defuse.pl</code> option summary (for version 0.8.0):</p>
+<pre class="term">
+Usage: defuse.pl [options]
+Run the deFuse pipeline for fusion discovery.
+  -h, --help      Displays this information
+  -c, --config    Configuration Filename
+  -d, --dataset   Dataset Directory
+  -o, --output    Output Directory
+  -r, --res       Main results filename (default: results.tsv 
+                  in Output Directory)
+  -a, --rescla    Results with a probability column filename 
+                  (default: results.classify.tsv in Output Directory)
+  -b, --resfil    Filtered by the probability threshold results filename 
+                  (default: results.filtered.tsv in Output Directory)
+  -1, --1fastq    Fastq filename 1
+  -2, --2fastq    Fastq filename 2
+  -n, --name      Library Name (default: Output Directory Suffix)
+  -l, --local     Job Local Directory (default: Output Directory)
+  -s, --submit    Submitter Type (default: direct)
+  -p, --parallel  Maximum Number of Parallel Jobs (default: 1)
+</pre>
+
+<p style="background-color: #ffff99">Note that the driver script was renamed to <code>defuse_run.pl</code>
+in version 0.8.0. However, <code>defuse.pl</code> is still available
+as a symbolic link. Note also that starting with version 0.8.0 the
+dataset directory has to be provided on the command line with <code>-d</code></p>
+
+
+<h3>References:</h3>
+<ul>
+    <li>Andrew McPherson et al. <em>deFuse: an algorithm for gene fusion 
+        discovery in tumor RNA-Seq data</em>. PLoS Comput Biol. 2011, 
+    7:e1001138.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/21625565">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3098195/">PMC</a>&nbsp;|&nbsp;
+    <a href="http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1001138">
+        Journal</a>.
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://bitbucket.org/dranew/defuse">Bitbucket</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: defuse (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>defuse can be run in local or slurm mode. In local mode it can use multiple CPUs</li>
+    <li>Example files in <code>$DEFUSE_TEST_DATA</code></li>
+    <li>Reference data in /fdb/defuse/</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16 --mem=20g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>DATA=/usr/local/apps/defuse/TEST_DATA/small</b>
+[user@cn3144 ~]$ <b>module load defuse</b>
+[user@cn3144 ~]$ <b>cp /usr/local/apps/defuse/config_hg19_ens69.txt config.txt</b>
+[user@cn3144 ~]$ <b>defuse.pl -c config.txt -o small.out \
+  -d /fdb/defuse/hg19_ens69_newgmap \
+  -1 $DATA/rna/spiked.1.fastq -2 $DATA/rna/spiked.2.fastq \
+  -s direct -p 12</b>
+[user@cn3144 ~]$
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>
+A deFuse batch job can run in two different ways - either all jobs started
+by the main <code>defuse.pl</code> are run on the same compute node, or they
+are submitted to other nodes via slurm.
+</p>
+
+<p>Here is an example script that will run all jobs on the same node as 
+the node running the main deFuse script. This makes use of a small data
+set of simulated RNASeq reads. Note that bowtie is allowed 2 threads
+in the sample config file, so the number of parallel jobs is limited
+to half the number of CPUs.</p>
+
+<pre class="term">
+#! /bin/bash
+# filename: small.sh
+set -e
+
+DATA=/usr/local/apps/defuse/TEST_DATA/small
+DEFUSE_VER=0.8.1
+module load defuse/$DEFUSE_VER || exit 1
+
+cp -r $DATA . || exit 1
+cp /usr/local/apps/defuse/$DEFUSE_VER/config_hg19_ens69.txt config.txt
+
+defuse.pl -c config.txt -o small.out \
+    -d /fdb/defuse/hg19_ens69_newgmap \
+    -1 small/rna/spiked.1.fastq -2 small/rna/spiked.2.fastq \
+    -s direct -p $SLURM_CPUS_PER_TASK
+</pre>
+
+<p>The batch file is submitted to the queue with a command similar to the
+following:</p>
+<pre class="term">
+biowulf$ <b>sbatch --cpus-per-task=20 small.sh</b>
+</pre>
+
+<p>The profile of a local defuse job with 24 CPUs processing 60M 125nt paired
+end reads:</p>
+
+<div style="width:90%; margin: 0 auto;">
+  <img src="/images/defuse_local.png", alt="defuse memory and thread trace" width="100%">
+</div>
+
+<p>The other approach is shown in the following batch script with runs
+the main script on a compute node with just 2 CPUs allocated. The main 
+script in turn submits subjobs via slurm. This example uses data
+obtained from the Gerstein lab for cell line NCI-H660, which contains
+a known TMPRSS2-ERG fusion.</p>
+
+
+<pre class="term">
+#! /bin/bash
+# this file is large.sh
+
+# defuse version
+DEFUSE_VER=0.8.1
+module load defuse/$DEFUSE_VER || exit 1
+cp /usr/local/apps/defuse/$DEFUSE_VER/config_hg19_ens69.txt config.txt
+
+# large test data - copy if it doesn't already exist
+if [[ ! -d large ]]; then
+    cd large
+    DATA=/usr/local/apps/defuse/TEST_DATA/NCIH660
+    cp $DATA/NCIH660.fastq.tar.gz .
+    tar -xzf NCIH660.fastq.tar.gz
+    rm NCIH660.fastq.tar.gz
+    cd ..
+fi
+
+defuse.pl -c config.txt -o ncih660.out \
+    -d /fdb/defuse/hg19_ens69_newgmap \
+    -1 large/NCIH660_1.fastq \
+    -2 large/NCIH660_2.fastq \
+    -s slurm -p 25
+</pre>
+
+<p>Which is submitted as follows</p>
+
+<pre class="term">
+biowulf$ <b>sbatch large.sh</b>
+</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>To set up a swarm of defuse jobs, each running the subjobs in local mode,
+use a swarm file like this:</p>
+
+<pre class="term">
+defuse.pl -c config.txt -o defuse1.out \
+  -d /fdb/defuse/hg19_ens69_newgmap \
+  -1 defuse1.1.fastq \
+  -2 defuse1.2.fastq \
+  -s direct -p 12 
+defuse.pl -c config.txt -o defuse2.out \
+  -d /fdb/defuse/hg19_ens69_newgmap \
+  -1 defuse2.1.fastq \
+  -2 defuse2.2.fastq \
+  -s direct -p 12 
+[...]
+</pre>
+
+<p>Then submit the swarm, requesting 24 CPUs and 10GB memory for each task</p>
+
+<pre class="term">
+biowulf$ <b>swarm -g 10 -t 24 swarmfile --module=defuse/0.8.1</b>
+</pre>
+
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module defuse <td>Loads the defuse module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

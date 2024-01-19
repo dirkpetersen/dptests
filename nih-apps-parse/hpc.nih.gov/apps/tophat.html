@@ -1,0 +1,169 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'tophat on Biowulf';</script>
+<div class="title">tophat on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>TopHat is a splice junction mapper for RNA-Seq reads. It aligns RNA-Seq reads
+to mammalian-sized genomes using the short read aligner Bowtie, and then
+analyzes the mapping results to identify splice junctions between exons.</p>
+
+<br />
+<br />
+<h3>References:</h3>
+<ul>
+  <li>
+    Cole Trapnell, L. Pachter L, and S. L. Salzberg.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/19289445">
+      <u><b>TopHat: discovering splice junctions with RNA-Seq.</b></u>
+    </a>
+    <em>Bioinformatics 2009, 25:1105-1111</em>
+  <li>
+    Daehwan Kim, G. Pertea, C. Trapnell, H. Pimentel, R. Kelley, S. L. Salzberg SL. 
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/23618408">
+      <u><b>TopHat2: accurate alignment of transcriptomes in the presence of insertions, deletions and gene fusions.</b></u>
+    </a>
+    <em>Genome Biology 2013, 14:R36.</em>
+  <li>
+    Daehwan Kim, and S. L. Salzberg.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/21835007">
+      <u><b>TopHat-Fusion: an algorithm for discovery of novel fusion transcripts.</b></u>
+    </a>
+    <em>Genome Biology 2011, 12:R72.</em>
+  </li>
+</ul>
+
+<p class="alert">
+Please note that TopHat has entered a low maintenance, low support stage as it is now largely superseded by <a href="hisat.html">HISAT2</a> which provides the same core functionality (i.e. spliced alignment of RNA-Seq reads), in a more accurate and much more efficient way.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://ccb.jhu.edu/software/tophat/index.shtml">Home page</a></li>
+  <li><a href="http://ccb.jhu.edu/software/tophat/manual.shtml">Manual</a></li>
+  <li><a href="https://groups.google.com/forum/#!forum/tuxedo-tools-users">Google group</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>tophat</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>PATH</tt></li>
+  </ul>
+</ul>
+
+<p>TopHat makes use of either <code>bowtie2</code> (the default) or <code>bowtie</code> (optional; 
+necessary for colorspace reads as bowtie2 does not support colorspace). TopHat
+is limited to a maximal read length of 1024nts.</p>
+<p>TopHat2 now includes TopHat-Fusion's ability to look for fusions between
+different transcripts (<code>--fusion-search</code>).</p>
+<!-- ========================================================================= -->
+
+<p><a class="navbar-safe-anchor"></a><div class="heading">Index files</div></p>
+<p>TopHat will need either <code>bowtie2</code> or <code>bowtie</code> indices which are available
+as part of the igenomes package at</p>
+<p><b><code>/fdb/igenomes/[organism]/[source]/[build]/Sequence/Bowtie[2]Index/*</code></b></p>
+<ul>
+<li><b><code>[organism]</code></b> is the specific organism of interest
+  (Gallus_gallus, Rattus_norvegicus, etc.)</li>
+<li><b><code>[source]</code></b> is the source for the sequence (NCBI,
+  Ensembl, UCSC)</li>
+<li><b><code>[build]</code></b> is the specific genome build of interest
+  (hg19, build37.2, GRCh37)</li>
+</ul>
+<p>More information on the locally available igenomes builds/organisms
+is available from our <a href="https://hpc.cit.nih.gov/apps/db.php?f=Igenomes">scientific database index</a>.
+For more information about igenomes in general,
+<a href="ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/README.txt">iGenomes readme</a>.</p>
+<!-- ========================================================================= -->
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=8 --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>cd /data/$USER/test_data</b>
+[user@cn3144 ~]$ <b>module load tophat</b>
+[user@cn3144 ~]$ <b>tophat -o job1 -p8 /path/to/genome /path/to/fastq.gz</b>
+...
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. tophat.sh). For example:</p>
+
+<pre class="term">
+#! /bin/bash
+module load tophat
+cd /data/${USER}/test_data
+tophat \
+  --output-dir=./tophat_test \
+  --min-anchor-length=10 \
+  --num-threads=$SLURM_CPUS_PER_TASK \
+  --b2-sensitive \
+  /fdb/igenomes/Mus_musculus/UCSC/mm9/Sequence/Bowtie2Index/genome \
+  fastq/rnaseq_500k.fastq.gz
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=20g tophat.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p class="alert">Note that tophat by default creates
+a ouput directory called <code>tophat_out</code>. Therefore, to run multiple jobs in
+parallel, the jobs either have to be run in separate directories or
+the command line has to specify the <code>-o / --output_dir</code> for each job.</p>
+
+<p>Create a swarmfile (e.g. tophat.swarm). For example:</p>
+
+<pre class="term">
+tophat -o job1 -p ${SLURM_CPUS_PER_TASK} --b2-sensitive \
+  --GTF=annot/140609_refseq_nomir_nosnor.gtf --no-novel-juncs \    
+  /fdb/igenomes/Mus_musculus/UCSC/mm9/Sequence/Bowtie2Index/genome \
+  fastq/rnaseq_500k.fastq.gz
+tophat -o job2 -p ${SLURM_CPUS_PER_TASK} --b2-sensitive \
+  --GTF=annot/140609_refseq_nomir_nosnor.gtf --no-novel-juncs \    
+  /fdb/igenomes/Mus_musculus/UCSC/mm9/Sequence/Bowtie2Index/genome \
+  fastq/rnaseq_250k.fastq.gz
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f tophat.swarm -g 10 -t 16 --module tophat</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module tophat</tt> <td>Loads the tophat module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

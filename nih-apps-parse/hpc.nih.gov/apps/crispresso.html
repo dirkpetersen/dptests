@@ -1,0 +1,171 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'CRISPResso on Biowulf';</script>
+<div class="title">CRISPResso on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+CRISPResso2 is a software pipeline for the analysis of genome editing experiments. It is designed to enable rapid and intuitive interpretation of results produced by amplicon sequencing.
+<p>CRISPResso automatizes and performs the following steps summarized in the figure below:</p>
+<ol>
+    <li>filters low quality reads,</li>
+    <li>trims adapters,</li>
+    <li>aligns the reads to a reference amplicon,</li>
+    <li>quantifies the proportion of HDR and NHEJ outcomes,</li>
+    <li>quantifies frameshift/inframe mutations (if applicable) and identifies affected splice sites,</li>
+    <li>produces a graphical report to visualize and quantify the indels distribution and position.</li>
+</ol>
+</p>
+
+<h3>Reference:</h3>
+<ul>
+
+  <li>
+    <a href="https://www.nature.com/articles/nbt.3583">Pinello, Luca, et al. "Analyzing CRISPR genome-editing experiments with CRISPResso." <i>Nature biotechnology</i> 34.7 (2016): 695-697.</a>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://crispresso.pinellolab.partners.org/submission">CRISPResso Main Site</a></li>
+<li><a href="https://crispresso.pinellolab.partners.org/help">Manual</a></li>
+<li><a href="https://github.com/pinellolab/CRISPResso2">GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>CRISPResso and CRISPResso2 are both installed. Use <tt>module avail crispresso</tt> to see which versions are installed.</li>
+    <li>Module Name: <tt>crispresso</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. This example runs through the test suite supplied by the developer. Example commands can be found within the <a href="https://github.com/pinellolab/CRISPResso2/blob/master/tests/testRelease.sh"><tt>testRelease.sh</tt> script</a>. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf crispresso]$ <b>sinteractive -c2 --mem=4g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 11290667
+salloc.exe: job 11290667 queued and waiting for resources
+salloc.exe: job 11290667 has been allocated resources
+salloc.exe: Granted job allocation 11290667
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0863 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+error: unable to open file /tmp/slurm-spank-x11.11290667.0
+slurmstepd: error: x11: unable to read DISPLAY value
+
+[user@cn0863 crispresso]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn0863 11290667]$ <b>git clone https://github.com/pinellolab/CRISPResso2.git</b>
+Cloning into 'CRISPResso2'...
+remote: Enumerating objects: 57, done.
+remote: Counting objects: 100% (57/57), done.
+remote: Compressing objects: 100% (44/44), done.
+remote: Total 1118 (delta 29), reused 26 (delta 12), pack-reused 1061
+Receiving objects: 100% (1118/1118), 1.53 MiB | 0 bytes/s, done.
+Resolving deltas: 100% (783/783), done.
+
+[user@cn0863 11290667]$ <b>cd CRISPResso2/tests/</b>
+
+[user@cn0863 tests]$ <b>git checkout v2.2.14</b>
+Note: checking out 'v2.2.14'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -b with the checkout command again. Example:
+
+  git checkout -b new_branch_name
+
+HEAD is now at 4598226... HDR Updates - yw #82
+
+[user@cn0863 tests]$ <b>module load crispresso</b>
+[+] Loading crispresso  2.2.14  on cn0863
+[+] Loading singularity  3.10.5  on cn0863
+
+[user@cn0863 tests]$ <b>./testRelease.sh</b>
+Running CRISPResso
+Running CRISPResso with parameters
+Running CRISPRessoBatch
+
+[user@cn0863 tests]$ <b>exit</b>
+exit
+srun: error: cn0863: task 0: Exited with exit code 255
+salloc.exe: Relinquishing job allocation 11290667
+salloc.exe: Job allocation 11290667 has been revoked.
+
+[user@biowulf crispresso]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. crispresso.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load crispresso
+SEQ=CGGATGTTCCAATCAGTACGCAGAGAGTCGCCGTCTCCAAGGTGAAAGCGGAAGTAGGGCCTTCGCGCACCTCATGGAATCCCTTCTGCAGCACCTGGATCGCTTTTCCGAGCTTCTGGCGGTCTCAAGCACTACCTACGTCAGCACCTGGGACCCCGCCACCGTGCGCCGGGCCTTGCAGTGGGCGCGCTACCTGCGCCACATCCATCGGCGCTTTGGTCGG
+CRISPResso -r1 FANC.Cas9.fastq -a $SEQ -g GGAATCCCTTCTGCAGCACC
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] crispresso.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. crispresso.swarm). For example:</p>
+
+<pre class="term">
+CRISPResso -r1 A.fastq -a $SEQ -g GGAATCCCTTCTGCAGCACC
+CRISPResso -r1 B.fastq -a $SEQ -g GGAATCCCTTCTGCAGCACC
+CRISPResso -r1 C.fastq -a $SEQ -g GGAATCCCTTCTGCAGCACC
+CRISPResso -r1 D.fastq -a $SEQ -g GGAATCCCTTCTGCAGCACC
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f crispresso.swarm [-g #] [-t #] --module crispresso</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module crispresso</tt> <td>Loads the crispresso module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

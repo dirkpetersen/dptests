@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'cellphonedb on Biowulf';</script>
+<div class="title">cellphonedb on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A publicly available repository of curated receptors, ligands and their interactions. Subunit architecture is included for both ligands and receptors, representing heteromeric complexes accurately.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://www.nature.com/articles/s41586-018-0698-6">Vento-Tormo, Roser, et al. "Single-cell reconstruction of the early maternal–fetal interface in humans." <i>Nature</i> 563.7731 (2018): 347.</a>
+<li><a href="https://www.biorxiv.org/content/10.1101/680926v1">Efremova, Mirjana, et al. "CellPhoneDB v2. 0: Inferring cell-cell communication from combined expression of multi-subunit receptor-ligand complexes." <i>bioRxiv</i> (2019): 680926.</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.cellphonedb.org/">cellphonedb Main Site</a></li>
+<li><a href="https://github.com/ventolab/cellphonedb">cellphonedb GitHub repo</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>cellphonedb</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>Environment variables set <!--for ones users should be aware of -->
+        <ul>
+            <li><tt>CELLPHONEDB_HOME</tt></li>
+        </ul>
+    <li>cellphonedb uses the python package "Click" that is very opinionated about locale.  If you receive locale related errors try setting your <tt>LANG</tt> and <tt>LC_ALL</tt> variables to something like <tt>en_US.utf8</tt>
+    </ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --cpus-per-task=4 --mem=16G --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 41538656
+salloc.exe: job 41538656 queued and waiting for resources
+salloc.exe: job 41538656 has been allocated resources
+salloc.exe: Granted job allocation 41538656
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3114 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn3114 ~]$ <b>cd /data/$USER</b>
+
+[user@cn3114 user]$ <b>git clone https://github.com/ventolab/cellphonedb.git</b>
+Cloning into 'cellphonedb'...
+remote: Enumerating objects: 15, done.
+remote: Counting objects: 100% (15/15), done.
+remote: Compressing objects: 100% (14/14), done.
+remote: Total 9381 (delta 1), reused 4 (delta 1), pack-reused 9366
+Receiving objects: 100% (9381/9381), 61.54 MiB | 24.54 MiB/s, done.
+Resolving deltas: 100% (7066/7066), done.
+Checking out files: 100% (368/368), done.
+
+[user@cn3114 user]$ <b>cd cellphonedb/in/example_data/</b>
+
+[user@cn3114 example_data]$ <b>module load cellphonedb</b>
+[+] Loading cellphonedb  2.1.1  on cn3114
+[+] Loading gcc  7.3.0  ...
+[+] Loading GSL 2.4 for GCC 7.2.0 ...
+[-] Unloading gcc  7.3.0  ...
+[+] Loading gcc  7.3.0  ...
+[+] Loading openmpi 3.0.2  for GCC 7.3.0
+[+] Loading ImageMagick  7.0.8  on cn3114
+[+] Loading HDF5  1.10.4
+[+] Loading pandoc  2.1.1  on cn3114
+[+] Loading R 3.6.0
+
+[user@cn3114 example_data]$ <b>cellphonedb method statistical_analysis test_meta.txt test_counts.txt</b>
+[ ][APP][08/11/19-18:25:15][WARNING] Latest local available version is `v2.0.0`, using it
+[ ][APP][08/11/19-18:25:15][WARNING] User selected downloaded database `v2.0.0` is available, using it
+[ ][CORE][08/11/19-18:25:15][INFO] Initializing SqlAlchemy CellPhoneDB Core
+[...snip...]
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. cellphonedb.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load cellphonedb
+cd /data/$USER/cellphonedb/in/example_data/
+cellphonedb method statistical_analysis test_meta.txt test_counts.txt
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] cellphonedb.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. cellphonedb.swarm). For example:</p>
+
+<pre class="term">
+cellphonedb method analysis 1meta.txt 1counts.txt 
+cellphonedb method analysis 2meta.txt 2counts.txt 
+cellphonedb method analysis 3meta.txt 3counts.txt 
+cellphonedb method analysis 4meta.txt 4counts.txt 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f cellphonedb.swarm [-g #] [-t #] --module cellphonedb</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module cellphonedb</tt> <td>Loads the cellphonedb module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

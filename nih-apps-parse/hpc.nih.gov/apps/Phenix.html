@@ -1,0 +1,176 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Phenix on Biowulf';</script>
+<div class="title">Phenix on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+        <div class="tocItem"><a href="#rosetta">Running Rosetta through Phenix </a></div>
+        <div class="tocItem"><a href="#cryofit">CryoFit</a></div>
+      </div>
+</table>
+
+<p>
+<img align=left style="margin:2em;" src="/images/phenix.jpg" alt="Phenix logo">
+
+  <p>The <a href="http://www.phenix-online.org">PHENIX software suite</a> is a highly automated system for macromolecular structure determination that can rapidly arrive at an initial partial model of a structure without significant human intervention, given moderate resolution and good quality data.</p>
+
+</p>
+
+<h3>References:</h3>
+<ul>
+  <li>
+    P.D. Adams, P.V. Afonine, G. Bunkoczi, V.B. Chen, I.W. Davis, N. Echols, J.J. Headd, L.W. Hung, G.J. Kapral, R.W. Grosse-Kunstleve, A.J. McCoy, N.W. Moriarty, R. Oeffner, R.J. Read, D.C. Richardson, J.S. Richardson, T.C. Terwilliger, and P.H. Zwart.
+  <a href="http://www.ncbi.nlm.nih.gov/pubmed/21821126"><b><u>PHENIX: a comprehensive Python-based system for macromolecular structure solution.</u></b></a>
+  <em>Acta Cryst. D66, 213-221 (2010)</em>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://www.phenix-online.org/documentation/" target=_blank>Phenix Documentation</a></li>
+    <li><a href="https://www.phenix-online.org/documentation/reference/rosetta_refine.html" target=_blank>Crystallographic Refinement with Rosetta</a></li>
+    <li><a href="https://phenix-online.org/documentation/tutorials/cryo_fit_gui.html" target=_blank>Fit Biomolecules into Cryo-EM Maps using MD Simulation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Phenix</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><b>$PATH</b></li>
+    <li><b>$PHENIX</b> -- main installation directory</li>
+    <li><b>$PHENIX_VERSION</b> -- version</li>
+    <li><b>$PHENIX_MODULES_DIR</b> -- path to Phenix modules</li>
+    <li><b>$PHENIX_ROSETTA_PATH</b> -- Rosetta installation directory</li>
+    <li><b>$ROSETTA3_DB</b> -- Rosetta database directory</li>
+  </ul>
+<li>Extra modules:
+  <ul>
+    <li><b><a href="https://phenix-online.org/documentation/reference/cryo_fit.html">cryo_fit</a></b> -- fit biomolecule to a cryoem map</li>
+  </ul>
+</ul>
+
+<p class="alert">This application requires an <a href="/docs/connect.html">X-Windows connection</a>.  Further, there are combinations of X11 servers and drivers that cause Phenix to crash.  It is known that XQuartz (v2.7.x) is incompatible with Phenix.  Users are encouraged to use <a href="https://hpc.nih.gov/docs/nx.html">NX or FastX</a> as their X11 servers.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load Phenix</b>
+[user@cn3144 ~]$ <b>phenix</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+  <h3>Pymol</h3>
+
+  <p>Phenix can launch graphical applications Coot and Pymol. Navigate to Preferences -&gt; Graphics and insert this string into the text box for PyMOL path:</p>
+  <ul>
+    <li><b>Coot:</b> <tt>/usr/local/apps/Coot/0.9.8.92/bin/coot</tt></li>
+    <li><b>Pymol:</b> <tt>/usr/local/apps/pymol/2.1.0/bin/pymol</tt></li>
+  </ul>
+  <center><img src='Phenix.jpg' alt="PyMOL path" /></center>
+
+  <p>Now when the PyMOL button is clicked, you should see this:</p>
+
+  <img width=100% height=auto src="PyMOL.png" alt="PyMOL window" />
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. Phenix.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load Phenix
+phenix.autobuild seq_file=p9.seq data=p9-solve.mtz \
+  input_map_file=p9-resolve.mtz resolution=2.4  \
+  ncs_copies=1 nproc=$SLURM_CPUS_ON_NODE \
+  temp_dir=/lscratch/$SLURM_JOB_ID</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] --gres=lscratch:50 Phenix.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. Phenix.swarm). For example:</p>
+
+<pre class="term">
+phenix.elbow input_1.pdb
+phenix.elbow input_2.pdb
+phenix.elbow input_3.pdb
+phenix.elbow input_4.pdb</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f Phenix.swarm [-g #] [-t #] --module Phenix</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module Phenix</tt> <td>Loads the Phenix module for each subjob in the swarm 
+</table>
+
+<a Name="rosetta"></a><div class="heading">Using Rosetta within Phenix</div>
+<p class="alert"><a href="rosetta.html">Rosetta</a> has been compiled specifically for Phenix, and is available via
+two environment variables <b>PHENIX_ROSETTA_PATH</b> and <b>ROSETTA3_DB</b>. Do NOT load the Rosetta modules built for
+Biowulf, as these are NOT compiled specifically for Phenix. Also note that structural models are limited to standard amino acids and other limitations.</p>
+
+<p>Here is an example of structural refinement using Rosetta to generate structural models (this file is named Rosetta_refine.sh):</p>
+<pre class="term">#!/bin/bash
+#SBATCH --cpus-per-task=4
+#SBATCH --time=72:00:00
+#SBATCH --mem=50g
+#SBATCH --gres=lscratch:50
+module load Phenix
+phenix.rosetta_refine input.pdb input.mtz \
+  nproc=$SLURM_CPUS_ON_NODE \
+  temp_dir=/lscratch/$SLURM_JOB_ID \
+  post_refine=True</pre>
+
+<p>Then submit to the cluster:</p>
+
+<pre class="term">sbatch Rosetta_refine.sh</pre>
+
+<a Name="cryofit"></a><div class="heading">Using CryoFit within Phenix</div>
+<p>The <a href="https://phenix-online.org/documentation/tutorials/cryo_fit_gui.html">CryoFit</a> protocol can be used to fit a fasta or pdb into a cryoEM map.</p>
+<ul>
+  <li><b>gromacs_cryo_fit:</b> <tt>/usr/local/apps/Phenix/1.20.1-4487/cryo_fit-2Jan2020/cryo_fit/bin</tt></li>
+</ul>
+
+<p>Both cryo_fit and cryo_fit2 can be run from the commandline.  Here is how to run the tutorials:</p>
+
+<pre class="term">
+cp $PHENIX_MODULES_DIR/cryo_fit/tutorial_input_files/*.{mrc,pdb} .
+phenix.cryo_fit GTPase_activation_center_tutorial.pdb GTPase_activation_center_tutorial_gaussian_1p5.mrc
+</pre>
+
+<pre class="term">
+cp -R $PHENIX_MODULES_DIR/cryo_fit2/tutorial/input .
+phenix.cryo_fit2 input/tutorial_cryo_fit2_model.pdb input/tutorial_cryo_fit2_map.ccp4 resolution=4 
+</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

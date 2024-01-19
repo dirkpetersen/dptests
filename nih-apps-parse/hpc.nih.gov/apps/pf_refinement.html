@@ -1,0 +1,79 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Protofilament Refinement on Biowulf';</script>
+<div class="title">Protofilament Refinement on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+Protofilament Refinement is a software package to further refine microtubule structures, by aligning individual protofilaments rather than full microtubule segements.
+Currently, this program assumes that you have already refined your microtubule structures to a moderately high resolution. A full microtubule refinement suite may be further developed in the future.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://gitlab.com/gedebs371/protofilament-refinement">Protofilament Refinement Main Site</a></li>
+<li><a href="https://gitlab.com/gedebs371/protofilament-refinement/-/blob/master/Tutorial.pdf">Tutorial</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application requires a <a href="/docs/nx.html">graphical connection using NX</a></p>
+
+<ul>
+  <li>Module Name: <tt>pf_refinement</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Multithreaded
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load pf_refinement</b>
+[user@cn3144 ~]$ <b>cd /data/<em>user</em></b>
+[user@cn3144 <em>user</em>]$ <b>mkdir MyNewProject && cd $_</b>
+[user@cn3144 MyNewProject]$ <b>pf_init_project</b></pre>
+
+<p>This will create a graphical window:</p>
+
+<div><center><img src="pf_refinement_1.png" border=0 alt="pf_init_project" width="400px"/></div>
+
+<p>After initializing the project in your /data directory and running through the additional steps, the interactive session is ended like so:</p>
+
+<pre class="term">[user@cn3144 MyNewProject]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

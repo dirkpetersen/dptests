@@ -1,0 +1,149 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'AFNI on Biowulf';</script>
+<div class="title">AFNI on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+AFNI (Analysis of Functional NeuroImages) is a set of C programs for
+processing, analyzing, and displaying functional MRI (FMRI) data - a technique
+for mapping human brain activity. AFNI is developed by the Scientific and
+Statistical Computing Core, NIMH. </p>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href=
+"http://afni.nimh.nih.gov/afni/">AFNI website</a>
+<li><a href="https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/index.html">AFNI documentation</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: AFNI (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>AFNI
+binaries on Biowulf are updated once a day at 4 am, so loading the  'current-openmp' version will
+get you the latest binaries. Loading the module will give you the timestamp of the last update, e.g.
+<pre class="term">
+[user@biowulf ~]$ <b>module load afni/current-openmp</b>
+[+] Loading AFNI current-openmp ...
+AFNI/current-openmp last updated  <b>2017-11-01</b>
+</pre>
+<li>The default version of AFNI on Biowulf contains some multi-threaded executables. AFNI jobs using multi-threaded executables can be submitted to more than the default
+2 CPUs, as described below.
+<li>A copy of AFNI is retained every 3 months, for users who want to complete a run using the same version of the executables. These 3-month snapshots are stored for a year.</li>
+<li>This application produces HTML reports. You can use <A href="/docs/hpcdrive.html">hpcdrive to view these reports</a> on your local workstation.</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load afni</b>
+[+] Loading AFNI current-openmp ...
+AFNI/current-openmp last updated  2017-05-22
+
+[user@cn3144 ~]$ <b>cd /data/user/afni/AFNI_data2_helix/</b>
+
+[user@cn3144 AFNI_data2_helix]$ <b>time tcsh proc.subj ED</b>
+(version 1.24, Jun 4, 2007)
+++ 3dcopy: AFNI version=AFNI_2011_12_21_1014 (Jan  8 2015) [64-bit]
+++ 3dTcat: AFNI version=AFNI_2011_12_21_1014 (Jan  8 2015) [64-bit]
+++ 3dTcat: AFNI version=AFNI_2011_12_21_1014 (Jan  8 2015) [64-bit]
+++ 3dTcat: AFNI version=AFNI_2011_12_21_1014 (Jan  8 2015) [64-bit]
+++ 3dTcat: AFNI version=AFNI_2011_12_21_1014 (Jan  8 2015) [64-bit]
+
+[....etc...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. AFNI.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+# this file is called AFNI.sh
+
+module load AFNI
+cd /data/$USER/AFNI_data2_helix
+tcsh ./proc.subj ED
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] AFNI.sh</pre>
+You would use --cpus-per-task for the multithreaded AFNI executables. --mem is used if you need more than the default memory.
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<P>
+Typically, AFNI on Biowulf is used to simultaneously process a large number
+of independent datasets via the <a href="/apps/swarm.html">swarm</a>
+utility.</p>
+<p>A small sample set of data for 3 subjects can be copied from
+<tt>/usr/local/apps/afni/AFNI_data2_helix.tar.gz</tt>,
+courtesy of Rick Reynolds (NIMH). This tar file includes a script called
+<tt>proc.subj</tt> to process data for a single subject.</p>
+You can unpack this dataset into your own area with
+<pre class="term">
+cd /data/$USER
+tar xvzf /usr/local/apps/afni/AFNI_data2_helix.tar.gz
+</pre>
+<p>A swarm command file to process these 3 datasets would look like</p>
+<div class="term">
+<pre>
+#-------- this file is called swarm.cmd -----------------
+cd /data/$USER/AFNI_data2_helix; tcsh ./proc.subj ED
+cd /data/$USER/AFNI_data2_helix; tcsh ./proc.subj EE
+cd /data/$USER/AFNI_data2_helix; tcsh ./proc.subj EF
+#--------------------------------------------------------
+</pre></div>
+<p>
+This swarm command file would be submitted to the batch system with:</p>
+<pre>
+swarm -f swarm.cmd --module afni
+</pre>
+<p>
+If each individual process requires more than 4 GB of RAM, you can
+specify the required memory with
+<pre>
+swarm -g # -f swarm.cmd --module afni
+</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module afni<td>Loads the AFNI module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

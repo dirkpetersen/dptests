@@ -1,0 +1,128 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "LAST";</script>
+
+<div class="title">LAST on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+    LAST is designed for moderately large data (e.g. genomes, DNA reads,
+    proteomes).  It's especially geared toward:
+    <ul>
+	<li>Finding rearrangements and recombinations (<tt>last-split</tt>)</li>  
+	<li>Finding DNA-versus-protein related regions, especially protein fossils.</li>
+	<li>Unusual data, e.g. AT-rich DNA, because it can fit parameters to the data and calculate significance.</li>
+    <li>Sensitive DNA-DNA search, due to fitting, sensitive seeding, and
+	calculating significance.</li>
+    </ul>
+    It can also indicate the confidence/uncertainty of each column in an
+    alignment, and use sequence quality data in a rigorous fashion.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+    <li>
+	Kiełbasa SM, Wan R, Sato K, Horton P, Frith MC.
+	<a href="http://genome.cshlp.org/content/21/3/487.long"><b><u>Adaptive seeds tame genomic sequence comparison.</u></b></a>
+	<em>Genome Res. 2011 21(3):487-93.</em>
+  </li>
+  <li>See <a href="https://gitlab.com/mcfrith/last/-/blob/main/doc/last-papers.rst"><b>Detailed papers on LAST</b></a> for a full list.</li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://gitlab.com/mcfrith/last">LAST Main Site</a></li>
+    <li><a href="https://gitlab.com/mcfrith/last/-/blob/main/doc/last-cookbook.rst">LAST Cookbook</a></li>
+	<li><a href="https://gitlab.com/mcfrith/last/-/tree/main/doc">Documentation page listing</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>last</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded using the <tt>-P</tt> flag on <tt>lastal</tt>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>LAST_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$LAST_HOME/examples</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load last</b>
+
+[user@cn3144 ~]$ <b>lastdb humdb $LAST_HOME/examples/humanMito.fa</b>
+[user@cn3144 ~]$ <b>lastal humdb $LAST_HOME/examples/fuguMito.fa > myalns.maf</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. last.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load last
+lastdb humdb $LAST_HOME/examples/humanMito.fa
+lastal humdb $LAST_HOME/examples/fuguMito.fa > myalns.maf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] last.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. last.swarm). For example:</p>
+
+<pre class="term">
+lastal -P $SLURM_CPUS_PER_TASK humdb sample1.fa > s1.maf
+lastal -P $SLURM_CPUS_PER_TASK humdb sample2.fa > s2.maf
+lastal -P $SLURM_CPUS_PER_TASK humdb sample3.fa > s3.maf
+lastal -P $SLURM_CPUS_PER_TASK humdb sample4.fa > s4.maf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f last.swarm [-g #] [-t #] --module last</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module last</tt> <td>Loads the last module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

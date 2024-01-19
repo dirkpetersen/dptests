@@ -1,0 +1,192 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'tombo on Biowulf';</script>
+<div class="title">tombo on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p> Tombo is a suite of tools primarily for the identification of modified nucleotides from nanopore sequencing data. Tombo also provides tools for the analysis and visualization of raw nanopore signal.
+
+  
+    Features:
+    <ul>
+        <li>
+            Modified Base Detection
+            <ul>
+                <li>
+                    Supports both DNA and direct RNA
+                    <ul>
+                        <li>
+                            RNA processing details
+                        </li>
+                    </ul>
+
+                </li>
+                <li>
+                    Three detection algorithms support broad range of applications
+                    <ul>
+                        <li>
+                            Alternative model (preferred)
+                        </li>
+                        <li>
+                            Sample comparison
+                        </li>
+                        <li>
+                            De novo
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            Reference-anchored raw signal vizualization
+        </li>
+        <li>
+            Raw signal analysis python API
+        </li>
+        <li>
+            User-friendly model estimation methods with tutorial
+        </li>
+    </ul>
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>H. H. Jeong, H. K. Yalamanchili, C. Guo C, J. M. Shulman, and Z. Liu
+<em>De novo Identification of DNA Modifications Enabled by Genome-Guided Nanopore Signal Processing</em> bioRxiv (2016).
+<a href="http://biorxiv.org/content/early/2017/04/10/094672">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>tombo on <a href="https://github.com/nanoporetech/tombo">GitHub</a></li>
+<li>tombo on <a href="https://nanoporetech.github.io/tombo/">Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: tombo (see <a href="/apps/modules.html">the modules page</a>
+for more information)</li>
+<li>tombo is multithreaded. Please match the number of threads to the number of allocated CPUs</li>
+<li>Example files in <code>$TOMBO_TEST_DATA</code></li>
+<li>General reference data in <code>/fdb/igenomes/</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g --cpus-per-task=4 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load tombo</b>
+[user@cn3144]$ <b>tar xvfz ${TOMBO_TEST_DATA}/${GZFILE} .</b>
+[user@cn3144]$ <b>export REF="/fdb/igenomes/Saccharomyces_cerevisiae/UCSC/sacCer3/Sequence/WholeGenomeFasta/genome.fa"</b>
+[user@cn3144]$ <b>tombo resquiggle $FAST5DIR $REF --processes $SLURM_CPUS_PER_TASK  --num-most-common-errors 5 --overwrite</b>
+[18:08:23] Loading minimap2 reference.
+[18:08:24] Getting file list.
+[18:08:24] Loading default canonical ***** DNA ***** model.
+[18:08:24] Re-squiggling reads (raw signal to genomic sequence alignment).
+5 most common unsuccessful read types (approx. %):
+     2.7% (     93 reads) : Alignment not produced                                                          
+     1.0% (     35 reads) : Poor raw to expected signal matching (revert with `tombo filter clear_filters`) 
+     0.1% (      5 reads) : Read event to sequence alignment extends beyond bandwidth                       
+     -----
+     -----
+100%|##################################################################| 3621/3621 [05:49<00:00, 10.36it/s]
+[18:14:14] Final unsuccessful reads summary (3.7% reads unsuccessfully processed; 133 total reads):
+     2.6% (     93 reads) : Alignment not produced                                                          
+     1.0% (     35 reads) : Poor raw to expected signal matching (revert with `tombo filter clear_filters`) 
+     0.1% (      5 reads) : Read event to sequence alignment extends beyond bandwidth                       
+[18:14:14] Saving Tombo reads index to file.
+
+[user@cn3144]$ <b>tombo detect_modifications alternative_model --fast5-basedirs $FAST5DIR \
+    --statistics-file-basename native.e_coli_sample \
+    --alternate-bases dam dcm --processes $SLURM_CPUS_PER_TASK</b>
+    [18:20:03] Parsing Tombo index file(s).
+    [18:20:03] Performing alternative model testing.
+    [18:20:03] Performing specific alternate base(s) testing.
+    [18:20:03] Calculating read coverage regions.
+    [18:20:03] Calculating read coverage.
+    [18:20:04] Performing modified base detection across genomic regions.
+    100%|##############################################################| 2392/2392 [01:10<00:00, 33.89it/s]
+
+[user@cn3144]$ <b>tombo plot most_significant --fast5-basedirs $FAST5DIR \
+    --statistics-filename native.e_coli_sample.dcm.tombo.stats \
+    --plot-standard-model --plot-alternate-model dcm \
+    --pdf-filename sample.most_significant_dcm_sites.pdf</b>
+    [18:23:05] Loading statistics from file.
+    [18:23:06] Parsing Tombo index file(s).
+    [18:23:06] Loading default canonical ***** DNA ***** model.
+    [18:23:06] Preparing plot data.
+    [18:23:08] Plotting.
+
+[user@cn3144]$ <b>tombo text_output browser_files --statistics-filename native.e_coli_sample.dam.tombo.stats \
+    --file-types dampened_fraction --browser-file-basename native.e_coli_sample.dam</b>
+    [18:23:42] Loading statistics from file.
+    [18:23:42] Parsing and outputting statistics wiggles.
+
+[user@cn3144]$ <b>tombo text_output browser_files --fast5-basedirs $FAST5DIR \
+    --file-types coverage --browser-file-basename native.e_coli_sample</b>
+    [18:24:23] Parsing Tombo index file(s).
+    [18:24:23] Getting and writing  coverage bedgraphs.
+    [18:24:23] Calculating read coverage regions.
+    [18:24:23] Calculating read coverage.   
+</pre>
+
+<!-- <p>Notes:</p>
+<ol>
+    <li>tombo tries to determine if data is paired end by comparing sequence
+        ids. This can fail with certain id lines like, for example, those
+        produced by the sra-toolkit. In other words, it's a fragile
+        autodetection and fastq files may have to be reformatted to make it
+        work correctly.</li>
+    <li>tombo supports compressed fastq files</li>
+</ol> -->
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch script file (e.g. tombo.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+cd /lscratch/$SLURM_JOB_ID
+module load tombo
+tar xvfz ${TOMBO_TEST_DATA}/${GZFILE} .
+export REF="/fdb/igenomes/Saccharomyces_cerevisiae/UCSC/sacCer3/Sequence/WholeGenomeFasta/genome.fa"
+tombo resquiggle $FAST5DIR $REF --processes $SLURM_CPUS_PER_TASK  --num-most-common-errors 5 --overwrite
+....
+....
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=10g --gres=lscratch:100 tombo.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

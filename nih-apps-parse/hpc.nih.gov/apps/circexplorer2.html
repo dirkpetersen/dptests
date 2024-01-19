@@ -1,0 +1,89 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Circexplorer2 on Biowulf &amp; Helix';</script>
+    <div class="title">Circexplorer2 on Biowulf &amp; Helix</div>
+    <p></p>
+    <table width=25% align=right>
+      <tr> 
+        <td> <div class="toc"> 
+            <div class="tocHeading">Quick Links</div>
+            <div class="tocItem"><a href="#int">Interactive job on Biowulf</a></div>
+            <div class="tocItem"><a href="#serial">Batch job on Biowulf</a></div>
+            <div class="tocItem"><a href="#swarm">Swarm of jobs</a></div>
+          </div>
+    </table>
+    <!-- ======================================================================= -->
+    <div class="heading">Description</div>
+    <p>CIRCexplorer2 is a combined strategy to identify junction reads from back 
+      spliced exons and intron lariats.</p>
+    <p>There may be multiple versions available on our systems. An easy way of 
+      selecting the version is to use <a href="/apps/modules.html">modules</a>. 
+      To see the modules available, type</p>
+    <pre class="term">
+module avail circexplorer2 
+</pre>
+    <p>To select a module use</p>
+    <pre class="term">
+module load circexplorer2/[version]
+</pre>
+    <p>where <code>[version]</code> is the version of choice.</p>
+    <!-- comment out where applicable 
+<p class="alert">meka is a multithreaded application. Make sure to match the
+number of cpus requested with the number of threads.</p> -->
+    <div class="heading">Environment variables set</div>
+    <ul>
+      <li> <code>$PATH</code></li>
+      <li><code>database files in /fdb/circexplorers2</code></li>
+    </ul>
+<div class="heading">Documentation</div>
+    <p><a href="https://github.com/YangLab/CIRCexplorer">https://github.com/YangLab/CIRCexplorer</a></p>
+<!-- ======================================================================= -->
+    <a class="navbar-safe-anchor"  Name="int"></a> 
+    <div class="heading">Circexplorers2 job on Biowulf</div>
+    <p>Allocate an interactive session with <a href="/docs/userguide.html#int">sinteractive</a> 
+      and use as described below</p>
+    <pre class="term">
+biowulf$ <b>sinteractive --mem=5g</b>
+salloc.exe: Pending job allocation 38978697
+[...snip...]
+salloc.exe: Nodes cn2273 are ready for job
+node$ <b>module load circexplorer2</b>
+[+] Loading circexplorer2
+node$ <b>CIRCexplorer2.py -f accepted_hits.bam -g hg19.fa -r ref.txt</b>
+[...snip...]
+node$ <b>exit</b>
+biowulf$
+</pre>
+    <p>&nbsp;</p>
+    <!-- ======================================================================= -->
+    <a class="navbar-safe-anchor"  Name="serial"></a> 
+    <div class="heading">Batch job on Biowulf</div>
+    <p>Create a batch script similar to the following example:</p>
+    <pre class="term">
+#! /bin/bash
+# this file is circexplorer2.batch
+
+module load circexplorer2 || exit 1
+cd /data/$USER
+CIRCexplorer2.py -f accepted_hits.bam -g hg19.fa -r ref.txt</pre>
+    <p>Submit to the queue with <a href="/docs/userguide.html">sbatch</a>:</p>
+    <pre class="term">
+biowulf$ <b>sbatch circexplorer2.batch</b>
+</pre>
+<p>&nbsp;</p>
+<a class="navbar-safe-anchor"  Name="swarm"></a>
+<div class="heading">Swarm of Jobs on Biowulf</div>
+    <p>Create a swarmfile (e.g. script.swarm). For example:</p>
+    <pre class="term">
+# this file is called script.swarm
+cd dir1;circexplorer2 command 1;circexplorer2 command 2
+cd dir2;circexplorer2 command 1;circexplorer2 command 2
+cd dir3;circexplorer2 command 1;circexplorer2 command 2
+[...]
+</pre>
+    <p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+    <pre class="term">swarm -f script.swarm --module circexplorer2</pre>
+    <P>For more information regarding swarm: <a href="https://hpc.nih.gov/apps/swarm.html#usage">https://hpc.nih.gov/apps/swarm.html#usage 
+      </a> 
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

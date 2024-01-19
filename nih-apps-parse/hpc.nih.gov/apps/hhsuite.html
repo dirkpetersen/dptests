@@ -1,0 +1,160 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'hhsuite on Biowulf';</script>
+<div class="title">hhsuite on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The HH-suite is an open-source software package for sensitive protein
+sequence searching based on the pairwise alignment of hidden Markov models
+(HMMs).
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>M. Remmert, A. Biegert, A. Hauser, J. Söding. <em>HHblits: lightning-fast iterative protein sequence searching by HMM-HMM alignment.</em> Nature Methods 2011, 9:173-175. doi:<a href="https://doi.org/10.1038/nmeth.1818">10.1038/nmeth.1818</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/soedinglab/hh-suite">hhsuite Main Site</a></li>
+<li><a href="https://github.com/soedinglab/hh-suite/blob/master/hhsuite-userguide.pdf">User Guide</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>hhsuite</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>hhsuite is a multithreaded application. Make sure to match the number of cpus requested with the number of threads.
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>HHLIB</tt></li>
+  </ul>
+<li>Example files in <tt>/fdb/hhsuite/test-data</tt>
+<li>Reference data in <tt>/fdb/hhsuite/</tt>
+</ul>
+
+<p>hhblits and hhsearch need to do many random file access and read
+operations. The central file systems (i.e. /data, /scratch, or /fdb) will
+not perform well under this type of load. This means that running against
+the database directly stored on /fdb will not be performant. In addition
+it may tax the file system enough to also slow down other user's
+computations. We therefore recommend to copy the database to be searched
+to <a href="https://hpc.nih.gov/docs/userguide.html#local">lscratch</a>.
+In particular, nodes with SSD storage should be used. This means that the
+ideal usage pattern for large hhblits/hhsearch jobs is to allocate a node
+(or nodes) exclusively, copy the database to lscratch, and then run all
+computations on that node.</p>
+
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --constraint=ssd3200 --gres=lscratch:100 --cpus-per-task=10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load hhsuite</b>
+[+] Loading gcc  7.3.0  ... 
+[+] Loading openmpi 3.0.0  for GCC 7.3.0 
+[+] Loading hhsuite  3.3.0 
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 46116226]$ <b>cp -r /fdb/hhsuite/uniprot20_2016_02 .</b>
+[user@cn3144 46116226]$ <b>hhblits \
+ -cpu $SLURM_CPUS_PER_TASK \
+ -i /fdb/hhsuite/test-data/query.a3m \
+ -d uniprot20_2016_02/uniprot20_2016_02 \
+ -o query.hhr
+</b>
+- 17:04:47.198 INFO: Searching 8290206 column state sequences.
+
+- 17:04:47.723 INFO: /fdb/hhsuite/test-data/query.a3m is in A2M, A3M or FASTA format
+
+- 17:04:47.794 INFO: Iteration 1
+
+- 17:04:48.727 INFO: Prefiltering database
+
+- 17:06:47.000 INFO: HMMs passed 1st prefilter (gapless profile-profile alignment)  : 302479
+...
+...
+[user@cn3144 46116226]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. hhblits.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+set -e
+
+module load hhsuite
+cd /lscratch/$SLURM_JOB_ID
+cp -r /fdb/hhsuite/uniprot20_2016_02 .
+
+hhblits -i /fdb/hhsuite/test-data/query.seq \
+  -d ./uniprot20_2016_02/uniprot20_2016_02 \
+  -cpu $SLURM_CPUS_PER_TASK -o test.hhr \
+  -oa3m test.a3m -n 6
+
+hhmake -i test.a3m -o test.hhm
+addss.pl test.hhm test_addss.hhm -hmm
+cp test* /path/to/output/dir
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --gres=lscratch:100 [--mem=#] hhblits.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. hhblits.swarm). For example:</p>
+
+<pre class="term">
+cp -r /fdb/hhsuite/uniprot20_2016_02 /lscratch/$SLURM_JOB_ID \
+&& hhblits -i sample1.seq -d /lscratch/$SLURM_JOB_ID/uniprot20_2016_02/uniprot20_2016_02 -cpu $SLURM_CPUS_PER_TASK -o sample1.hhr
+cp -r /fdb/hhsuite/uniprot20_2016_02 /lscratch/$SLURM_JOB_ID \
+&& hhblits -i sample2.seq -d /lscratch/$SLURM_JOB_ID/uniprot20_2016_02/uniprot20_2016_02 -cpu $SLURM_CPUS_PER_TASK -o sample2.hhr
+cp -r /fdb/hhsuite/uniprot20_2016_02 /lscratch/$SLURM_JOB_ID \
+&& hhblits -i sample3.seq -d /lscratch/$SLURM_JOB_ID/uniprot20_2016_02/uniprot20_2016_02 -cpu $SLURM_CPUS_PER_TASK -o sample3.hhr
+cp -r /fdb/hhsuite/uniprot20_2016_02 /lscratch/$SLURM_JOB_ID \
+&& hhblits -i sample4.seq -d /lscratch/$SLURM_JOB_ID/uniprot20_2016_02/uniprot20_2016_02 -cpu $SLURM_CPUS_PER_TASK -o sample4.hhr
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f hhblits.swarm [-g #] -t 6 --gres=lscratch:100 --module hhsuite</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--gres lscratch:#</tt> <td>Number of gigabytes of local scratch space required for each process
+  <tr><td><tt>--module hhsuite</tt> <td>Loads the hhsuite module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

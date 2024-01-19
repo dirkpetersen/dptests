@@ -1,0 +1,127 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SynthDNM: a random-forest based classifier for robust de novo prediction of SNPs and indels.';</script>
+<div class="title"><b>SynthDNM: a random-forest based classifier for robust de novo prediction of SNPs and indels.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+SynthDNM is a random-forest based classifier that can be readily adapted
+to new sequencing or variant-calling pipelines 
+by applying a flexible approach to constructing simulated
+training examples from real data. The optimized SynthDNM classifiers predict de novo SNPs and indels
+with robust accuracy across multiple methods of variant calling.
+</p>
+<h3>References:</h3>
+<ul> Aojie Lian, James Guevara, Kun Xia and Jonathan Sebat <br />
+<i> Customized de novo mutation detection for any variant
+calling pipeline: SynthDNM </i> <br />
+<a href="https://academic.oup.com/bioinformatics/article/37/20/3640/6209072">Bioinformatics</a>, Volume 37, Issue 20, October 2021, Pages 3640–3641, https://doi.org/10.1093/bioinformatics/btab225
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/james-guevara/synthdnm">SynthDNM Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>SynthDNM</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SDNM_HOME</b>&nbsp; installation directory</li>
+    <li><b>SDNM_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>SDNM_DATA</b>&nbsp; &nbsp; sample data folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. 
+<br />Sample session on a GPU node:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --mem=8g -c4 --gres=lscratch:20</b>
+[user@cn2379 ~]$ <b>module load synthdnm</b>
+[+] Loading singularity  3.8.4  on cn2379
+[+] Loading synthdnm  1.1.50
+</pre>
+Basic usage:
+<pre class="term">
+[user@cn2379 ~]$ <b>run_synthdnm.py -h</b>
+usage: run_synthdnm.py [-h] [--vcf_file VCF_FILE] --ped_file PED_FILE
+                       [--region REGION] [--features_file FEATURES_FILE]
+                       [--output_folder OUTPUT_FOLDER]
+                       [--training_set_tsv TRAINING_SET_TSV]
+                       {classify,make_training_set,train,grid_search} ...
+
+SynthDNM: a de novo mutation classifier and training paradigm
+
+positional arguments:
+  {classify,make_training_set,train,grid_search}
+                        Available sub-commands
+    classify            Classify DNMs using pre-trained classifiers.
+    make_training_set   Make training set.
+    train               Train classifiers
+    grid_search         Randomized grid search across hyperparameters.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --vcf_file VCF_FILE   VCF file input
+  --ped_file PED_FILE   Pedigree file (.fam/.ped/.psam) input
+  --region REGION       Interval ('{}' or '{}:{}-{}' in format of chr or
+                        chr:start-end) on which to run training or
+                        classification
+  --features_file FEATURES_FILE
+                        Features file input
+  --output_folder OUTPUT_FOLDER
+                        Output folder for output files (if not used, then
+                        output folder is set to 'synthdnm_output')
+  --training_set_tsv TRAINING_SET_TSV
+                        Training set file (created using make_training_set
+                        mode)
+[user@cn2379 ~]$ <b>run_synthdnm.py classify -h</b>
+usage: run_synthdnm.py classify [-h] --clf_folder CLF_FOLDER
+                                [-feature_extraction_only]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --clf_folder CLF_FOLDER
+                        Folder that contains the classifiers, which must be in
+                        .pkl format (if not specified, will look for them in
+                        the default data folder)
+  -feature_extraction_only
+                        Only output the features file (without classifying
+</pre>
+
+End the interactive session:
+<pre class="term">
+[user@cn2379 ~]$ <b>exit</b>
+</pre>
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. synthdnm.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load synthdnm
+cp $SDNM_DATA/* .
+synthdnm -v tutorial.vcf -f tutorial.ped
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+<pre class="term"><b>sbatch synthdnm.sh</b></pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

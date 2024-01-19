@@ -1,0 +1,115 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'svviz on Biowulf';</script>
+<div class="title">svviz on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+svviz visualizes high-throughput sequencing data relevant to a structural variant. Only reads supporting the variant or the reference allele will be shown. svviz can operate in both an interactive web browser view to closely inspect individual variants, or in batch mode, allowing multiple variants (annotated in a VCF file) to be analyzed simultaneously.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Spies N, Zook JM, Salit M, Sidow A.
+    <a href="https://pubmed.ncbi.nlm.nih.gov/26286809/">
+      <b><u>svviz: a read viewer for validating structural variants.</u></b>
+    </a>
+    <em>Bioinformatics, 2015 Dec 15;31(24):3994-6.</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/svviz/svviz">svviz Main Site</a></li>
+<li><a href="https://svviz.readthedocs.io/en/latest/index.html">svviz Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application requires a <a href="https://hpc.nih.gov/docs/tunneling/">interactive tunnel session</a></p>
+
+<ul>
+  <li>Module Name: <tt>svviz</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>SVVIZ_EXAMPLES</tt></li>
+  </ul>
+  <li>Example files in <tt>$SVVIZ_EXAMPLES</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --gres=lscratch:10 --tunnel</b>
+salloc.exe: Pending job allocation 26710013
+salloc.exe: job 26710013 queued and waiting for resources
+salloc.exe: job 26710013 has been allocated resources
+salloc.exe: Granted job allocation 26710013
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3094 are ready for job
+
+Created 1 generic SSH tunnel(s) from this compute node to 
+biowulf for your use at port numbers defined 
+in the $PORTn ($PORT1, ...) environment variables.
+
+
+Please create a SSH tunnel from your workstation to these ports on biowulf.
+On Linux/MacOS, open a terminal and run:
+
+    ssh  -L 45000:localhost:45000 biowulf.nih.gov
+
+For Windows instructions, see https://hpc.nih.gov/docs/tunneling
+
+[user@cn3094 ~]$ <b>echo $PORT1</b>
+45000
+[user@cn3094 ~]$ <b>module load svviz</b>
+
+[user@cn3094 ~]$ <b>svviz --port $PORT1 --type inv \
+  -b $SVVIZ_EXAMPLES/example1/son.sorted.bam \
+  -b $SVVIZ_EXAMPLES/example1/father.sorted.bam \
+  -b $SVVIZ_EXAMPLES/example1/mother.sorted.bam \
+  $SVVIZ_EXAMPLES/example1/chr4_short.fa chr4 88847163 88858699</b>
+
+...
+
+Starting browser at http://127.0.0.1:45000/
+ * Serving Flask app "svviz.web" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+</pre>
+
+<p>Create an ssh tunnel using value of <b><tt>$PORT1</tt></b> (<a href="https://hpc.nih.gov/docs/tunneling/#maclinux">mac/linux</a> or <a href="https://hpc.nih.gov/docs/tunneling/#windows">windows</a>).</p>
+
+<p>Then open a web brower and load the URL <em>localhost:#####</em>, where <em>#####</em> is the value of <b><tt>$PORT1</tt></b>.</p>
+
+<div><center><img src="svviz.png" border=1 alt="main" width="800px"/></div>
+
+<p>If you want to run another svviz command, type the keystroke combination <b>Control+C</b> within the sinteractive tunnel session to escape and stop the svviz process.  You can then run other svviz commands.</p>
+
+<p>When you are completely finished with svviz and need to end the sinteractive tunnel session, type <b><tt>exit</tt></b>:</p>
+
+<pre class="term">[user@cn3094 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 26710013
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

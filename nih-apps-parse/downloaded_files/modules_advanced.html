@@ -1,0 +1,123 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Environment Modules on Biowulf & Helix Advanced Topics';</script>
+<div class="title">
+Environment Modules on Biowulf & Helix<br>
+Advanced Topics</div>
+<p>
+<div class="heading">Examine a modulefile, contd.</div>
+<p>
+The Module Environment System, "<b>Lmod</b>", currently in use on <b>biowulf</b> and <b>helix</b>, always reports the output of the "<b>module display</b>" command in the "<b>lua</b>" programming language, as shown in the above example. If you are more familiar with the "<b>tcl</b>" programming language, use <b>Table 1.</b> below to translate the "<b>Lmod</b>" output.
+<table border=1 cellpadding=6 style='margin-left:1em;margin-right:1em;'>
+<caption style='font-size:larger;font-weight:bold;text-align:left;'>
+Table 1. Translations of some modulefile commands
+</caption>
+<tr style='font-size:larger;font-weight:bold;text-align:center;'><td>tcl command</td><td>lua command</td><td>shell</td><td>shell equivalent</td></tr>
+<tr><td>prepend_path PATH NewPath</td><td>prepend_path("PATH","NewPath")</td><td>any</td><td>PATH=NewPath:$PATH</td></tr>
+<tr><td>append_path PATH NewPath</td><td>append_path("PATH","NewPath")</td><td>any</td><td>PATH=$PATH:NewPath</td></tr>
+<tr><td rowspan=2>setenv VarName varvalue</td><td rowspan=2>setenv(VarName,varvalue)</td><td>bash<br>ksh</td><td>export VarName=varvalue</td></tr>
+<tr><td>csh</td><td>setenv VarName varvalue</td></tr>
+<tr><td>module-whatis "Whatis message"</td><td>whatis("Whatis message")</td><td colspan=2 style='background:lightgrey;'></td></tr>
+</table>
+<p>
+If you prefer to set paths directly instead of using modules, you can use the information from "<b>module display</b>" to do so. 
+
+<p>
+<a class="navbar-safe-anchor" Name="nested"></a><div class="heading">Nested modules</div>
+<p>
+You might want to set up a personal modulefile that loads and unloads a collection of other modules. The advantage to writing a modulefile in this way is: if a module "<b>A</b>" requires modules "<b>B</b>","<b>C</b>", and "<b>D</b>" (or more!), the single module command,
+"<b>module load A</b>" will load module "<b>A</b>" and all its required modules, thus avoiding the commands
+"<b>module load B"</b>, "<b>module load C</b>", "<b>module load D</b>" (or more!).
+<p>
+Below is an example of such a module, called '<b>myngs</b>', which loads a specific version of <b>Novocraft</b>, <b>Cufflinks</b>, and <b>Tophat</b>.  You will need to put this module file into "<b>/home/user/privatemodules/</b>".
+<p>
+<div class="term"><Pre>
+#%Module1.0
+ 
+# this module is called myngs
+  
+module-whatis "Loads  novocraft/3.00.02 cufflinks/2.0.1   tophat/2.0.8/bowtie2-2.1.0"
+ 
+set mode [module-info mode]
+#
+if { $mode == "whatis" } {  exit }
+#
+foreach modulename { novocraft/3.00.02 cufflinks/2.0.1   tophat/2.0.8/bowtie2-2.1.0 } {
+  module load $modulename
+  if { $mode == "load" }   { puts stderr "$modulename is loaded" }
+  if { $mode == "unload" } { puts stderr "$modulename is unloaded" }
+}
+</pre></div>
+<p>
+The example module "<b>myngs</b>" has two notable features:
+<ol>
+<li> For each required module, with name "<b>$modulename</b>" used as an item in the <b>foreach</b> loop, <br>
+there is a command "<b>module load $modulename</b>" but no "<b>module unload $modulename</b>". 
+<p>
+This works only because the new Environment Module manager, "<b>lmod</b>", has this behavior:
+<ul>
+<li> When the user performs "<b>module load myngs</b>" in a shell, each "<b>module load $modulename</b>" in the <b>modulefile</b> performs a "<b>load</b>" operation.
+<li> When the user performs "<b>module unload myngs</b>" in a shell, each "<b>module load $modulename</b>" in the <b>modulefile</b> performs an "<b>unload</b>" operation.
+</ul>
+<p>
+<li> The lines with "<b>puts stderr</b>" make a report only as a reminder, and are optional.
+</ol>
+<p>
+Here is a sample session using the above module.
+<div class="term"><pre>
+[user@helix ~]$ <b>module load use.own</b>
+
+[user@helix ~]$ <b>module list</b>
+Currently Loaded Modules:
+  1) use.own
+
+[user@helix ~]$ <b>module load myngs</b>
+novocraft/3.00.02 is loaded
+cufflinks/2.0.1 is loaded
+tophat/2.0.8/bowtie2-2.1.0 is loaded
+
+[user@helix ~]$ <b>module list</b>
+Currently Loaded Modules:
+  1) use.own                      3) cufflinks/2.0.1              5) myngs
+  2) novocraft/3.00.02            4) tophat/2.0.8/bowtie2-2.1.0
+
+[user@helix ~]$ <b>module unload myngs</b>
+novocraft/3.00.02 is unloaded
+cufflinks/2.0.1 is unloaded
+tophat/2.0.8/bowtie2-2.1.0 is unloaded
+
+[user@helix ~]$ <b>module list</b>
+Currently Loaded Modules:
+  1) use.own
+</pre></div>
+<p>
+<div class="heading">Tip on Best-Practices When Writing Personal Modulefiles</div>
+<P>
+One purpose of a <b>modulefile</b> for an application is to adjust environment variables to the needs of the application.
+Particularly important are variables which have a value specifying<br> a "search path" &#151; a colon-separated list of directory pathnames in search order.
+<p>
+ For example:
+<p>
+<table border=1 cellpadding=4 width=100%>
+<tr style='font-weight:bold;text-align:center;'><td>Variable Name</td><td>Description of Directory Contents</td></tr>
+<tr><td><b>PATH</b></td><td>Executable programs</td></tr>
+<tr><td><b>MANPATH</b></td><td>Linux man pages</td></tr>
+<tr><td><b>LD_LIBRARY_PATH</td><td>Shared libraries</td></tr>
+<tr><td><b>PERL5LIB</b></td><td>Perl modules</td></tr>
+<tr><td><b>PYTHONPATH</b></td><td>Python packages</td></tr>
+</table>
+<p>
+The safest way to set these environment variables is to follow the rules:
+<ul>
+<li> A <b>modulefile</b> performs a "<b>module load</b> <i>*REQUIRED*</i>" operation<br>
+ for each of its "<i>*REQUIRED*</i>" modules
+<p>
+<li> Each <b>modulefile</b> adjusts the environment variables for its own application,<br>
+and never those for its "<i>*REQUIRED*</i>" modules.
+</ul>
+</div>
+<p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

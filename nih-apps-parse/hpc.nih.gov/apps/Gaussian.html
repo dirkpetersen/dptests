@@ -1,0 +1,281 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Gaussian on Biowulf';</script>
+<div class="title">Gaussian on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#gaussview">GaussView </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+        <div class="tocItem"><a href="#errors">Interpreting Gaussian Errors </a></div>
+      </div>
+</table>
+
+<p>
+Gaussian provides state-of-the-art capabilities for electronic structure modeling, and is a connected system of programs for performing semiempirical and ab initio molecular orbital (MO) calculations.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="http://gaussian.com/citation/">Official Gaussian Literature Citations</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://gaussian.com">Gaussian Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Gaussian</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>Multi-threaded, with distributed capability using <a href="http://gaussian.com/lindaprod/">Linda</a></li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$g09root/$g16root</tt></li>
+    <li><tt>$GAUSS_SCRDIR</tt></li>
+    <li><tt>$GAUSS_MDEF</tt></li>
+    <li><tt>$GAUSS_WDEF</tt></li>
+    <li><tt>$GAUSS_PDEF</tt></li>
+    <li><tt>$GAUSS_LFLAGS</tt></li>
+  </ul>
+</li>
+<li>Example files in <tt>$g09root/g09/tests/com</tt> or <tt>$g16root/g16/tests/com</tt></li>
+</ul>
+
+<p class="alert">Interactive use of Gaussian must be run on an interactive node with local scratch space allocated.  Please see
+<a href="https://hpc.nih.gov/docs/userguide.html#int">https://hpc.nih.gov/docs/userguide.html#int</a>
+and
+<a href="https://hpc.nih.gov/docs/userguide.html#local">https://hpc.nih.gov/docs/userguide.html#local</a>
+for more information.</p>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:100</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load Gaussian/G16-C01</b>
+[user@cn3144 ~]$ <b>g16 &lt; g16.com &gt; g16.log</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<a name="gaussview"></a><div class="heading">GaussView</div>
+<p><b>GaussView</b> is available with the command <b>gview</b> (after loading the Gaussian module).</p>
+
+  <pre class="term">gview</pre>
+
+<p>You may see some kind of error:</p>
+<pre class="term">libGL error: No matching fbConfigs or visuals found
+libGL error: failed to load driver: swrast
+[xcb] Unknown sequence number while processing queue
+[xcb] Most likely this is a multi-threaded client and XInitThreads has not been called
+[xcb] Aborting, sorry about that.
+gview.exe: xcb_io.c:259: poll_for_event: Assertion `!xcb_xlib_threads_sequence_lost' failed.
+Aborted</pre>
+
+<p class="alert"><b>NOTE:</b> Depending on your desktop, <em>gview</em> may require the use of NX persistent connection to display graphics.  Please see <a href="https://hpc.nih.gov/docs/connect.html">https://hpc.nih.gov/docs/connect.html</a> for information about NX.</p>
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p class="alert"><b>NOTE:</b> Gaussian uses local scratch disk for temporary files. Because <a href="http://hpc.nih.gov/docs/userguide.html#local">local disk space is not available by default, it must be deliberately allocated</a>.  Otherwise you may see an error regarding local scratch space.  The environment variable <b>$GAUSS_SCRDIR</b> is set to <b>/lscratch/$SLURM_JOBID</b> by default for biowulf jobs.</p>
+
+<p>Create a batch script for submission to the cluster, for example <b>gaussian.batch</b>:</p>
+
+<pre class="term">#---------------------  file gaussian.batch  -----------------------
+#!/bin/bash
+#SBATCH -J gaussian
+module load Gaussian/G16-C01
+g16 &lt; g16.com &gt; g16.log
+</pre>
+
+<p>The following environment variables will be set when the g16 command is run:</p>
+<ul>
+<li><b>$GAUSS_WDEF</b> : Run with Linda (only for multinode jobs, substitutes for %LindaWorkers), set when <b>--nodes</b> is greater than 1</li>
+<li><b>$GAUSS_PDEF</b> : Number of processors per node (substitutes for %NProcShared), set by <b>--cpus-per-task</b></li>
+<li><b>$GAUSS_MDEF</b> : Memory per node (substitutes for %Mem), set by <b>--mem</b></li>
+</ul>
+
+<p>Because these environment variables are set, there is no need to include the Link 0 commands %LindaWorkers, 
+%NProcShared, or %Mem.  The number of processors, nodes, and amount of memory is determined by the amounts
+allocated in the slurm job.  However, if these commands are present in the g16 input file, they will take precedence over
+the environment variables.</p>
+</p>
+
+<p>To submit an 8 cpu job on a single node, utilizing 4GB of memory, and 100 GB of scratch space, you would use the following command:</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --threads-per-core=1 --mem=4g --gres=lscratch:100 gaussian.batch</pre>
+
+<p>The <b>--threads-per-core=1</b> option causes slurm to allocate a single cpu per core, essentially disabling
+hyperthreading, and will give better runtimes than otherwise.</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile, for example <b>gaussian.swarm</b>:</p>
+
+<pre class="term">#---------------------  file gaussian.swarm  -----------------------
+g16 &lt; test1.com &gt; test1.log
+g16 &lt; test2.com &gt; test2.log
+g16 &lt; test3.com &gt; test3.log
+g16 &lt; test4.com &gt; test4.log</pre>
+
+<p>Submit to swarm, allocating the required resources as necessary.  The following example allocates 
+4 cores (<b>-t 4</b>), 2 GB of memory (<b>-g 2</b>), and 20 GB of local disk space (<b>--gres=lscratch:50</b>)
+per gaussian process.</p>
+
+<pre class="term">swarm -f gaussian.swarm -t 4 -g 2 --noht --gres=lscratch:50 --module Gaussian</pre>
+
+<!-- errors -->
+<a Name="errors"></a><div class="heading">Interpreting Gaussian Errors</div>
+
+<p>Gaussian errors are not always straightforward to interpret. Something as
+simple as a "file not found" can seem baffling and cryptic. Here is a
+collection of errors and their translations:</p>
+<table width="870" border="1">
+<tr>
+<th width="600">Gaussian Error</th>
+<th>Translation to English</th>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">Error termination in NtrErr:
+ntran open failure returned to fopen.
+Segmentation fault</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">Can't open a file.</td></tr>
+<tr><td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">Out-of-memory error in routine UFChkP (IEnd= 12292175 MxCore=6291456)
+Use %Mem=12MW to provide the minimum amount of memory required to complete this step.
+Error termination via Lnk1e at Thu Feb 2 13:05:32 2006.</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">Default memory (6 MW, set in $GAUSS_MEMDEF) is too small for unfchk.</p></td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB"><pre class="fullterm">galloc: could not allocate memory.: Resource temporarily unavailable</pre></td>
+<td valign="top" style="padding-left:5px">Not enough memory.</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">Out-of-memory error in routine...</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">Not enough memory.</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">End of file in GetChg.
+Error termination via Lnk1e ...</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">Not enough memory.</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">IMax=3 JMax=2 DiffMx= 0.00D+00
+Unable to allocate space to process matrices in G2DrvN:
+NAtomX= 58 NBasis= 762 NBas6D= 762 MDV1= 6291106 MinMem= 105955841.</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">Gaussian has 6 MW free memory (MDV1) but requires at least 106 MW
+(MinMem).</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">Estimate disk for full transformation -677255533 words. Semi-Direct
+transformation. Bad length for file.</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">MaxDisk has been set too low.</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">Error termination in NtrErr:
+NtrErr Called from FileIO.</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">The calculation has exceeded the maximum limit of maxcyc.</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">Erroneous read. Read 0 instead of 6258688.  fd = 4 g_read</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">Disk quota or disk size exceeded. Could also be disk failure or NFS
+timeout.</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">Erroneous write. Write 8192 instead of 12288.
+fd = 4
+orig len = 12288 left = 12288 g_write</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">Disk quota or disk size exceeded. Could also be disk failure or NFS
+timeout.</td>
+</tr>
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+
+<pre class="fullterm">PGFIO/stdio: Permission denied
+PGFIO-F-/OPEN/unit=11/error code returned by host stdio - 13.
+File name = /lscratch/2394920/Gau-#####.inp
+In source file ml0.f, at line number 177</pre>
+
+</td>
+<td valign="top" style="padding-left:5px">The user does not have write permission for $GAUSS_SCRDIR.</td>
+</tr>
+
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+<pre class="fullterm">QPERR — A SYNTAX ERROR WAS DETECTED IN THE INPUT LINE.</pre>
+</td>
+<td valign="top" style="padding-left:5px">A syntax error was detected in the input.  There is some guidance in the output file below this line.</td>
+</tr>
+
+<tr>
+<td valign="top" style="background-color: #DBDFDB">
+<pre class="fullterm">Error during math dispatch processing...
+Error: Fastmath dispatch table is corrupt
+Error during math dispatch processing...
+Error: Fastmath dispatch table is corrupt</pre>
+</td>
+<td valign="top" style="padding-left:5px">g16 prior to C01 will not run on newer AMD using the AVX2 instruction set of Zen+ architecture.</td>
+</tr>
+
+
+</table>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

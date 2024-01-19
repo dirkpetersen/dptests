@@ -1,0 +1,103 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Hap-IBD: detecting identity-by-descent (IBD) segments and homozygosity-by-descent (HBD) segments';</script>
+<div class="title"><b>Hap-IBD: detecting identity-by-descent (IBD) segments and homozygosity-by-descent (HBD) segments</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The hap-ibd program detects identity-by-descent (IBD) segments and homozygosity-by-descent (HBD) segments 
+in phased genotype data. The hap-ibd program can analyze data sets with hundreds of thousands of samples.
+</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/browning-lab/hap-ibd">hap-ibd GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>hap-ibd</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>HAPIBD_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>HAPIBD_DATA</b>&nbsp; sample data directory
+    <li><b>JARPATH</b>&nbsp; path to the folder containing JAR file
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn3335 ~]$ <b>module load Hap-IBD</b>
+[+] Loading java 12.0.1  ...
+[+] Loading Hap-IBD  20221201
+[user@cn3335 ~]$ <b>hap-ibd</b>
+hap-ibd.jar  [ version 1.0, 20May22.818 ]
+
+Syntax: java -jar hap-ibd.jar [arguments in format: parameter=value]
+
+Data Parameters:
+  gt=&lt;VCF file with GT field&gt;                         (required)
+  map=&lt;PLINK map file with cM units&gt;                  (required)
+  out=&lt;output file prefix&gt;                            (required)
+  excludesamples=&lt;excluded samples file&gt;              (optional)
+
+Algorithm Parameters:
+  min-seed=&lt;min cM length of seed segment&gt;            (default: 2.0)
+  max-gap=&lt;max base pairs in non-IBS gap&gt;             (default: 1000)
+  min-extend=&lt;min cM length of extension segment&gt;     (default: min(1.0, min-seed))
+  min-output=&lt;min cM length of output segment&gt;        (default: 2.0)
+  min-markers=&lt;min markers in seed segment&gt;           (default: 100)
+  min-mac=&lt;minimum minor allele count filter&gt;         (default: 2)
+  nthreads=&lt;number of computational threads&gt;          (default: all CPU cores)
+[user@cn3335 ~]$ <b>cp $HAPIBD_DATA/* .</b>
+[user@cn3335 ~]$ <b>hap-ibd gt=target.truth.vcf.gz map=target.map out=hap-ibd.out</b>
+Copyright (C) 2019 Brian L. Browning
+Enter "java -jar hap-ibd.jar" to print a list of command line arguments
+
+Program            :  hap-ibd.jar  [ version 1.0, 20May22.818 ]
+Start Time         :  11:21 AM EST on 31 Jan 2023
+Max Memory         :  30688 MB
+
+Parameters
+  gt               :  target.truth.vcf.gz
+  map              :  target.map
+  out              :  hap-ibd.out
+  min-seed         :  2.0
+  max-gap          :  1000
+  min-extend       :  1.0
+  min-output       :  2.0
+  min-markers      :  100
+  min-mac          :  2
+  nthreads         :  24
+
+Statistics
+  samples          :  300
+  markers          :  24965
+  IBD segments     :  181
+  IBD segs/sample  :  0.6
+  HBD segments     :  0
+  HBD segs/sample  :  0.000
+
+Wallclock Time:    :  2 seconds
+End Time           :  11:21 AM EST on 31 Jan 2023
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

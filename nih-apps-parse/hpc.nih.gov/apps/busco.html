@@ -1,0 +1,134 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'busco on Biowulf';</script>
+<div class="title">busco on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+BUSCO completeness assessments employ sets of Benchmarking Universal Single-Copy Orthologs from <a href="http://www.orthodb.org">OrthoDB</a> to provide quantitative measures of the completeness of genome assemblies, annotated gene sets, and transcriptomes in terms of expected gene content. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Robert M. Waterhouse, Mathieu Seppey, Felipe A. Simao, Mose Manni, Panagiotis Ioannidis, Guennadi Klioutchnikov, Evgenia V. Kriventseva, and Evgeny M. Zdobnov. <a href="https://doi.org/10.1093/molbev/msx319">BUSCO applications from quality assessments to gene prediction and phylogenomics.</a> 
+<em>Mol Biol Evol, published online Dec 6, 2017</em></li>
+<li>Felipe A. Simao, Robert M. Waterhouse, Panagiotis Ioannidis, Evgenia V. Kriventseva, and Evgeny M. Zdobnov. <a href="https://doi.org/10.1093/bioinformatics/btv351">BUSCO: assessing genome assembly and annotation completeness with single-copy orthologs.</a>
+<em>Bioinformatics, published online June 9, 2015</em></li>
+</ul>
+
+<p class="alert"><b> BUSCO configuration files between different BUSCO versions will likely be incompatible.</b><br>
+  Please rename the configuration file in your home directory, <tt>busco.config</tt> to, say, <tt>busco.config.OLD</tt>. When you load different versions of BUSCO, a new configuration file will be created in your home directory <tt>~/busco.config</tt> but <b><em>only if</em></b> it doesn't already exist. As a result it is important to rename previous configuration files when switching between different BUSCO versions. You can also set the contents of the environment variable <tt>BUSCO_CONFIG_FILE</tt> to a path and file name of your choosing if you are planning to go back and forth between different versions of BUSCO.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://gitlab.com/ezlab/busco">BUSCO Main Site</a>
+<li><a href="https://busco.ezlab.org/busco_userguide.html">BUSCO User Guide</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>busco</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>BUSCO versions 4 and greater perform automated download of all necessary files and datasets to conduct a run.</li>
+<li>BUSCO requires a configuration file that sets the paths for required executables (tblastn, makeblastdb, augustus, hmmsearch) as well as parameters that the user wants to set for their busco runs. When you load the busco module, the default configuration file is copied to <tt>/home/$USER/busco.config</tt>. The paths for tblastn, makeblastdb, augustus, hmmsearch are already set correctly in this file. You can edit the file and set any additional busco parameters that you want. 
+<li><a href="https://github.com/Gaius-Augustus/Augustus">Augustus</a> is a gene prediction program for eukaryotes which is required by BUSCO. Augustus requires a writable configuration directory. When you load the <tt>busco</tt> module, the Augustus config directory will be copied to /home/$USER/augustus.config, and Augustus runs will update this directory. 
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>BUSCO_CONFIG_FILE</tt> - set to /home/$USER/busco.config</li>
+    <li><tt>AUGUSTUS_CONFIG_PATH</tt> - set to /home/$USER/augustus.config</li>
+    <li><tt>BUSCO_EXAMPLE_DATA</tt> - set to /usr/local/apps/busco/sample_data</li>
+  </ul>
+
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 6 --mem=6G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load busco</b>
+$ module load busco
+[+] Loading singularity  3.7.1  on cn3144
+[+] Loading busco  4.1.3
+Busco Config file /home/user/busco.config  does not exist
+   copying from /usr/local/apps/busco/4.1.3/share/config.ini.v4.1.3
+ You should edit this file to set your own parameters
+Augustus Config directory /home/user/augustus.config  does not exist
+   copying from /usr/local/apps/busco/4.1.3/share/augustus_config
+
+<i>#####Edit the busco.config file to set any additional parameters desired</i>
+
+[user@cn3144 ~]$ <b>nano ~/busco.config</b>
+
+<i>##### Copy the sample data set </i>
+
+[user@cn3144 ~]$ <b>cp $BUSCO_EXAMPLE_DATA/bacteria/genome.fna .</b>
+
+<i>##### Run BUSCO</i>
+[user@cn3144 ~]$ <b>busco -i genome.fna -c 6 -m geno -f --out test_bacteria</b>
+INFO:   ***** Start a BUSCO v4.1.3 analysis, current time: 03/09/2021 12:22:58 *****
+INFO:   Configuring BUSCO with /home/user/busco.config
+INFO:   Mode is genome
+INFO:   Input file is genome.fna
+INFO:   Downloading information on latest versions of BUSCO data...
+WARNING:        Running Auto Lineage Selector as no lineage dataset was specified. This will take a little longer than normal. If you know what lineage dataset you want to use, please specify this in the config file or using the -l (--lineage-dataset) flag in the command line.
+INFO:   No lineage specified. Running lineage auto selector.
+
+INFO:   ***** Starting Auto Select Lineage *****
+        This process runs BUSCO on the generic lineage datasets for the domains archaea, bacteria and eukaryota. Once the optimal domain is selected, BUSCO automatically attempts to find the most appropriate BUSCO dataset to use based on phylogenetic placement.
+        --auto-lineage-euk and --auto-lineage-prok are also available if you know your input assembly is, or is not, an eukaryote. See the user guide for more information.
+        A reminder: Busco evaluations are valid when an appropriate dataset is used, i.e., the dataset belongs to the lineage of the species to test. Because of overlapping markers/spurious matches among domains, busco matches in another domain do not necessarily mean that your genome/proteome contains sequences from this domain. However, a high busco score in multiple domains might help you identify possible contaminations.
+INFO:   Downloading file 'https://busco-data.ezlab.org/v4/data/lineages/archaea_odb10.2020-03-06.tar.gz'
+INFO:   Decompressing file '/home/user/busco_downloads/lineages/archaea_odb10.tar.gz'
+INFO:   Running BUSCO using lineage dataset archaea_odb10 (prokaryota, 2020-03-06)
+INFO:   ***** Run Prodigal on input to predict and extract genes *****
+INFO:   Running Prodigal with genetic code 11 in single mode
+INFO:   Running 1 job(s) on prodigal, starting at 03/09/2021 12:23:07
+INFO:   [prodigal]      1 of 1 task(s) completed
+INFO:   Genetic code 11 selected as optimal
+INFO:   ***** Run HMMER on gene sequences *****
+[...]
+
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. busco.sh). The example below assumes that you have downloaded the lineage-specific profile library and edited the BUSCO config as desired. 
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load busco/4.1.3
+busco -m genome -i target.fa -o test2 -l bacteria_odb10
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] busco.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

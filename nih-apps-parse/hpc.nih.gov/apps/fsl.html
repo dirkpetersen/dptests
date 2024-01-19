@@ -1,0 +1,346 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FSL on Biowulf';</script>
+<div class="title">FSL on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+	<div class="tocItem"><a href="#par">FSL parallelization</a></div>
+	<div class="tocItem"><a href="#gpu">FSL on GPUs</a></div>
+      </div>
+</table>
+
+<p>
+<a href="http://www.fmrib.ox.ac.uk/fsl/"><img src="/images/fsl-logo-big.jpg"
+align="right" alt="fsl logo" border="0" /></a>
+FSL is a comprehensive library of image analysis and statistical tools for
+FMRI, MRI and DTI brain imaging data. FSL is written mainly by members of the
+Analysis Group, FMRIB, Oxford, UK. <a href="http://www.fmrib.ox.ac.uk/fsl/">FSL
+website</a>.</p>
+<P>
+FSL can analyze the following:<br>
+Functional MRI: FEAT, MELODIC, FABBER, BASIL, VERBENA<br>
+Structural MRI: BET, FAST, FIRST, FLIRT & FNIRT, FSLVBM, SIENA & SIENAX, fsl_anat<br>
+Diffusion MRI: FDT, TBSS, EDDY, TOPUP<br>
+GLM / Stats: GLM general advice, Randomise, Cluster, FDR, Dual Regression, Mm, FLOBS<br>
+Other: FSLView, Fslutils, Atlases, Atlasquery, SUSAN, FUGUE, MCFLIRT, Miscvis, POSSUM, BayCEST<br>
+<a href="http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslOverview">Detailed Overview of FSL tools</a>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.fmrib.ox.ac.uk/fsl/">FSL website Site</a> at Oxford University</li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>fsl</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>All parallelization in FSL v4.0 and up is done via the fsl_sub command that is built into several tools. fsl_sub has been modified to use the 
+Biowulf swarm utility. (Thanks to Adam Thomas and Joe Naegele NIMH)</p>
+<p>The following programs in FSL can use parallelization: FEAT, MELODIC, TBSS,
+BEDPOSTX, FSLVBM, POSSUM. See <a href="http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation#Cluster_aware_tools">the FSL website</a> for
+more information.</p>
+<li>When using FEAT you would need allocate space in <tt>lscratch</tt> and assign the <tt>TMPDIR</tt> environment variable to that allocation as follows:
+<pre class="term">
+[user@biowulf]$ export TMPDIR=${SLURM_JOB_ID}
+</pre>
+</li>
+
+<li>Some defaults in FSL can be overridden by setting environment variables: 
+  <ul>
+    <li><tt>FSL_MEM</tt>: Default is 4 GB, but you can increase it by setting this environment variable in a batch script or interactive session: 
+<pre class="term">
+[user@biowulf]$ export FSL_MEM=20
+</pre>
+</li>
+    <li><tt>FSL_QUEUE</tt>: By default FSL submits to the norm partition, but you can submit to another partition by setting this variable in a batch script or interactive session. Example:
+<pre class="term">
+[user@biowulf]$ module load fsl
+[user@biowulf]$ export FSL_QUEUE=norm
+[user@biowulf]$ bedpostx myjob
+</pre>
+</li>
+    <li><tt>NOBATCH</tt>: Some FEAT jobs do not parallelize correctly. You can also choose to run such jobs in serial mode by setting <tt>NOBATCH=true</tt> in a batch script or interactive session. Example:
+<pre class="term">
+[user@biowulf]$ export NOBATCH=true
+[user@biowulf]$ bedpostx myjob
+</pre>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fsl</b>
+
+[user@cn3144 ~]$ <b>fsl</b>
+<center><img src="/images/FSL_6.0.4_screenshot.png" alt=""></center>
+You should now see the FSL GUI appear on your desktop as above. Once you are finished using the GUI, please exit your interactive session by typing 'exit'.
+<P>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fsl.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load fsl/6.0.4
+mcflirt -in /data/user/fmri1 -out mcf1 -mats -plots -refvol 90 -rmsrel -rmsabs; betfunc mcf1 bet1
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  [--mem=#] fsl.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. fsl.swarm). For example:</p>
+
+<pre class="term">
+mcflirt -in /data/user/fmri1 -out mcf1 -mats -plots -refvol 90 -rmsrel -rmsabs; betfunc mcf1 bet1
+mcflirt -in /data/user/fmri2 -out mcf2 -mats -plots -refvol 90 -rmsrel -rmsabs; betfunc mcf2 bet2
+mcflirt -in /data/user/fmri3 -out mcf3 -mats -plots -refvol 90 -rmsrel -rmsabs; betfunc mcf3 bet3
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fsl.swarm [-g #] [-t #] --module fsl/6.0.4</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module fsl/6.0.4</tt> <td>Loads the fsl module for each subjob in the swarm 
+</table>
+
+<a Name="par"></a><div class="heading">FSL Parallelization</div>
+<p>All parallelization in FSL v4.0 and up is done via the fsl_sub command that is built into several tools. fsl_sub has been modified to use the Biowulf swarm utility.</p>
+<p>The following programs in FSL can use parallelization: FEAT, MELODIC, TBSS,
+BEDPOSTX, FSLVBM, POSSUM. See <a href="http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation#Cluster_aware_tools">the FSL website</a> for
+more information.</p>
+Sample session running bedpostx in parallel: 
+<div class="term"><pre>
+[user@biowulf]$ <b>module load fsl/6.0.4</b>
+
+[user@biowulf]$ <b>bedpostx sampledataset</b>
+subjectdir is /data/user/bedpost/sampledataset
+Making bedpostx directory structure
+Queuing preprocessing stages
+Input args=-T 60 -m as -N bpx_preproc -l /data/user/bedpost/sampledataset.bedpostX/logs /usr/local/apps/fsl/5.0/fsl/bin/bedpostx_preproc.sh /data/user/bedpost/sampledataset 0
+
+Queuing parallel processing stage
+
+----- Bedpostx Monitor -----
+Input args=-j 12050 -l /data/user/bedpost/sampledataset.bedpostX/logs -M user@mail.nih.gov -N bedpostx -t /data/user/bedpost/sampledataset.bedpostX/commands.txt
+
+Queuing post processing stage
+Input args=-j 12051 -T 60 -m as -N bpx_postproc -l /data/user/bedpost/sampledataset.bedpostX/logs /usr/local/apps/fsl/5.0/fsl/bin/bedpostx_postproc.sh /data/user/bedpost/sampledataset
+
+[user@biowulf]$ 
+</pre></div>
+The job is submitted in 3 parts: pre-processing, bedpost, and post-processing. Each part is dependent on the completion of
+the previous part, and will only run after the previous part is completed. 
+<P>
+If you use 'sjobs' or some variant of 'squeue' to monitor your jobs, you will see at first: 
+<pre class="term">
+[user@biowulf ~]$ <b>sjobs</b>
+User    JobId       JobName    Part  St  Reason      Runtime   Wallt  CPUs  Memory    Dependency          Nodelist
+==================================================================================================================
+user 7264_0      bpx_preproc  norm  R    ---         0:04   2:00:00      2  4GB/node                    cn1824
+user 7265_[0-71] bedpostx     norm  PD   ---         0:05   2:00:00      2  4GB/node  afterany:7264_* 
+user 7266_[0]    bpx_postproc norm  PD  Dependency   0:00   2:00:00      1  4GB/node  afterany:7265_*
+</pre>
+<P>
+ie. 3 jobs with dependencies for the 2nd and 3rd jobs.
+
+Once the pre-processing (job 7264 in this example) is over, the main bedpost jobs (job 7265) will run, and you will see something like this:
+<pre class="term">
+[user@biowulf ~]$ <b>sjobs</b>
+JOBID            NAME      TIME        ST      CPUS  MIN_ME   NODE   DEPENDENCY       NODELIST(REASON)
+7264_0         bedpost     0:07        R       1     4G       1                          p1718
+7264_1         bedpost     0:07        R       1     4G       1                          p1719
+7264_2         bedpost     0:07        R       2     4G       1                          p999
+7264_3         bedpost     0:07        R       2     4G       1                          p999
+...etc...
+7264_[33-71]   bedpost      0:00       PD      1     4G       1                         (QOSMaxCpusPerUserLimit)
+7264_[0]       bpx_postproc 0:00       PD      1     4G       1      afterany:9517_*    (Dependency)
+</pre>
+
+and once those are completed, the post-processing step (job 9518) will run.
+<P>
+<u><h4>FSL parallel jobs and memory</h4></u>
+By default, all parallel FSL jobs submitted through fsl_sub will be submitted requesting 4 GB memory. In some cases, this may not be enough memory for the job. In those cases, the user can
+set an environment variable, FSL_MEM, which will set the memory required for the jobs. For example, if a bedpost run as above failed due to lack of memory, you could run as follows:
+<pre class="term">
+[user@biowulf]$ <b>module load fsl/6.0.4</b>
+
+[user@biowulf]$ <b>export FSL_MEM=16</b>
+
+[user@biowulf]$ <b>bedpostx sampledataset</b>
+[...]
+
+[user@biowulf]$ <b>sjobs</b>
+JOBID            NAME      TIME        ST      CPUS  MIN_ME   NODE   DEPENDENCY       NODELIST(REASON)
+7264_0         bedpost     0:07        R       1     16G       1                          p1718
+7264_1         bedpost     0:07        R       1     16G       1                          p1719
+7264_2         bedpost     0:07        R       2     16G       1                          p999
+7264_3         bedpost     0:07        R       2     16G       1                          p999
+...etc...
+7264_[33-71]   bedpost      0:00       PD      1     16G       1                         (QOSMaxCpusPerUserLimit)
+7264_[0]       bpx_postproc 0:00       PD      1     16G       1      afterany:9517_*    (Dependency)
+</pre>
+In the example above, the value of FSL_MEM was set to 16 (GB), and therefore the jobs were submitted requesting 16 GB of memory.
+<P>
+
+<a Name="gpu"></a><div class="heading">FSL on GPUs</div>
+<P>
+Some FSL programs can use GPUs. However, they may require different versions of CUDA libraries, so there are separate modules set up for each of the GPU-enabled FSL applications. 
+<P>
+<table border=1 cellpadding=10>
+<tr><td><b>Program <Td><b>Module
+<tr><td>bedpostx <td>fsl/6.0.x/bedpostx_gpu <br>(note: FSL_GPU environment variable also needs to be set)
+<tr><td>probtrax <td>fsl/6.0.x/probtrax_gpu
+<tr><td>eddy  <td>fsl/6.0.x/eddy_cuda
+</table>
+See examples below for more information. 
+<P>
+
+<h4>bedpostx_gpu</h4>
+As of FSL 6.0.0, <tt>bedpostx_gpu</tt> is GPU-enabled. To run <tt>bedpostx_gpu</tt>, you need to set an additional environment variable <tt>FSL_GPU</tt> specifying
+which kind of GPU you want to run on. For example: 
+<pre class="term">
+% export FSL_GPU=k80	# submit to the K80 GPUs
+or 
+% export FSL_GPU=p100	# submit to the p100 GPUs
+or 
+% export FSL_GPU=v100	# submit to the v100 GPUs
+</pre>
+The available GPU types on Biowulf can be seen by typing 'freen | grep gpu'. 
+<P>
+Sample session below. In 
+<pre class='term'>
+[user@biowulf]$ <b>module load fsl/6.0.4/bedpost_gpu</b>
+[+] Loading fsl  CUDA/9.1  ... 
+[+] Loading FSL 6.0.4  ... 
+
+[user@biowulf]$ <b>export FSL_GPU=k80</b>
+
+[user@biowulf]$ <b>bedpostx_gpu fdt_subj1</b>
+---------------------------------------------
+------------ BedpostX GPU Version -----------
+---------------------------------------------
+subjectdir is /data/user/bedpost/fdt_subj1
+Making bedpostx directory structure
+Copying files to bedpost directory
+Pre-processing stage
+Queuing parallel processing stage
+
+----- Bedpostx Monitor -----
+Queuing post processing stage
+1 parts processed out of 4
+2 parts processed out of 4
+3 parts processed out of 4
+4 parts processed out of 4
+
+[user@biowulf]$ <b>squeue -u $USER</b>
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+      22908533_[0]     quick bedpostx   user PD       0:00      1 (None)
+      22908536_[0]     quick bedpostx   user PD       0:00      1 (Dependency)
+    22908534_[0-3]       gpu bedpostx   user PD       0:00      1 (Dependency)
+
+[user@biowulf]$ All parts processed    
+</pre>
+As you see above, the pre-processing and post-processing stages run on the quick partition. Only the actual bedpostx processing is done on the GPU partition. This is transparent to the user.
+
+<P>
+<h4>probtrackx2_gpu</h4>
+FSL's probabilistic tracking script with crossing fibres is also GPU enabled (but not cluster-aware). <tt>probtrackx2_gpu</tt> for CUDA 10.0 is available on Biowulf. In the example below we load the module fsl/6.0.4/probtrax_gpu on an sinteractive session on a GPU node but for longer runs it is advisable to use sbatch and select a GPU node(s):
+<pre class='term'>
+[user@biowulf]$ <b>sinteractive --gres=gpu:k80x:1</b>
+salloc.exe: Pending job allocation 12345678
+salloc.exe: job 12345678 queued and waiting for resources
+salloc.exe: job 12345678 has been allocated resources
+salloc.exe: Granted job allocation 12345678
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1234 are ready for job
+
+[user@cn1234]$ <b>module load fsl/6.0.4/probtrax_gpu</b>
+[+] Loading fsl CUDA/9.1 ... 
+[+] Loading FSL 6.0.4  ... 
+
+[user@cn1234]$ <b>cd sampledataset.bedpostX</b>
+
+[user@cn1234]$ <b>probtrackx2_gpu --samples=merged -m nodif_brain_mask.nii.gz -x nodif_brain.nii.gz -o fdt_paths</b>
+PROBTRACKX2 VERSION GPU
+Log directory is: logdir
+Running in seedmask mode
+Number of Seeds: 222441
+Time Loading Data: 8 seconds
+...................Allocated GPU 0...................
+Free memory at the beginning: 6301548544 ---- Total memory: 6379143168
+Free memory after copying masks: 5891424256 ---- Total memory: 6379143168
+Running 390938 streamlines in parallel using 2 STREAMS
+Total number of streamlines: 1112205000
+Free memory before running iterations: 1031929856 ---- Total memory: 6379143168
+Iteration 1 out of 5690
+...
+Iteration 5688 out of 5690
+Iteration 5689 out of 5690
+Iteration 5690 out of 5690
+
+Time Spent Tracking:: 6 seconds
+
+save results
+
+TOTAL TIME: 14 seconds
+
+</pre>
+     
+
+<P>
+<h4>Eddy</h4>
+The eddy program can run on GPUs, via the <tt>eddy_cuda</tt> executable. You will need to load the appropriate module so that <tt>eddy_cuda</tt> can
+find the appropriate CUDA libraries. In FSL 6.0.5, there
+are two different compiled versions that you can use on Biowulf: <tt>eddy_cuda9.1</tt> and eddy_cuda10.2.  Sample batch script: 
+
+<pre class="term">
+#/bin/bash 
+
+cd mydir
+module load fsl/6.0.5/eddy_cuda
+eddy_cuda10.2 [...]
+</pre>
+<P>
+You will also need to submit to a GPU node, of course. e.g.
+<pre class="term">
+sbatch --partition=gpu --gres=gpu:k80:1 myjob.sh
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

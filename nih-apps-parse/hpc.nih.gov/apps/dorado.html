@@ -1,0 +1,101 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "dorado";</script>
+
+<div class="title">dorado on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+Dorado is a basecaller for Oxford Nanopore reads.
+</p>
+
+<!-- <h3>References:</h3>
+<ul>
+
+  <li>
+    Blow J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A really amazing research paper.</u></b></a>
+    <em>J Mol Biol. 2012 Jan 13;415(2):406-18.</em>
+  </li>
+  <li>
+    Blow J., Doe J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A retread of another amazing research paper.</u></b></a>
+    <em>J Struct Biol. 2012 Dec;180(3):519-30.</em>
+  </li>
+
+</ul> -->
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>dorado on <a href="https://github.com/nanoporetech/dorado">GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>dorado</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li><span style="background-color: #FFFF99">Requires a V100/V100x or newer GPU for basecalling.</span> Alignment is not accelerated.</li>
+    <li>Use <a href="/apps/pod5.html">pod5</a> input format for optimal performance</li>
+    <li>Models are found in <tt>${DORADO_MODELS}</tt></li>
+    <li>Example files in <tt>${DORADO_TEST_DATA}</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:v100:1,lscratch:200 --mem=16g --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load dorado/0.3.4</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>cp -rL "${DORADO_TEST_DATA:-none}" input</b>
+[user@cn3144 ~]$ <b>ls -lh input</b>
+-rw-r--r--. 1 user group 20G Jun  2 17:21 reads.pod5
+[user@cn3144 ~]$ # emits unaligned bam by default
+[user@cn3144 ~]$ <b>dorado basecaller --device cuda:all ${DORADO_MODELS}/dna_r9.4.1_e8_sup@v3.3 input > output.bam</b>
+[user@cn3144 ~]$ <b>ls -lh output.bam</b>
+-rw-r--r-- 1 user group 2.1G Jun  2 20:02 output.bam
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. dorado.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load dorado/0.3.4
+cd /lscratch/$SLURM_JOB_ID
+cp -rL "${DORADO_TEST_DATA:-none}" input
+dorado basecaller --device cuda:all ${DORADO_MODELS}/dna_r9.4.1_e8_sup@v3.3 input &gt; output.bam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=16g --gres=lscratch:50,gpu:v100x:1 dorado.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

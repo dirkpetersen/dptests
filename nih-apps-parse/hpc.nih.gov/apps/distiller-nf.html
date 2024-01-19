@@ -1,0 +1,129 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'distiller-nf on Biowulf';</script>
+<div class="title">distiller-nf on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A modular Hi-C mapping pipeline for reproducible data analysis, it was used for Micro-C analysis too.
+The distiller pipeline aims to provide the following functionality:
+
+<li>Align the sequences of Hi-C molecules to the reference genome
+<li>Parse .sam alignment and form files with Hi-C pairs
+<li>Filter PCR duplicates
+<li>Aggregate pairs into binned matrices of Hi-C interactions 
+</p>
+<p>
+<ul>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Krietenstein N, Abraham S, Venev SV, Abdennur N, Gibcus J, Hsieh TS, Parsi KM, Yang L, Maehr R, Mirny LA, Dekker J, Rando OJ. <em>Ultrastructural Details of Mammalian Chromosome Architecture.</em> Mol Cell. 2020 May 7
+    <a href="https://pubmed.ncbi.nlm.nih.gov/32213324/">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.sciencedirect.com/science/article/pii/S1097276520301519?via%3Dihub">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>distiller-nf Github:<a href="https://github.com/open2c/distiller-nf">Github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>distiller-nf</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>distiller-nf is a nextflow pipeline, it requires three configuration files: project.yml(for input and ref seq), nextflow.config(already setted up on Biowulf), and local/cluster.config(Biowulf provides templates which you can download and modify).
+	<pre class="term">
+	cp -r ${DISTILLER_CONFIG:-none} .
+	</pre>
+        <li> Then to give a customized config file, you have to provide the full path to custom.config.
+        <pre class="term">
+	-profile custom --custom_config /your_full_path_to/custom.config
+	</pre>
+	<li>To run test data with test_project.yml, you also need to save a local copy of the test data. 
+	<pre class="term">
+	cp -r ${DISTILLER_TEST_DATA:-none} .
+	</pre>
+</ul>
+</a>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=10 --mem=10G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load distiller-nf</b>
+[user@cn3144]$ <b>mkdir /data/$USER/distiller/</b>
+[user@cn3144]$ <b>cd /data/$USER/distiller/</b>
+[user@cn3144]$ <b>cp -r ${DISTILLER_TEST_DATA:-none} .</b>
+[user@cn3144]$ <b>cp -r ${DISTILLER_CONFIG:-none} .</b>
+[user@cn3144]$ <b>nextflow $DISTILLER/distiller.nf -params-file ./test/test_project.yml</b>
+N E X T F L O W  ~  version 21.04.1
+Launching `/usr/local/apps/distiller-nf/0.3.3/distiller.nf` [trusting_euler] - revision: a0539e1286
+executor >  local (26)
+[-        ] process > download_truncate_chunk_fastqs                                      -
+[-        ] process > local_truncate_chunk_fastqs                                         -
+[-        ] process > fastqc                                                              -
+[a8/eb3aac] process > map_parse_sort_chunks (library:MATa_R1 run:lane1 chunk:0)           [100%] 5 of 5 ✔
+[0e/e85c28] process > merge_dedup_splitbam (library:MATa_R2)                              [100%] 4 of 4 ✔
+[50/2f4035] process > bin_zoom_library_pairs (library:MATa_R2 filter:mapq_30)             [100%] 8 of 8 ✔
+[d1/bd0918] process > merge_zoom_library_group_coolers (library_group:all filter:mapq_30) [100%] 6 of 6 ✔
+[3a/d421e5] process > merge_stats_libraries_into_groups (library_group:MATalpha)          [100%] 3 of 3 ✔
+Completed at: 04-Aug-2021 12:44:36
+Duration    : 1m 14s
+CPU hours   : 0.5
+Succeeded   : 26
+
+
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. distiller-nf.sh). For example:</p>
+
+<pre class="term">
+<code class="bash">
+#!/bin/bash
+set -e
+module load distiller-nf
+cd /data/$USER/distiller/
+cp -r ${DISTILLER_TEST_DATA:-none} .
+cp -r ${DISTILLER_CONFIG:-none} .
+nextflow $DISTILLER/distiller.nf -params-file ./test/test_project.yml -profile cluster
+</code>
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch distiller-nf.sh</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

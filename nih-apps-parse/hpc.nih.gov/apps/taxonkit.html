@@ -1,0 +1,115 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'TaxonKit on Biowulf';</script>
+<div class="title">TaxonKit on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A Cross-platform and Efficient NCBI Taxonomy Toolkit
+</p>
+<p>
+Subcommands
+<ul>
+  <li>list: list taxon tree of given taxids
+  <li>lineage: query lineage of given taxids (supporting STDIN)
+  <li>reformat: reformat lineage (supporting STDIN)
+  <li>name2taxid: query taxid by taxon scientific name (supporting STDIN)
+  <li>taxid-changelog: create taxid changelog from dump archives
+
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Shen W, Xiong J. <em>TaxonKit: a cross-platform and efficient NCBI taxonomy toolkit</em>. doi:https://doi.org/10.1101/513523
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>taxonkit Main Site:<a href="https://bioinf.shenwei.me/taxonkit/">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>taxonkit</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+  <ul>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load taxonkit</b>
+[user@cn3144 ~]$ <b>taxonkit list --show-rank --show-name --ids 9605</b>
+9605 [genus] Homo
+  9606 [species] Homo sapiens
+    63221 [subspecies] Homo sapiens neanderthalensis
+    741158 [subspecies] Homo sapiens subsp. 'Denisova'
+    2665952 [no rank] environmental samples
+      2665953 [species] Homo sapiens environmental sample
+  1425170 [species] Homo heidelbergensis
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. taxonkit.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load taxonkit
+#This will download the whole taxon tree
+taxonkit list --show-rank --show-name --ids 1 >t1.txt
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  --mem=2g taxonkit.sh</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,149 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DYNAMO on Biowulf';</script>
+<div class="title">DYNAMO on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+Dynamo is a software environment for subtomogram averaging of cryo-EM data. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://www.sciencedirect.com/science/article/pii/S1047847711003650">Dynamo: A flexible, user-friendly development tool for subtomogram averaging of cryo-EM data in high-performance computing environments</a>. Castaño-Díez D, Kudryashev M, Arheit M, Stahlberg H., J Struct Biol. 2012.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://wiki.dynamo.biozentrum.unibas.ch/w/index.php/Main_Page">Dynamo Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>dynamo</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:k80:2,lscratch:10 --mem=20g -c14</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load dynamo</b>
+[+] Loading dynamo  1.4.01  on cn3144 
+
+[user@cn3144 ~]$ <b>source dynamo_activate_linux_shipped_MCR.sh /usr/local/apps/dynamo/1.4.01/</b>
+MCR for linux has been  found in location: /dynamo/1.4.01/MCRLinux/v94
+Activating Dynamo as standalone
+-------------------------------------------------------------
+ 
+              Dynamo Setup for standalone Linux 
+ 
+-------------------------------------------------------------
+ 
+       
+1- Adding execution paths
+   ----------------------
+       
+    Identifying directories of Dynamo distribution hanging from the specified Dynamo root directory: 
+     /dynamo/1.4.01
+ 
+    [OK] Done updating Linux paths.
+       
+2- Testing OpenMP
+   --------------
+       
+    checking functionality of OpenMP wrappers....
+
+    [OK] OpenMP tools seem functional
+       
+3- Testing MCR libraries
+   ---------------------
+       
+    [OK] MCR library seems active
+  
+  
+------------------------------------
+Dynamo is ready for standalone use in your Linux system
+ 
+[user@cn3144 ~]$ <b>export MCR_CACHE_ROOT=/lscratch/$SLURM_JOBID</b>
+
+[user@cn3144 ~]$ <b>dynamo</b>
+Initializing MATLAB Runtime version 9.4
+"MCR libraries starting dynamo. Starting the Dynamo console can take some time. A good choice of MCR_CACHE_ROOT might speed this up."
+Launching the console....
+ (use "dynamo x" for a Dynamo graphics terminal  on a independent window)
+ 
+     Dynamo console for standalone modus
+     -----------------------------------
+       
+       
+     * Commands starting with the symbol "!" will be passed to the system
+     * Commands starting with the symbol "\" will be executed as Matlab expressions
+     * Strings including the symbol ":" are treated as database queries
+     * Graphic output: enabled
+     * Type "help" for a list of console control commands
+       
+       
+Dynamo > <b>exit</b>
+ok, bye!
+ 
+
+Exiting Dynamo console.
+Returning control to system.
+ 
+
+ 
+ Note after exiting the Dynamo console:
+   
+       if you experience difficulties with the text display you might need to type: 
+       stty echo 
+       in your system shell to fix them.
+ 
+[delete:pmodelpool.Manager] Deletion of model pool manager from memory.
+
+[user@cn3144 ~]<b>dynamo x &</b>
+[1] 5233
+[user@cn3144 ~]$ Initializing MATLAB Runtime version 9.4
+"MCR libraries starting dynamo. Starting the Dynamo console can take some time. A good choice of MCR_CACHE_ROOT might speed this up."
+Launching a Dynamo graphics terminal in a separate window....
+
+</pre>
+The above should display dynamo's graphical interface.
+<P>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

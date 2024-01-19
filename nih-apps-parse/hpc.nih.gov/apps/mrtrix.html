@@ -1,0 +1,125 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mrtrix on Biowulf';</script>
+<div class="title">mrtrix on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MRtrix provides a large suite of tools for image processing, analysis and visualisation, with a focus on the analysis of white matter using diffusion-weighted MRI
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://mrtrix.readthedocs.io/en/latest/index.html">mrtrix user documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>mrtrix</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Note that the GUI options have not been installed. 
+<li>Multithreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>MRTRIX_HOME</tt></li>
+  </ul>
+<li><b>mrtrix configuration</b>: Users can set up a file <tt>/home/$USER/.mrtrix.conf</tt> containing mrtrix configuration options with default options that they desire.
+The list of possible settings for the mrtrix config file is <a href="http://mrtrix.readthedocs.io/en/latest/reference/config_file_options.html">detailed here</a>.
+A sample config file is available in <tt>/usr/local/apps/mrtrix/mrtrix.conf</tt>. 
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load mrtrix</b>
+[+] Loading eigen 3.3.4  ...
+[+] Loading Zlib 1.2.11  ...
+[+] Loading GSL 2.4 for GCC 4.8.5 ...
+[+] Loading FFTW 3.3.7 , compiled with gcc4.8.5  and openmpi2.1.2  ...
+[+] Loading mrtrix 3.0_RC2  ...
+
+[user@cn3144 ~]$ <b>mrinfo /usr/local/apps/mrtrix/sample_data/data_slice_0000.nii.gz</b>
+mrinfo: [WARNING] transform matrix contains invalid entries - resetting to sane defaults
+************************************************
+Image:               "/usr/local/apps/mrtrix/sample_data/data_slice_0000.nii.gz"
+************************************************
+  Dimensions:        128 x 104 x 1 x 65
+  Voxel size:        2 x 2 x 2 x 1
+  Data strides:      [ 1 2 4 3 ]
+  Format:            NIfTI-1.1 (GZip compressed)
+  Data type:         signed 16 bit integer (little endian)
+  Intensity scaling: offset = 0, multiplier = 1
+  Transform:                    1           0           0        -127
+                                0           1           0        -103
+                                0           0           1          -0
+  comments:          FSL5.0
+  
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mrtrix.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load mrtrix
+mrstats /usr/local/apps/mrtrix/sample_data/nodif_brain_mask.nii.gz
+mrhistogram /usr/local/apps/mrtrix/sample_data/nodif.nii.gz  out.hist
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] mrtrix.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. mrtrix.swarm). For example:</p>
+
+<pre class="term">
+mrstats file1.nii.gz
+mrstats file2.nii.gz
+mrstats file3.nii.gz
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f mrtrix.swarm [-g #] [-t #] --module mrtrix</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module mrtrix</tt> <td>Loads the mrtrix module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

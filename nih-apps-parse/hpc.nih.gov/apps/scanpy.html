@@ -1,0 +1,113 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Scanpy on Biowulf';</script>
+<div class="title">Scanpy on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+Scanpy is a scalable toolkit for analyzing single-cell gene expression data. It includes preprocessing, visualization, clustering, pseudotime and trajectory inference and differential expression testing. The Python-based implementation efficiently deals with datasets of more than one million cells.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>
+  Wolf FA, Angerer P, Theis FJ.
+  <a href="https://www.ncbi.nlm.nih.gov/pubmed/29409532">SCANPY: large-scale single-cell gene expression data analysis.</a>
+  <u>Genome Biol.</u> <em>2018 Feb 6;19(1):15.</em>
+</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://scanpy.readthedocs.io/en/latest/index.html#">Scanpy Main Site</a></li>
+<li><a href="https://scanpy.readthedocs.io/en/stable/tutorials.html">Scanpy Documentation</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>scanpy</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded
+<li>Example files in <tt>$SCANPY_EXAMPLES</tt>
+</ul>
+<P>
+
+<p class="alert">This application contains graphical content and requires an <a href="https://hpc.nih.gov/docs/connect.html">X-Windows connection</a>. It is primarily meant to be run via <a href="https://hpc.nih.gov/apps/jupyter.html">Jupyter notebooks</a>.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0860 are ready for job
+
+[user@cn0860 ~]$ <b>module load scanpy</b>
+[+] Loading scanpy 1.8.1 on cn0860
+[+] Loading singularity  3.8.2  on cn0860
+[user@cn0860 ~]$ <b>cp -r $SCANPY_DATA/* .</b>
+[user@cn0860 ~]$ <b>python cluster.py</b>
+scanpy==1.8.1 anndata==0.7.6 umap==0.5.1 numpy==1.20.3 scipy==1.7.1 pandas==1.3.2 scikit-learn==0.24.2 statsmodels==0.12.2 python-igraph==0.9.6 pynndescent==0.5.4
+... reading from cache file cache/data-filtered_gene_bc_matrices-hg19-matrix.h5ad
+normalizing counts per cell
+    finished (0:00:00)
+</pre>
+<img src="scanpy/Figure_1.png" width="600" border="0" alt="">
+<pre class="term">
+filtered out 19024 genes that are detected in less than 3 cells
+</pre>
+<img src="scanpy/Figure_2.png" width="600" border="0" alt="">
+<img src="scanpy/Figure_3.png" width="600" border="0" alt="">
+<img src="scanpy/Figure_4.png" width="600" border="0" alt="">
+<pre class="term">
+/Miniconda/lib/python3.9/site-packages/scanpy/preprocessing/_normalization.py:155: UserWarning: Revieved a view of an AnnData. Making a copy.
+  view_to_actual(adata)
+normalizing counts per cell
+    finished (0:00:00)
+extracting highly variable genes
+    finished (0:00:00)
+</pre>
+<img src="scanpy/Figure_5.png" width="600" border="0" alt="">
+<pre class="term">
+/Miniconda/lib/python3.9/site-packages/scanpy/preprocessing/_simple.py:373: UserWarning: Revieved a view of an AnnData. Making a copy.
+  view_to_actual(adata)
+regressing out ['total_counts', 'pct_counts_mt']
+    sparse input is densified and may lead to high memory use
+    finished (0:00:10)
+</pre>
+<pre class="term">
+[user@cn0860 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. scanpy.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load scanpy
+python my_script.py
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] scanpy.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,136 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'velocyto: a library for the analysis of RNA velocity.';</script>
+<div class="title"><b>velocyto: a library for the analysis of RNA velocity.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Velocyto is a library for the analysis of RNA velocity. It includes a command line tool and an analysis pipeline.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Gioele La Manno, Ruslan Soldatov, Amit Zeisel, Emelie Braun, Hannah Hochgerner, Viktor Petukhov,
+Katja Lidschreiber, Maria E. Kastriti, Peter Lönnerberg, Alessandro Furlan, Jean Fan, Lars E. Borm, Zehua Liu,
+David van Bruggen, Jimin Guo, Xiaoling He, Roger Barker, Erik Sundström, Gonçalo Castelo-Branco, Patrick Cramer,
+Igor Adameyko, Sten Linnarsson &amp; Peter V. Kharchenko<br />
+<i>RNA velocity of single cells </i> <br />
+<a href="https://www.nature.com/articles/s41586%E2%80%93018%E2%80%930414%E2%80%936">Nature</a> <b>560</b>,
+494-498 (2018).
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/velocyto-team/velocyto.py">velocyto GitHub page</a></li>
+<li><a href="http://velocyto.org/velocyto.py/index.html">velocito Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>velocyto</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>VELOCYTO_HOME</b>&nbsp; installation directory</li>
+    <li><b>VELOCYTO_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>VELOCYTO_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>VELOCYTO_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@cn0882 ~]$<b>module load velocyto  </b>
+[+] Loading velocyto  0.17  on cn0882
+[+] Loading singularity  3.8.2  on cn0882
+[user@cn0882 ~]$<b>velocyto --help </b>
+Usage: velocyto [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --version  Show the version and exit.
+  --help     Show this message and exit.
+
+Commands:
+  run            Runs the velocity analysis outputting a loom file
+  run10x         Runs the velocity analysis for a Chromium Sample
+  run-dropest    Runs the velocity analysis on DropEst preprocessed data
+  run-smartseq2  Runs the velocity analysis on SmartSeq2 data (independent bam file per cell)
+  tools          helper tools for velocyto
+</pre>
+Copy sample data to the current folder:
+<pre class="term">
+[user@cn0882 ~]$ <b>cp -r $VELOCYTO_DATA/* .</b>
+</pre>
+Run velocyto on the sample data:
+<pre class="term">
+[user@cn0882 ~]$ <b>velocyto run10x --samtools-memory 4000 -m mm10_rmsk.gtf SAMPLE_CELLRANGER_OUTPUT genes.gtf</b>
+2021-09-20 16:30:10,265 - DEBUG - Using logic: Default
+...
+2021-09-20 16:30:10,266 - DEBUG - Example of barcode: AAACGGGGTAAGTTCC and cell_id: SCAF463_4W_WT_cTEC:AAACGGGGTAAGTTCC-1
+...
+2021-09-20 16:30:10,385 - WARNING - Not found cell and umi barcode in entry 1 of the bam file
+2021-09-20 16:30:10,385 - WARNING - Not found cell and umi barcode in entry 56 of the bam file
+2021-09-20 16:30:10,385 - WARNING - Not found cell and umi barcode in entry 57 of the bam file
+...
+2021-09-20 16:30:16,188 - DEBUG - Parsing Chromosome 1 strand - [line 0]
+2021-09-20 16:30:16,627 - DEBUG - Done with 1- [line 54320]
+2021-09-20 16:30:16,627 - DEBUG - Assigning indexes to genes
+2021-09-20 16:30:16,633 - DEBUG - Seen 846 genes until now
+2021-09-20 16:30:16,633 - DEBUG - Parsing Chromosome 1 strand + [line 54321]
+2021-09-20 16:30:16,877 - DEBUG - Done with 1+ [line 107106]
+2021-09-20 16:30:16,877 - DEBUG - Assigning indexes to genes
+2021-09-20 16:30:16,884 - DEBUG - Seen 1727 genes until now
+2021-09-20 16:30:16,884 - DEBUG - Parsing Chromosome 10 strand - [line 107107]
+2021-09-20 16:30:17,163 - DEBUG - Done with 10- [line 137495]
+2021-09-20 16:30:17,163 - DEBUG - Assigning indexes to genes
+2021-09-20 16:30:17,167 - DEBUG - Seen 2300 genes until now
+2021-09-20 16:30:17,167 - DEBUG - Parsing Chromosome 10 strand + [line 137496]
+2021-09-20 16:30:17,317 - DEBUG - Done with 10+ [line 170976]
+2021-09-20 16:30:17,317 - DEBUG - Assigning indexes to genes
+2021-09-20 16:30:17,320 - DEBUG - Seen 2907 genes until now
+...
+2021-09-20 16:30:18,831 - DEBUG - Parsing Chromosome 14 strand + [line 399691]
+2021-09-20 16:30:18,930 - DEBUG - Done with 14+ [line 422194]
+2021-09-20 16:30:18,930 - DEBUG - Assigning indexes to genes
+2021-09-20 16:30:18,933 - DEBUG - Seen 7777 genes until now
+2021-09-20 16:30:18,933 - DEBUG - Parsing Chromosome 15 strand - [line 422195]
+2021-09-20 16:30:19,056 - DEBUG - Done with 15- [line 449456]
+...
+2021-09-20 16:39:33,489 - DEBUG - Summarizing the results of intron validation.
+2021-09-20 16:39:33,741 - DEBUG - Validated 52245 introns (of which unique intervals 21892) out of 582013 total possible introns (considering each possible transcript models).
+2021-09-20 16:39:33,741 - DEBUG - Validated 52245 introns (of which unique intervals 21892) out of 582013 total possible introns (considering each possible transcript models).
+...
+2021-09-20 16:39:33,788 - DEBUG - Read first 0 million reads
+ 2021-09-20 16:40:52,528 - DEBUG - Read first 10 million reads
+2021-09-20 16:41:02,539 - DEBUG - Counting for batch 1, containing 100 cells and 6053119 reads
+2021-09-20 16:44:14,661 - DEBUG - 283859 reads not considered because fully enclosed in repeat masked regions
+2021-09-20 16:45:46,512 - DEBUG - Read first 20 million reads
+2021-09-20 16:46:01,828 - DEBUG - Counting for batch 2, containing 100 cells and 6282651 reads
+2021-09-20 16:49:21,786 - DEBUG - 275079 reads not considered because fully enclosed in repeat masked regions
+2021-09-20 16:50:48,232 - DEBUG - Read first 30 million reads
+2021-09-20 16:51:12,473 - DEBUG - Counting for batch 3, containing 100 cells and 6248290 reads
+...
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn0882 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

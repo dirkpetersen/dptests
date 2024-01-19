@@ -1,0 +1,313 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Novocraft on Biowulf';</script>
+    <div class="title">Novocraft on Biowulf</div>
+<p><font color="red">NovoSplice beta is now available for testing.</font></p>
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+		<div class="tocItem"><a href="#mpi">MPI jobs </a></div>
+		<div class="tocItem"><a href="#index">Novoindex </a></div>
+		<div class="tocItem"><a href="#bench">Benchmarks </a></div>
+      </div>
+</td></tr></table>
+
+    <p> Novoalign is an aligner for single-ended and paired-end reads from the Illumina 
+      Genome Analyser. Novoalign finds global optimum alignments using full Needleman-Wunsch 
+      algorithm with affine gap penalties whilst performing at the same or better 
+      speed than aligners that are limited to two mismatches and no insertions 
+      or deletions.</p>
+    <p>Novoalign indexes for some common genome assemblies such as hg18 and hg19 
+      are available in <tt>/fdb/novoalign</tt>. If there are other genomes you 
+      want indexed, please email staff@hpc.nih.gov<a Name="doc"></a></p>
+<div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.novocraft.com/">Novocraft homepage, see tab for documentation</a></li>
+</ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>novocraft</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) </li>
+      <li>Multithreaded/MPI</li>
+      <li>Reference data in <tt>/fdb/novoalign/</tt> </li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>sinteractive --cpus-per-task=4 --mem=10g</b>
+[user@cn3144 ~]$ <strong>novoalign -c $SLURM_CPUS_PER_TASK -d celegans -f sim1.fastq sim1r.fastq -o SAM &gt; out1.sam</strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>    <p>Create a batch input file (e.g. novo.sh). For example:</p>    <pre class="term">
+#!/bin/bash
+set -e
+
+module load novocraft
+
+# cd to the appropriate directory
+cd /data/$USER/mydir
+
+# generate an index file named 'celegans' for the sequence file elegans.dna.fa
+novoindex celegans elegans.dna.fa
+
+# align the reads in file s_1_sequence.txt against the indexed genome of C.Elegans.
+novoalign -c $SLURM_CPUS_PER_TASK -f s_1_sequence.txt -d celegans -o SAM > out.sam</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <div class="term">$ sbatch --cpus-per-task=4 --mem=10g myscript </div>
+    <p> The number assigned to '--cpus-per-task' will be passed to the $SLURM_CPUS_PER_TASK 
+      in the script automatically. User can adjust memory requirement based on 
+      needs using --mem as in the example. </p>
+    <pre class="term">&nbsp;</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. novo.swarm). For example:</p>
+
+<pre class="term">
+cd /data/$USER/novo1; novoalign -c $SLURM_CPUS_PER_TASK -d celegans -f sim1.fastq sim1r.fastq -o SAM > out1.sam
+cd /data/$USER/novo2; novoalign -c $SLURM_CPUS_PER_TASK -d celegans -f sim2.fastq sim2r.fastq -o SAM > out2.sam
+cd /data/$USER/novo3; novoalign -c $SLURM_CPUS_PER_TASK -d celegans -f sim3.fastq sim3r.fastq -o SAM > out3.sam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f novo.swarm -g 12 -t 4 --module novocraft</pre>
+where
+    <table width="55%" border=0>
+      <tr><td width=12%><tt>-g <i>#</i> </tt></td><td width="88%">Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  </td></tr><tr><td><tt>-t <i>#</i></tt> </td><td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  </td></tr><tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr></table>
+<a Name="mpi"></a><div class="heading">Running a NovoalignMPI or NovoalignCSMPI batch job on Biowulf</div>
+
+<p>1.  Create a batch script along the lines of the one below:</p>
+<pre class="term">
+#!/bin/bash 
+# the file name is novoMPIScript
+
+# load the latest version of novoalignMPI
+module load novocraft
+cd /data/$USER/mydir
+Nodelist=`make-novo-nodelist`
+mpiexec -envall -host $Nodelist -np $SLURM_NTASKS novoalignMPI -c $SLURM_CPUS_PER_TASK -d /fdb/novoalign/chr_all_mm10.nix -f infile1.fq infile2.fq > outputfile</pre>
+<P>3. submit job on the biowulf headnode:
+
+<pre class="term">
+biowulf $ sbatch --partition=multinode --nodes=2 --ntasks=4 --cpus-per-task=28 --constraint=x2695 mpi.script </pre>
+<ul>
+<li>'make-novo-nodelist' script will gather node name information and assign to variable $Nodelist</li>
+<li><span class="term">$SLURM_NTASKS</span><strong> and </strong><span class="term">$SLURM_CPUS_PER_TASK</span> will be automatically assigned by slurm based on the submission command.</li>
+<li>In this example, a master task was first started which then forked out 2 novoalignMPI tasks to each of the 2 nodes (3 novoalign tasks and one master task). Each novoalign task will use 28 threads. 
+<li>Note that one node will run 2 tasks (28x2=56 threads) and the other node will run one master task and one novoalign task (only 28-30 threads since the master task is only listenning).
+  <li>The --constraint flag ensures that the job will allocate the same type of nodes.</li>
+<li>The -envall flag is for passing variables to mpiexec.</li>
+</ul>
+<p><a class="navbar-safe-anchor"  name="index"></a>
+<div class="heading">Novoindex memory usage</div></p>
+<p>Novoindex can use a lot of memory, so it is worthwhile estimating the memory usage before submitting the job, to prevent nodes with overloaded memory. (Thanks to Colin Hercus of Novocraft for this information). </p>
+<p> The memory used for a indexed genome is<br />
+  <tt> N/2 + 4<sup>(k+1)</sup> + 4N/s </tt><br />
+  where N is the length of the reference genome, k the index k-mer length and s the indexing step size. Note that the second term must be converted to the same units as the first and third. </p>
+<p> For example, for a 6GB reference sequence, with default values k=15 and s=2, the index size would be <br />
+  6G/2 + 4<sup>16</sup> +4*6G/2 = 3G + 4G + 12G = 20G </p>
+<p> It might be better to set the options as -k=15 -s=3 and then have index of ~ 15G <br />
+  or -k=14 -s=3 for an index size of 13G. </p>
+<p> Changing k&amp;s can have an effect on run time so it might be worth testing with a few values to find the best memory/run time trade off.</p>
+<p><a class="navbar-safe-anchor"  name="bench"></a>
+<div class="heading">Novoalign &amp; NovoalignMPI benchmark</div>
+</p>
+<p>In general, parallel jobs should scale to at least 70% efficiency for the sake of other Biowulf users. One user using twice the resources to squeeze out 10% more performance may be keeping other users from working at all. The efficiency of a parallel job can be calculated as follows, where <em>e</em> is efficiency, <em>n</em> is the number of processors running the simulation, <em>t1</em> is the performance time running on one node and <em>tn</em> is the performance time running on n nodes.</p>
+<pre>       <em>e = t1/(n*tn)</em>  </pre>
+<p>For example if a job benchmarks at 20 minutes when running on one node and at 5 minutes when running on 8 nodes, we can figure the efficiency of scaling like this:</p>
+<pre>       e= 20/(8*5) = 50% </pre>
+<p>50% is way below the 70% guideline; this job does not scale well out to 8 nodes and would therefore use too many resources to justify any benefit. Indeed it may be the case that adding nodes would slow the actual over-all performance (wall-time) of the job.  This type of benchmarking should be done on all systems you intend to simulate before long-term runs.</p>
+<p>To find the most appropriate number of nodes for a specific type of job, it is essential to run one's own benchmarks. </p>
+<p>
+  <!--========================================================================-->
+  
+  The following novoalignMPI benchmark was done using paired reads, each 27 gb, against hg19 index file, using either x2650 or x2695 nodes.</p>
+<p>Since a master process is considered a task, it could take up to one node depend on how many cpus-per-task is set. For example, if 3 tasks and 56 cpus-per-task is requested, then 1 node which run the master process will pratically do nothing and only 2 nodes have novoalign jobs running. </p>
+<p>The following table has been colaborated so that only nodes running novoalign jobs are counted.</p>
+<table width="452" border="1">
+  <tr>
+    <td width="86"><div align="center">No. of Nodes</div></td>
+    <td width="118"><div align="center">x2650</div></td>
+    <td width="128"><div align="center">x2695</div></td>
+    <td width="92"> <div align="center">Efficiency</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">1</div></td>
+    <td><div align="center">42m</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">100%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">2</div></td>
+    <td><div align="center">21m</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">100%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">4</div></td>
+    <td><div align="center">12m</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">87.5%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">8</div></td>
+    <td><div align="center">7m</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">75%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">16</div></td>
+    <td><div align="center">4.5m</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">58%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">1</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">26m</div></td>
+    <td><div align="center">100%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">2</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">13m</div></td>
+    <td><div align="center">100%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">4</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">8.5m</div></td>
+    <td><div align="center">76%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">8</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">5.5m</div></td>
+    <td><div align="center">59%</div></td>
+  </tr>
+  <tr>
+    <td><div align="center">16</div></td>
+    <td><div align="center"></div></td>
+    <td><div align="center">4.5m</div></td>
+    <td><div align="center">36%</div></td>
+  </tr>
+</table>
+<p>Based on the benchmark above, user should not use more than 4 nodes for x2695 and 8 nodes for x2650.</p>
+<p>&nbsp;</p>
+<p>The following novoalign (non-MPI) benchmark was done using paired reads, each 27 gb, against hg19 index file, using either x2650 or x2695.</p>
+<table width="336" border="1">
+  <tr>
+    <th width="67" scope="col">CPUS</th>
+    <th width="70" scope="col">x2650</th>
+    <th width="78" scope="col">x2695</th>
+    <th width="93" scope="col">Efficiency</th>
+    </tr>
+  <tr>
+    <td>1</td>
+    <td>643m</td>
+    <td>&nbsp;</td>
+    <td>100</td>
+    </tr>
+  <tr>
+    <td>2</td>
+    <td>343m</td>
+    <td>&nbsp;</td>
+    <td>94</td>
+    </tr>
+  <tr>
+    <td>4</td>
+    <td>224m</td>
+    <td>&nbsp;</td>
+    <td>72</td>
+    </tr>
+  <tr>
+    <td>8</td>
+    <td> 147m </td>
+    <td>&nbsp;</td>
+    <td>55</td>
+    </tr>
+  <tr>
+    <td>16</td>
+    <td>79m</td>
+    <td>&nbsp;</td>
+    <td>51</td>
+    </tr>
+  <tr>
+    <td>32</td>
+    <td>46m</td>
+    <td>&nbsp;</td>
+    <td>44</td>
+    </tr>
+  <tr>
+    <td height="26">1</td>
+    <td>&nbsp;</td>
+    <td>600m</td>
+    <td>100</td>
+    </tr>
+  <tr>
+    <td height="26">2</td>
+    <td>&nbsp;</td>
+    <td>491m</td>
+    <td>61</td>
+    </tr>
+  <tr>
+    <td height="26">4</td>
+    <td>&nbsp;</td>
+    <td>283m</td>
+    <td>53</td>
+    </tr>
+  <tr>
+    <td height="26">8</td>
+    <td>&nbsp;</td>
+    <td>148m</td>
+    <td>51</td>
+    </tr>
+  <tr>
+    <td height="26">16</td>
+    <td>&nbsp;</td>
+    <td>81m</td>
+    <td>46</td>
+    </tr>
+  <tr>
+    <td height="26">32</td>
+    <td>&nbsp;</td>
+    <td>49m</td>
+    <td>38</td>
+    </tr>
+</table>
+<p>&nbsp;</p>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

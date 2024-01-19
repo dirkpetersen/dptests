@@ -1,0 +1,128 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'EPACTS on Biowulf';</script>
+<div class="title">EPACTS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+EPACTS (Efficient and Parallelizable Association Container Toolbox) is a versatile software pipeline to perform various statistical tests for 
+identifying genome-wide association from sequence data through a user-friendly interface, both to scientific analysts and to method developers.
+
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>EPACTS was developed in the Abecasis lab at the University of Michigan. [<A href="http://genome.sph.umich.edu/wiki/EPACTS">EPACTS webpage</a>]
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://genome.sph.umich.edu/wiki/EPACTS">EPACTS Wiki</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>EPACTS</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load EPACTS</b>
+
+[user@cn3144 ~]$ <b>cp ${EPACTS_DIR}/1000G_* .</b>
+
+[user@cn3144 ~]$ <b>epacts single --vcf 1000G_exome_chr20_example_softFiltered.calls.vcf.gz   \
+       --ped 1000G_dummy_pheno.ped  --min-maf 0.001 --chr 20 --pheno DISEASE \
+       --cov AGE --cov SEX --test b.score --anno  --out test --run 2</b>
+Detected phenotypes with 2 unique values - 1 and 2 - considering them as binary phenotypes... re-encoding them into 1 and 2
+Successfully written phenotypes and 2 covariates across 266 individuals
+Processing chromosome 20...
+Finished generating EPACTS Makefile
+Running 2 parallel jobs of EPACTS
+forkExecWait(): make -f /data/user/test.Makefile -j 2
+Rscript /usr/local/share/EPACTS/epactsSingle.R --vanilla /usr/local /data/user/test.phe /data/user/test.cov /data/user/test.ind /data/user/1000G_exome_chr20_example_softFiltered.calls.vcf.gz 20:1-10000000 /data/user/test.20.1.10000000.epacts GT 0.001 1 3 1000000000 0.5 0 FALSE single.b.score
+Rscript /usr/local/share/EPACTS/epactsSingle.R --vanilla /usr/local /data/user/test.phe /data/user/test.cov /data/user/test.ind /data/user/1000G_exome_chr20_example_softFiltered.calls.vcf.gz 20:10000001-20000000 /data/user/test.20.10000001.20000000.epacts GT 0.001 1 3 1000000000 0.5 0 FALSE single.b.score
+Loading required package: epactsR
+Loading required package: epactsR
+NOTICE - Reading VCF took 1 seconds
+[....]
+zcat /data/user/test.epacts.gz | awk '$9 != "NA" { print $0 }' | sort -g -k 9 | head -n 5000 > /data/user/test.epacts.top5000
+touch /data/user/test.epacts.OK
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. EPACTS.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+
+cd /data/$USER
+module load EPACTS
+cp ${EPACTS_DIR}/1000G_* .
+epacts single --vcf  1000G_exome_chr20_example_softFiltered.calls.vcf.gz   \
+       --ped  1000G_dummy_pheno.ped    --min-maf 0.001 --chr 20 --pheno DISEASE \
+       --cov AGE --cov SEX --test b.score --anno  --out test --run 2
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--mem=#] EPACTS.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. EPACTS.swarm). For example:</p>
+
+<pre class="term">
+epacts single --vcf input1.vcf --ped pheno.ped --out out1 --run 2
+epacts single --vcf input2.vcf --ped pheno.ped --out out2 --run 2
+epacts single --vcf input3.vcf --ped pheno.ped --out out3 --run 2
+epacts single --vcf input4.vcf --ped pheno.ped --out out4 --run 2
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f EPACTS.swarm [-g #] [-t #] --module EPACTS</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module EPACTS</tt> <td>Loads the EPACTS module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

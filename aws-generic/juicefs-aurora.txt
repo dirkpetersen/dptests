@@ -1,0 +1,104 @@
+aws rds describe-db-engine-versions --engine aurora-postgresql
+aws rds describe-db-engine-versions --engine aurora-mysql
+
+
+aws --profile aws rds create-db-cluster --db-cluster-identifier juicefs-postgresql --engine aurora-postgresql --engine-version 15.5 --master-username root --master-user-password moinmoin --enable-http-endpoint --no-deletion-protection --storage-encrypted
+
+aws --profile aws rds create-db-cluster-endpoint --db-cluster-identifier juicefs-postgresql  --db-cluster-endpoint-identifier juicefs-postgresql-1 --endpoint-type ANY
+
+
+aws --profile aws rds create-db-cluster --db-cluster-identifier juicefs-mysql --engine aurora-mysql --engine-version 8.0.mysql_aurora.3.05.1 --master-username root --master-user-password moinmoin --no-deletion-protection --storage-encrypted
+
+aws --profile aws rds create-db-cluster-endpoint --db-cluster-identifier juicefs-mysql  --db-cluster-endpoint
+-identifier juicefs-mysql-1 --endpoint-type ANY
+
+
+endpoints:
+  postgres: juicefs-postgresql-1.cluster-custom-c9gsi48wsx0s.us-west-2.rds.amazonaws.com
+  mysql:    juicefs-mysql-1.cluster-custom-c9gsi48wsx0s.us-west-2.rds.amazonaws.com
+
+
+
+
+
+
+
+
+{
+    "DBCluster": {
+        "AllocatedStorage": 1,
+        "AvailabilityZones": [
+            "us-west-2c",
+            "us-west-2a",
+            "us-west-2b"
+        ],
+        "BackupRetentionPeriod": 1,
+        "DBClusterIdentifier": "juicefs-mysql",
+        "DBClusterParameterGroup": "default.aurora-mysql8.0",
+        "DBSubnetGroup": "default",
+        "Status": "creating",
+        "Endpoint": "juicefs-mysql.cluster-c9gsi48wsx0s.us-west-2.rds.amazonaws.com",
+        "ReaderEndpoint": "juicefs-mysql.cluster-ro-c9gsi48wsx0s.us-west-2.rds.amazonaws.com",
+        "MultiAZ": false,
+        "Engine": "aurora-mysql",
+        "EngineVersion": "8.0.mysql_aurora.3.05.1",
+        "Port": 3306,
+        "MasterUsername": "root",
+        "PreferredBackupWindow": "06:51-07:21",
+        "PreferredMaintenanceWindow": "thu:09:25-thu:09:55",
+        "ReadReplicaIdentifiers": [],
+        "DBClusterMembers": [],
+        "VpcSecurityGroups": [
+            {
+                "VpcSecurityGroupId": "sg-0faf415d8af6be541",
+                "Status": "active"
+            }
+        ],
+        "HostedZoneId": "Z1PVIF0B656C1W",
+        "StorageEncrypted": true,
+        "KmsKeyId": "arn:aws:kms:us-west-2:701747442027:key/73ab023a-f117-4ac5-b863-1ceb3f7e03dc",
+        "DbClusterResourceId": "cluster-F6YYKF34VAXVD67NASHXVBMPPM",
+        "DBClusterArn": "arn:aws:rds:us-west-2:701747442027:cluster:juicefs-mysql",
+        "AssociatedRoles": [],
+        "IAMDatabaseAuthenticationEnabled": false,
+        "ClusterCreateTime": "2024-01-06T18:17:02.872000+00:00",
+        "EngineMode": "provisioned",
+        "DeletionProtection": false,
+        "HttpEndpointEnabled": false,
+
+
+
+{
+    "DBClusterEndpointIdentifier": "juicefs-postgresql-1",
+    "DBClusterIdentifier": "juicefs-postgresql",
+    "DBClusterEndpointResourceIdentifier": "cluster-endpoint-2SNEKSNPNYHS3WG3N6JYC7A55I",
+    "Endpoint": "juicefs-postgresql-1.cluster-custom-c9gsi48wsx0s.us-west-2.rds.amazonaws.com",
+    "Status": "creating",
+    "EndpointType": "CUSTOM",
+    "CustomEndpointType": "ANY",
+    "StaticMembers": [],
+    "ExcludedMembers": [],
+    "DBClusterEndpointArn": "arn:aws:rds:us-west-2:701747442027:cluster-endpoint:juicefs-postgresql-1"
+
+
+
+
+{
+    "DBClusterEndpointIdentifier": "juicefs-mysql-1",
+    "DBClusterIdentifier": "juicefs-mysql",
+    "DBClusterEndpointResourceIdentifier": "cluster-endpoint-4WJZTGVOLXETURKN4G7MFEB4IQ",
+    "Endpoint": "juicefs-mysql-1.cluster-custom-c9gsi48wsx0s.us-west-2.rds.amazonaws.com",
+    "Status": "creating",
+    "EndpointType": "CUSTOM",
+    "CustomEndpointType": "ANY",
+    "StaticMembers": [],
+    "ExcludedMembers": [],
+    "DBClusterEndpointArn": "arn:aws:rds:us-west-2:701747442027:cluster-endpoint:juicefs-mysql-1"
+}
+
+
+
+
+
+
+

@@ -1,0 +1,78 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' aria2 on Biowulf ';</script>
+<div class="title">
+aria2 on Biowulf </div>
+<P>
+
+<!-- ======================================================================= -->
+<div class="heading">Description</div>
+
+<p>
+<code>aria2c</code> is a utility for downloading files over the HTTP(S), (S)FTP,
+and Metalink protocols. The version installed on our systems does not support
+bittorrent. In can use multiple sources and multiple connections to the same
+source to speed up downloads. It can make use of the proxies that allow limited
+internet access to the compute nodes.
+</p>
+
+<p>There may be multiple versions of aria2 available. An easy way of selecting the
+version is to use <a href="/apps/modules.html">modules</a>.  To see the modules
+available, type</p>
+<pre class="term">
+module avail aria2 
+</pre>
+
+<p>To select a module use</p>
+<pre class="term">
+module load aria2/[version]
+</pre>
+<p>where <code>[version]</code> is the version of choice.</p>
+
+<h3>Environment variables set</h3>
+<ul>
+<li>$PATH</li>
+</ul>
+
+
+<h3>Documentation</h3>
+<ul>
+    <li><a href="https://aria2.github.io/manual/en/html/index.html">Manual</a> </li>
+    <li><a href="https://github.com/aria2/aria2">Github</a></li>
+</ul>
+
+<!-- ======================================================================= -->
+<a class="navbar-safe-anchor"  Name="helix"></a>
+<div class="heading">Usage</div>
+
+<p>Download a file with a single connection from a single source</p>
+<pre class="term">
+$ module load aria2
+$ aria2c "$testurl"
+</pre>
+
+<p>Download a file with 4 single connections from a single source. <code>-x</code>
+is used to set the number of connections and <code>-k</code> is used to
+specify the chunk size.</p>
+<pre class="term">
+$ aria2c -x4 -k1M "$testurl"
+</pre>
+
+<p>Download files listed in a text file (<code>-i</code>) with a max of 2 concurrent 
+downloads (<code>-j</code>).</p>
+<pre class="term">
+$ aria2c -i listfile -j2
+</pre>
+
+<p>Throttle download speed per download</p>
+<pre class="term">
+$ aria2c --max-download-limit=1M $testurl
+</pre>
+
+<p>Throttle overall download speed</p>
+<pre class="term">
+$ aria2c --max-overall-download-limit=1M $testurl
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

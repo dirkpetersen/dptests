@@ -1,0 +1,134 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Gem on HPC';</script>
+    <div class="title">Gem on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> GEM: High resolution peak calling and motif discovery for ChIP-seq and 
+      ChIP-exo data.</p>
+    <p>GEM is a scientific software for studying protein-DNA interaction at high 
+      resolution using ChIP-seq/ChIP-exo data. It can also be applied to CLIP-seq 
+      and Branch-seq data. <br />
+      GEM links binding event discovery and motif discovery with positional priors 
+      in the context of a generative probabilistic model of ChIP data and genome 
+      sequence, resolves ChIP data into explanatory motifs and binding events 
+      at unsurpassed spatial resolution. GEM reciprocally improves motif discovery 
+      using binding event locations, and binding event predictions using discovered 
+      motifs.</p>
+    <p>GEM has following features:</p>
+    <ul>
+      <li> Exceptionally high spatial resolution on binding event prediction (aka 
+        peak calling) </li>
+      <li> Highly accurate de novo motif discovery </li>
+      <li>Resolves closely spaced (less than 500bp) homotypic events that appear 
+        as a single cluster of reads </li>
+      <li> Enables analysis of spatial binding constraints of multiple transcription 
+        factors, for predicting TF dimer binding sites, enhanceosomes, etc. </li>
+      <li>Analyzes ChIP-seq, ChIP-exo, CLIP-seq and Branch-seq data, single-end 
+        or paired-end </li>
+      <li> Runs in single-condition mode or multi-condition mode </li>
+    </ul>
+
+  <h3>References:</h3>    <ul>
+      <li><a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3415389/">https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3415389/</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="http://groups.csail.mit.edu/cgs/gem/">http://groups.csail.mit.edu/cgs/gem/</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>gem</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Multithreaded</li>
+      <li>environment variables set 
+        <ul>
+          <li><code>$GEMJARPATH</code></li>
+          <li> <code>$GEMJAR</code></li>
+          <li><tt>$GEM_JAR</tt></li>
+          <li><tt>$GEM_JARPATH</tt></li>
+        </ul>
+      </li>
+      <li>Example files in <tt>/usr/local/apps/gem/TEST_DATA</tt> </li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>    
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive -c 10 --mem 10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <strong>module load gem</strong>
+[user@cn3144]$ <strong>cp -r ${GEM_TEST_DATA:-none}/ .
+[user@cn3144]$ <strong>java -Xmx10g -jar $GEMJAR --t 8 --d Read_Distribution_default.txt \
+--g mm10.chrom.sizes \
+--genome /fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/Chromosomes/ \
+--s 2000000000 --expt SRX000540_mES_CTCF.bed --ctrl SRX000543_mES_GFP.bed \
+--f BED --out mouseCTCF --k_min 6 --k_max 13</strong></pre>
+    <pre class="term">
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load gem
+java -Xmx10g -jar $GEMJAR --t 8 --d $GEM_TEST_DATA/Read_Distribution_default.txt \<br />--g $GEM_TEST_DATA/mm10.chrom.sizes \<br />--genome /fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/Chromosomes/ \<br />--s 2000000000 --expt SRX000540_mES_CTCF.bed --ctrl SRX000543_mES_GFP.bed \<br />--f BED --out mouseCTCF --k_min 6 --k_max 13</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch --cpus-per-task=10 --mem=10g batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; gem command
+cd dir2; gem command
+cd dir3; gem command
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm -g 10 -t 4 --module gem</pre>
+where
+    <table width="63%" border=0>
+      <tr><td width=18%><tt>-g <i>#</i> </tt></td><td width="82%">Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  </td></tr><tr><td><tt>-t <i>#</i></tt> </td><td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  </td></tr><tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr></table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,129 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "yak";</script>
+
+<div class="title">yak on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Yak is initially developed for two specific use cases: 1) to robustly estimate the base accuracy of CCS reads and assembly contigs, and 2) to investigate the systematic error rate of CCS reads. It achieves the goals by comparing sequences to the k-mer spectrum of short reads or by comparing spectra. No reference genome or truth data is needed.
+</p>
+<p>
+It is worth noting that estimating base accuracy is tricky. When the accuracy approaches Q50, both unsampled and erroneous k-mers in short reads may interfere with a naive estimator. Yak introduces an empirical model to address this issue. Its estimate is less affected by the coverage and the quality of short reads.
+</p>
+
+<!--
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Blow J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A really amazing research paper.</u></b></a>
+    <em>J Mol Biol. 2012 Jan 13;415(2):406-18.</em>
+  </li>
+  <li>
+    Blow J., Doe J.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/00000000"><b><u>A retread of another amazing research paper.</u></b></a>
+    <em>J Struct Biol. 2012 Dec;180(3):519-30.</em>
+  </li>
+
+</ul>
+-->
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/lh3/yak">yak on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>yak</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded. Use the <tt>-t</tt> flag to set the number of threads
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>YAK_HOME</tt></li>
+  </ul>
+  <!--
+<li>Example files in <tt>???</tt>
+    <li>Reference data in <tt>/fdb/TEMPLATE/</tt>
+	-->
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem 32g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load yak</b>
+
+[user@cn3144 ~]$ <b>yak count -b37 -o ccs.yak /fdb/app_testdata/fastq/Homo_sapiens/HG002_NA24385_son-PacBio_CCS_15kb/m54238_180901_011437.Q20.fastq.gz
+</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. yak.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load yak
+
+yak count -b37 -o ccs.yak /fdb/app_testdata/fastq/Homo_sapiens/HG002_NA24385_son-PacBio_CCS_15kb/m54238_180901_011437.Q20.fastq.gz
+
+yak inspect ccs.yak > ccs.hist
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] yak.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. yak.swarm). For example:</p>
+
+<pre class="term">
+yak count -b37 -o sample1.yak sample1.fq.gz
+yak count -b37 -o sample2.yak sample2.fq.gz
+yak count -b37 -o sample3.yak sample3.fq.gz
+yak count -b37 -o sample4.yak sample4.fq.gz
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f yak.swarm [-g #] [-t #] --module yak</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module yak</tt> <td>Loads the yak module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

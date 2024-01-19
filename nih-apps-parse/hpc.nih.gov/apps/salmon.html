@@ -1,0 +1,162 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'salmon on Biowulf';</script>
+<div class="title">salmon on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<a href="http://dasher.wustl.edu"><img alt="Salmon Logo" src="/images/SalmonLogo.png"
+    align="right" border="0" vspace="10" hspace="10" /></a>
+<p>
+Salmon is used to estimate expression at the transcript level from RNA-Seq data. It uses
+<em>quasi-mapping</em> instead of full alignment which reduces computation time and
+attempts to account for common biases in RNA-Seq data with realistic models.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>R. Patro, G. Duggal, M. Love, R. Irizarry, and C. Kingsford.
+    <em>Salmon provides fast and bias-aware quantification of transcript expression</em>.
+    Nature Methods 2017, 14:417-419.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/28263959">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5600148/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://www.nature.com/articles/nmeth.4197">Journal</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li>Salmon <a href="https://combine-lab.github.io/salmon/about/">Home page</a></li>
+    <li>Salmon <a href="https://github.com/COMBINE-lab/salmon">GitHub repo</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: salmon (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Salmon is a multi-threaded application. Please make sure to match the number of threads to the
+    number of allocated CPUs.</li>
+    <li>Example files can be found in <code>$SALMON_TEST_DATA</code></li>
+    <li>When running large numbers of concurrent jobs with a large transcriptome index,
+    please consider copying the transcriptome index to lscratch and running several (5-10) consecutive
+    salmon analyses with the same local index to reduce the load on the file systems.</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program.
+In the sample session below, we will build a transcriptome index for <em>S. cerevisiae</em> and then
+use that index to quantify expression in some yeast RNA-Seq data:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load salmon</b>
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>cp -rL $SALMON_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>ls -lh</b>
+total 9.0M
+drwxr-xr-x 2 user group 4.0K Feb 23 07:34 ERP004763
+-rw-r--r-- 1 user group 9.0M Feb 23 07:34 R64-1-1.cdna_nc.fa
+
+[user@cn3144 ~]$ # create the transcriptome index from the fasta of transcripts
+[user@cn3144 ~]$ <b>salmon index -p $SLURM_CPUS_PER_TASK -t R64-1-1.cdna_nc.fa -i R64</b>
+[2020-04-22 11:37:08.511] [jLog] [warning] The salmon index is being built without any decoy sequences.  It is recommended that decoy sequence (either computed auxiliary decoy sequence or the genome of the organism) be provided during indexing. Further details can be found at https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode.
+[2020-04-22 11:37:08.511] [jLog] [info] building index
+[...snip...]
+[2020-04-22 11:37:13.870] [jLog] [info] done building index
+[user@cn3144 ~]$ # quantify the 6 samples in ERP004763 using automatically determined library
+                 # type (e.g. stranded vs unstranded; -l A)
+[user@cn3144 ~]$ <b>for fq in ERP004763/*.fastq.gz; do
+                        echo "Processing $fq"
+                        salmon quant -i R64 -l A -r $fq -p $SLURM_CPUS_PER_TASK \
+                            -o $(basename $fq .fastq.gz)_quant
+                    done </b>
+[...snip...]
+[user@cn3144 ~]$ <b>ls -lh ERR458495_quant</b>
+total 296K
+drwxr-xr-x 2 user group 4.0K Feb 23 07:43 aux_info
+-rw-r--r-- 1 user group  204 Feb 23 07:43 cmd_info.json
+-rw-r--r-- 1 user group  490 Feb 23 07:43 lib_format_counts.json
+drwxr-xr-x 2 user group 4.0K Feb 23 07:43 libParams
+drwxr-xr-x 2 user group 4.0K Feb 23 07:43 logs
+-rw-r--r-- 1 user group 272K Feb 23 07:43 quant.sf
+
+[user@cn3144 ~]$ <b>head -5 ERR458495_quant/quant.sf</b>
+Name    Length  EffectiveLength TPM     NumReads
+YHR055C 186     8.490   2588.845789     88.963768
+YPR161C 1974    1725.000        6.445037        45.000000
+YOL138C 4026    3777.000        3.008935        46.000000
+YDR395W 2835    2586.000        7.834068        82.000000
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. salmon.sh) similar to the following example:</p>
+
+<pre class="term">
+#!/bin/bash
+
+module load salmon/0.9.1 || exit 1
+
+fastq=${1:-none}
+[[ "$fastq" != "none" ]] || exit 1
+[[ -f "$fastq" ]] || exit 1
+
+salmon quant -i R64 -l A -r $fastq -p $SLURM_CPUS_PER_TASK \
+    -o $(basename $fastq .fastq.gz)_quant
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=4g salmon.sh ERP004763/ERR458495.fastq.gz</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. salmon.swarm). For example:</p>
+
+<pre class="term">
+salmon quant -i R64 -l A -r sample1.fastq.gz -p $SLURM_CPUS_PER_TASK -o sample1_quant
+salmon quant -i R64 -l A -r sample2.fastq.gz -p $SLURM_CPUS_PER_TASK -o sample2_quant
+salmon quant -i R64 -l A -r sample3.fastq.gz -p $SLURM_CPUS_PER_TASK -o sample3_quant
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f salmon.swarm -g 4 -t 6 --module salmon/0.9.1</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module salmon <td>Loads the salmon module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

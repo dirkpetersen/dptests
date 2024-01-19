@@ -1,0 +1,226 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'fusioncatcher on Biowulf';</script>
+<div class="title">fusioncatcher on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+FusionCatcher searches for novel/known somatic fusion genes, translocations, 
+and chimeras in RNA-seq data (paired-end or single-end reads from Illumina NGS 
+platforms like Solexa/HiSeq/NextSeq/MiSeq) from diseased samples.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="http://www.biorxiv.org/content/early/2014/11/19/011650">Nicorici, Daniel, et al. "FusionCatcher-a tool for finding somatic fusion genes in paired-end RNA-sequencing data." <i>bioRxiv</i> (2014): 011650.</a></li>
+<li><a href="http://onlinelibrary.wiley.com/doi/10.1002/9780470015902.a0025848/full">Tuna, Musaffe. "Next‐Generation Sequencing in Cancer: Tools for Fusion Gene Detection." <i>eLS</i> (2015).</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/ndaniel/fusioncatcher">GitHub</a></li>
+    <li><a href="http://sourceforge.net/projects/fusioncatcher/">sourceforge</a></li>
+    <li><a href="https://github.com/ndaniel/fusioncatcher/blob/master/doc/manual.md">fusioncatcher manual</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>fusioncatcher</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Reference data in <tt>$FUSIONCATCHER_REFERENCE_DATA</tt></li>
+
+<p class="alert"><b>Disk Usage</b><br>
+FusionCatcher jobs may use a great deal of disk space for temporary files.  In
+some instances disk usage may run into the hundreds of GB range. If the 
+<tt>--output</tt> directory is located on network storage, the I/O load can lead to poor
+performance and affect other users.  Local scratch space (<tt>lscratch</tt>) 
+should therefore be used when jobs are submitted to the batch system (as in the 
+examples below).  See <a href="https://hpc.nih.gov/docs/userguide.html#local">
+the Biowulf user guide</a> for more information about using lscratch.
+</p>
+
+<!--
+<li>Environment variables set <!--for ones users should be aware of --
+  <ul>
+    <li><tt>FUSIONCATCHER_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>???</tt>
+-->
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem 20g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fusioncatcher</b>
+[user@cn3144 ~]$<b> mkdir -p /data/$USER/fusioncatcher/test</b>
+[user@cn3144 ~]$<b> cd /data/$USER/fusioncatcher/test</b>
+[user@cn3144 test]$<b> wget  http://sourceforge.net/projects/fusioncatcher/files/test/reads_{1,2}.fq.gz</b>
+[user@cn3144 ~]$<b> cd ..</b>
+[user@cn3144 ~]$<b> fusioncatcher \
+        --input ./test/ \
+        --output ./test-results/ \
+        --threads=2
+</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fusioncatcher.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+set -e
+
+module load fusioncatcher
+fusioncatcher \
+ --input /data/$USER/fusioncatcher/test/ \
+ --output /lscratch/$SLURM_JOB_ID/test-results/ \
+ --threads=2
+
+mkdir /data/$USER/fusioncatcher/$SLURM_JOB_ID
+mv /lscratch/$SLURM_JOB_ID/test-results /data/$USER/fusioncatcher/$SLURM_JOB_ID/test-results
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] --mem 20g --gres lscratch:10 --time 30 fusioncatcher.sh</pre>
+
+<p>
+Note that larger jobs may need more memory, lscratch space, and longer walltime.
+A typical single-sample paired end RNA-Seq run should requred less than 50GB memory and 100GB lscratch space.
+</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>
+FusionCatcher has a built-in "batch mode" which can be accessed using the 
+fusioncatcher-batch command.  This command accepts a filename as input.  The
+file should be tab delimited text listing paired input and output. Interested 
+users should see
+<a href="https://github.com/ndaniel/fusioncatcher/blob/master/doc/manual.md">the FusionCatcher manual</a>
+for more details. However, users should note that the batch scripts used for
+fusioncatcher-batch jobs can easily be converted to swarm scripts and run in 
+parallel for great speed increases.   
+</p>
+
+<p>
+In this section, we will begin by considering a fusioncatcher-batch job and see
+how to convert it to a swarm job for increased efficiency.  An example 
+FusionCatcher batch script that uses ftp URLs as input can be downloaded 
+<a href="http://sourceforge.net/projects/fusioncatcher/files/examples/illumina-bodymap2.txt">here</a>.
+For brevity we will refer to the contents of this file in abbreviated form
+below.
+</p>
+<p>
+The batch script looks something like so:
+</p>
+<pre class="term">
+ftp.uk/72.fastq   thyroid
+ftp.uk/73.fastq   testis
+ftp.uk/74.fastq   ovary
+ftp.uk/75.fastq   leukocyte
+ftp.uk/76.fastq   skeletal muscle
+ftp.uk/77.fastq   prostate
+ftp.uk/78.fastq   lymph node
+ftp.uk/79.fastq   lung
+ftp.uk/80.fastq   adipose
+ftp.uk/81.fastq   adrenal
+ftp.uk/82.fastq   brain
+ftp.uk/83.fastq   breast
+ftp.uk/84.fastq   colon
+ftp.uk/85.fastq   kidney
+ftp.uk/86.fastq   heart
+ftp.uk/87.fastq   liver 
+</pre>
+<p>
+The ftp URLs on the left denote input for the batch script, and the names on 
+the right give the locations of directories that should contain output when the
+script is run.  
+</p>
+<p>
+This syntax can be adapted to make a swarm file:
+</p>
+<pre class="term">
+fusioncatcher -i ftp.uk/72.fastq -o /lscratch/$SLURM_JOB_ID/thyroid         -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/thyroid 
+fusioncatcher -i ftp.uk/73.fastq -o /lscratch/$SLURM_JOB_ID/testis          -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/testis
+fusioncatcher -i ftp.uk/74.fastq -o /lscratch/$SLURM_JOB_ID/ovary           -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/ovary
+fusioncatcher -i ftp.uk/75.fastq -o /lscratch/$SLURM_JOB_ID/leukocyte       -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/leukocyte
+fusioncatcher -i ftp.uk/76.fastq -o /lscratch/$SLURM_JOB_ID/skeletal_muscle -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/skeletal_muscle
+fusioncatcher -i ftp.uk/77.fastq -o /lscratch/$SLURM_JOB_ID/prostate        -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/prostate
+fusioncatcher -i ftp.uk/78.fastq -o /lscratch/$SLURM_JOB_ID/lymph_node      -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/lymph_node
+fusioncatcher -i ftp.uk/79.fastq -o /lscratch/$SLURM_JOB_ID/lung            -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/lung
+fusioncatcher -i ftp.uk/80.fastq -o /lscratch/$SLURM_JOB_ID/adipose         -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/adipose
+fusioncatcher -i ftp.uk/81.fastq -o /lscratch/$SLURM_JOB_ID/adrenal         -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/adrenal
+fusioncatcher -i ftp.uk/82.fastq -o /lscratch/$SLURM_JOB_ID/brain           -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/brain
+fusioncatcher -i ftp.uk/83.fastq -o /lscratch/$SLURM_JOB_ID/breast          -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/breast
+fusioncatcher -i ftp.uk/84.fastq -o /lscratch/$SLURM_JOB_ID/colon           -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/colon
+fusioncatcher -i ftp.uk/85.fastq -o /lscratch/$SLURM_JOB_ID/kidney          -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/kidney
+fusioncatcher -i ftp.uk/86.fastq -o /lscratch/$SLURM_JOB_ID/heart           -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/heart
+fusioncatcher -i ftp.uk/87.fastq -o /lscratch/$SLURM_JOB_ID/liver           -p 2; \
+    mv /lscratch/$SLURM_JOB_ID/thyroid /data/$USER/liver
+</pre>
+<p>
+Note the substitution of underscores for spaces in the output directories.
+Note also the -p argument limiting each sub-job to 2 processors.  This is
+appropriate because SLURM will assign each job 2 cpus (1 hyperthreaded core) by
+default. Assuming that this file is saved as fusioncatcher.swarm, it could be 
+submitted using the <a href='/apps/swarm.html'>swarm</a> command as follows:
+</p>
+<pre class="term">
+[user@helix ~]$ <b>swarm -f fusioncatcher.swarm [-t #] -g 20 --time 20 --module fusioncatcher --gres=lscratch:10</b>
+</pre>
+
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module fusioncatcher</tt> <td>Loads the fusioncatcher module for each subjob in the swarm 
+  <tr><td><tt>--gres lscratch:10</tt> <td>Allocates 10 GB of local scratch space for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

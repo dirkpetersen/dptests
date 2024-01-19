@@ -1,0 +1,133 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FuSeq: discovering fusion genes from paired-end RNA sequencing data';</script>
+<div class="title"><b>FuSeq: discovering fusion genes from paired-end RNA sequencing data</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+FuSeq is a fast and accurate method to discover fusion genes based on quasi-mapping to quickly map the reads, extract initial candidates from split reads and fusion equivalence classes of mapped reads, and finally apply multiple filters and statistical tests to get the final candidates. 
+</p>
+
+<h3>References:</h3>
+<ul>
+Trung Nghia Vu, Wenjiang Deng, Quang Thinh Trac, Stefano Calza, Woochang Hwang and Yudi Pawitan. <br />
+<i>A fast detection of fusion genes from paired-end RNA-seq data. </i> <br />
+<a href="https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-018-5156-1">BMC Genomics</a>, 2018, <b>19</b>, p.786. <a href="https://doi.org/10.1186/s12864-018-5156-1">https://doi.org/10.1186/s12864-018-5156-1</a>.
+
+</ul>
+
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/nghiavtr/FuSeq">FuSeq GitHub Page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: FuSeq (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>FUSEQ_HOME</b>  FuSeq installation directory</li>
+    <li><b>FUSEQ_BIN</b> FuSeq executable folder </li>
+   <li><b>FUSEQ_REF</b> FuSeq reference directory</li>
+    <li><b>FUSEQ_DATA</b> sample data for running FuSeq </li>
+    <li><b>FUSEQ_R</b>    FuSeq R source files directory</li>
+  </ul>
+</ul>
+<P>
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g --gres=lscratch:10 </b>
+[user@cn3144 ~]$ <b>module load FuSeq </b>
+[+] Loading gcc  9.2.0  ...
+[+] Loading GSL 2.6 for GCC 9.2.0 ...
+[+] Loading openmpi 3.1.4  for GCC 9.2.0
+[+] Loading ImageMagick  7.0.8  on cn2367
+[+] Loading HDF5  1.10.4
+[+] Loading NetCDF 4.7.4_gcc9.2.0
+[+] Loading pandoc  2.10.1  on cn2367
+[+] Loading pcre2 10.21  ...
+[+] Loading R 4.0.0
+[+] Loading FuSeq / 1.1.3  ...
+</pre>
+Create soft links to the sample read data:
+<pre class="term">
+[user@cn3144 ~]$ <b>cp -r $FUSEQ_DATA ./ </b>
+</pre>
+Index the sample transcript data if needed, GRCh37_release75 and GRCh38_release106 are already indexed at /fdb/fuseq/:
+<pre class="term"> 
+[user@cn3144 ~]$ <b>TxIndexer -t Homo_sapiens.GRCh37.75.cdna.all.fa -o TxIndexer_idx</b>
+---------------------------------------------------------------
+
+--- FuSeq acknowledges the Sailfish and Rapmap for this indexer ---
+
+---------------------------------------------------------------
+
+writing log to TxIndexer_idx/LogDir/FuSeq_index.log
+RapMap Indexer
+
+[Step 1 of 4] : counting k-mers
+counted k-mers for 180000 transcriptsElapsed time: 4.19777s
+
+Replaced 0 non-ATCG nucleotides
+Clipped poly-A tails from 1401 transcripts
+Building rank-select dictionary and saving to disk done
+Elapsed time: 0.0257811s
+Writing sequence data to file . . . done
+Elapsed time: 0.137891s
+[info] Building 32-bit suffix array (length of generalized text is 287322183)
+Building suffix array . . . success
+saving to disk . . . done
+Elapsed time: 0.440665s
+done
+Elapsed time: 41.0055s
+processed 287000000 positions
+khash had 102501816 keys
+saving hash to disk . . . done
+Elapsed time: 9.4689s
+</pre>
+Extract fusion equivalence classes and split reads by running FuSeq with 16 cpus:
+<pre class="term">
+[user@cn3144 ~]$ <b>FuSeq -i /fdb/fuseq/TxIndexer_idx/GRCh37.75/ \
+  -l IU -1 SRR064287_1.fastq -2 SRR064287_2.fastq -p 16 \
+    -g $FUSEQ_REF/Homo_sapiens.GRCh37.gtf -o feqDir
+</b>
+</pre>
+- a folder feqDir will be produced. <br /> <br />
+
+Finally, discover the fusion genes. This will be done in two steps. <br />
+First, create .sqlite file containing the annotation file:
+<pre class="term">
+[user@cn3144 ~]$ <b>Rscript $FUSEQ_R/createSqlite.R $FUSEQ_REF/Homo_sapiens.GRCh37.gtf Homo_sapiens.GRCh37.sqlite </b>
+</pre>
+Second, use the file Homo_sapiens.GRCh37.sqlite, together with 
+the supporting annotation file Homo_sapiens.GRCh37.txAnno.RData containing information of paralogs, gene types, etc., to perform the discovery of fusion genes:
+<pre class="term">
+[user@cn3144 ~]$ <b>Rscript $FUSEQ_R/FuSeq.R in=feqDir \
+   txfasta=$FUSEQ_REF/Homo_sapiens.GRCh37.cdna.all.fa \
+      sqlite=Homo_sapiens.GRCh37.sqlite \
+         txanno=Homo_sapiens.GRCh37.txAnno.RData
+	 </b>
+[user@cn3144 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 18320304
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

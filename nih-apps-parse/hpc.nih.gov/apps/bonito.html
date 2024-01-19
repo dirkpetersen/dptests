@@ -1,0 +1,159 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'bonito on Biowulf';</script>
+<div class="title">bonito on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width: 70%">
+    <p>
+    A PyTorch Basecaller for Oxford Nanopore Reads. According to ONT this is a research
+    release
+    </p>
+    <blockquote>
+        provided as technology demonstrators to provide early access to
+        features or stimulate Community development of tools. Support for this
+        software will be minimal and is only provided directly by the
+        developers.
+    </blockquote>
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>bonito on <a href="https://github.com/nanoporetech/bonito">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: bonito (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>This software is GPU accelerated</li>
+    <li>Example files in <code>$BONITO_TEST_DATA</code></li>
+</ul>
+
+<h3>Models available</h3>
+<p>Use</p>
+<pre class="term">
+$ bonito download --models --show
+</pre>
+
+<p>to see all available models. Note that models are included in the install
+already. <em>fast</em>: fast model <em>hac</em>: high accuracy <em>sup</em>:
+super high accuracy</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Note that 0.3.6
+runs on p100 GPUs but &gt;=0.5.0 requires v100 or newer. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:50,gpu:v100x:1 --mem=12g --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load bonito/0.7.2</b>
+[user@cn3144]$ <b>cp -rL ${BONITO_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>ls -lh</b>
+total 4.0K
+drwxr-xr-x 3 user group 4.0K Feb  8 11:07 Zymo-GridION-EVEN-BB-SN
+[user@cn3144]$ <b>find Zymo-GridION-EVEN-BB-SN -name '*.fast5' -printf '.' | wc -c</b>
+160000
+[user@cn3144]$ ### basecalling command for bonito 0.3.6
+[user@cn3144]$ <b>bonito basecaller --fastq --recursive \
+                    --device cuda dna_r9.4.1 Zymo-GridION-EVEN-BB-SN &gt; reads.fastq</b>
+&gt; loading model
+&gt; calling: 20829 reads [49:08,  7.08 reads/s]
+...
+[user@cn3144]$ ### basecalling command for bonito &gt;=0.5.0
+[user@cn3144]$ <b>bonito basecaller --recursive --device cuda \
+    dna_r9.4.1_e8_hac@v3.3 Zymo-GridION-EVEN-BB-SN | gzip -c - &gt; reads.fastq.gz</b>
+&gt; loading model dna_r9.4.1_e8.1_hac@v3.3
+&gt; completed reads: 160000
+&gt; duration: 0:24:34
+&gt; samples per second 4.7E+06
+&gt; done
+
+[user@cn3144]$ ### basecalling command for bonito &gt;=0.7.1
+[user@cn3144]$ <b>bonito basecaller --recursive --device cuda \
+    dna_r9.4.1_e8_hac@v3.3 Zymo-GridION-EVEN-BB-SN | gzip -c - &gt; reads.fastq.gz</b>
+&gt; reading fast5
+&gt; outputting unaligned fastq
+&gt; loading model dna_r9.4.1_e8_hac@v3.3
+&gt; completed reads: 160000
+&gt; duration: 0:23:39
+&gt; samples per second 4.9E+06
+&gt; done
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+
+</pre>
+
+<p>Current versions of bonito achieved ~110 reads/s on a V100X GPU with the hac
+model. The basecaller does not scale to more than 1 GPU</p>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. bonito.sh), which uses the input file 'bonito.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+wd=$PWD
+
+module load bonito/0.7.2 || exit 1
+cd /lscratch/$SLURM_JOB_ID || exit 1
+cp -rL ${BONITO_TEST_DATA:-none}/* .
+bonito basecaller --recursive --device cuda \
+    dna_r9.4.1_e8_hac@v3.3 Zymo-GridION-EVEN-BB-SN | gzip -c - &gt; reads.fastq.gz
+mv reads.fastq $wd
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=12g --gres=gpu:v100x:1,lscratch:50 bonito.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. bonito.swarm). For example:</p>
+
+<pre class="term">
+bonito basecaller --fastq --recursive --device cuda dna_r9.4.1_e8_hac@v3.3 run1 > reads1.fastq
+bonito basecaller --fastq --recursive --device cuda dna_r9.4.1_e8_hac@v3.3 run2 > reads2.fastq
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f bonito.swarm -g 12 -t 6 --gres=gpu:v100x:1 --module bonito/0.7.2</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module bonito <td>Loads the bonito module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

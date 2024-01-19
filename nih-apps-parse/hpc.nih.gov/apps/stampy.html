@@ -1,0 +1,168 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'stampy on Biowulf';</script>
+<div class="title">stampy on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width: 70%">
+    
+<p>Stampy is a short read mapper for Illumina data with particular emphasis on
+mapping reads with a higher number of sequence differences.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>G. Lunter and M. Goodson. <em>
+    Stampy: A statistical algorithm for sensitive and fast mapping of Illumina sequence reads</em>. 
+        Genome Reaserch, 2011: 21:936-939.
+        <a href="https://www.ncbi.nlm.nih.gov/pubmed/20980556">PubMed</a> &nbsp;|&nbsp;
+        <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3106326/">PMC</a> &nbsp;|&nbsp;
+        <a href="http://genome.cshlp.org/content/21/6/936">Journal</a>
+    </li>
+</ul>
+
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://www.well.ox.ac.uk/project-stampy">Home page</a> </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: stampy (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>stampy is a multithreaded application. Please make sure to match the number
+    of threads with the number of allocated CPUs.</li>
+    <li>Example files in <code>$STAMPY_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load stampy samtools</b>
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>cp $STAMPY_TEST_DATA/* .</b>
+[user@cn3144]$ <b>ls -lh</b>
+total 68M
+-rw-r--r-- 1 user group 56M Jun 21 08:54 ERR458495.fastq.gz
+-rwxrwxr-x 1 user group 12M Jun 21 08:54 sacCer3.fa
+</pre>
+
+<p>Build a genome and a hash file</p>
+<pre class="term">
+[user@cn3144]$ <b>stampy.py -G sacCer3 \
+           --species Saccharomyces_cerevisiae \
+           --assembly sacCer3 sacCer3.fa</b>
+stampy: Building genome...
+stampy: Input files: ['sacCer3.fa']
+stampy: Done
+[user@cn3144]$ <b>stampy.py -g sacCer3 -H sacCer3</b>
+stampy: Building hash table...
+stampy: Initializing...
+stampy: Counting...
+stampy: Initializing hash...         
+stampy: Flagging high counts...           
+stampy: Creating hash...            
+stampy: Writing...                  
+stampy: Finished building hash table
+stampy: Done
+
+[user@cn3144]$ <b>ls -lh</b>
+total 87M
+-rw-r--r-- 1 user group  56M Jun 21 08:54 ERR458495.fastq.gz
+-rwxrwxr-x 1 user group  12M Jun 21 08:54 sacCer3.fa
+-rw-r--r-- 1 user group  16M Jun 21 08:58 sacCer3.sthash
+-rw-r--r-- 1 user group 2.9M Jun 21 08:58 sacCer3.stidx
+</pre>
+
+<p>Align single end data</p>
+<pre class="term">
+[user@cn3144]$ <b>stampy.py -t $SLURM_CPUS_PER_TASK -g sacCer3 -h sacCer3 -M ERR458495.fastq.gz \
+                      | samtools sort -@2 -T ./test -o test.bam</b>
+stampy: Mapping...
+stampy: # Nucleotides (all/1/2):        52874862        52874862        0
+stampy: # Variants:                     329629  329629  0
+stampy: # Fraction:                     0.0062  0.0062  0.0000
+stampy: Done
+</pre>
+
+
+<p>End the sinteractive session</p>
+<pre class="term">
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Create a batch input file (e.g. stampy.sh) similar to the following example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load stampy/1.0.31 samtools/1.8 || exit 1
+stampy.py -g sacCer3 -h sacCer3 -t $SLURM_CPUS_PER_TASK -M ERR458495.fastq.gz \
+  | samtools sort -T /lscratch/$SLURM_JOB_ID/test -@2 -m1g -o test.bam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=4g --gres=lscratch:10 stampy.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. stampy.swarm). For example:</p>
+
+<pre class="term">
+stampy.py -g sacCer3 -h sacCer3 -t $SLURM_CPUS_PER_TASK -M sample1.fastq.gz \
+  | samtools sort -T /lscratch/$SLURM_JOB_ID/sample -@2 -m1g -o sample1.bam
+stampy.py -g sacCer3 -h sacCer3 -t $SLURM_CPUS_PER_TASK -M sample2.fastq.gz \
+  | samtools sort -T /lscratch/$SLURM_JOB_ID/sample -@2 -m1g -o sample2.bam
+stampy.py -g sacCer3 -h sacCer3 -t $SLURM_CPUS_PER_TASK -M sample3.fastq.gz \
+  | samtools sort -T /lscratch/$SLURM_JOB_ID/sample -@2 -m1g -o sample3.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f stampy.swarm -g 4 -t 4 --gres=lscratch:10 --module stampy/1.0.32,samtools/1.8</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module stampy <td>Loads the stampy module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

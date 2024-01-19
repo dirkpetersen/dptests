@@ -1,0 +1,271 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PEPPER_deepvariant: long-read variant calling and nanopore assembly polishing';</script>
+<div class="title"><b>PEPPER_deepvariant:  long-read variant calling and nanopore assembly polishing</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+PEPPER-Margin-DeepVariant is a haplotype-aware variant calling pipeline for processing third-generation 
+nanopore sequence data. It outperforms the short-read-based single-nucleotide-variant identification method 
+at the whole-genome scale and produces high-quality single-nucleotide variants in segmental duplications 
+and low-mappability regions where short-read-based genotyping fails. It also can provide highly contiguous 
+phase blocks across the genome with nanopore reads and perform de novo assembly polishing to produce 
+diploid assemblies with high accuracy. This pipeline is also applicable to PacBio HiFi data, 
+providing an efficient solution with superior performance over the current WhatsHap-DeepVariant standard. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Kishwar Shafin, Trevor Pesout, Pi-Chuan Chang, Maria Nattestad, Alexey Kolesnikov,
+Sidharth Goel, Gunjan Baid, Mikhail Kolmogorov, Jordan M. Eizenga, Karen H. Miga,
+Paolo Carnevali, Miten Jain, Andrew Carroll and Benedict Paten, <br />
+<i>Haplotype-aware variant calling with PEPPER-Margin-DeepVariant enables high
+accuracy in nanopore long-reads.</i> <br />
+<a href="https://www.nature.com/articles/s41592-021-01299-w">Nature Methods volume 18, pages 1322–1332 (2021).</a>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/kishwarshafin/pepper">PEPPER Github page</a></li>
+<li><a href="https://github.com/kishwarshafin/pepper/blob/r0.7/docs/misc/pepper_v0.7_method_update.md">PEPPER-Margin-DeepVariant r0.7 method description</a></li>
+<li><a href="https://github.com/kishwarshafin/pepper/blob/r0.7/docs/usage/usage_and_parameters.md">PEPPER-Margin-DeepVariant usage and parameters</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>PEPPER_deepvariant</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Implemented as a Singularity container
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PEPPER_HOME</b>&nbsp; installation directory</li>
+    <li><b>PEPPER_BIN</b>&nbsp; &nbsp; executables directory</li>
+    <li><b>PEPPER_CONFIG</b>sample configuration files directory</li>
+    <li><b>PEPPER_SRC</b>&nbsp; &nbsp; source directory</li>
+    <li><b>PEPPER_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=8g -c10 --gres=lscratch:20</b>
+[user@cn3316 ~]$ <b>module load PEPPER_deepvariant </b>
+[+] Loading singularity  3.8.5-1  on cn4235
+[+] Loading pepper_deepvariant 0.7  ...
+</pre>
+The basic usage command for PEPPER_deepvariant is:
+<pre class="term">
+[user@cn3123 user]$ <b>run_pepper_margin_deepvariant -h</b>
+usage: run_pepper_margin_deepvariant [-h] [--version] {call_variant} ...
+
+Run PEPPER-Margin-DeepVariant for variant calling.Example run: run_pepper_margin_deepvariant -b <BAM> -f <FASTA> -o <OUTPUT_DIR> -t <THREADS> <--ont_r9_guppy5_sup/--ont_r10_q20/--hifi>
+
+positional arguments:
+  {call_variant}
+
+optional arguments:
+  -h, --help      show this help message and exit
+  --version       Show version.
+
+[user@cn3123 user]$ <b>run_pepper_margin_deepvariant call_variant -h</b>
+usage: run_pepper_margin_deepvariant call_variant -b BAM -f FASTA -o OUTPUT_DIR -t THREADS [-r REGION] [-g] [--gvcf]
+                                                  [-s SAMPLE_NAME] [--pepper_snp_skip_indels]
+                                                  [--no_pepper_snp_skip_indels] [--use_pepper_hp] [--no_use_pepper_hp]
+                                                  [--haplotag_with_pepper_hp] [--no_haplotag_with_pepper_hp]
+                                                  [--use_pepper_snp_candidates] [--no_use_pepper_snp_candidates]
+                                                  [--only_pepper] [--only_haplotag] [--phased_output]
+                                                  [--skip_final_phased_bam] [-p OUTPUT_PREFIX] [-k] [--dry]
+                                                  [--pepper_model PEPPER_MODEL] [--pepper_hp_model PEPPER_HP_MODEL]
+                                                  [--pepper_quantized] [--no_pepper_quantized]
+                                                  [--pepper_downsample_rate PEPPER_DOWNSAMPLE_RATE]
+                                                  [--pepper_region_size PEPPER_REGION_SIZE]
+                                                  [--pepper_include_supplementary] [--pepper_min_mapq PEPPER_MIN_MAPQ]
+                                                  [--pepper_min_snp_baseq PEPPER_MIN_SNP_BASEQ]
+                                                  [--pepper_min_indel_baseq PEPPER_MIN_INDEL_BASEQ]
+                                                  [--pepper_snp_frequency PEPPER_SNP_FREQUENCY]
+                                                  [--pepper_insert_frequency PEPPER_INSERT_FREQUENCY]
+                                                  [--pepper_delete_frequency PEPPER_DELETE_FREQUENCY]
+                                                  [--pepper_min_coverage_threshold PEPPER_MIN_COVERAGE_THRESHOLD]
+                                                  [--pepper_candidate_support_threshold PEPPER_CANDIDATE_SUPPORT_THRESHOLD]
+                                                  [--pepper_snp_candidate_frequency_threshold PEPPER_SNP_CANDIDATE_FREQUENCY_THRESHOLD]
+                                                  [--pepper_indel_candidate_frequency_threshold PEPPER_INDEL_CANDIDATE_FREQUENCY_THRESHOLD]
+                                                  [--pepper_skip_indels]
+                                                  [--pepper_allowed_multiallelics PEPPER_ALLOWED_MULTIALLELICS]
+                                                  [--pepper_snp_p_value PEPPER_SNP_P_VALUE]
+                                                  [--pepper_insert_p_value PEPPER_INSERT_P_VALUE]
+                                                  [--pepper_delete_p_value PEPPER_DELETE_P_VALUE]
+                                                  [--pepper_snp_q_cutoff PEPPER_SNP_Q_CUTOFF]
+                                                  [--pepper_indel_q_cutoff PEPPER_INDEL_Q_CUTOFF]
+                                                  [--pepper_report_snp_above_freq PEPPER_REPORT_SNP_ABOVE_FREQ]
+                                                  [--pepper_report_indel_above_freq PEPPER_REPORT_INDEL_ABOVE_FREQ]
+                                                  [--margin_haplotag_model MARGIN_HAPLOTAG_MODEL]
+                                                  [--margin_hp_haplotag_model MARGIN_HP_HAPLOTAG_MODEL]
+                                                  [--margin_phase_model MARGIN_PHASE_MODEL] [--dv_model DV_MODEL]
+                                                  [--dv_alt_aligned_pileup DV_ALT_ALIGNED_PILEUP]
+                                                  [--dv_realign_reads DV_REALIGN_READS]
+                                                  [--dv_min_mapping_quality DV_MIN_MAPPING_QUALITY]
+                                                  [--dv_min_base_quality DV_MIN_BASE_QUALITY]
+                                                  [--dv_sort_by_haplotypes DV_SORT_BY_HAPLOTYPES]
+                                                  [--dv_parse_sam_aux_fields DV_PARSE_SAM_AUX_FIELDS]
+                                                  [--dv_add_hp_channel DV_ADD_HP_CHANNEL]
+                                                  [--dv_use_hp_information DV_USE_HP_INFORMATION]
+                                                  [--dv_use_multiallelic_mode DV_USE_MULTIALLELIC_MODE]
+                                                  (--ont_r9_guppy5_sup | --ont_r10_q20 | --hifi) [-h]
+
+...                     
+
+[user@cn3123 user]$ <b>cp -r $PEPPER_DATA/* .</b>
+[user@cn3123 user]$ <b>run_pepper_margin_deepvariant call_variant  -b NA12878_S1.chr20.10_10p1mb.bam -f  ucsc.hg19.chr20.unittest.fasta -o output -t 2 --hifi</b>
+[08-16-2022 14:08:55] INFO: VARIANT CALLING MODULE SELECTED
+[08-16-2022 14:08:55] INFO: [1/8] RUNNING THE FOLLOWING COMMAND
+-------
+mkdir -p output;
+mkdir -p output/logs;
+mkdir -p output/intermediate_files;
+cp /opt/pepper_models/PEPPER_VARIANT_HIFI_V7.pkl output/intermediate_files/
+-------
+[08-16-2022 14:08:57] INFO: [2/8] RUNNING THE FOLLOWING COMMAND
+-------
+time pepper_variant call_variant -b NA12878_S1.chr20.10_10p1mb.bam -f ucsc.hg19.chr20.unittest.fasta -t 2 -m output/intermediate_files/PEPPER_VARIANT_HIFI_V7.pkl -o output/pepper/ --no_quantized  -s Sample --hifi 2>&1 | tee output/logs/1_pepper.log
+-------
+[08-16-2022 14:08:59] INFO: HiFi VARIANT CALLING MODE SELECTED.
+[08-16-2022 14:08:59] INFO: MODE: PEPPER SNP
+[08-16-2022 14:08:59] INFO: THRESHOLDS ARE SET TO:
+[08-16-2022 14:08:59] INFO: MIN MAPQ:                           5
+[08-16-2022 14:08:59] INFO: MIN SNP BASEQ:                      10
+[08-16-2022 14:08:59] INFO: MIN INDEL BASEQ:                    10
+[08-16-2022 14:08:59] INFO: MIN SNP FREQUENCY:                  0.1
+[08-16-2022 14:08:59] INFO: MIN INSERT FREQUENCY:               0.12
+[08-16-2022 14:08:59] INFO: MIN DELETE FREQUENCY:               0.12
+[08-16-2022 14:08:59] INFO: MIN COVERAGE THRESHOLD:             2
+[08-16-2022 14:08:59] INFO: MIN CANDIDATE SUPPORT:              2
+[08-16-2022 14:08:59] INFO: MIN SNP CANDIDATE FREQUENCY:        0.1
+[08-16-2022 14:08:59] INFO: MIN INDEL CANDIDATE FREQUENCY:      0.12
+[08-16-2022 14:08:59] INFO: SKIP INDEL CANDIDATES:              False
+[08-16-2022 14:08:59] INFO: MAX ALLOWED CANDIDATE IN ONE SITE:  4
+[08-16-2022 14:08:59] INFO: MIN SNP PREDICTIVE VALUE:           0.01
+[08-16-2022 14:08:59] INFO: MIN INSERT PREDICTIVE VALUE:        0.001
+[08-16-2022 14:08:59] INFO: MIN DELETE PREDICTIVE VALUE:        0.01
+[08-16-2022 14:08:59] INFO: SNP QV CUTOFF FOR RE-GENOTYPING:    20
+[08-16-2022 14:08:59] INFO: INDEL QV CUTOFF FOR RE-GENOTYPING:  50
+[08-16-2022 14:08:59] INFO: REPORT ALL SNPs ABOVE THRESHOLD:    0
+[08-16-2022 14:08:59] INFO: REPORT ALL INDELs ABOVE THRESHOLD:  0
+[08-16-2022 14:08:59] INFO: CALL VARIANT MODULE SELECTED
+[08-16-2022 14:08:59] INFO: RUN-ID: 08162022_140859
+[08-16-2022 14:08:59] INFO: IMAGE OUTPUT: output/pepper/images_08162022_140859/
+[08-16-2022 14:08:59] INFO: STEP 1/3 GENERATING IMAGES:
+[08-16-2022 14:08:59] INFO: COMMON CONTIGS FOUND: ['chr20']
+[08-16-2022 14:08:59] INFO: TOTAL CONTIGS: 1 TOTAL INTERVALS: 631 TOTAL BASES: 63025519
+[08-16-2022 14:08:59] INFO: STARTING PROCESS: 0 FOR 316 INTERVALS
+[08-16-2022 14:08:59] INFO: [THREAD 00] 10/316 COMPLETE (3%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 20/316 COMPLETE (6%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 30/316 COMPLETE (9%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 40/316 COMPLETE (12%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 50/316 COMPLETE (15%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 60/316 COMPLETE (18%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 70/316 COMPLETE (22%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 80/316 COMPLETE (25%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 90/316 COMPLETE (28%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 100/316 COMPLETE (31%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 110/316 COMPLETE (34%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 120/316 COMPLETE (37%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 130/316 COMPLETE (41%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 140/316 COMPLETE (44%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 150/316 COMPLETE (47%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 160/316 COMPLETE (50%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 170/316 COMPLETE (53%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 180/316 COMPLETE (56%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 190/316 COMPLETE (60%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 200/316 COMPLETE (63%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 210/316 COMPLETE (66%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 220/316 COMPLETE (69%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 230/316 COMPLETE (72%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 240/316 COMPLETE (75%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 250/316 COMPLETE (79%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 260/316 COMPLETE (82%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 270/316 COMPLETE (85%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:08:59] INFO: [THREAD 00] 280/316 COMPLETE (88%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:09:00] INFO: [THREAD 00] 290/316 COMPLETE (91%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:09:00] INFO: [THREAD 00] 300/316 COMPLETE (94%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:09:00] INFO: [THREAD 00] 310/316 COMPLETE (98%) [ELAPSED TIME: 0 Min 0 Sec]
+[08-16-2022 14:09:00] INFO: THREAD 0 FINISHED SUCCESSFULLY.
+[08-16-2022 14:09:00] INFO: FINISHED IMAGE GENERATION
+[08-16-2022 14:09:00] INFO: TOTAL ELAPSED TIME FOR GENERATING IMAGES: 0 Min 0 Sec
+[08-16-2022 14:09:00] INFO: STEP 2/3 RUNNING INFERENCE
+[08-16-2022 14:09:00] INFO: OUTPUT: output/pepper/predictions_08162022_140859/
+[08-16-2022 14:09:00] INFO: DISTRIBUTED CPU SETUP.
+[08-16-2022 14:09:00] INFO: TOTAL CALLERS: 2
+[08-16-2022 14:09:00] INFO: THREADS PER CALLER: 1
+[08-16-2022 14:09:00] INFO: MODEL LOADING TO ONNX
+[08-16-2022 14:09:00] INFO: SETTING THREADS TO: 1.
+[08-16-2022 14:09:00] INFO: STARTING INFERENCE.
+[08-16-2022 14:09:00] INFO: TOTAL SUMMARIES: 2.
+[08-16-2022 14:09:00] INFO: SUMMARY PROCESSED 1/2.
+[08-16-2022 14:09:00] INFO: SUMMARY PROCESSED 2/2.
+[08-16-2022 14:09:00] INFO: THREAD 0 FINISHED SUCCESSFULLY.
+[08-16-2022 14:09:00] INFO: FINISHED PREDICTION
+[08-16-2022 14:09:00] INFO: ELAPSED TIME: 0 Min 0 Sec
+[08-16-2022 14:09:00] INFO: PREDICTION FINISHED SUCCESSFULLY.
+[08-16-2022 14:09:00] INFO: TOTAL ELAPSED TIME FOR INFERENCE: 0 Min 0 Sec
+[08-16-2022 14:09:00] INFO: STEP 3/3 FINDING CANDIDATES
+[08-16-2022 14:09:00] INFO: OUTPUT: output/pepper/
+[08-16-2022 14:09:00] INFO: STARTING CANDIDATE FINDING.
+[08-16-2022 14:09:01] INFO: FINISHED PROCESSING, TOTAL CANDIDATES FOUND: 194
+[08-16-2022 14:09:01] INFO: FINISHED PROCESSING, TOTAL VARIANTS IN PEPPER: 16
+[08-16-2022 14:09:01] INFO: FINISHED PROCESSING, TOTAL VARIANTS SELECTED FOR RE-GENOTYPING: 178
+[08-16-2022 14:09:01] INFO: TOTAL TIME SPENT ON CANDIDATE FINDING: 0 Min 0 Sec
+[08-16-2022 14:09:01] INFO: TOTAL ELAPSED TIME FOR FINDING CANDIDATES: 0 Min 1 Sec
+
+real    0m4.129s
+user    0m2.901s
+sys     0m1.906s
+[08-16-2022 14:09:01] INFO: [3/8] RUNNING THE FOLLOWING COMMAND
+-------
+mv output/pepper/PEPPER_VARIANT_FULL.vcf output/;
+mv output/pepper/PEPPER_VARIANT_OUTPUT_PEPPER.vcf output/;
+mv output/pepper/PEPPER_VARIANT_OUTPUT_VARIANT_CALLING.vcf output/;
+bgzip output/PEPPER_VARIANT_FULL.vcf;
+tabix -p vcf output/PEPPER_VARIANT_FULL.vcf.gz;
+bgzip output/PEPPER_VARIANT_OUTPUT_PEPPER.vcf;
+tabix -p vcf output/PEPPER_VARIANT_OUTPUT_PEPPER.vcf.gz;
+bgzip output/PEPPER_VARIANT_OUTPUT_VARIANT_CALLING.vcf;
+tabix -p vcf output/PEPPER_VARIANT_OUTPUT_VARIANT_CALLING.vcf.gz;
+rm -rf output/pepper/;
+echo "CONTIGS FOUND IN PEPPER VCF:";
+zcat output/PEPPER_VARIANT_FULL.vcf.gz | grep -v '#' | cut -f1 | uniq
+...
+</pre>
+<pre class="term">
+[user@cn3316 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fithichip.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load PEPPER_deepvariant
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] fithichip.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

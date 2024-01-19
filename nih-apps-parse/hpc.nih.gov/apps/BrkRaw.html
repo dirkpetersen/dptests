@@ -1,0 +1,92 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BrkRaw: A comprehensive tool to access raw Bruker Biospin MRI data.';</script>
+<div class="title">BrkRaw: A comprehensive tool to access raw Bruker Biospin MRI data.</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The ‘BrkRaw’ is a python module designed to provide a comprehensive tool to access raw data acquired from Bruker Biospin preclinical MRI scanner. This module is also compatible with the zip compressed data to enable use of the archived data directly.
+The module is comprised of four components, including graphical user interface (GUI), command-line tools, high-level and low-level python APIs.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Lee, Sung-Ho, Ban, Woomi, & Shih, Yen-Yu Ian. <br />
+<i> BrkRaw/bruker: BrkRaw v0.3.3 (Version 0.3.3). Zenodo. June 4, 2020.</i><br />
+<a href="http://doi.org/10.5281/zenodo.3877179">DOI: </a> http://doi.org/10.5281/zenodo.3877179<br/>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/BrkRaw/bruker">BrkRaw Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>BrkRaw</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>BRKRAW_HOME</b>&nbsp; installation directory</li>
+    <li><b>BRKRAW_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn4471 ~]$ <b>module load BrkRaw </b>
+[+] Loading BrkRaw 0.3.6  ...
+</pre>
+Copy sample data to the current folder:
+<pre class="term">
+[user@cn4471 ~]$ <b>brkraw -h</b>
+usage: brkraw [-h] [-v] command ...
+
+BrkRaw command-line interface
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -v, --version  show program's version number and exit
+
+Sub-commands:
+  To run this command, you must specify one of the functions listedbelow
+  next to the command. For more information on each function, use -h next to
+  the function name to call help document.
+
+  command        description
+    info         Prints out the information of the internal contents in Bruker
+                 raw data
+    gui          Run GUI mode
+    tonii        Convert a single raw Bruker data into NifTi file(s)
+    tonii_all    Convert All raw Bruker data located in the input directory
+    bids_helper  Creates a BIDS datasheet for guiding BIDS data converting.
+    bids_convert
+                 Convert ALL raw Bruker data located in the input directory
+                 based on the BIDS datasheet
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn4471 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

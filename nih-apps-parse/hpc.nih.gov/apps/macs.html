@@ -1,0 +1,155 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'macs on Biowulf';</script>
+<div class="title">macs on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>Model-based Analysis of ChIP-Seq (MACS) is used on short reads sequencers
+such as Genome Analyzer (Illumina / Solexa). MACS empirically models the length
+of the sequenced ChIP fragments, which tends to be shorter than sonication or
+library construction size estimates, and uses it to improve the spatial
+resolution of predicted binding sites. MACS also uses a dynamic Poisson
+distribution to effectively capture local biases in the genome sequence,
+allowing for more sensitive and robust prediction. MACS compares favorably to
+existing ChIP-Seq peak-finding algorithms and can be used for ChIP-Seq with or
+without control samples.</p>
+
+
+<h3>References:</h3>
+<ul>
+<li>Y. Zhang, T. Liu, C. A. Meyer, J. Eeckhoute, D. S. Johnson, B. E. Bernstein, C. Nusbaum, R. M. Myers, M. Brown, W. Li and X. S. Liu. <em>Model-based Analysis of ChIP-Seq (MACS)</em> Genome Biology 2008. 
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/18798982">PubMed</a>&nbsp;|&nbsp;
+<a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2592715/">PMC</a>&nbsp;|&nbsp;
+<a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2008-9-9-r137">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li>Source code repository: <a href="https://github.com/taoliu/MACS">on GitHub</a></li>
+    <li>Manual <a href="https://github.com/taoliu/MACS/wiki">on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: macs (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example data in <code>$MACS_TEST_DATA</code></li>
+    <li>MACS will need lscratch for storage temporary files.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g --gres=lscratch:5 </b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load macs</b>
+[+] Loading macs  2.2.6
+
+[user@cn3144 ~]$ <b>macs2</b>
+usage: macs2 [-h] [--version]
+             {callpeak,bdgpeakcall,bdgbroadcall,bdgcmp,bdgopt,cmbreps,bdgdiff,filterdup,predictd,pileup,randsample,refinepeak}
+             ...
+
+[user@cn3144 ~]$ <b>cp $MACS_TEST_DATA/*.bam .</b>
+[user@cn3144 ~]$ <b>ls -lh</b>
+-rw-rw-r-- 1 user group 387M Feb 14 10:19 ENCFF001NGB.bam
+-rw-rw-r-- 1 user group 458M Feb 14 10:19 ENCFF001NHS.bam
+
+[user@cn3144 ~]$ # ENCFF001NHS.bam is the control (IgG) data
+[user@cn3144 ~]$ <b>macs2 callpeak \
+    -t ENCFF001NGB.bam -c ENCFF001NHS.bam \
+    -n test -g mm</b>
+
+INFO  @ Wed, 14 Feb 2018 09:47:20:
+# Command line: callpeak -t /usr/local/apps/macs/TEST_DATA/ENCFF001NGB.bam -c /usr/local/apps/macs/TEST_DATA/ENCFF001NH
+S.bam -n test -g mm
+# ARGUMENTS LIST:
+# name = test
+# format = AUTO
+# ChIP-seq file = ['/usr/local/apps/macs/TEST_DATA/ENCFF001NGB.bam']
+# control file = ['/usr/local/apps/macs/TEST_DATA/ENCFF001NHS.bam']
+# effective genome size = 1.87e+09
+# band width = 300
+# model fold = [5, 50]
+# qvalue cutoff = 5.00e-02
+# Larger dataset will be scaled towards smaller dataset.
+# Range for calculating regional lambda is: 1000 bps and 10000 bps
+# Broad region calling is off
+# Paired-End mode is off
+
+INFO  @ Wed, 14 Feb 2018 09:47:20: #1 read tag files...
+[...snip...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. macs.sh), which uses the input file 'macs.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load macs || exit 1
+macs2 callpeak \
+    -t treatment1.bam \
+    -c control.bam \
+    --call-summits \
+    --tempdir /lscratch/$SLURM_JOB_ID \
+    --qvalue 0.01 \
+    -n treatment1 -g mm
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=10g  --gres=lscratch:20 macs.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. macs.swarm). For example:</p>
+
+<pre class="term">
+macs2 callpeak -t treatment1.bam -c control.bam --name treatment1
+macs2 callpeak -t treatment2.bam -c control.bam --name treatment2
+macs2 callpeak -t treatment3.bam -c control.bam --name treatment3
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f macs.swarm -g 10 --module macs --gres=lscratch:10</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module macs <td>Loads the macs module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

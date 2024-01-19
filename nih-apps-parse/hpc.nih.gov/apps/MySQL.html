@@ -1,0 +1,415 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MySQL';</script>
+<div class="title">MySQL</div>
+
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#biobase">Mysql database on biobase</a></div>
+<div class="tocItem"><a href="#temp">Temporary User-Managed Mysql</a></div>
+<div class="tocItem"><a href="#perm">Permanent User-Managed Mysql</a></div>
+</div></table>
+
+<p><a href="http://www.mysql.com/" target="external">MySQL</a> is a general-purpose RDBMS, and is widely used as a backend for many applications. On Biowulf, users can either request a database on the mysql host biobase.nih.gov, or run a temporary Mysql instance on a node, or run an occasional Mysql instance pointing to a permanent location in the user's data area. These options are detailed below.</p>
+
+<P>
+
+<a name="modality" id="modality"></a>
+<div class="subheading">Choose your modality</div>
+<table width="100%" cellpadding="3" cellspacing="0" border="0" class= "horztable">
+  <tr>
+    <td class="softBottom"><b>Modality</b></td>
+    <td class="softBottom"><b>Pros</b></td>
+    <td class="softBottom"><b>Cons</b></td>
+  </tr><tr>
+    <td class="softBottom"><a href="#biobase">biobase.nih.gov</a></td>
+    <td class="softBottom">
+      <ul>
+        <li>always available
+        <li>accessible within NIH network
+        <li>most reliable data storage
+      </ul>
+    </td>
+    <td class="softBottom">
+      <ul>
+        <li>no root access
+        <li>strict limits on databases and use
+        <li>controlled and restricted by HPC Staff
+      </ul>
+    </td>
+  </tr><tr>
+    <td class="softBottom"><a href="#temp"><tt>local_mysql</tt></a></td>
+    <td class="softBottom">
+      <ul>
+        <li>easy to create and manage
+        <li>full root access
+        <li>full control over administration
+        <li>fastest and most reliable access
+      </ul>
+    </td>
+    <td class="softBottom">
+      <ul>
+        <li>must be started within an HPC job
+        <li>not accessible outside cluster
+        <li>temporary instance on /lscratch
+        <li>data must be archived between jobs
+      </ul>
+    </td>
+  </tr><tr>
+    <td><a href="#perm"><tt>local_mysql --basedir</tt></a></td>
+    <td>
+      <ul>
+        <li>easy to create and manage
+        <li>full root access
+        <li>full control over administration
+        <li>no need to archive data
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>must be started within an HPC job
+        <li>not accessible outside cluster
+        <li>data stability not 100% reliable</li>
+        <li>access speed affected by network slowdowns</li>
+        <li>InnoDB engine not available</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+
+<a Name="biobase"></a>
+<div class="heading">Mysql database on biobase.nih.gov</div>
+
+<p>The mysql host biobase.nih.gov is available for user accounts.  This server is available only
+within the NIH network, and is intended only for use with applications run on HPC @ NIH hosts.
+To obtain a mysql account on biobase.nih.gov, please contact <a href="mailto:staff@hpc.nih.gov">
+staff@hpc.nih.gov</a>.</p>
+
+<p>One of the primary purposes for biobase.nih.gov is hosting the backend databases for our local
+mirror of the <a href="http://genome.cit.nih.gov/">UCSC Genome Browser</a>.  Users can access the
+local databases using a special read-only account.  Please contact <a href="mailto:staff@hpc.nih.gov">
+staff@hpc.nih.gov</a> for details.</p>
+
+<h4>Using biobase from the cluster</h4>
+<p>Because nodes in the cluster are sequestered to an internal network, the host 'biobase.nih.gov' should
+not be used as the mysql host.  Instead, use 'biobase':</p>
+
+<pre class="term">[node1]$ mysql -u <em>user</em> -p -h <b>biobase</b></pre>
+
+<!-- =================================================================================================================== -->
+<!-- local_mysql -->
+<!-- =================================================================================================================== -->
+<a Name="temp"></a>
+<div class="heading">Temporary Mysql instance</div>
+
+<p>Once a mysql module has been loaded, the command <tt><b>local_mysql</b></tt> allows a mysql
+instance to be started on a node. The <tt><b>local_mysql</b></tt> has four sub-commands:</p>
+
+<ul>
+  <li><tt><b>create</b></tt> -- creates the MySQL installation tree
+  <li><tt><b>start</b></tt> -- starts the server
+  <li><tt><b>stop</b></tt> --stops the server
+  <li><tt><b>destroy</b></tt> -- removes the MySQL installation tree
+
+  <li><tt><b>archive</b></tt> -- create a tarball of basedir
+  <li><tt><b>restore</b></tt> -- restore basedir from tarball
+  <li><tt><b>status</b></tt> -- report status of local mysql server
+</ul>
+
+<p>Here is an example of how to start a mysql server on an interactive
+node, using the dynamically-allocated local /lscratch disk as the root directory.</p>
+
+<h4>Start interactive session</h4>
+
+<p>In this example, we allocate 10 GB of local scratch space for the session. 
+See <a href="https://hpc.nih.gov/docs/userguide.html#local">https://hpc.nih.gov/docs/userguide.html#local</a> for more information about using /lscratch.
+See <a href="https://hpc.nih.gov/docs/userguide.html#int">https://hpc.nih.gov/docs/userguide.html#int</a> for more information on allocating interactive sessions.
+<em>Job and node ids have been changed to protect the innocent</em>.
+</p>
+
+<pre class="term">
+[biowulf]$ <b>sinteractive --mem=10g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation <b><em>123456789</em></b>
+salloc.exe: job <b><em>123456789</em></b> queued and waiting for resources
+salloc.exe: job <b><em>123456789</em></b> has been allocated resources
+salloc.exe: Granted job allocation <b><em>123456789</em></b>
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes <b><em>node1</em></b> are ready for job
+</pre>
+
+<h4>Initialize and start a mysql instance</h4>
+
+<p>Once the interactive session is ready, load the mysql module of choice, initialize and start the mysql instance.</p>
+
+<p class="didyouknow">By default, <b><tt>local_mysql</tt></b> will set the root password of the instance to
+<tt>mysql123</tt>.  This can be changed using the option <b><tt>--password</tt></b>.</p>
+
+<pre class="term">
+[node1]$ <b>module load mysql</b>
+[node1]$ <b>local_mysql create</b></pre>
+
+
+<p class="didyouknow">The default engine is <b>MyISAM</b>.  This can be changed by editing <b>my.cnf</b> prior to starting the server:</p>
+<pre class="term">
+[node1]$ <b>cat /lscratch/$SLURM_JOB_ID/mysql/my.cnf</b>
+...
+default_storage_engine      = <em>MyISAM</em>
+default_tmp_storage_engine  = <em>MyISAM</em>
+...
+[node1]$ <b>vi /lscratch/$SLURM_JOB_ID/mysql/my.cnf</b>
+[node1]$ <b>cat /lscratch/$SLURM_JOB_ID/mysql/my.cnf</b>
+...
+default_storage_engine      = <em>InnoDB</em>
+default_tmp_storage_engine  = <em>InnoDB</em>
+...
+</pre>
+
+<p>Set <b><tt>MYSQL_HOME</tt></b> and <b><tt>MYSQL_UNIX_PORT</tt></b> variables:</p>
+<pre class="term">[node1]$ <b>export MYSQL_HOME=/lscratch/$SLURM_JOB_ID/mysql</b>
+[node1]$ <b>export MYSQL_UNIX_PORT=/lscratch/$SLURM_JOB_ID/mysql/mysql.sock</b></pre>
+
+<p>Now start up the server:</p>
+
+<pre class="term">
+[node1]$ <b>local_mysql start</b>
+MySQL is running now
+You can now log in using 'mysql -u root -p'mysql123'
+</pre>
+
+<p>By default, the initialization procedure creates a new directory under /lscratch (<b><tt>/lscratch/$SLURM_JOB_ID/mysql</tt></b>) and fills it with files and directories:</p>
+
+<pre class="term">
+[node1]$ <b>ls -F /lscratch/<em>123456789</em>/mysql</b>
+bin/  data/  my.cnf  mysql.err  mysql.pid  mysql.sock  share/  support-files/  tmp/
+</pre>
+
+<ul>
+  <li><b>bin/</b> - holds executables needed for mysql server</li>
+  <li><b>data/</b> - location of databases and tables</li>
+  <li><b>my.cnf</b> - personal configuration</li>
+  <li><b>mysql.err</b> - error logfile</li>
+  <li><b>mysql.pid</b> - holds process id for mysql server instance</li>
+  <li><b>mysql.sock</b> - socket file for mysql server instance</li>
+  <li><b>share/</b> - miscellaneous files</li>
+  <li><b>support-file/</b> - miscellaneous files</li>
+  <li><b>tmp/</b> - temporary files needed for mysql server</li>
+</ul>
+
+<h4>Log in do a few things</h4>
+
+<p>Once the mysql instance is up and running, you can log in using either:</p>
+<ul>
+  <li><b>The full socket file path:</b> --socket=/lscratch/$SLURM_JOB_ID/mysql/mysql.sock</li>
+  <li><b>The host and port:</b> --host=$SLURM_NODELIST --port=55555</li>
+</ul>
+
+<p class="alert">By default, <b><tt>local_mysql</tt></b> will set the port to 55555. <b>This is different than the standard
+mysql port of 3306 and therefore must be explicitly specified either by using the socket file or with the --port option.</b> 
+The port can be changed using the option <b><tt>--port</tt></b>.</p>
+
+<pre class="term">
+[node1]$ <b>mysql -u root -p'mysql123'</b>
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 3
+Server version: 5.7.30 Source distribution
+
+Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql&gt; <b>CREATE USER me IDENTIFIED BY 'pass123';</b>
+mysql&gt; <b>CREATE DATABASE `my_db`;</b>
+mysql&gt; <b>GRANT ALL ON `my_db`.* TO me;</b>
+mysql&gt; <b>USE my_db;</b>
+mysql&gt; <b>CREATE TABLE my_table (x int, y int, z int);</b>
+mysql&gt; <b>DESC my_table;</b>
++-------+---------+------+-----+---------+-------+
+| Field | Type    | Null | Key | Default | Extra |
++-------+---------+------+-----+---------+-------+
+| x     | int(11) | YES  |     | NULL    |       |
+| y     | int(11) | YES  |     | NULL    |       |
+| z     | int(11) | YES  |     | NULL    |       |
++-------+---------+------+-----+---------+-------+
+mysql&gt; <b>exit</b>
+[node1]$
+</pre>
+
+<h4>Simplify using ~/.my.cnf</h4>
+
+<p>MySQL can read default information from configuration files.  For personal use, the default is <b><tt>~/.my.cnf</tt></b>.  This file can be edited
+to simplify use of mysql.</p>
+
+<pre class="term">
+# Configuration for local_mysql
+[mysql]
+auto-rehash=FALSE
+prompt= \h:\d>\_
+
+[client]
+user=me
+password=pass123
+database=my_db
+host=node1
+port=55555
+socket=/lscratch/123456789/mysql/mysql.sock
+</pre>
+
+<p>Note that the <b>host</b>, <b>port</b> and <b>socket</b> values will likely be different.</p>
+
+<p>Creating this personal <b>~/.my.cnf</b> file will allow simple connections:</p>
+<pre class="term">[node1]$ mysql
+...
+localhost:my_db>
+</pre>
+
+<h4>Log in from another machine</h4>
+
+<p>While the interactive session is running, the mysql instance will be accessible from any node within the Biowulf cluster
+using the <b><tt>--host</b></tt> and <b><tt>--port</tt></b> options.</p>
+
+<pre class="term">[node2]$ <b>mysql -u me -p'pass123' --host=<em>node1</em> --port=55555</b></pre>
+
+<p class="alert">By default the root account initially created <b>does not allow access from outside the original host where mysql was initialized</b>.
+Either modify the root account (not good idea) or create an alternate account (better idea) for access from other nodes.</p>
+
+<h4>Stop mysql prior to archiving and exiting the interactive session</h4>
+
+<pre class="term">
+[node1]$ <b>local_mysql stop</b>
+
+MySQL is stopped!
+</pre>
+
+<h4>Archive the contents</h4>
+
+<p>The contents of the temporary server instance can be archived into a single tarball for restarting later and on a different node.  This is the recommended way of keeping instances long-term.</p>
+
+<pre class="term">
+[node1]$ <b>local_mysql archive --archivefile=/data/$USER/save.tgz</b>
+[node1]$ <b>ls -l /data/$USER/save.tgz</b>
+-rw-r--r-- 1 user user 1371882 Jul  1 11:35 /data/user/save.tgz
+</pre>
+
+
+<h4>Exit the interactive session</h4>
+
+<p>Lastly, exit the interactive session.  The contents of /lscratch will be destroyed!</p>
+
+<pre class="term">
+[node1]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation <em>123456789</em>
+[biowulf]$
+</pre>
+
+<h4>Start a new interactive session, restore the contents, and start mysql again</h4>
+
+<pre class="term">
+[biowulf]$ <b>sinteractive --mem=10g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation <b><em>234567891</em></b>
+... 
+[node3]$ <b>module load mysql</b>
+[node3]$ <b>local_mysql restore --archivefile=/data/$USER/save.tgz</b>
+[node3]$ <b>local_mysql start</b>
+
+MySQL is running now
+You can now log in using 'mysql -u root -p'mysql123' --socket=/lscratch/<b><em>234567891</em></b>/mysql/mysql.sock'
+</pre>
+
+<!-- Permanent -->
+<P>
+<a Name="perm"></a>
+<div class="heading">Mysql database with permanent location in /data</div>
+
+<p>If the mysql files are required permanently, such that the server could be brought up again
+and again, <b>and archiving is not a possibility (see above)</b>, then don't take the default <b><tt>--basedir</b></tt> value.  Instead, point the <b><tt>--basedir</tt></b> option to a directory in 
+a /data area.</p>
+
+<p class="didyouknow">By default mysql files are written to /lscratch.  This can be changed using the option <b><tt>--basedir</tt></b>.
+<b><tt>local_mysql</tt></b> will attempt to create the directory path given by <b><tt>--basedir</tt></b>, and will complain if
+the path already exists.</p>
+
+<pre class="term">
+[node1]$ <b>module load mysql</b>
+[node1]$ <b>local_mysql --basedir /data/<em>user</em>/mysql start</b>
+...
+[node1]$ <b>mysql -u root -p'mysql123' --host=$SLURM_NODELIST --port=55555</b>
+mysql&gt;
+</pre>
+
+<p>And as always be sure to stop the server when you're done using it:</p>
+
+<pre class="term">[node1]$ <b>local_mysql --basedir /data/<em>user</em>/mysql stop</b></pre>
+
+<p>Here is a script that can be used to launch a mysql server in a batch job.  It traps signals so that the server is cleanly shut down prior to the job ending.</p>
+<pre class="term">
+#!/bin/bash
+#SBATCH --time=8:00:00 --signal=B:USR1@60 --job-name=mysql_server
+
+term_handler()
+{
+    [[ -f /data/<em>user</em>/mysql/mysql.pid ]] && local_mysql --basedir /data/<em>user</em>/mysql --port 55555 stop
+    exit
+}
+
+# associate the function "term_handler" with signals
+trap 'term_handler' TERM
+trap 'term_handler' EXIT
+trap 'term_handler' USR1
+
+# start the server
+module load mysql
+local_mysql --basedir /data/<em>user</em>/mysql --port 55555 start
+
+# sleep for the time with sbatch (above)
+sleep 8h & wait
+[[ -f /data/<em>user</em>/mysql/mysql.pid ]] && local_mysql --basedir /data/<em>user</em>/mysql --port 55555 stop
+</pre>
+
+<p>To find the node on which the mysql server is running, use the jobname as a filter:</p>
+
+<pre class="term">dashboard_cli jobs --jobname mysql_server --fields nodelist --raw --no-header</pre>
+
+<!--
+<p class="alert">99% of all MySQL administrators install the server on a locally available hard drive or SSD.  Thus, /lscratch is ideal.  However,
+the use of a remotely mounted shared filesystem for MySQL storage is non-ideal and may result in errors.  For example, it is <b>not possible to use the InnoDB engine on your /data directory</b> and results in
+errors when tables are created. </p>
+
+<p>Attempts to create a table with the InnoDB engine within your /data directory will likely give this error:</p>
+
+<pre class="term">
+[node1]$ <b>grep InnoDB /data/<em>user</em>/mysql/my.cnf</b>
+default_storage_engine      = InnoDB
+default_tmp_storage_engine  = InnoDB
+...
+mysql&gt; <b>CREATE DATABASE my_db;</b>
+Query OK, 1 row affected (0.01 sec)
+
+mysql&gt; <b>USE my_db;</b>
+Database changed
+mysql&gt; <b>CREATE TABLE my_table ( x INT );</b>
+ERROR 1114 (HY000): The table 'my_table' is full
+</pre>
+-->
+
+<h4>Restart the mysql server</h4>
+
+<p>Then later on, the server can be started up with the original database files:</p>
+
+<pre class="term">[biowulf]$ <b>sinteractive</b>
+...
+[node1]$ <b>module load mysql</b>
+[node1]$ <b>local_mysql --basedir /data/<em>user</em>/mysql start</b>
+</pre>
+
+<p>For more information about how to use <b><tt>local_mysql</tt></b>, type</p>
+
+<pre class="term">local_mysql --help</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,127 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Cytoscape on Biowulf';</script>
+<div class="title">Cytoscape on Biowulf</div>
+
+<a href="http://www.cytoscape.org"><img alt="Cytoscape Logo" src="/images/cy3logoOrange.svg"
+align="left" border="0" vspace="10" hspace="5" width="50" height="50" /></a>
+
+<p>
+  Cytoscape is an open source software platform for visualizing complex networks and integrating
+  these with any type of attribute data. With Cytoscape, you can load molecular and genetic interaction
+  data sets in many standards formats, project and integrate global datasets and functional annotations,
+  establish powerful visual mappings across these data, perform advanced analysis and modeling and
+  visualize and analyze human-curated pathway datasets.
+</p>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job</a></div>
+        <div class="tocItem"><a href="#config">Cytoscape Configuration</a></div>
+        <div class="tocItem"><a href="#apps">Cytoscape Apps</a></div>
+      </div>
+</table>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.cytoscape.org">Cytoscape Home</a>
+<li><a href="http://manual.cytoscape.org/en/stable/index.html">Cytoscape User Manual</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application requires a <a href="/docs/nx.html">graphical connection using NX</a></p>
+
+<ul>
+    <li>Module Name: <tt>Cytoscape</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Environment variables set: <tt>CYTOSCAPE_HOME</tt></li>
+    <li>Example files in <tt>$CYTOSCAPE_HOME/sampleData/</tt></li>
+    <li>Refrain from manually loading java modules as these may cause problems with Cytoscape</li>
+    <li>We recommend allocated at least 8GB memory for Cytoscape jobs and sessions</li>
+    <li>To use the cyREST API with client applications like the RCy3 library, make sure to set the following before running Cytoscape:
+      <tt>export no_proxy=localhost</tt></li>
+</ul>
+<P>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> from Biowulf using a graphical connection (we recommend NX) and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+</pre> 
+
+<p>To use Cytoscape, you must load the module. Type: </p>
+
+<div class="term">
+<pre>
+<b>module load Cytoscape</b>
+<b>Cytoscape&</b>
+</pre></div>
+
+<p><center><img alt="Cytoscape GUI" src="/images/cy3_3_0_desktop.png" width="640" height="383"></a></center></p>
+
+<a Name="config"></a><div class="heading">Cytoscape Configuration Directory</div>
+<p>Cytoscape will create a configuration directory inside the user's home directory. This is usually 
+  <tt>/home/$USER/CytoscapeConfiguration</tt>. We have observed two potential issues around this:</p>
+<ul>
+  <li>
+    <p>Several batch jobs that automate task(s) in Cytoscape, usually running via an API, can write many files to
+    the configuration directory. In some cases this can exceed the 16GB quota on the user's home directory causing
+    many problems to the user and running jobs. A possible solution is to reset JAVA_OPTIONS and change the
+    configuration directory location. For example, run the following before starting Cytoscape:</p>  
+    <pre class="term">export JAVA_OPTIONS="-Duser.home=/data/$USER/CytoscapeConfiguration"</pre>
+  </li>
+  <li>
+    <p>If user's switch between different versions of the Cytoscape module, they may encounter some incompatibilities
+    since the same configuration directory is used regardless of which Cytoscape version is started. This could be
+    especially true for Cytoscape plugins (apps) that are incompatible with certain versions of Cytoscape. Use the
+    same solution as listed above or rename the previous configuration directory.</p>
+  </li>
+</ul>
+
+<a Name="apps"></a><div class="heading">Cytoscape Apps</div>
+<p>Cytoscape functionality can be extended using plugins, called Cytoscape Apps. There is an 
+  "<a href="https://apps.cytoscape.org/">app store</a>" from where users can download, install, and manage these
+  apps. However, to use the app store from a compute node on Biowulf (i.e. from an interactive session) Cytoscape
+  must be configured to use the node's <a href="https://hpc.nih.gov/docs/transfer.html#compute">http proxy</a>.
+  Here are the steps on how to do this:
+</p>
+<ol>
+  <li>
+    <p>Allocate an sinteractive session as usual and run the following <b>before starting Cytoscape</b>:</p>
+    <pre class="term">echo $http_proxy</pre>
+  </p>An example of the output you should see after running the above command is: <tt>http://dtn05-e0:3128</tt>.
+    Here the proxy server is <i>dtn05-e0</i> and port is <i>3128</i>. You will likely see different values. Note them down.</p>
+  </li>
+  <li>
+  </p>Run Cytoscape and navigate to <b>Edit</b> --> <b>Preferences</b>> --> <b>Proxy Settings</b>. For "Type" select <b>http</b>. Enter the
+    proxy server and port you obtained in the previous steps. Leave the User Name and Password fields blank.
+    Click "OK".</p>
+  </li>
+  <li>
+    Then open Cytoscape's App Manager by navigating to <b>Apps</b> --> <b>App Manager</b>. You should see the
+    app manager contact the default App Store, <tt>https://apps.cytoscape.org</tt> and refresh the cache of
+    available apps for installation.
+  </li>
+</ol>
+
+<p class="alert">
+  If you want to install and manage Cytoscape apps in a different sinteractive session, you will may need to redo step 1.
+  This is because the proxy server may be different between different compute nodes.
+</p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

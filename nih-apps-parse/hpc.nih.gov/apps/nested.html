@@ -1,0 +1,138 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "TEMPLATE";</script>
+
+<div class="title">NESTED on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+nested (now also called TE-greedy) is software to analyze nested LTR transposable elements
+in DNA sequences, such as reference genomes. It is made of two components: nested-generator
+for generating simulated sequences of nested retrotransposons, and nested-nester (now called
+TE-greedy-nester) that looks for nested, as well as non-nested and solo-LTR repeat sequences
+in the input. Unlike other similar software, TE-greedy-nester is structure-based by using
+de-novo retrotransposon identification software LTR Finder, relying on sequence information
+only secondarily.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Matej Lexa, Pavel Jedlicka, Ivan Vanat, Michal Cervenansky, Eduard Kejnovsky
+    <a href="https://doi.org/10.1093/bioinformatics/btaa632"><b><u>TE-greedy-nester: structure-based detection of LTR retrotransposons and their nesting</u></b></a>
+    <em>Bioinformatics, Volume 36, Issue 20, October 2020, Pages 4991–4999</em>
+  </li>
+
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://gitlab.fi.muni.cz/lexa/nested">Chap Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>nested</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+
+<li>Example files in <tt>/usr/local/apps/nested/2.0.0/test_data</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Getting Started</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load nested</b>
+[+] Loading nested  2.0.0  on cn3144
+[+] Loading singularity  3.10.5  on cn3144
+
+[user@cn3144 ~]$<b>nested-nester --help</b>
+Usage: nested-nester [OPTIONS] INPUT_FASTA
+
+Options:
+  -s, --sketch                    Sketch output.
+  -f, --format TEXT               Format for GFF.
+  -o, --output_fasta_offset INTEGER
+                                  Number of bases around the element included
+                                  in output fasta files.
+  -d, --output_folder PATH        Output data folder.
+  -t, --initial_threshold INTEGER
+                                  Initial threshold value.
+  -m, --threshold_multiplier FLOAT
+                                  Threshold multiplier.
+  -n, --threads INTEGER           Number of threads
+  -dt, --discovery_tool [LTR_finder|LTRharvest|finder|harvest]
+                                  Determines which tool is used for
+                                  retrotransoson discovery. Default:
+                                  LTR_finder
+  -solo, --solo_ltrs              Run solo LTR module
+  --help                          Show this message and exit.
+
+[user@cn3144 ~]$ <b>nested-generator --help</b>
+Usage: nested-generator [OPTIONS] INPUT_DB OUTPUT_DB
+
+Options:
+  -l, --baselength INTEGER        Baselength for generated elements.
+  -i, --number_of_iterations INTEGER
+                                  Number of inserted elements.
+  -n, --number_of_elements INTEGER
+                                  Number of generated sequences.
+  -f, --filter                    Filter database and create new one with
+                                  given output db path.
+  -s, --filter_string TEXT        Filter entries by given string [ONLY
+                                  RELEVANT WITH -filter OPTION].
+  -o, --filter_offset INTEGER     LTR offset allowed [ONLY RELEVANT WITH
+                                  -filter OPTION].
+  -p, --percentage INTEGER        Percentage of elements in generated
+                                  sequence.
+  -a, --average_element INTEGER   Average element length in database.
+  -e, --expected_length INTEGER   Expected output sequence length [ONLY WORKS
+                                  WITH -percentage and -average_element].
+  -d, --output_directory TEXT     Output directory.
+  --help                          Show this message and exit.
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Example</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Example running nested</p>
+
+<pre class="term">
+[user@cn3144 ~]$<b>cp -a /usr/local/apps/nested/2.0.0/test_data/ . </b>
+[user@cn3144 ~]$ <b>nested-nester test_data/151kb_adh1_bothPrimes.fasta</b>
+/usr/local/lib/python3.9/dist-packages/nested-1.0.0-py3.9.egg/nested/config/config.py:14: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
+Processing adh1_vicinity_150bpPlMin
+Processing adh1_vicinity_150bpPlMin: DONE [0:00:10.348563]
+Total time: 0:00:10.350736
+Number of errors: 0
+</pre>
+<p>For more information please see the  <a href="https://gitlab.fi.muni.cz/lexa/nested/-/blob/master/README.md">GitLab Page</a> </p>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

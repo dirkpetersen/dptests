@@ -1,0 +1,165 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'delly on Biowulf';</script>
+<div class="title">delly on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>delly is an integrated structural variant prediction method that can detect
+deletions, tandem duplications, inversions and translocations at
+single-nucleotide resolution in short-read massively parallel sequencing data.
+It uses paired-ends and split-reads to sensitively and accurately delineate
+genomic rearrangements throughout the genome.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Tobias Rausch, Thomas Zichner, Andreas Schlattl, Adrian M. Stuetz, 
+    Vladimir Benes, Jan O. Korbel. <em>Delly: structural variant discovery by 
+        integrated paired-end and split-read analysis.</em>. Bioinformatics 2012, 
+    28:333-339.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/22962449">Pubmed</a> &nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3436805/">PMC</a> &nbsp;|&nbsp;
+    <a href="http://bioinformatics.oxfordjournals.org/content/28/18/i333.abstract">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/tobiasrausch/delly">GitHub</a> </li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: delly (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>delly is a multithreaded application. The delly module sets the <code>$OMP_NUM_THREADS</code>
+    environment variable automatically to match <code>$SLURM_CPUS_PER_TASK</code>. However,
+    note that delly primarily parallelizes on the sample level, so there is no benefit to allocating
+    multiple CPUs when processing a single sample.</li>
+    <li>Example files in <code>$DELLY_TEST_DATA</code></li>
+    <li>Files with regions to exclude from calling for some genomes can be found in
+    <code>$DELLY_EXCL_FILES</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=5g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load delly/0.7.8</b>
+[user@cn3144 ~]$ <b>delly</b>
+**********************************************************************
+Program: Delly
+This is free software, and you are welcome to redistribute it under
+certain conditions (GPL); for license details use '-l'.
+This program comes with ABSOLUTELY NO WARRANTY; for details use '-w'.
+
+Delly (Version: 0.7.8)
+Contact: Tobias Rausch (rausch@embl.de)
+**********************************************************************
+
+Usage: delly <command> <arguments>
+
+Commands:
+
+    call         discover and genotype structural variants
+    merge        merge structural variants across VCF/BCF files and within a single VCF/BCF file
+    filter       filter somatic or germline structural variants
+
+[user@cn3144 ~]$ <b>cp $DELLY_TEST_DATA/* .</b>
+[user@cn3144 ~]$ # calling somatic SVs
+[user@cn3144 ~]$ <b>delly call -o test.bcf -g DEL.fa DEL.bam</b>
+[...snip...]
+[user@cn3144 ~]$ <b>module load samtools</b>
+[user@cn3144 ~]$ <b>bcftools view test.bcf</b>
+##fileformat=VCFv4.2
+##FILTER=&lt;ID=PASS,Description="All filters passed"&gt;
+##fileDate=20180308
+##ALT=&lt;ID=DEL,Description="Deletion"&gt;
+##ALT=&lt;ID=DUP,Description="Duplication"&gt;
+##ALT=&lt;ID=INV,Description="Inversion"&gt;
+##ALT=&lt;ID=BND,Description="Translocation"&gt;
+##ALT=&lt;ID=INS,Description="Insertion"&gt;
+...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. delly.sh) similar to the following example:</p>
+
+<pre class="term">
+#! /bin/bash
+
+function die {
+    echo "$@" &gt;&amp;2
+    exit 1
+}
+
+module load delly/0.7.8 || die "Could not load module"
+cd /data/$USER/data_for_delly
+delly call -o delly_calls.bcf -g ref.fa \
+    sample1.bam sample2.bam sample3.bam sample4.bam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=10g delly.sh</pre>
+
+<p>Loading the module as part of the batch script will automatically
+set the OMP_NUM_THREADS variable to match the number of allocated
+CPUs. If not loading the module in the batch script, please set
+OMP_NUM_THREADS explicitly.</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. delly.swarm). For example:</p>
+
+<pre class="term">
+export OMP_NUM_THREADS=2; cd /data/$USER/dir1; delly call -o del.bcf -g ref.fa sample1.bam
+export OMP_NUM_THREADS=2; cd /data/$USER/dir2; delly call -o del.bcf -g ref.fa sample2.bam
+export OMP_NUM_THREADS=2; cd /data/$USER/dir3; delly call -o del.bcf -g ref.fa sample3.bam
+export OMP_NUM_THREADS=2; cd /data/$USER/dir4; delly call -o del.bcf -g ref.fa sample4.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f delly.swarm -g 10 -t 2 --module delly/0.7.8</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module delly <td>Loads the delly module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

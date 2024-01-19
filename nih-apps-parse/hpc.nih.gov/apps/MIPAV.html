@@ -1,0 +1,74 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MIPAV on Biowulf';</script>
+<div class="title">MIPAV on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+<p><A href="http://mipav.cit.nih.gov"><img src="http://mipav.cit.nih.gov/about.asp_files/splash.gif" alt="" align=right></a></p>
+<P>
+The MIPAV (Medical Image Processing, Analysis, and Visualization) application enables quantitative analysis and visualization of medical images of 
+numerous modalities such as PET, MRI, CT, or microscopy. Using MIPAV's standard user-interface and analysis tools, researchers at remote sites 
+(via the internet) can easily share research data and analyses, thereby enhancing their ability to research, diagnose, monitor, and treat medical disorders. 
+
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://mipav.cit.nih.gov">MIPAV website</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>MIPAV</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Don't run MIPAV on the login node. Use an interactive session instead as in the example below.
+<li>Singlethreaded/multithreaded.
+<li>Sample data in <tt>/usr/local/apps/MIPAV/sample_data/</tt>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>MIPAV_HOME</tt></li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load MIPAV</b>
+
+[user@cn3144 ~]$ <b> mipav &</b>
+<p><center><img src="/images/mipav1.jpg" width="640" height="66" alt="" /></center>
+
+<p><center><img src="/images/mipav2.jpg" width="548" height="308" alt="" /></center>
+
+<p><center><img src="/images/mipav3.png" width="748" alt="" /></center>
+
+<p><center><img src="/images/mipav4.png" width="548" alt="" /></center>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

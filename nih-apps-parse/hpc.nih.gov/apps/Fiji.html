@@ -1,0 +1,66 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Fiji: an open-source platform for biological-image analysis on Biowulf';</script>
+<div class="title"><b>Fiji: an open-source platform for
+biological-image analysis on Biowulf</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Fiji is a distribution of the popular open-source software ImageJ focused on biological-image analysis. Fiji uses modern software engineering practices to combine powerful software libraries with a broad range of scripting languages to enable rapid prototyping of image-processing algorithms. Fiji facilitates the transformation of new algorithms into ImageJ plugins that can be shared with end users through an integrated update system.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Johannes Schindelin, Ignacio Arganda-Carreras, Erwin Frise, Verena Kaynig,
+Mark Longair, Tobias Pietzsch, Stephan Preibisch, Curtis Rueden, Stephan Saalfeld, Benjamin Schmid, Jean-Yves Tinevez, Daniel James White, Volker Hartenstein,
+Kevin Eliceiri, Pavel Tomancak and Albert Cardona, <br />
+<i>Fiji: an open-source platform for biological-image analysis. </i> <br />
+Nature Methods, 2012, vol. <b>9</b>, N7, p. 676-682.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://fiji.sc">Fiji Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Fiji</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set 
+  <ul>
+    <li><b>FIJI_ROOT</b>&nbsp; Fiji installation directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. You should see the Fiji logo appear, and then the Fiji console window. <br />
+<span style="background-color: #FFFF00">In order to use Fiji,
+you have to create <a href="https://hpc.nih.gov/docs/connect.html">graphical X11 connection</a> to Biowulf. <br />
+Both MobaXterm (recommended) and NX will work for Windows users, while XQuartz works well for Mac users.</p></span> <br/>
+Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@@cn3316 ~]$ <b>module load Fiji </b>
+[user@@cn3316 ~]$ <b>fiji &</b>
+</pre>
+<p>
+<center><img width=70% height=auto src="/images/Fiji.png" align="center" alt="Fiji display"></center>
+</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

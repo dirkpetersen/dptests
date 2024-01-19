@@ -1,0 +1,166 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'raxml-ng on Biowulf';</script>
+<div class="title">raxml-ng on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+	<div class="tocItem"><A href="#chain">Chaining long jobs</a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+RAxML-NG is a phylogenetic tree inference tool which uses maximum-likelihood (ML) optimality criterion. Its search heuristic is based on iteratively 
+performing a series of Subtree Pruning and Regrafting (SPR) moves, which allows to quickly navigate to the best-known ML tree. RAxML-NG is a 
+successor of RAxML (Stamatakis 2014) and leverages the highly optimized likelihood computation implemented in libpll (Flouri et al. 2014).
+
+RAxML-NG offers improvements in speed, flexibility and user-friendliness over the previous RAxML versions. It also implements some of the features 
+previously available in ExaML (Kozlov et al. 2015), including checkpointing and efficient load balancing for partitioned alignments (Kobert et al. 2014).
+</p>
+
+<div class="heading">Reference</div>
+<P>
+<a href="https://academic.oup.com/bioinformatics/article/35/21/4453/5487384">RAxML-NG: a fast, scalable and user-friendly tool for maximum likelihood phylogenetic inference </a>
+Alexey M Kozlov, Diego Darriba, Tom&aacute;s Flouri, Benoit Morel, Alexandros Stamatakis .  Bioinformatics, Volume 35, Issue 21, 1 November 2019, Pages 4453-4455, https://doi.org/10.1093/bioinformatics/btz305
+
+<P>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/amkozlov/raxml-ng">raxml-ng on github</a></li>
+<li><A href="https://github.com/amkozlov/raxml-ng/wiki">raxml github wiki</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>raxml-ng</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Multithreaded, MPI</li>
+    <li>Example files in <tt>/usr/local/apps/raxml-ng/examples</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load raxml-ng</b>
+
+[user@cn3144 ~]$ <b> cp /usr/local/apps/raxml-ng/examples/myoglobin61.phy  .</b>
+
+[user@cn3144 ~]$ <b> raxml-ng --msa myoglobin597.phy --model GTR+G --threads $SLURM_CPUS_PER_TASK</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. raxml-ng.sh).</P>
+<P>
+<b><u>Threaded version of raxml-ng</u></b>
+<pre class="term">
+#!/bin/bash
+set -e
+module load raxml-ng
+
+raxml-ng --msa myoglobin597.phy --model GTR+G --threads $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the SLURM <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] [--time=DD-HH:MM:SS] raxml-ng.sh</pre>
+<P>
+<b><u>MPI version of raxml-ng</u></b>
+<p>
+In our tests, the threaded version ran faster than the MPI version. However, for larger input datasets the MPI version might perform better. Please run your own benchmark comparisons for your data, and let us know of any interesting results.
+</p>
+<p>Here is sample batch script for an MPI-only job (but on a single node):</p>
+<pre class="term">
+#!/bin/bash
+
+module load raxml-ng/1.0.0-mpi
+mpirun -n $SLURM_NTASKS raxml-ng-mpi --msa data.phy --model GTR+G --threads 1
+</pre>
+<P>
+Submit with:
+<pre class="term">
+sbatch --ntasks=# --ntasks-per-core=1 [--time=DD-HH:MM:SS] jobscript
+</pre>
+<p>Make sure to consult our documentation on <a href="https://hpc.nih.gov/policies/multinode.html">efficient use of the multinode partition</a> if you want to run raxml-ng-mpi over multiple nodes. Before you use the multinode parition make sure your dataset could benefit from such a large number of resources.</p>
+<p>In most cases where you want to use MPI, the hybrid MPI/pthreads setup is more efficient. Please consult <a href="https://github.com/amkozlov/raxml-ng/wiki/Parallelization#mpi-and-hybrid-mpipthreads">this page</a> for how to set these up and reach out to us if needed.</p>
+<P>
+<a Name="chain"></a><div class="heading">Chaining long raxml-ng jobs</div>
+<P>
+Checkpointing is built in to raxml-ng. Thus, if you have a longrunning raxml-ng job that is terminated because you did not specify a long enough walltime, or if your 
+job is going to require more than the Biowulf 10-day max walltime, you can resubmit the job and it will restart from the last checkpoint. 
+See <a href="https://github.com/amkozlov/raxml-ng/wiki/Advanced-Tutorial">the advanced tutorial for details</a>.
+<P>
+You can take advantage of this feature to run a chain of jobs, each of which will pick up where the previous one terminated, using <a href="https://hpc.nih.gov/docs/userguide.html#depend">job dependencies</a>. For example:
+
+<pre class="term">
+biowulf% <b>sbatch --cpus-per-task=16 --mem=20g  --time=8-00:00:00 myjobscript</b>
+1111
+biowulf% <b>sbatch --depend=afterany:1111 --cpus-per-task=16 --mem=20g  --time=8-00:00:00 myjobscript</b>
+2222
+biowulf% <b>sbatch --depend=afterany:2222 --cpus-per-task=16 --mem=20g  --time=8-00:00:00 myjobscript</b>
+3333
+</pre>
+Each of these jobs will run for 8 days. When job 1111 terminates, job 2222 will start up from the last checkpoint file, and likewise for job 3333. The 3 jobs will utilize a total walltime of 24 days. 
+
+
+<P>
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. raxml-ng.swarm). For example:</p>
+
+<pre class="term">
+raxml-ng --msa file1.phy --model GTR+G --threads $SLURM_CPUS_PER_TASK
+raxml-ng --msa file2.phy --model GTR+G --threads $SLURM_CPUS_PER_TASK
+raxml-ng --msa file3.phy --model GTR+G --threads $SLURM_CPUS_PER_TASK
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f raxml-ng.swarm -g 20  -t 8  --module raxml-ng</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g  20</tt><td>20 Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t  8</tt> <td>8 threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module raxml-ng</tt> <td>Loads the raxml-ng module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

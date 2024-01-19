@@ -1,0 +1,134 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Clair3: Integrating pileup and full-alignment for high-performance long-read variant calling';</script>
+<div class="title"><b>Clair3: Integrating pileup and full-alignment for high-performance long-read variant calling</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Clair3 is a small variant caller for Illumina, PacBio and ONT long reads. Compare to PEPPER (r0.4), Clair3 (v0.1) shows a better SNP F1-score with ≤30-fold of ONT data (precisionFDA Truth Challenge V2), and a better Indel F1-score, while runs generally four times faster.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/HKU-BAL/Clair3">Clair3 Github / tutorial page</a></li>
+<li><a href="https://github.com/HKU-BAL/Clair3/blob/main/docs/training_data.md">Training data and trained models</a></li>
+<li><a href="https://github.com/HKU-BAL/Clair3/tree/main/docs/quick_demo">Demos for processing Illumina, PacBio and ONT data</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Clair3</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded
+<li>Can be run on both CPU and GPU nodes
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>CLAIR3_HOME</b>&nbsp; installation directory</li>
+    <li><b>CLAIR3_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>CLAIR3_MODELS</b>&nbsp; &nbsp; trained models folder</li> 
+    <li><b>CLAIR3_DATA</b>&nbsp; &nbsp; sample data folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. 
+<br />Sample session on a GPU node:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --gres=gpu:p100:1,lscratch:10 --mem=16g -c4</b>
+[user@cn2379 ~]$ <b>module load clair3</b>
+[user@cn2379 ~]$ <b>cp -r $CLAIR3_DATA/* .</b>
+
+[user@cn2379 ~]$ <b>THREADS=4</b>
+[user@cn2379 ~]$ <b>OUTPUT_VCF_FILE_PATH=merge_output.vcf.gz</b>
+</pre>
+<b> Processing sample Illumina data</b><br />
+<pre class="term"> 
+[user@cn2379 ~]$ <b>PLATFORM='ilmn' </b>
+[user@cn2379 ~]$ <b>INPUT_DIR="Illumina"
+[user@cn2379 ~]$ <b>cp -r $CLAIR3_DATA/${INPUT_DIR} .</b>
+[user@cn2379 ~]$ <b>REF="GRCh38_chr20.fa"</b>
+[user@cn2379 ~]$ <b>BAM="HG003_chr20_demo.bam"</b>
+[user@cn2379 ~]$ <b>BASELINE_VCF_FILE_PATH="HG003_GRCh38_chr20_v4.2.1_benchmark.vcf.gz"</b>
+[user@cn2379 ~]$ <b>BASELINE_BED_FILE_PATH="HG003_GRCh38_chr20_v4.2.1_benchmark_noinconsistent.bed"</b>
+[user@cn2379 ~]$ <b>clair3 \
+  --bam_fn=${INPUT_DIR}/${BAM} \
+  --ref_fn=${INPUT_DIR}/${REF} \
+  --model_path=${CLAIR3_MODELS}/${PLATFORM} \
+  --threads=${THREADS} \
+  --platform=${PLATFORM} \
+  --output=./ \
+  --bed_fn=${INPUT_DIR}/${BASELINE_BED_FILE_PATH} </b>
+...
+</pre>
+<b> Processing sample PacBio Hifi data</b><br />
+<pre class="term">
+[user@cn2379 ~]$ <b>PLATFORM='hifi' </b>
+[user@cn2379 ~]$ <b>INPUT_DIR="PacBio"
+[user@cn2379 ~]$ <b>cp -r $CLAIR3_DATA/${INPUT_DIR} .</b>
+[user@cn2379 ~]$ <b>REF="GRCh38_no_alt_chr20.fa"</b>
+[user@cn2379 ~]$ <b>BAM="HG003_chr20_demo.bam"</b>
+[user@cn2379 ~]$ <b>BASELINE_VCF_FILE_PATH="HG003_GRCh38_chr20_v4.2.1_benchmark.vcf.gz"</b>
+[user@cn2379 ~]$ <b>BASELINE_BED_FILE_PATH="HG003_GRCh38_chr20_v4.2.1_benchmark_noinconsistent.bed"</b>
+[user@cn2379 ~]$ <b>clair3 \
+  --bam_fn=${INPUT_DIR}/${BAM} \
+  --ref_fn=${INPUT_DIR}/${REF} \
+  --threads=${THREADS} \
+  --platform=${PLATFORM} \
+  --model_path=${CLAIR3_MODELS}/${PLATFORM} \
+  --output=./ \
+  --bed_fn=${INPUT_DIR}/${BASELINE_BED_FILE_PATH} </b>
+...
+</pre>
+<b> Processing sample ONT data</b><br />
+<pre class="term">
+[user@cn2379 ~]$ <b>PLATFORM='ont' </b>
+[user@cn2379 ~]$ <b>INPUT_DIR="ONT"
+[user@cn2379 ~]$ <b>cp -r $CLAIR3_DATA/${INPUT_DIR} .</b>
+[user@cn2379 ~]$ <b>REF="GRCh38_no_alt_chr20.fa"</b>
+[user@cn2379 ~]$ <b>BAM="HG003_chr20_demo.bam"</b>
+[user@cn2379 ~]$ <b>BASELINE_VCF_FILE_PATH="HG003_GRCh38_chr20_v4.2.1_benchmark.vcf.gz"</b>
+[user@cn2379 ~]$ <b>BASELINE_BED_FILE_PATH="HG003_GRCh38_chr20_v4.2.1_benchmark_noinconsistent.bed"</b>
+[user@cn2379 ~]$ <b>clair3 \
+  --bam_fn=${INPUT_DIR}/${BAM} \
+  --ref_fn=${INPUT_DIR}/${REF} \
+  --threads=${THREADS} \
+  --platform=${PLATFORM} \                                                                            --model_path=${CLAIR3_MODELS}/${PLATFORM} \
+  --output=./ \
+  --vcf_fn=${INPUT_DIR}/${BASELINE_VCF_FILE_PATH} </b>
+...
+</pre>                
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. clair3.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load Clair3 
+...               
+clair3 \ 
+  --bam_fn=${INPUT_DIR}/${BAM} \
+  --ref_fn=${INPUT_DIR}/${REF} \                                                                      --threads=${THREADS} \
+  --platform=${PLATFORM} \                                                                            --model_path=${CLAIR3_MODELS}/${PLATFORM} \
+  --output=./ \
+  --vcf_fn=${INPUT_DIR}/${BASELINE_VCF_FILE_PATH}
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+<pre class="term"><b>sbatch clair3.sh</b></pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

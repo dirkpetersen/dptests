@@ -1,0 +1,156 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "gopeaks";</script>
+
+<div class="title">gopeaks on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+From the gopeaks documentation:
+</p>
+
+<blockquote>
+    GoPeaks is a peak caller designed for CUT&amp;TAG/CUT&amp;RUN sequencing
+    data. GoPeaks by default works best with narrow peaks such as H3K4me3 and
+    transcription factors. However, broad epigenetic marks like H3K27Ac/H3K4me1
+    require different the step, slide, and minwidth parameters.
+</blockquote>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+      W. M. Yashar <em> et al</em>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/35788238/"><b><u>GoPeaks: histone modification peak calling for CUT&amp;Tag </u></b></a>
+    <em> Genome Biol. 2022 Jul 4;23(1):14</em>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/maxsonBraunLab/gopeaks">Gopeaks on GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>gopeaks</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>gopeaks can take advantage of more than one CPU though it does not appear to be
+        configurable via well known environment variables or command line arguments. Based
+        on testing an allocation of 4-6 CPUs is appropriate</li>
+<li>Example files in <tt>$GOPEAKS_TEST_DATA</tt>
+<li>Reference data in <tt>/fdb/gopeaks/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>) for running the peakfinder with a control and generating a summary plot with deeptools:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --gres=lscratch:20 --mem=30g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load gopeaks</b>
+
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 ~]$ <b>cp $GOPEAKS_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>ls -lh</b>
+
+[user@cn3144 ~]$ <b>gopeaks -b GSE190793_Kasumi_cutrun.bam -c GSE190793_Kasumi_IgG.bam --mdist 1000 --prefix Kasumi_cnr</b>
+Reading chromsizes from bam header...
+nTests: 431593
+nzSignals: 4.5114732e+07
+nzBins: 8298786
+n: 7.566515e+06
+p: 7.184688090883924e-07
+mu: 5.962418894299423
+var: 5.962414610487421
+
+[user@cn3144 ~]$ <b>cat Kasumi_cnr_gopeaks.json</b>
+{
+        "gopeaks_version": "1.0.0",
+        "date": "2023-05-12 12:40:59 PM",
+        "elapsed": "7m19.045741504s",
+        "prefix": "Kasumi_cnr",
+        "command": "gopeaks -b GSE190793_Kasumi_cutrun.bam -c GSE190793_Kasumi_IgG.bam --mdist 1000 --verbose --prefix=Kasumi_cnr",
+        "peak_counts": 29393
+}
+
+[user@cn3144 ~]$ # create a summary graph for peaks centered on the middle of the peak interval +- 1000
+[user@cn3144 ~]$ # i.e. not gene annotation
+
+[user@cn3144 ~]$ <b>module load deeptools</b>
+[user@cn3144 ~]$ <b>bamCoverage -p6 -b GSE190793_Kasumi_cutrun.bam -o GSE190793_Kasumi_cutrun.bw</b>
+[user@cn3144 ~]$ <b>bamCoverage -p6 -b GSE190793_Kasumi_IgG.bam -o GSE190793_Kasumi_IgG.bw</b>
+[user@cn3144 ~]$ <b>computeMatrix reference-point -R Kasumi_cnr_peaks.bed -a 1000 -b 1000 --referencePoint center \
+                    -S GSE190793_Kasumi_cutrun.bw GSE190793_Kasumi_IgG.bw \
+                    --sortRegions descend --samplesLabel 'Cut&Run' 'IgG' -p6 -o cutrun_matrix</b>
+[user@cn3144 ~]$ <b>plotHeatmap -m cutrun_matrix -o cutrun.png --averageTypeSummaryPlot mean --colorMap GnBu</b>
+[user@cn3144 ~]$ <b>cp Kasumi_cnr_* *.bw cutrun.png /data/$USER/my_working_directory</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<div style="width: 50%; margin: 0 auto">
+  <img src="/images/gopeaks_heatmap.png" width="100%"/>
+</div>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. gopeaks.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load gopeaks/1.0.0
+cp $GOPEAKS_TEST_DATA/* .
+gopeaks -b GSE190793_Kasumi_cutrun.bam -c GSE190793_Kasumi_IgG.bam --mdist 1000 --prefix Kasumi_cnr
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=30g gopeaks.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. gopeaks.swarm). For example:</p>
+
+<pre class="term">
+gopeaks -b replicate1.bam -c control.bam --mdist 1000 --prefix replicate1_gopeaks
+gopeaks -b replicate2.bam -c control.bam --mdist 1000 --prefix replicate2_gopeaks
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f gopeaks.swarm -g 30 -t 6 --module gopeaks</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module gopeaks</tt> <td>Loads the gopeaks module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

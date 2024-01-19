@@ -1,0 +1,435 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'nextflow on Biowulf';</script>
+<div class="title">nextflow on Biowulf</div>
+<P>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+Nextflow is a domain specific language modelled after UNIX pipes. It simplifies
+writing parallel and scalable pipelines. The version installed on our systems
+can run jobs locally (on the same machine) and by submitting to Slurm.</p>
+
+<p>The code that is executed at each pipeline stage can be written in a number of
+different languages (shell, python, R, ...).</p>
+
+<p>Intermediate results for workflows are stored in the <code>$PWD/work</code>
+directory which allows resuming execution of pipelines.</p>
+
+<p>The language used to write pipeline scripts is an extension of 
+<a href="http://www.groovy-lang.org/">groovy</a>.</p>
+
+<p class="alert">Nextflow is a complex workflow management tool. Please read
+the manual carefully and make sure to place appropriate limits on your pipeline
+to avoid submitting too many jobs or running too many local processes.</p>
+
+<p class="alert">Nextflow, when running many tasks appears to create many 
+temp files in the ./work directory. Please make sure that your pipeline
+does not inadvertently create millions of small files which would result
+in a degradation of file system performance.</p>
+
+
+<div class="heading"><a name="gotcha"></a>Common pitfalls</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<dl>
+ <dd>
+		 <dt><b>FATAL error while mount /gs6</b></dt>
+		     <dd>By 6.25.2023, /gs6 is retired from the cluster, thus if you see some errors like this: 
+			     <div class="term">
+				    WARNING: skipping mount of /gs6: stat /gs6: no such file or directory
+				    FATAL: container creation failed: mount /gs6->/gs6 error: while
+				    mounting /gs6: mount source /gs6 doesn't exist.
+			     </div>
+			     <br>
+			     Please update to the most recent version of nextflow.config, and then run your pipeline again:
+			     <div class="term">
+				     cp /usr/local/apps/nextflow/nextflow.config .
+			     </div>
+				     <br>
+
+			               </dd>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://www.nextflow.io/index.html">Home page</a> </li>
+    <li><a href="http://www.nextflow.io/docs/latest/index.html">Manual</a></li>
+    <li><a href="https://github.com/nextflow-io/nextflow">GitHub</a></li>
+    <li><a href="https://nextflow.slack.com">slack</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+	<li>nf-core/2.9 (experimental) is packaged with nextflow/23.04.1, it is accessible after loading the newest nextflow module.</li> 
+	<div class="term">
+		<p>module load nextflow
+		<p>nf-core --help
+						                                  </div>
+
+    <li>Module Name: nextflow (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Nextflow can use local, slurm, or srun/ignite</li>
+    <li style="background-color: #FFFF99">The master process submitting jobs should be run
+    either as a batch job or on an interactive node - not on the biowulf
+    login node.</li>
+    <li>Please explicitly set the <code>pollInterval</code> and <code>queueStatInterval</code>
+    to reduce the frequency
+    with which nextflow polls slurm. The default frequency creates too many
+    queries and results in unnecessary load on the scheduler.</li>
+    <li>When your /home directory is full while running nextflow, it could be that the singularity cache is filling up, please redirect those to /data directory with:
+	    <div class="term">
+
+	    export NXF_SINGULARITY_CACHEDIR=/data/$USER/singularity;
+	    export SINGULARITY_CACHEDIR=/data/$USER/.singularity;
+	    </div>
+</ul>
+<P>
+
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>First, let's do some basic local execution. For this we will allocate an interactive session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g -c2 --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144]$ <b>module load nextflow</b>
+</pre>
+
+<p>For the traditional hello world example we will parallelize the
+uppercasing of different language greetings:</p>
+<pre class="term">
+# create file of greetings
+[user@cn3144]$ <b>mkdir testdir;cat &gt; ./testdir/test1 &lt;&lt;EOF</b>
+Hello world!
+Hallo world!
+Ciao world!
+Salut world!
+Bongiorno world!
+Servus world!
+<b>EOF</b>
+[user@cn3144]$ <b>cat &gt; ./testdir/test2 &lt;&lt;EOF</b>
+Gruess Gott world!
+Na was los world!
+Gruetzi world!
+Hello world!
+Come va world!
+Ca va world!
+Hi world!
+Good bye world!
+<b>EOF</b>
+[user@cn3144]$ <b>cat &gt; test.R &lt;&lt;EOF</b>
+args <- commandArgs(trailingOnly = TRUE)
+library(readr)
+df <- read_lines(args[1])
+
+# create output
+sink(args[2])
+
+for (each in df){
+  cat (toupper(each))
+  cat ('\n')
+  }
+
+sink()
+<b>EOF</b>
+</pre>
+
+<p>We then create a file called <code>rhello.nf</code> that describes
+the workflow to be executed</p>
+
+<pre class="term">
+// Declare syntax version
+nextflow.enable.dsl=2
+
+params.output_dir = './results'
+
+process getsbatchlist {
+  module 'R'
+
+  input:
+   path(input_file)
+   each Rs
+
+  publishDir "${params.output_dir}"
+
+  output:
+   path "${input_file}.txt"
+
+  script:
+   """
+   Rscript ${Rs} ${input_file} ${input_file}.txt
+   """
+}
+
+workflow {
+  def inputf =  Channel.fromPath('./testdir/test*')
+  def Rs = Channel.fromPath('./test.R')
+  getsbatchlist(inputf,Rs) | view
+}
+
+</pre>
+
+
+<p>The workflow is executed with</p>
+<pre class="term">
+[user@cn3144]$ <b>nextflow rhello.nf</b>
+N E X T F L O W  ~  version 23.04.1
+Launching `test2.nf` [hopeful_cray] DSL2 - revision: 7401a333f4
+executor >  local (2)
+[28/6ccadb] process > getsbatchlist (2) [100%] 2 of 2 ✔
+/gpfs/gsfs8/users/apptest2/work/82/9d153e5b2a5ab4399ab36beb01e552/test2.txt
+/gpfs/gsfs8/users/apptest2/work/28/6ccadb35b01a2755c9670375ec1a05/test1.txt
+
+[user@cn3144]$ <b>cat results/test1.txt</b>
+HELLO WORLD!
+HALLO WORLD!
+CIAO WORLD!
+SALUT WORLD!
+BONGIORNO WORLD!
+SERVUS WORLD!
+</pre>
+
+<p>Note that results are out of order.</p>
+
+<p>The same workflow can be used to run each of the processes as a slurm job
+by creating a <code>nextflow.config</code> file. We provide a file with correct
+settings for biowulf at <code>/usr/local/apps/nextflow/nextflow.config</code>.
+If you use this file please don't change settings for job submission and
+querying (<code>pollInterval, queueStatInterval, and submitRateLimit</code>).
+In particular you might want to remove the lscratch allocation if that does not apply to your workflow. Although
+it was encouraged to use lscratch as much as you can.
+</p>
+
+<pre class="term">
+[user@cn3144]$ <b>cp /usr/local/apps/nextflow/nextflow.config .</b>
+[user@cn3144]$ <b>cat nextflow.config</b>
+
+params {
+  config_profile_description = 'Biowulf nf-core config'
+  config_profile_contact = 'staff@hpc.nih.gov'
+  config_profile_url = 'https://hpc.nih.gov/apps/nextflow.html'
+  max_memory = '224 GB'
+  max_cpus = 32
+  max_time = '72 h'
+
+}
+
+
+// use a local executor for short jobs and it has to give -c and --mem to make nextflow
+// allocate the resource automatically. For this the
+// settings below may have to be adapted to the allocation for
+// the main nextflow job.
+executor {
+    $local {
+        queueSize = 100
+        memory = "$SLURM_MEM_PER_NODE MB"
+        cpus = "$SLURM_CPUS_PER_TASK"
+
+    }
+    $slurm {
+        queue = 'norm'
+        queueSize = 200
+        pollInterval = '2 min'
+        queueStatInterval = '5 min'
+        submitRateLimit = '6/1min'
+        retry.maxAttempts = 1
+    }
+}
+
+singularity {
+    enabled = true
+    autoMounts = true
+    cacheDir = "/data/$USER/singularity"
+    envWhitelist='https_proxy,http_proxy,ftp_proxy,DISPLAY,SLURM_JOB_ID,SINGULARITY_BINDPATH'
+}
+
+env {
+    SINGULARITY_CACHEDIR="/data/$USER/singularity"
+    PYTHONNOUSERSITE = 1
+}
+
+profiles {
+    biowulflocal {
+        process.executor = 'local'
+        process.cache = 'lenient'
+
+    }
+
+    biowulf {
+        process {
+            executor = 'slurm'
+            maxRetries = 1
+
+            clusterOptions = ' --gres=lscratch:200 '
+
+            scratch = '/lscratch/$SLURM_JOB_ID'
+            // with the default stageIn and stageOut settings using scratch can
+            // result in humungous work folders
+            // see https://github.com/nextflow-io/nextflow/issues/961 and
+            //     https://www.nextflow.io/docs/latest/process.html?highlight=stageinmode
+            stageInMode = 'symlink'
+            stageOutMode = 'rsync'
+
+            // for running pipeline on group sharing data directory, this can avoid inconsistent files timestamps
+            cache = 'lenient'
+
+        // example for setting different parameters for jobs with a 'gpu' label
+        // withLabel:gpu {
+        //    queue = 'gpu'
+        //    time = '36h'
+        //    clusterOptions = " --gres=lscratch:400,gpu:v100x:1 "
+        //    containerOptions = " --nv "
+        // }
+
+        // example for setting different parameters for a process name
+        //  withName: 'FASTP|MULTIQC' {
+        //  cpus = 6
+        //  queue = 'quick'
+        //  memory = '6 GB'
+        //  time = '4h'
+        // }
+
+        // example for setting different parameters for jobs with a resource label
+        //  withLabel:process_low {
+        //  cpus = 2
+        //  memory = '12 GB'
+        //  time = '4h'
+        // }
+        // withLabel:process_medium {
+        //  cpus = 6
+        //  memory = '36 GB'
+        //  time = '12h'
+        // }
+        // withLabel:process_high {
+        //  cpus = 12
+        //  memory = '72 GB'
+        //  time = '16 h'
+        // }
+     }
+        timeline.enabled = true
+        report.enabled = true
+    }
+}
+
+
+[user@cn3144]$ <b>nextflow run -profile biowulf hello.nf</b>
+N E X T F L O W  ~  version 20.10.0
+Launching `hello.nf` [intergalactic_cray] - revision: f195027c60
+executor >  slurm (15)
+[34/d935ef] process > splitLetters        [100%] 1 of 1 ✔
+HELLO WORLD!
+[...snip...]
+[97/85354f] process > convertToUpper (11) [100%] 14 of 14 ✔
+</pre>
+Running nextflow with biowulf profile (slurm executor) using test input from nf-core:
+<pre class="term">
+[user@cn3144]$ <b>nextflow run nf-core/sarek -profile test,biowulf --outdir testout</b>
+N E X T F L O W  ~  version 22.10.4
+Launching `https://github.com/nf-core/sarek` [agitated_noyce] DSL2 - revision: c87f4eb694 [master]
+
+WARN: Found unexpected parameters:
+* --test_data_base: https://raw.githubusercontent.com/nf-core/test-datasets/modules
+- Ignore this warning: params.schema_ignore_params = "test_data_base"
+
+
+
+------------------------------------------------------
+                                        ,--./,-.
+        ___     __   __   __   ___     /,-._.--~'
+  |\ | |__  __ /  ` /  \ |__) |__         }  {
+  | \| |       \__, \__/ |  \ |___     \`-._,-`-,
+                                        `._,._,'
+      ____
+    .´ _  `.
+   /  |\`-_ \      __        __   ___
+  |   | \  `-|    |__`  /\  |__) |__  |__/
+   \ |   \  /     .__| /¯¯\ |  \ |___ |  \
+    `|____\´
+
+  nf-core/sarek v3.1.2
+------------------------------------------------------
+...
+</pre>
+<P>Run nextflow with local executor (biowulflocal profile) to utilize allocated cpus and memory on compute node, --mem and -c is essential, and use lscratch as work directory for troubleshooting: 
+<pre class="term">
+[user@biowulf]$<b>sinteractive --mem=80g -c 32 --gres=lscratch:200</b>
+[user@cn3144]$ <b>nextflow run nf-core/sarek
+-r 3.2.3 \
+-profile biowulflocal \
+--wes \
+--joint_germline \
+--input test.csv \
+--tools haplotypecaller,vep,snpeff \
+--outdir /data/$USER/sarek/ \
+--genome GATK.GRCh38 \
+--igenomes_base /fdb/igenomes_s3 \
+--save_output_as_bam \
+-w /lscratch/$SLURM_JOB_ID \
+--cache_version 110 \
+--vep_cache /fdb/VEP/110/cache \
+--snpeff_cache /fdb/snpEff/5.1d/data/
+</b>
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. sbatch_nf_main.sh) to run the master process. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+#SBATCH --job-name=nextflow-main
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=4G
+#SBATCH --gres=lscratch:200
+#SBATCH --time=24:00:00
+
+module load nextflow
+export NXF_SINGULARITY_CACHEDIR=/data/$USER/singularity;
+export SINGULARITY_CACHEDIR=/data/$USER/.singularity;
+export TMPDIR=/lscratch/$SLURM_JOB_ID
+
+nextflow run nf-core/sarek
+-r 3.2.3 \
+-profile biowulf \
+--wes \
+--joint_germline \
+--input test.csv \
+--tools haplotypecaller,vep,snpeff \
+--outdir /data/$USER/sarek \
+--genome GATK.GRCh38 \
+--igenomes_base /fdb/igenomes_s3 \
+--save_output_as_bam \
+--cache_version 110 \
+--vep_cache /fdb/VEP/110/cache/ \
+--snpeff_cache /fdb/snpEff/5.1d/data/
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+
+<pre class="term">sbatch_nf_main.sh</pre>
+
+
+<p class="alert">The master process submitting jobs should be run
+either as a batch job or on an interactive node - not on the biowulf
+login node.</p>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

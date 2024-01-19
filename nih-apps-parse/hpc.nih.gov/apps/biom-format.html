@@ -1,0 +1,149 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Biom-format on Biowulf';</script>
+<div class="title">Biom-format on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+The biom-format python package contains a command line tool to manipulate
+and convert <a href="http://biom-format.org/">biom format</a> files. It
+also includes an API for programatically manipulating biom files. It is
+therefore installed as both in independent application and as part of the
+python environments.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Daniel McDonald <em>et al.</em>. <em>The Biological Observation
+        Matrix (BIOM) format or: how I learned to stop worrying and love
+    the ome-ome</em>. GigaScience 1 (2012), doi:10.1186/2047-217X-1-7.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/23587224">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/pmid/23587224/">PMC</a>&nbsp;|&nbsp;
+    <a href="http://www.gigasciencejournal.com/content/1/1/7">Journal</a>
+    </li>
+</ul>
+
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://biom-format.org/">biom-format Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>biom-format</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Singlethreaded app
+<li>Example files in /usr/local/apps/biom-format/TEST_DATA
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session (user input in <b>bold</b>:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load biom-format</b>
+
+[user@cn3144 ~]$ <b>TD=/usr/local/apps/biom-format/TEST_DATA</b>
+
+[user@cn3144 ~]$ <b>biom head -i $TD/phinch_testdata.biom</b>
+# Constructed from biom file
+#OTU ID 0.IntakeWater.1 0.IntakeWater.3 0.IntakeWater.2 27.WaterCoralpond.2 
+228057  3.0     6.0     3.0     1.0     0.0
+988537  0.0     0.0     0.0     2.0     0.0
+89370   0.0     0.0     0.0     1.0     1.0
+2562097 0.0     0.0     0.0     0.0     0.0
+256904  8.0     0.0     1.0     32.0    58.0
+
+[user@cn3144 ~]$ <b>biom convert -i $TD/phinch_testdata.biom -o test.biom --to-hdf5</b>
+
+[user@cn3144 ~]$ <b>module load hdf5</b>
+
+[user@cn3144 ~]$ <b>h5ls test.biom</b>
+observation              Group
+sample                   Group
+
+[user@cn3144 ~]$ <b>h5ls test.biom/sample</b>
+group-metadata           Group
+ids                      Dataset {95}
+matrix                   Group
+metadata                 Group
+
+[user@cn3144 ~]$ <b>biom summarize-table -i test.biom</b>
+Num samples: 95
+Num observations: 67900
+Total count: 10223009
+Table density (fraction of non-zero values): 0.056
+
+Counts/sample summary:
+ Min: 16.0
+ Max: 1106184.0
+ Median: 65463.000
+ Mean: 107610.621
+ Std. dev.: 164313.408
+ Sample Metadata Categories: description; alkalinity; material; ammonium; nitrite; 
+  LinkerPrimerSequence; sulfide; BarcodeName; InternalCode; temp; 
+  collection_date; BarcodeSequence; salinity; phosphate; ReverseBarcode; nitrate; 
+  ph; ReverseName; ReversePrimerSequence; Hardness; diss_oxygen
+ Observation Metadata Categories: taxonomy
+
+Counts/sample detail:
+0.WipesKoipondLgWaterfall.1: 16.0
+0.WipesKoipondLFilter.1: 18.0
+[...snip...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>When loading one of the python 2.7 modules, the <code>biom</code>
+command line tool will also become available (though the version may vary
+over time), as will the API. For example
+</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>module load python</b>
+
+[user@cn3144 ~]$ <b>which biom</b>
+/usr/local/Anaconda/envs/py2.7.9/bin/biom
+
+[user@cn3144 ~]$ <b>python</b>
+Python 2.7.9 |Continuum Analytics, Inc.| (default, Apr 14 2015, 12:54:25)
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-1)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+Anaconda is brought to you by Continuum Analytics.
+Please check out: http://continuum.io/thanks and https://binstar.org
+
+&gt;&gt;&gt; <b>import biom</b>
+
+&gt;&gt;&gt; <b>table = biom.load_table("test.biom")</b>
+
+&gt;&gt;&gt; <b>table</b>
+67900 x 95 &lt;class 'biom.table.Table'&gt; with 360783 nonzero entries (5% dense)
+</pre>
+
+
+<P>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

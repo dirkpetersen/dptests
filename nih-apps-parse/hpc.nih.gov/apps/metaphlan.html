@@ -1,0 +1,183 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'metaphlan on Biowulf';</script>
+<div class="title">metaphlan on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width:70%;">
+    
+    <p>
+    From the metaphlan documentation:
+    </p>
+
+    <blockquote>MetaPhlAn is a computational tool for profiling the composition of microbial 
+      communities (Bacteria, Archaea and Eukaryotes) from metagenomic shotgun sequencing data
+      (i.e. not 16S) with species-level. With the newly added StrainPhlAn module, it is now
+      possible to perform accurate strain-level microbial profiling.
+
+      MetaPhlAn relies on ~1.1M unique clade-specific marker genes identified from ~100,000
+      reference genomes (~99,500 bacterial and archaeal and ~500 eukaryotic), allowing:
+
+      <ul>
+      <li>unambiguous taxonomic assignments;</li>
+      <li>accurate estimation of organismal relative abundance;</li>
+      <li>species-level resolution for bacteria, archaea, eukaryotes and viruses;</li>
+      <li>strain identification and tracking;</li>
+      <li>orders of magnitude speedups compared to existing methods;</li>
+      <li>metagenomic strain-level population genomics</li>
+      </ul>
+
+    </blockquote>
+
+    <p>Metaphlan versions >3 include <em>strainphlan</em>, <em>phylophlan</em>, and <em>hclust2</em>.</p>
+
+    <h3>References:</h3>
+    <ul>
+    <li>D. Tin Truong, E. A. Franzosa, T. L. Tickle, M. Scholz, G. Weingart, E. Pasolli, A. Tett, C. Huttenhower and N. Segata. <em>MetaPhlAn2 for enhanced metagenomic taxonomic profiling</em>. Nat Methods. 13:101 (2016).
+   <a href="https://www.ncbi.nlm.nih.gov/pubmed/26418763">PubMed</a>&nbsp;|&nbsp;
+   <a href="https://www.nature.com/articles/nmeth.3589">Journal</a> 
+   </li>
+   <li>D. Tin Truong, A. Tett, E. Pasolli, C. Huttenhower, and N. Segata. <em>Microbial strain-level population structure and genetic diversity from metagenomes</em>. Genome Res. 27:626-638 (2017)
+   <a href="https://www.ncbi.nlm.nih.gov/pubmed/28167665">PubMed</a>&nbsp;|&nbsp;
+   <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5378180/">PMC</a>&nbsp;|&nbsp;
+   <a href="https://genome.cshlp.org/content/27/4/626.long">Journal</a>
+   </li>
+    </ul>
+</div>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/biobakery/MetaPhlAn">metaphlan github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: metaphlan (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>metaphlan uses multithreading. Please match the number of CPUs to the number of
+    allocated cpus.</li>
+    <li>Example files in <code>$METAPHLAN_TEST_DATA</code></li>
+    <li>We no longer provide metaphlan reference data since metaphlan3 requires these to be writable. This is
+    not feasible in an HPC environment. Instead, users must install their own database the first time they run
+    metaphlan. For example,
+    <pre>
+    	<tt>metaphlan --install --bowtie2db /data/$USER/mp_db</tt>
+    </pre>
+    Use the <tt>--bowtie2db</tt> option to point to where you want to install the database. Subsequent calls with the same
+    option and argument will use the installed database.
+    </li>
+    <li>For the older version, metaphlan2, reference data is in <tt>/fdb/metaphlan/v20/</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c4 --mem=8g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3144]$ <b>module load metaphlan</b>
+
+[user@cn3144]$ <b>export METAPHLAN_DB=/data/$USER/mp_db</b>
+
+[user@cn3144]$ <b>mkdir fasta</b>
+
+[user@cn3144]$ <b>cp ${METAPHLAN_TEST_DATA:-none}/*.fasta.gz fasta</b>
+
+[user@cn3144]$ <b>ls -lh fasta</b>
+-rw-r--r-- 1 user group 690K Nov  4 13:11 SRS014459-Stool.fasta.gz
+-rw-r--r-- 1 user group 608K Nov  4 13:11 SRS014464-Anterior_nares.fasta.gz
+-rw-r--r-- 1 user group 704K Nov  4 13:11 SRS014470-Tongue_dorsum.fasta.gz
+-rw-r--r-- 1 user group 748K Nov  4 13:11 SRS014472-Buccal_mucosa.fasta.gz
+-rw-r--r-- 1 user group 696K Nov  4 13:11 SRS014476-Supragingival_plaque.fasta.gz
+-rw-r--r-- 1 user group 687K Nov  4 13:11 SRS014494-Posterior_fornix.fasta.gz
+
+[user@cn3144]$ <b>for f in fasta/*.gz
+do name=$(basename $f .fasta.gz)
+   metaphlan --nproc $SLURM_CPUS_PER_TASK --bowtie2out ${name}.bt2.bz2 \
+             --input_type fasta --bowtie2db $METAPHLAN_DB $f > ${name}_profile.txt
+done</b>
+
+[user@cn3144]$ <b>merge_metaphlan_tables.py *_profile.txt > merged_abundance_table.txt</b>
+
+<!--
+[user@cn3144]$ <b>hclust2.py -c bbcry --top 25 --minv 0.1 \
+                      -l --in merged_abundance_table.txt \
+                      --out abundance_heatmap.png</b>
+-->
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. metaphlan.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load metaphlan || exit 1
+METAPHLAN_DB=/data/$USER/mp_db
+fastq=/path/to/sample.fastq.gz
+name=$(dirname $fastq)/$(basename $fastq .fastq.gz)
+metaphlan --nproc $SLURM_CPUS_PER_TASK --bowtie2out ${name}.bt2.bz2 \
+          --input_type fastq --bowtie2db $METAPHLAN_DB $fastq &gt; ${name}_profile.txt
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=12g metaphlan.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. metaphlan.swarm). For example:</p>
+
+<pre class="term">
+metaphlan --nproc $SLURM_CPUS_PER_TASK --bowtie2out sample1.bt2.bz2 \
+          --input_type fastq --bowtie2db $METAPHLAN_DB sample1.fastq.gz &gt; sample1_profile.txt
+metaphlan --nproc $SLURM_CPUS_PER_TASK --bowtie2out sample2.bt2.bz2 \
+          --input_type fastq --bowtie2db $METAPHLAN_DB sample2.fastq.gz &gt; sample2_profile.txt
+metaphlan --nproc $SLURM_CPUS_PER_TASK --bowtie2out sample3.bt2.bz2 \
+          --input_type fastq --bowtie2db $METAPHLAN_DB sample3.fastq.gz &gt; sample3_profile.txt
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f metaphlan.swarm -g 12 -t 6 --module metaphlan</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module metaphlan <td>Loads the metaphlan module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

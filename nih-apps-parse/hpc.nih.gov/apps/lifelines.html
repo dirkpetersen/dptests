@@ -1,0 +1,169 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BioNetGen: specification and simulation of rule-based models of biochemical systems';</script>
+<div class="title">Lifelines: a pure Python implementation of the best parts of survival analysis.</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Lifelines is a complete survival analysis library, written in pure Python. 
+It has the benefits of easy installation, internal plotting methods, simple and intuitive API
+handles right, left and interval censored data. It also contains the most popular parametric, 
+semi-parametric and non-parametric models.
+<br />
+<br />
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Cameron Davidson-Pilon
+<i>lifelines: survival analysis in Python </i> <br />
+<a href="chrome-extension://bdfcnmeidppjeaggnmidamkiddifkdib/viewer.html?file=https://joss.theoj.org/papers/10.21105/joss.01317.pdf"> Journal of Open Source Software, 4(40), 1317. https://doi.org/10.21105/joss.
+01317
+1
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/CamDavidsonPilon/lifelines">Lifelines Github page</a></li>
+<li><a href="https://lifelines.readthedocs.io/en/latest/">Lifelines documentation</a></li>
+<li><a href="https://medium.com/analytics-vidhya/survival-analysis-using-lifelines-in-python-bf5eb0435dec">Lifelines Video Tutorial </a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>lifelines</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<br />
+<li>Unusual environment variables set
+  <ul>
+    <li><b>LIFELINES_HOME</b>&nbsp; installation directory</li>
+    <li><b>LIFELINES_BIN</b>&nbsp; executable   directory</li>
+    <li><b>LIFELINES_DATA</b>&nbsp; sample data directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn3144 ~]$ <b>module load lifelines</b>
+[+] Loading singularity  3.10.5  on cn4338
+[+] Loading lifelines  0.27.4
+</pre>
+<br />
+The basdic usage of the lifelines application is as follows:
+<pre class="term">
+[user@cn3144 ~]$ <b>sinteractive</b>
+[user@cn3144 ~]$ <b>python</b>
+&gt;&gt;&gt; import lifelines
+&gt;&gt;&gt; from lifelines.datasets import load_waltons
+&gt;&gt;&gt; print(df.head())
+      T  E    group
+0   6.0  1  miR-137
+1  13.0  1  miR-137
+2  13.0  1  miR-137
+3  13.0  1  miR-137
+4  19.0  1  miR-137
+&gt;&gt;&gt; T = df['T']
+&gt;&gt;&gt; E = df['E']
+&gt;&gt;&gt; kmf = KaplanMeierFitter()
+&gt;&gt;&gt; kmf.fit(T, event_observed=E)
+<lifelines.KaplanMeierFitter:"KM_estimate", fitted with 163 total observations, 7 right-censored observations>
+&gt;&gt;&gt; kmf.survival_function_
+          KM_estimate
+timeline
+0.0          1.000000
+6.0          0.993865
+7.0          0.987730
+9.0          0.969210
+13.0         0.950690
+15.0         0.938344
+17.0         0.932170
+19.0         0.913650
+22.0         0.888957
+26.0         0.858090
+29.0         0.827224
+32.0         0.821051
+33.0         0.802531
+36.0         0.790184
+38.0         0.777837
+41.0         0.734624
+43.0         0.728451
+45.0         0.672891
+47.0         0.666661
+48.0         0.616817
+51.0         0.598125
+53.0         0.554512
+54.0         0.542051
+56.0         0.429903
+58.0         0.404981
+60.0         0.311524
+61.0         0.254305
+62.0         0.240921
+63.0         0.180690
+66.0         0.160614
+68.0         0.100384
+69.0         0.014341
+75.0         0.000000
+&gt;&gt;&gt; kmf.cumulative_density_
+          KM_estimate
+timeline
+0.0          0.000000
+6.0          0.006135
+7.0          0.012270
+9.0          0.030790
+13.0         0.049310
+15.0         0.061656
+17.0         0.067830
+19.0         0.086350
+22.0         0.111043
+26.0         0.141910
+29.0         0.172776
+32.0         0.178949
+33.0         0.197469
+36.0         0.209816
+38.0         0.222163
+41.0         0.265376
+43.0         0.271549
+45.0         0.327109
+47.0         0.333339
+48.0         0.383183
+51.0         0.401875
+53.0         0.445488
+54.0         0.457949
+56.0         0.570097
+58.0         0.595019
+60.0         0.688476
+61.0         0.745695
+62.0         0.759079
+63.0         0.819310
+66.0         0.839386
+68.0         0.899616
+69.0         0.985659
+75.0         1.000000
+</pre>
+<br />
+End the interactive session:
+<pre class="term">
+[user@cn3111 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

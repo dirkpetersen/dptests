@@ -1,0 +1,145 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'AdmixTools on Biowulf';</script>
+<div class="title">AdmixTools on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+ADMIXTOOLS (<a href="https://genetics.med.harvard.edu/reich/Reich_Lab/Software_files/2012_Patterson_AncientAdmixture_Genetics.pdf">Patterson et al. 2012</a>) 
+is a software package that supports formal tests of whether admixture occurred, and makes it possible to infer admixture proportions and dates. 
+</p>
+The package contains 6 programs: 
+<ul>
+<li>convertf: See <A href="/docs/AdmixTools/README.CONVERTF ">README.CONVERTF</a> for documentation of programs for converting 
+file formats.
+<li>qp3Pop: See <A href="/docs/AdmixTools/README.3PopTest">README.3PopTest</a> for details of running f_3 test. This test can 
+be used as a format test of admixture with 3 populations.
+<li>qpBound: See <A href="/docs/AdmixTools/README.3PopTest">README.3PopTest</a> for details of running qpBound. This test can 
+be used for estimating bounds on the admixture proportions, given 3 
+populations (2 reference and one target).
+<li>qpDstat: See <A href="/docs/AdmixTools/README.Dstatistics">README.Dstatistics</a> for details of running D-statistics. This 
+is a formal test of admixture with 4 populations.
+<li>qpF4Ratio: See <a href="/docs/AdmixTools/README.F4RatioTest">README.F4RatioTest</a> for details of running F4 ratio 
+estimation. This program computes the admixture proportion by taking the 
+ratio of two f4 tests.
+<li>rolloff:  See <A href="/docs/AdmixTools/README.ROLLOFF">README.ROLLOFF</a>/ <a href="/docs/AdmixTools/README.ROLLOFF_OUTPUT">README.ROLLOFF_OUTPUT</a> 
+for details for running  rolloff. This program can be used for dating admixture events.
+</ul>
+Example files are in /usr/local/apps/AdmixTools/examples/
+<h3>References:</h3>
+<ul>
+<li>Paper</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://genetics.med.harvard.edu/reich/Reich_Lab/Software.html">AdmixTools website</a> at Harvard.
+<li><A href="https://github.com/DReichLab/AdmixTools">AdmixTools on Github</a>.
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>AdmixTools</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Example files in <tt>/usr/local/apps/AdmixTools/examples/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load AdmixTools</b>
+[+] Loading AdmixTools 4.1 ...
+
+[user@cn3144 examples]$ <b>cp -r  $AMT_DATA/* .</b>
+[user@cn3144 examples]$ <b>expfit.sh rolloff-test-parfile.par</b>
+Running rexpfit.r 
+Input file:  ASW_CEU_YRI
+Output file:  expfit_ASW_CEU_YRI
+Expfit logfile: expfit_ASW_CEU_YRI.flog
+Output plot: expfit_ASW_CEU_YRI.pdf
+ expfit.sh rolloff-test-parfile.par
+Jackknife logfile: expfit_ASW_CEU_YRI.log
+  
+Jackknife summary: ASW_CEU_YRI.jin
+Jackknife mean:          5.468
+Jackknife std. err:      0.253
+[user@cn3145 test]$  expfit.sh rolloff-test-parfile.par
+Running rexpfit.r 
+Input file:  ASW_CEU_YRI
+Output file:  expfit_ASW_CEU_YRI
+Expfit logfile: expfit_ASW_CEU_YRI.flog
+Output plot: expfit_ASW_CEU_YRI.pdf
+Jackknife logfile: expfit_ASW_CEU_YRI.log
+
+Jackknife summary: ASW_CEU_YRI.jin
+Jackknife mean:          5.468
+Jackknife std. err:      0.253
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. AdmixTools.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+# this file is called admix.sh
+
+module load AdmixTools
+
+convertf -p par.EIGENSTRAT.PED</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  [--mem=#] AdmixTools.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. AdmixTools.swarm). For example:</p>
+
+<pre class="term">
+rolloff -p rolloff1.par > rolloff1.log 2>&1
+rolloff -p rolloff2.par > rolloff2.log 2>&1
+rolloff -p rolloff3.par > rolloff3.log 2>&1
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f AdmixTools.swarm [-g #] --module AdmixTools</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--module AdmixTools</tt> <td>Loads the AdmixTools module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

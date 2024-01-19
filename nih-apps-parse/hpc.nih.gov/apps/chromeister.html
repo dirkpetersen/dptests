@@ -1,0 +1,128 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "Chromeister";</script>
+
+<div class="title">CHROMEISTER on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Chromeister: An ultra fast, heuristic approach to detect conserved signals in extremely large pairwise genome comparisons.
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Pérez-Wohlfeil, E., Diaz-del-Pino, S. & Trelles, O.
+    <a href="https://doi.org/10.1038/s41598-019-46773-w"><b><u>Ultra-fast genome comparison for large-scale genomic experiments.</u></b></a>
+    <em>Scientific reports 9, no. 1 (2019): 1-10.</em>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/estebanpw/chromeister">Chromeister Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>chromeister</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+        <li>Multithreaded
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>CHROMEISTER_HOME</tt></li>
+    <li><tt>SCRIPTS</tt> adds scripts from /usr/local/apps/chromeister/1.5.a/scripts to path</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+[user@cn4274 ~]$ <b>module load chromeister</b>
+[+] Loading chromeister  1.5.a  on cn4274
+[+] Loading singularity  3.10.5  on cn4274
+[+] Loading gcc  11.3.0  ...
+[+] Loading HDF5  1.12.2
+[+] Loading netcdf  4.9.0
+[-] Unloading gcc  11.3.0  ...
+[+] Loading gcc  11.3.0  ...
+[+] Loading openmpi/4.1.3/gcc-11.3.0  ...
+[+] Loading pandoc  2.18  on cn4274
+[+] Loading pcre2  10.40
+[+] Loading R 4.3.0
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Example</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Execute Chromeister binary</p>
+<pre class="term">
+#copy over test-data
+[user@cn4274 ~]$ <b>cp -a /usr/local/apps/chromeister/test-data .</b>
+[user@cn4274 ~]$ <b>cd test-data</b>
+#run chromeister with inputs
+[user@cn4274 test-data]$ <b>CHROMEISTER -query mycoplasma-232.fasta \</b>
+<b>-db mycoplasma-232.fasta \</b>
+<b>-out mycoplasma-232-7422.mat \</b>
+<b>-dimension 500 && Rscript ${SCRIPTS}/compute_score.R mycoplasma-232-7422.mat 500</b>
+[INFO] Generating a 500x500 matrix
+[INFO] Loading database
+99%...[INFO] Database loaded and of length 892758.
+[INFO] Ratios: Q [1.785516e+03] D [1.785516e+03]. Lenghts: Q [892758] D [892758]
+[INFO] Pixel size: Q [5.600622e-04] D [5.600622e-04].
+[INFO] Computing absolute hit numbers.
+99%...Scanning hits table.
+99%...
+[INFO] Query length 892758.
+[INFO] Writing matrix.
+[INFO] Found 25819 unique hits for z = 4.
+0
+</pre>
+
+<p>Annotate an SV:</p>
+<pre class="term">
+[user@cn4338] <b>cp -a /usr/local/apps/duphold/0.2.3/test_data .</b>
+[user@cn4338 test_data]$<b> duphold \
+ --threads 4 \
+ --vcf sparse_in.vcf \
+ --bam sparse.cram \
+ --fasta sparse.fa \
+ --output output.bcf </b>
+#To view output, load samtools and view with bcftools
+[user@cn4338 test_data] <b>module load samtools</b>
+[user@cn4338 test_data] <b>bcftools view test-out.bcf</b>
+##fileformat=VCFv4.2
+...
+##bcftools_viewVersion=1.4-19-g1802ff3+htslib-1.4-29-g42bfe70
+##bcftools_viewCommand=view CHM1_CHM13/full.37d5.vcf.gz; Date=Mon Sep 24 13:48:04 2018
+...
+##bcftools_viewVersion=1.17+htslib-1.17
+##bcftools_viewCommand=view test-out.bcf; Date=Thu May 25 12:49:34 2023
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  Eluc-CR2.F
+NW_017858824.1  135118  72454   N       DEL   5875.46 .       SVTYPE=DEL;END=135332;CIPOS=0,0;CIEND=0,0;CIPOS95=0,0;CIEND95=0,0;GCF=0.306977  GT:DP:DHFC:DHFFC:DHBFC:DHSP     0/1:200:1.91667:0.597403:1.76923:0
+</pre>
+
+<table border=0>
+<tr><td><td>For more information on pre and post processing, please visit the <a href="https://github.com/brentp/duphold"></u></b>Duphold Github Page</a>
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

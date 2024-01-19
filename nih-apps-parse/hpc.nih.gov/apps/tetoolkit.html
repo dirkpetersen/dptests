@@ -1,0 +1,162 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'tetoolkit on Biowulf';</script>
+<div class="title">tetoolkit on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p> A package for including transposable elements in differential enrichment
+analysis of sequencing datasets.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Ying Jin, O. H. Tam, E. Paniagua and M. Hammell. <em>TEtranscripts: a 
+        package for including transposable elements in differential expression 
+        analysis of RNA-seq datasets</em>. Bioinformatics 2015, 23:btv422.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/26206304">Pubmed</a>&nbsp;|&nbsp;
+    PMC&nbsp;|&nbsp;
+    <a href="http://bioinformatics.oxfordjournals.org/content/early/2015/08/06/bioinformatics.btv422.long">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li> <a href="https://github.com/mhammell-laboratory/tetoolkit">GitHub</a></li>
+    <li> <a href="http://hammelllab.labsites.cshl.edu/software/#TEToolkit">Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: tetoolkit (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files in <code>$TETOOLKIT_TEST_DATA</code></li>
+    <li>Reference data in <code>/fdb/tetoolkit/</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g --cpus-per-task=12 --gres=lscratch:50</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load tetoolkit</b>
+[user@cn3144]$ <b>cp -rL $TETOOLKIT_TEST_DATA/01fastq .</b>
+[user@cn3144]$ <b>cp $TETOOLKIT_TEST_DATA/GTF/dm6_rmsk_TE.gtf.gz .</b>
+[user@cn3144]$ <b>gunzip dm6_rmsk_TE.gtf.gz</b>
+</pre>
+
+<p>This test data contains 4 untreated samples (GSM461176, GSM461177, GSM461178, GSM461182) and
+3 samples with RNAi depleted <em>Pasilla</em> gene expression (GSM461179, GSM461180, GSM461181).
+First, let's align it in a way that is compatible with TEtranscripts. This will take about 1h.</p>
+
+<pre class="term">
+[user@cn3144]$ <b>module load STAR/2.7.3a</b>
+[user@cn3144]$ <b>genome=/fdb/STAR_indices/2.7.3a/UCSC/dm6/genes-75</b>
+[user@cn3144]$ <b>mkdir -p 02aln</b>
+[user@cn3144]$ <b>for fq in 01fastq/*.fastq.gz ; do
+     STAR --runThreadN $SLURM_CPUS_PER_TASK \
+          --genomeDir $genome \
+          --readFilesCommand zcat \
+          --outSAMtype BAM Unsorted \
+          --winAnchorMultimapNmax 200 \
+          --outFilterMultimapNmax 100 \
+          --readFilesIn "$fq" \
+          --outFileNamePrefix "./02aln/$(basename $fq .fastq.gz)"
+ done</b>
+</pre>
+
+<p>Now we can run TEtoolkit on the alignments.</p>
+
+<pre class="term">
+[user@cn3144]$ <b>untreated=(
+     02aln/GSM461176Aligned.out.bam
+     02aln/GSM461177Aligned.out.bam
+     02aln/GSM461178Aligned.out.bam
+     02aln/GSM461182Aligned.out.bam )</b>
+[user@cn3144]$ <b>treated=(
+     02aln/GSM461179Aligned.out.bam
+     02aln/GSM461180Aligned.out.bam
+     02aln/GSM461181Aligned.out.bam )</b>
+[user@cn3144]$ <b>TEtranscripts --mode multi \
+    --TE dm6_rmsk_TE.gtf \
+    --GTF /fdb/STAR_indices/2.7.3a/UCSC/dm6/genes.gtf \
+    --minread 100 \
+    --project test \
+    -c "${untreated[@]}" \
+    -t "${treated[@]}"</b>
+...
+[user@cn3144]$ <b>ls -1</b>
+drwxr-xr-x 2 user group 4.0K Apr 10 08:50 01fastq
+drwxr-xr-x 2 user group 4.0K Apr 10 09:38 02aln
+-rw-r--r-- 1 user group 5.3M Apr 10 08:51 dm6_rmsk_TE.gtf
+-rw-r--r-- 1 user group 521K Apr 10 14:13 test.cntTable
+-rw-r--r-- 1 user group  735 Apr 10 14:13 test_DESeq2.R
+-rw-r--r-- 1 user group 878K Apr 10 14:13 test_gene_TE_analysis.txt
+-rw-r--r-- 1 user group  94K Apr 10 14:13 test_sigdiff_gene_TE.txt
+
+[user@cn3144]$ <b>head -5 test_sigdiff_gene_TE.txt</b>
+baseMean        log2FoldChange  lfcSE   stat    pvalue  padj
+AGBE    1668.50772310032        0.489686064951153       0.162938655205519       3.00534004244418        0.00265284088823233   0.0288848429674012
+AGO2    8993.79284144723        -0.265578080875274      0.0892885493032728      -2.97438006270239       0.0029358119956592    0.0313958714926737
+ATP7    1750.30129130752        0.526853871760357       0.161346748429612       3.26535165343106        0.00109328255464026   0.0139041285415587
+Aats-cys        1256.3667600502 -0.670235513690024      0.105205551162389       -6.37072384759898       1.8813812974601e-10   1.13699601511619e-08
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. tetoolkit.sh), which uses the input file 'tetoolkit.in'. For example:</p>
+
+<pre class="term">
+#! /bin/bash
+# this is tetranscripts.sh
+
+module load tetoolkit/2.1.4 || exit 1
+untreated=(
+     02aln/GSM461176Aligned.out.bam
+     02aln/GSM461177Aligned.out.bam
+     02aln/GSM461178Aligned.out.bam
+     02aln/GSM461182Aligned.out.bam )
+treated=(
+     02aln/GSM461179Aligned.out.bam
+     02aln/GSM461180Aligned.out.bam
+     02aln/GSM461181Aligned.out.bam )
+TEtranscripts --mode multi \
+    --TE dm6_rmsk_TE.gtf \
+    --GTF /fdb/STAR_indices/2.7.3a/UCSC/dm6/genes.gtf \
+    --minread 100 \
+    --project test \
+    -c "${untreated[@]}" \
+    -t "${treated[@]}"
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=10g tetoolkit.sh</pre>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

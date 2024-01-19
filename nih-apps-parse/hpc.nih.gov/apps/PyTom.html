@@ -1,0 +1,141 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PyTom: a toolbox developed for interpreting cryo electron tomography data';</script>
+<div class="title"><b>PyTom: a toolbox developed for interpreting cryo electron tomography data</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+PyTom is a software package for the analysis of volumetric data 
+obtained by cryo electron tomography (cryo-ET). 
+It covers a complete pipeline of processing steps 
+for tomogram reconstruction, localization of macromolecular complexes in tomograms, 
+fine alignment of subtomograms extracted at these locations, and their classification.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Thomas Hrabe, Yuxiang Chen, Stefan Pfeffer, Luis Kuhn Cuellar, Ann-Victoria Mangold <br />&amp;  Friedrich Förster <br />
+<i> PyTom: A python-based toolbox for localization of macromolecules in cryo-electron
+tomograms and subtomogram analysis </i><br />
+<a href="https://reader.elsevier.com/reader/sd/pii/S1047847711003492?token=C0FF8D1654C70F8ABC07CFCE18C3E62AC035C09981B31F6197FA7094484F05BC5BB5D70DC5A4CDB95CEB2F7F4B1F9AEA&originRegion=us-east-1&originCreation=20221018175925">Journal of Structural Biology 178 (2012) 177–188</a> <br/>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/FridoF/PyTom">PyTom Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: PyTom (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>PYTOM_HOME</b> &nbsp; installation directory</li>
+    <li><b>PYTOM_BIN</b>  &nbsp; &nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>PYTOM_DATA</b> &nbsp; &nbsp; sample data directory</li>
+    <li><b>PYTOM_TESTS</b> &nbsp; &nbsp; test scripts folder</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn4199 ~]$ <b>module load PyTom</b>
+[+] Loading PyTom 1.0  ...
+</pre>
+Running tests:
+<pre class="term">
+[user@cn4199 ~]$ <b>wget https://github.com/FridoF/PyTom/archive/refs/tags/v1.0.tar.gz</b>
+[user@cn4199 ~]$ <b>tar -zxf v1.0.tar.gz && rm -f v1.0.tar.gz</b>
+[user@cn4199 ~]$ <b>cd PyTom-1.0/tests</b>
+[user@cn4199 ~]$ <b>pytom -m unittest discover</b>
+...
+This license affects the software package PyTom and all the herein distributed source / data files.
+Authors:
+Marten Chaillet
+Gijs van der Schot
+Ilja Gubins
+Mihajlo Vanevic
+Thomas Hrabe
+Yuxiang Chen
+Friedrich Foerster
+
+Copyright (c) 2021
+Utrecht University
+http://www.pytom.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation version 2 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+The complete license can be obtained from
+
+http://www.gnu.org/licenses/gpl-2.0.html.
+
+RMSD =  0.72
+....................We adjusted msdz to 5.000 nm to make it an integer multiple of pixel size.
+Number of slices for multislice:  12
+Determining DQE for K2SUMMIT
+chi-square value for fitting sinc function is 0.0005657000438432647
+Determining MTF for K2SUMMIT
+chi-square value for fitting sinc function is 1.0941206081582777e-05
+Projecting the model with 1 processes
+[Parallel(n_jobs=1)]: Using backend SequentialBackend with 1 concurrent workers.
+Transforming sample for tilt/frame  0
+Reduced rotation height for relevant specimens: 300
+Simulating projection with multislice method for frame/tilt  0
+Number of electrons per pixel (before oversampling and sample absorption): 100.00
+[Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    8.2s remaining:    0.0s
+[Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    8.2s finished
+...
+.variance for spline interpolation with numba: 3.850465873256326e-06
+.before parallel:  24
+after setting for parallel:  4
+execution numba 4 threads:  0.1669407606124878
+variance for spline interpolation with numba parallel: 3.816609478235478e-06
+.variance for pt linear interpolation: 3.833221927715919e-06
+variance for pt cubic interpolation: 3.817091292496215e-06
+variance for pt spline interpolation: 3.816610180137391e-06
+.variance for vt linear interpolation on cpu: 3.8332236727001145e-06
+variance for vt bspline interpolation on cpu: 3.826985903288005e-06
+variance for vt bspline_simple interpolation on cpu: 3.826985903288005e-06
+variance for vt filt_bspline interpolation on cpu: 3.910493887815392e-06
+variance for vt filt_bspline_simple interpolation on cpu: 3.910493887815392e-06
+.variance for vt linear interpolation on gpu: 3.846456e-06
+variance for vt bspline interpolation on gpu: 3.8316716e-06
+variance for vt bspline_simple interpolation on gpu: 3.8315306e-06
+variance for vt filt_bspline interpolation on gpu: 3.879772e-06
+variance for vt filt_bspline_simple interpolation on gpu: 3.87833e-06
+...
+----------------------------------------------------------------------
+Ran 55 tests in 72.486s
+
+OK
+
+[user@cn4199 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 59748321
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

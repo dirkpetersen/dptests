@@ -1,0 +1,451 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' NAMD on Biowulf ';</script>
+<div class="title">
+NAMD on Biowulf </div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#parallel">Infiniband batch job</a></div>
+<div class="tocItem"><a href="#gpu">On GPUs</a></div>
+<div class="tocItem"><a href="#replica">Replica Exchange</a></div>
+<div class="tocItem"><a href="#plumed">NAMD with Plumed</a></div>
+<div class="tocItem"><a href="#chain">Walltimes and chaining jobs</a></div>
+<div class="tocItem"><a href="namd/index.html">Benchmarks</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+<p><a href="http://www.ks.uiuc.edu/Research/namd/">NAMD</a> is a parallel
+molecular dynamics program for UNIX platforms designed
+for high-performance simulations in structural biology. It is developed by the
+<A href="https://www.ks.uiuc.edu/">Theoretical Biophysics Group at the Beckman Center, University of Illinois</a>.</p>
+<p>NAMD was developed to be compatible with existing molecular dynamics
+packages, especially the packages X-PLOR and <a href=
+"/apps/charmm/">CHARMM</a>, so it will accept X-PLOR and CHARMM input
+files. The output files produced by NAMD are also compatible with X-PLOR and
+CHARMM.</p>
+<p>NAMD is closely integrated with with <a href="VMD.html">VMD</a> for
+visualization and analysis.</p>
+<P>
+There are several versions of NAMD available on Biowulf. You can check the available versions with
+<pre class="term">
+module avail NAMD
+</pre>
+
+<p><b>Important:</b> Please read the webpage <a href="https://hpc.nih.gov/policies/multinode.html">Making efficient use of Biowulf's Multinode Partition</a> before running large parallel jobs. 
+
+<P>
+<a class="navbar-safe-anchor"  Name="helix"></a><div class="heading">On Helix</div>
+<P>
+NAMD is a compute-intensive scientific program that cannot be run on Helix.  Helix is a dedicated interactive data transfer node and should be used only for file transfer and file management..
+
+<P>
+<a class="navbar-safe-anchor"  Name="parallel"></a><div class="heading">Batch job on Biowulf</div>
+<P>
+The following example uses the ApoA1 benchmark example from the NAMD site. It is available on Biowulf in <br>
+<tt>/usr/local/apps/NAMD/TESTDATA</tt>
+<P>
+<b><u>Specifying a homogenous set of nodes</u></b>
+<P>
+The 'multinode' partition, to which all jobs that require more than a single node must be submitted, is heterogenous. For efficient multinode 
+parallel jobs, you need to ensure that you request nodes of a 
+single CPU type. For example, at the time of writing this webpage, the 'freen' command displays:
+
+<pre>
+biowulf% freen
+
+Partition    FreeNds    FreeCPUs      Cores  CPUs    Mem   Disk   Features
+-------------------------------------------------------------------------------------------------------
+...
+multinode   65/466     3640/26096        28    56    248g   400g   cpu56,core28,g256,ssd400,x2695,ibfdr
+multinode   4/190      128/6080          16    32     60g   800g   cpu32,core16,g64,ssd800,x2650,ibfdr
+multinode   312/539    17646/30184       28    56    250g   800g   cpu56,core28,g256,ssd800,x2680,ibfdr
+...
+</pre>
+
+These lines indicate that there are 3 kinds of nodes in the multinode partition. You should submit your job exclusively to one kind of node by specifying <tt>--constraint=x2695</tt>, 
+<tt>--constraint=x2650</tt>, or <tt>--constraint=x2680</tt> as in the examples below.
+
+<P>
+Sample batch script for the ibverbs version: 
+<pre class="term">
+#!/bin/bash
+
+cd /data/$USER/mydir
+
+module load NAMD/2.14-verbs
+make-namd-nodelist
+charmrun ++nodelist ~/namd.$SLURM_JOBID ++p $SLURM_NTASKS `which namd2` +setcpuaffinity  input.namd
+
+# delete the NAMD-specific node list
+rm ~/namd.$SLURM_JOBID
+</pre>
+<b>Note:</b> The NAMD <tt>+setcpuaffinity</tt> flag should be used for the ibverbs version for performance improvement. This flag should <b>not</b> be
+used when running the OpenMPI/Intel compiled version, since OpenMPI enforces its own cpu affinity. It should also not be used when you are not allocating all the CPUs on a node, since it assigns the cpu affinity in a round-robin fashion. See <a href="https://www.ks.uiuc.edu/Research/namd/2.9/ug/node87.html
+">https://www.ks.uiuc.edu/Research/namd/2.9/ug/node87.html
+</a>.
+<P>
+Sample batch script for the OpenMPI 2.0/Intel-compiler version compiled on Biowulf <br>
+Note: in our benchmarks, this version was slightly slower than the ibverbs version, so most users will want to use the ibverbs version.
+<pre class="term">
+#!/bin/bash
+#
+cd /data/$USER/mydir
+module load NAMD/2.14-openmpi
+
+mpirun -np $SLURM_NTASKS `which namd2`    input.namd
+</pre>
+<P>
+Submit this job with: 
+<pre class="term">
+sbatch --partition=multinode --constraint=x2680 --ntasks=# --ntasks-per-core=1 --time=168:00:00 --exclusive jobscript
+</pre>
+<P>
+where:
+<dl>
+<dt>--partition=multinode </dt>
+<dd>Submit to the IB-FDR partition. Highly parallel programs like NAMD with lots of interprocess communication should be run on the Infiniband (IB) network</dd>
+<dt>--constraint=x2680</dt>
+<dd>Request only x2680 nodes in the multinode partition. A heterogenous set of nodes is likely to lower performance.
+<dt>--ntasks=# </dt>
+<dd>Specifies the number of NAMD processes to run. This is passed into the script via the $SLURM_NTASKS variable. <br>
+The number of tasks should be (number of nodes) * (number of physical cores per node). <br>
+e.g. for the x2695 nodes, ntasks should be (number of nodes) * 28.
+</dd>
+<dt>--ntasks-per-core=1 </dt>
+<dd>Specifies that each NAMD process should run on a physical core. Hyperthreading is ignored. This parameter is highly recommended for parallel jobs. </dd>
+<dt>--time=168:00:00</dt>
+<dd>Specifies a walltime limit of 168 hrs = 1 week. See the section on <a href="#chain">chaining jobs</a> below.</dd>
+<dt>--exclusive </dt>
+<dd>specifies that all nodes allocated to this job should be allocated exclusively. This is recommended for multi-node parallel jobs.</dd>
+</dl>
+<P>
+Due to a technical complication, 'jobload' may report incorrect results for a NAMD parallel job. Here is a typical NAMD ibverbs run with the jobload showing as 0:
+<pre class="term">
+           JOBID            TIME            NODES  CPUS  THREADS   LOAD       MEMORY
+                     Elapsed / Wall               Alloc   Active           Used /     Alloc
+        32072214    00:03:29 /    08:00:00 cn1517    56        0     0%     0.0 /   56.0 GB
+                    00:03:29 /    08:00:00 cn1518     0        0     0%     0.0 /    0.0 GB
+                 Nodes:    2    CPUs:  112  Load Avg:   0%
+</pre>
+However, 'ssh cn1517 ps -C namd2' will show that there are 28 namd2 processes on each node. The NAMD output file will also report details such as:
+<pre>
+Charm++> Running on 2 unique compute nodes (56-way SMP).
+</pre>
+<P>
+<a Name="gpu"></a><div class="heading">On GPUs</div>
+<P>
+The latest GPU-resident single-node-per-replicate computation mode NAMD 3.0 build is available via the module 
+<tt>NAMD/3.0*-CUDA</tt>. Please read
+the <a href="https://www.ks.uiuc.edu/Research/namd/3.0/announce.html">NAMD webpage about NAMD 3.0</a>
+Note that to get the enhanced performance, you
+must run this version on a single node with NVLink, which means the v100x or a100 GPU nodes on Biowulf. 
+<P>
+<u><b>Sample script, single-node GPU job, NAMD 3.0beta3</b></u>
+<pre class="term">
+#!/bin/bash
+
+cd /data/$USER/mydir
+module load NAMD/3.0/beta3-CUDA
+namd3 +p${SLURM_CPUS_PER_TASK} +setcpuaffinity stmv.namd
+</pre>
+Submit with, for example: 
+<pre class="term">
+sbatch -p gpu --gres=gpu:v100x:1 --cpus-per-task=8 my_batch_script	# 1 v100x GPU
+sbatch -p gpu --gres=gpu:a100:2 --cpus-per-task=16 --nodes=1 my_batch_script	# 2 a100 GPU
+sbatch -p gpu --gres=gpu:v100x:4 --cpus-per-task=32 --nodes=1 my_batch_script	# all 4 v100x GPU on a single node
+</pre>
+
+<P>
+See the <a href="namd">benchmarks page</a> for some samples of performance.
+<P>
+<u><b>Single-node GPU job, NAMD 2.14 </b></u><br>
+To run a single-node GPU job, that will run on a single K80, P100, V100 or V100x node, create a batch script along the 
+following lines. Note thatn NAMD 2.14 can run (and it is recommended to) multiple ntasks per GPU.
+<Pre class="term">
+#!/bin/bash
+
+cd /data/$USER/mydir
+
+module load NAMD/2.14-verbs-CUDA
+charmrun ++local `which namd3` +p $SLURM_NTASKS +setcpuaffinity stmv.namd
+</pre>
+The environment variable $CUDA_VISIBLE_DEVICES will be set by Slurm to the GPU devices that are allocated to the job.
+<P>
+To submit to 2 GPU devices and half the CPUs on a K80 node:
+<pre class="term">
+sbatch --partition=gpu --gres=gpu:k80:2 --ntasks=14 --ntasks-per-core=1 jobscript
+</pre>
+<P>
+To submit to all 4 GPU devices and all the CPUs on a V100 node:
+<pre class="term">
+sbatch --partition=gpu --gres=gpu:v100:4 --ntasks=28 --ntasks-per-core=1 --exclusive jobscript
+</pre>
+
+<P>
+As per the <A href="http://www.ks.uiuc.edu/Research/namd/2.12/ug/node90.html">NAMD GPU documentation</a>, multiple NAMD threads can utilize the same set of GPUs, and the tasks 
+are equally distributed among the allocated GPUs on a node. 
+<P>
+
+<u><b>Multi-node GPU job</b></u>
+<P>
+
+While it is possible to run a multinode GPU NAMD job, please be sure that your NAMD job scales to more than 1 GPU node before submitting multinode GPU jobs. (<a href="namd/">See 
+our benchmarks for details</a>).
+To submit a multinode job, you could use a script like the following:
+<pre class="term">
+#!/bin/bash
+
+cd /data/$USER/mydir
+
+module load  NAMD/2.14-verbs-CUDA
+
+# on a K80 node
+make-namd-nodelist
+charmrun ++nodelist ~/namd.$SLURM_JOBID ++p $SLURM_NTASKS `which namd2` ++ppn 28 input.namd
+</pre>
+To submit to 2 K80 nodes:
+<pre class="term">
+sbatch ---partition=gpu --gres=gpu:k80:4 --ntasks=56 --ntasks-per-core=1 --nodes=2 --exclusive jobscript  
+</pre>
+Note that the number of ntasks is set to the number of cores on 2 nodes, i.e. 56. 
+<P>
+<u><b>Monitoring GPU jobs</b></u>
+<P>
+To monitor your GPU jobs, use 'jobload' to see the CPU utilization (should be ~ 50%), and 'ssh nodename nvidia-smi' to see the GPU utilization. 
+In the example below, a NAMD job is submitted to 8 GPUs (2 nodes) and 56 cores (all cores on the 2 nodes). 
+<pre class="term">
+[biowulf]$  <b>sbatch --partition=gpu --gres=gpu:k80:4 --ntasks=56 --ntasks-per-core=1 --nodes=2 run.gpu</b>
+129566
+</pre>
+Jobload shows that the job is utilizing all cores:
+<pre class="term">
+[biowulf]$  <b>jobload -u user</b>
+     JOBID      RUNTIME     NODES   CPUS    AVG CPU%            MEMORY
+                                                              Used/Alloc
+    129566     00:00:26    cn0603     56       50.00    836.9 MB/62.5 GB
+               00:00:26    cn0604     56       50.06    644.6 MB/62.5 GB
+</pre>
+The 'nvidia-smi' command shows that there are 4 NAMD processes  running on the 4 GPUs of the node. The 'GPU-Util' value will bounce around, so is not very meaningful.
+<pre class="term">
+[biowulf]$  <b>ssh cn3084 nvidia-smi</b>
+Sun Feb 26 15:19:07 2017
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 367.48                 Driver Version: 367.48                    |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|===============================+======================+======================|
+|   0  Tesla K80           On   | 0000:83:00.0     Off |                  Off |
+| N/A   48C    P0    58W / 149W |     91MiB / 12205MiB |     15%      Default |
++-------------------------------+----------------------+----------------------+
+|   1  Tesla K80           On   | 0000:84:00.0     Off |                  Off |
+| N/A   35C    P0    75W / 149W |     91MiB / 12205MiB |     15%      Default |
++-------------------------------+----------------------+----------------------+
+|   2  Tesla K80           On   | 0000:8A:00.0     Off |                  Off |
+| N/A   51C    P0    62W / 149W |     90MiB / 12205MiB |     12%      Default |
++-------------------------------+----------------------+----------------------+
+|   3  Tesla K80           On   | 0000:8B:00.0     Off |                  Off |
+| N/A   39C    P0    76W / 149W |     91MiB / 12205MiB |     14%      Default |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                       GPU Memory |
+|  GPU       PID  Type  Process name                               Usage      |
+|=============================================================================|
+|    0     40816    C   ..._2.12_Linux-x86_64-ibverbs-smp-CUDA/namd2    87MiB |
+|    1     40816    C   ..._2.12_Linux-x86_64-ibverbs-smp-CUDA/namd2    87MiB |
+|    2     40816    C   ..._2.12_Linux-x86_64-ibverbs-smp-CUDA/namd2    86MiB |
+|    3     40816    C   ..._2.12_Linux-x86_64-ibverbs-smp-CUDA/namd2    87MiB |
++-----------------------------------------------------------------------------+
+</pre>
+
+<a Name="replica"></a><div class="heading">Replica Exchange</div>
+<P>
+<b>Sample Replica Exchange job script using the OpenMPI version on Infiniband (multinode) partition</b>
+<pre class="term">
+#!/bin/bash
+
+cd /data/$USER/mydir
+module load NAMD/2.13b2-openmpi
+
+mkdir output
+(cd output; mkdir 0 1 2 3 4 5 6 7)
+mpirun namd2 +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+</pre>
+The number of MPI ranks must be a multiple of the number of replicas. Thus, for the 8 replicas above, you could submit with:
+<pre class="term">
+sbatch --partition=multinode --ntasks=24 --ntasks-per-core=1 --nodes=1 --exclusive   jobscript
+</pre>
+using 24 of the 28 physical cores on a single node. 
+<P>
+<b>Replica Exchange job using the verbs-CUDA version on multiple GPUs </b><br>
+<pre class="term">
+#!/bin/bash
+
+cd $SLURM_SUBMIT_DIR
+
+# this run uses the fold_alanin example provided by NAMD
+# download the example files and set up the output directories
+tar xvf /usr/local/apps/NAMD/2.13b2/replica_example.tar.gz
+cd replica/example
+mkdir output
+(cd output; mkdir 0 1 2 3 4 5 6 7)
+
+module load NAMD/NAMD/2.13b2-verbs-CUDA
+make-namd-nodelist
+
+charmrun ++nodelist ~/namd.$SLURM_JOBID +p8 \
+    `which namd2` +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+</pre>
+To run the above on 8 k80 GPUs (2 nodes), you would submit with: 
+<pre class="term">
+sbatch --partition=gpu --gres=gpu:k80:4 --nodes=2 --ntasks=32 --exclusive  jobscript
+</pre>
+Note that jobload will report incorrect usage for this job. It will look like: 
+<pre class="term">
+           JOBID            TIME            NODES  CPUS  THREADS   LOAD       MEMORY
+                     Elapsed / Wall               Alloc   Active           Used /     Alloc
+        48970813    00:16:44 /    02:00:00 cn4200    56        0     0%     0.0 /  112.0 GB
+                    00:16:44 /    02:00:00 cn4201     0        0     0%     0.0 /    0.0 GB
+</pre>
+However, the appropriate processes and GPU usage can be checked with commands such as the following. For the example above (8 replicas, 8 GPUs), you should see 
+4 namd2 processes on the node CPUs, and 4 namd2 processes on the GPUs of each node.
+<pre class="term">
+biowulf% <b>ssh cn4200 ps auxw | grep namd</b>
+user   51222  0.0  0.0  17168  1496 ?        S    11:18   0:00 charmrun ++nodelist /home/user/namd.48970813 +p8 /usr/local/apps/NAMD/2.13b2/NAMD_2.13_Linux-x86_64-verbs-smp-CUDA/namd2 +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+user   51297  100  0.1 323977568 299836 ?    Rl   11:18   4:29 /usr/local/apps/NAMD/2.13b2/NAMD_2.13_Linux-x86_64-verbs-smp-CUDA/namd2 +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+user   51299  100  0.1 323977572 297048 ?    Rl   11:18   4:29 /usr/local/apps/NAMD/2.13b2/NAMD_2.13_Linux-x86_64-verbs-smp-CUDA/namd2 +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+user   51300  100  0.1 323977572 297344 ?    Rl   11:18   4:29 /usr/local/apps/NAMD/2.13b2/NAMD_2.13_Linux-x86_64-verbs-smp-CUDA/namd2 +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+user   51301  100  0.1 323977568 296996 ?    Rl   11:18   4:29 /usr/local/apps/NAMD/2.13b2/NAMD_2.13_Linux-x86_64-verbs-smp-CUDA/namd2 +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+
+biowulf% <b>ssh cn4200 nvidia-smi</b>
+Wed Feb 19 11:23:33 2020
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 440.33.01    Driver Version: 440.33.01    CUDA Version: 10.2     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|===============================+======================+======================|
+|   0  Tesla K80           On   | 00000000:83:00.0 Off |                  Off |
+| N/A   64C    P0    75W / 149W |    414MiB / 12206MiB |     91%      Default |
++-------------------------------+----------------------+----------------------+
+|   1  Tesla K80           On   | 00000000:84:00.0 Off |                  Off |
+| N/A   30C    P8    34W / 149W |     11MiB / 12206MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+|   2  Tesla K80           On   | 00000000:8A:00.0 Off |                  Off |
+| N/A   42C    P8    27W / 149W |     11MiB / 12206MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+|   3  Tesla K80           On   | 00000000:8B:00.0 Off |                  Off |
+| N/A   37C    P8    34W / 149W |     11MiB / 12206MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                       GPU Memory |
+|  GPU       PID   Type   Process name                             Usage      |
+|=============================================================================|
+|    0     51297      C   ..._2.13_Linux-x86_64-verbs-smp-CUDA/namd2   100MiB |
+|    1     51299      C   ..._2.13_Linux-x86_64-verbs-smp-CUDA/namd2   100MiB |
+|    2     51300      C   ..._2.13_Linux-x86_64-verbs-smp-CUDA/namd2   100MiB |
+|    3     51301      C   ..._2.13_Linux-x86_64-verbs-smp-CUDA/namd2   100MiB |
++-----------------------------------------------------------------------------+
+</pre>
+<P>
+
+
+<a Name="plumed"></a><div class="heading">NAMD with plumed</div>
+
+<P>NAMD version 2.9 has been compiled with support for <a href="http://www.plumed.org/">Plumed 2.4.2</a>, a library for performing
+free energy calculation as part of molecular simulations. To use Plumed, you must load the <tt>NAMD/2.9-plumed</tt> module. This
+version is compiled with OpenMPI to allow parallelization of Plumed, and therefore, the sample batch job for the OpenMPI version
+given <a href="#parallel">above</a> should be used as the basis of scripts.</P>
+
+<P>An example submission script using Plumed would look like:</P>
+
+<P>
+<pre class="term">
+#!/bin/bash
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-core=1
+#SBATCH --ntasks-per-node=16
+#SBATCH --ntasks=64
+#SBATCH --partition=multinode
+#SBATCH --constraint=x2650
+#SBATCH --mem=48g
+
+module load NAMD/2.9-plumed
+
+mpirun -np $SLURM_NTASKS --mca btl self,sm,openib --mca btl_openib_if_exclude "mlx4_0:2" `which namd2` input 
+</pre>
+
+<P>Note that the necessary compiler, MPI, and FFTW modules are loaded automatically by the NAMD module.</P>
+
+<P>
+
+<a Name="chain"></a><div class="heading">Walltimes and chaining jobs</div>
+<P>
+There are walltime limits on most Biowulf partitions. Use 'batchlim' to see the current walltime limits. 
+<P>
+ An example namd config file for running a second simulation starting from the last timestep and the restart files of a previous simulation is available at <a href="http://www.ks.uiuc.edu/~timisgro/sample.conf">http://www.ks.uiuc.edu/~timisgro/sample.conf</a>.
+<P>
+If restarting a NAMD REMD job, be sure to comment out the 'bincoordinates' and 'extendedsystem' parameters in your NAMD configuration file, if applicable
+<P>
+After an initial run has produced a set of restart files, you would submit future runs using a batch script along these lines:
+<P>
+<pre class="term">
+#!/bin/bash
+
+module load NAMD/2.10
+
+# Create host file (required)
+make-namd-nodelist
+mpirun -n $SLURM_NTASKS  `which namd2` myjob.restart.namd > out.log
+rm -f ~/namd.$SLURM_JOBID
+
+# this script resubmits itself to the batch queue. 
+# The NAMD config file is set up to start the simulation from the last timestep 
+#   in the previous simulation
+sbatch --partition=multinode --constraint=x2650 --ntasks=$SLURM_NTASKS --ntasks-per-core=1 --time=168:00:00 --exclusive this_job_script
+</pre>
+Submit this script, as usual, with a command like:
+<pre>
+sbatch --partition=multinode --constraint=x2650 --ntasks=64 --ntasks-per-node=1 --time=168:00:00 --exclusive this_job_script
+</pre>
+The NAMD 2.10 replica.namd file is at <tt>/usr/local/apps/NAMD/NAMD_2.10_Linux-x86_64-ibverbs/lib/replica/replica.namd</tt>.
+<P>
+<h4>Chaining Replica Exchange jobs</h4>
+(Thanks to Christopher Siwy (CC) for this information).
+<p>
+<ul>
+<li>  Create separate job/config/namd files for running the restart job
+<li> Modify them appropriately (e.g., reference the correct restart files, do not remove the existing replica output folders)
+<li> Update the job0.conf file to source the restart tcl file that NAMD generates in the folder up from each replica's folder
+</ul>
+<P>
+The most important points here are:<br>
+- Ensure you do not delete your replica folders when you run the restart (as this is usually done when you start a new REMD simulation)<br>
+- In your job0.conf (or whatever you name it) file, include the following two lines after the line referencing the NAMD configuration<br>
+ <pre class="term">
+source [format $output_root.job0.<b>restart20.tcl</b> ""]
+set num_runs <b>10000</b>
+ </pre>
+The items in bold will likely be subjective. And the number of runs, is the TOTAL number of runs for the simualtion, not the number of 
+runs to run from that point forward. So in the example above, the restart will begin at the 20th run and continue till it reaches the 10,000th run.
+<P>
+<A href="http://www.ks.uiuc.edu/Research/namd/mailing_list/namd-l.2013-2014/1719.html">This thread in the NAMD mailing list</a> may help in debugging problems.
+
+
+<a class="navbar-safe-anchor"  Name="bench"></a><div class="heading">Benchmarks</div>
+<P>
+<A href="namd/">On the Benchmarks page</a>
+
+</center>
+<a class="navbar-safe-anchor"  Name="doc"></a><div class="heading">Documentation</div>
+<P>
+<P>
+<A href="http://www.ks.uiuc.edu">Theoretical and Computational Biophysics group</a> at UIUC, the NAMD/VMD developers.
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

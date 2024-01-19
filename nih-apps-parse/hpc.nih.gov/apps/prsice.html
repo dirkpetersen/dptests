@@ -1,0 +1,139 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'PRSice on Biowulf';</script>
+<div class="title">PRSice on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+PRSice (pronounced 'precise') is a Polygenic Risk Score software for calculating, applying, evaluating and plotting the results of polygenic risk scores (PRS) analyses.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>PRSice: Polygenic Risk Score software, Euesden, Lewis, O'Reilly, Bioinformatics (2015) 31 (9):1466-1468. doi: <a href="https://doi.org/10.1093/bioinformatics/btu848">10.1093/bioinformatics/btu848</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://choishingwan.github.io/PRSice/">PRSice Main Site</a></li>
+<li><a href="https://groups.google.com/forum/#!forum/prsice">User Support Group</a>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>prsice</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>PRSICE_HOME</tt></li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ cd /data/$USER
+[user@cn3144 ~]$ mkdir TEST
+[user@cn3144 ~]$ cd TEST
+[user@cn3144 ~] cp /usr/local/apps/prsice/TEST_DATA/* .
+[user@cn3144 ~]$ <b>module load prsice</b>
+[user@cn3144 ~]$ <b>PRSice.R \
+    --prsice $(which PRSice) \
+    --base TOY_BASE_GWAS.assoc \
+    --target TOY_TARGET_DATA \
+    --thread 1 \
+    --stat OR \
+    --binary-target T</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. prsice.sh). For example:</p>
+
+<pre class="term">
+#!/bin/sh
+set -e
+module load prsice
+
+test -n "$SLURM_CPUS_PER_TASK" || SLURM_CPUS_PER_TASK=1
+PRSice.R \
+ --prsice $(which PRSice) \
+ --base TOY_BASE_GWAS.assoc \
+ --target TOY_TARGET_DATA \
+ --thread $SLURM_CPUS_PER_TASK \
+ --stat OR
+ --binary-target T
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] prsice.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. prsice.swarm). For example:</p>
+
+<pre class="term">
+PRSice.R \
+ --prsice $(which PRSice) \
+ --base TOY_BASE_GWAS.assoc \
+ --target TARGET_DATA_1 \
+ --thread $SLURM_CPUS_PER_TASK \
+ --stat OR
+ --binary-target T
+PRSice.R \
+ --prsice $(which PRSice) \
+ --base TOY_BASE_GWAS.assoc \
+ --target TARGET_DATA_2 \
+ --thread $SLURM_CPUS_PER_TASK \
+ --stat OR
+ --binary-target T
+PRSice.R \
+ --prsice $(which PRSice) \
+ --base TOY_BASE_GWAS.assoc \
+ --target TARGET_DATA_3 \
+ --thread $SLURM_CPUS_PER_TASK \
+ --stat OR
+ --binary-target T
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f prsice.swarm [-g #] -t # --module prsice</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module prsice</tt> <td>Loads the PRSice module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

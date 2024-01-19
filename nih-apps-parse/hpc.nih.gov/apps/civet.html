@@ -1,0 +1,123 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Civet on Biowulf';</script>
+<div class="title">Civet on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> Civet is a pipeline for analysis of brain imaging data. Civet is used to extract and analyze cortical surfaces from MR images and can be used to perform a number of volumetric and corticometric computations</em>.  </p>
+
+<h3>References:</h3>
+<ul>
+<li>C. Lepage, L. Lewis, S. Jeun, P. Bermudez, N. Khalili-Mahani, M. Omidyegaheh, A. Zijdenbos, R.D. Vincent, R. Adalat, A.C. Evans.
+<em><a href="https://archive.aievolution.com/2017/hbm1701/index.cfm?do=abs.viewAbs&abs=3292">Human MR Evaluation of Cortical Thickness Using CIVET v2.1</a></em>. Organization for Human Brain Mapping (2017)</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Civet Main Site: <a href="https://www.bic.mni.mcgill.ca/ServicesSoftware/CIVET">CIVET Project webpage</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: civet (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4224 are ready for job
+
+[user@cn4224 ~]$ <b>module load civet</b>
+[+] Loading civet  2.1.1  on cn4224 
+[+] Loading singularity  3.7.1  on cn4224
+[user@cn4224 ~]$ <b>CIVET_Processing_Pipeline -help</b>
+
+CIVET_Processing_Pipeline, version 2.1.1, released December, 2018.
+
+    Takes any number of multi or single spectral input MINC volumes and
+    extracts the cortical surfaces from them utilizing the PMP pipeline
+    system. It then calculates cortical thickness at each vertex of the 
+    produced cortical surfaces (non-linearly registered) using the t-link 
+    metric (in both Talairach and native spaces). It can also produce ANIMAL 
+    segmentations, symmetry analyses, regional thickness, surface areas 
+    and volumes for brain lobes.
+
+    On-line documentation is available at:
+        http://www.bic.mni.mcgill.ca/ServicesSoftware/CIVET.
+
+[...]
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. civet.sh) similar to the following.</p>
+
+<pre class="term">
+#! /bin/bash
+
+set -e
+
+module load civet
+
+CIVET_Processing_Pipeline -sourcedir /data/user/civet-data-sets \
+                          -targetdir /data/user/civet-output-dir \
+                          -prefix my_data -N3-distance 0 -area-fwhm 20 \
+                          -thickness tlink 30 -VBM -resample-surfaces \
+                          -combine-surfaces -id-file scans -run
+</pre>
+
+<p>Submit these jobs using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile for the first step of the pipeline (e.g. civet.swarm). For example:</p>
+
+<pre class="term">
+CIVET_Processing_Pipeline -sourcedir /data/user/civet-data-set-01 \
+                          -targetdir /data/user/civet-output-01 \
+                          -prefix my_data -N3-distance 0 -area-fwhm 20 \
+                          -thickness tlink 30 -VBM -resample-surfaces \
+                          -combine-surfaces -id-file scans -run
+CIVET_Processing_Pipeline -sourcedir /data/user/civet-data-02 \
+                          -targetdir /data/user/civet-output-02 \
+                          -prefix my_data -N3-distance 0 -area-fwhm 20 \
+                          -thickness tlink 30 -VBM -resample-surfaces \
+                          -combine-surfaces -id-file scans -run
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f civet.swarm [-g #] --module civet</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>--module civet <td>Loads the civet module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

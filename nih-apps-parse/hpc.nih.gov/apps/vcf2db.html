@@ -1,0 +1,157 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Vcf2db on Biowulf';</script>
+<div class="title">Vcf2db on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Previously (and currently), gemini kept a bunch of vetted annotations along with the gemini install and annotated an incoming VCF with those annotations as it was loaded into gemini. This is nice for users but by de-coupling the annotation from the loading, we have more flexiblility.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/quinlan-lab/vcf2db">vcf2db Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>vcf2db</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>singlethreaded app
+<li>Example files in <tt>/usr/local/apps/vcf2db/tests</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>cp /usr/local/apps/vcf2db/tests/test.* .</b>
+
+[user@cn3144 ~]$ <b>module load vcf2db</b>
+
+[user@cn3144 ~]$ <b>vcf2db.py -h</b>
+usage: 
+Take a VCF and create a gemini compatible database
+
+       [-h] [--a-ok A_OK] [-e INFO_EXCLUDE] [--impacts-field IMPACTS_FIELD]
+       [--legacy-compression]
+       [--expand {gt_ref_depths,gt_types,gt_depths,gt_alt_depths,gt_quals,gt_alt_freqs}]
+       VCF ped db
+
+positional arguments:
+  VCF
+  ped
+  db
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --a-ok A_OK           list of info names to include even with Number=A (will
+                        error if they have > 1 value
+  -e INFO_EXCLUDE, --info-exclude INFO_EXCLUDE
+                        don't save this field to the database. May be
+                        specified multiple times.
+  --impacts-field IMPACTS_FIELD
+                        this field should be propagated to the variant_impacts
+                        table. by default, only CSQ/EFF/ANN fields are added.
+                        the field can be suffixed with a type of ':i' or ':f'
+                        to indicate int or float to override the default of
+                        string. e.g. AF:f
+  --legacy-compression
+  --expand {gt_ref_depths,gt_types,gt_depths,gt_alt_depths,gt_quals,gt_alt_freqs}
+                        sample columns to expand into their own tables
+
+
+[user@cn3144 ~]$ <b>vcf2db.py test.vcf test.ped test.db</b>
+skipping 'AC' because it has Number=A
+skipping 'AF' because it has Number=A
+pedigree notice: '1_dad' is dad but has unknown sex. Setting to male
+pedigree notice: '1_mom' is mom but has unknown sex. Setting to female
+pedigree notice: '2_dad' is dad but has unknown sex. Setting to male
+pedigree notice: '2_mom' is mom but has unknown sex. Setting to female
+pedigree notice: '3_dad' is dad but has unknown sex. Setting to male
+pedigree notice: '3_mom' is mom but has unknown sex. Setting to female
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value '1'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value 'aaa'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value 'bbb'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value '2'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value 'ccc'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value 'ddd'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value 'eee'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+/usr/local/Anaconda/envs_app/vcf2db/2017.12.11/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value 'fff'. (this warning may be suppressed after 10 occurrences)
+  (util.ellipses_string(value),))
+6 variant_impacts:23  effects time: 0.0 chunk time:0.1  43.33 variants/second
+indexing ... finished in 0.0 seconds...
+total time: in 0.2 seconds...
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. vcf2db.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load vcf2db
+vcf2db.py test.vcf test.ped test.db
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch vcf2db.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. vcf2db.swarm). For example:</p>
+
+<pre class="term">
+vcf2db.py test1.vcf test1.ped test1.db
+vcf2db.py test2.vcf test2.ped test2.db
+vcf2db.py test3.vcf test3.ped test3.db
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f vcf2db.swarm [-g 4] [-t 2] --module vcf2db</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module vcf2db</tt> <td>Loads the vcf2db module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

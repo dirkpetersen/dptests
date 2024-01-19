@@ -1,0 +1,443 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' CHARMM on Biowulf ';</script>
+<div class="title">
+CHARMM on Biowulf </div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#cover">Cover scripts</a></div>
+<div class="tocItem"><a href="#batch">Batch jobs</a></div>
+<div class="tocItem"><a href="#gpus">Using GPUs</a></div>
+<div class="tocItem"><a href="#interact">Interactive Usage</a></div>
+<div class="tocItem"><a href="#param">Force Field Parameters</a></div>
+<div class="tocItem"><A href="c42b2html/index.html">c42b2 Documentation</a></div>
+<div class="tocItem"><a href="#chain">Daisy Chaining</a></div>
+<div class="tocItem"><a href="#bench">Benchmarks</a></div>
+<div class="tocItem"><A href="#resource">Other CHARMM resources</a></div>
+</table>
+
+<p>CHARMM (Chemistry at HARvard Macromolecular Mechanics) [1]:</p>
+<ul>
+<li>A thirty year history, with an emphasis on accuracy and precision,
+under the leadership of Nobel prize winner Prof. Martin Karplus
+<li>A versatile and widely used molecular simulation program with broad
+application to many-particle systems</li>
+<li>Has been developed with a primary focus on the study of molecules of
+biological interest, including peptides, proteins, prosthetic groups, small
+molecule ligands, nucleic acids, lipids, and carbohydrates, as they occur in
+solution, crystals, and membrane environments</li>
+<li>Provides a large suite of computational tools that encompass numerous
+conformational and path sampling methods, free energy estimates, molecular
+minimization, dynamics, analysis techniques, and model-building
+capabilities</li>
+<li>Can be utilized with various energy functions and models, from mixed
+quantum mechanical-molecular mechanical force fields, to all-atom classical
+potentials with explicit solvent and various boundary conditions, to implicit
+solvent and membrane models</li></ul>
+<center><b><i>Major new features:</i></b></center>
+<ul><li>Large performance improvements via additions of both a domain decomposition
+scheme (DOMDEC) [2], and an explicit interface to the OpenMM GPU code
+<li>New features include replica exchange support (REPDSTR), and routines allowing
+the exchange of coordinates, energies, and forces with an external program (MSCALE)
+<li>Fully converted to Fortran95 with some Fortran2003 extensions; greatly improved memory
+management, now size configurable at run time
+</ul>
+<center>
+[1] CHARMM: The Biomolecular simulation Program <i>J. Comp. Chem.</i> <b>30,</b> 1545-1615 (2009).<br>
+[2] New faster CHARMM molecular dynamics engine <i>J. Comp. Chem.</i> <b>35,</b> 406-413 (2014).
+</center>
+
+<a class="navbar-safe-anchor"  Name="cover"></a><div class="heading">Cover Scripts</div>
+
+<p>In order provide support for multiple executable types using a range of parallel
+communication methods and hardware via a common interface, cover scripts have been
+made available in <kbd>/usr/local/apps/charmm/bin</kbd> on Biowulf, each named for the
+CHARMM release version they support.  The recommended setup is to use<p>
+<kbd>module load charmm</kbd><p>
+to modify the command search path for your shell (bash or csh); the cover script will load
+any additional modules required.  Besides the cover scripts,
+a tool for extracting data from CHARMM output log files,
+<a href="https://www.charmm.org//ubbthreads/ubbthreads.php?ubb=showflat&Number=12510#Post12510">getprop.csh</a>,
+is also available. Descriptions of the cover script commands, syntax listings, and
+usage examples are given in this section.
+General usage notes for running CHARMM via the SLURM queue and using the X11
+graphics are given below, after the cover script descriptions.
+
+<center><H3>Latest CHARMM release: <a name="c42b2">c42b2</a></H3></center>
+Recommended version for all applications; includes DOMDEC, DOMDEC_GPU, and many other new features.  (The
+OpenMM and Q-Chem interfaces are not currently available, but could be easily added if there is sufficient
+interest.)  Typing  <kbd>'c42b2 -help'</kbd> on Biowulf gives the following syntax
+and notes listing:<p>
+<div class="term"><pre>
+ <b>biowulf /<6>charmm [5]</b> <i>module load charmm</i>
+ <b>biowulf /<6>charmm [6]</b> <i>c42b2 -help</i>
+        Syntax; square brackets indicate [ optional args ]
+                        SINGLE PROC
+c42b2 [options] [ charmm-args ] < file.inp >& file.out
+
+  Omit "< file.inp >& file.out" for interactive use (e.g. graphics)
+
+                        PARALLEL
+c42b2 [options] ompi Nproc file.inp [ charmm-args ] >& file.out  # OpenMPI
+
+c42b2 -h | -help   # this listing
+
+                        Notes:
+  [options] ; must precede parallel keywords, order dependent
+verbose       :: prints additional environment info; must be *first*
+ddg           :: domdec_gpu; requires node with GPU (-p gpu)
+sse           :: override AVX architecture detection
+  PM Ewald type override option; default includes COLFFT and DOMDEC:
+async         :: alt. (slower) PME method, incl. REPDSTR and MSCALE
+
+  Parallel args; input filename required as 3rd arg
+ompi    :: use the OpenMPI parallel library
+Nproc   :: number of MPI processes; one per core, or one per GPU (ddg)
+
+charmm-args   :: optional script @ vars, in the form N:27 or RUN=15 etc.
+                   (N.B. must follow any options and parallel args)
+
+        Examples:
+
+c42b2 MDL:2 < minmodel.inp >& minmodel.out          # single proc min
+c42b2 ompi 16 minmodel.inp MDL:2 >& minmodel.out    # minimization
+c42b2 ompi 64 dyn.inp >& dyn.out                    # COLFFT or DOMDEC
+c42b2 ddg ompi 8 dyn.inp >& dyn.out                 # DOMDEC_GPU
+c42b2 ompi 64 dyn.inp -chsize 450000 >& dyn.out     # 450000 atom limit
+c42b2 sse ompi 64 dyn.inp >& dyn.out                # force use of SSE on AVX host
+c42b2 async ompi 32 dyn.inp >& dyn.out              # async; P21 symmetry, REPDSTR
+</pre></div><p>
+The above usage examples illustrate the positional keywords; parallel usage requires the
+<b>ompi</b> keyword, followed by two more arguments for the number of cores (not SLURM
+cpus!) and finally the input file name.  The optional mutually exclusive arguments
+<b>ddg</b> and <b>async</b> invoke different executables, compiled with different
+feature sets and with different run-time library requirements; the <b>c42b2</b>
+cover script loads the modules needed, <i>e.g.</i> CUDA for ddg, and then invokes
+the requested executable.  The <b>async</b> keyword includes support for features
+such as replica exchange MD, non-orthogonal crystal lattices, simulation of the
+assymetric unit with rotations of the simulation cell, and a number of other custom
+features; the fast DOMDEC code is <b>NOT</b> supported.
+<p>The <b>sse</b> keyword uses an older version of the Intel chipset floating point
+microarchitecture instructions, and is mainly used for testing.<p>
+
+Which options to use depends on the details of the types of calculations or 
+operations being done, the type of molecular system, the boundary conditions,
+and probably other factors.
+
+<a class="navbar-safe-anchor"  Name="batch"></a><div class="heading">SLURM Batch Jobs</div><p>
+For a non-parallel CHARMM job such as model building or ad hoc trajectory analysis, the
+commands and setup have few requirements.  The job script (build.csh) can be simply:<p>
+<div class="term"><pre>
+#!/bin/csh
+cd $SLURM_SUBMIT_DIR
+module load charmm
+c42b2 < build-psf.inp >& build-psf.out
+</pre></div><p>
+The above can be submitted to the batch queue via:<p>
+<div class="term"><pre>
+sbatch build.csh
+</pre></div><p>
+
+For parallel usage, the following script (sbatch.csh) illustrates submitting a SLURM batch
+job which will use the 16 physical cores on each of 4 nodes (64 total cores:<p>
+
+<div class="term"><pre>
+#!/bin/csh
+
+# use subdir name for job id and log file names
+set id = $cwd:t
+
+# nodes
+@ n = 4
+# tasks, for 16 core nodes
+@ nt = 16 * $n
+
+sbatch --ntasks=$nt -J $id -o $id.%j job.csh
+</pre></div>
+<p>Assuming the Infiniband (multinode) nodes will be used, the <kbd>job.csh</kbd> script contains:<p>
+<div class="term"><pre>
+#!/bin/csh
+#SBATCH --partition=multinode
+#SBATCH --exclusive
+#SBATCH --ntasks-per-core=1
+
+cd $SLURM_SUBMIT_DIR 
+module load charmm
+c42b2 ompi $SLURM_NTASKS charmmrun.inp >& charmmrun.out
+</pre></div>
+<p>The environment variable SLURM_SUBMIT_DIR points to the working directory where 'sbatch'
+was run, and SLURM_NTASKS contains the value given with the <kbd>--ntasks=</kbd> argument
+to sbatch. The above is suitable for most parallel CHARMM usage, other than the
+DOMDEC_GPU code invoked via the <kbd>ddg</kbd> cover script keyword (see below).
+A more detailed example for long simulations, also using separate scripts for
+job submission and job execution, is given in the <a href="#chain">Daisy Chaining</a>
+section below.  Of course, one could submit <kbd>job.csh</kbd> directly via e.g.:<p>
+<div class="term"><pre>
+sbatch --ntasks=64 -J MyJob -o MyJob.%j job.csh
+</pre></div>
+<p>where %j represents the SLURM job number.  
+
+<a class="navbar-safe-anchor"  Name="gpus"></a><div class="heading">Using GPUs</div><p>
+The DOMDEC_GPU code invoked via the <b>ddg</b> cover script keyword uses both an MPI library
+(OpenMPI in this case) and OpenMP threads, and therefore requires changes to the SLURM
+<b>sbatch</b> arguments.  The changes are shown in the example below (sbatchGPU.csh); 
+the <kbd>--nodes=</kbd> argument must be included, and the <kbd>--ntasks=</kbd> value must
+be twice the number of nodes, as each node has two GPU devices.
+
+<div class="term"><pre>
+#!/bin/csh
+
+# use subdir name for job id and log file names
+set id = $cwd:t
+
+# nodes
+@ n = 4
+# tasks, for nodes with 2 GPUs
+@ nt = 2 * $n
+
+# use all eight GPUs on four nodes
+sbatch --ntasks=$nt --nodes=$n -J $id -o $id.%j gpujob.csh
+</pre></div><p>
+A minimal job script follows, which illustrates additional changes to the information
+given to SLURM, via directives that do not depend on the number of nodes requested.
+Other than requesting <kbd>--exclusive</kbd> use of the node, all of the directives are
+distinct from those in the <kbd>job.csh</kbd> example above for general parallel usage.
+
+<div class="term"><pre>
+#!/bin/csh
+#SBATCH --partition=gpu
+#SBATCH --exclusive
+#SBATCH --cpus-per-task=8
+#SBATCH --gres=gpu:k20x:2
+
+cd $SLURM_SUBMIT_DIR 
+module load charmm
+c42b2 ddg ompi $SLURM_NTASKS charmmgpu.inp >& charmmgpu.out
+</pre></div><p>
+<a class="navbar-safe-anchor"  Name="interact"></a><div class="heading">Interactive Usage</div><p>
+For a variety of tasks such as model building, analysis, and graphics, foreground interactive use
+of CHARMM can be advantageous, esp. when developing and testing a new input script.  The SLURM
+<b>sinteractive</b> command makes this fairly easy (system prompts in <b>bold</b>, user input in <i>italics</i>):
+<div class="term"><pre>
+<b> biowulf /<2>EwaldNVE [69]</b> <i>sinteractive</i>
+salloc.exe: Granted job allocation 1693180
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0032 are ready for job
+
+<b> cn0032 /<2>EwaldNVE [1]</b> <i>module load charmm</i>
+<b> cn0032 /<2>EwaldNVE [2]</b> <i>c42b2 &lt; build-psf.inp &gt;&amp; build-psf.out</i>
+<b> cn0032 /<2>EwaldNVE [3]</b> <i>exit</i>
+exit
+salloc.exe: Relinquishing job allocation 1693180
+salloc.exe: Job allocation 1693180 has been revoked.
+</pre></div><p>
+By adding a couple SLURM options, one can also run parallel minimization jobs as well:
+<div class="term"><pre>
+<b> biowulf /<2>EwaldNVE [70]</b> <i>sinteractive -n 8 --ntasks-per-core=1</i>
+salloc.exe: Granted job allocation 1693189
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0254 are ready for job
+
+<b> cn0254 /<2>EwaldNVE [1]</b> <i>module load charmm</i>
+<b> cn0254 /<2>EwaldNVE [2]</b> <i>c42b2 &lt; build-psf.inp &gt;&amp; build-psf.out</i>
+<b> cn0254 /<2>EwaldNVE [3]</b> <i>c42b2 ompi 8 minmodel.inp &gt;&amp; minmodel.out &amp;</i>
+<b> cn0254 /<2>EwaldNVE [4]</b> <i>exit</i>
+exit
+salloc.exe: Relinquishing job allocation 1693189
+</pre></div><p>
+For troubleshooting, it may be useful to pipe the output, and both save it in file (via 'tee') and view it in the 'less' browser, e.g.:
+<div class="term"><pre>
+<b> cn0254 /<2>EwaldNVE [3]</b> c42b2 ompi 8 minmodel.inp |&amp; tee minmodel.out | less
+</pre></div><p>
+Finally, CHARMM itself can be run interactively, via simply:
+<div class="term"><pre>
+<b> biowulf /<2>EwaldNVE [71]</b> <i>sinteractive</i>
+salloc.exe: Granted job allocation 1693592
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn0103 are ready for job
+
+<b> cn0103 /<2>EwaldNVE [1]</b> <i>module load charmm</i>
+<b> cn0103 /<2>EwaldNVE [2]</b> <i>c42b2</i>
+Linux cn0074 3.10.0-693.2.2.el7.x86_64 #1 SMP Tue Sep 12 22:26:13 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux
+ 16:39:01 up 2 days, 17:06,  0 users,  load average: 18.98, 18.69, 18.38
+[+] Loading Intel 2018.1.163  Compilers ... 
+>>>========>>  FOR SYNTAX AND NOTES, TRY    "c42b2 -help"
+-rwxrwxr-x 1 venabler 38816824 Jun  3 16:25 /usr/local/apps/charmm/c42b2/em64t/ifortavx.x11
+/usr/local/apps/charmm/c42b2/em64t/ifortavx.x11
+1
+                 Chemistry at HARvard Macromolecular Mechanics
+           (CHARMM) - Developmental Version 42b2   February 15, 2018            
+       Copyright(c) 1984-2014  President and Fellows of Harvard College
+                              All Rights Reserved
+    Current operating system: Linux-3.10.0-693.2.2.el7.x86_64(x86_64)@cn0074    
+                 Created on  6/7/18 at 16:39:01 by user: venabler    
+
+            Maximum number of ATOMS:    360720, and RESidues:      120240
+</pre></div><p>
+At this point the program is expecting input, starting with a title; it is recommended to type <kbd>bomlev -1</kbd>
+as the first command, as that will forgive typing errors and allow the program to continue.  It also recommended
+to have the initial setup commands (reading RTF and PARAM files, PSF and COOR files, etc.) in a 'stream' file, so
+that those actions can be done vie e.g.
+<div class="term"><pre>
+stream init.str
+</pre></div><p>
+The same applies to other complex setups, such as establishing restraints, or graphics setup.<p>
+Note that the graphics uses X11, so the initial login to biowulf should use either the -X or the -Y
+option of the ssh command, to enable X11 tunneling for the graphics display.
+<a class="navbar-safe-anchor"  Name="param"></a><div class="heading">Force Field Parameters</div><p>
+Recent versions of the distributed CHARMM parameters, including the latest release, are 
+available in <kbd>/usr/local/apps/charmm</kbd> as subdirectories <kbd>topparYYYY</kbd> where YYYY is the release year.
+Each release contains a number of corrections and additions from the past year, esp. for the CHARMM force
+fields.  The toppar2017 release uses a newer format, so one should be careful about using it with older PSF files.
+Files distributed with models built using CHARMM-GUI now use this newer format.
+
+<a class="navbar-safe-anchor"  Name="chain"></a><div class="heading">Daisy Chaining</div><p>
+In order to run a long series of CHARMM calculations, a systematic method has been developed
+over many years and operating systems.  There are several basic concepts:<ul>
+<li> circularity; one script submits a job which runs with another script, which calls the submit script when it finishes (daisy chaining)
+<li> generic names; the initial output files have generic names, and are numbered upon job completion
+<li> completion testing; a series of simple checks must be satisfied for numbering and continuation</ul>
+The <kbd>sbatch.csh</kbd> or <kbd>sbatchGPU.csh</kbd> scripts shown above in the
+<a href="#batch">Batch jobs</a> section can be used as the submit scripts; they can also be found
+in <kbd>/usr/local/apps/charmm/scripts</kbd> or obtained via the links at the end of this section.
+A detailed description of this system of scripts, albeit for a PBS queue, can be found in this
+<a href="https://www.charmm.org//ubbthreads/ubbthreads.php?ubb=showflat&Number=35051#Post35051">post</a>
+in the Script Archive forum at www.charmm.org; the changes for SLURM on Biowulf
+are shown in the following <kbd>dyn.csh</kbd> example:<p>
+<div class="term"><pre>
+#!/bin/csh
+#SBATCH --partition=multinode
+#SBATCH --exclusive
+#SBATCH --ntasks-per-core=1
+
+# ASSUMPTION (1): output files are named    dyn.res  dyn.trj  dyn.out
+# ASSUMPTION (2): previous restart file read as  dyn.rea
+#
+
+cd $SLURM_SUBMIT_DIR 
+
+if ( ! -d Res ) mkdir Res
+if ( ! -d Out ) mkdir Out
+if ( ! -d Crd ) mkdir Crd
+if ( ! -d Trj ) mkdir Trj
+
+set chm = "/usr/local/apps/charmm/bin/c42b2 ompi $SLURM_NTASKS"
+set nrun = 1
+set d = $cwd:t
+
+@ krun = 1
+ while ( $krun <= $nrun )
+
+if ( -e next.seqno ) then
+ $chm dyn.inp D:$d > dyn.out
+else
+ $chm dynstrt.inp D:$d > dyn.out
+endif
+
+set okay = true
+# TEST FOR EXISTENCE, THEN NONZERO LENGTH OF OUTPUT FILES
+if ( -e dyn.res && -e dyn.dcd ) then
+ @ res = `wc dyn.res | awk '{print $1}'`
+ @ tsz = `ls -s dyn.dcd | awk '{print $1}'`
+ @ nrm = `grep ' NORMAL TERMINATION ' dyn.out | wc -l`
+ if ( $res > 100 && $tsz > 0 && $nrm == 1 ) then
+# SUCCESSFUL RUN; COPY RESTART FILE
+  cp dyn.res dyn.rea
+# DETERMINE RUN NUMBER
+  if ( -e next.seqno ) then
+   @ i = `cat next.seqno` 
+  else
+   @ i = 1
+  endif
+# NUMBER AND MOVE THE OUTPUT FILES
+  mv dyn.out Out/dyn$i.out
+  mv dyn.crd Crd/dyn$i.crd
+  mv dyn.res Res/dyn$i.res
+  mv dyn.dcd Trj/dyn$i.dcd
+  gzip -f Out/dyn$i.out Res/dyn$i.res Crd/dyn$i.crd
+# CONDITIONAL END CHECK
+  if ( -e last.seqno ) then
+    @ l = `cat last.seqno`
+    if ( $i == $l ) then
+      @ i += 1
+      echo $i > next.seqno 
+      exit
+    endif
+  endif
+  @ i += 1
+  echo $i > next.seqno
+ else
+# ZERO LENGTH FILE(S)
+  set okay = false
+ endif
+else
+# FILE DOESN'T EXIST
+ set okay = false
+endif
+
+# TEST FOR CHARMM RUN FAILED; CREATE .ERR FILE WITH TIMESTAMP
+if ( $okay == true ) then
+# SUBMIT THE NEXT JOB
+ if ( $krun == $nrun ) ./sbatch.csh
+ @ krun += 1
+else
+ set ts = `date +%m%d.%H%M`
+ date > msg.tmp
+ echo $cwd >> msg.tmp
+ head -64 dyn.out >> msg.tmp
+ tail -64 dyn.out >> msg.tmp
+ mv dyn.out dyn.err.$ts
+ mail -s "$SLURM_JOB_NAME $SLURM_JOB_ID $ts" $USER@helix.nih.gov < msg.tmp
+ exit(201)
+endif
+
+end
+</pre></div><p>
+The above can be used for most parallel CHARMM usage (except for GPUs); for some types of
+calculations, the <b>async</b> keyword may be needed as well.<p>
+Plain text versions of the scripts are given in the following links; after downloading, rename
+them to .csh files, and allow them to be executed via e.g.<p>
+<div class="term"><pre>
+mv sbatch.txt sbatch.csh
+chmod u+x sbatch.csh
+</pre></div><p>
+<center>Script download links:&nbsp;&nbsp;&nbsp;<b><a href="sbatch.txt">sbatch.txt</a>&nbsp;&nbsp;
+<a href="dyn.txt">dyn.txt</a>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="sbatchGPU.txt">sbatchGPU.txt</a>&nbsp;&nbsp;
+<a href="dyngpu.txt">dyngpu.txt</a></b>
+</center>
+<a class="navbar-safe-anchor"  Name="bench"></a><div class="heading">Benchmarks</div><p>
+The plot below is from CHARMM benchmarks run during the beta test phase of Biowulf, and shows results
+for DOMDEC on Infiniband nodes (solid lines) and DOMDEC_GPU on <b>gpu</b> nodes (dotted lines), for
+even numbers from 2 through 16 nodes.  The timings in ns/day are from short MD simulations, run with
+a 1 fs integration time step, for 3 molecular systems of different sizes and shapes:<ul>
+<li> <b>moesin</b>; 140K atoms; aqueous protein and lipid bilayer in a tetragonal unit cell, with c > a=b (tall)
+<li> <b>DNPC</b>; 210K atoms; aqueous pure DNPC (24:1 chains) bilayer in a tetragonal unit cell, with a=b > c (short)
+<li> <b>GroEL</b>; 468K atoms; aqueous GroEL assembly in a cubic unit cell, a=b=c</ul>
+<center><img src="BW2c39b2Bench.png" width=800 height=548></center><p>
+Note that the ns/day rate would be doubled with the use of a 2 fs time step, which is often done for more
+exploratory sampling, but not necessarily recommended for the best accuracy and precision. Simulations
+systems that cannot use DOMDEC will be somewhat slower, and will not scale well past about 64 cores.
+<a class="navbar-safe-anchor"  Name="resource"></a><div class="heading">Other CHARMM resources</div><p>
+<ul>
+<LI><A HREF="http://www.charmm.org"><B>CHARMM.org</A> Homepage</B>
+<LI><A HREF="http://charmm.chemistry.harvard.edu/"><B>Harvard University</A> CHARMM Website</B>
+<LI><A HREF="http://www.charmmtutorial.org"><B>Tutorial</A> Wiki</B>
+<LI><A HREF="http://mackerell.umaryland.edu/charmm_ff.shtml"><B>Force Fields</A> From Alex MacKerell</B>
+<LI><A HREF="https://cgenff.paramchem.org/"><B>ParamChem</A> Using CGenFF to add new molecules </B>
+<LI><A HREF="http://www.charmm-gui.org/"><B>CHARMM-GUI;</A> model building, esp. membrane systems</B>
+<LI><A HREF="http://www.charmming.org/charmming/"><B>CHARMMing;</A> learning site, emphasis on QM/MM, redox</B>
+</ul>
+
+<hr>
+<center><b>The CHARMM program is provided and maintained on Biowulf by the NHLBI
+<a href="http://www.lobos.nih.gov/lcb/index.shtml"> Laboratory of Computational Biology</a></b></center>
+<hr>
+<ADDRESS>
+CHARMM on Biowulf / <A HREF="mailto:Rick_Venable@nih.gov"> Rick_Venable@nih.gov </A>
+</ADDRESS>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

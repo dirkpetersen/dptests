@@ -1,0 +1,469 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MATLAB on NIH HPC Systems';</script>
+<!-- styles for MATLAB syntax highlighting -->
+<style type="text/css">
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+</style></head>
+
+<div class="title">MATLAB on NIH HPC Systems</div>
+
+<!-- ======================================================================= -->
+<!-- Quick links  -->
+<table border=0 cellpadding=10> 
+<tr><td width=25%>
+<br>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><B>On this page</b><div>
+<div class="tocItem"><A href="#intonbio">Interactive sessions on Biowulf</a></div>
+<div class="tocItem"><A href="#shell">MATLAB in shell scripts</a></div>
+<div class="tocItem"><A href="#compiledbatch">Submitting jobs to Slurm</a></div>
+<div class="tocItem"><A href="#swarm">Swarm of jobs on Biowulf</a></div>
+<div class="tocItem"><A href="#gpu">Using the GPUs with Matlab</a></div>
+<div class="tocItem"><A href="#parcomp">Parallel Computing Toolbox</a></div>
+<br>
+<div class="tocItem"><B>Related</b><div>
+<!-- <div class="tocItem"><A href="https://hpc.nih.gov/apps/Matlab.html">MATLAB on Biowulf</a></div>  -->
+<div class="tocItem"><A href="/apps/Matlab_compiler.html">MATLAB Compiler</a></div>
+<div class="tocItem"><A href="/apps/Matlabdct.html">MATLAB Parallel Computing Toolbox</a></div>
+<!-- ======================================================================= -->
+
+<td>
+
+<div class="heading">Description</div>
+<A href="http://www.mathworks.com"><img src="/images/mwlogo_notag.jpg" alt="" align="right"></a></p>
+<P>
+MATLAB integrates mathematical computing and data visualization in a powerful language to provide a flexible environment for technical computing. The open architecture makes it easy to use MATLAB and its companion products to explore data and create custom tools. MATLAB users benefit from a growing community, pre-written toolboxes containing popular algorithms and analyses, and an integrated development environment (IDE) for writing and debugging code.
+
+<br>
+
+<p class="alert"><B>IMPORTANT: (November 2021) Biowulf users now have access to unlimited Matlab licenses and all toolboxes</b> <br>
+The NIH HPC Staff is pleased to announce a new Matlab license model that provides the following advantages to Biowulf Matlab users: 
+(1) access to all Matlab toolboxes,
+(2) unlimited number of Matlab licenses,
+(3) the ability to run batch jobs without using the Matlab compiler, and
+(4) the ability to submit large numbers of Matlab batch jobs.
+As before, interactive Matlab jobs are still possible, and are limited to two sinteractive sesssions.
+</p>
+
+<div class="heading">Web sites</div>
+<ul> 
+<li><A href="http://www.mathworks.com/products/matlab/">Official website</a></li>
+<li><A href="http://www.mathworks.com/help/matlab/getting-started-with-matlab.html">Getting started</a></li>
+<li><A href="http://www.mathworks.com/matlabcentral/fileexchange/">MATLAB file exchange</a></li>
+<li><A href="http://www.mathworks.com/matlabcentral/answers/">MATLAB answers</a></li>
+</ul>
+</table>
+
+<!-- ======================================================================= -->
+<P>
+<div class="heading">Important Notes</div>
+<a href="Matlab.html" style="font-size:12px">back to top</a><br/>
+
+<!-- ======================================================================= -->
+<!-- Quick links  -->
+<table border=0 cellpadding=10> 
+<tr><td width=25%>
+<br>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><A href="#licenses">Licenses</div>
+<div class="tocItem"><A href="#modules">Modules</a></div>
+<!-- ======================================================================= -->
+<td>
+
+</table>
+
+<!-- ================== -->
+<P>
+<div class="subheading"><a name="licenses"><B>Licenses</b></a></div>
+
+<P>
+Licenses are checked out automatically when you use a MATLAB or its toolboxes.  Licenses are returned when your sinterative session ends. There is no maximum number of MATLAB sessions a single user can run. However, as more than one instance of Matlab can run within a single interactive session, users must make sure they request increased resource allocation for their interactive session if more than one Matlab instance will be launched.      
+<P>
+
+<!-- ================== -->
+<P>
+<div class="subheading"><a name="modules"><B>Modules</b></a></div>
+<P>
+As with other applications on the HPC systems, MATLAB is managed using <a href="/apps/modules.html">environment modules</a>. To see which versions of MATLAB and third-party toolboxes are available, type:
+<P>
+<div class="term"><pre>
+[user@cn1234 ~]$ <b>module avail matlab</b>
+----------------------------------------------------------------
+   matlab-eeglab/2022.0    matlab-spm/12.7219    matlab/2022a    matlab/2023a
+
+Module defaults are chosen based on Find First Rules due to Name/Version/Version modules found in the module tree.
+See https://lmod.readthedocs.io/en/latest/060_locating.html for details.
+
+If the avail list is too long consider trying:
+
+"module --default avail" or "ml -d av" to just list the default modules.
+"module overview" or "ml ov" to display the number of modules for each name.
+
+Use "module spider" to find all possible modules and extensions.
+Use "module keyword key1 key2 ..." to search for all possible modules matching any of the "keys".
+
+[user@cn1234 ~]$ 
+</pre></div>
+
+<p class="alert">
+Please note that, while we have installed several third-party toolboxes in the past, the best place to install third-party toolboxes is your data directory. Please email us at staff@hpc.nih.gov if you require assistance with third-party toolbox installation.
+</p>
+
+
+<P>
+To select a module, type:
+<P>
+<div class="term"><pre>
+[user@cn1234 ~]$ <b>module load matlab/[ver]</b>
+</pre></div>
+
+<p>where [ver] is an optional version specification. Without [ver] the default MATLAB version is loaded.
+
+<p class="alert">
+Please note that, for 2017a and later, the complete set of third-party toolboxes will not be automatically loaded unless you choose the <tt>matlab.all</tt> module or load them individually.
+</p>
+
+To load a third-party toolbox, like SPM, for use with MATLAB >= 2017a, do:
+
+<div class="term"><pre>
+[user@cn1234 ~]$ <b>module load matlab-spm</b>
+</pre></div>
+
+<p>
+If you have already begun a MATLAB session, there is no need to restart.
+The loading can be accomplished using the <tt>nih_matmod</tt> function:
+</p>
+
+<div class="term"><pre>
+>> <b>nih_matmod avail</b>
+
+eeglab/2022.0    spm/12.7219
+
+Module defaults are chosen based on Find First Rules due to Name/Version/Version modules found in the module tree.
+See https://lmod.readthedocs.io/en/latest/060_locating.html for details.
+
+If the avail list is too long consider trying:
+
+"module --default avail" or "ml -d av" to just list the default modules.
+"module overview" or "ml ov" to display the number of modules for each name.
+
+Use "module spider" to find all possible modules and extensions.
+Use "module keyword key1 key2 ..." to search for all possible modules matching
+any of the "keys".
+
+>> <b>nih_matmod load spm</b>
+</pre></div>
+
+<p>
+Use <b><tt>help nih_matmod</tt></b> from within MATLAB for complete usage information.
+</p>
+
+<P>
+<div class="heading"><a name="intonbio"></a>Interactive sessions on Biowulf</a></div>
+<a href="Matlab.html" style="font-size:12px">back to top</a><br/>
+<P>
+Because MATLAB is not permitted on the Biowulf login node, users must request resources on a compute node. 
+<P>
+First, establish an ssh or X-Windows connection to the Biowulf login node. When running an X-Windows session on Biowulf, remember to use the <tt>-X</tt> or <tt>-Y</tt> option with your <tt>ssh</tt> command.
+<P>
+Then use the <tt>sinteractive</tt> command to request resources on a compute node:
+<pre><div class="term">
+[user@biowulf ~]$ <B>sinteractive -c 8 --mem=10g </b> 
+salloc.exe: Pending job allocation 15323416
+salloc.exe: job 15323416 queued and waiting for resources
+salloc.exe: job 15323416 has been allocated resources
+salloc.exe: Granted job allocation 15323416
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1640 are ready for job
+[user@cn1640 ~]$
+</div></pre>
+<P>
+By default, the <tt>sinteractive</tt> command only allocates a few cpus and a small amount of memory. You can request more cpus and memory with the <tt>--cpus-per-task=ncpus</tt> and <tt>mem=GBg</tt> options respectively.  See <tt>sinteractive -h</tt> for a complete list of options.  
+
+<!-- ================== -->
+<br>
+<P>
+<div class="subheading"><a name="gui"></a><B>Graphical Interactive sessions</b></a></div>
+<P>
+To run the MATLAB integrated development environment (IDE also known as the Java virtual machine), an <a href="/docs/nx.html">X Windows</a> connection is required. NoMachine's <a href="/docs/nx.html">NX</a> is the X-Windows client currently recommended by staff for Windows and Mac. When used to start a GNOME desktop session, NX is optimized to provide a fast, responsive MATLAB environment.
+
+<p class="alert"><B>HINT:</b> Debugging X-Windows clients<br>
+If you have trouble starting the MATLAB IDE, ensure that your X-Windows client is working properly by typing 'xclock' in the shell. This shouldn't be an issue with a GUI based client like NX.
+
+<P>
+After connecting to a compute node, load the MATLAB module.
+
+<P>
+<div class="term"><pre>
+[user@cn1234 ~]$ <b>module load matlab</b>
+[user@cn1234 ~]$ <b>matlab&</b>
+</pre></div>
+
+<p>Including <b>&</b> in your command above allows you to continue using the terminal while the MATLAB application is running. You should now see a MATLAB splash screen followed by the IDE:
+<center><p align=center><img src="/images/matlab-2021a-splash-screen.png" alt="MATLAB splash image" width=50%></p></center>
+    
+<p> <center><img src="/images/matlab_screenshot.png" alt="MATLAB desktop image" width=75%></center></p>
+
+<!-- ================== -->
+<P>
+<div class="subheading"><a name="cmd"></a><B>Interactive shell sessions</b></a></div>
+<P>
+It is also possible to run MATLAB interactively on the command-line, without the IDE. This would be useful if you do not wish to use X-Windows.</p>
+
+<pre><div class="term">
+[user@cn1234 ~]$ <b>module load matlab</b>
+[user@cn1234 ~]$ <b>matlab -nodisplay</b>
+
+                                              < M A T L A B (R) >
+                                     Copyright 1984-2021 The MathWorks, Inc.
+                                R2021a Update 3 (9.10.0.1684407) 64-bit (glnxa64)
+                                                  May 27, 2021
+
+ 
+To get started, type doc.
+For product information, visit www.mathworks.com.
+ 
+>> <b>quit</b>
+
+[user@cn1234 ~]$</div></pre> 
+
+<!-- ======================================================================= -->
+<P>
+<div class="heading"><a name="shell"></a>MATLAB in shell scripts</a></div>
+<a href="Matlab.html" style="font-size:12px">back to top</a><br/>
+
+<!-- ======================================================================= -->
+<!-- Quick links  -->
+<table  border=0 cellpadding=10> 
+<tr><td width=25%>
+<br>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><A href="#hardcoded">MATLAB commands and variables hardcoded into shell script</a></div>
+<div class="tocItem"><A href="#passvars">Passing MATLAB variables to a shell script</a></div>
+<div class="tocItem"><A href="#functions">MATLAB functions in shell scripts</a></div>
+<!-- ======================================================================= -->
+
+<td>
+<P>
+</table>
+
+<!-- ================== -->
+<br>
+<P>
+<div class="subheading"><a name="hardcoded"></a><B>MATLAB commands and variables hardcoded into shell script</b></a></div>
+<P>
+The simplest (but perhaps least useful) way to run a MATLAB job in the background would be to hardcode variables and MATLAB commands directly into a script. Even though this method is not very practical it serves as a useful example to MATLAB users unfamiliar with bash scripting:
+
+<div class="term">
+<pre>
+#!/bin/bash
+# this file is called hyp1.sh
+ 
+module load matlab
+matlab -nojvm<<-EOF
+    a = 3;                                    
+    b = 4;
+    H = sqrt(a^2 + b^2)
+    exit
+EOF
+</pre></div>
+<p> You could run this job in the background of an interactive session like so: 
+
+<div class="term">
+<pre>
+[user@cn0001 ~]$ <b>./hyp1.sh > hyp1_output 2>&1 &</b>
+</pre></div>
+
+<p class="alert"><B>HINT:</b><tt> Permission denied</tt> error<br>
+If you receive an error such as this: 
+<br>
+<tt>bash: ./hyp1.sh: Permission denied</tt>
+<br>
+Use the <tt>chmod</tt> command to make the file executable, like so:
+<br>
+<tt>[user@cn0001]$ <b>chmod 755 hyp1.sh</b></tt>
+<p>
+
+<P>
+In this case, the output will be redirected to <tt>hyp1_output</tt>. The computation will proceed in the background allowing the you to run another session of MATLAB interactively or run other MATLAB programs in the background. If you use this strategy to run a few instances of MATLAB in parallel you must be careful not to overload your allocated CPUs.
+</p>
+
+<p class="alert"><B>HINT:</b><tt>`EOF'</tt> warning<br>
+If a message similar to the following is found in your output file, make sure to remove any trailing whitespace from both of the <tt>EOF</tt> lines.
+<br>
+<tt>/var/spool/slurm/slurmd/job48226/slurm_script: line 10: warning: here-document at line 5 delimited by end-of-file (wanted `EOF')</tt><p>
+
+<!-- ================== -->
+<P>
+<div class="subheading"><a name="passvars"></a><B>Passing MATLAB variables to a shell script</b></a></div>
+<P>
+You can set up a batch script that contains MATLAB commands and pass variables to the job at the time of submission. This might be useful for very simple MATLAB analyses. For example:
+
+<div class="term"><pre>
+#!/bin/bash
+# this file is called hyp2.sh
+ 
+a=$1
+b=$2
+echo "a is $a, b is $b";
+
+module load matlab
+matlab -nojvm<<-EOF
+    H = sqrt($a^2 + $b^2)
+    exit
+EOF
+</pre></div>
+
+<p>In this script the values of <tt>a</tt> and <tt>b</tt> are expected to be passed from the command line.  This is accomplished like so:
+
+<div class="term"><pre>
+[user@cn0001 ~]$ <b>./hyp2.sh 22 5 > hyp2_output 2>&1 &</b>
+</pre></div>
+
+<P>
+Similar to the previous example, the output is directed to <tt>hyp2_output</tt>.
+
+<!-- ================== -->
+<P>
+<div class="subheading"><a name="functions"></a><B>MATLAB functions in shell scripts</b></a></div>
+<P>
+Of course it is possible to write your own functions and call them in a shell script using the same syntax as above. Let's assume you write a function and save it in <tt>hyp.m</tt>
+
+<div class="term"><pre>
+<span class="keyword">function</span> H = hyp(a,b)
+<span class="comment">% return the hypotenuse (H)</span>
+<span class="comment">% from the legs (a and b)</span>
+
+<span class="comment">% convert chars to doubles</span>
+<span class="comment">% (this is necessary when</span>
+<span class="comment">% code is compiled)</span>
+<span class="keyword">if</span> ischar(a), a = str2double(a); <span class="keyword">end</span>
+<span class="keyword">if</span> ischar(b), b = str2double(b); <span class="keyword">end</span>
+
+H = sqrt(a^2 + b^2)
+</pre></div>
+
+<P>
+To run the code in the background, you could write a script like so:
+<div class="term"><pre>
+#!/bin/bash
+# this file is called hyp3.sh
+ 
+a=$1
+b=$2
+
+module load matlab
+matlab -nojvm<<-EOF
+    cd /full/path/to/hyp.m
+    hyp($a,$b);
+    exit
+EOF
+</pre></div>
+
+<P>
+Similar to the last example you would run this code in the backround with:
+<div class="term"><pre>
+[user@cn0001 ~]$ <b>./hyp3.sh 8 4 > hyp3_output 2>&1 &</b>
+</pre></div>
+
+<P>
+This method allows you to develop analyses of any complexity in MATLAB (rather than hardcoding commands into shell scripts) and run them in the background of an interactive session. 
+
+<P>
+One common approach is to write a MATLAB function that accepts a file name as input, loads the file (containing all variables and data), performs some analysis, and then saves the analyzed data to a new <tt>.mat</tt> file. This minimizes the complexity of the input that must be supplied through a shell script. In this case, the <tt>_output</tt> file will only be used for diagnosing a debugging problems, because the output will be saved to a new <tt>.mat</tt> file specified by the user in the function.  
+
+<!-- ================== -->
+<br>
+<P>
+<div class="heading"><a name="compiledbatch"></a>Submitting jobs to Slurm</a></div>
+<a href="Matlab.html" style="font-size:12px">back to top</a><br/>
+<P>
+Long running jobs, or jobs that are "embarrassingly parallel" should be submitted to the batch system. To submit matlab code as a batch job, you should write another a shell script as follows:
+<div class="term"><pre>
+#!/bin/bash
+# this file is called hyp4.sh
+#SBATCH --job-name=hypotenuse4
+#SBATCH --mail-type=BEGIN,END
+
+module load matlab
+ 
+matlab -nodisplay -nodesktop -nojvm -nosplash&lt;&lt;EOF
+   cd /data/user
+   hyp(3,4)
+   exit
+EOF
+</pre></div>
+<P>
+Note the optional inclusion of <tt>#SBATCH</tt> options that set the job name and email alerts. You would then submit the job like so:
+<div class="term"><pre>
+[user@biowulf ~]$ <b>sbatch /data/user/hyp4.sh</b>
+</pre></div>
+<P>
+For more information on using the <tt>sbatch</tt> command for SLURM, visit the <a href="/docs/userguide.html#submit">Job Submission</a> section of the <a href="/docs/userguide.html">Biowulf User Guide</a>.
+
+<!-- ======================================================================= -->
+<br>
+<P>
+<div class="heading"><a name="swarm"></a>Swarm of jobs on Biowulf</a></div>
+<a href="Matlab.html" style="font-size:12px">back to top</a><br/>
+
+<P>
+The <a href="/apps/swarm.html"><tt>swarm</tt> program</a> is a convenient way to submit large numbers of jobs. With <tt>swarm</tt> you can run several instances of your compiled MATLAB code distributed across the cluster. You create a swarm command file containing a single line for each independent job. The <tt>swarm</tt> program will then package up the commands into batch jobs and submit them to Slurm for you.
+<P>
+To run a swarm based on the example above, create a swarm command file named <tt>hyp.swarm</tt> with each line containing a single command:</p>
+
+<div class="term">
+<pre>
+#SWARM --job-name=hypothenuse4
+matlab -nodisplay -nodesktop -nojvm -nosplash -r 'cd /data/${USER}; hyp(3,4); exit;'
+matlab -nodisplay -nodesktop -nojvm -nosplash -r 'cd /data/${USER}; hyp(5,6); exit;'
+matlab -nodisplay -nodesktop -nojvm -nosplash -r 'cd /data/${USER}; hyp(7,8); exit;'
+</pre></div>
+
+<P>
+Submit this file to the batch system with the command:
+</p>
+
+<div class="term">
+<pre>
+[user@biowulf ~]$ <b>swarm -f hyp.swarm --module=matlab</b>
+</pre></div>
+<P>
+Please note that, with this type of swarm, <a href="/apps/swarm.html#p">subjob packing (<tt>-p</tt> option)</a> should <strong>not</strong> be used. <a href="/apps/swarm.html#bundling">Bundling (<tt>-b</tt>)</a>, however, would work as expected.
+
+<!-- ======================================================================= -->
+<br>
+<div class="heading"><a name="gpu"></a>Using the GPUs with Matlab</a></div>
+<a href="Matlab.html" style="font-size:12px">back to top</a><br/>
+<P>
+Several toolboxes can use GPU resources. Some of those toolboxes are: Statistics and Machine Learning, Image processing, Deep Learning, Computer Vision, Signal Processing, Wavelet, Curve Fitting, Parallel Computing. Many functions in the Deep Learning Toolbox use GPU resources automatically (see Matlab's <a href="https://www.mathworks.com/help/parallel-computing/run-matlab-functions-on-a-gpu.html?searchHighlight=gpu&s_tid=srchtitle#mw_9dca79d1-506b-4229-a4d2-3f243b075629">Deep Learning with GPUs</a>). For all other toolboxes users must explicitly elect to use GPU resources by passing a <a href="https://www.mathworks.com/help/parallel-computing/gpuarray.html">gpuArray</a> data structure to a given function. For further details on how to use GPU with Matlab, please see Matlab's Help Center section on how to <a href="https://www.mathworks.com/help/parallel-computing/run-matlab-functions-on-a-gpu.html">Run Matlab Functions on a GPU</a>. 
+
+
+<!-- ======================================================================= -->
+<br>
+<div class="heading"><a name="parcomp"></a>Parallel Computing Toolbox</a></div>
+<a href="Matlab.html" style="font-size:12px">back to top</a><br/>
+<P>
+The MATLAB Parallel Computing Toolbox enables you to develop distributed and parallel MATLAB applications and execute them using multiple cores in a single node or to utilize the graphical processing units (GPUs) of a properly equipped machine. 
+
+<P>
+Please NOTE:
+<br>
+1. In it's current configuration, the Parallel Computing Toolbox does not scale beyond a single node. This will allow your job to run up to 16 times faster on the norm partition. This may be sufficient for many jobs.  But this toolbox will not allow you to run jobs on multiple nodes. To run jobs of larger scale, use sbatch or swarm.   
+<br>
+2. Within MATLAB and in online documentation this toolbox is referred to as the Parallel Computing Toolbox.  Within the licensing software it is referred to as the Distributed Processing Toolbox.  There is a related Mathworks product that is not currently installed on our systems that extends the functionality of the Parallel Computing Toolbox called the Distributed Computing Server.  This has been the source of confusion.  
+
+<p>See <a href="/apps/Matlabdct.html">MATLAB Parallel Computing Toolbox</a> for examples on using the toolbox on biowulf.
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

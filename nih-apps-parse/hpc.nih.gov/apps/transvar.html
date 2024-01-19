@@ -1,0 +1,106 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = ' Transvar on Biowulf';</script>
+    <div class="title"> Transvar on Biowulf</div>    
+    <table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+          <div class="tocItem"><a href="#int">Interactive Job on Biowulf</a></div>
+          <div class="tocItem"><a href="#serial">Single Batch Job on Biowulf</a></div>
+          <div class="tocItem"><a href="#swarm">Swarm of Jobs</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></td></tr></table>
+    
+    <p><strong>TransVar</strong> is a versatile annotator for 3-way conversion and annotation among genomic characterization(s) of mutations (e.g., chr3:g.178936091G&gt;A) and transcript-dependent annotation(s) (e.g., PIK3CA:p.E545K or PIK3CA:c.1633G&gt;A, or NM_006218.2:p.E545K, or NP_006266.2:p.G240Afs*50). It is particularly designed with the functionality of resolving ambiguous mutation annotations arising from differential transcript usage. TransVar keeps awareness of the underlying unknown transcript structure (exon boundary, reference amino acid/base) while performing reverse annotation (via fuzzy matching from protein level to cDNA level). TransVar has the following features:</p>
+    <ul>
+      <li>supports HGVS nomenclature</li>
+      <li>supports input from gene name, transcript ID, protein ID, UniProt ID and other aliases.</li>
+      <li>supports both left-alignment and right-alignment convention in reporting indels and duplications.</li>
+      <li>supports annotation of a region based on a transcript-dependent characterization</li>
+      <li>supports mutations at both coding region and intronic/UTR regions</li>
+      <li>supports noncoding RNA annotation</li>
+      <li>supports VCF inputs</li>
+      <li>supports long haplotype decomposition</li>
+      <li>supports single nucleotide variation (SNV), insertions and deletions (indels) and block substitutions</li>
+      <li>supports transcript annotation from commonly-used databases such as Ensembl, NCBI RefSeq and GENCODE etc</li>
+      <li>supports GRCh36, 37, 38 (human), GRCm38 (mouse), NCBIM37 (mouse)</li>
+      <li>supports &gt;60 other genomes available from Ensembl</li>
+      <li>functionality of forward annotation.</li>
+    </ul>
+<p><strong>Note 1:</strong></p>
+<p>Transvar Hg19 files are located under /fdb/transvar
+<p><strong>Note 2: </strong>
+<p>To avoid /home/$USER disk quota filled up, create a link to point '/home/$USER/.transvar.download' to '/data/$USER/transvar' first.
+<p><strong>Note 3: </strong>
+<p>In version 2.5.9 and newer, download of new/current versions of the annotations is broken.  Older versions can be downloaded either manually or by temporarily using an older version, such as 2.4, to access them from the old web site.
+<p><a class="navbar-safe-anchor"  Name="int"></a>
+<div class="heading">
+          Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<P>
+    <div class="term">
+      <pre>
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load transvar</b>
+
+[user@cn3144 ~]$ <strong>transvar config --download_anno --refversion hg19</strong>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre></div>
+
+<p><a class="navbar-safe-anchor"  Name="serial"></a>
+<div class="heading">Submitting a single batch job</div>
+    
+<p>1. Create a script file. The file will contain the lines similar to the
+      lines below. Modify the path of program location before running.</p>
+    
+    <div class="term">
+      <pre>#!/bin/bash 
+
+module load transvar
+cd /data/$USER/somewhere
+transvar config --download_anno --refversion hg19
+....
+....</pre></div>
+
+    <p>2. Submit the script on Biowulf. </p>
+      
+ <div class="term">
+$ sbatch myscript
+</div>
+  </p>
+    <p></p><a class="navbar-safe-anchor"  Name="swarm"></a>
+    <div class="heading">Submitting a swarm of jobs</div>
+
+<p>Using the 'swarm' utility, one can submit many jobs to the cluster to run concurrently. </p>
+<p>Set up a swarm command file (eg /data/$USER/cmdfile). Here is a sample file:</p>
+
+<pre class="term">cd /data/user/run1/; transvar config --download_anno --refversion hg19
+cd /data/user/run2/; transvar config --download_anno --refversion hg19
+cd /data/user/run3/; transvar config --download_anno --refversion hg19
+........
+</pre>
+    
+  <p>The <strong>-f</strong> flag is required to specify swarm file name.<br>
+  <p>Submit the swarm job:
+<pre class="term">$ swarm -f swarmfile --module transvar</pre>
+  <p>- Use -g flag for more memory requirement (default 1.5gb per line in swarmfile)</p>
+  <p>For more information regarding running swarm, see <a href="http://hpc.cit.nih.gov/apps/swarm.html">swarm.html</a></p>
+<p>&nbsp;</p>
+<p><a class="navbar-safe-anchor"  Name="doc"></a>
+    <div class="heading">Documentation</div>
+    
+<p><a href="https://bitbucket.org/wanding/transvar">https://bitbucket.org/wanding/transvar</a></p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

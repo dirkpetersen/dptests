@@ -1,0 +1,152 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "alphalink";</script>
+<style>
+    .hl { background-color: #ffff99; }
+    code {background-color: #eeeeee; border: 1px solid #bbbbbb; padding: 0;}
+    dt {font-weight: bold; margin-top: 5px;}
+    dd {padding-left: 2px; border-left: 1px solid #bbbbbb;}
+    .btt {border: 1px solid silver;
+          background-color: white;
+          padding: 5px;
+          position: relative;
+          margin: 5px 0px 10px 10px;
+          float: right;
+          top: -25px;
+          left: 10px;
+          }
+</style>
+
+<div class="title">AlphaLink on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p> AlphaLink predicts protein structures using deep learning given a sequence and a set of experimental contacts. 
+ It extends OpenFold with crosslinking MS data or other experimental distance restraint by explicitly incorporating
+ them in the OpenFold architecture.</p>
+
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+      "Protein structure prediction with in-cell photo-crosslinking mass spectrometry and deep learning", Nat. Biotech. XXX doi:10.1038/s41587-023-01704-z.
+      <a href="https://pubmed.ncbi.nlm.nih.gov/36941363/">PubMed</a>&nbsp;|&nbsp
+      <a href="https://www.nature.com/articles/s41587-023-01704-z">Journal</a>
+  </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li>AlphaLink on <a href="https://github.com/lhatsk/AlphaLink">GitHub</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <code>alphalink</code> (see <a href="/apps/modules.html">the modules page</a> 
+        for more information)</li>
+    <li>Some steps in an analysis require GPU</li>
+    <li>Example files in <code>$ALPHALINK_TEST_DATA</code></li>
+    <li>Environment variables set:
+        <ul>
+            <li><code>ALPHALINK_CP_[CACA|DIST]</code> - AlphaLink model checkpoint files</li>
+            <li><code>[UNIREF90|MGNIFY|PDB70|UNICLUST30]_PATH</code> - Path to Alphafold DBs</li>
+            <li><code>[JACKHMMER|HHBLITS|HHSEARCH|KALIGN]_BIN</code> - Required programs</li>
+        </ul>
+    </li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+
+<p>In the following example we will predict a structure from a single FASTA sequence and the
+ crosslinking mass-spectrometry residue pairs.</p>
+
+<h3>AlphaLink structure prediction</h3>
+
+<h4>AlphaLink with CSV crosslink restraints</h4>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:1,lscratch:100 --constraint='gpup100|gpuv100|gpuv100x|gpua100' -c 8 --mem=32g</b>
+[user@cn3144]$ <b>module load alphalink/1.0</b>
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>cp -r ${ALPHALINK_TEST_DATA:-none}/* .</b>
+[user@cn3144]$ <b>time predict_with_crosslinks.py CDK/fasta/CDK.fasta CDK/crosslinks/mixture.csv \
+                    --checkpoint_path $ALPHALINK_CP_CACA \
+                    --uniref90_database_path $UNIREF90_PATH \
+                    --mgnify_database_path $MGNIFY_PATH \
+                    --pdb70_database_path $PDB70_PATH \
+                    --uniclust30_database_path $UNICLUST30_PATH \
+                    --jackhmmer_binary_path $JACKHMMER_BIN \
+                    --hhblits_binary_path $HHBLITS_BIN \
+                    --hhsearch_binary_path $HHSEARCH_BIN \
+                    --kalign_binary_path $KALIGN_BIN</b>
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Loaded OpenFold parameters at /fdb/alphalink/finetuning_model_5_ptm_CACA_10A.pt...
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Generating alignments for sp|P24941|CDK2_HUMAN...
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Loaded 9 restraints...
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Running inference for sp|P24941|CDK2_HUMAN...
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Inference time: 56.18929745070636
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Output written to /lscratch/0000000/predictions/sp|P24941|CDK2_HUMAN_model_5_ptm_crosslinks_unrelaxed.pdb...
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Relaxed output written to /lscratch/0000000/predictions/sp|P24941|CDK2_HUMAN_model_5_ptm_crosslinks_relaxed.pdb...
+INFO:/usr/local/apps/alphalink/1.0/AlphaLink/predict_with_crosslinks.py:Model output written to /lscratch/0000000/predictions/sp|P24941|CDK2_HUMAN_model_5_ptm_crosslinks_output_dict.pkl...
+real    44m12.596s
+user    159m13.407s
+sys     4m3.506s
+[user@cn3144]$ <b>ls -lh predictions</b>
+total 153M
+-rw-r--r-- 1 user group 153M Oct 17 12:26 'sp|P24941|CDK2_HUMAN_model_5_ptm_crosslinks_output_dict.pkl'
+-rw-r--r-- 1 user group 384K Oct 17 12:26 'sp|P24941|CDK2_HUMAN_model_5_ptm_crosslinks_relaxed.pdb'
+-rw-r--r-- 1 user group 190K Oct 17 12:25 'sp|P24941|CDK2_HUMAN_model_5_ptm_crosslinks_unrelaxed.pdb'
+</pre>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<h3>Prediction of structure with crosslinking constraints - at most 10 concurrent jobs</h3>
+
+<pre class="term">
+#! /bin/bash
+
+set -e
+
+module load alphalink
+
+predict_with_crosslinks.py protein.fasta crosslinks.csv \
+                    --checkpoint_path $ALPHALINK_CP_CACA \
+                    --uniref90_database_path $UNIREF90_PATH \
+                    --mgnify_database_path $MGNIFY_PATH \
+                    --pdb70_database_path $PDB70_PATH \
+                    --uniclust30_database_path $UNICLUST30_PATH \
+                    --jackhmmer_binary_path $JACKHMMER_BIN \
+                    --hhblits_binary_path $HHBLITS_BIN \
+                    --hhsearch_binary_path $HHSEARCH_BIN \
+                    --kalign_binary_path $KALIGN_BIN
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sbatch --cpus-per-task=8 --mem=32g --time=3:00:00 \
+                   --gres=lscratch:50,gpu:1 \
+                   --partition=gpu \
+                   --constraint='gpup100|gpuv100|gpuv100x|gpua100' \
+                   alphalink.sh</b>
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

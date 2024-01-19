@@ -1,0 +1,151 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'cgpBattenberg on Biowulf';</script>
+<div class="title">cgpBattenberg on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p> An installation helper, perl wrapper and the R program Battenberg which
+detects subclonality and copy number in matched NGS data.</p>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>cgpBattenberg <a href="https://github.com/cancerit/cgpBattenberg">GitHub repo</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: cgpBattenberg (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>cgpBattenberg.pl can use multiple threads (<code>-t</code>). Please match the number of threads with
+    <li>cgpBattenberg is part of the Cancer Genome Project and is closely related to the programs <a href="/apps/BRASS.html">BRASS</a> and <a href="/apps/ascatNgs.html">Ascat NGS</a> as well as the utilites <a href="https://github.com/cancerit/VAGrENT">VAGrENT</a> and <a href="https://github.com/cancerit/PCAP-core">PCAP-core</a>. All of these programs can be added to your path using the <tt>cancerit-wgs</tt> module. To get the most recent versions of all of these, use the <tt>cancerit-wgs/latest</tt> module version.
+    the number of allocated CPUs</li>
+    <li>Reference data in <code>/fdb/cancerit-wgs/cgpBattenberg/</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session. Note
+that the cgpBattenberg.pl is part of the cancerit-wgs tools.</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load cgpBattenberg</b>
+Usage:
+    battenberg.pl [options]
+
+      Required parameters:
+        -outdir                -o   Folder to output result to.
+        -reference             -r   Path to reference genome index file *.fai
+        -tumbam                -tb  Path to tumour bam file
+                                     - when '-a' defined sample name
+        -normbam               -nb  Path to normal bam file
+                                     - when '-a' defined sample name
+        -gender                -ge  Gender, XX, XY or L (see -gl)
+        -impute-info           -e   Location of the impute info file
+        -thousand-genomes-loc  -u   Location of the directory containing 1k genomes data
+        -ignore-contigs-file   -ig  File containing contigs to ignore
+                                    - specifically male sex chromosome, mitochondria and non primary contigs
+        -gc-correction-loc     -gc  Path to gc correction files
+
+      Optional parameters:
+[...snip...]
+
+[user@cn3144]$ <b>battenberg.pl -p output \
+    -r /fdb/igenomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa \
+    -tb tumor.bam \
+    -nb normal.bam \
+    -ge XX \
+    -impute-info /fdb/cancerit-wgs/cgpBattenberg/impute/impute_info.txt \
+    -thousand-genomes-loc /fdb/cancerit-wgs/cgpBattenberg/1000genomesloci \
+    -ignore-contigs-file ignore_contigs \
+    -gc-correction-loc /fdb/cancerit-wgs/cgpBattenberg/battenberg_wgs_gc_correction_1000g_v3 \
+    -species Human -assembly 37 \
+    -t $SLURM_CPUS_PER_TASK
+</b>
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<p><span style="background-color: #ffff99">Notes</span>:</p>
+<ul>
+    <li>The ignore contigs file should include the Y, MT, and non-primary contigs. Running without
+    this will result in errors.</li>
+    <li>Increasing the number of threads results in a proportional increase in the amount of memory
+    required. In one test I was able to run 6 threads with 40GB of memory with tumor and normal files
+    of approximately 25GB.</li>
+</ul>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. cgpBattenberg.sh), which uses the input file 'cgpBattenberg.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load cgpBattenberg
+battenberg.pl -p output \
+    -r /fdb/igenomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa \
+    -tb tumor.bam \
+    -nb normal.bam \
+    -ge XX \
+    -impute-info /fdb/cancerit-wgs/cgpBattenberg/impute/impute_info.txt \
+    -thousand-genomes-loc /fdb/cancerit-wgs/cgpBattenberg/1000genomesloci \
+    -ignore-contigs-file ignore_contigs \
+    -gc-correction-loc /fdb/cancerit-wgs/cgpBattenberg/battenberg_wgs_gc_correction_1000g_v3 \
+    -species Human -assembly 37 \
+    -t $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=30g cgpBattenberg.sh</pre>
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. cgpBattenberg.swarm). For example:</p>
+
+<pre class="term">
+battenberg.pl -p output -tb tumor1.bam -nb normal1.bam ... -t $SLURM_CPUS_PER_TASK 
+battenberg.pl -p output -tb tumor2.bam -nb normal2.bam ... -t $SLURM_CPUS_PER_TASK 
+battenberg.pl -p output -tb tumor3.bam -nb normal3.bam ... -t $SLURM_CPUS_PER_TASK 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f cgpBattenberg.swarm -g 30 -t 16 --module cgpBattenberg</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module cgpBattenberg <td>Loads the cgpBattenberg module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

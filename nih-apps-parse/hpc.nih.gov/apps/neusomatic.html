@@ -1,0 +1,154 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'NeuSomatic on Biowulf';</script>
+<div class="title">NeuSomatic on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+NeuSomatic is based on deep convolutional neural networks for accurate somatic mutation detection. With properly trained models, it can robustly perform across sequencing platforms, strategies, and conditions. NeuSomatic summarizes and augments sequence alignments in a novel way and incorporates multi-dimensional features to capture variant signals effectively. It is not only a universal but also accurate somatic mutation detection method.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li><a href="https://www.nature.com/articles/s41467-019-09027-x">Sahraeian, Sayed Mohammad Ebrahim, et al. "Deep convolutional neural networks for accurate somatic mutation detection." <i>Nature communications</i> 10.1 (2019): 1041.</a></li>
+<li><a href="https://www.biorxiv.org/content/10.1101/667261v2">Sahraeian, Sayed Mohammad Ebrahim, et al. "Robust Cancer Mutation Detection with Deep Learning Models Derived from Tumor-Normal Sequencing Data." <i>BioRxiv</i> (2019): 667261.</a></li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/bioinform/neusomatic">Neusomatic Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>neusomatic</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>This is a GPU app. (Will default to CPU if <tt>$CUDA_VISIBLE_DEVICES</tt> is unset or empty.)
+<li>Newer versions of neusomatic are installed as a container.  
+<li>Environment variables set when the module is loaded. (NOTE: these refer to locations within the neusomatic container and do not exist on the host. They can be passed as arguments to CLI options at runtime. See examples below.)<!--for ones users should be aware of -->
+  <ul>
+    <li><tt>NEUSOMATIC_BIN=/opt/neusomatic/neusomatic/bin</tt></li>
+    <li><tt>NEUSOMATIC_MODELS=/opt/neusomatic/neusomatic/models</tt></li>
+    <li><tt>NEUSOMATIC_SCAN_ALIGNMENTS=/opt/neusomatic/neusomatic/bin/scan_alignments</tt></li>
+  </ul>
+<li>You can use the <tt>--checkpoint</tt> flag to start training neusomatic from a pre-trained model. See the main site above for more information about this and other options. 
+<li>Example files are maintained in the <a href="https://github.com/bioinform/neusomatic/tree/master/test">GitHub repository under "tests".</a> A modified version of the <tt>run_test.sh</tt> script that is better attuned to the Biowulf environment can be found at <tt>/usr/local/apps/neusomatic/0.2.1/neusomatic/test</tt>
+<li>You must ensure that the name of the reference matches that in the header of the <tt>*.bam</tt> file or you will receive difficult to understand errors.
+<li>The neusomatic directory can be copied outside of your home directory. 
+<li>You can run your own data by replacing the input files, adjusting the parameters and choosing the proper pretrained model in the example script. This may be the easiest way to get started analyzing your own data. 
+<li>For best performance, you probably need to train a model on your own data set.  
+<li>If you receive errors like <tt>assert(fasta_file.fetch((c), p - 1, p - 1 + len(r)).upper() == r)</tt> you should check to make sure that your <tt>truth_vcf</tt> file does not container lowercase letters in the <tt>REF</tt> and <tt>ALT</tt> fields. 
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:k80:1,lscratch:10 --mem=20g -c14</b>
+salloc.exe: Pending job allocation 40260664
+salloc.exe: job 40260664 queued and waiting for resources
+salloc.exe: job 40260664 has been allocated resources
+salloc.exe: Granted job allocation 40260664
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4192 are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+
+[user@cn4192 ~]$ <b>cp -r /usr/local/apps/neusomatic/0.2.1/neusomatic ~/</b>
+
+[user@cn4192 ~]$ <b>cd ~/neusomatic/test/</b>
+
+[user@cn4192 test]$ <b>module load neusomatic</b>
+[+] Loading neusomatic  0.2.1  on cn4192
+[+] Loading singularity  on cn4192
+
+[user@cn4192 test]$ <b>./run_test.sh</b>
+INFO 2019-10-24 17:23:17,745 __main__             Namespace(dbsnp_to_filter=None, del_merge_min_af=0, del_min_af=0.05, ensemble_tsv=None, filter_duplicate=False, first_do_without_qual=False, good_ao=10, ins_merge_min_af=0, ins_min_af=0.05, long_read=False, matrix_base_pad=7, matrix_width=32, max_dp=100000, merge_r=0.5, min_ao=1, min_dp=5, min_ev_frac_per_col=0.06, min_mapq=10, mode='call', normal_bam='../normal.bam', num_threads=1, reference='Homo_sapiens.GRCh37.75.dna.chromosome.22.fa', region_bed='../region.bed', restart=False, scan_alignments_binary='/opt/neusomatic/neusomatic/bin/scan_alignments', scan_maf=0.05, scan_window_size=2000, snp_min_af=0.05, snp_min_ao=10.0, snp_min_bq=20.0, truth_vcf=None, tsv_batch_size=50000, tumor_bam='../tumor.bam', work='work_standalone')
+INFO 2019-10-24 17:23:17,745 preprocess           ----------------------Preprocessing------------------------
+INFO 2019-10-24 17:23:17,747 preprocess           Scan tumor bam (and extracting quality scores).
+INFO 2019-10-24 17:23:17,748 process_split_region Scan bam.
+INFO 2019-10-24 17:23:17,748 scan_alignments      -------------------Scan Alignment BAM----------------------
+[...]
+INFO 2019-10-24 17:23:22,886 __main__             use_cuda: True
+INFO 2019-10-24 17:23:22,886 call_neusomatic      -----------------Call Somatic Mutations--------------------
+INFO 2019-10-24 17:23:22,886 call_neusomatic      PyTorch Version: 1.1.0
+INFO 2019-10-24 17:23:22,886 call_neusomatic      Torchvision Version: 0.3.0
+INFO 2019-10-24 17:23:22,931 call_neusomatic      GPU calling!
+[...]
+INFO 2019-10-24 17:23:44,911 postprocess          Postprocessing is Done.
+### NeuSomatic stand-alone: SUCCESS! ###
+### NeuSomatic ensemble: SUCCESS! ###
+
+[user@cn4192 test]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 40260664
+
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. neusomatic.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load neusomatic
+preprocess.py \
+        --mode call \
+        --reference Homo_sapiens.GRCh37.75.dna.chromosome.22.fa \
+        --region_bed region.bed \
+        --tumor_bam tumor.bam \
+        --normal_bam normal.bam \
+        --work work_standalone \
+        --scan_maf 0.05 \
+        --min_mapq 10 \
+        --snp_min_af 0.05 \
+        --snp_min_bq 20 \
+        --snp_min_ao 10 \
+        --ins_min_af 0.05 \
+        --del_min_af 0.05 \
+        --num_threads 1 \
+        --scan_alignments_binary $NEUSOMATIC_BIN/scan_alignments
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --partition=gpu --gres=gpu:k80:1,lscratch:10 --mem=20g -c14 neusomatic.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. neusomatic.swarm). For example:</p>
+
+<pre class="term">
+preprocess.py --mode call --region_bed region1.bed --tumor_bam tumor.bam   --normal_bam ../normal.bam [...]
+preprocess.py --mode call --region_bed region2.bed --tumor_bam tumor.bam   --normal_bam ../normal.bam [...]
+preprocess.py --mode call --region_bed region3.bed --tumor_bam tumor.bam   --normal_bam ../normal.bam [...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f neusomatic.swarm -g 20 -t 14 --partition=gpu --gres=gpu:k80:1,lscratch:10 --module neusomatic</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module neusomatic</tt> <td>Loads the neusomatic module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

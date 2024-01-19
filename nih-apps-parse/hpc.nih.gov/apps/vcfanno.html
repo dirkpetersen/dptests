@@ -1,0 +1,84 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Vcfanno on HPC';</script>
+    <div class="title">Vcfanno on HPC</div>
+    <p>vcfanno annotates a VCF with any number of <em>sorted</em> and tabixed 
+      input BED, BAM, and VCF files in parallel. It does this by finding overlaps 
+      as it streams over the data and applying user-defined operations on the 
+      overlapping annotations. </p>
+    <p>In order to parallelize, work is broken down as follows. A slice (array) 
+      of query intervals is accumulated until a specified number is reached (usually 
+      ~5K-25K) or a gap cutoff is exceeded; at that point, the bounds of the region 
+      are used to perform a tabix (or any regional) query on the database files. 
+      This is all done in <a href="https://github.com/brentp/irelate">irelate</a>. 
+      vcfanno then iterates over the streams that result from the tabix queries 
+      and finds intersections with the query stream. This is a parallel chrom-sweep. 
+      This method avoids problems with chromosome order.</p>
+    <p>For VCF, values are pulled by name from the INFO field. For BED, values 
+      are pulled from (1-based) column number. For BAM, depth (count), &quot;mapq&quot; 
+      and &quot;seq&quot; are currently supported.</p>
+<h3><a Name="doc"></a></h3>
+<div class="heading">Documentation</div>
+    <ul>
+      <li><a href="https://github.com/brentp/vcfanno">https://github.com/brentp/vcfanno</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>vcfanno</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) </li>
+      <li>Example files: /usr/local/apps/vcfanno/version/example/</li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>    
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load vcfanno</strong>
+[user@cn3144 ~]$ <strong>vcfanno -lua example/custom.lua example/conf.toml example/query.vcf.gz</strong>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load vcfanno
+vcfanno -lua example/custom.lua example/conf.toml example/query.vcf.gz</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; vcfanno -lua example/custom.lua example/conf.toml example/query.vcf.gz
+cd dir2; vcfanno -lua example/custom.lua example/conf.toml example/query.vcf.gz
+cd dir3; vcfanno -lua example/custom.lua example/conf.toml example/query.vcf.gz
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm --module vcfanno</pre>
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

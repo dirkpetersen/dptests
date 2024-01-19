@@ -1,0 +1,3288 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'R/Bioconductor on Biowulf';</script>
+<link type="text/css" rel="stylesheet" href="../css/datatables.min.css" />
+<script type="text/javascript" language="javascript" src="../js/datatables.min.js"></script>
+<script type="text/javascript" language="javascript" src="../js/jquery.dataTables.min.js"></script>
+<style>
+    .hl { background-color: #ffff99; }
+    code {padding: 1px; background-color: #eeeeee; font-family: monospace;}
+    dt {font-weight: bold; margin-top: 5px;}
+    dd {padding-left: 2px; border-left: 1px solid #bbbbbb;}
+    .btt {border: 1px solid silver;
+          background-color: white;
+          padding: 5px;
+          position: relative;
+          margin: 5px 0px 10px 10px;
+          float: right;
+          top: -25px;
+          left: 10px;
+          }
+</style>
+<div class="title">R/Bioconductor on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><a href="#changes">Changelog</a></div>
+                <div class="tocItem"><a href="#gotcha">Common pitfalls</a></div>
+                <div class="tocItem"><a href="#int">Interactive R</a></div>
+                <div class="tocItem"><a href="#packages">Installed packages</a></div>
+                <div class="tocItem"><a href="#install">Manage your own packages</a></div>
+                <div class="tocItem"><a href="#sbatch">R batch job</a></div>
+                <div class="tocItem"><a href="#swarm">Swarm of R jobs </a></div>
+                <div class="tocItem"><a href="#rswarm">Rswarm</a></div>
+                <div class="tocItem"><a href="#parallel">Using the parallel package</a></div>
+                <div class="tocItem"><a href="#biocparallel">Using the BiocParallel package</a></div>
+                <div class="tocItem"><a href="#threading">Implicit multithreading</a></div>
+                <div class="tocItem"><a href="#rmpi">R MPI jobs</a></div>
+                <div class="tocItem"><a href="#shiny">Run a shiny app on biowulf</a></div>
+                <div class="tocItem"><a href="#pkgnotes">Notes for individual packages</a></div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+
+
+<div style='width: 70%; height: 300px'>
+<a href="http://cran.r-project.org">
+    <img src="/images/Rlogo.jpg" alt="R logo" style="float: left; margin-right: 5px;">
+</a>
+
+<p>R is a language and environment for statistical computing and graphics. It
+can be considered an open source decendant of the S language which was
+developed by Chambers and colleagues at Bell Laboratories in the 1970s.</p>
+
+<p>R is highly extensible and provides a wide variety of modern statistical
+analysis methods combined with excellent graphical visualization capabilities
+embedded in a programming language that supports procedural, functuional, and
+object oriented programming styles. R natively provides operators for calculations
+on arrays and matrices.</p>
+
+<p>While individual single threaded R code is not expected to run any faster in
+an <a href="/docs/userguide.html#int">interactive session</a> on a compute node
+than it would run on a modern desktop, Biowulf allows users to run many R jobs
+concurrently or take advantage of the speedup provided by parallelizing R code
+to a much greater degree than possible on a single workstation.</p>
+
+<p>On biowulf, R modules are available for the minor releases (e.g. 4.2) which
+will contain the newest patch level releases (e.g. 4.2.3).</p>
+
+</div> <!-- end intro paragraph -->
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="changes"></a>Changelog</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<dl>
+    <dt>June 23 2023: default location for <code>$R_LIBS_USER</code></dt>
+    <dd>changed to <code>/data/$USER/R/rhel8/%v</code> with migration to RHEL8</dd>
+    <dt>May 2023: R/4.3.0 becomes the default R installation.</dt>
+    <dd>User visible changes:
+        <ul>
+            <li>Calling <code>&amp;&amp;</code> or <code>||</code> with LHS or (if evaluated) 
+                RHS of length greater than one is now always an error, with a report of the form
+                <code>'length = 4' in coercion to 'logical(1)'</code>. R 4.2.0 introduced
+                a warning for this usage of conditional operators.</li>
+            <li>Environment variable _R_CHECK_LENGTH_1_LOGIC2_ no longer has any effect.</li>
+        </ul>
+        See <a href="https://cran.r-project.org/doc/manuals/r-release/NEWS.html">R NEWS</a> for
+        full details.
+    </dd>
+    <dt>Nov 2022: R/4.2.2 becomes the default R installation.</dt>
+    <dt>Jul 2022: R/4.2.0 becomes the default R installation.</dt>
+    <dd>Some notable changes:
+        <ul>
+            <li>Calling <code>&amp;&amp;</code> or <code>||</code> with either argument of length greater
+                than one now gives a warning (which it is intended will become
+                an error).</li>
+            <li>Calling if() or while() with a condition of length greater
+                than one gives an error rather than a warning. Consequently,
+                environment variable _R_CHECK_LENGTH_1_CONDITION_ no longer has
+                any effect.</li>
+            <li>The graphics engine version, R_GE_version, has been bumped to 15.</li>
+        </ul>
+    </dd>
+    <dt>Jul 2021: R/4.1.0 becomes the default R installation.</dt>
+    <dt>Apr 2021: R/4.0.5 becomes the default R installation. OpenMPI is now version 4</dt>
+    <dt>Nov 2020: R/4.0.3 becomes the default R installation</dt>
+    <dt>Jun 2020: R/4.0.0 becomes the default R installation</dt>
+    <dd>For details see <a href="http://cran.r-project.org/doc/manuals/r-release/NEWS.html">R NEWS</a>. Notable changes:
+    <ul>
+        <li>R now uses <code>stringsAsFactors = FALSE</code> as the default</li>
+        <li>There is a new syntax for specifying raw character constants similar to the one used in C++: r"(...)"</li>
+    </ul>
+    As usual, many packages are pre-installed and private packages
+    need to be re-installed.
+    
+    </dd>
+    <dt>Jun 2020: R/4.0.0 becomes the default R installation</dt>
+    <dt>Apr 2020: R/3.6.3 becomes the default R installation</dt>
+    <dt>Dec 2019: R/3.6.1 becomes the default R installation and R is now compiled with gcc 9.2.0</dt>
+    <dt>Jun 2019: R/3.6.0 becomes the default R installation</dt>
+    <dt>Feb 2019: R/3.5.2 becomes the default R installation</dt>
+    <dt>Jun 2018: Cluster update from RHEL6 to RHEL7</dt>
+    <dd>
+    <ul>
+        <li>R sessions are not allowed on helix any more.</li>
+        <li>R is compiled against MKL for improved performance</li>
+    </ul>
+    </dd>
+</dl>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="gotcha"></a>Common pitfalls</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<dl>
+    <dt>Implicit multithreading</dt>
+    <dd>
+        R can make use of <a href='#threading'>implicit multithreading</a> via two
+        different mechanisms. One of them is regulated by the <code>OMP_NUM_THREADS</code>
+        environment variable which is set to 1 by the R modules because leaving this
+        variable unset can lead to R using as many threads as there are CPUs on a compute
+        node thus overloading jobs. If you know your code can make effective use of those
+        threads you can explicitly set <code>OMP_NUM_THREADS</code> to greated than 1 after
+        loading the module. However, only a subset of code will be able to take advantage of
+        this - don't expect an automatic speed increase.
+    </dd>
+    <dt><code>parallel::detectCores()</code> always detects all CPUs on a node</dt>
+    <dd>
+        R using one of the parallel packages (parallel, doParallel, ...) often overload
+        their job allocation because they are using the <code>detectCores()</code> function
+        from the parallel package to determine how many worker processes to use. However,
+        this function returns the number of physical CPUs on a compute node irrespective of
+        how many have been allocated to a job. Therefore, if not all CPUs are allocated to a job
+        the job will be overloaded and perform poorly. See the section on the 
+        <a href="#parallel">parallel</a> package for more detail.
+    </dd>
+    <dt><code>BiocParallel</code> by default tries to use most CPUs on a node</dt>
+    <dd>
+        <code>BiocParallel</code> is not aware of slurm and by default tries to use most
+        of the CPUs on a node irrespetive of the slurm allocation. This can lead to overloaded
+        jobs. See the section on the
+        <a href="#biocparallel">BiocParallel</a> package for more information on how to avoid
+        this.
+    </dd>
+    <dt>Poor scaling of parallel code</dt>
+    <dd>
+        Don't assume that you should allocate as many CPUs as possible to a parallel workload.
+        Parallel efficiency often drops and in some cases allocating more CPUs may actually
+        extend runtimes. If you use/implement parallel algorithms please measure scaling
+        before submitting large numbers of such jobs.
+    </dd>
+    <dt>Can't install packages in my private library</dt>
+    <dd>
+        R will attempt to install packages to <code>/data/R/rhel8/%v</code> (RHEL8) where <code>%v</code> is the two
+        digit version of R (e.g. 4.1) or in the path set by <code>$R_LIBS_USER</code>. 
+        However, R won't always automatically create that directory and in
+        its absence will try to install to the central packge library which will fail. If you encounter
+        installation failures please make sure the library directory for your version of R exists.
+    </dd>
+    <dt>AnnotationHub or ExperimentHub error <code>No internet connection</code></dt>
+    <dd>
+        The AnnotationHub and ExperimentHub packages and packages depending on them need to connect to the
+        internet via a proxy. When using AnnotationHub or ExperimentHub directly, a proxy can be specified
+        explicitly in the call to set up the Hub. However, if they are used indirectly that is not possible.
+        Instead, define the proxy either using environment variables EXPERIMENT_HUB_PROXY/ANNOTATION_HUB_PROXY
+        or by setting options in R with <code>setAnnotationHubOption("PROXY", Sys.getenv("http_proxy"))</code>
+        or the corresponding <code>setExperimentHubOption</code> function.
+    </dd>
+    <dt>Updating broken packages installed in home directory</dt>
+    <dd>
+        When R and/or the centrally installed R packages are updated, packages installed in your
+        private library may break or result in other packages not loading. The most common error
+        results from a locally installed <code>rlang</code> package. Look for errors that
+        include your private library path in the errors. All locally
+        installed package can be updated with
+        <pre class="term">
+&gt; my.lib &lt;- .libPaths()[1]  # check first that .libPaths()[1] is indeed the path to your library
+&gt; my.pkgs &lt;- list.files(my.lib)
+&gt; library(pacman)
+&gt; p_install(pkgs, character.only=T, lib=my.lib)
+</pre>
+        An easy way to fix this error is also to delete the locally installed rlang with
+        <pre class="term">
+$ rm -rf ~/R/4.2/library/rlang  # replace 4.2 with the R major.minor version you are using
+        </pre>
+    <dt>Re-install packages to 1) data directory from home directory and/or 2) different R version</dt>
+    <dd>
+        Since R_LIBS_USER was relocated to data directory, the R packages installed in your
+        private library (at ~/R/) need to be reinstalled. And/or if you need to update to a newer R version by reinstalling
+        all the packages from an older version of R. Let's create the private library directory for the new version of R first (e.g. R/4.3):
+<pre class="term">
+$ mkdir -p /data/$USER/R/rhel8/4.3/
+        </pre>
+For example, for packages installed under R/4.2, you can re-install them by creating a list of installed libraries, find 
+the ones that are not yet installed under data directory or not the same R version you are using, then re-install them with (please replace apptest with your username):
+<pre class="term">
+&gt; packages&lt;-installed.packages(lib.loc="/home/apptest/R/4.2/library")[,"Package"]
+&gt; toInstall&lt;-setdiff(packages,installed.packages(loc.lib="/data/apptest/R/rhel8/4.3/")[,"Package"])
+&gt; BiocManager::install(toInstall)
+</pre>
+
+
+    </dd> 
+</dl>
+
+<p class="alert">R will automatically use <a href="https://hpc.nih.gov/docs/userguide.html#local">lscratch</a>
+for temporary files if it has been allocated. Therefore we highly recommend users always
+allocate a minimal amount of lscratch of 1GB plus whatever lscratch storage is required by
+your code.</p>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="int"></a>Interactive R</div>
+<div class="btt"><a href="#top">top</a></div>
+ 
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> for
+interactive R work. Note that R sessions are not allowed on the login node
+nor helix.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+</pre>
+
+<p>There may be multiple versions of R available. An easy way of selecting the
+version is to use <a href="/apps/modules.html">modules</a>.To see the modules
+available, type</p>
+<pre class="term">
+[user@cn3144 ~]$ <b>module -r avail '^R$'</b>
+
+--------------- /usr/local/lmod/modulefiles ------------------
+R/3.4    R/3.4.3    R/3.4.4    R/3.5 (D)    R/3.5.0    R/3.5.2
+</pre>
+
+<p>Set up your environment and start up an R session</p>
+<pre class="term">
+[user@cn3144 ~]$ <b>module load R/3.5</b>
+[user@cn3144 ~]$ <b>R</b>
+R version 3.5.0 (2018-04-23) -- "Joy in Playing"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+&gt; library(tidyverse)
+── Attaching packages ─────────────────────────────────────── tidyverse 1.2.1 ──
+✔ ggplot2 2.2.1     ✔ purrr   0.2.4
+✔ tibble  1.4.2     ✔ dplyr   0.7.4
+✔ tidyr   0.8.0     ✔ stringr 1.3.0
+✔ readr   1.1.1     ✔ forcats 0.3.0
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+&gt; [...lots of work...]
+&gt; q()
+Save workspace image? [y/n/c]: n
+</pre>
+
+<p>A rudimentary graphical interface is available if the sinteractive
+session was started from a session with X11 forwarding enabled:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>R --gui=Tk</b>
+</pre>
+
+<p>However, <a href="RStudio.html">RStudio</a> is a much better interface
+with many advanced features.</p>
+
+<p>Don't forget to exit the interactive session</p>
+<pre class="term">
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="packages"></a>Installed packages</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>Packages installed in the current default R environment</p>
+
+<!-- INSERT R MODULES: BEGIN -->
+<div style='width: 60%; margin: 0 auto;'>
+<table id='r-packages' class='stripe compact dt-head-left'>
+  <thead><tr><th>Package</th><th>Version</th></tr></thead>
+  <tbody>
+    <tr><td>spatial</td><td>7.3-16</td></tr>
+    <tr><td>viridisLite</td><td>0.4.2</td></tr>
+    <tr><td>urltools</td><td>1.7.3</td></tr>
+    <tr><td>trapezoid</td><td>2.0-2</td></tr>
+    <tr><td>plotly</td><td>4.10.2</td></tr>
+    <tr><td>oligoClasses</td><td>1.62.0</td></tr>
+    <tr><td>numDeriv</td><td>2016.8-1.1</td></tr>
+    <tr><td>methylumi</td><td>2.46.0</td></tr>
+    <tr><td>mcmc</td><td>0.9-7</td></tr>
+    <tr><td>matrixcalc</td><td>1.0-6</td></tr>
+    <tr><td>latticeExtra</td><td>0.6-30</td></tr>
+    <tr><td>kdecopula</td><td>0.9.2</td></tr>
+    <tr><td>ipred</td><td>0.9-14</td></tr>
+    <tr><td>GWASExactHW</td><td>1.01</td></tr>
+    <tr><td>groHMM</td><td>1.34.0</td></tr>
+    <tr><td>GOSemSim</td><td>2.26.1</td></tr>
+    <tr><td>geosphere</td><td>1.5-18</td></tr>
+    <tr><td>DESeq2</td><td>1.40.2</td></tr>
+    <tr><td>DEoptimR</td><td>1.1-3</td></tr>
+    <tr><td>cn.mops</td><td>1.46.0</td></tr>
+    <tr><td>brio</td><td>1.1.3</td></tr>
+    <tr><td>AnnotationForge</td><td>1.42.2</td></tr>
+    <tr><td>TxDb.Celegans.UCSC.ce6.ensGene</td><td>3.2.2</td></tr>
+    <tr><td>strucchange</td><td>1.5-3</td></tr>
+    <tr><td>stabledist</td><td>0.7-1</td></tr>
+    <tr><td>shadowtext</td><td>0.1.2</td></tr>
+    <tr><td>rmarkdown</td><td>2.25</td></tr>
+    <tr><td>RcppTOML</td><td>0.2.2</td></tr>
+    <tr><td>ProtGenerics</td><td>1.32.0</td></tr>
+    <tr><td>PMCMR</td><td>4.4</td></tr>
+    <tr><td>MultiAssayExperiment</td><td>1.26.0</td></tr>
+    <tr><td>msm</td><td>1.7</td></tr>
+    <tr><td>MLEcens</td><td>0.1-7</td></tr>
+    <tr><td>magic</td><td>1.6-1</td></tr>
+    <tr><td>JavaGD</td><td>0.6-5</td></tr>
+    <tr><td>ENmix</td><td>1.36.08</td></tr>
+    <tr><td>distillery</td><td>1.2-1</td></tr>
+    <tr><td>cpp11</td><td>0.4.6</td></tr>
+    <tr><td>conflicted</td><td>1.2.0</td></tr>
+    <tr><td>caTools</td><td>1.18.2</td></tr>
+    <tr><td>bsplus</td><td>0.1.4</td></tr>
+    <tr><td>blob</td><td>1.2.4</td></tr>
+    <tr><td>ALL</td><td>1.42.0</td></tr>
+    <tr><td>ADGofTest</td><td>0.3</td></tr>
+    <tr><td>statmod</td><td>1.5.0</td></tr>
+    <tr><td>rcmdcheck</td><td>1.4.0</td></tr>
+    <tr><td>ks</td><td>1.14.1</td></tr>
+    <tr><td>keras</td><td>2.13.0</td></tr>
+    <tr><td>httr</td><td>1.4.7</td></tr>
+    <tr><td>Heatplus</td><td>3.8.0</td></tr>
+    <tr><td>europepmc</td><td>0.4.3</td></tr>
+    <tr><td>data.table</td><td>1.14.8</td></tr>
+    <tr><td>Cubist</td><td>0.4.2.1</td></tr>
+    <tr><td>CNEr</td><td>1.36.0</td></tr>
+    <tr><td>clusterRepro</td><td>0.9</td></tr>
+    <tr><td>bibtex</td><td>0.5.1</td></tr>
+    <tr><td>xfun</td><td>0.40</td></tr>
+    <tr><td>unisensR</td><td>0.3.3</td></tr>
+    <tr><td>spam</td><td>2.9-1</td></tr>
+    <tr><td>slingshot</td><td>2.8.0</td></tr>
+    <tr><td>NOISeq</td><td>2.44.0</td></tr>
+    <tr><td>Lmoments</td><td>1.3-1</td></tr>
+    <tr><td>interval</td><td>1.1-1.0</td></tr>
+    <tr><td>gfonts</td><td>0.2.0</td></tr>
+    <tr><td>DBI</td><td>1.1.3</td></tr>
+    <tr><td>ChIPpeakAnno</td><td>3.34.1</td></tr>
+    <tr><td>bindata</td><td>0.9-20</td></tr>
+    <tr><td>beadarray</td><td>2.50.0</td></tr>
+    <tr><td>RRPP</td><td>1.4.0</td></tr>
+    <tr><td>Rfast</td><td>2.0.8</td></tr>
+    <tr><td>PhysicalActivity</td><td>0.2-4</td></tr>
+    <tr><td>pheatmap</td><td>1.0.12</td></tr>
+    <tr><td>MplusAutomation</td><td>1.1.0</td></tr>
+    <tr><td>lifecycle</td><td>1.0.3</td></tr>
+    <tr><td>lars</td><td>1.3</td></tr>
+    <tr><td>Haplin</td><td>7.3.0</td></tr>
+    <tr><td>DaMiRseq</td><td>2.12.0</td></tr>
+    <tr><td>commonmark</td><td>1.9.0</td></tr>
+    <tr><td>ade4</td><td>1.7-22</td></tr>
+    <tr><td>parallel</td><td>4.3.0</td></tr>
+    <tr><td>tfdatasets</td><td>2.9.0</td></tr>
+    <tr><td>remotes</td><td>2.4.2.1</td></tr>
+    <tr><td>plyr</td><td>1.8.9</td></tr>
+    <tr><td>org.Hs.eg.db</td><td>3.17.0</td></tr>
+    <tr><td>mize</td><td>0.2.4</td></tr>
+    <tr><td>kpeaks</td><td>1.1.0</td></tr>
+    <tr><td>flux</td><td>0.3-0.1</td></tr>
+    <tr><td>DAAG</td><td>1.25.4</td></tr>
+    <tr><td>bindr</td><td>0.1.1</td></tr>
+    <tr><td>Bhat</td><td>0.9-12</td></tr>
+    <tr><td>vipor</td><td>0.4.5</td></tr>
+    <tr><td>tximeta</td><td>1.18.3</td></tr>
+    <tr><td>tkWidgets</td><td>1.78.0</td></tr>
+    <tr><td>sciplot</td><td>1.2-0</td></tr>
+    <tr><td>refund</td><td>0.1-32</td></tr>
+    <tr><td>reactome.db</td><td>1.84.0</td></tr>
+    <tr><td>libcoin</td><td>1.0-10</td></tr>
+    <tr><td>cn.farms</td><td>1.48.0</td></tr>
+    <tr><td>cli</td><td>3.6.1</td></tr>
+    <tr><td>BiocSingular</td><td>1.16.0</td></tr>
+    <tr><td>bayestestR</td><td>0.13.1</td></tr>
+    <tr><td>slider</td><td>0.3.1</td></tr>
+    <tr><td>shinydashboard</td><td>0.7.2</td></tr>
+    <tr><td>sampling</td><td>2.9</td></tr>
+    <tr><td>RMTstat</td><td>0.3.1</td></tr>
+    <tr><td>raster</td><td>3.6-26</td></tr>
+    <tr><td>pls</td><td>2.8-2</td></tr>
+    <tr><td>miniUI</td><td>0.1.1.1</td></tr>
+    <tr><td>gsubfn</td><td>0.7</td></tr>
+    <tr><td>grr</td><td>0.9.5</td></tr>
+    <tr><td>GOstats</td><td>2.66.0</td></tr>
+    <tr><td>GENIE3</td><td>1.22.0</td></tr>
+    <tr><td>gdata</td><td>3.0.0</td></tr>
+    <tr><td>future.apply</td><td>1.11.0</td></tr>
+    <tr><td>edgeR</td><td>3.42.4</td></tr>
+    <tr><td>dfoptim</td><td>2023.1.0</td></tr>
+    <tr><td>ChIPseeker</td><td>1.36.0</td></tr>
+    <tr><td>ccaPP</td><td>0.3.3</td></tr>
+    <tr><td>class</td><td>7.3-22</td></tr>
+    <tr><td>tensorA</td><td>0.36.2</td></tr>
+    <tr><td>spdep</td><td>1.2-8</td></tr>
+    <tr><td>RNifti</td><td>1.5.0</td></tr>
+    <tr><td>pROC</td><td>1.18.4</td></tr>
+    <tr><td>PBSmodelling</td><td>2.68.8</td></tr>
+    <tr><td>partykit</td><td>1.2-20</td></tr>
+    <tr><td>mstate</td><td>0.3.2</td></tr>
+    <tr><td>knn.covertree</td><td>1.0</td></tr>
+    <tr><td>GPArotation</td><td>2023.8-1</td></tr>
+    <tr><td>ggformula</td><td>0.10.4</td></tr>
+    <tr><td>extraDistr</td><td>1.9.1</td></tr>
+    <tr><td>DMRcatedata</td><td>2.18.0</td></tr>
+    <tr><td>cmprsk</td><td>2.2-11</td></tr>
+    <tr><td>batchelor</td><td>1.16.0</td></tr>
+    <tr><td>batch</td><td>1.1-5</td></tr>
+    <tr><td>additivityTests</td><td>1.1-4.1</td></tr>
+    <tr><td>svd</td><td>0.5.4.1</td></tr>
+    <tr><td>snow</td><td>0.4-4</td></tr>
+    <tr><td>Publish</td><td>2023.01.17</td></tr>
+    <tr><td>plotmo</td><td>3.6.2</td></tr>
+    <tr><td>plgem</td><td>1.72.0</td></tr>
+    <tr><td>parsedate</td><td>1.3.1</td></tr>
+    <tr><td>parathyroidSE</td><td>1.38.0</td></tr>
+    <tr><td>manhattanly</td><td>0.3.0</td></tr>
+    <tr><td>leafcutter</td><td>0.2.9</td></tr>
+    <tr><td>DRIMSeq</td><td>1.28.0</td></tr>
+    <tr><td>diffusionMap</td><td>1.2.0</td></tr>
+    <tr><td>bit</td><td>4.0.5</td></tr>
+    <tr><td>zlibbioc</td><td>1.46.0</td></tr>
+    <tr><td>rvinecopulib</td><td>0.6.3.1.1</td></tr>
+    <tr><td>qvcalc</td><td>1.0.3</td></tr>
+    <tr><td>pingr</td><td>2.0.2</td></tr>
+    <tr><td>pbdMPI</td><td>0.4-6</td></tr>
+    <tr><td>oro.nifti</td><td>0.11.4</td></tr>
+    <tr><td>mixsqp</td><td>0.3-48</td></tr>
+    <tr><td>MAGeCKFlute</td><td>2.4.0</td></tr>
+    <tr><td>e1071</td><td>1.7-13</td></tr>
+    <tr><td>ashr</td><td>2.2-63</td></tr>
+    <tr><td>arsenal</td><td>3.6.3</td></tr>
+    <tr><td>TeachingDemos</td><td>2.12</td></tr>
+    <tr><td>R.matlab</td><td>3.7.0</td></tr>
+    <tr><td>rle</td><td>0.9.2</td></tr>
+    <tr><td>R2WinBUGS</td><td>2.1-21</td></tr>
+    <tr><td>markdown</td><td>1.11</td></tr>
+    <tr><td>ggm</td><td>2.5</td></tr>
+    <tr><td>fansi</td><td>1.0.5</td></tr>
+    <tr><td>clue</td><td>0.3-65</td></tr>
+    <tr><td>CHsharp</td><td>0.4</td></tr>
+    <tr><td>timeSeries</td><td>4031.107</td></tr>
+    <tr><td>sva</td><td>3.48.0</td></tr>
+    <tr><td>SummarizedExperiment</td><td>1.30.2</td></tr>
+    <tr><td>pec</td><td>2023.04.12</td></tr>
+    <tr><td>MatchIt</td><td>4.5.5</td></tr>
+    <tr><td>ICsurv</td><td>1.0.1</td></tr>
+    <tr><td>graph</td><td>1.78.0</td></tr>
+    <tr><td>ggthemes</td><td>4.2.4</td></tr>
+    <tr><td>ggdendro</td><td>0.1.23</td></tr>
+    <tr><td>ggalluvial</td><td>0.12.5</td></tr>
+    <tr><td>genetics</td><td>1.3.8.1.3</td></tr>
+    <tr><td>fontBitstreamVera</td><td>0.1.1</td></tr>
+    <tr><td>DNAcopy</td><td>1.74.1</td></tr>
+    <tr><td>discretization</td><td>1.0-1.1</td></tr>
+    <tr><td>colorRamps</td><td>2.3.1</td></tr>
+    <tr><td>ATACseqQC</td><td>1.24.0</td></tr>
+    <tr><td>tiff</td><td>0.1-11</td></tr>
+    <tr><td>survJamda.data</td><td>1.0.2</td></tr>
+    <tr><td>Rmpfr</td><td>0.9-3</td></tr>
+    <tr><td>rlecuyer</td><td>0.3-7</td></tr>
+    <tr><td>rafalib</td><td>1.0.0</td></tr>
+    <tr><td>pd.hugene.2.0.st</td><td>3.14.1</td></tr>
+    <tr><td>mygene</td><td>1.36.0</td></tr>
+    <tr><td>msa</td><td>1.32.0</td></tr>
+    <tr><td>geonames</td><td>0.999</td></tr>
+    <tr><td>FSelector</td><td>0.34</td></tr>
+    <tr><td>fracdiff</td><td>1.5-2</td></tr>
+    <tr><td>ELMER.data</td><td>2.24.0</td></tr>
+    <tr><td>EGSEA</td><td>1.28.0</td></tr>
+    <tr><td>dnet</td><td>1.1.7</td></tr>
+    <tr><td>CODEX</td><td>1.32.0</td></tr>
+    <tr><td>basilisk.utils</td><td>1.12.1</td></tr>
+    <tr><td>KernSmooth</td><td>2.23-21</td></tr>
+    <tr><td>wateRmelon</td><td>2.6.0</td></tr>
+    <tr><td>Surrogate</td><td>3.2.1</td></tr>
+    <tr><td>ROTS</td><td>1.28.0</td></tr>
+    <tr><td>questionr</td><td>0.7.8</td></tr>
+    <tr><td>pkgload</td><td>1.3.3</td></tr>
+    <tr><td>pkgbuild</td><td>1.4.2</td></tr>
+    <tr><td>optigrab</td><td>0.9.2.1</td></tr>
+    <tr><td>logcondens</td><td>2.1.8</td></tr>
+    <tr><td>JADE</td><td>2.0-4</td></tr>
+    <tr><td>inaparc</td><td>1.2.0</td></tr>
+    <tr><td>ids</td><td>1.0.1</td></tr>
+    <tr><td>gsl</td><td>2.1-8</td></tr>
+    <tr><td>ggtree</td><td>3.8.2</td></tr>
+    <tr><td>fdrtool</td><td>1.2.17</td></tr>
+    <tr><td>blockmodeling</td><td>1.1.5</td></tr>
+    <tr><td>utils</td><td>4.3.0</td></tr>
+    <tr><td>graphics</td><td>4.3.0</td></tr>
+    <tr><td>zCompositions</td><td>1.4.1</td></tr>
+    <tr><td>vioplot</td><td>0.4.0</td></tr>
+    <tr><td>rbenchmark</td><td>1.0.0</td></tr>
+    <tr><td>moments</td><td>0.14.1</td></tr>
+    <tr><td>locfit</td><td>1.5-9.8</td></tr>
+    <tr><td>inline</td><td>0.3.19</td></tr>
+    <tr><td>idr</td><td>1.3</td></tr>
+    <tr><td>hgu133plus2probe</td><td>2.18.0</td></tr>
+    <tr><td>gld</td><td>2.6.6</td></tr>
+    <tr><td>GGIRread</td><td>0.3.1</td></tr>
+    <tr><td>enrichR</td><td>3.2</td></tr>
+    <tr><td>dropbead</td><td>0.3.1</td></tr>
+    <tr><td>CCA</td><td>1.2.2</td></tr>
+    <tr><td>MASS</td><td>7.3-60</td></tr>
+    <tr><td>grDevices</td><td>4.3.0</td></tr>
+    <tr><td>xopen</td><td>1.0.0</td></tr>
+    <tr><td>tidyselect</td><td>1.2.0</td></tr>
+    <tr><td>seqLogo</td><td>1.66.0</td></tr>
+    <tr><td>rvest</td><td>1.0.3</td></tr>
+    <tr><td>robustbase</td><td>0.99-0</td></tr>
+    <tr><td>rjson</td><td>0.2.21</td></tr>
+    <tr><td>qs</td><td>0.25.5</td></tr>
+    <tr><td>praise</td><td>1.0.0</td></tr>
+    <tr><td>KMsurv</td><td>0.1-5</td></tr>
+    <tr><td>INPower</td><td>1.36.0</td></tr>
+    <tr><td>HilbertVis</td><td>1.58.0</td></tr>
+    <tr><td>hexView</td><td>0.3-4</td></tr>
+    <tr><td>geometry</td><td>0.4.7</td></tr>
+    <tr><td>EBSeqHMM</td><td>1.34.0</td></tr>
+    <tr><td>DMRcate</td><td>2.14.1</td></tr>
+    <tr><td>corpcor</td><td>1.6.10</td></tr>
+    <tr><td>spData</td><td>2.3.0</td></tr>
+    <tr><td>rotl</td><td>3.1.0</td></tr>
+    <tr><td>rex</td><td>1.2.1</td></tr>
+    <tr><td>RCircos</td><td>1.2.2</td></tr>
+    <tr><td>rbokeh</td><td>0.5.2</td></tr>
+    <tr><td>qpdf</td><td>1.3.2</td></tr>
+    <tr><td>psych</td><td>2.3.9</td></tr>
+    <tr><td>progress</td><td>1.2.2</td></tr>
+    <tr><td>PBSmapping</td><td>2.73.2</td></tr>
+    <tr><td>mr.raps</td><td>0.2</td></tr>
+    <tr><td>miscTools</td><td>0.6-28</td></tr>
+    <tr><td>MassSpecWavelet</td><td>1.66.0</td></tr>
+    <tr><td>LSD</td><td>4.1-0</td></tr>
+    <tr><td>gss</td><td>2.2-7</td></tr>
+    <tr><td>batchtools</td><td>0.9.17</td></tr>
+    <tr><td>airway</td><td>1.20.0</td></tr>
+    <tr><td>survival</td><td>3.5-5</td></tr>
+    <tr><td>TH.data</td><td>1.1-2</td></tr>
+    <tr><td>SPAtest</td><td>3.1.2</td></tr>
+    <tr><td>randtoolbox</td><td>2.0.4</td></tr>
+    <tr><td>ncbit</td><td>2013.03.29.1</td></tr>
+    <tr><td>hexbin</td><td>1.28.3</td></tr>
+    <tr><td>dagitty</td><td>0.3-1</td></tr>
+    <tr><td>bsseq</td><td>1.36.0</td></tr>
+    <tr><td>bslib</td><td>0.5.1</td></tr>
+    <tr><td>apeglm</td><td>1.22.1</td></tr>
+    <tr><td>spatstat.random</td><td>3.1-6</td></tr>
+    <tr><td>ReactomePA</td><td>1.44.0</td></tr>
+    <tr><td>pctGCdata</td><td>0.3.0</td></tr>
+    <tr><td>outliers</td><td>0.15</td></tr>
+    <tr><td>mlmRev</td><td>1.0-8</td></tr>
+    <tr><td>inum</td><td>1.0-5</td></tr>
+    <tr><td>illuminaio</td><td>0.42.0</td></tr>
+    <tr><td>hopach</td><td>2.60.0</td></tr>
+    <tr><td>exomeCopy</td><td>1.46.0</td></tr>
+    <tr><td>densityClust</td><td>0.3.2</td></tr>
+    <tr><td>bit64</td><td>4.0.5</td></tr>
+    <tr><td>annaffy</td><td>1.72.0</td></tr>
+    <tr><td>tidygraph</td><td>1.2.3</td></tr>
+    <tr><td>rpf</td><td>1.0.14</td></tr>
+    <tr><td>rGADEM</td><td>2.48.0</td></tr>
+    <tr><td>plier</td><td>1.70.0</td></tr>
+    <tr><td>httr2</td><td>0.2.3</td></tr>
+    <tr><td>git2r</td><td>0.32.0</td></tr>
+    <tr><td>gargle</td><td>1.5.2</td></tr>
+    <tr><td>gage</td><td>2.50.0</td></tr>
+    <tr><td>EnhancedVolcano</td><td>1.18.0</td></tr>
+    <tr><td>dqrng</td><td>0.3.1</td></tr>
+    <tr><td>ada</td><td>2.0-5</td></tr>
+    <tr><td>threejs</td><td>0.3.3</td></tr>
+    <tr><td>spacetime</td><td>1.3-0</td></tr>
+    <tr><td>Ringo</td><td>1.64.0</td></tr>
+    <tr><td>ncdf4</td><td>1.21</td></tr>
+    <tr><td>MEGENA</td><td>1.3.7</td></tr>
+    <tr><td>ensemblVEP</td><td>1.42.0</td></tr>
+    <tr><td>DropletUtils</td><td>1.20.0</td></tr>
+    <tr><td>aroma.core</td><td>3.3.0</td></tr>
+    <tr><td>snpStats</td><td>1.50.0</td></tr>
+    <tr><td>semTools</td><td>0.5-6</td></tr>
+    <tr><td>rticles</td><td>0.25</td></tr>
+    <tr><td>riskRegression</td><td>2023.09.08</td></tr>
+    <tr><td>ResidualMatrix</td><td>1.10.0</td></tr>
+    <tr><td>R.cache</td><td>0.16.0</td></tr>
+    <tr><td>pathview</td><td>1.40.0</td></tr>
+    <tr><td>optmatch</td><td>0.10.6</td></tr>
+    <tr><td>motifmatchr</td><td>1.22.0</td></tr>
+    <tr><td>maSigPro</td><td>1.72.0</td></tr>
+    <tr><td>ipw</td><td>1.2</td></tr>
+    <tr><td>DDRTree</td><td>0.1.5</td></tr>
+    <tr><td>cqn</td><td>1.46.0</td></tr>
+    <tr><td>contrast</td><td>0.24.2</td></tr>
+    <tr><td>AUCell</td><td>1.22.0</td></tr>
+    <tr><td>aggregation</td><td>1.0.1</td></tr>
+    <tr><td>VGAM</td><td>1.1-9</td></tr>
+    <tr><td>vcd</td><td>1.4-11</td></tr>
+    <tr><td>styler</td><td>1.10.2</td></tr>
+    <tr><td>R.rsp</td><td>0.45.0</td></tr>
+    <tr><td>Rook</td><td>1.2</td></tr>
+    <tr><td>pwr</td><td>1.3-0</td></tr>
+    <tr><td>prediction</td><td>0.3.14</td></tr>
+    <tr><td>MotifDb</td><td>1.42.0</td></tr>
+    <tr><td>MAST</td><td>1.26.0</td></tr>
+    <tr><td>mapproj</td><td>1.2.11</td></tr>
+    <tr><td>lsmeans</td><td>2.30-0</td></tr>
+    <tr><td>Kendall</td><td>2.2.1</td></tr>
+    <tr><td>HDInterval</td><td>0.2.4</td></tr>
+    <tr><td>googlesheets4</td><td>1.1.1</td></tr>
+    <tr><td>golubEsets</td><td>1.42.0</td></tr>
+    <tr><td>glmnet</td><td>4.1-8</td></tr>
+    <tr><td>futile.logger</td><td>1.4.3</td></tr>
+    <tr><td>boot</td><td>1.3-28.1</td></tr>
+    <tr><td>webdriver</td><td>1.0.6</td></tr>
+    <tr><td>tidybayes</td><td>3.0.6</td></tr>
+    <tr><td>RCurl</td><td>1.98-1.12</td></tr>
+    <tr><td>randtests</td><td>1.0.1</td></tr>
+    <tr><td>mipfp</td><td>3.2.1</td></tr>
+    <tr><td>HTqPCR</td><td>1.54.0</td></tr>
+    <tr><td>haven</td><td>2.5.3</td></tr>
+    <tr><td>ComplexHeatmap</td><td>2.16.0</td></tr>
+    <tr><td>tinytex</td><td>0.48</td></tr>
+    <tr><td>spatstat.utils</td><td>3.0-3</td></tr>
+    <tr><td>plm</td><td>2.6-3</td></tr>
+    <tr><td>pd.hg.u133.plus.2</td><td>3.12.0</td></tr>
+    <tr><td>pbkrtest</td><td>0.5.2</td></tr>
+    <tr><td>PADOG</td><td>1.42.0</td></tr>
+    <tr><td>iterators</td><td>1.0.14</td></tr>
+    <tr><td>ica</td><td>1.0-3</td></tr>
+    <tr><td>hugene20sttranscriptcluster.db</td><td>8.8.0</td></tr>
+    <tr><td>gson</td><td>0.1.0</td></tr>
+    <tr><td>ggfortify</td><td>0.4.16</td></tr>
+    <tr><td>GetoptLong</td><td>1.0.5</td></tr>
+    <tr><td>dichromat</td><td>2.0-0.1</td></tr>
+    <tr><td>warp</td><td>0.2.0</td></tr>
+    <tr><td>rJava</td><td>1.0-6</td></tr>
+    <tr><td>pbdZMQ</td><td>0.3-10</td></tr>
+    <tr><td>pasilla</td><td>1.28.0</td></tr>
+    <tr><td>openssl</td><td>2.1.1</td></tr>
+    <tr><td>HTMLUtils</td><td>0.1.8</td></tr>
+    <tr><td>Gviz</td><td>1.44.2</td></tr>
+    <tr><td>ggbeeswarm</td><td>0.7.2</td></tr>
+    <tr><td>deconstructSigs</td><td>1.8.0</td></tr>
+    <tr><td>csaw</td><td>1.34.0</td></tr>
+    <tr><td>config</td><td>0.3.2</td></tr>
+    <tr><td>colourpicker</td><td>1.3.0</td></tr>
+    <tr><td>brglm</td><td>0.7.2</td></tr>
+    <tr><td>ballgown</td><td>2.32.0</td></tr>
+    <tr><td>datasets</td><td>4.3.0</td></tr>
+    <tr><td>remaCor</td><td>0.0.16</td></tr>
+    <tr><td>isva</td><td>1.9</td></tr>
+    <tr><td>isotone</td><td>1.1-1</td></tr>
+    <tr><td>filelock</td><td>1.0.2</td></tr>
+    <tr><td>ChIPsim</td><td>1.54.0</td></tr>
+    <tr><td>bio3d</td><td>2.4-4</td></tr>
+    <tr><td>base64enc</td><td>0.1-3</td></tr>
+    <tr><td>awsMethods</td><td>1.1-1</td></tr>
+    <tr><td>akima</td><td>0.6-3.4</td></tr>
+    <tr><td>signal</td><td>0.7-7</td></tr>
+    <tr><td>RWekajars</td><td>3.9.3-2</td></tr>
+    <tr><td>rngtools</td><td>1.5.2</td></tr>
+    <tr><td>RMySQL</td><td>0.10.26</td></tr>
+    <tr><td>Rcgmin</td><td>2022-4.30</td></tr>
+    <tr><td>mvQuad</td><td>1.0-8</td></tr>
+    <tr><td>mouse4302.db</td><td>3.13.0</td></tr>
+    <tr><td>marray</td><td>1.78.0</td></tr>
+    <tr><td>lobstr</td><td>1.1.2</td></tr>
+    <tr><td>fontawesome</td><td>0.5.2</td></tr>
+    <tr><td>deldir</td><td>1.0-9</td></tr>
+    <tr><td>ape</td><td>5.7-1</td></tr>
+    <tr><td>whisker</td><td>0.4.1</td></tr>
+    <tr><td>variancePartition</td><td>1.30.2</td></tr>
+    <tr><td>tweenr</td><td>2.0.2</td></tr>
+    <tr><td>SeqVarTools</td><td>1.38.0</td></tr>
+    <tr><td>random</td><td>0.2.6</td></tr>
+    <tr><td>profvis</td><td>0.3.8</td></tr>
+    <tr><td>prettyunits</td><td>1.2.0</td></tr>
+    <tr><td>PMCMRplus</td><td>1.9.8</td></tr>
+    <tr><td>openxlsx</td><td>4.2.5.2</td></tr>
+    <tr><td>MatrixEQTL</td><td>2.3</td></tr>
+    <tr><td>hunspell</td><td>3.0.3</td></tr>
+    <tr><td>hthgu133acdf</td><td>2.18.0</td></tr>
+    <tr><td>gridtext</td><td>0.1.5</td></tr>
+    <tr><td>ggraph</td><td>2.1.0</td></tr>
+    <tr><td>gamlss.data</td><td>6.0-2</td></tr>
+    <tr><td>flashClust</td><td>1.01-2</td></tr>
+    <tr><td>downloader</td><td>0.4</td></tr>
+    <tr><td>deepSNV</td><td>1.46.0</td></tr>
+    <tr><td>TitanCNA</td><td>1.38.0</td></tr>
+    <tr><td>sqldf</td><td>0.4-11</td></tr>
+    <tr><td>seriation</td><td>1.5.1</td></tr>
+    <tr><td>SCATE</td><td>1.10.0</td></tr>
+    <tr><td>rstan</td><td>2.32.3</td></tr>
+    <tr><td>loo</td><td>2.6.0</td></tr>
+    <tr><td>ggdist</td><td>3.3.0</td></tr>
+    <tr><td>genbankr</td><td>1.27.0</td></tr>
+    <tr><td>dr</td><td>3.0.10</td></tr>
+    <tr><td>DiceKriging</td><td>1.6.0</td></tr>
+    <tr><td>testthat</td><td>3.2.0</td></tr>
+    <tr><td>safe</td><td>3.40.1</td></tr>
+    <tr><td>rslurm</td><td>0.6.2</td></tr>
+    <tr><td>readstata13</td><td>0.10.1</td></tr>
+    <tr><td>pryr</td><td>0.1.6</td></tr>
+    <tr><td>phyloseq</td><td>1.44.0</td></tr>
+    <tr><td>optimx</td><td>2023-8.13</td></tr>
+    <tr><td>modelr</td><td>0.1.11</td></tr>
+    <tr><td>mathjaxr</td><td>1.6-0</td></tr>
+    <tr><td>hu6800probe</td><td>2.18.0</td></tr>
+    <tr><td>diffHic</td><td>1.32.0</td></tr>
+    <tr><td>cosinor2</td><td>0.2.1</td></tr>
+    <tr><td>coin</td><td>1.4-3</td></tr>
+    <tr><td>binom</td><td>1.1-1.1</td></tr>
+    <tr><td>tzdb</td><td>0.4.0</td></tr>
+    <tr><td>RUnit</td><td>0.4.32</td></tr>
+    <tr><td>rrcov</td><td>1.7-4</td></tr>
+    <tr><td>RPMM</td><td>1.25</td></tr>
+    <tr><td>rgdal</td><td>1.6-6</td></tr>
+    <tr><td>rematch2</td><td>2.1.2</td></tr>
+    <tr><td>R6</td><td>2.5.1</td></tr>
+    <tr><td>qvalue</td><td>2.32.0</td></tr>
+    <tr><td>multidplyr</td><td>0.1.3</td></tr>
+    <tr><td>laeken</td><td>0.5.2</td></tr>
+    <tr><td>invgamma</td><td>1.1</td></tr>
+    <tr><td>ijtiff</td><td>2.3.3</td></tr>
+    <tr><td>hdrcde</td><td>3.4</td></tr>
+    <tr><td>expint</td><td>0.1-8</td></tr>
+    <tr><td>dir.expiry</td><td>1.8.0</td></tr>
+    <tr><td>DiffBind</td><td>3.10.1</td></tr>
+    <tr><td>DEXSeq</td><td>1.46.0</td></tr>
+    <tr><td>DescTools</td><td>0.99.50</td></tr>
+    <tr><td>cowplot</td><td>1.1.1</td></tr>
+    <tr><td>base64url</td><td>1.4</td></tr>
+    <tr><td>ars</td><td>0.6</td></tr>
+    <tr><td>stats</td><td>4.3.0</td></tr>
+    <tr><td>wheatmap</td><td>0.2.0</td></tr>
+    <tr><td>uuid</td><td>1.1-1</td></tr>
+    <tr><td>uroot</td><td>2.1-2</td></tr>
+    <tr><td>TMB</td><td>1.9.6</td></tr>
+    <tr><td>rhdf5</td><td>2.44.0</td></tr>
+    <tr><td>nloptr</td><td>2.0.3</td></tr>
+    <tr><td>globaltest</td><td>5.54.0</td></tr>
+    <tr><td>dunn.test</td><td>1.3.5</td></tr>
+    <tr><td>DO.db</td><td>2.9</td></tr>
+    <tr><td>DEsingle</td><td>1.20.0</td></tr>
+    <tr><td>ChAMP</td><td>2.30.0</td></tr>
+    <tr><td>StanHeaders</td><td>2.26.28</td></tr>
+    <tr><td>sjlabelled</td><td>1.2.0</td></tr>
+    <tr><td>rio</td><td>1.0.1</td></tr>
+    <tr><td>preseqR</td><td>4.0.0</td></tr>
+    <tr><td>performance</td><td>0.10.5</td></tr>
+    <tr><td>paxtoolsr</td><td>1.34.0</td></tr>
+    <tr><td>NLP</td><td>0.2-1</td></tr>
+    <tr><td>network</td><td>1.18.1</td></tr>
+    <tr><td>minpack.lm</td><td>1.2-4</td></tr>
+    <tr><td>metadat</td><td>1.2-0</td></tr>
+    <tr><td>impute</td><td>1.74.1</td></tr>
+    <tr><td>IlluminaHumanMethylation27k.db</td><td>1.4.8</td></tr>
+    <tr><td>ggdag</td><td>0.2.10</td></tr>
+    <tr><td>fdapace</td><td>0.5.9</td></tr>
+    <tr><td>doParallel</td><td>1.0.17</td></tr>
+    <tr><td>DelayedMatrixStats</td><td>1.22.6</td></tr>
+    <tr><td>bootstrap</td><td>2019.6</td></tr>
+    <tr><td>affyio</td><td>1.70.0</td></tr>
+    <tr><td>TCGAbiolinksGUI.data</td><td>1.20.0</td></tr>
+    <tr><td>sys</td><td>3.4.2</td></tr>
+    <tr><td>siggenes</td><td>1.74.0</td></tr>
+    <tr><td>sets</td><td>1.0-24</td></tr>
+    <tr><td>rredlist</td><td>0.7.1</td></tr>
+    <tr><td>ps</td><td>1.7.5</td></tr>
+    <tr><td>pedigreemm</td><td>0.3-3</td></tr>
+    <tr><td>nonnest2</td><td>0.5-6</td></tr>
+    <tr><td>Matrix</td><td>1.6-1.1</td></tr>
+    <tr><td>logging</td><td>0.10-108</td></tr>
+    <tr><td>lavaan</td><td>0.6-16</td></tr>
+    <tr><td>ggplot.multistats</td><td>1.0.0</td></tr>
+    <tr><td>ggplot2</td><td>3.4.4</td></tr>
+    <tr><td>GenomicScores</td><td>2.12.1</td></tr>
+    <tr><td>fda</td><td>6.1.4</td></tr>
+    <tr><td>xtable</td><td>1.8-4</td></tr>
+    <tr><td>VariantAnnotation</td><td>1.46.0</td></tr>
+    <tr><td>TFBSTools</td><td>1.38.0</td></tr>
+    <tr><td>spatstat.linnet</td><td>3.1-1</td></tr>
+    <tr><td>rstanarm</td><td>2.26.1</td></tr>
+    <tr><td>Rsamtools</td><td>2.16.0</td></tr>
+    <tr><td>phyclust</td><td>0.1-34</td></tr>
+    <tr><td>MBESS</td><td>4.9.2</td></tr>
+    <tr><td>IlluminaHumanMethylation450kanno.ilmn12.hg19</td><td>0.6.1</td></tr>
+    <tr><td>GenomicRanges</td><td>1.52.1</td></tr>
+    <tr><td>BB</td><td>2019.10-1</td></tr>
+    <tr><td>xtermStyle</td><td>3.0.5</td></tr>
+    <tr><td>widgetTools</td><td>1.78.0</td></tr>
+    <tr><td>tab</td><td>5.1.1</td></tr>
+    <tr><td>reactlog</td><td>1.1.1</td></tr>
+    <tr><td>pvclust</td><td>2.2-0</td></tr>
+    <tr><td>processx</td><td>3.8.2</td></tr>
+    <tr><td>nleqslv</td><td>3.3.4</td></tr>
+    <tr><td>Matching</td><td>4.10-14</td></tr>
+    <tr><td>maftools</td><td>2.16.0</td></tr>
+    <tr><td>linprog</td><td>0.9-4</td></tr>
+    <tr><td>jomo</td><td>2.7-6</td></tr>
+    <tr><td>iotools</td><td>0.3-2</td></tr>
+    <tr><td>htmlTable</td><td>2.4.1</td></tr>
+    <tr><td>HSMMSingleCell</td><td>1.20.0</td></tr>
+    <tr><td>gtable</td><td>0.3.4</td></tr>
+    <tr><td>gee</td><td>4.13-25</td></tr>
+    <tr><td>gap.datasets</td><td>0.0.6</td></tr>
+    <tr><td>gamlss.dist</td><td>6.1-1</td></tr>
+    <tr><td>fpc</td><td>2.2-10</td></tr>
+    <tr><td>falconx</td><td>0.2</td></tr>
+    <tr><td>BSgenome.Dmelanogaster.UCSC.dm2</td><td>1.4.0</td></tr>
+    <tr><td>BANOVA</td><td>1.2.1</td></tr>
+    <tr><td>vctrs</td><td>0.6.4</td></tr>
+    <tr><td>truncdist</td><td>1.0-2</td></tr>
+    <tr><td>seqinr</td><td>4.2-30</td></tr>
+    <tr><td>PolynomF</td><td>2.0-5</td></tr>
+    <tr><td>org.Rn.eg.db</td><td>3.17.0</td></tr>
+    <tr><td>lmm</td><td>1.4</td></tr>
+    <tr><td>ggnewscale</td><td>0.4.9</td></tr>
+    <tr><td>DEoptim</td><td>2.2-8</td></tr>
+    <tr><td>CircStats</td><td>0.2-6</td></tr>
+    <tr><td>taxize</td><td>0.9.100</td></tr>
+    <tr><td>survRM2</td><td>1.0-4</td></tr>
+    <tr><td>OrganismDbi</td><td>1.42.0</td></tr>
+    <tr><td>OpenImageR</td><td>1.3.0</td></tr>
+    <tr><td>opencv</td><td>0.2.3</td></tr>
+    <tr><td>nucleR</td><td>2.32.0</td></tr>
+    <tr><td>mouse4302frmavecs</td><td>1.5.0</td></tr>
+    <tr><td>minfi</td><td>1.46.0</td></tr>
+    <tr><td>loomR</td><td>0.2.0</td></tr>
+    <tr><td>Iso</td><td>0.0-21</td></tr>
+    <tr><td>hgu133a2cdf</td><td>2.18.0</td></tr>
+    <tr><td>goseq</td><td>1.52.0</td></tr>
+    <tr><td>futile.options</td><td>1.0.1</td></tr>
+    <tr><td>FlowSOM</td><td>2.8.0</td></tr>
+    <tr><td>wikitaxa</td><td>0.4.0</td></tr>
+    <tr><td>shinyBS</td><td>0.61.1</td></tr>
+    <tr><td>segmented</td><td>1.6-4</td></tr>
+    <tr><td>scater</td><td>1.28.0</td></tr>
+    <tr><td>rstpm2</td><td>1.6.2</td></tr>
+    <tr><td>reshape2</td><td>1.4.4</td></tr>
+    <tr><td>rentrez</td><td>1.2.3</td></tr>
+    <tr><td>PKI</td><td>0.1-12</td></tr>
+    <tr><td>pcaPP</td><td>2.0-3</td></tr>
+    <tr><td>paran</td><td>1.5.2</td></tr>
+    <tr><td>NuPoP</td><td>2.8.1</td></tr>
+    <tr><td>magrittr</td><td>2.0.3</td></tr>
+    <tr><td>kSamples</td><td>1.2-10</td></tr>
+    <tr><td>KEGGdzPathwaysGEO</td><td>1.38.0</td></tr>
+    <tr><td>gmp</td><td>0.7-2</td></tr>
+    <tr><td>ggsignif</td><td>0.6.4</td></tr>
+    <tr><td>ggjoy</td><td>0.4.1</td></tr>
+    <tr><td>gbm</td><td>2.1.8.1</td></tr>
+    <tr><td>FME</td><td>1.3.6.3</td></tr>
+    <tr><td>DRR</td><td>0.0.4</td></tr>
+    <tr><td>Category</td><td>2.66.0</td></tr>
+    <tr><td>ash</td><td>1.0-15</td></tr>
+    <tr><td>tools</td><td>4.3.0</td></tr>
+    <tr><td>RTCGA</td><td>1.30.0</td></tr>
+    <tr><td>rmeta</td><td>3.0</td></tr>
+    <tr><td>RLRsim</td><td>3.1-8</td></tr>
+    <tr><td>repr</td><td>1.1.6</td></tr>
+    <tr><td>gamlss</td><td>5.4-20</td></tr>
+    <tr><td>curry</td><td>0.1.1</td></tr>
+    <tr><td>cubature</td><td>2.1.0</td></tr>
+    <tr><td>biocViews</td><td>1.68.2</td></tr>
+    <tr><td>arrayQualityMetrics</td><td>3.56.0</td></tr>
+    <tr><td>scDD</td><td>1.24.0</td></tr>
+    <tr><td>RWeka</td><td>0.4-46</td></tr>
+    <tr><td>R.oo</td><td>1.25.0</td></tr>
+    <tr><td>RhpcBLASctl</td><td>0.23-42</td></tr>
+    <tr><td>pbmcapply</td><td>1.5.1</td></tr>
+    <tr><td>IlluminaHumanMethylationEPICmanifest</td><td>0.3.0</td></tr>
+    <tr><td>ggrastr</td><td>1.0.2</td></tr>
+    <tr><td>CompQuadForm</td><td>1.4.3</td></tr>
+    <tr><td>biomformat</td><td>1.28.0</td></tr>
+    <tr><td>vegan</td><td>2.6-4</td></tr>
+    <tr><td>tximportData</td><td>1.28.0</td></tr>
+    <tr><td>scrime</td><td>1.3.5</td></tr>
+    <tr><td>scde</td><td>2.28.2</td></tr>
+    <tr><td>Rvmmin</td><td>2018-4.17.1</td></tr>
+    <tr><td>rjags</td><td>4-14</td></tr>
+    <tr><td>quantsmooth</td><td>1.66.0</td></tr>
+    <tr><td>mvnfast</td><td>0.2.8</td></tr>
+    <tr><td>muhaz</td><td>1.2.6.4</td></tr>
+    <tr><td>janitor</td><td>2.2.0</td></tr>
+    <tr><td>itertools</td><td>0.1-3</td></tr>
+    <tr><td>IlluminaHumanMethylationEPICanno.ilm10b2.hg19</td><td>0.6.0</td></tr>
+    <tr><td>ICS</td><td>1.4-1</td></tr>
+    <tr><td>googleAuthR</td><td>2.0.1</td></tr>
+    <tr><td>corrplot</td><td>0.92</td></tr>
+    <tr><td>circlize</td><td>0.4.15</td></tr>
+    <tr><td>BiocVersion</td><td>3.17.1</td></tr>
+    <tr><td>visNetwork</td><td>2.1.2</td></tr>
+    <tr><td>tilingArray</td><td>1.78.0</td></tr>
+    <tr><td>swagger</td><td>3.33.1</td></tr>
+    <tr><td>spatstat</td><td>3.0-6</td></tr>
+    <tr><td>scatterpie</td><td>0.2.1</td></tr>
+    <tr><td>RItools</td><td>0.3-3</td></tr>
+    <tr><td>party</td><td>1.3-13</td></tr>
+    <tr><td>MendelianRandomization</td><td>0.9.0</td></tr>
+    <tr><td>LogicReg</td><td>1.6.6</td></tr>
+    <tr><td>gageData</td><td>2.38.0</td></tr>
+    <tr><td>earth</td><td>5.3.2</td></tr>
+    <tr><td>cytomapper</td><td>1.12.0</td></tr>
+    <tr><td>Canopy</td><td>1.3.0</td></tr>
+    <tr><td>urca</td><td>1.3-3</td></tr>
+    <tr><td>txtplot</td><td>1.0-4</td></tr>
+    <tr><td>SparseM</td><td>1.81</td></tr>
+    <tr><td>rnoaa</td><td>1.4.0</td></tr>
+    <tr><td>qlcMatrix</td><td>0.9.7</td></tr>
+    <tr><td>NBPSeq</td><td>0.3.1</td></tr>
+    <tr><td>msir</td><td>1.3.3</td></tr>
+    <tr><td>mosaicCore</td><td>0.9.2.1</td></tr>
+    <tr><td>iClusterPlus</td><td>1.36.1</td></tr>
+    <tr><td>GenomeInfoDb</td><td>1.36.4</td></tr>
+    <tr><td>DOT</td><td>0.1</td></tr>
+    <tr><td>cicero</td><td>1.18.0</td></tr>
+    <tr><td>trust</td><td>0.1-8</td></tr>
+    <tr><td>tictoc</td><td>1.2</td></tr>
+    <tr><td>spatstat.sparse</td><td>3.0-2</td></tr>
+    <tr><td>servr</td><td>0.27</td></tr>
+    <tr><td>Rhdf5lib</td><td>1.22.1</td></tr>
+    <tr><td>polspline</td><td>1.1.23</td></tr>
+    <tr><td>pkgdown</td><td>2.0.7</td></tr>
+    <tr><td>pals</td><td>1.8</td></tr>
+    <tr><td>later</td><td>1.3.1</td></tr>
+    <tr><td>kpmt</td><td>0.1.0</td></tr>
+    <tr><td>GEOmetadb</td><td>1.62.0</td></tr>
+    <tr><td>gaussquad</td><td>1.0-3</td></tr>
+    <tr><td>ensembldb</td><td>2.24.1</td></tr>
+    <tr><td>copula</td><td>1.1-2</td></tr>
+    <tr><td>canine2.db</td><td>3.13.0</td></tr>
+    <tr><td>BH</td><td>1.81.0-1</td></tr>
+    <tr><td>rgl</td><td>1.2.1</td></tr>
+    <tr><td>RANN</td><td>2.6.1</td></tr>
+    <tr><td>PROcess</td><td>1.76.0</td></tr>
+    <tr><td>geneplotter</td><td>1.78.0</td></tr>
+    <tr><td>fishplot</td><td>0.5.1</td></tr>
+    <tr><td>egg</td><td>0.4.5</td></tr>
+    <tr><td>ActCR</td><td>0.3.0</td></tr>
+    <tr><td>urlchecker</td><td>1.0.1</td></tr>
+    <tr><td>synchronicity</td><td>1.3.5</td></tr>
+    <tr><td>RcppParallel</td><td>5.1.7</td></tr>
+    <tr><td>qrng</td><td>0.0-9</td></tr>
+    <tr><td>proxy</td><td>0.4-27</td></tr>
+    <tr><td>pd.mouse430.2</td><td>3.12.0</td></tr>
+    <tr><td>parallelly</td><td>1.36.0</td></tr>
+    <tr><td>metafor</td><td>4.4-0</td></tr>
+    <tr><td>leidenbase</td><td>0.1.25</td></tr>
+    <tr><td>KEGGREST</td><td>1.40.1</td></tr>
+    <tr><td>hapsim</td><td>0.31</td></tr>
+    <tr><td>GenomicDataCommons</td><td>1.24.3</td></tr>
+    <tr><td>cvAUC</td><td>1.1.4</td></tr>
+    <tr><td>basilisk</td><td>1.12.1</td></tr>
+    <tr><td>aod</td><td>1.3.2</td></tr>
+    <tr><td>zeallot</td><td>0.1.0</td></tr>
+    <tr><td>rsconnect</td><td>1.1.1</td></tr>
+    <tr><td>R.devices</td><td>2.17.1</td></tr>
+    <tr><td>progressr</td><td>0.14.0</td></tr>
+    <tr><td>patchwork</td><td>1.1.3</td></tr>
+    <tr><td>org.Cf.eg.db</td><td>3.17.0</td></tr>
+    <tr><td>inflection</td><td>1.3.6</td></tr>
+    <tr><td>IlluminaHumanMethylation27kmanifest</td><td>0.4.0</td></tr>
+    <tr><td>hgu133plus2.db</td><td>3.13.0</td></tr>
+    <tr><td>fds</td><td>1.8</td></tr>
+    <tr><td>dplyr</td><td>1.1.3</td></tr>
+    <tr><td>cometExactTest</td><td>0.1.5</td></tr>
+    <tr><td>combinat</td><td>0.0-8</td></tr>
+    <tr><td>cmm</td><td>1.0</td></tr>
+    <tr><td>methods</td><td>4.3.0</td></tr>
+    <tr><td>useful</td><td>1.2.6</td></tr>
+    <tr><td>trimcluster</td><td>0.1-5</td></tr>
+    <tr><td>survey</td><td>4.2-1</td></tr>
+    <tr><td>SQUAREM</td><td>2021.1</td></tr>
+    <tr><td>reticulate</td><td>1.34.0</td></tr>
+    <tr><td>phia</td><td>0.2-1</td></tr>
+    <tr><td>pfamAnalyzeR</td><td>1.0.1</td></tr>
+    <tr><td>ParamHelpers</td><td>1.14.1</td></tr>
+    <tr><td>gaston</td><td>1.5.9</td></tr>
+    <tr><td>clock</td><td>0.7.0</td></tr>
+    <tr><td>affxparser</td><td>1.72.0</td></tr>
+    <tr><td>weights</td><td>1.0.4</td></tr>
+    <tr><td>tseries</td><td>0.10-54</td></tr>
+    <tr><td>TFisher</td><td>0.2.0</td></tr>
+    <tr><td>tensorflow</td><td>2.14.0</td></tr>
+    <tr><td>tensor</td><td>1.5</td></tr>
+    <tr><td>Repitools</td><td>1.46.0</td></tr>
+    <tr><td>R2HTML</td><td>2.3.3</td></tr>
+    <tr><td>JM</td><td>1.5-2</td></tr>
+    <tr><td>hgu95av2probe</td><td>2.18.0</td></tr>
+    <tr><td>fastICA</td><td>1.2-3</td></tr>
+    <tr><td>compute.es</td><td>0.2-5</td></tr>
+    <tr><td>bigmemory</td><td>4.6.1</td></tr>
+    <tr><td>sourcetools</td><td>0.1.7-1</td></tr>
+    <tr><td>PFAM.db</td><td>3.17.0</td></tr>
+    <tr><td>PAIRADISE</td><td>1.16.0</td></tr>
+    <tr><td>lsa</td><td>0.73.3</td></tr>
+    <tr><td>iCNV</td><td>1.20.0</td></tr>
+    <tr><td>future.batchtools</td><td>0.12.0</td></tr>
+    <tr><td>EBImage</td><td>4.42.0</td></tr>
+    <tr><td>ddalpha</td><td>1.3.13</td></tr>
+    <tr><td>ctc</td><td>1.74.0</td></tr>
+    <tr><td>clusterGeneration</td><td>1.3.8</td></tr>
+    <tr><td>broom.mixed</td><td>0.2.9.4</td></tr>
+    <tr><td>AnnotationHub</td><td>3.8.0</td></tr>
+    <tr><td>svUnit</td><td>1.0.6</td></tr>
+    <tr><td>stringfish</td><td>0.15.8</td></tr>
+    <tr><td>shinytest</td><td>1.5.3</td></tr>
+    <tr><td>scattermore</td><td>1.2</td></tr>
+    <tr><td>mixOmics</td><td>6.24.0</td></tr>
+    <tr><td>misc3d</td><td>0.9-1</td></tr>
+    <tr><td>metap</td><td>1.9</td></tr>
+    <tr><td>IlluminaHumanMethylationEPICanno.ilm10b4.hg19</td><td>0.6.0</td></tr>
+    <tr><td>hwriter</td><td>1.3.2.1</td></tr>
+    <tr><td>gmm</td><td>1.8</td></tr>
+    <tr><td>Glimma</td><td>2.10.0</td></tr>
+    <tr><td>ddCt</td><td>1.56.0</td></tr>
+    <tr><td>bc3net</td><td>1.0.4</td></tr>
+    <tr><td>WikipediR</td><td>1.5.0</td></tr>
+    <tr><td>RSpectra</td><td>0.16-1</td></tr>
+    <tr><td>RColorBrewer</td><td>1.1-3</td></tr>
+    <tr><td>perry</td><td>0.3.1</td></tr>
+    <tr><td>networkLite</td><td>1.0.5</td></tr>
+    <tr><td>mvord</td><td>1.1.1</td></tr>
+    <tr><td>minqa</td><td>1.2.6</td></tr>
+    <tr><td>maxLik</td><td>1.5-2</td></tr>
+    <tr><td>htmlwidgets</td><td>1.6.2</td></tr>
+    <tr><td>hgu133a2.db</td><td>3.13.0</td></tr>
+    <tr><td>HDF5Array</td><td>1.28.1</td></tr>
+    <tr><td>ggridges</td><td>0.5.4</td></tr>
+    <tr><td>gcrma</td><td>2.72.0</td></tr>
+    <tr><td>epiDisplay</td><td>3.5.0.2</td></tr>
+    <tr><td>bumphunter</td><td>1.42.0</td></tr>
+    <tr><td>compiler</td><td>4.3.0</td></tr>
+    <tr><td>TxDb.Hsapiens.UCSC.hg38.knownGene</td><td>3.17.0</td></tr>
+    <tr><td>timeDate</td><td>4022.108</td></tr>
+    <tr><td>sysfonts</td><td>0.8.8</td></tr>
+    <tr><td>statnet</td><td>2019.6</td></tr>
+    <tr><td>stargazer</td><td>5.2.3</td></tr>
+    <tr><td>S4Arrays</td><td>1.0.6</td></tr>
+    <tr><td>GOSim</td><td>1.38.0</td></tr>
+    <tr><td>getPass</td><td>0.2-2</td></tr>
+    <tr><td>Ecfun</td><td>0.3-2</td></tr>
+    <tr><td>Ecdat</td><td>0.4-2</td></tr>
+    <tr><td>dotCall64</td><td>1.1-0</td></tr>
+    <tr><td>beanplot</td><td>1.3.1</td></tr>
+    <tr><td>foreign</td><td>0.8-84</td></tr>
+    <tr><td>roxygen2</td><td>7.2.3</td></tr>
+    <tr><td>robCompositions</td><td>2.4.1</td></tr>
+    <tr><td>NMOF</td><td>2.8-0</td></tr>
+    <tr><td>limma</td><td>3.56.2</td></tr>
+    <tr><td>hu6800cdf</td><td>2.18.0</td></tr>
+    <tr><td>hierfstat</td><td>0.5-11</td></tr>
+    <tr><td>hgu133a2probe</td><td>2.18.0</td></tr>
+    <tr><td>gower</td><td>1.0.1</td></tr>
+    <tr><td>fontLiberation</td><td>0.1.0</td></tr>
+    <tr><td>flexclust</td><td>1.4-1</td></tr>
+    <tr><td>ca</td><td>0.71.1</td></tr>
+    <tr><td>WES.1KG.WUGSC</td><td>1.32.0</td></tr>
+    <tr><td>usethis</td><td>2.2.2</td></tr>
+    <tr><td>textshaping</td><td>0.3.7</td></tr>
+    <tr><td>shiny</td><td>1.7.5.1</td></tr>
+    <tr><td>R2jags</td><td>0.7-1</td></tr>
+    <tr><td>quadprog</td><td>1.5-8</td></tr>
+    <tr><td>phylobase</td><td>0.8.10</td></tr>
+    <tr><td>microbenchmark</td><td>1.4.10</td></tr>
+    <tr><td>MAVE</td><td>1.3.11</td></tr>
+    <tr><td>graphlayouts</td><td>1.0.1</td></tr>
+    <tr><td>GEOquery</td><td>2.68.0</td></tr>
+    <tr><td>gdsfmt</td><td>1.36.1</td></tr>
+    <tr><td>fitdistrplus</td><td>1.1-11</td></tr>
+    <tr><td>ChAMPdata</td><td>2.32.0</td></tr>
+    <tr><td>argparser</td><td>0.7.1</td></tr>
+    <tr><td>adegenet</td><td>2.1.10</td></tr>
+    <tr><td>threg</td><td>1.0.3</td></tr>
+    <tr><td>targets</td><td>1.3.2</td></tr>
+    <tr><td>scatterplot3d</td><td>0.3-44</td></tr>
+    <tr><td>promises</td><td>1.2.1</td></tr>
+    <tr><td>prettydoc</td><td>0.4.1</td></tr>
+    <tr><td>poilog</td><td>0.4.2</td></tr>
+    <tr><td>pkgmaker</td><td>0.32.10</td></tr>
+    <tr><td>pd.mogene.2.0.st</td><td>3.14.1</td></tr>
+    <tr><td>pbapply</td><td>1.7-2</td></tr>
+    <tr><td>llogistic</td><td>1.0.3</td></tr>
+    <tr><td>humanomni5quadv1bCrlmm</td><td>1.0.0</td></tr>
+    <tr><td>ellipse</td><td>0.5.0</td></tr>
+    <tr><td>doSNOW</td><td>1.0.20</td></tr>
+    <tr><td>data.tree</td><td>1.0.0</td></tr>
+    <tr><td>topGO</td><td>2.52.0</td></tr>
+    <tr><td>squash</td><td>1.0.9</td></tr>
+    <tr><td>spatstat.explore</td><td>3.2-3</td></tr>
+    <tr><td>s2</td><td>1.1.4</td></tr>
+    <tr><td>Runuran</td><td>0.38</td></tr>
+    <tr><td>rngWELL</td><td>0.10-9</td></tr>
+    <tr><td>rmdformats</td><td>1.0.4</td></tr>
+    <tr><td>posterior</td><td>1.4.1</td></tr>
+    <tr><td>NbClust</td><td>3.0.1</td></tr>
+    <tr><td>ICC</td><td>2.4.0</td></tr>
+    <tr><td>fBasics</td><td>4031.95</td></tr>
+    <tr><td>extrafontdb</td><td>1.0</td></tr>
+    <tr><td>dfidx</td><td>0.0-5</td></tr>
+    <tr><td>xgboost</td><td>1.7.5.1</td></tr>
+    <tr><td>viridis</td><td>0.6.4</td></tr>
+    <tr><td>universalmotif</td><td>1.18.1</td></tr>
+    <tr><td>treeio</td><td>1.24.3</td></tr>
+    <tr><td>survivalAnalysis</td><td>0.3.0</td></tr>
+    <tr><td>stepPlr</td><td>0.93</td></tr>
+    <tr><td>pillar</td><td>1.9.0</td></tr>
+    <tr><td>parmigene</td><td>1.1.0</td></tr>
+    <tr><td>packrat</td><td>0.9.2</td></tr>
+    <tr><td>MKmisc</td><td>1.9</td></tr>
+    <tr><td>insight</td><td>0.19.6</td></tr>
+    <tr><td>hms</td><td>1.1.3</td></tr>
+    <tr><td>hgu95av2cdf</td><td>2.18.0</td></tr>
+    <tr><td>fftwtools</td><td>0.9-11</td></tr>
+    <tr><td>etm</td><td>1.1.1</td></tr>
+    <tr><td>cvTools</td><td>0.3.2</td></tr>
+    <tr><td>coxme</td><td>2.2-18.1</td></tr>
+    <tr><td>BWStest</td><td>0.2.3</td></tr>
+    <tr><td>bkmr</td><td>0.2.2</td></tr>
+    <tr><td>bindrcpp</td><td>0.2.2</td></tr>
+    <tr><td>aroma.light</td><td>3.30.0</td></tr>
+    <tr><td>XVector</td><td>0.40.0</td></tr>
+    <tr><td>units</td><td>0.8-2</td></tr>
+    <tr><td>samr</td><td>3.0</td></tr>
+    <tr><td>registry</td><td>0.5-1</td></tr>
+    <tr><td>recipes</td><td>1.0.8</td></tr>
+    <tr><td>intansv</td><td>1.40.0</td></tr>
+    <tr><td>ICSNP</td><td>1.1-2</td></tr>
+    <tr><td>feather</td><td>0.3.5</td></tr>
+    <tr><td>extrafont</td><td>0.19</td></tr>
+    <tr><td>base64</td><td>2.0.1</td></tr>
+    <tr><td>worrms</td><td>0.4.3</td></tr>
+    <tr><td>wk</td><td>0.8.0</td></tr>
+    <tr><td>venneuler</td><td>1.1-3</td></tr>
+    <tr><td>VanillaICE</td><td>1.62.0</td></tr>
+    <tr><td>ucminf</td><td>1.2.0</td></tr>
+    <tr><td>svglite</td><td>2.1.2</td></tr>
+    <tr><td>SingleR</td><td>2.2.0</td></tr>
+    <tr><td>Rsolnp</td><td>1.16</td></tr>
+    <tr><td>reshape</td><td>0.8.9</td></tr>
+    <tr><td>phytools</td><td>1.9-16</td></tr>
+    <tr><td>mzID</td><td>1.38.0</td></tr>
+    <tr><td>km.ci</td><td>0.5-6</td></tr>
+    <tr><td>isobar</td><td>1.46.0</td></tr>
+    <tr><td>highr</td><td>0.10</td></tr>
+    <tr><td>filehash</td><td>2.4-5</td></tr>
+    <tr><td>densvis</td><td>1.10.3</td></tr>
+    <tr><td>CVST</td><td>0.2-3</td></tr>
+    <tr><td>arm</td><td>1.13-1</td></tr>
+    <tr><td>nnet</td><td>7.3-19</td></tr>
+    <tr><td>venn</td><td>1.11</td></tr>
+    <tr><td>sendmailR</td><td>1.4-0</td></tr>
+    <tr><td>rappdirs</td><td>0.3.3</td></tr>
+    <tr><td>plot3Drgl</td><td>1.0.4</td></tr>
+    <tr><td>pepr</td><td>0.4.0</td></tr>
+    <tr><td>multcomp</td><td>1.4-25</td></tr>
+    <tr><td>mgcv</td><td>1.9-0</td></tr>
+    <tr><td>ggalt</td><td>0.4.0</td></tr>
+    <tr><td>dtw</td><td>1.23-1</td></tr>
+    <tr><td>cosinor</td><td>1.2.3</td></tr>
+    <tr><td>broom</td><td>1.0.5</td></tr>
+    <tr><td>translations</td><td>4.3.0</td></tr>
+    <tr><td>rbibutils</td><td>2.2.15</td></tr>
+    <tr><td>polynom</td><td>1.4-1</td></tr>
+    <tr><td>org.Mm.eg.db</td><td>3.17.0</td></tr>
+    <tr><td>msigdbr</td><td>7.5.1</td></tr>
+    <tr><td>chromVAR</td><td>1.22.1</td></tr>
+    <tr><td>BSgenome.Hsapiens.UCSC.hg19</td><td>1.4.3</td></tr>
+    <tr><td>BPSC</td><td>0.99.2</td></tr>
+    <tr><td>sensitivity</td><td>1.29.0</td></tr>
+    <tr><td>pbatR</td><td>2.2-16</td></tr>
+    <tr><td>mclogit</td><td>0.9.6</td></tr>
+    <tr><td>lmom</td><td>3.0</td></tr>
+    <tr><td>GlobalOptions</td><td>0.1.2</td></tr>
+    <tr><td>ggfun</td><td>0.1.3</td></tr>
+    <tr><td>geiger</td><td>2.0.11</td></tr>
+    <tr><td>episensr</td><td>1.3.0</td></tr>
+    <tr><td>compositions</td><td>2.0-6</td></tr>
+    <tr><td>colorspace</td><td>2.1-0</td></tr>
+    <tr><td>BSgenome.Scerevisiae.UCSC.sacCer1</td><td>1.4.0</td></tr>
+    <tr><td>BSgenome.Hsapiens.UCSC.hg18</td><td>1.3.1000</td></tr>
+    <tr><td>bold</td><td>1.3.0</td></tr>
+    <tr><td>splines</td><td>4.3.0</td></tr>
+    <tr><td>yulab.utils</td><td>0.1.0</td></tr>
+    <tr><td>scuttle</td><td>1.10.3</td></tr>
+    <tr><td>rae230aprobe</td><td>2.18.0</td></tr>
+    <tr><td>pvca</td><td>1.40.0</td></tr>
+    <tr><td>proto</td><td>1.0.0</td></tr>
+    <tr><td>oompaData</td><td>3.1.3</td></tr>
+    <tr><td>jsonlite</td><td>1.8.7</td></tr>
+    <tr><td>gert</td><td>2.0.0</td></tr>
+    <tr><td>foreach</td><td>1.5.2</td></tr>
+    <tr><td>forcats</td><td>1.0.0</td></tr>
+    <tr><td>fgsea</td><td>1.26.0</td></tr>
+    <tr><td>farver</td><td>2.1.1</td></tr>
+    <tr><td>FactoMineR</td><td>2.9</td></tr>
+    <tr><td>expm</td><td>0.999-7</td></tr>
+    <tr><td>credentials</td><td>2.0.1</td></tr>
+    <tr><td>BSgenome.Scerevisiae.UCSC.sacCer2</td><td>1.4.0</td></tr>
+    <tr><td>BiocManager</td><td>1.30.22</td></tr>
+    <tr><td>subSeq</td><td>1.30.0</td></tr>
+    <tr><td>snowFT</td><td>1.6-1</td></tr>
+    <tr><td>pipeFrame</td><td>1.16.0</td></tr>
+    <tr><td>NMF</td><td>0.26</td></tr>
+    <tr><td>logicFS</td><td>2.20.0</td></tr>
+    <tr><td>LGEWIS</td><td>1.1</td></tr>
+    <tr><td>IsoformSwitchAnalyzeR</td><td>2.0.1</td></tr>
+    <tr><td>fit.models</td><td>0.64</td></tr>
+    <tr><td>ExomeDepth</td><td>1.1.16</td></tr>
+    <tr><td>BiocGenerics</td><td>0.46.0</td></tr>
+    <tr><td>codetools</td><td>0.2-19</td></tr>
+    <tr><td>sna</td><td>2.7-1</td></tr>
+    <tr><td>sgeostat</td><td>1.0-27</td></tr>
+    <tr><td>R.methodsS3</td><td>1.8.2</td></tr>
+    <tr><td>multicool</td><td>0.1-12</td></tr>
+    <tr><td>MSQC</td><td>1.1.0</td></tr>
+    <tr><td>lmerTest</td><td>3.1-3</td></tr>
+    <tr><td>lazyeval</td><td>0.2.2</td></tr>
+    <tr><td>ergm.multi</td><td>0.2.0</td></tr>
+    <tr><td>ROpenCVLite</td><td>4.70.0</td></tr>
+    <tr><td>rBayesianOptimization</td><td>1.2.0</td></tr>
+    <tr><td>quantreg</td><td>5.97</td></tr>
+    <tr><td>plumber</td><td>1.2.1</td></tr>
+    <tr><td>pbs</td><td>1.1</td></tr>
+    <tr><td>natserv</td><td>1.0.0</td></tr>
+    <tr><td>naivebayes</td><td>0.9.7</td></tr>
+    <tr><td>monocle</td><td>2.28.0</td></tr>
+    <tr><td>maps</td><td>3.4.1</td></tr>
+    <tr><td>lmtest</td><td>0.9-40</td></tr>
+    <tr><td>interactiveDisplayBase</td><td>1.38.0</td></tr>
+    <tr><td>flexsurv</td><td>2.2.2</td></tr>
+    <tr><td>flexmix</td><td>2.3-19</td></tr>
+    <tr><td>CODEX2</td><td>1.3.0</td></tr>
+    <tr><td>BSgenome.Mmusculus.UCSC.mm10</td><td>1.4.3</td></tr>
+    <tr><td>bayesplot</td><td>1.10.0</td></tr>
+    <tr><td>accelerometry</td><td>3.1.2</td></tr>
+    <tr><td>WikidataR</td><td>2.3.3</td></tr>
+    <tr><td>TxDb.Rnorvegicus.UCSC.rn4.ensGene</td><td>3.2.2</td></tr>
+    <tr><td>TrajectoryUtils</td><td>1.8.0</td></tr>
+    <tr><td>strex</td><td>1.6.0</td></tr>
+    <tr><td>spls</td><td>2.2-3</td></tr>
+    <tr><td>shinyFiles</td><td>0.9.3</td></tr>
+    <tr><td>sesame</td><td>1.18.4</td></tr>
+    <tr><td>RInside</td><td>0.2.18</td></tr>
+    <tr><td>readr</td><td>2.1.4</td></tr>
+    <tr><td>rainbow</td><td>3.7</td></tr>
+    <tr><td>PMA</td><td>1.2-2</td></tr>
+    <tr><td>packcircles</td><td>0.3.6</td></tr>
+    <tr><td>IRkernel</td><td>1.3.2</td></tr>
+    <tr><td>IlluminaHumanMethylation27kanno.ilmn12.hg19</td><td>0.6.0</td></tr>
+    <tr><td>biclust</td><td>2.0.3.1</td></tr>
+    <tr><td>stats4</td><td>4.3.0</td></tr>
+    <tr><td>base</td><td>4.3.0</td></tr>
+    <tr><td>tradeSeq</td><td>1.14.0</td></tr>
+    <tr><td>tclust</td><td>1.5-4</td></tr>
+    <tr><td>synthpop</td><td>1.8-0</td></tr>
+    <tr><td>S4Vectors</td><td>0.38.2</td></tr>
+    <tr><td>rstatix</td><td>0.7.2</td></tr>
+    <tr><td>proj4</td><td>1.0-12</td></tr>
+    <tr><td>oz</td><td>1.0-22</td></tr>
+    <tr><td>ordinal</td><td>2022.11-16</td></tr>
+    <tr><td>mitools</td><td>2.4</td></tr>
+    <tr><td>meta</td><td>6.5-0</td></tr>
+    <tr><td>googledrive</td><td>2.1.1</td></tr>
+    <tr><td>ggpubr</td><td>0.6.0</td></tr>
+    <tr><td>bitops</td><td>1.0-7</td></tr>
+    <tr><td>affycomp</td><td>1.76.1</td></tr>
+    <tr><td>WriteXLS</td><td>6.4.0</td></tr>
+    <tr><td>waveslim</td><td>1.8.4</td></tr>
+    <tr><td>TxDb.Hsapiens.UCSC.hg19.knownGene</td><td>3.2.2</td></tr>
+    <tr><td>tsna</td><td>0.3.5</td></tr>
+    <tr><td>thgenetics</td><td>0.4-2</td></tr>
+    <tr><td>sparseMatrixStats</td><td>1.12.2</td></tr>
+    <tr><td>readxl</td><td>1.4.3</td></tr>
+    <tr><td>RcppRoll</td><td>0.3.0</td></tr>
+    <tr><td>RcppProgress</td><td>0.4.2</td></tr>
+    <tr><td>postlogic</td><td>0.1.0.1</td></tr>
+    <tr><td>ggeffects</td><td>1.3.2</td></tr>
+    <tr><td>emmeans</td><td>1.8.9</td></tr>
+    <tr><td>chk</td><td>0.9.1</td></tr>
+    <tr><td>betareg</td><td>3.1-4</td></tr>
+    <tr><td>bbmle</td><td>1.0.25</td></tr>
+    <tr><td>BatchJobs</td><td>1.9</td></tr>
+    <tr><td>UpSetR</td><td>1.4.0</td></tr>
+    <tr><td>timsac</td><td>1.3.8-4</td></tr>
+    <tr><td>tergm</td><td>4.2.0</td></tr>
+    <tr><td>subplex</td><td>1.8</td></tr>
+    <tr><td>spatstat.model</td><td>3.2-6</td></tr>
+    <tr><td>sparsesvd</td><td>0.2-2</td></tr>
+    <tr><td>rversions</td><td>2.1.2</td></tr>
+    <tr><td>pd.genomewidesnp.6</td><td>3.14.1</td></tr>
+    <tr><td>oompaBase</td><td>3.2.9</td></tr>
+    <tr><td>iterpc</td><td>0.4.2</td></tr>
+    <tr><td>irr</td><td>0.84.1</td></tr>
+    <tr><td>IRdisplay</td><td>1.1</td></tr>
+    <tr><td>gmodels</td><td>2.18.1.1</td></tr>
+    <tr><td>Exact</td><td>3.2</td></tr>
+    <tr><td>withr</td><td>2.5.1</td></tr>
+    <tr><td>tidyr</td><td>1.3.0</td></tr>
+    <tr><td>spatstat.data</td><td>3.0-1</td></tr>
+    <tr><td>showimage</td><td>1.0.0</td></tr>
+    <tr><td>RWiener</td><td>1.3-3</td></tr>
+    <tr><td>RSQLite</td><td>2.3.1</td></tr>
+    <tr><td>RcppAnnoy</td><td>0.0.21</td></tr>
+    <tr><td>perm</td><td>1.0-0.4</td></tr>
+    <tr><td>lava</td><td>1.7.2.1</td></tr>
+    <tr><td>intervals</td><td>0.15.4</td></tr>
+    <tr><td>FlowSorted.Blood.EPIC</td><td>2.4.2</td></tr>
+    <tr><td>EBSeq</td><td>1.40.0</td></tr>
+    <tr><td>zebrafishcdf</td><td>2.18.0</td></tr>
+    <tr><td>vroom</td><td>1.6.4</td></tr>
+    <tr><td>TxDb.Mmusculus.UCSC.mm9.knownGene</td><td>3.2.2</td></tr>
+    <tr><td>robustHD</td><td>0.8.0</td></tr>
+    <tr><td>RNOmni</td><td>1.0.1.2</td></tr>
+    <tr><td>quantmod</td><td>0.4.25</td></tr>
+    <tr><td>pastecs</td><td>1.3.21</td></tr>
+    <tr><td>nplplot</td><td>4.6</td></tr>
+    <tr><td>mutoss</td><td>0.1-13</td></tr>
+    <tr><td>hdf5r</td><td>1.3.8</td></tr>
+    <tr><td>glmpath</td><td>0.98</td></tr>
+    <tr><td>extRemes</td><td>2.1-3</td></tr>
+    <tr><td>chipseq</td><td>1.50.0</td></tr>
+    <tr><td>tsne</td><td>0.1-3.1</td></tr>
+    <tr><td>tripack</td><td>1.3-9.1</td></tr>
+    <tr><td>TailRank</td><td>3.2.2</td></tr>
+    <tr><td>rsample</td><td>1.2.0</td></tr>
+    <tr><td>qqconf</td><td>1.3.2</td></tr>
+    <tr><td>orthogonalsplinebasis</td><td>0.1.7</td></tr>
+    <tr><td>modeltools</td><td>0.2-23</td></tr>
+    <tr><td>maxstat</td><td>0.7-25</td></tr>
+    <tr><td>glmmML</td><td>1.1.5</td></tr>
+    <tr><td>GenomicAlignments</td><td>1.36.0</td></tr>
+    <tr><td>fail</td><td>1.3</td></tr>
+    <tr><td>enpls</td><td>6.1</td></tr>
+    <tr><td>brew</td><td>1.0-8</td></tr>
+    <tr><td>vsn</td><td>3.68.0</td></tr>
+    <tr><td>survminer</td><td>0.4.9</td></tr>
+    <tr><td>relimp</td><td>1.0-5</td></tr>
+    <tr><td>RcppNumerical</td><td>0.6-0</td></tr>
+    <tr><td>pan</td><td>1.9</td></tr>
+    <tr><td>mmap</td><td>0.6-21</td></tr>
+    <tr><td>listenv</td><td>0.9.0</td></tr>
+    <tr><td>gh</td><td>1.4.0</td></tr>
+    <tr><td>DynDoc</td><td>1.78.0</td></tr>
+    <tr><td>denstrip</td><td>1.5.4</td></tr>
+    <tr><td>CpGassoc</td><td>2.60</td></tr>
+    <tr><td>ConsensusClusterPlus</td><td>1.64.0</td></tr>
+    <tr><td>bios2mds</td><td>1.2.3</td></tr>
+    <tr><td>beachmat</td><td>2.16.0</td></tr>
+    <tr><td>tcltk</td><td>4.3.0</td></tr>
+    <tr><td>wdm</td><td>0.2.4</td></tr>
+    <tr><td>rhdf5filters</td><td>1.12.1</td></tr>
+    <tr><td>prabclus</td><td>2.3-2</td></tr>
+    <tr><td>orthopolynom</td><td>1.0-6.1</td></tr>
+    <tr><td>NADA</td><td>1.6-1.1</td></tr>
+    <tr><td>KEGGgraph</td><td>1.60.0</td></tr>
+    <tr><td>ggstance</td><td>0.3.6</td></tr>
+    <tr><td>gdtools</td><td>0.3.4</td></tr>
+    <tr><td>gamm4</td><td>0.2-6</td></tr>
+    <tr><td>epiR</td><td>2.0.65</td></tr>
+    <tr><td>dygraphs</td><td>1.1.1.6</td></tr>
+    <tr><td>dmrseq</td><td>1.20.1</td></tr>
+    <tr><td>tidyverse</td><td>2.0.0</td></tr>
+    <tr><td>systemPipeR</td><td>2.6.3</td></tr>
+    <tr><td>ruv</td><td>0.9.7.1</td></tr>
+    <tr><td>robust</td><td>0.7-2</td></tr>
+    <tr><td>Rfit</td><td>0.24.6</td></tr>
+    <tr><td>RefPlus</td><td>1.70.0</td></tr>
+    <tr><td>mutSignatures</td><td>2.1.1</td></tr>
+    <tr><td>minet</td><td>3.58.0</td></tr>
+    <tr><td>hgu95av2</td><td>2.2.0</td></tr>
+    <tr><td>getopt</td><td>1.20.4</td></tr>
+    <tr><td>geomorph</td><td>4.0.6</td></tr>
+    <tr><td>fftw</td><td>1.0-7</td></tr>
+    <tr><td>falcon</td><td>0.2</td></tr>
+    <tr><td>evd</td><td>2.3-6.1</td></tr>
+    <tr><td>diptest</td><td>0.76-0</td></tr>
+    <tr><td>dimRed</td><td>0.2.6</td></tr>
+    <tr><td>depmap</td><td>1.14.0</td></tr>
+    <tr><td>dendextend</td><td>1.17.1</td></tr>
+    <tr><td>conditionz</td><td>0.1.0</td></tr>
+    <tr><td>ChromHeatMap</td><td>1.54.0</td></tr>
+    <tr><td>chopsticks</td><td>1.66.0</td></tr>
+    <tr><td>arrangements</td><td>1.1.9</td></tr>
+    <tr><td>truncnorm</td><td>1.0-9</td></tr>
+    <tr><td>systemfit</td><td>1.1-30</td></tr>
+    <tr><td>RApiSerialize</td><td>0.1.2</td></tr>
+    <tr><td>randomForestSRC</td><td>3.2.2</td></tr>
+    <tr><td>plot3D</td><td>1.4</td></tr>
+    <tr><td>optparse</td><td>1.7.3</td></tr>
+    <tr><td>optimParallel</td><td>1.0-2</td></tr>
+    <tr><td>mclust</td><td>6.0.0</td></tr>
+    <tr><td>manipulateWidget</td><td>0.11.1</td></tr>
+    <tr><td>logistf</td><td>1.26.0</td></tr>
+    <tr><td>hash</td><td>2.2.6.3</td></tr>
+    <tr><td>ggrepel</td><td>0.9.4</td></tr>
+    <tr><td>ggbio</td><td>1.48.0</td></tr>
+    <tr><td>EMCluster</td><td>0.2-15</td></tr>
+    <tr><td>coxphf</td><td>1.13.4</td></tr>
+    <tr><td>ClusterR</td><td>1.3.1</td></tr>
+    <tr><td>brms</td><td>2.20.4</td></tr>
+    <tr><td>bridgesampling</td><td>1.1-2</td></tr>
+    <tr><td>ASSET</td><td>2.18.0</td></tr>
+    <tr><td>webutils</td><td>1.1</td></tr>
+    <tr><td>uwot</td><td>0.1.16</td></tr>
+    <tr><td>SKAT</td><td>2.2.5</td></tr>
+    <tr><td>shinystan</td><td>2.6.0</td></tr>
+    <tr><td>scran</td><td>1.28.2</td></tr>
+    <tr><td>mnormt</td><td>2.1.1</td></tr>
+    <tr><td>kernlab</td><td>0.9-32</td></tr>
+    <tr><td>HIBAG</td><td>1.36.4</td></tr>
+    <tr><td>h2o</td><td>3.42.0.2</td></tr>
+    <tr><td>grpreg</td><td>3.4.0</td></tr>
+    <tr><td>gbRd</td><td>0.4-11</td></tr>
+    <tr><td>clisymbols</td><td>1.2.0</td></tr>
+    <tr><td>supraHex</td><td>1.38.0</td></tr>
+    <tr><td>Seurat</td><td>4.4.0</td></tr>
+    <tr><td>sctransform</td><td>0.4.1</td></tr>
+    <tr><td>rtracklayer</td><td>1.60.1</td></tr>
+    <tr><td>Rmisc</td><td>1.5.1</td></tr>
+    <tr><td>reprex</td><td>2.0.2</td></tr>
+    <tr><td>RcisTarget</td><td>1.20.0</td></tr>
+    <tr><td>officer</td><td>0.6.2</td></tr>
+    <tr><td>micEcon</td><td>0.6-18</td></tr>
+    <tr><td>callr</td><td>3.7.3</td></tr>
+    <tr><td>XML</td><td>3.99-0.14</td></tr>
+    <tr><td>Rttf2pt1</td><td>1.3.12</td></tr>
+    <tr><td>restfulr</td><td>0.0.15</td></tr>
+    <tr><td>ratelimitr</td><td>0.4.1</td></tr>
+    <tr><td>nnls</td><td>1.5</td></tr>
+    <tr><td>mlr</td><td>2.19.1</td></tr>
+    <tr><td>maptools</td><td>1.1-8</td></tr>
+    <tr><td>esATAC</td><td>1.22.0</td></tr>
+    <tr><td>crlmm</td><td>1.58.0</td></tr>
+    <tr><td>cobs</td><td>1.3-5</td></tr>
+    <tr><td>splines2</td><td>0.5.1</td></tr>
+    <tr><td>RJSONIO</td><td>1.3-1.8</td></tr>
+    <tr><td>RcmdrPlugin.TeachingDemos</td><td>1.2-0</td></tr>
+    <tr><td>RcmdrMisc</td><td>2.9-1</td></tr>
+    <tr><td>Rcmdr</td><td>2.9-1</td></tr>
+    <tr><td>oligo</td><td>1.64.1</td></tr>
+    <tr><td>mvbutils</td><td>2.8.232</td></tr>
+    <tr><td>irlba</td><td>2.3.5.1</td></tr>
+    <tr><td>gtools</td><td>3.9.4</td></tr>
+    <tr><td>Epi</td><td>2.47.1</td></tr>
+    <tr><td>eha</td><td>2.11.1</td></tr>
+    <tr><td>cubelyr</td><td>1.0.2</td></tr>
+    <tr><td>clipr</td><td>0.8.0</td></tr>
+    <tr><td>cghMCR</td><td>1.58.0</td></tr>
+    <tr><td>Biostrings</td><td>2.68.1</td></tr>
+    <tr><td>aplot</td><td>0.2.2</td></tr>
+    <tr><td>zip</td><td>2.3.0</td></tr>
+    <tr><td>yaml</td><td>2.3.7</td></tr>
+    <tr><td>xlsx</td><td>0.6.5</td></tr>
+    <tr><td>Rdpack</td><td>2.5</td></tr>
+    <tr><td>rae230acdf</td><td>2.18.0</td></tr>
+    <tr><td>networkD3</td><td>0.4</td></tr>
+    <tr><td>mets</td><td>1.3.2</td></tr>
+    <tr><td>genefilter</td><td>1.82.1</td></tr>
+    <tr><td>formula.tools</td><td>1.7.1</td></tr>
+    <tr><td>epitools</td><td>0.5-10.1</td></tr>
+    <tr><td>EDASeq</td><td>2.34.0</td></tr>
+    <tr><td>dynamicTreeCut</td><td>1.63-1</td></tr>
+    <tr><td>distributional</td><td>0.3.2</td></tr>
+    <tr><td>datawizard</td><td>0.9.0</td></tr>
+    <tr><td>cluster</td><td>2.1.4</td></tr>
+    <tr><td>signatureSearch</td><td>1.14.0</td></tr>
+    <tr><td>sfsmisc</td><td>1.1-16</td></tr>
+    <tr><td>seewave</td><td>2.2.3</td></tr>
+    <tr><td>Rhtslib</td><td>2.2.0</td></tr>
+    <tr><td>RcppZiggurat</td><td>0.1.6</td></tr>
+    <tr><td>qap</td><td>0.1-2</td></tr>
+    <tr><td>pander</td><td>0.6.5</td></tr>
+    <tr><td>optextras</td><td>2019-12.4</td></tr>
+    <tr><td>ini</td><td>0.3.1</td></tr>
+    <tr><td>Illumina450ProbeVariants.db</td><td>1.36.0</td></tr>
+    <tr><td>frma</td><td>1.52.0</td></tr>
+    <tr><td>ExperimentHub</td><td>2.8.1</td></tr>
+    <tr><td>EnvStats</td><td>2.8.1</td></tr>
+    <tr><td>dtwclust</td><td>5.5.12</td></tr>
+    <tr><td>doFuture</td><td>1.0.0</td></tr>
+    <tr><td>SuppDists</td><td>1.1-9.7</td></tr>
+    <tr><td>supclust</td><td>1.1-1</td></tr>
+    <tr><td>slam</td><td>0.1-50</td></tr>
+    <tr><td>shinythemes</td><td>1.2.0</td></tr>
+    <tr><td>SeuratObject</td><td>4.1.4</td></tr>
+    <tr><td>rprojroot</td><td>2.0.3</td></tr>
+    <tr><td>PSCBS</td><td>0.66.0</td></tr>
+    <tr><td>pixmap</td><td>0.4-12</td></tr>
+    <tr><td>nycflights13</td><td>1.0.2</td></tr>
+    <tr><td>HardyWeinberg</td><td>1.7.5</td></tr>
+    <tr><td>ggtext</td><td>0.1.2</td></tr>
+    <tr><td>ecodist</td><td>2.0.9</td></tr>
+    <tr><td>EBarrays</td><td>2.64.0</td></tr>
+    <tr><td>devEMF</td><td>4.4-1</td></tr>
+    <tr><td>cOde</td><td>1.1.1</td></tr>
+    <tr><td>cachem</td><td>1.0.8</td></tr>
+    <tr><td>xmlparsedata</td><td>1.0.5</td></tr>
+    <tr><td>TFMPvalue</td><td>0.0.9</td></tr>
+    <tr><td>ROC</td><td>1.76.0</td></tr>
+    <tr><td>princurve</td><td>2.1.6</td></tr>
+    <tr><td>hoardr</td><td>0.5.3</td></tr>
+    <tr><td>gRbase</td><td>2.0.0</td></tr>
+    <tr><td>GeneRegionScan</td><td>1.56.0</td></tr>
+    <tr><td>fmsb</td><td>0.7.5</td></tr>
+    <tr><td>fastmap</td><td>1.1.1</td></tr>
+    <tr><td>fastcluster</td><td>1.2.3</td></tr>
+    <tr><td>DT</td><td>0.30</td></tr>
+    <tr><td>doBy</td><td>4.6.19</td></tr>
+    <tr><td>verification</td><td>1.42</td></tr>
+    <tr><td>SpatialExperiment</td><td>1.10.0</td></tr>
+    <tr><td>ROpenCV</td><td>unknown</td></tr>
+    <tr><td>rootSolve</td><td>1.8.2.4</td></tr>
+    <tr><td>RcppHNSW</td><td>0.5.0</td></tr>
+    <tr><td>qtl</td><td>1.60</td></tr>
+    <tr><td>kde1d</td><td>1.0.5</td></tr>
+    <tr><td>httpuv</td><td>1.6.11</td></tr>
+    <tr><td>HMMcopy</td><td>1.42.0</td></tr>
+    <tr><td>fission</td><td>1.20.0</td></tr>
+    <tr><td>fibroEset</td><td>1.42.0</td></tr>
+    <tr><td>emdbook</td><td>1.3.13</td></tr>
+    <tr><td>drc</td><td>3.0-1</td></tr>
+    <tr><td>broman</td><td>0.80</td></tr>
+    <tr><td>Biobase</td><td>2.60.0</td></tr>
+    <tr><td>bigmemory.sri</td><td>0.1.6</td></tr>
+    <tr><td>assertthat</td><td>0.2.1</td></tr>
+    <tr><td>V8</td><td>4.4.0</td></tr>
+    <tr><td>udunits2</td><td>0.13.2.1</td></tr>
+    <tr><td>selectr</td><td>0.4-2</td></tr>
+    <tr><td>ROCR</td><td>1.0-11</td></tr>
+    <tr><td>permute</td><td>0.9-7</td></tr>
+    <tr><td>pcaMethods</td><td>1.92.0</td></tr>
+    <tr><td>np</td><td>0.60-17</td></tr>
+    <tr><td>mvmeta</td><td>1.0.3</td></tr>
+    <tr><td>interp</td><td>1.1-4</td></tr>
+    <tr><td>hthgu133aprobe</td><td>2.18.0</td></tr>
+    <tr><td>GenSA</td><td>1.1.10.1</td></tr>
+    <tr><td>FDb.InfiniumMethylation.hg19</td><td>2.2.0</td></tr>
+    <tr><td>fastDummies</td><td>1.7.3</td></tr>
+    <tr><td>dvmisc</td><td>1.1.4</td></tr>
+    <tr><td>directlabels</td><td>2023.8.25</td></tr>
+    <tr><td>car</td><td>3.1-2</td></tr>
+    <tr><td>BiocNeighbors</td><td>1.18.0</td></tr>
+    <tr><td>AnnotationDbi</td><td>1.62.2</td></tr>
+    <tr><td>animation</td><td>2.7</td></tr>
+    <tr><td>wordcloud</td><td>2.6</td></tr>
+    <tr><td>sandwich</td><td>3.0-2</td></tr>
+    <tr><td>pspline</td><td>1.0-19</td></tr>
+    <tr><td>methylKit</td><td>1.26.0</td></tr>
+    <tr><td>memoise</td><td>2.0.1</td></tr>
+    <tr><td>IlluminaHumanMethylation450kmanifest</td><td>0.4.0</td></tr>
+    <tr><td>FlowSorted.CordBlood.450k</td><td>1.28.0</td></tr>
+    <tr><td>FDb.InfiniumMethylation.hg18</td><td>2.2.0</td></tr>
+    <tr><td>DOSE</td><td>3.26.2</td></tr>
+    <tr><td>debugme</td><td>1.1.0</td></tr>
+    <tr><td>corrgram</td><td>1.14</td></tr>
+    <tr><td>c3net</td><td>1.1.1.1</td></tr>
+    <tr><td>zoo</td><td>1.8-12</td></tr>
+    <tr><td>triangle</td><td>1.0</td></tr>
+    <tr><td>tis</td><td>1.39</td></tr>
+    <tr><td>splancs</td><td>2.01-44</td></tr>
+    <tr><td>SimpleITK</td><td>2.1.1.1</td></tr>
+    <tr><td>scRNAseq</td><td>2.14.0</td></tr>
+    <tr><td>pd.mogene.1.0.st.v1</td><td>3.14.1</td></tr>
+    <tr><td>parameters</td><td>0.21.2</td></tr>
+    <tr><td>mcmcplots</td><td>0.4.3</td></tr>
+    <tr><td>graphite</td><td>1.46.0</td></tr>
+    <tr><td>GGally</td><td>2.1.2</td></tr>
+    <tr><td>actuar</td><td>3.3-2</td></tr>
+    <tr><td>utf8</td><td>1.2.3</td></tr>
+    <tr><td>TxDb.Hsapiens.UCSC.hg18.knownGene</td><td>3.2.2</td></tr>
+    <tr><td>simsurv</td><td>1.0.0</td></tr>
+    <tr><td>rncl</td><td>0.8.7</td></tr>
+    <tr><td>RcppThread</td><td>2.1.6</td></tr>
+    <tr><td>poweRlaw</td><td>0.70.6</td></tr>
+    <tr><td>GSVA</td><td>1.48.3</td></tr>
+    <tr><td>flowCore</td><td>2.12.2</td></tr>
+    <tr><td>ergm</td><td>4.5.0</td></tr>
+    <tr><td>dtplyr</td><td>1.3.1</td></tr>
+    <tr><td>collapse</td><td>2.0.3</td></tr>
+    <tr><td>bezier</td><td>1.1.2</td></tr>
+    <tr><td>bayesm</td><td>3.1-6</td></tr>
+    <tr><td>AnnotationFilter</td><td>1.24.0</td></tr>
+    <tr><td>svgPanZoom</td><td>0.3.4</td></tr>
+    <tr><td>ResourceSelection</td><td>0.3-6</td></tr>
+    <tr><td>philentropy</td><td>0.7.0</td></tr>
+    <tr><td>mice</td><td>3.16.0</td></tr>
+    <tr><td>lubridate</td><td>1.9.3</td></tr>
+    <tr><td>lme4</td><td>1.1-34</td></tr>
+    <tr><td>hardhat</td><td>1.3.0</td></tr>
+    <tr><td>GO.db</td><td>3.17.0</td></tr>
+    <tr><td>GMMAT</td><td>1.4.1</td></tr>
+    <tr><td>geepack</td><td>1.3.9</td></tr>
+    <tr><td>Formula</td><td>1.2-5</td></tr>
+    <tr><td>DSS</td><td>2.48.0</td></tr>
+    <tr><td>cummeRbund</td><td>2.42.0</td></tr>
+    <tr><td>catmap</td><td>1.6.4</td></tr>
+    <tr><td>splitstackshape</td><td>1.4.8</td></tr>
+    <tr><td>RnBeads</td><td>2.18.1</td></tr>
+    <tr><td>RcppEigen</td><td>0.3.3.9.3</td></tr>
+    <tr><td>modeldata</td><td>1.2.0</td></tr>
+    <tr><td>MLInterfaces</td><td>1.80.0</td></tr>
+    <tr><td>ISwR</td><td>2.0-8</td></tr>
+    <tr><td>ineq</td><td>0.2-13</td></tr>
+    <tr><td>glue</td><td>1.6.2</td></tr>
+    <tr><td>GenomicFeatures</td><td>1.52.2</td></tr>
+    <tr><td>doMC</td><td>1.3.8</td></tr>
+    <tr><td>dendsort</td><td>0.3.4</td></tr>
+    <tr><td>dbplyr</td><td>2.3.4</td></tr>
+    <tr><td>checkmate</td><td>2.2.0</td></tr>
+    <tr><td>calibrate</td><td>1.7.7</td></tr>
+    <tr><td>BSgenome.Mmusculus.UCSC.mm9</td><td>1.4.0</td></tr>
+    <tr><td>tidytree</td><td>0.4.5</td></tr>
+    <tr><td>stringi</td><td>1.7.12</td></tr>
+    <tr><td>rARPACK</td><td>0.11-0</td></tr>
+    <tr><td>plogr</td><td>0.2.0</td></tr>
+    <tr><td>nabor</td><td>0.5.0</td></tr>
+    <tr><td>klaR</td><td>1.7-2</td></tr>
+    <tr><td>infotheo</td><td>1.2.0.1</td></tr>
+    <tr><td>glmmTMB</td><td>1.1.8</td></tr>
+    <tr><td>ggmap</td><td>3.0.2</td></tr>
+    <tr><td>genalg</td><td>0.2.1</td></tr>
+    <tr><td>effectsize</td><td>0.8.6</td></tr>
+    <tr><td>dynlm</td><td>0.3-6</td></tr>
+    <tr><td>Deriv</td><td>4.1.3</td></tr>
+    <tr><td>cytolib</td><td>2.12.1</td></tr>
+    <tr><td>crul</td><td>1.4.0</td></tr>
+    <tr><td>AlgDesign</td><td>1.2.1</td></tr>
+    <tr><td>TxDb.Dmelanogaster.UCSC.dm3.ensGene</td><td>3.2.2</td></tr>
+    <tr><td>tmvtnorm</td><td>1.5</td></tr>
+    <tr><td>tfautograph</td><td>0.3.2</td></tr>
+    <tr><td>sodium</td><td>1.2.1</td></tr>
+    <tr><td>regioneR</td><td>1.32.0</td></tr>
+    <tr><td>PureCN</td><td>2.6.4</td></tr>
+    <tr><td>pbivnorm</td><td>0.6.0</td></tr>
+    <tr><td>networkDynamic</td><td>0.11.3</td></tr>
+    <tr><td>leaps</td><td>3.1</td></tr>
+    <tr><td>gistr</td><td>0.9.0</td></tr>
+    <tr><td>gam</td><td>1.22-2</td></tr>
+    <tr><td>fs</td><td>1.6.3</td></tr>
+    <tr><td>ffpe</td><td>1.44.0</td></tr>
+    <tr><td>fastseg</td><td>1.46.0</td></tr>
+    <tr><td>DirichletMultinomial</td><td>1.42.0</td></tr>
+    <tr><td>agricolae</td><td>1.3-6</td></tr>
+    <tr><td>spatstat.geom</td><td>3.2-7</td></tr>
+    <tr><td>sass</td><td>0.4.7</td></tr>
+    <tr><td>RMariaDB</td><td>1.3.0</td></tr>
+    <tr><td>read.gt3x</td><td>1.2.0</td></tr>
+    <tr><td>pscl</td><td>1.5.5.1</td></tr>
+    <tr><td>numbers</td><td>0.8-5</td></tr>
+    <tr><td>multtest</td><td>2.56.0</td></tr>
+    <tr><td>isoband</td><td>0.2.7</td></tr>
+    <tr><td>GIGrvg</td><td>0.8</td></tr>
+    <tr><td>genoPlotR</td><td>0.8.11</td></tr>
+    <tr><td>effects</td><td>4.2-2</td></tr>
+    <tr><td>distr</td><td>2.9.2</td></tr>
+    <tr><td>devtools</td><td>2.4.5</td></tr>
+    <tr><td>deSolve</td><td>1.38</td></tr>
+    <tr><td>crayon</td><td>1.5.2</td></tr>
+    <tr><td>ChIPQC</td><td>1.36.1</td></tr>
+    <tr><td>biomaRt</td><td>2.56.1</td></tr>
+    <tr><td>Wrench</td><td>1.18.0</td></tr>
+    <tr><td>timechange</td><td>0.2.0</td></tr>
+    <tr><td>stabs</td><td>0.6-4</td></tr>
+    <tr><td>ReportingTools</td><td>2.39.0</td></tr>
+    <tr><td>qcc</td><td>2.7</td></tr>
+    <tr><td>preprocessCore</td><td>1.62.1</td></tr>
+    <tr><td>mixtools</td><td>2.0.0</td></tr>
+    <tr><td>lumi</td><td>2.52.0</td></tr>
+    <tr><td>igraph</td><td>1.5.1</td></tr>
+    <tr><td>GSEABase</td><td>1.62.0</td></tr>
+    <tr><td>GSA</td><td>1.03.2</td></tr>
+    <tr><td>GreyListChIP</td><td>1.32.1</td></tr>
+    <tr><td>glasso</td><td>1.11</td></tr>
+    <tr><td>GenomicDistributions</td><td>1.8.0</td></tr>
+    <tr><td>conquer</td><td>1.3.3</td></tr>
+    <tr><td>classInt</td><td>0.4-10</td></tr>
+    <tr><td>ChIPseqR</td><td>1.54.0</td></tr>
+    <tr><td>cellranger</td><td>1.1.0</td></tr>
+    <tr><td>arrow</td><td>12.0.1</td></tr>
+    <tr><td>apcluster</td><td>1.4.11</td></tr>
+    <tr><td>admisc</td><td>0.33</td></tr>
+    <tr><td>survMisc</td><td>0.5.6</td></tr>
+    <tr><td>SuperLearner</td><td>2.0-28.1</td></tr>
+    <tr><td>snakecase</td><td>0.11.1</td></tr>
+    <tr><td>sm</td><td>2.2-5.7.1</td></tr>
+    <tr><td>SeqArray</td><td>1.40.1</td></tr>
+    <tr><td>RSNNS</td><td>0.4-16</td></tr>
+    <tr><td>metapod</td><td>1.8.0</td></tr>
+    <tr><td>manipulate</td><td>1.0.1</td></tr>
+    <tr><td>goftest</td><td>1.2-3</td></tr>
+    <tr><td>diffobj</td><td>0.3.5</td></tr>
+    <tr><td>CNTools</td><td>1.56.0</td></tr>
+    <tr><td>BSgenome.Hsapiens.1000genomes.hs37d5</td><td>0.99.1</td></tr>
+    <tr><td>BRAIN</td><td>1.46.0</td></tr>
+    <tr><td>BBmisc</td><td>1.13</td></tr>
+    <tr><td>AllelicImbalance</td><td>1.38.0</td></tr>
+    <tr><td>ScaledMatrix</td><td>1.8.1</td></tr>
+    <tr><td>ritis</td><td>1.0.0</td></tr>
+    <tr><td>RcppGSL</td><td>0.3.13</td></tr>
+    <tr><td>parallelMap</td><td>1.5.1</td></tr>
+    <tr><td>mouse4302cdf</td><td>2.18.0</td></tr>
+    <tr><td>merTools</td><td>0.6.1</td></tr>
+    <tr><td>ieugwasr</td><td>0.1.5</td></tr>
+    <tr><td>HSAUR2</td><td>1.1-20</td></tr>
+    <tr><td>GenomeInfoDbData</td><td>1.2.10</td></tr>
+    <tr><td>fontquiver</td><td>0.2.1</td></tr>
+    <tr><td>EGSEAdata</td><td>1.28.0</td></tr>
+    <tr><td>dbscan</td><td>1.1-11</td></tr>
+    <tr><td>caret</td><td>6.0-94</td></tr>
+    <tr><td>BiocBaseUtils</td><td>1.2.0</td></tr>
+    <tr><td>BiasedUrn</td><td>2.0.11</td></tr>
+    <tr><td>tmvnsim</td><td>1.0-2</td></tr>
+    <tr><td>snowfall</td><td>1.84-6.2</td></tr>
+    <tr><td>signatureSearchData</td><td>1.14.0</td></tr>
+    <tr><td>rematch</td><td>2.0.0</td></tr>
+    <tr><td>Rbowtie2</td><td>2.6.0</td></tr>
+    <tr><td>randomForest</td><td>4.7-1.1</td></tr>
+    <tr><td>MLmetrics</td><td>1.1.1</td></tr>
+    <tr><td>labeling</td><td>0.4.3</td></tr>
+    <tr><td>fastGHQuad</td><td>1.0.1</td></tr>
+    <tr><td>BubbleTree</td><td>2.30.0</td></tr>
+    <tr><td>bdsmatrix</td><td>1.3-6</td></tr>
+    <tr><td>afex</td><td>1.3-0</td></tr>
+    <tr><td>xts</td><td>0.13.1</td></tr>
+    <tr><td>tidytidbits</td><td>0.3.2</td></tr>
+    <tr><td>sn</td><td>2.1.1</td></tr>
+    <tr><td>rstantools</td><td>2.3.1.1</td></tr>
+    <tr><td>ranger</td><td>0.15.1</td></tr>
+    <tr><td>operator.tools</td><td>1.6.3</td></tr>
+    <tr><td>OpenMx</td><td>2.21.8</td></tr>
+    <tr><td>motifStack</td><td>1.44.1</td></tr>
+    <tr><td>lpsymphony</td><td>1.28.1</td></tr>
+    <tr><td>forecast</td><td>8.21.1</td></tr>
+    <tr><td>diagram</td><td>1.6.5</td></tr>
+    <tr><td>nlme</td><td>3.1-162</td></tr>
+    <tr><td>statnet.common</td><td>4.9.0</td></tr>
+    <tr><td>sjstats</td><td>0.18.2</td></tr>
+    <tr><td>rvcheck</td><td>0.2.1</td></tr>
+    <tr><td>RProtoBufLib</td><td>2.12.1</td></tr>
+    <tr><td>poorman</td><td>0.2.6</td></tr>
+    <tr><td>mda</td><td>0.5-4</td></tr>
+    <tr><td>matrixStats</td><td>1.0.0</td></tr>
+    <tr><td>hgu133plus2cdf</td><td>2.18.0</td></tr>
+    <tr><td>girafe</td><td>1.52.0</td></tr>
+    <tr><td>ggvis</td><td>0.4.8</td></tr>
+    <tr><td>BSgenome.Celegans.UCSC.ce2</td><td>1.4.0</td></tr>
+    <tr><td>beeswarm</td><td>0.4.0</td></tr>
+    <tr><td>annotate</td><td>1.78.0</td></tr>
+    <tr><td>affycoretools</td><td>1.72.0</td></tr>
+    <tr><td>singscore</td><td>1.20.0</td></tr>
+    <tr><td>sem</td><td>3.1-15</td></tr>
+    <tr><td>pseval</td><td>1.3.1</td></tr>
+    <tr><td>mitml</td><td>0.4-5</td></tr>
+    <tr><td>JGR</td><td>1.9-2</td></tr>
+    <tr><td>heatmaply</td><td>1.5.0</td></tr>
+    <tr><td>argparse</td><td>2.2.2</td></tr>
+    <tr><td>VennDiagram</td><td>1.7.3</td></tr>
+    <tr><td>TTR</td><td>0.24.3</td></tr>
+    <tr><td>sjPlot</td><td>2.8.15</td></tr>
+    <tr><td>runjags</td><td>2.2.1-7</td></tr>
+    <tr><td>Rmpi</td><td>0.7-1</td></tr>
+    <tr><td>kinship2</td><td>1.9.6</td></tr>
+    <tr><td>here</td><td>1.0.1</td></tr>
+    <tr><td>gpls</td><td>1.72.0</td></tr>
+    <tr><td>GENESIS</td><td>2.30.0</td></tr>
+    <tr><td>forestplot</td><td>3.1.3</td></tr>
+    <tr><td>doRNG</td><td>1.8.6</td></tr>
+    <tr><td>chron</td><td>2.3-61</td></tr>
+    <tr><td>arrayQuality</td><td>1.78.0</td></tr>
+    <tr><td>xlsxjars</td><td>0.6.1</td></tr>
+    <tr><td>qgraph</td><td>1.9.5</td></tr>
+    <tr><td>PearsonDS</td><td>1.3.0</td></tr>
+    <tr><td>MCMCpack</td><td>1.6-3</td></tr>
+    <tr><td>hmmm</td><td>1.0-4</td></tr>
+    <tr><td>haplo.stats</td><td>1.9.3</td></tr>
+    <tr><td>gitcreds</td><td>0.1.2</td></tr>
+    <tr><td>desc</td><td>1.4.2</td></tr>
+    <tr><td>BSgenome.Hsapiens.UCSC.hg38</td><td>1.4.5</td></tr>
+    <tr><td>Brobdingnag</td><td>1.2-9</td></tr>
+    <tr><td>BiocFileCache</td><td>2.8.0</td></tr>
+    <tr><td>babelgene</td><td>22.9</td></tr>
+    <tr><td>sitmo</td><td>2.0.2</td></tr>
+    <tr><td>RUVSeq</td><td>1.34.0</td></tr>
+    <tr><td>rsvg</td><td>2.6.0</td></tr>
+    <tr><td>pracma</td><td>2.4.2</td></tr>
+    <tr><td>pacman</td><td>0.5.1</td></tr>
+    <tr><td>mogene20sttranscriptcluster.db</td><td>8.8.0</td></tr>
+    <tr><td>MESS</td><td>0.5.12</td></tr>
+    <tr><td>grImport</td><td>0.9-7</td></tr>
+    <tr><td>commonsMath</td><td>1.2.8</td></tr>
+    <tr><td>blme</td><td>1.0-5</td></tr>
+    <tr><td>askpass</td><td>1.2.0</td></tr>
+    <tr><td>TSP</td><td>1.2-4</td></tr>
+    <tr><td>SnowballC</td><td>0.7.1</td></tr>
+    <tr><td>SC3</td><td>1.28.3</td></tr>
+    <tr><td>satuRn</td><td>1.8.0</td></tr>
+    <tr><td>RBGL</td><td>1.76.0</td></tr>
+    <tr><td>R2OpenBUGS</td><td>3.2-3.2.1</td></tr>
+    <tr><td>purrr</td><td>1.0.2</td></tr>
+    <tr><td>lpSolve</td><td>5.6.19</td></tr>
+    <tr><td>lambda.r</td><td>1.2.4</td></tr>
+    <tr><td>labelled</td><td>2.12.0</td></tr>
+    <tr><td>influenceR</td><td>0.1.5</td></tr>
+    <tr><td>ggsci</td><td>3.0.0</td></tr>
+    <tr><td>doMPI</td><td>0.2.2</td></tr>
+    <tr><td>docopt</td><td>0.7.1</td></tr>
+    <tr><td>dlm</td><td>1.1-6</td></tr>
+    <tr><td>DelayedArray</td><td>0.26.7</td></tr>
+    <tr><td>cyclocomp</td><td>1.1.1</td></tr>
+    <tr><td>clusterProfiler</td><td>4.8.3</td></tr>
+    <tr><td>SRAdb</td><td>1.62.0</td></tr>
+    <tr><td>signeR</td><td>2.2.1</td></tr>
+    <tr><td>schoolmath</td><td>0.4.2</td></tr>
+    <tr><td>SCATEData</td><td>1.10.0</td></tr>
+    <tr><td>rlang</td><td>1.1.1</td></tr>
+    <tr><td>RcppArmadillo</td><td>0.12.6.4.0</td></tr>
+    <tr><td>R2admb</td><td>0.7.16.3</td></tr>
+    <tr><td>qqman</td><td>0.1.9</td></tr>
+    <tr><td>mlogit</td><td>1.1-1</td></tr>
+    <tr><td>locfdr</td><td>1.1-8</td></tr>
+    <tr><td>LearnBayes</td><td>2.15.1</td></tr>
+    <tr><td>lawstat</td><td>3.6</td></tr>
+    <tr><td>kknn</td><td>1.3.1</td></tr>
+    <tr><td>karyoploteR</td><td>1.26.0</td></tr>
+    <tr><td>gclus</td><td>1.3.2</td></tr>
+    <tr><td>curl</td><td>5.1.0</td></tr>
+    <tr><td>covr</td><td>3.6.3</td></tr>
+    <tr><td>cancerTiming</td><td>3.1.8</td></tr>
+    <tr><td>aplpack</td><td>1.3.5</td></tr>
+    <tr><td>acepack</td><td>1.4.2</td></tr>
+    <tr><td>solrium</td><td>1.2.0</td></tr>
+    <tr><td>sf</td><td>1.0-14</td></tr>
+    <tr><td>rsvd</td><td>1.0.5</td></tr>
+    <tr><td>rmutil</td><td>1.1.10</td></tr>
+    <tr><td>rlemon</td><td>0.2.1</td></tr>
+    <tr><td>mcbiopi</td><td>1.1.6</td></tr>
+    <tr><td>logitnorm</td><td>0.8.38</td></tr>
+    <tr><td>lintr</td><td>3.1.0</td></tr>
+    <tr><td>leiden</td><td>0.4.3</td></tr>
+    <tr><td>kableExtra</td><td>1.3.4</td></tr>
+    <tr><td>GWASTools</td><td>1.46.0</td></tr>
+    <tr><td>GGIR</td><td>3.0-0</td></tr>
+    <tr><td>BradleyTerry2</td><td>1.1-2</td></tr>
+    <tr><td>BeadDataPackR</td><td>1.52.0</td></tr>
+    <tr><td>bamsignals</td><td>1.32.0</td></tr>
+    <tr><td>Amelia</td><td>1.8.1</td></tr>
+    <tr><td>grid</td><td>4.3.0</td></tr>
+    <tr><td>shinyjs</td><td>2.1.0</td></tr>
+    <tr><td>sessioninfo</td><td>1.2.2</td></tr>
+    <tr><td>multcompView</td><td>0.1-9</td></tr>
+    <tr><td>mime</td><td>0.12</td></tr>
+    <tr><td>MALDIquant</td><td>1.22.1</td></tr>
+    <tr><td>Hmisc</td><td>5.1-1</td></tr>
+    <tr><td>CBPS</td><td>0.23</td></tr>
+    <tr><td>BMA</td><td>3.18.17</td></tr>
+    <tr><td>BiocStyle</td><td>2.28.1</td></tr>
+    <tr><td>AER</td><td>1.2-10</td></tr>
+    <tr><td>WikidataQueryServiceR</td><td>1.0.0</td></tr>
+    <tr><td>tm</td><td>0.7-11</td></tr>
+    <tr><td>SomaticSignatures</td><td>2.36.0</td></tr>
+    <tr><td>scales</td><td>1.2.1</td></tr>
+    <tr><td>ragg</td><td>1.2.6</td></tr>
+    <tr><td>nortest</td><td>1.0-4</td></tr>
+    <tr><td>MRInstruments</td><td>0.3.2</td></tr>
+    <tr><td>metagenomeSeq</td><td>1.42.0</td></tr>
+    <tr><td>isdparser</td><td>0.4.0</td></tr>
+    <tr><td>gplots</td><td>3.1.3</td></tr>
+    <tr><td>formatR</td><td>1.14</td></tr>
+    <tr><td>evaluate</td><td>0.22</td></tr>
+    <tr><td>ellipsis</td><td>0.3.2</td></tr>
+    <tr><td>amap</td><td>0.8-19</td></tr>
+    <tr><td>WGCNA</td><td>1.72-1</td></tr>
+    <tr><td>superpc</td><td>1.12</td></tr>
+    <tr><td>startupmsg</td><td>0.9.6</td></tr>
+    <tr><td>spelling</td><td>2.2.1</td></tr>
+    <tr><td>shinycssloaders</td><td>1.0.0</td></tr>
+    <tr><td>seqbias</td><td>1.48.0</td></tr>
+    <tr><td>rms</td><td>6.7-1</td></tr>
+    <tr><td>RcppML</td><td>0.3.7</td></tr>
+    <tr><td>plotrix</td><td>3.8-2</td></tr>
+    <tr><td>MVA</td><td>1.0-8</td></tr>
+    <tr><td>memisc</td><td>0.99.31.6</td></tr>
+    <tr><td>LaplacesDemon</td><td>16.1.6</td></tr>
+    <tr><td>Homo.sapiens</td><td>1.3.1</td></tr>
+    <tr><td>HKprocess</td><td>0.1-1</td></tr>
+    <tr><td>hapmapsnp6</td><td>1.42.0</td></tr>
+    <tr><td>gridExtra</td><td>2.3</td></tr>
+    <tr><td>GPfit</td><td>1.0-8</td></tr>
+    <tr><td>geeM</td><td>0.10.1</td></tr>
+    <tr><td>FSA</td><td>0.9.5</td></tr>
+    <tr><td>crosstalk</td><td>1.2.0</td></tr>
+    <tr><td>affy</td><td>1.78.2</td></tr>
+    <tr><td>waldo</td><td>0.5.1</td></tr>
+    <tr><td>splus2R</td><td>1.3-3</td></tr>
+    <tr><td>smoother</td><td>1.1</td></tr>
+    <tr><td>SIS</td><td>0.8-8</td></tr>
+    <tr><td>Signac</td><td>1.11.0</td></tr>
+    <tr><td>renv</td><td>1.0.3</td></tr>
+    <tr><td>prodlim</td><td>2023.08.28</td></tr>
+    <tr><td>ppclust</td><td>1.1.0</td></tr>
+    <tr><td>MutationalPatterns</td><td>3.10.0</td></tr>
+    <tr><td>matlab</td><td>1.0.4</td></tr>
+    <tr><td>IRanges</td><td>2.34.1</td></tr>
+    <tr><td>igraphdata</td><td>1.0.1</td></tr>
+    <tr><td>Gmisc</td><td>3.0.3</td></tr>
+    <tr><td>ggplotify</td><td>0.1.2</td></tr>
+    <tr><td>geneLenDataBase</td><td>1.36.0</td></tr>
+    <tr><td>etrunct</td><td>0.1</td></tr>
+    <tr><td>entropy</td><td>1.3.1</td></tr>
+    <tr><td>coda</td><td>0.19-4</td></tr>
+    <tr><td>Affymoe4302Expr</td><td>1.38.0</td></tr>
+    <tr><td>tfruns</td><td>1.5.1</td></tr>
+    <tr><td>rstudioapi</td><td>0.15.0</td></tr>
+    <tr><td>RiboProfiling</td><td>1.30.0</td></tr>
+    <tr><td>rgeos</td><td>0.6-2</td></tr>
+    <tr><td>pkgconfig</td><td>2.0.3</td></tr>
+    <tr><td>pedgene</td><td>3.6</td></tr>
+    <tr><td>nor1mix</td><td>1.3-0</td></tr>
+    <tr><td>JASPAR2016</td><td>1.28.0</td></tr>
+    <tr><td>htmltools</td><td>0.5.6.1</td></tr>
+    <tr><td>globals</td><td>0.16.2</td></tr>
+    <tr><td>ggExtra</td><td>0.10.1</td></tr>
+    <tr><td>ff</td><td>4.0.9</td></tr>
+    <tr><td>abind</td><td>1.4-5</td></tr>
+    <tr><td>rpart</td><td>4.1.19</td></tr>
+    <tr><td>umap</td><td>0.2.10.0</td></tr>
+    <tr><td>R.filesets</td><td>2.15.0</td></tr>
+    <tr><td>Nozzle.R1</td><td>1.1-1.1</td></tr>
+    <tr><td>mvtnorm</td><td>1.2-3</td></tr>
+    <tr><td>MRMix</td><td>0.1.0</td></tr>
+    <tr><td>MatrixGenerics</td><td>1.12.3</td></tr>
+    <tr><td>googleVis</td><td>0.7.1</td></tr>
+    <tr><td>future</td><td>1.33.0</td></tr>
+    <tr><td>EnsDb.Hsapiens.v86</td><td>2.99.0</td></tr>
+    <tr><td>DiagrammeR</td><td>1.0.10</td></tr>
+    <tr><td>convert</td><td>1.76.0</td></tr>
+    <tr><td>lattice</td><td>0.21-8</td></tr>
+    <tr><td>XLConnect</td><td>1.0.7</td></tr>
+    <tr><td>tkrplot</td><td>0.0-27</td></tr>
+    <tr><td>sesameData</td><td>1.18.0</td></tr>
+    <tr><td>seqminer</td><td>9.1</td></tr>
+    <tr><td>Rtsne</td><td>0.16</td></tr>
+    <tr><td>pso</td><td>1.0.4</td></tr>
+    <tr><td>logisticPCA</td><td>0.2</td></tr>
+    <tr><td>GWASdata</td><td>1.38.1</td></tr>
+    <tr><td>ggseqlogo</td><td>0.1</td></tr>
+    <tr><td>FD</td><td>1.0-12.1</td></tr>
+    <tr><td>BSgenome</td><td>1.68.0</td></tr>
+    <tr><td>arrayhelpers</td><td>1.1-0</td></tr>
+    <tr><td>tfestimators</td><td>1.9.2</td></tr>
+    <tr><td>sjmisc</td><td>2.8.9</td></tr>
+    <tr><td>shape</td><td>1.4.6</td></tr>
+    <tr><td>R.utils</td><td>2.12.2</td></tr>
+    <tr><td>lhs</td><td>1.1.6</td></tr>
+    <tr><td>httpcode</td><td>0.3.0</td></tr>
+    <tr><td>gridBase</td><td>0.4-7</td></tr>
+    <tr><td>genomeIntervals</td><td>1.56.0</td></tr>
+    <tr><td>furrr</td><td>0.3.1</td></tr>
+    <tr><td>bookdown</td><td>0.36</td></tr>
+    <tr><td>backports</td><td>1.4.1</td></tr>
+    <tr><td>affyPLM</td><td>1.76.1</td></tr>
+    <tr><td>tcltk2</td><td>1.2-11</td></tr>
+    <tr><td>showtextdb</td><td>3.0</td></tr>
+    <tr><td>shinyWidgets</td><td>0.8.0</td></tr>
+    <tr><td>Rsubread</td><td>2.14.2</td></tr>
+    <tr><td>rgexf</td><td>0.16.2</td></tr>
+    <tr><td>rgenoud</td><td>5.9-0.3</td></tr>
+    <tr><td>projpred</td><td>2.7.0</td></tr>
+    <tr><td>polyclip</td><td>1.10-6</td></tr>
+    <tr><td>microbiome</td><td>1.22.0</td></tr>
+    <tr><td>magick</td><td>2.7.4</td></tr>
+    <tr><td>ltsa</td><td>1.4.6</td></tr>
+    <tr><td>InteractionSet</td><td>1.28.1</td></tr>
+    <tr><td>Icens</td><td>1.72.0</td></tr>
+    <tr><td>hgu133a.db</td><td>3.13.0</td></tr>
+    <tr><td>GENEAread</td><td>2.0.9</td></tr>
+    <tr><td>estimability</td><td>1.4.1</td></tr>
+    <tr><td>digest</td><td>0.6.33</td></tr>
+    <tr><td>BiocParallel</td><td>1.34.2</td></tr>
+    <tr><td>writexl</td><td>1.4.2</td></tr>
+    <tr><td>TxDb.Mmusculus.UCSC.mm10.knownGene</td><td>3.10.0</td></tr>
+    <tr><td>sp</td><td>2.1-1</td></tr>
+    <tr><td>SingleCellExperiment</td><td>1.22.0</td></tr>
+    <tr><td>Rgraphviz</td><td>2.44.0</td></tr>
+    <tr><td>ncvreg</td><td>3.14.1</td></tr>
+    <tr><td>mscstts</td><td>0.6.3</td></tr>
+    <tr><td>mixmeta</td><td>1.2.0</td></tr>
+    <tr><td>HDO.db</td><td>0.99.1</td></tr>
+    <tr><td>FateID</td><td>0.2.2</td></tr>
+    <tr><td>clValid</td><td>0.7</td></tr>
+    <tr><td>anytime</td><td>0.3.9</td></tr>
+    <tr><td>xaringan</td><td>0.28</td></tr>
+    <tr><td>webshot</td><td>0.5.5</td></tr>
+    <tr><td>terra</td><td>1.7-55</td></tr>
+    <tr><td>survivalROC</td><td>1.0.3.1</td></tr>
+    <tr><td>RgoogleMaps</td><td>1.4.5.3</td></tr>
+    <tr><td>rBiopaxParser</td><td>2.40.0</td></tr>
+    <tr><td>pseudo</td><td>1.4.3</td></tr>
+    <tr><td>plsVarSel</td><td>0.9.10</td></tr>
+    <tr><td>pkgcond</td><td>0.1.1</td></tr>
+    <tr><td>ModelMetrics</td><td>1.2.2.2</td></tr>
+    <tr><td>knitr</td><td>1.44</td></tr>
+    <tr><td>jpeg</td><td>0.1-10</td></tr>
+    <tr><td>JASPAR2018</td><td>1.1.1</td></tr>
+    <tr><td>gridSVG</td><td>1.7-5</td></tr>
+    <tr><td>FNN</td><td>1.1.3.2</td></tr>
+    <tr><td>exactRankTests</td><td>0.8-35</td></tr>
+    <tr><td>changepoint</td><td>2.2.4</td></tr>
+    <tr><td>carData</td><td>3.0-5</td></tr>
+    <tr><td>biovizBase</td><td>1.48.0</td></tr>
+    <tr><td>xml2</td><td>1.3.5</td></tr>
+    <tr><td>tximport</td><td>1.28.0</td></tr>
+    <tr><td>timereg</td><td>2.0.5</td></tr>
+    <tr><td>texreg</td><td>1.38.6</td></tr>
+    <tr><td>stringr</td><td>1.5.0</td></tr>
+    <tr><td>praznik</td><td>11.0.0</td></tr>
+    <tr><td>phangorn</td><td>2.11.1</td></tr>
+    <tr><td>OmicCircos</td><td>1.38.0</td></tr>
+    <tr><td>jquerylib</td><td>0.1.4</td></tr>
+    <tr><td>flextable</td><td>0.9.3</td></tr>
+    <tr><td>BSgenome.Ecoli.NCBI.20080805</td><td>1.3.1000</td></tr>
+    <tr><td>bluster</td><td>1.10.0</td></tr>
+    <tr><td>VIM</td><td>6.2.2</td></tr>
+    <tr><td>tuneR</td><td>1.4.5</td></tr>
+    <tr><td>tibble</td><td>3.2.1</td></tr>
+    <tr><td>RNeXML</td><td>2.4.11</td></tr>
+    <tr><td>Rglpk</td><td>0.6-5</td></tr>
+    <tr><td>penalized</td><td>0.9-52</td></tr>
+    <tr><td>munsell</td><td>0.5.0</td></tr>
+    <tr><td>HiClimR</td><td>2.2.1</td></tr>
+    <tr><td>gProfileR</td><td>0.7.0</td></tr>
+    <tr><td>gnm</td><td>1.1-5</td></tr>
+    <tr><td>gap</td><td>1.5-3</td></tr>
+    <tr><td>facets</td><td>0.6.2</td></tr>
+    <tr><td>energy</td><td>1.7-11</td></tr>
+    <tr><td>dgof</td><td>1.4</td></tr>
+    <tr><td>Cairo</td><td>1.6-1</td></tr>
+    <tr><td>BSgenome.Cfamiliaris.UCSC.canFam2</td><td>1.4.0</td></tr>
+    <tr><td>ASCAT</td><td>3.1.2</td></tr>
+    <tr><td>ActiveDriver</td><td>1.0.0</td></tr>
+    <tr><td>sloop</td><td>1.0.1</td></tr>
+    <tr><td>R.huge</td><td>0.10.0</td></tr>
+    <tr><td>Rcpp</td><td>1.0.11</td></tr>
+    <tr><td>png</td><td>0.1-8</td></tr>
+    <tr><td>missMethyl</td><td>1.34.0</td></tr>
+    <tr><td>MatrixModels</td><td>0.5-2</td></tr>
+    <tr><td>gsmoothr</td><td>0.1.7</td></tr>
+    <tr><td>forge</td><td>0.2.0</td></tr>
+    <tr><td>fastmatch</td><td>1.1-4</td></tr>
+    <tr><td>CATALYST</td><td>1.24.0</td></tr>
+    <tr><td>BiocIO</td><td>1.10.0</td></tr>
+    <tr><td>aroma.apd</td><td>0.7.0</td></tr>
+    <tr><td>aroma.affymetrix</td><td>3.2.1</td></tr>
+    <tr><td>aCGH</td><td>1.78.0</td></tr>
+    <tr><td>triebeard</td><td>0.4.1</td></tr>
+    <tr><td>subselect</td><td>0.15.5</td></tr>
+    <tr><td>SNPRelate</td><td>1.34.1</td></tr>
+    <tr><td>showtext</td><td>0.9-6</td></tr>
+    <tr><td>ShortRead</td><td>1.58.0</td></tr>
+    <tr><td>QuickJSR</td><td>1.0.7</td></tr>
+    <tr><td>profileModel</td><td>0.6.1</td></tr>
+    <tr><td>mixdist</td><td>0.5-5</td></tr>
+    <tr><td>miscF</td><td>0.1-5</td></tr>
+    <tr><td>mi</td><td>1.1</td></tr>
+    <tr><td>mboost</td><td>2.9-8</td></tr>
+    <tr><td>genomewidesnp6Crlmm</td><td>1.0.7</td></tr>
+    <tr><td>generics</td><td>0.1.3</td></tr>
+    <tr><td>float</td><td>0.3-1</td></tr>
+    <tr><td>ergm.count</td><td>4.1.1</td></tr>
+    <tr><td>EpiDynamics</td><td>0.3.1</td></tr>
+    <tr><td>enrichplot</td><td>1.20.3</td></tr>
+    <tr><td>Deducer</td><td>0.7-9</td></tr>
+    <tr><td>cleaver</td><td>1.38.0</td></tr>
+    <tr><td>bnclassify</td><td>0.4.7</td></tr>
+    <tr><td>systemfonts</td><td>1.0.5</td></tr>
+    <tr><td>stringdist</td><td>0.9.10</td></tr>
+    <tr><td>som</td><td>0.3-5.1</td></tr>
+    <tr><td>setRNG</td><td>2022.4-1</td></tr>
+    <tr><td>mlbench</td><td>2.1-3.1</td></tr>
+    <tr><td>lpSolveAPI</td><td>5.5.2.0-17.10</td></tr>
+    <tr><td>gridGraphics</td><td>0.5-1</td></tr>
+    <tr><td>ggforce</td><td>0.4.1</td></tr>
+    <tr><td>FlowSorted.Blood.450k</td><td>1.38.0</td></tr>
+    <tr><td>findpython</td><td>1.0.8</td></tr>
+    <tr><td>fields</td><td>15.2</td></tr>
+    <tr><td>downlit</td><td>0.4.3</td></tr>
+    <tr><td>aws</td><td>2.5-3</td></tr>
+    <tr><td>annotatr</td><td>1.26.0</td></tr>
+  </tbody>
+</table>
+</div>
+<!-- INSERT R MODULES: END -->
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="install"></a>Manage your own packages</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<h4>Per-user R library</h4>
+
+<p>Users can install their own packages. By default, on RHEL8, this private library
+is located at <code>/data/$USER/R/rhel8/%v</code> where <code>%v</code>
+is the major.minor version of R (e.g. 4.3). This is a change from the
+behaviour on RHEL7 where the default location was <code>~/R/%v/library</code>.
+
+<span class="hl"> Note that this directory is not created automatically by some
+versions of R so it is safest to create it manually before installing R
+packages.</span></p>
+
+<p>Users can choose alternative locations for this directory by setting and
+exporting the environment variable <code>$R_LIBS_USER</code> in your shell
+startup script. If you are a bash user, for example, you could add the
+following line to your <code>~/.bash_profile</code> to relocated your R
+library:
+
+<pre class="term">
+export R_LIBS_USER="/data/$USER/code/R/rhel8/%v"
+</pre>
+
+
+<p>Here is an example using the <a href="http://trinker.github.io/pacman/">pacman</a> 
+package for easier package management:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ R
+
+R version 4.1.0 (2021-05-18) -- "Camp Pontanezen"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+&gt; <b>library(pacman)</b>
+&gt; <b>p_isinstalled(rapport)</b>
+[1] FALSE
+&gt; <b>p_install(rapport)</b>
+Installing package into ‘/spin1/home/linux/user/R/4.1/library’
+(as ‘lib’ is unspecified)
+also installing the dependency ‘rapportools’
+
+trying URL 'http://cran.rstudio.com/src/contrib/rapportools_1.0.tar.gz'
+
+[...snip...]
+rapport installed
+&gt;
+</pre>
+
+<h4>More granular (and reproducible) package management</h4>
+
+<p>A better approach than relying on packages installed centrally or in
+your home directory is to create isolated, per project package sets. This
+increases reproducibility at the cost of increased storage and potential
+package installation headaches. Some packages to implement this:</p>
+
+<ul>
+    <li>Recommended: The <a href="https://rstudio.github.io/renv/articles/renv.html">renv</a> package
+        is a more modern replacement for packrat.</li>
+    <li>The older <a href="https://rstudio.github.io/packrat/">packrat</a> package implements isolated per
+project R libraries. See the <a href="https://rstudio.github.io/packrat/walkthrough.html">packrat walkthrough</a>
+for a basic introduction.</li>
+</ul>
+
+
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="sbatch"></a>R batch job</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>R batch jobs are similar to any other batch job. A batch script ('rjob.sh')
+is created that sets up the environment and runs the R code:</p>
+
+<pre class="term">
+#!/bin/bash
+
+module load R/4.2
+R --no-echo --no-restore --no-save &lt; /data/user/Rtests/Rtest.r &gt; /data/user/Rtests/Rtest.out
+</pre>
+
+<p>or use <code>Rscript</code> instead</p>
+<pre class="term">
+#!/bin/bash
+
+module load R/3.5
+Rscript /data/user/Rtests/Rtest.r &gt; /data/user/Rtests/Rtest.out
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] rjob.sh</pre>
+
+<h4>Command line arguments for R scripts</h4>
+
+<p>R scripts can be written to accept command line arguments. The simplest
+way of doing this is with the <code>commandArgs()</code> function. For
+example the script 'simple_args.R'</p>
+
+<pre class="term">
+args &lt;- commandArgs(trailingOnly=TRUE)
+
+i &lt;- 0
+for (arg in args) {
+    i &lt;- i + 1
+    cat(sprintf("arg %02i: '%s'\n", i, arg))
+}
+</pre>
+
+<p>can be called like this</p>
+
+<pre class="term">
+[user@cn3144]$ <b>module load R</b>
+[user@cn3144]$ <b>Rscript simple.R this is a test</b>
+arg 01: 'this'
+arg 02: 'is'
+arg 03: 'a'
+arg 04: 'test'
+[user@cn3144]$ <b>Rscript simple.R 'this is a test'</b>
+arg 01: 'this is a test'
+[user@cn3144]$ <b>R --no-echo --no-restore --no-save --args 'this is a test' &lt; simple.R</b>
+arg 01: 'this is a test'
+</pre>
+
+<p>Alternatively, commandline arguments can be parsed using the getopt package. For example:</p>
+
+<pre class="term">
+library(getopt)
+
+###
+### Describe the expected command line arguments
+###
+# mask: 0=no argument
+#       1=required argument
+#       2=optional argument
+spec &lt;- matrix(c(
+# long name  short name  mask  type          description(optional)
+# ---------  ----------  ----  ------------  ---------------------
+  'file'   , 'f',          1,  'character',  'input file',
+  'verbose', 'v',          0,  'logical',    'verbose output', 
+  'help'   , 'h',          0,  'logical',    'show this help message'
+), byrow=TRUE, ncol=5);
+
+# parse the command line
+opt &lt;- getopt(spec);
+
+# show help if requested
+if (!is.null(opt$help)) {
+  cat(getopt(spec, usage=TRUE));
+  q();
+}
+
+# set defaults
+if ( is.null(opt$file) )    { opt$file    = 'testfile' }
+if ( is.null(opt$verbose) ) { opt$verbose = FALSE }
+print(opt)
+</pre>
+
+<p>This script an be used as follows</p>
+<pre class="term">
+[user@cn3144]$ <b>Rscript getopt_example.R --file some.txt --verbose</b>
+$ARGS
+character(0)
+
+$file
+[1] "some.txt"
+
+$verbose
+[1] TRUE
+
+[user@cn3144]$ <b>Rscript getopt_example.R --file some.txt</b>
+$ARGS
+character(0)
+
+$file
+[1] "some.txt"
+
+$verbose
+[1] FALSE
+
+[user@cn3144]$ <b>Rscript getopt_example.R --help</b>
+Usage: getopt_example.R [-[-file|f] <character>] [-[-verbose|v]] [-[-help|h]]
+    -f|--file       input file
+    -v|--verbose    verbose output
+    -h|--help       show this help message
+</pre>
+
+<p>getopt does not have support for mixing flags and positional arguments.
+There are other packages with different features and approaches that can
+be used to design command line interfaces for R scripts.</p>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="swarm"></a>Swarm of R jobs</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a
+set of independent commands requiring identical resources.</p>
+
+<p>Create a swarmfile (e.g. rjobs.swarm). For example:</p>
+
+<pre class="term">
+Rscript /data/user/R/R1  &gt; /data/user/R/R1.out
+Rscript /data/user/R/R2  &gt; /data/user/R/R2.out
+Rscript /data/user/R/R3  &gt; /data/user/R/R3.out
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f TEMPLATE.swarm [-g #] [-t #] --module R/3.5</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module TEMPLATE <td>Loads the TEMPLATE module for each subjob in the swarm 
+</table>
+
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="rswarm"></a>Rswarm</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p><code>Rswarm</code> is a utility to create a series of R input files from a
+single R (master) template file with different output filenames and with unique
+random number generator seeds. It will simultaneously create a swarm command
+file that can be used to submit the swarm of R jobs. Rswarm was originally
+developed by Lori Dodd and Trevor Reeve with modifications by the Biowulf
+staff.</p>
+
+<p>Say, for example, that the goal of a simulation study is to evaluate
+properties of the t-test. The function "sim.fun" in file "sim.R" below
+repeatedly generates random normal data with a given mean, performs a one
+sample t-test (i.e. testing if the mean is different from 0), and records the
+p-values.</p>
+
+<pre class="term">
+#######################################
+# n.samp:  size of samples generated for each simulation
+# mu:      mean
+# sd:      standard deviation
+# nsim:    the number of simulations
+# output1: output table
+# seed:    the seed for set.seed
+#######################################
+sim.fun &lt;- function(n.samp=100, mu=0, sd=1, n.sim, output1, seed){
+
+    set.seed(seed)
+
+    p.values &lt;- c()
+    for (i in 1:n.sim){
+        x &lt;- rnorm(n.samp, mean=mu, sd=sd)
+        p.values &lt;- c(p.values, t.test(x)$p.value)
+    }
+    saveRDS(p.values, file=output1)
+}
+</pre>
+
+<p>To use Rswarm, create a wrapper script similar to the following ("rfile.R")</p>
+<pre class="term">
+source("sim.R")
+sim.fun(n.sim=DUMX, output1="DUMY1",seed=DUMZ)
+</pre>
+<p>using the the dummy variables which will be replaced by Rswarm.</p>
+
+<div style="width: 70%; margin: 0 auto;">
+<table class='horztable'>
+    <tr><th class='softBottom'><b>Dummy variable</b></th><th class='softBottom'><b>Replaced with</b></th></tr>
+    <tr><td>DUMX</td><td>Number of simulations to be specified in each replicate file</td></tr>
+    <tr><td>DUMY1</td><td>Output file 1</td></tr>
+    <tr><td>DUMY2</td><td>Output file 2 (optional)</td></tr>
+    <tr><td>DUMZ</td><td>Random seed</td></tr>
+</table>
+</div>
+
+<p>To swarm this code, we need replicates of the rfile.R file, each with a
+different seed and different output file. The Rswarm utility will create the
+specified number of replicates, supply each with a different seed (from an
+external file containing seed numbers), and create unique output files for each
+replicate.  Note, that we allow for you to specify the number of simulations
+within each file, in addition to specifying the number of replicates.</p>
+
+<p>For example, the following  Rswarm command at the Biowulf prompt will create
+2 replicate files, each specifying 50 simulations,  a different seed from a
+file entitled, "seedfile.txt," and unique output files.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>ls -lh</b>
+total 8.0K
+-rw-r--r-- 1 user group  63 Apr 25 12:34 rfile.R
+-rw-r--r-- 1 user group 564 Apr 25 12:15 seedfile.txt
+-rw-r--r-- 1 user group 547 Apr 25 12:04 sim.R
+[user@biowulf]$ <b>head -n2 seedfile.txt</b>
+24963
+27507
+[user@biowulf]$ <b>Rswarm --rfile=rfile.R --sfile=seedfile.txt --path=. \
+    --reps=2 --sims=50 --start=0 --ext1=.rds</b>
+The template file is rfile.R
+The seed file is seedfile.txt
+The path is .
+The number of replicates desired is 2
+The number of sims per file is 50
+The starting file number is 0+1
+The extension for output files 1 is .rds
+The extension for output files 2 is .std.txt
+Is this correct (y or n)? : y
+Creating file number 1: ./rfile1.R with output ./rfile1.rds ./rfile1.std.txt and seed 24963
+Creating file number 2: ./rfile2.R with output ./rfile2.rds ./rfile2.std.txt and seed 27507
+[user@biowulf]$ <b>ls -lh</b>
+total 16K
+-rw-r--r-- 1 user group  69 Apr 25 12:39 rfile1.R
+-rw-r--r-- 1 user group  69 Apr 25 12:39 rfile2.R
+-rw-r--r-- 1 user group  63 Apr 25 12:34 rfile.R
+-rw-r--r-- 1 user group  50 Apr 25 12:39 rfile.sw
+-rw-r--r-- 1 user group 564 Apr 25 12:15 seedfile.txt
+-rw-r--r-- 1 user group 547 Apr 25 12:04 sim.R
+[user@biowulf]$ <b>cat rfile1.R</b>
+source("sim.R")
+sim.fun(n.sim=50, output1="./rfile1.rds",seed=24963)
+[user@biowulf]$ <b>cat rfile2.R</b>
+source("sim.R")
+sim.fun(n.sim=50, output1="./rfile2.rds",seed=27507)
+[user@biowulf]$ <b>cat rfile.sw</b>
+R --no-echo --no-restore --no-save &lt; ./rfile1.R
+R --no-echo --no-restore --no-save &lt; ./rfile2.R
+[user@biowulf]$ <b>swarm -f rfile.sw --time=10 --partition=quick --module R</b>
+199110
+[user@biowulf]$ <b>ls -lh *.rds</b>
+-rw-r--r-- 1 user group 445 Apr 25 12:52 rfile1.rds
+-rw-r--r-- 1 user group 445 Apr 25 12:52 rfile2.rds
+</pre>
+
+<p>Full Rswarm usage:</p>
+<pre class="term">
+Usage: Rswarm [options]
+   --rfile=[file]   (required) R program requiring replication
+   --sfile=[file]   (required) file with generated seeds, one per line
+   --path=[path]    (required) directory for output of all files
+   --reps=[i]       (required) number of replicates desired
+   --sims=[i]       (required) number of sims per file
+   --start=[i]      (required) starting file number
+   --ext1=[string]    (optional) file extension for output file 1
+   --ext2=[string]    (optional) file extension for output file 2`
+   --help, -h         print this help text
+</pre>
+
+<p>Note that R scripts can be written to take a random seed as a command line argument
+or derive it from the environment variable <code>SLURM_ARRAY_TASK_ID</code> to achieve
+an equivalent result.</p>
+
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="parallel"></a>Using the parallel package</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p> The R <a
+    href="http://stat.ethz.ch/R-manual/R-devel/library/parallel/doc/parallel.pdf">
+parallel</a> package provides functions for parallel execution of R code on
+machines with multiple CPUs. Unlike other parallel processing methods, all jobs
+share the full state of R when spawned, so no data or code needs to be
+initialized if it was loaded before starting worker processes. The actual
+spawning is very fast as well since no new R instance needs to be started.</p>
+
+<h4>Detecting the number of CPUs</h4>
+<p>Parallel includes the <code>dectectCores</code> function which is often used
+to automatically detect the number of available CPUs. However, it always
+reports <em>all</em> CPUs available on a node irrespective of how many CPUs
+were allocated to the job. This is not the desired behavior for batch jobs
+or sinteractive sessions. Instead, please use the <code>availableCores()</code> 
+function from the future (or parallelly for R &gt;= 4.0.3) package which correctly 
+returns the number of <em>allocated</em> CPUs:</p>
+
+<pre class="term">
+parallelly::availableCores() # for R &gt;= 4.0.3
+# or
+future::availableCores()
+</pre>
+
+<p>Or, if you prefer, you could also write your own detection function
+similar to the following example</p>
+
+<pre class="term">
+detectBatchCPUs <- function() { 
+    ncores &lt;- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")) 
+    if (is.na(ncores)) { 
+        ncores &lt;- as.integer(Sys.getenv("SLURM_JOB_CPUS_PER_NODE")) 
+    } 
+    if (is.na(ncores)) { 
+        return(2)
+    } 
+    return(ncores) 
+}
+</pre>
+
+<h4>Random number generation</h4>
+
+<p>The state of the random number generator in each worker process has
+to be carefully considered for any parallel workloads. See the help for
+<code>mcparallel</code> and the parallel package documentation for
+more details.</p>
+
+<h4>Example 1: mclapply</h4>
+
+The <code>mclapply()</code> function calls <code>lapply()</code> in parallel, so that the first two arguments 
+to <code>mclapply()</code> are exactly the same as for <code>lapply()</code>. Except the <code>mc.cores</code> argument needs 
+to be specified to split the computatation across multiple CPUs on the same node. In most cases <code>mc.cores</code>
+should be equal to the number of allocated CPUs.</p>
+
+<pre class="term">
+&gt; ncpus &lt;- parallelly::availableCores()
+&gt; options(mc.cores = ncpus) # set a global option for parallel packages
+# Then run mclapply() 
+&gt; mclapply(X, FUN, ..., mc.cores = ncpus)
+</pre>
+
+<p>Performance comparision between <code>lapply()</code> and <code>mclapply()</code>:</p>
+<pre class="term">
+&gt; library(parallel)
+&gt; ncpus &lt;- parallelly::availableCores()
+&gt; N <- 10^6
+&gt; system.time(x&lt;-lapply(1:N, function(i) {rnorm(300)}))
+##   user  system elapsed
+## 36.588   1.375  38.053
+&gt; system.time(x&lt;-mclapply(1:N, function(i) {rnorm(300)},mc.cores = ncpus)) #Test on a phase5 node with ncpus=12
+##   user  system elapsed
+## 11.587  14.547  13.684
+</pre>
+
+<p>In this example, using 12 CPUs with <code>mclapply()</code> only reduced runtime by only 2.8 fold compared to running
+on a single CPU. Under ideal conditions, the reduction would have been expected to be 12 fold. This means the work done
+per CPU was less in the parallel case than in the sequential (single CPU) case. This is called <em>parallel efficiency</em>.
+In this example the efficiency would have been sequential CPU time / parallel CPU time = (38.1 * 1) / (13.7 * 12) = 23%.</p>
+
+<p>Parallel jobs should aim for an efficiency of 70-80%. Because parallel algorithms rarely
+scale ideally to multiple CPUs we highly recommend performing scaling test before running programs in parallel.
+To better optimize the usage of <code>mclapply()</code>, we benchmarked the performance of <code>mclappy()</code> with 2-32 CPUs 
+and compared their efficiency:</p>
+<p class="aligncenter">
+<img align="middle" width="50%" src="/images/mclapply_benchmark.png" />
+</p>
+
+<p>The code used for benchmark was:</p>
+<pre class="term">
+&gt; library(parallel)
+&gt; library(microbenchmark)
+&gt; N <- 10^5
+# benchmark the performance with 2-32 CPUs for 20 times
+&gt; for (n in c(2,4,6,8,16,32)) {
+microbenchmark(mctest = mclapply(1:N, function(i) {rnorm(30000)},mc.cores=n),times = 20)
+}
+</pre>
+
+<p>As show in the figure, this particular <code>mclapply()</code> should be run with no more than 6 CPUs
+to ensure a higher than 70% of efficiency. This may be different for your code and should be tested
+for each type of workload. Note that memory usage increases with more CPUs are used which
+makes it even more important to not allocate more CPUs than necessary.</p>
+
+<h4>Example 2: foreach</h4>
+<p>A very convenient way to do parallel computations is provided by the 
+<a href="https://cran.r-project.org/web/packages/foreach/index.html">foreach</a> package. Here
+is a simple example (copied from this 
+<a href="https://www.r-bloggers.com/the-wonders-of-foreach/">blog post</a>)</p>
+
+<pre class="term">
+&gt; library(foreach)
+&gt; library(doParallel)
+&gt; library(doMC)
+&gt; registerDoMC(cores=future::availableCores())
+&gt; max.eig <- function(N, sigma) {
+     d &lt;- matrix(rnorm(N**2, sd = sigma), nrow = N)
+     E &lt;- eigen(d)$values
+     abs(E)[[1]] } 
+&gt; library(rbenchmark)
+&gt; benchmark(
+     foreach(n = 1:100) %do% max.eig(n, 1),
+     foreach(n = 1:100) %dopar% max.eig(n, 1) )
+
+##          test                             replications elapsed relative user.self sys.self user.child sys.child
+##1    foreach(n = 1:100) %do% max.eig(n, 1)          100  32.696    3.243 32.632   0.059      0.000      0.00
+##2 foreach(n = 1:100) %dopar% max.eig(n, 1)          100  10.083    1.000 3.037    3.389     43.417     10.73
+>                                                                       
+</pre>
+
+<p>Note that with 12 CPUs we got a speedup of only 3.2 relative to sequential
+resulting in a low parallel efficiency. Another cautionary tale to
+carefully test scaling of parallel code.</p>
+
+<p>A second way to run foreach in parallel:</p>
+
+<pre class="term">
+&gt; library(doParallel)
+&gt; cl <- makeCluster(future::availableCores())
+&gt; registerDoParallel(cl) 
+ # parallel command
+&gt; ...
+ # stop cluster
+&gt; stopCluster(cl)
+</pre>
+
+<p>What if we increased the number of tasks and the size of the largest matrix
+(i.e. more work per task)? In the example above that means increasing the
+<code>i</code> in <code>foreach(n=1:i)</code> using a fixed number of CPUs (32
+in this case). We then calculated the speedup relative to execution on 2 CPUs:</p>
+
+<style>
+.aligncenter {
+    text-align: center;
+}
+</style>
+
+<p class="aligncenter">
+<img align="middle" width="50%" src="/images/foreach_i_dopar-1.png" />
+</p>
+
+
+<p>If parallelism was 100% efficient, the speedup would be 16-fold. We recommend
+running jobs at 70% parallel efficiency or better which would correspond to a
+11-fold speedup in this case (blue horizontal line). In this example, 70% efficiency
+is reached at <code>i &gt; 300</code>. That means on biowulf you should only
+run this code on 32 CPUs if for <code>i &gt; 300</code>.</p>
+
+<p>How does the code perform with different numbers of CPUs for <code>i = 500</code>.
+Based on the results shown below, this code should be run with no more than 32 CPUs
+to ensure that efficiency is better than 70%.</p>
+
+<p class="aligncenter">
+<img align="middle" width="50%" src="/images/foreach_i500_cpus_constrain-1.png" />
+</p>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="biocparallel"></a>Using the BiocParallel package</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p> The R <a
+    href="http://bioconductor.org/packages/release/bioc/html/BiocParallel.html">
+BiocParallel</a> provides modified versions and novel implementation of
+functions for parallel evaluation, tailored to use with Bioconductor objects. Like
+the parallel package, it is not aware of slurm allocations and will therefore,
+by default, try to use <code>parallel::detectCores() - 2</code> CPUs, which is
+all but 2 CPUs installed on a compute node irrespective of how many CPUs have
+been allocated to a job. That will lead to overloaded jobs and very inefficient
+code. You can verify this by checking on the registered backends after allocating
+an interactive session with 2 CPUs:</p>
+
+<pre class="term">
+&gt; library(BiocParallel)
+&gt; registered()
+$MulticoreParam
+class: MulticoreParam
+  bpisup: FALSE; bpnworkers: 54; bptasks: 0; bpjobname: BPJOB
+  bplog: FALSE; bpthreshold: INFO; bpstopOnError: TRUE
+  bptimeout: 2592000; bpprogressbar: FALSE
+  bpRNGseed: 
+  bplogdir: NA
+  bpresultdir: NA
+  cluster type: FORK
+[...snip...]
+</pre>
+
+<p>So the default backend (top of the registered stack) would use 54 workers on
+2 CPUs. The default backend can be changed with</p>
+
+<pre class="term">
+&gt; options(MulticoreParam=quote(MulticoreParam(workers=future::availableCores())))
+&gt; registered()
+$MulticoreParam
+class: MulticoreParam
+  bpisup: FALSE; bpnworkers: 2; bptasks: 0; bpjobname: BPJOB
+  bplog: FALSE; bpthreshold: INFO; bpstopOnError: TRUE
+[...snip..]
+</pre>
+
+<p>or</p>
+<pre class="term">
+&gt; register(MulticoreParam(workers = future::availableCores()), default=TRUE)
+</pre>
+
+<p>Alternatively, a param object can be passed to BiocParallel functions.</p>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="threading"></a>Implicit multithreading</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>R can do implicit multithreading when using a subset of optimized functions
+in the library or functions that take advantage of parallelized routines in the
+lower level math libraries.<p>
+
+<p>The function <code>crossprod(m)</code> which is equivalent to calculating
+<code>t(m) %*% m</code>, for example, makes use of implicit parallelism in the
+underlying math libraries and can benefit from using more than one thread. The number
+of threads used by such functions is regulated by the environment variable
+<code>OMP_NUM_THREADS</code>, which the R module sets automatically when
+loaded as part of a batch or interactive job. Here is the runtime of
+this function with different values for <code>OMP_NUM_THREADS</code>:
+
+<div style="width:70%; margin: 0 auto;">
+  <img src="/images/R_implicitThreads2-mkl.png", alt="crossprod benchmark" width="100%">
+</div>
+
+<p>The code used for this benchmark was</p>
+<pre class="term">
+# this file is benchmark2.R
+runs <- 3
+o &lt;- 2^13
+b &lt;- 0
+
+for (i in 1:runs) {
+  a &lt;- matrix(rnorm(o*o), o, o)
+  invisible(gc())
+  timing &lt;- system.time({
+    b &lt;- crossprod(a)		# equivalent to: b &lt;- t(a) %*% a
+  })[3]
+  cat(sprintf("%f\n", timing))
+}
+</pre>
+
+<p>And was called with</p>
+<pre class="term">
+node$ <b>module load R/3.5</b>
+node$ <b>OMP_NUM_THREADS=1 Rscript benchmark2.R</b>
+node$ <b>OMP_NUM_THREADS=2 Rscript benchmark2.R</b>
+...
+node$ <b>OMP_NUM_THREADS=32 Rscript benchmark2.R</b>
+</pre>
+<p>From within a job that had been allocated 32 CPUs.</p>
+
+
+<p>Notes:</p>
+<ul>
+    <li>The R module sets <code>OMP_NUM_THREADS</code> to 1.
+    This is done to avoid problems when also using explicit parallelism that
+    uses forked worker processes like for example the 'parallel' package. In that
+    case each worker may start <code>OMP_NUM_THREADS</code> threads so there
+    could be as many as <code>ncpus * OMP_NUM_THREADS</code> total threads. If 
+    ncpus is set to the number of allocated CPUs, as would be the most common case,
+    that would lead to a huge overload of the job and could potentially fail
+    if the ulimit on the number of processes is exceeded.</li>
+
+    <li>Increasing <code>OMP_NUM_THREADS</code> and allocating more CPUs
+    may or may not increase performance of your code. Before running jobs
+    with more CPUs it is vital to benchmark single jobs and prove that
+    your code can benefit from implicit parallelism. Otherwise
+    resources will be wasted.
+    </li>
+    
+    <li>Benchmarking is also important to measure efficiency of parallelism. Clearly,
+    in this example, running with more than 8 threads would be highly inefficient.
+    </li>
+</ul>
+
+<p>There appears to also be another level of parallelism within the R libraries.
+One function that takes advantage of this is the <code>dist</code> function.
+The level of parallelism allowed with this mechanism seems to be set with
+two internal R functions (<code>setMaxNumMathThreads</code> and <code>setNumMathThreads</code>).
+Note that this is a distinct mechanism - i.e. setting OMP_NUM_THREADS has
+no impact on <code>dist</code> and <code>setMaxNumMathThreads</code>
+has no impact on the performance of <code>crossprod</code>. Here is the performance
+of <code>dist</code> with different numbers of threads:
+</p>
+
+<div style="width:70%; margin: 0 auto;">
+  <img src="/images/R_implicitThreads1-mkl.png", alt="dist benchmark" width="100%">
+</div>
+
+<p>The timings for this example were created with</p>
+<pre class="term">
+# this file is benchmark1.R
+rt <- data.frame()
+o &lt;- 2^12
+m &lt;- matrix(rnorm(o*o), o, o)
+for (nt in c(1, 2, 4, 8, 16, 32)) {
+    .Internal(setMaxNumMathThreads(nt)) 
+    .Internal(setNumMathThreads(nt))
+    res &lt;- system.time(d &lt;- dist(m))
+    rt &lt;- rbind(rt, c(nt, o, res[3]))
+}
+colnames(rt) &lt;- c("threads", "order", "elapsed")
+write.csv(rt, file="benchmark1.csv", row.names=F)
+</pre>
+
+<p>This was run within an allocation with 32 CPUs with</p>
+<pre class="term">
+node$ <b>OMP_NUM_THREADS=1 Rscript benchmark1.R</b>
+</pre>
+
+<p>The same notes about benchmarking as above apply. Also note that there is
+very little documentation about this to be found online.</p>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="rmpi"></a>R MPI jobs</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>Our R installations include the <a href="http://www.stats.uwo.ca/faculty/yu/Rmpi/">Rmpi</a> and
+<a href="https://github.com/RBigData/pbdMPI">pbdMPI</a> interfaces to MPI (OpenMPI in our case). R/MPI code
+can be run as batch jobs or from an sinteractive session with <code>mpiexec</code> or <code>srun --mpi=pmix</code>.
+Running MPI code from an interactive R session is currently not supported.</p>
+
+<p>The higher level snow MPI cluster interface is currently not supported. However, 
+the <a href="https://cran.r-project.org/web/packages/doMPI/vignettes/doMPI.pdf">doMPI</a>
+parallel backend for <a href="https://cran.r-project.org/web/packages/foreach/index.html">foreach</a> is supported.</p>
+
+<p>See our <a href="/development/MPI.html">MPI docs</a> for more detail</p>
+
+<h3>Example Rmpi code</h3>
+
+<p>This is a lower level Rmpi script</p>
+<pre class="term">
+# this script is test1.r
+library(Rmpi)
+id &lt;- mpi.comm.rank(comm=0)
+np &lt;- mpi.comm.size (comm=0)
+hostname &lt;- mpi.get.processor.name()
+
+msg &lt;- sprintf ("Hello world from task %03d of %03d, on host %s \n", id , np , hostname)
+cat(msg)
+
+invisible(mpi.barrier(comm=0))
+invisible(mpi.finalize())
+</pre>
+
+<!-- not currently true - looking at ways to make this possible again
+<p>This script can be run from an sinteractive session which is useful for debugging</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --ntasks=4 --nodes=4</b>
+salloc.exe: Pending job allocation 19945094
+salloc.exe: job 19945094 queued and waiting for resources
+salloc.exe: job 19945094 has been allocated resources
+salloc.exe: Granted job allocation 19945094
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn[4101-4104] are ready for job
+srun: error: x11: no local DISPLAY defined, skipping
+[user@cn4101 ~]$ <b>module load R</b>
+[user@cn4101 ~]$ <b>mpiexec Rscript test1.r</b>
+Hello world from task 000 of 004, on host cn4101
+Hello world from task 001 of 004, on host cn4102
+Hello world from task 002 of 004, on host cn4103
+Hello world from task 003 of 004, on host cn4104
+[user@cn4101 ~]$ <b>srun --mpi=pmix Rscript test1.r</b>
+Hello world from task 000 of 004, on host cn4101
+Hello world from task 001 of 004, on host cn4102
+Hello world from task 002 of 004, on host cn4103
+Hello world from task 003 of 004, on host cn4104
+</pre> 
+-->
+
+<p>It can be submitted as a batch job with the following script:</p>
+
+<pre class="term">
+#! /bin/bash
+# this script is test1.sh
+
+module load R/4.1.0 || exit 1
+srun --mpi=pmix Rscript test1.r
+## or
+# mpiexec Rscript test1.r
+</pre>
+
+<p>which would be submitted with</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sbatch --ntasks=4 --nodes=2 --partition=multinode test1.sh</b>
+</pre>
+
+<p>And would generate output similar to</p>
+<pre class="term">
+Hello world from task 000 of 004, on host cn4101
+Hello world from task 001 of 004, on host cn4102
+Hello world from task 002 of 004, on host cn4103
+Hello world from task 003 of 004, on host cn4104
+</pre>
+
+<p>Here is a Rmpi example with actual collective communication though still very simplistic.
+This script derives an estimate for &#960; in each task, gathers the results in task 0 and
+repeats this process n times to arrive at a final estimate:</p>
+
+<pre class="term">
+# this is test2.r
+library(Rmpi)
+
+# return a random number from /dev/urandom
+readRandom &lt;- function() {
+  dev &lt;- "/dev/urandom"
+  rng = file(dev,"rb", raw=TRUE)
+  n = readBin(rng, what="integer", 1) # read some 8-byte integers 
+  close(rng)
+  return( n[1] ) # reduce range and shift
+}
+
+pi_dart &lt;- function(i) {
+    est &lt;- mean(sqrt(runif(throws)^2 + runif(throws)^2) &lt;= 1) * 4
+    return(est)
+}
+
+id &lt;- mpi.comm.rank(comm=0)
+np &lt;- mpi.comm.size (comm=0)
+hostname &lt;- mpi.get.processor.name()
+rngseed &lt;- readRandom()
+cat(sprintf("This is task %03d of %03d, on host %s with seed %i\n", 
+    id , np , hostname, rngseed))
+set.seed(rngseed)
+
+throws &lt;- 1e7
+rounds &lt;- 400
+pi_global_sum = 0.0
+for (i in 1:rounds) {
+    # each task comes up with its own estimate of pi
+    pi_est &lt;- mean(sqrt(runif(throws)^2 + runif(throws)^2) &lt;= 1) * 4
+    # then we gather them all in task 0; type=2 means that the values are doubles
+    pi_task_sum &lt;- mpi.reduce(pi_est, type=2, op="sum", dest=0, comm=0)
+    if (id == 0) {
+        # task with id 0 then uses the sum to calculate an avarage across the
+        # tasks and adds that to the global sum
+        pi_global_sum &lt;- pi_global_sum + (pi_task_sum / np)
+    }
+}
+
+# when we're done, the task id 0 averages across all the rounds and prints the result
+if (id == 0) {
+    cat(sprintf("Real value of pi = %.10f\n", pi))
+    cat(sprintf("  Estimate of pi = %.10f\n", pi_global_sum / rounds))
+}
+
+invisible(mpi.finalize())
+</pre>
+
+<p>Submitting this script with a batch script similar to the first example results
+in output like this:</p>
+
+<pre class="term">
+This is task 000 of 004, on host cn4101 with seed -303950071
+This is task 001 of 004, on host cn4102 with seed -1074523673
+This is task 002 of 004, on host cn4103 with seed 788983269
+This is task 003 of 004, on host cn4104 with seed -922785662
+Real value of pi = 3.1415926536
+  Estimate of pi = 3.1415935438
+</pre>
+
+<h3>doMPI example code</h3>
+
+<p>doMPI provides an MPI backend for the foreach package. Here is a simple hello-world-ish
+doMPI example. Note that in my testing the least issues were encountered when
+the foreach loops were run from the first rank of the MPI job.</p>
+
+<pre class="term">
+suppressMessages({
+    library(Rmpi)
+    library(doMPI)
+    library(foreach)
+})
+
+myrank <- mpi.comm.rank(comm=0)
+cl <- doMPI::startMPIcluster()
+registerDoMPI(cl)
+if (myrank == 0) {
+    cat("-------------------------------------------------\n")
+    cat("== This is rank 0 running the foreach loops ==\n")
+    
+
+    x <- foreach(i=1:16, .combine="c") %dopar% {
+        id <- mpi.comm.rank(comm=0)
+        np <- mpi.comm.size (comm=0)
+        hostname <- mpi.get.processor.name()
+        sprintf ("Hello world from process %03d of %03d, on host %s \n", id , np , hostname)
+    }
+    print(x)
+    
+    x <- foreach(i=1:200, .combine="c") %dopar% {
+        sqrt(i)
+    }
+
+    cat("-------------------------------------------------\n")
+    print(x)
+
+    x <- foreach(i=1:16, .combine="cbind") %dopar% {
+        set.seed(i)
+        rnorm(3)
+    }
+
+
+    cat("-------------------------------------------------\n")
+    print(x)
+
+}
+closeCluster(cl)
+mpi.quit(save="no")
+</pre>
+
+<p>Do not specify the number of tasks to run. doMPI clusters will hang during shutdown
+if doMPI has to spawn worker processes. Instead, let <code>mpiexec</code> start the processes and then
+doMPI will wire up a main process and workers from the existing processes. Note that the 
+<code>startMPIcluster</code> function has to be called early in the script for that reason.</p>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="shiny"></a>Run a shiny app on biowulf</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<p>Shiny apps can be run on biowulf for a single user. Since they require tunneling a running
+shiny app cannot be shared with other users. However, if the code for the app is accessible
+to different users they each can run an ephemeral shiny app on biowulf. We will use the following
+example application:</p>
+
+<pre class="term">
+## this file is 01_hello.r
+library(shiny)
+
+
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("Hello Shiny!"),
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+      # Input: Slider for the number of bins ----
+      sliderInput(inputId = "bins",
+                  label = "Number of bins:",
+                  min = 1,
+                  max = 50,
+                  value = 30)
+    ),
+    # Main panel for displaying outputs ----
+    mainPanel(
+      # Output: Histogram ----
+      plotOutput(outputId = "distPlot")
+    )
+  )
+)
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+  # Histogram of the Old Faithful Geyser Data ----
+  # with requested number of bins
+  # This expression that generates a histogram is wrapped in a call
+  # to renderPlot to indicate that:
+  #
+  # 1. It is "reactive" and therefore should be automatically
+  #    re-executed when inputs (input$bins) change
+  # 2. Its output type is a plot
+  output$distPlot <- renderPlot({
+    x    <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    hist(x, breaks = bins, col = "#007bc2", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times")
+
+    })
+}
+
+# which port to run on
+port <- tryCatch(
+  as.integer(Sys.getenv("PORT1", "none")),
+  error = function(e) {
+    cat("Please remember to use --tunnel to run a shiny app")
+    cat("See https://hpc.nih.gov/docs/tunneling/")
+    stop()
+  }
+)
+
+# run the app
+shinyApp(
+  ui,
+  server,
+  options = list(port=port, launch.browser=F, host="127.0.0.1")
+)
+</pre>
+
+<p>Start an sinteractive session with a <a href="https://hpc.nih.gov/docs/tunneling/">tunnel</a></p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=6g --gres=lscratch:10 --tunnel</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load R</b>
+[user@cn3144 ~]$ <b>Rscript 01_hello.r</b>
+
+Listening on http://127.0.0.1:34239
+</pre>
+
+<p>After you set up your tunnel you can use the URL above to access the shiny app.</p>
+
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="pkgnotes"></a>Notes for individual packages</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<h3>h2o</h3>
+
+<p>h2o is a machine learning package written in java. The R interface starts a java h2o instance
+with a given number of threads and then connects to it through http. This fails on compute nodes
+if the http proxy variables are set. Therefore it is necessary to unset <code>http_proxy</code>
+before using h2o:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=20g --gres=lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load R/4.2</b>
+[user@cn3144 ~]$ <b>unset http_proxy</b>
+[user@cn3144 ~]$ <b>R</b>
+R version 4.2.0 (2022-04-22) -- "Vigorous Calisthenics"
+Copyright (C) 2022 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+[...snip...]
+&gt; library(h2o)
+&gt; h2o.init(ip='localhost', nthreads=future::availableCores(), max_mem_size='12g')
+H2O is not running yet, starting it now...
+
+Note:  In case of errors look at the following log files:
+    /tmp/RtmpVdW92Y/h2o_user_started_from_r.out
+    /tmp/RtmpVdW92Y/h2o_user_started_from_r.err
+
+openjdk version "1.8.0_161"
+OpenJDK Runtime Environment (build 1.8.0_161-b14)
+OpenJDK 64-Bit Server VM (build 25.161-b14, mixed mode)
+
+Starting H2O JVM and connecting: . Connection successful!
+
+R is connected to the H2O cluster:
+    H2O cluster uptime:         1 seconds 683 milliseconds
+    H2O cluster timezone:       America/New_York
+    H2O data parsing timezone:  UTC
+    H2O cluster version:        3.36.1.2
+    H2O cluster version age:    3 months and 20 days !!!
+    H2O cluster name:           H2O_started_from_R_user_ywu882
+    H2O cluster total nodes:    1
+    H2O cluster total memory:   10.64 GB
+    H2O cluster total cores:    4
+    H2O cluster allowed cores:  4
+    H2O cluster healthy:        TRUE
+    H2O Connection ip:          localhost
+    H2O Connection port:        54321
+    H2O Connection proxy:       NA
+    H2O Internal Security:      FALSE
+    R Version:                  R version 4.2.0 (2022-04-22)
+
+&gt;
+</pre>
+
+<h3>dyno</h3>
+
+<p>dyno is a meta package that installs several other packages from the dynvers
+(<a href="https://github.com/dynverse">https://github.com/dynverse</a>). It
+includes some cran packages and some packages only available on github. We
+generally don't install any new github-only R packages any more so here are the
+instructions for installing this as a user.</p>
+
+<h5>Installation</h5>
+
+<pre class="term">
+###
+### 1. install with the default dependent packages
+###
+[user@biowulf]$ <b>sinteractive --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load R/4.2</b>
+[user@cn3144 ~]$ <b>R -q --no-save --no-restore -e 'devtools::install_github("dynverse/dyno")'</b>
+
+###
+### 2. install a pached version of babelwhale
+###
+[user@cn3144 ~]$ <b>git clone https://github.com/dynverse/babelwhale.git</b>
+[user@cn3144 ~]$ <b>patch -p0 &lt;&lt;'__EOF__'
+--- babelwhale/R/run.R.orig     2021-07-16 20:58:26.563714000 -0400
++++ babelwhale/R/run.R  2021-07-16 20:58:26.483721000 -0400
+@@ -122,6 +122,8 @@
+         environment_variables %&gt;% gsub("^.*=", "", .),
+         environment_variables %&gt;% gsub("^(.*)=.*$", "SINGULARITYENV_\\1", .)
+       ),
++      "http_proxy" = Sys.getenv("http_proxy"),
++      "https_proxy" = Sys.getenv("https_proxy"),
+       "SINGULARITY_TMPDIR" = tmpdir,
+       "SINGULARITY_CACHEDIR" = config$cache_dir,
+       "PATH" = Sys.getenv("PATH") # pass the path along
+__EOF__</b>
+
+[user@cn3144 ~]$ <b>R CMD INSTALL babelwhale</b>
+
+###
+### 3. Create a configuration that uses a dedicated singularity cache somewhere
+###    outside the home directory. In this example using `/data/$USER/dynocache`
+###
+
+[user@cn3144 ~]$ <b>R -q --no-save --no-restore &lt;&lt;'__EOF__'
+config &lt;- babelwhale::create_singularity_config(
+  cache_dir = "/data/$USER/dynocache"
+)
+babelwhale::set_default_config(config, permanent = TRUE)
+__EOF__</b>
+</pre>
+
+<h5>Notes:</h5>
+<ul>
+    <li>There is a bug in the `plot_dimred` function - see
+  https://github.com/dynverse/dynplot/issues/54. I tried installing
+  the devel version but it didn't help. YMMV</li>
+    <li>If you want to use the parts that use shiny (e.g. guidelines_shiny)
+  you will need to use a tunnel and call the function like
+  <code>guidelines_shiny(dataset, port=####, launch.browser=F)</code> where
+  #### is the port set up by the `sinteractive --tunnel`</li>
+</ul>
+
+<!-- ===================================================================================== -->
+<div class="heading"><a name="doc"></a>Documentation</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<ul>
+    <li><a href="http://www.cran.r-project.org/">The R Homepage</a></li>
+    <li><a href="http://cran.r-project.org/manuals.html">PDF manuals</a> including an Introduction to R.</li>
+    <li><a href="http://cran.r-project.org/doc/FAQ/R-FAQ.html">The R FAQ</a> </li>
+    <li><a href="http://stat.ethz.ch/R-manual/R-devel/library/parallel/doc/parallel.pdf">'parallel' documentation</a></li>
+    <li><A href="http://www.stats.uwo.ca/faculty/yu/Rmpi/">Rmpi documentation</a></li>
+    <li><a href="http://www.sfu.ca/~sblay/R/snow.html">Snow user guide</a></li>
+</ul>
+
+<script> 
+$(document).ready(function() { $('#r-packages').DataTable({
+    columnDefs: [
+        // Left align the header content of column 1
+       { className: "dt-left", targets: [ '_all' ] }
+    ]
+});});
+</script>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

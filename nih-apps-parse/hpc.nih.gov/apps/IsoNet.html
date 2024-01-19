@@ -1,0 +1,93 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RGI: Resistance Gene Identifier ';</script>
+<div class="title"><b>IsoNet: Isotropic Reconstruction of Electron Tomograms with Deep Learning</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<br />
+<p>
+IsoNet is a deep learning-based software package that iteratively reconstructs the missing-wedge information and increases signal-to-noise ratio, using the knowledge learned from raw tomograms. Without the need for sub-tomogram averaging, IsoNet generates tomograms with significantly reduced resolution anisotropy. Applications of IsoNet to three representative types of cryoET data demonstrate greatly improved structural interpretability: resolving lattice defects in immature HIV particles, establishing architecture of the paraflagellar rod in Eukaryotic flagella, and identifying heptagon-containing clathrin cages inside a neuronal synapse of cultured cells. detect AMR genes from thirteen genomes of Pseudomonas strains.
+</p>
+
+<br />
+<h3>References:</h3>
+<ul>
+<li>Yun-Tao Liu, Heng Zhang, Hui Wang, Chang-Lu Tao, Guo-Qiang Bi &amp; Z. Hong Zhou <br />
+<i>Isotropic reconstruction for electron tomography with deep learning</i><br />
+<a href="https://www.nature.com/articles/s41467-022-33957-8">Nature Communications volume 13, Article number: 6482 (2022) </a><br/>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/IsoNet-cryoET/IsoNet">IsoNet on Github</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>IsoNet</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>ISONET_HOME</b>&nbsp; installation directory</li>
+    <li><b>ISONET_BIN </b>&nbsp; &nbsp; &nbsp; bin directory</li>
+    <li><b>ISONET_SRC </b>&nbsp; &nbsp; &nbsp; source directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3107 ~]$<b> module load IsoNet</b>
+[+] Loading singularity  3.10.5  on cn4183
+[+] Loading CUDA Toolkit  10.2.89  ...
+[+] Loading cuDNN/7.6.5/CUDA-10.2 libraries...
+[+] Loading IsoNet  0.2.1
+[user@cn3107 ~]$<b> isonet.py -h </b>
+INFO: Showing help with the command 'isonet.py -- --help'.
+
+NAME
+    isonet.py - ISONET: Train on tomograms and restore missing-wedge
+
+SYNOPSIS
+    isonet.py -
+
+DESCRIPTION
+    for detail discription, run one of the following commands:
+
+    isonet.py prepare_star -h
+    isonet.py prepare_subtomo_star -h
+    isonet.py deconv -h
+    isonet.py make_mask -h
+    isonet.py extract -h
+    isonet.py refine -h
+    isonet.py predict -h
+    isonet.py resize -h
+    isonet.py gui -h
+
+[user@cn3107 ~]$<b> isonet.py gui </b>
+<img src="isonet/isonet_gui.png" width="600" border="0" alt="">
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3107 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

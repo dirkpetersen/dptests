@@ -1,0 +1,121 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Plastimatch on Biowulf';</script>
+<div class="title">Plastimatch on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> Plastimatch is an application to perform registration of medical images such as X-Rays, CT, PET, and MRI.</em>.  </p>
+
+<h3>References:</h3>
+<ul>
+<li>Zaffino P, Raudaschl P, Fritscher K, Sharp GC, Spadea MF.
+<em><a href="https://pubmed.ncbi.nlm.nih.gov/27587045/">Technical Note: plastimatch mabs, an open source tool for automatic image segmentation</a></em>. Med Phys. 2016 Sep;43(9):5155.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Plastimatch Main Site: <a href="https://plastimatch.org">Plastimatch</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: plastimatch (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Test data can be found in <code>${PLASTIMATCH_TEST_DATA}</code>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=4g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4224 are ready for job
+
+[user@cn4224 ~]$ <b>module load plastimatch</b>
+[user@cn4244 ~]$ <b>cd /data/${USER}</b>
+[user@cn4224 ~]$ <b>cp ${PLASTIMATCH_TEST_DATA}/* .</b>
+[user@cn4224 ~]$ <b>tar xvzf registration-tutorial.tar.gz</b>
+[user@cn4224 ~]$ <b>cd registration-tutorial</b>
+[user@cn4224 ~]$ <b>plastimatch register parms.txt</b>
+Loading fixed image [0]: t5.mha
+Loading moving image [0]: t0.mha
+Launching registration worker thread
+Inside registration worker thread
+Doing registration stage
+[1] xf_in->m_type = 0, xf_out->m_type = 0
+RESAMPLE 0 1: (3 3 2), (3 3 2)
+RESAMPLE 0 1: (3 3 2), (3 3 2)
+volume_calc_grad complete.
+plm_warp_native is complete.
+[...]
+Saving image...
+Trying to write image to warped.mha
+Load:   0.138638
+Run:    1.27459
+Save:   0.392006
+Total:  1.80523
+Finished!
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. plastimatch.sh) similar to the following.</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load plastimatch
+cd /data/${USER}
+cp ${PLASTIMATCH_TESTDATA}/* .
+tar xzf registration-tutorial.tar.gz
+cd registration-tutorial
+plastimatch register parms.txt
+</pre>
+
+<p>Submit these jobs using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile for the first step of the pipeline (e.g. plastimatch.swarm). For example:</p>
+
+<pre class="term">
+plastimatch register parms_01.txt
+plastimatch register parms_02.txt
+plastimatch register parms_03.txt
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f plastimatch.swarm [-g #] --module plastimatch</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>--module plastimatch <td>Loads the plastimatch module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

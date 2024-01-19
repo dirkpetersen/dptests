@@ -1,0 +1,124 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'xtail: genome-wide assessment of differential translations with ribosome profiling data';</script>
+<div class="title"><b>xtail: genome-wide assessment of differential translations with ribosome profiling data
+.</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Xtail is an analysis pipeline tailored for ribosome profiling data 
+that comprehensively and accurately identifies differentially translated genes in pairwise comparisons. 
+Applied on simulated and real datasets, Xtail exhibits high sensitivity with minimal false-positive rates, 
+outperforming existing methods in the accuracy of quantifying differential translations.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Zhengtao Xiao, Qin Zou, Yu Liu &amp; Xuerui Yang <br />
+<i>Genome-wide assessment of differential translations with ribosome profiling data </i> <br />
+<a href="https://www.nature.com/articles/ncomms11194">Nature Communications volume 7, Article number: 11194 (2016) </a>
+</ul>
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/xryanglab/xtail">xtail GitHub page</a></li>
+<li><a href="https://rdrr.io/github/xryanglab/xtail/man/">xtail Documentation</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>xtail</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>XTAIL_HOME</b>&nbsp; installation directory</li>
+    <li><b>XTAIL_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>XTAIL_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>XTAIL_DATA</b>&nbsp; sample data directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@cn0911 ~]$<b>module load xtail   </b>
+[+] Loading singularity  3.10.5  on cn4185
+[+] Loading xtail  1.1.5
+[user@cn0911 ~]$<b>wget https://github.com/xryanglab/xtail/archive/refs/tags/v1.1.4.tar.gz</b>
+[user@cn0911 ~]$<b>tar -zxf v1.1.4.tar.gz && rm -f v1.1.4.tar.gz && cd xtail-1.1.4</b>
+[user@cn0911 ~]$<b>R</b>
+
+R version 3.6.1 (2019-07-05) -- "Action of the Toes"
+...
+&gt; <b>library(xtail) </b>
+...
+&gt; <b>data(xtaildata)</b>
+</pre>
+Get the mrna count data and rpf count data. For the example only the first
+# 100 are used:
+<pre class="term">
+&gt; <b>test.mrna &lt;- xtaildata$mrna[1:100,]</b>
+&gt; <b>test.mrna </b>
+                control1 control2 treat1 treat2
+ENSG00000000003      825      955    866   1039
+ENSG00000000419     1054      967    992    888
+ENSG00000000457       71       75    139     95
+ENSG00000000460      191      162    199    201
+ENSG00000000971       81        2     88     11
+...
+ENSG00000006530      562      588    547    597
+ENSG00000006534      176      106    157    141
+ENSG00000006555       32       36     40     52
+&gt; <b>test.rpf  &lt;- xtaildata$rpf[1:100,]</b>
+&gt; <b>test.rpf</b>
+                control1 control2 treat1 treat2
+ENSG00000000003      143      302    197    195
+ENSG00000000419      234      481    383    306
+ENSG00000000457       12       17     17     15
+...
+ENSG00000006530      127      214    130    176
+ENSG00000006534       13       25     17     10
+ENSG00000006555        3       11      4      3
+</pre>
+Assign condition labels to samples:
+<pre class="term">
+&gt; <b>condition &lt;- c("control","control","treat","treat")</b>
+</pre>
+Run xtail
+<pre class="term">
+&gt; <b>test.results &lt;- xtail(test.mrna,test.rpf,condition, threads = 2)</b>
+Calculating the library size factors
+1. Estimate the log2 fold change in mrna
+2. Estimate the log2 fold change in rpf
+3. Estimate the difference between two log2 fold changes
+4. Estimate the log2 ratio in first condition
+5. Estimate the log2 ratio in second condition
+6. Estimate the difference between two log2 ratios
+Number of the log2FC and log2R used in determining the final p-value
+ log2FC: 16
+ log2R: 84
+&gt; <b> q()</b>
+[user@cn0911 ~]$<b>exit</b>
+</pre> 
+End the interactive session:
+<pre class="term">
+[user@cn0911 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

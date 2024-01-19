@@ -1,0 +1,201 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'regenie: whole genome regression modelling  of large genome-wide association studies. ';</script>
+<div class="title"><b>regenie: whole genome regression modelling <br />                               of large genome-wide association studies.
+ </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+regenie is a C++ program for whole genome regression modelling  <br /> 
+of large genome-wide association studies.  It is developed and supported 
+by a team of scientists at the Regeneron Genetics Center.
+regenie employs the BGEN library.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Joelle Mbatchou, Leland Barnard, Joshua Backman, Anthony Marcketta, Jack A. Kosmicki, Andrey Ziyatdinov, Christian Benner, Colm O'Dushlaine, Mathew Barber, Boris Boutkov, Lukas Habegger, Manuel Ferreira, Aris Baras, Jeffrey Reid, Goncalo Abecasis, Evan Maxwell, Jonathan Marchini. <br />
+<i>Computationally efficient whole genome regression for quantitative and binary traits</i><br />
+<a href="https://www.biorxiv.org/content/10.1101/2020.06.19.162354v2.abstract"> bioRxiv</a> 
+(2020),doi: https://doi.org/10.1101/2020.06.19.162354.  <br/>
+<li>Band, G. and Marchini, J. <br />
+<i>BGEN: a binary file format for imputed genotype and haplotype data</i><br />
+<a href="https://www.biorxiv.org/content/10.1101/308296v2">bioRxiv</a> (2018); 
+doi: https://doi.org/10.1101/308296
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/rgcgithub/regenie">regenie Github page</a></li>
+<li><a href="https://rgcgithub.github.io/regenie/options/">regenie_Tutorial</a></li>
+<li><a href="https://enkre.net/cgi-bin/code/bgen/dir?ci=trunk">BGEN home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>regenie</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>REGENIE_HOME</b>&nbsp; installation directory</li>
+    <li><b>REGENIE_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>REGENIE_SRC </b>&nbsp; &nbsp; &nbsp; source code directory</li>
+    <li><b>REGENIE_DATA</b>&nbsp; sample data and checkpoints directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive </b>
+[user@cn3101 ~]$<b>module load regenie/3.0.3  </b>
+[+] Loading singularity  3.10.0  on cn3063
+[+] Loading regenie  3.0.3
+</pre>
+The available executables are:
+<pre class="term">
+[user@cn3101]$ <b>ls $REGENIE_BIN </b>
+bgenix  cat-bgen  edit-bgen  regenie  zstd
+</pre>
+In particular, the command line options of the executable regenie are as follows:                  
+<pre class="term">
+[user@cn3101]$ <b>regenie --help</b>
+              |============================|
+              |        REGENIE v3.0.3      |
+              |============================|
+
+Copyright (c) 2020-2022 Joelle Mbatchou, Andrey Ziyatdinov and Jonathan Marchini.
+Distributed under the MIT License.
+
+
+Usage:
+  /regenie/regenie [OPTION...]
+
+  -h, --help      print list of available options
+      --helpFull  print list of all available options
+
+ Main options:
+      --step INT                specify if fitting null model (=1) or
+                                association testing (=2)
+      --bed PREFIX              prefix to PLINK .bed/.bim/.fam files
+      --pgen PREFIX             prefix to PLINK2 .pgen/.pvar/.psam files
+      --bgen FILE               BGEN file
+      --sample FILE             sample file corresponding to BGEN file
+      --ref-first               use the first allele as the reference for
+...
+</pre>
+To perform training of the predictor network using this executable, copy sample data to the current folder:
+<pre class="term">
+[user@cn3101]$ <b>cp $REGENIE_DATA/* .</b>
+</pre>
+A sample command to run regenie:
+<pre class="term">
+[user@cn3101]$ <b>regenie --bgen example.bgen --out my_output --step 1 --bsize 200 --phenoFile phenotype_bin.txt</b>
+Start time: Tue Aug 16 13:24:00 2022
+
+              |============================|
+              |        REGENIE v3.0.3      |
+              |============================|
+
+Copyright (c) 2020-2022 Joelle Mbatchou, Andrey Ziyatdinov and Jonathan Marchini.
+Distributed under the MIT License.
+
+Log of output saved in file : my_output.log
+
+Options in effect:
+  --bgen example.bgen \
+  --out my_output \
+  --step 1 \
+  --bsize 200 \
+  --phenoFile phenotype_bin.txt
+
+Fitting null model
+ * bgen             : [example.bgen]
+   -summary : bgen file (v1.2 layout, zlib compressed) with 500 named samples and 1000 variants with 8-bit encoding.
+   -index bgi file [example.bgen.bgi]
+ * phenotypes       : [phenotype_bin.txt] n_pheno = 2
+   -keeping and mean-imputing missing observations (done for each trait)
+   -number of phenotyped individuals  = 500
+ * number of individuals used in analysis = 500
+   -residualizing and scaling phenotypes...done (0ms)
+ * # threads        : [55]
+ * block size       : [200]
+ * # blocks         : [5] for 1000 variants
+ * # CV folds       : [5]
+ * ridge data_l0    : [5 : 0.01 0.25 0.5 0.75 0.99 ]
+ * ridge data_l1    : [5 : 0.01 0.25 0.5 0.75 0.99 ]
+ * approximate memory usage : 2MB
+ * setting memory...done
+
+Chromosome 1
+ block [1] : 200 snps  (4ms)
+   -residualizing and scaling genotypes...done (3ms)
+   -calc working matrices...done (420ms)
+   -calc level 0 ridge...done (79ms)
+ block [2] : 200 snps  (2ms)
+   -residualizing and scaling genotypes...done (1ms)
+   -calc working matrices...done (439ms)
+   -calc level 0 ridge...done (79ms)
+ block [3] : 200 snps  (2ms)
+   -residualizing and scaling genotypes...done (1ms)
+   -calc working matrices...done (483ms)
+   -calc level 0 ridge...done (81ms)
+ block [4] : 200 snps  (3ms)
+   -residualizing and scaling genotypes...done (1ms)
+   -calc working matrices...done (366ms)
+   -calc level 0 ridge...done (78ms)
+ block [5] : 200 snps  (2ms)
+   -residualizing and scaling genotypes...done (1ms)
+   -calc working matrices...done (485ms)
+   -calc level 0 ridge...done (78ms)
+
+ Level 1 ridge...
+   -on phenotype 1 (Y1)...done (0ms)
+   -on phenotype 2 (Y2)...done (0ms)
+
+Output
+------
+phenotype 1 (Y1) :
+  0.01  : Rsq = 0.00292408, MSE = 0.995083&lt;- min value
+  0.25  : Rsq = 0.00619743, MSE = 0.998022
+  0.5   : Rsq = 0.00679147, MSE = 1.00153
+  0.75  : Rsq = 0.00753375, MSE = 1.00367
+  0.99  : Rsq = 0.00733694, MSE = 1.01373
+  * making predictions...writing LOCO predictions...done (9ms)
+
+phenotype 2 (Y2) :
+  0.01  : Rsq = 0.012437, MSE = 0.98745&lt;- min value
+  0.25  : Rsq = 0.00739346, MSE = 0.997094
+  0.5   : Rsq = 0.00612812, MSE = 1.00169
+  0.75  : Rsq = 0.00621549, MSE = 1.00343
+  0.99  : Rsq = 0.0082828, MSE = 1.00621
+  * making predictions...writing LOCO predictions...done (9ms)
+
+List of blup files written to: [my_output_pred.list]
+
+Elapsed time : 2.66076s
+End time: Tue Aug 16 13:24:02 2022
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3101 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

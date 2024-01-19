@@ -1,0 +1,195 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'FCS on Biowulf';</script>
+<div class="title">FCS on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> FCS is a toolset to elimate contaminant sequences from a genome assembly. Currently, there are two tools in this toolset: <code>fcs-adaptor</code> and <code>fcs-gx</code></em>.  </p>
+
+<h3>References:</h3>
+<ul>
+<li>Astashyn A, Tvedte ES, Sweeney D, Sapojnikov V, Bouk N, Joukov V, Mozes E, Strope PK, Sylla PM, Wagner L, Bidwell SL, Clark K, Davis EW, Smith-White B, Hlavina W, Pruitt KD, Schneider VA, Murphy TD
+<em><a href="https://pubmed.ncbi.nlm.nih.gov/37292984/">Rapid and sensitive detection of genome contamination at scale with FCS-GX</a></em>. bioRxiv [Preprint]. 2023 Jun 6:2023.06.02.543519. doi: 10.1101/2023.06.02.543519.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>FCS Main Site: <a href="https://github.com/ncbi/fcs">Github site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: fcs (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Test data can be found in <code>${FCS_TEST_DATA}</code>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. From the FCS tutorials at the <a href="https://github.com/ncbi/fcs">FCS Github site</a>:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=3g --cpus-per-task=4 --gres=lscratch:100</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn4224 are ready for job
+
+[user@cn4224 ~]$ <b>module load fcs</b>
+[+] Loading fcs  0.4.0  on cn4285
+[+] Loading singularity  3.10.5  on cn4285
+
+[user@cn4244 ~]$ <b>cd /lscratch/${SLURM_JOB_ID}</b>
+[user@cn4224 ~]$ <b>cp ${FCS_TEST_DATA}/fcsadaptor_prok_test.fa.gz inputdir/.</b>
+[user@cn4224 ~]$ <b>mkdir inputdir outputdir</b>
+[user@cn4224 ~]$ <b>run_fcsadaptor.sh --fasta-input ./inputdir/fcsadaptor_prok_test.fa.gz --output-dir ./outputdir --prok --container-engine singularity --image ${FCS_HOME}/fcs-adaptor.sif</b>
+[WARN  tini (2647065)] Tini is not running as PID 1 and isn't registered as a child subreaper.
+Zombie processes will not be re-parented to Tini, so zombie reaping won't work.
+To fix the problem, use the -s option or set the environment variable TINI_SUBREAPER to register Tini as a child subreaper, or run Tini as PID 1.
+Output will be placed in: /output-volume
+Executing the workflow
+Resolved '/app/fcs/progs/ForeignContaminationScreening.cwl' to 'file:///app/fcs/progs/ForeignContaminationScreening.cwl'
+[workflow ] start
+[workflow ] starting step ValidateInputSequences
+[step ValidateInputSequences] start
+
+[..]
+
+[job all_skipped_trims] completed success
+[step all_skipped_trims] completed success
+[workflow ] starting step all_cleaned_fasta
+[step all_cleaned_fasta] start
+[step all_cleaned_fasta] completed success
+[workflow ] completed success
+
+[user@cn4224 ~]$ <b>cp ${FCS_TEST_DATA}/fcsgx_test.fa.gz .</b>
+[user@cn4224 ~]$ <b>SOURCE_DB_MANIFEST="https://ftp.ncbi.nlm.nih.gov/genomes/TOOLS/FCS/database/test-only/test-only.manifest"</b>
+[user@cn4224 ~]$ <b>LOCAL_DB=/lscratch/${SLURM_JOB_ID}/gxdb</b>
+[user@cn4224 ~]$ <b>fcs.py db get --mft "$SOURCE_DB_MANIFEST" --dir "$LOCAL_DB/test-only"</b>
+[user@cn4224 ~]$ <b>fcs.py db check --mft "$SOURCE_DB_MANIFEST" --dir "$LOCAL_DB/gxdb"</b>
+===============================================================================
+Source:      https://ftp.ncbi.nlm.nih.gov/genomes/TOOLS/FCS/database/test-only
+Destination: /app/db/gxdb
+Resuming failed transfer in /app/db/gxdb...
+Space check: Available:15.71GiB; Existing:0B; Incoming:4.29GiB; Delta:4.29GiB
+
+Requires transfer: 56B test-only.meta.jsonl
+
+Requires transfer: 5.92KiB test-only.taxa.tsv
+
+Requires transfer: 21.33KiB test-only.seq_info.tsv.gz
+
+Requires transfer: 7.85MiB test-only.blast_div.tsv.gz
+
+Requires transfer: 67.56MiB test-only.gxs
+
+Requires transfer: 4.21GiB test-only.gxi
+
+[user@cn4224 ~]$ <b>GXDB_LOC=/lscratch/${SLURM_JOB_ID}/gxdb</b>
+[user@cn4224 ~]$ <b>fcs.py screen genome --fasta ./fcsgx_test.fa.gz --out-dir ./gx_out/ --gx-db "$GXDB_LOC/test-only"  --tax-id 6973</b>
+--------------------------------------------------------------------
+
+tax-id    : 6973
+fasta     : /sample-volume/fcsgx_test.fa.gz
+size      : 8.55 MiB
+split-fa  : True
+BLAST-div : roaches
+gx-div    : anml:insects
+w/same-tax: True
+bin-dir   : /app/bin
+gx-db     : /app/db/gxdb/test-only/test-only.gxi
+gx-ver    : Mar 10 2023 15:34:33; git:v0.4.0-3-g8096f62
+output    : /output-volume//fcsgx_test.fa.6973.taxonomy.rpt
+
+--------------------------------------------------------------------
+
+ [...]
+
+fcs_gx_report.txt contamination summary:
+----------------------------------------
+                                seqs      bases
+                               ----- ----------
+TOTAL                            243   27170378
+-----                          ----- ----------
+prok:CFB group bacteria          243   27170378
+
+--------------------------------------------------------------------
+
+fcs_gx_report.txt action summary:
+---------------------------------
+                                seqs      bases
+                               ----- ----------
+TOTAL                            243   27170378
+-----                          ----- ----------
+EXCLUDE                          214   25795430
+REVIEW                            29    1374948
+
+--------------------------------------------------------------------
+
+[user@cn4224 ~]$ <b>zcat fcsgx_test.fa.gz | fcs.py clean genome --action-report ./gx_out/fcsgx_test.fa.6973.fcs_gx_report.txt --output clean.fasta --contam-fasta-out contam.fasta</b>
+Applied 214 actions; 25795430 bps dropped; 0 bps hardmasked.
+
+[user@cn4224 ~]$ <b>ls gx_out</b>
+fcsgx_test.fa.6973.fcs_gx_report.txt  fcsgx_test.fa.6973.taxonomy.rpt
+
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fcsadaptor.sh) similar to the following.</p>
+
+<pre class="term">
+#! /bin/bash
+
+module load fcs
+cd /lscratch/${SLURM_JOB_ID}
+mkdir inputdir outputdir
+cp ${FCS_TEST_DATA}/fcsadaptor_prok_test.fa.gz inputdir/.
+
+run_fcsadaptor.sh --fasta-input ./inputdir/fcsadaptor_prok_test.fa.gz --output-dir ./outputdir --prok --container-engine singularity --image ${FCS_HOME}/fcs-adaptor.sif
+
+cp -r outputdir /data/${USER}/.
+</pre>
+
+<p>Submit these jobs using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile to run fcs-adaptor (e.g. fcsadaptor.swarm). For example:</p>
+
+<pre class="term">
+run_fcsadaptor.sh --fasta-input ./inputdir/fcsadaptor_prok_test1.fa.gz --output-dir ./outputdir1 --prok --container-engine singularity --image ${FCS_HOME}/fcs-adaptor.sif; cp -r outputdir1 /data/${USER}/. 
+run_fcsadaptor.sh --fasta-input ./inputdir/fcsadaptor_prok_test2.fa.gz --output-dir ./outputdir2 --prok --container-engine singularity --image ${FCS_HOME}/fcs-adaptor.sif; cp -r outputdir2 /data/${USER}/.
+run_fcsadaptor.sh --fasta-input ./inputdir/fcsadaptor_prok_test3.fa.gz --output-dir ./outputdir3 --prok --container-engine singularity --image ${FCS_HOME}/fcs-adaptor.sif; cp -r outputdir3 /data/${USER}/.
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fcsadaptor.swarm [-g #] --module fcs</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>--module fcs <td>Loads the fcs module for each subjob in the swarm
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

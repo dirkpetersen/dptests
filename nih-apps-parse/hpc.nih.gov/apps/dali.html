@@ -1,0 +1,171 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Dali on Biowulf';</script>
+<div class="title">Dali on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#alphafold">AlphaFold searching </a></div>
+      </div>
+</table>
+
+<p>
+The three-dimensional co-ordinates of each protein are used to calculate residue - residue distance matrices. 
+</p>
+
+<h3>References:</h3>
+<ul>
+
+  <li>
+    Holm J.
+    <a href="https://pubmed.ncbi.nlm.nih.gov/32006276/"><b><u>Using Dali for protein structure comparison.</u></b></a>
+    <em>Methods Mol. Biol. 2112, 29-42</em>
+  </li>
+
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://ekhidna2.biocenter.helsinki.fi/dali/">Dali Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<ul>
+    <li>Module Name: <tt>dali</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>singlethreaded and MPI
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>DALI_HOME</tt></li>
+    <li><tt>DALI_AF</tt></li>
+  </ul>
+<li>Example files in <tt>$DALI_HOME/example/</tt>
+<li>Reference data in <tt>/pdb/</tt> and <tt>$DALI_AF</tt>
+<li>Test script:<br />
+<pre class="term" style="width: 300px;">
+#!/bin/bash
+#SBATCH -J dali_test --ntasks=4 --nodes=1
+rm -rf test
+ml dali
+$DALI_HOME/test.csh
+</pre></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --ntasks=4 --nodes=1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load dali</b>
+[user@cn3144 ~]$ <b>cp /pdb/pdb/pp/pdb1ppt.ent.gz .</b>
+[user@cn3144 ~]$ <b>cp /pdb/pdb/bb/pdb1bba.ent.gz .</b>
+[user@cn3144 ~]$ <b>import.pl --pdbfile pdb1ppt.ent.gz --pdbid 1ppt --dat ./</b>
+[user@cn3144 ~]$ <b>import.pl --pdbfile pdb1bba.ent.gz --pdbid 1bba --dat ./</b>
+[user@cn3144 ~]$ <b>dali.pl --pdbfile1 pdb1ppt.ent.gz --pdbfile2 pdb1bba.ent.gz --dat1 ./ --dat2 ./ --outfmt "summary,alignments"</b>
+[user@cn3144 ~]$ <b>cat mol1A.txt</b>
+# Job: test
+# Query: mol1A
+# No:  Chain   Z    rmsd lali nres  %id PDB  Description
+   1:  mol2-A  3.6  1.8   33    36   39   MOLECULE: BOVINE PANCREATIC POLYPEPTIDE;
+
+# Pairwise alignments
+
+No 1: Query=mol1A Sbjct=mol2A Z-score=3.6
+
+DSSP  LLLLLLLLLLLLLHHHHHHHHHHHHHHHHHHLLlll
+Query GPSQPTYPGDDAPVEDLIRFYDNLQQYLNVVTRhry   36
+ident  |  | |||| |  |        |  | |  ||
+Sbjct APLEPEYPGDNATPEQMAQYAAELRRYINMLTRpry   36
+DSSP  LLLLLLLLLLLLLLLHHHHHHHHHHHHHHHHLLlll
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. dali.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load dali
+import.pl --pdbfile pdb1ppt.ent.gz --pdbid 1ppt --dat ./
+import.pl --pdbfile pdb1bba.ent.gz --pdbid 1bba --dat ./
+dali.pl --pdbfile1 pdb1ppt.ent.gz --pdbfile2 pdb1bba.ent.gz --dat1 ./ --dat2 ./ --outfmt "summary,alignments"
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch dali.sh</pre>
+
+<a Name="mpi"></a><div class="heading">MPI batch job</div>
+<p>In certain circumstances, dali can be accelerated using MPI.  To do so, include <tt><b>--np $SLURM_NTASKS</b></tt> with the command, and submit the job using <tt><b>--ntasks=<i>#</i> --nodes=1 </b></tt>, where <tt><b><i>#</i></b></tt> is the number of MPI tasks requested.  MPI only works on a single node, so # must be less than the maximum number of cpus available on a single node.  At present the maximum is 128; however, most nodes have only 56 cpus and so jobs requesting more than 56 cpus may wait a considerable time in the queue.</p>
+
+<pre class="term">
+...
+dali.pl <b>--np $SLURM_NTASKS</b> ...
+...
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --ntasks=32 --nodes=1 dali.sh</pre>
+
+<a Name="alphafold"></a><div class="heading">AlphaFold searching</div>
+
+<p><a href="http://ekhidna2.biocenter.helsinki.fi/dali/digest.html">Running with the AlphaFold database</a>:</p>
+
+<pre class="term">
+#!/bin/bash
+module load dali
+
+zcat /pdb/pdb/fd/pdb1fd3.ent.gz &gt; 1fd3.pdb
+import.pl --pdbfile 1fd3.pdb --pdbid 1fd3 --dat ./ --clean
+
+dali.pl \
+  --title "my search" \
+  --cd1 1fd3B \
+  --dat1 ./ \
+  --db ${DALI_AF}/Digest/HUMAN.list \
+  --BLAST_DB ${DALI_AF}/Digest/AF.fasta \
+  --repset ${DALI_AF}/Digest/HUMAN_70.list \
+  --dat2 ${DALI_AF}/DAT/ \
+  --clean \
+  --hierarchical \
+  --oneway \
+  --np ${SLURM_NTASKS}
+</pre>
+
+<p>Type <tt><b>ls ${DALI_AF}/Digest</b></tt> to see all the lists.</p>
+
+<p><b>NOTES:</b></p>
+<ul>
+<li>The import.pl process may fail due to formatting errors in the original pdb file.  Make sure that it completes normally and individual .dat files are created for each chain.  For the example (1fd3.pdb), there are four chains in the original pdb:<br />
+<pre class="term" style="width:200px;">
+1fd3A.dat
+1fd3B.dat
+1fd3C.dat
+1fd3D.dat
+1fd3.pdb</pre>
+</li>
+<li>The value of --cd1 must match the desired chain.  So for the B chain of 1fd3.pdb, use 1fd3B</li>
+<li>Make sure to use ${SLURM_NTASKS} for the value of --np; also be sure to allocate the job with --ntasks.</li>
+</ul>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

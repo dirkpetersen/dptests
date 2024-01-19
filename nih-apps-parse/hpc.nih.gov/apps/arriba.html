@@ -1,0 +1,120 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Arriba on Biowulf';</script>
+<div class="title">Arriba on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Arriba is a command-line tool for detecting gene fusions in RNA-Seq data. It
+can also detect other clinically-relevant structural variations such as exon duplications or truncations of genes (i.e., breakpoints in introns and intergenic regions).
+</p>
+
+<h3>References:</h3>
+A dedicated publication about Arriba has not been released yet. Until then, please refer to Arriba in your methods section as follows (or similar):
+
+    We used Arriba (https://github.com/suhrig/arriba/) to detect gene fusions from RNA-Seq data.
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/suhrig/arriba/">Arriba Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>arriba</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Arriba relies on the STAR genome aligner for much of its heavy lifting.  Both can be run multi-threaded by setting the number of threads on the command-line to a value greater than 1.
+        <li>The version of STAR encapsulated in arriba is 2.5.3a.
+<li>Reference data in <tt>/fdb/arriba/references</tt>
+    <li> Arriba is run by calling the <tt>run_arriba.sh</tt> script, which does not use any flags to identify which argument is which.  All arguments must be provided for each run, in the order specified by the script.  For more details, see the information printed when <tt>run_arriba.sh</tt> is called without any arguments.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load arriba</b>
+[+] Loading arriba  1.2.0  on cn3113
+[+] Loading singularity  3.5.3  on cn3113
+[user@cn3144 ~]$ <b>run_arriba.sh</b>
+Usage: run_arriba.sh STAR_genomeDir/ annotation.gtf assembly.fa blacklist.tsv read1.fastq.gz read2.fastq.gz threads
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. Arriba.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load arriba 
+run_arriba.sh  &gt; arriba.out
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] Arriba.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. Arriba.swarm). For example:</p>
+
+<pre class="term">
+run_arriba.sh  &gt; Arriba_1.out
+run_arriba.sh  &gt; Arriba_2.out
+run_arriba.sh  &gt; Arriba_3.out
+run_arriba.sh  &gt; Arriba_4.out
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f Arriba.swarm [-g #] [-t #] --module arriba</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module arriba</tt> <td>Loads the arriba module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

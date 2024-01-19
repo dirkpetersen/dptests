@@ -1,0 +1,164 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Lumpy on Biowulf';</script>
+<div class="title">Lumpy on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Lumpy detects structural variants from high throughput sequencing data
+using read-pair, split read, and other signals in parallel.
+</p>
+<p>There are two ways of using lumpy:
+</p>
+<ul>
+    <li> <code>lumpyexpress</code>: Automated and standardized analysis for
+         common situations</li>
+    <li> <code>lumpy</code>: Flexible breakpoint detection for more
+         complicated use cases</li>
+</ul>
+<p>Either way, lumpy expects input alignments as created by <code>bwa
+mem</code>.</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Ryan M. Layer, Colby Chiang, Aaron R. Quinlan and Ira M. Hall. 
+    <em>LUMPY: a probabilistic framework for structural variant discovery</em>
+    Genome Biol. 2014, 15:R84.
+    <a href="http://www.ncbi.nlm.nih.gov/pubmed/24970577">Pubmed</a>&nbsp;|&nbsp;
+    <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/pmid/24970577/">PMC</a> &nbsp;|&nbsp;
+    <a href="http://www.genomebiology.com/2014/15/6/R84">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/arq5x/lumpy-sv">lumpy Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>lumpy</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded app
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$LUMPY_HOME</tt></li>
+    <li><tt>$LUMPY_CONFIG</tt></li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load lumpy</b>
+
+[user@cn3144 ~]$ <b>lumpyexpress -t2 -B /path/to/input.bam</b>
+Sourcing executables from
+/usr/local/apps/lumpy/0.2.11/bin/lumpyexpress.config ...
+
+Checking for required python modules
+(/usr/local/Anaconda/envs/py2.7.9/bin/python)...
+samblaster: Version 0.1.22
+samblaster: Inputting from stdin
+samblaster: Outputting to stdout
+samblaster: Opening gcat_set_053.bam.vcf.Kzd6atukx0F1/disc_pipe for write.
+samblaster: Opening gcat_set_053.bam.vcf.Kzd6atukx0F1/spl_pipe for write.
+samblaster: Loaded 25 header sequence entries.
+samblaster: Output 27571 discordant read pairs to gcat_set_053.bam.vcf.Kzd6atukx0F1/disc_pipe
+samblaster: Output 0 split reads to gcat_set_053.bam.vcf.Kzd6atukx0F1/spl_pipe
+samblaster: Marked 0 of 39432108 (0.00%) read ids as duplicates using 1188k memory in 1M36S(96.300S) C
+PU seconds and 19M47S(1187S) wall time.
+Removed 5 outliers with isize >= 404
+Running LUMPY... 
+chrM    1000000
+[...snip...]
+
+[user@cn3144 ~]$ <b>lumpyexress -h</b>
+usage:   lumpyexpress [options]
+
+options:
+     -B FILE  full BAM file(s) (comma separated) (required)
+     -S FILE  split reads BAM file(s) (comma separated)
+     -D FILE  discordant reads BAM files(s) (comma separated)
+     -o FILE  output file [fullBam.bam.vcf]
+     -x FILE  BED file to exclude
+     -P       output probability curves for each variant
+     -m INT   minimum sample weight for a call [4]
+     -r FLOAT trim threshold [0]
+     -T DIR   temp directory [./output_prefix.XXXXXXXXXXXX]
+     -t N     number of threads [1]
+     -k       keep temporary files
+
+     -K FILE  path to lumpyexpress.config file
+                (default: same directory as lumpyexpress)
+     -v       verbose
+     -h       show this message
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. lumpy.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+
+module load lumpy || exit 1
+lumpyexpress -t $SLURM_CPUS_PER_TASK -B input.bam -o output.vcf
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=10 --mem=10G lumpy.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. lumpy.swarm). For example:</p>
+
+<pre class="term">
+lumpyexpress -t $SLURM_CPUS_PER_TASK -B input1.bam -o output1.vcf
+lumpyexpress -t $SLURM_CPUS_PER_TASK -B input2.bam -o output2.vcf
+lumpyexpress -t $SLURM_CPUS_PER_TASK -B input3.bam -o output3.vcf
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f lumpy.swarm -g 10 -t 10 --module lumpy</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module lumpy</tt> <td>Loads the lumpy module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

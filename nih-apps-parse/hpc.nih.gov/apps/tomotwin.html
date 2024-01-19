@@ -1,0 +1,201 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type="text/javascript" language="JavaScript">document.querySelector('title').textContent = "TomoTwin on Biowulf";</script>
+
+<div class="title">TomoTwin on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+TomoTwin is an application the enables particle picking for Cryo-ET using deep metric learning based procedures.
+</p>
+<p>
+<blockquote>
+TomoTwin comes pre-trained on so far 120 different proteins. By embedding tomograms in an information-rich, 
+high-dimensional space which separates macromolecules according to their 3-dimensional structure, TomoTwin allows
+users to identify proteins in tomograms de novo without manually creating training data or retraining the network
+each time a new protein is to be located. That means, you can simply run it for your specific sample without a
+much additional effort.
+</blockquote>
+</p>
+<h3>Reference:</h3>
+<ul>
+
+  <li>
+    Rice, G., Wagner, T., Stabrin, M. et al.
+    <a href="https://doi.org/10.1038/s41592-023-01878-z"><b><u>TomoTwin: generalized 3D localization of macromolecules in cryo-electron tomograms with structural data mining</u></b></a>
+    <em>Nat Methods (2023)</em>
+  </li>
+
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://tomotwin-cryoet.readthedocs.io/">TomoTwin Site</a></li>
+<li><a href="https://github.com/MPI-Dortmund/tomotwin-cryoet">TomoTwin Github</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+
+<p class="NXblock">This application uses the napari application to visualize the tomograms. napari requires a <a href="/docs/connect.html#nx">graphical connection using NX</a></p>
+
+<ul>
+<li>Module Name: <tt>tomotwin</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>GPU enabled</li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>TOMOTWIN_TEST_DATA</tt></li>
+    <li><tt>TOMOTWIN_MODEL</tt></li>
+  </ul>
+<li>Example files in <tt>$TOMOTWIN_TEST_DATA</tt></li>
+<li>Model file in <tt>$TOMOTWIN_MODEL</tt></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=16G --gres=lscratch:50,gpu:v100x:2</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load tomotwin</b>
+
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+
+[user@cn3144 46116226]$ <b>cp -r $TOMOTWIN_TEST_DATA/* .</b>
+
+[user@cn3144 46116226]$ <b>CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py tomogram \
+  -m tomotwin_model_p120_052022_loss.pth \
+  -v tomo/tomo.mrc \
+  -o out/embed/tomo/ \
+  -b 400</b>
+Latest version of TomoTwin is installed :-)
+reading tomotwin_model_p120_052022_loss.pth
+Model config:
+{'identifier': 'SiameseNet', 'network_config': ...}
+... UserWarning: This DataLoader will create 12 worker processes in total. Our suggested max number of worker in current system is 4 ...
+Embeddings have shape: (5083356, 35)
+Wrote embeddings to disk to out/embed/tomo/tomo_embeddings.temb
+Done.
+
+[user@cn3144 46116226]$ <b>tomotwin_tools.py extractref \
+  --tomo tomo/tomo.mrc \
+  --coords ref.coords \
+  --out out/extracted_ref/</b>
+1it [00:00, 97.91it/s]
+wrote subvolume reference to out/extracted_ref/
+
+[user@cn3144 46116226]$ <b>CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py subvolumes \
+  -m tomotwin_model_p120_052022_loss.pth \
+  -v out/extracted_ref/reference_0.mrc \
+  -o out/embed/ref</b>
+Latest version of TomoTwin is installed :-)
+reading tomotwin_model_p120_052022_loss.pth
+Model config:
+{'identifier': 'SiameseNet', 'network_config': ...}
+UserWarning: This DataLoader will create 12 worker processes in total. Our suggested max number of worker in current system is 4 ...
+Done. Wrote results to out/embed/ref/embeddings.temb
+
+[user@cn3144 46116226]$ <b>tomotwin_map.py distance \
+  -r out/embed/ref/embeddings.temb \
+  -v out/embed/tomo/tomo_embeddings.temb \
+  -o out/map/</b>
+Latest version of TomoTwin is installed :-)
+Read embeddings
+Map references: 100%|████████████████████████████████████| 1/1 [00:04&lt;00:00,  4.55s/it]
+Prepare output...
+Wrote output to out/map/map.tmap
+
+[user@cn3144 46116226]$ <b>tomotwin_locate.py findmax -m out/map/map.tmap -o out/locate/</b>
+Latest version of TomoTwin is installed :-)
+start locate  reference_0.mrc
+effective global min: 0.5
+Locate class 0: 100%|███████████████████████████████| 31071/31071 [00:06&lt;00:00, 4604.62it/s]
+Call get_avg_pos
+done 0
+Located reference_0.mrc 847
+Non-maximum-supression: 100%|███████████████████████| 847/847 [00:00&lt;00:00, 3489.54it/s]
+Particles of class reference_0.mrc: 844 (before NMS: 847)
+
+[user@cn3144 46116226]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. tomotwin.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+cd /lscratch/$SLURM_JOB_ID
+module load tomotwin
+cp -r $TOMOTWIN_TEST_DATA/* .
+
+CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py tomogram \
+    -m tomotwin_model_p120_052022_loss.pth \
+    -v tomo/tomo.mrc \
+    -o out/embed/tomo/ \
+    -b 400
+tomotwin_tools.py extractref \
+    --tomo tomo/tomo.mrc \
+    --coords ref.coords \
+    --out out/extracted_ref/
+CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py subvolumes \
+    -m tomotwin_model_p120_052022_loss.pth \
+    -v out/extracted_ref/reference_0.mrc \
+    -o out/embed/ref
+tomotwin_map.py distance \
+    -r out/embed/ref/embeddings.temb \
+    -v out/embed/tomo/tomo_embeddings.temb \
+    -o out/map/
+tomotwin_locate.py findmax -m out/map/map.tmap -o out/locate/
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] [--gres=lscratch:#,gpu:type:2] tomotwin.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. tomotwin.swarm). For example:</p>
+
+<pre class="term">
+CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py tomogram -m model.pth -v tomo1.mrc -o out1 -b 400
+CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py tomogram -m model.pth -v tomo2.mrc -o out2 -b 400
+CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py tomogram -m model.pth -v tomo3.mrc -o out3 -b 400
+CUDA_VISIBLE_DEVICES=0,1 tomotwin_embed.py tomogram -m model.pth -v tomo4.mrc -o out4 -b 400
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f tomotwin.swarm [-g #] [--gres=gpu:type:2] --module tomotwin</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>--gres=gpu:type:<i>2</i></tt> <td>2 GPUs required for each process (1 line in the swarm command file). Replace type with GPU types available like v100, v100x, p100, a100, etc.
+  <tr><td><tt>--module tomotwin</tt> <td>Loads the tomotwin module for each subjob in the swarm 
+</table>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

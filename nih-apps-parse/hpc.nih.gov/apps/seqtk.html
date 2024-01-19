@@ -1,0 +1,94 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'seqtk on Biowulf';</script>
+<div class="title">seqtk on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>    <p> Seqtk is a fast and lightweight tool for processing sequences in the FASTA 
+      or FASTQ format. It seamlessly parses both FASTA and FASTQ files which can 
+      also be optionally compressed by gzip. </p>    <h3><a Name="doc"></a></h3>
+<div class="heading">Documentation</div>    <ul>
+      <li><a href="https://github.com/lh3/seqtk">https://github.com/lh3/seqtk</a> 
+        <!-- End content area - do not edit below this line -->
+      </li>
+    </ul>
+
+<div class="heading">Important Notes</div>    <ul>
+      <li>Module Name: <tt>seqtk</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) 
+    </ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load seqtk
+</strong>[user@cn3144 ~]$<strong> seqtk seq -a in.fq.gz &gt; out.fa</strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. seqtk.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load seqtk
+seqtk seq -a in.fq.gz > out.fa</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch [--mem=#] seqtk.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. seqtk.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;seqtk seq -a in.fq.gz &gt; out.fa
+cd dir2;seqtk seq -a in.fq.gz &gt; out.fa
+cd dir3;seqtk seq -a in.fq.gz &gt; out.fa
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f seqtk.swarm [-g #] --module seqtk</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=20%><tt>-g <i>#</i> </tt>
+        <td>Number of Gigabytes of memory required for each process (1 line in 
+          the swarm command file) 
+      <tr>
+        <td><tt>--module seqtk</tt> 
+        <td>Loads the seqtk module for each subjob in the swarm 
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

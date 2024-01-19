@@ -1,0 +1,120 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'mbg on Biowulf';</script>
+<div class="title">mbg on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>
+From the repository:
+</p>
+
+<blockquote>
+Minimizer based sparse de Bruijn Graph constructor. Homopolymer
+compress input sequences, pick syncmers from hpc-compressed sequences,
+connect syncmers with an edge if they are adjacent in a read, unitigify and
+homopolymer decompress. Suggested input is PacBio HiFi/CCS reads, or ONT duplex
+reads. May or may not work with Illumina reads. Not suggested for PacBio CLR or
+regular ONT reads
+</blockquote>
+
+<h3>References:</h3>
+<ul>
+    <li>M. Rautiainen, T. Marschall. <em>MBG: Minimizer-based Sparse de Bruijn Graph Construction</em>.
+        Genome Biology (2020). <a href="https://pubmed.ncbi.nlm.nih.gov/33475133/">PubMed</a>&nbsp;|&nbsp;
+        <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/33475133/">PMC</a>&nbsp;|&nbsp;
+        <a href="https://academic.oup.com/bioinformatics/article/37/16/2476/6104877?login=true">Journal</a>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>mbg on <a href="https://github.com/maickrau/MBG">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: mbg (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>MBG is a multithreaded tool. Please match the number of allocated CPUs to the number of threads</li>
+    <li>Example files in <code>$MBG_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:10 --cpus-per-task=2 --mem=3g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144]$ <b>module load mbg</b>
+[user@cn3144]$ <b>cp ${MBG_TEST_DATA:-none}/SRR10971019.fasta .</b>
+[user@cn3144]$ <b>MBG -t $SLURM_CPUS_PER_TASK -i SRR10971019.fasta -o SRR10971019_graph.gfa -k 1501 -w 1450 -a 1 -u 3</b>
+Parameters: k=1501,w=1450,a=1,u=3,t=2,r=0,R=0,hpcvariantcov=0,errormasking=hpc,endkmers=no,blunt=no,keepgaps=no,guesswork=no,cache=no
+Collecting selected k-mers
+Reading sequences from SRR10971019.fasta
+1210730 total selected k-mers in reads
+265228 distinct selected k-mers in reads
+Unitigifying
+Filtering by unitig coverage
+3513 distinct selected k-mers in unitigs after filtering
+Getting read paths
+Reading sequences from SRR10971019.fasta
+Building unitig sequences
+Reading sequences from SRR10971019.fasta
+Writing graph to SRR10971019_graph.gfa
+selecting k-mers and building graph topology took 19,594 s
+unitigifying took 0,81 s
+filtering unitigs took 0,4 s
+getting read paths took 19,186 s
+building unitig sequences took 36,835 s
+forcing edge consistency took 0,24 s
+writing the graph and calculating stats took 0,94 s
+nodes: 567
+edges: 730
+assembly size 5346906 bp, N50 29122
+approximate number of k-mers ~ 4495839
+
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. mbg.sh), which uses the input file 'mbg.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load mbg/1.0.11
+cp ${MBG_TEST_DATA:-none}/SRR10971019.fasta .
+MBG -t $SLURM_CPUS_PER_TASK -i SRR10971019.fasta -o SRR10971019_graph.gfa -k 1501 -w 1450 -a 1 -u 3
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] mbg.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

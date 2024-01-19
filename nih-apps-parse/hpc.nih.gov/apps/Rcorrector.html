@@ -1,0 +1,152 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Rcorrector: Error correction for Illumina RNA-seq reads ';</script>
+<div class="title"><b>Rcorrector: Error correction for Illumina RNA-seq reads </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Rcorrector implements a k-mer based method to correct random sequencing errors 
+in Illumina RNA-seq reads. Rcorrector uses a De Bruijn graph to compactly represent 
+all trusted k-mers in the input reads. Unlike WGS read correctors, 
+which use a global threshold to determine trusted k-mers, Rcorrector computes a local
+threshold at every position in a read.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Li Song and Liliana Florea <br />
+<i> Rcorrector: efficient and accurate error
+correction for Illumina RNA-seq reads</i><br />
+<a href="https://gigascience.biomedcentral.com/articles/10.1186/s13742-015-0089-y">GigaScience </a> 2015, <b>4</b>, 48 <br/>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/mourisl/Rcorrector">Rcorrector on GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>Rcorrector</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>RCORRECTOR_HOME</b>&nbsp; installation directory</li>
+    <li><b>RCORRECTOR_BIN </b>&nbsp; &nbsp; &nbsp; executable directory</li>
+    <li><b>RCORRECTOR_DATA</b>&nbsp; sample data dorectory
+    <li><b>RCORRECTOR_SRC </b>&nbsp; &nbsp; &nbsp; source code directory
+    <li><b>RCORRECTOR_DOC </b>&nbsp; &nbsp; &nbsp; documentation directory
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=4g</b>
+[user@@cn3200 ~]$<b>module load Rcorrector </b>
+[+] Loading gcc  7.2.0  ... 
+[+] Loading jellyfish  2.2.7 
+[+] Loading Rcorrector 1.0.3.1  ...
+[user@biowulf]$ <b>rcorrector</b>
+Usage: ./rcorrector [OPTIONS]
+OPTIONS:
+Required parameters:
+	-r seq_file: seq_file is the path to the sequence file. Can use multiple -r to specifiy multiple sequence files
+	-p seq_file_left seq_file_right: the paths to the paired-end data set. Can use multiple -p to specifiy multiple sequence files
+	-i seq_file: seq_file is the path to the interleaved mate-pair sequence file. Can use multiple -i
+	-c jf_dump: the kmer counts dumped by JellyFish
+	-k kmer_length
+Other parameters:
+	-od output_file_directory (default: ./)
+	-t number of threads to use (default: 1)
+	-maxcor INT: the maximum number of correction every 100bp (default: 8)
+	-maxcorK INT: the maximum number of correction within k-bp window (default: 4)
+	-wk FLOAT: the proportion of kmers that are used to estimate weak kmer count threshold (default: 0.95)
+	-stdout: output the corrected sequences to stdout (default: not used)
+	-verbose: output some correction information to stdout (default: not used)
+[user@@cn3200 ~]$<b> run_rcorrector.pl </b>
+Usage: perl ./run_rcorrector.pl [OPTIONS]
+OPTIONS:
+Required parameters:
+	-s seq_files: comma separated files for single-end data sets
+	-1 seq_files_left: comma separated files for the first mate in the paried-end data sets
+	-2 seq_files_right: comma separated files for the second mate in the paired-end data sets
+	-i seq_files_interleaved: comma sperated files for interleaved paired-end data sets
+Other parameters:
+	-k kmer_length (<=32, default: 23)
+	-od output_file_directory (default: ./)
+	-t number_of_threads (default: 1)
+	-maxcorK INT: the maximum number of correction within k-bp window (default: 4)
+	-wk FLOAT: the proportion of kmers that are used to estimate weak kmer count threshold, lower for more divergent genome (default: 0.95)
+	-ek expected_number_of_kmers: does not affect the correctness of program but affect the memory usage (default: 100000000)
+	-stdout: output the corrected reads to stdout (default: not used)
+	-verbose: output some correction information to stdout (default: not used)
+	-stage INT: start from which stage (default: 0)
+		0-start from begining(storing kmers in bloom filter);
+		1-start from count kmers showed up in bloom filter;
+		2-start from dumping kmer counts into a jf_dump file;
+		3-start from error correction.
+[user@@cn3200 ~]$<b> run_rcorrector.pl -1 $RCORRECTOR_DATA/sample_read1.fq -2 $RCORRECTOR_DATA/sample_read2.fq</b>
+RPut the kmers into bloom filter
+jellyfish bc -m 23 -s 100000000 -C -t 1 -o tmp_ffad73bdce91fd172154077d85bac6cc.bc /usr/local/apps/Rcorrector/1.0.3.1/sample_data/sample_read1.fq /usr/local/apps/Rcorrector/1.0.3.1/sample_data/sample_read2.fq 
+Count the kmers in the bloom filter
+jellyfish count -m 23 -s 100000 -C -t 1 --bc tmp_ffad73bdce91fd172154077d85bac6cc.bc -o tmp_ffad73bdce91fd172154077d85bac6cc.mer_counts /usr/local/apps/Rcorrector/1.0.3.1/sample_data/sample_read1.fq /usr/local/apps/Rcorrector/1.0.3.1/sample_data/sample_read2.fq 
+Dump the kmers
+jellyfish dump -L 2 tmp_ffad73bdce91fd172154077d85bac6cc.mer_counts > tmp_ffad73bdce91fd172154077d85bac6cc.jf_dump
+Error correction
+/usr/local/apps/Rcorrector/1.0.3.1/bin/rcorrector   -p /usr/local/apps/Rcorrector/1.0.3.1/sample_data/sample_read1.fq /usr/local/apps/Rcorrector/1.0.3.1/sample_data/sample_read2.fq -c tmp_ffad73bdce91fd172154077d85bac6cc.jf_dump
+Stored 253 kmers
+Weak kmer threshold rate: 0.010000 (estimated from 0.950/1 of the chosen kmers)
+Bad quality threshold is '!'
+Processed 70 reads
+	Corrected 21 bases.
+
+</pre>
+End the interactive session:
+<pre class="term">
+[user@cn3200 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. rcorrector.sh). For example:</p>
+<pre class="term">
+#!/bin/bash
+#SBATCH --mem=4g
+module load Rcorrector           
+run_rcorrector.pl -1 $RCORRECTOR_DATA/sample_read1.fq -2 $RCORRECTOR_DATA/sample_read2.fq
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch rcorrector.sh </pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. rcorrector.swarm). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+run_rcorrector.pl -1 $RCORRECTOR_DATA/sample_read1.fq -2 $RCORRECTOR_DATA/sample_read2.fq
+</pre>
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f rcorrector.swarm  -g 4 </pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

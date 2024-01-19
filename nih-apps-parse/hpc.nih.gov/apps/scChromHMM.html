@@ -1,0 +1,95 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'scChromHMM: a suite of tools for rapid processing of single-cell histone modification data. ';</script>
+<div class="title"><b>scChromHMM: a suite of tools for rapid processing of single-cell histone modification data. </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+scChromHMM provides a suite of tools for rapid processing of single-cell histone modification data to perform chromatin states analysis of the genome within each single-cell. It is an extention of bulk ChromHMM framework, which consumes the HMM model learned from ChromHMM and perform chromatin state analysis by running forward-backward algorithm for each single-cell.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Bingjie Zhang, Avi Srivastava, Eleni Mimitou, Tim Stuart, Ivan Raimondi, Yuhan Hao, Peter Smibert &amp; Rahul Satija <br />
+<i>Characterizing cellular heterogeneity in chromatin state with scCUT&amp;Tag-pro </i><br />
+<a href="https://www.nature.com/articles/s41587-022-01250-0">Nature Biotechnology, 24 March 2022 </a></li>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/satijalab/scChromHMM">scChromHMM Github page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>scChromHMM</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>SCCHROMHMM_HOME</b>&nbsp; installation directory</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive  </b>
+[user@cn0861 ~]$ <b>module scChromHMM  </b>
+[+] Loading singularity  3.8.5-1  on cn4177
+[+] Loading scChromHMM 20220610  ...
+</pre>
+<pre class="term">
+[user@cn0861 ~]$ <b>schrom  -h </b>
+chrom 0.1.0
+Avi Srivastava, Bingjie Zhang, Rahul Satija
+Generate summary stats for multimodal data.
+
+USAGE:
+    schrom [SUBCOMMAND]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+SUBCOMMANDS:
+    help         Prints this message or the help of the given subcommand(s)
+    hmm          A subcommand to run hmm.
+    transform    A subcommand to transform long form matrices to short.
+[user@cn0861 ~]$ <b>schrom hmm -h </b>
+schrom-hmm
+A subcommand to run hmm.
+
+USAGE:
+    schrom hmm [FLAGS] --anchors <anchors>... --common_cells <common_cells> --fragments <fragments>... --model <model> --output <output> --threads <threads>
+
+FLAGS:
+    -h, --help       Prints help information
+        --onlyone    quantify only chromosome one
+    -V, --version    Prints version information
+
+OPTIONS:
+    -a, --anchors <anchors>...           path to the anchors files. [Same order as fragments]
+    -c, --common_cells <common_cells>    path to the file with cellular barcodes of common assay
+    -f, --fragments <fragments>...       path to the fragment files.
+    -m, --model <model>                  path to the chromeHMM model.txt file
+    -o, --output <output>                path to the output directory
+    -t, --threads <threads>              number of threads to use
+[user@cn0861 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

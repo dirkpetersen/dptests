@@ -1,0 +1,226 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Apache Spark on Biowulf';</script>
+<div class="title">Apache Spark on Biowulf</div>
+
+<p>Apache Spark is a large-scale data processing engine that performs
+in-memory computing. Spark offers bindings in Java, Scala, Python and R for
+building parallel applications.</p>
+
+<!-- =============================================================================== -->
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Apache Spark <a href="https://spark.apache.org/">home page</a></li>
+<li><a href="https://spark.apache.org/docs/latest/">Documentation</a></li>
+</ul>
+
+<!-- =============================================================================== -->
+<a Name="int"></a><div class="heading">Manage Spark clusters on biowulf</div>
+
+<p>Spark clusters running on biowulf nodes can be managed with the <code>spark</code>
+tool. Once a Spark cluster has been started, it can be used interactively or it can
+be used to submit Spark jobs to. Once there is no more need for the cluster
+<span style="background-color: #ff9;">it must be shut down</span>.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>module load spark</b>
+[user@biowulf]$ <b>spark</b>
+
+NAME
+        spark - administer spark clusters on compute nodes
+
+SYNOPSIS
+        spark cmd [options]
+
+COMMANDS
+        help   - show this help or help for specific cmd
+        start  - start a new spark cluster
+        list   - list clusters
+        show   - show cluster details
+        stop   - shut down a cluster
+        clean  - clean up the directory where cluster
+                 info is stored (/data/user/.spark-on-biowulf)
+
+DESCRIPTION
+        This tool is used to start, stop, monitor, and
+        use spark clusters running on compute nodes.
+
+[user@biowulf]$ <b>spark help start</b>
+
+NAME
+      spark start - start new spark cluster
+
+SYNOPSIS
+      spark start [options] nnodes
+
+DESCRIPTION
+      Provisions a new spark cluster with <nnodes> nodes
+
+      -t M  max runtime for the cluster in minutes. Minimum is
+            10. Default is 30. Actual runtime of the cluster
+            is slightly less to allow for startup and clean
+            shutdown
+      -l    copy the spark node logs back to the spark cluster
+            directory in shared space
+</pre>
+
+<p>Let's start a spark cluster on 2 nodes. This tool uses 56 CPU nodes
+with 256GB of memory and set a max runtime of 2h.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>spark start -t 120 2</b>
+INFO: Submitted job for cluster TkJvrN
+</pre>
+
+<p>The <code>spark</code> tool stores information about all its clusters
+in <code>/data/$USER/.spark-on-biowulf</code>. That includes clusters
+that already completed.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>tree /data/$USER/.spark-on-biowulf</b>
+/data/user/.spark-on-biowulf
+`-- [user   4.0K]  TkJvrN
+    |-- [user   4.1K]  jobscript.sh
+    |-- [user   4.0K]  logs
+    |-- [user    109]  prop
+    `-- [user      9]  slurm_job_id
+</pre>
+
+<p>We can check on the status of our clusters with</p>
+
+<pre class="term">
+[user@biowulf]$ <b>spark list</b>
+Cluster id  Slurm jobid                state
+---------- ------------ --------------------
+    TkJvrN     18256246              RUNNING
+
+[user@biowulf]$ <b>spark list -d</b>
+Cluster id  Slurm jobid                state
+---------- ------------ --------------------
+    TkJvrN     18256246              RUNNING
+               nodes: 2
+            max_time: 120
+               spark: 2.4.0
+              job_id: 18256246
+               start: 2019-01-16 12:33:03
+            nodelist: cn[3769-3770]
+              master: spark://cn3769:7077
+        master_webui: http://cn3769:8080
+              tunnel: ssh -L 8080:cn3769:8080 -N
+
+</pre>
+
+<p>Note that it may take a couple of minutes after the cluster starts running for
+the detailed information to be complete. Now that the cluster is running, we can
+put it to work. For example, lets use the cluster interactively with pyspark and
+have a bit of a look at the sqlite source code:</p>
+
+<pre class="term">
+[user@biowulf]$ module load python/3.8
+[user@biowulf]$ pyspark --master spark://cn0443:7077 --executor-memory=40g
+Python 3.8.12 | packaged by conda-forge | (main, Mar 24 2022, 23:25:59)
+[GCC 10.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+[...some warnings...]
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /__ / .__/\_,_/_/ /_/\_\   version 3.2.1
+      /_/
+
+Using Python version 3.8.12 (main, Mar 24 2022 23:25:59)
+Spark context Web UI available at http://biowulf2-e0:4040
+Spark context available as 'sc' (master = spark://cn4170:43701, app id = app-20220518160041-0000).
+SparkSession available as 'spark'.
+
+&gt;&gt;&gt; txt = spark.sparkContext.textFile("sqlite3.c")
+&gt;&gt;&gt; txt.count()
+202918
+&gt;&gt;&gt; defines = txt.filter(lambda l: l.startswith('#define'))
+&gt;&gt;&gt; defines.count()
+2492
+&gt;&gt;&gt; defines.first()
+u'#define SQLITE_CORE 1'
+&gt;&gt;&gt; txt.map(lambda l: len(l)).reduce(lambda a, b: a if (a&gt;b) else b)
+260
+&gt;&gt;&gt; Ctrl-D
+
+[user@biowulf]$
+</pre>
+
+<p>pyspark will use the first python interpreter on the path. That means
+loading the python/3.8 module, for example, will give you a python 3.8 spark
+shell. There are similar shells for R (<code>sparkR</code>) and scala
+(<code>spark-shell</code>).</p>
+
+<p>pyspark can also be used with a jupyter notebook:</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=10g --tunnel</b>
+...
+[user@cn3144]$ <b>module load spark jupyter</b>
+[user@cn3144]$ <b>pyspark-jupyter --master spark://cn0443:7077 --executor-memory=40g</b>
+Running on port 10762 on cn3421 listening on localhost
+[...snip...]
+</pre>
+
+<p>See our <a href="https://hpc.nih.gov/apps/jupyter.html">Jupyter documentation</a>
+for information about how to connect to a jupyter notebook running on a compute
+node.</p>
+
+<p>And we can uses <code>spark-submit</code> to submit spark jobs to the
+cluster</p>
+
+<pre class="term">
+ [user@biowulf]$ <b>spark-submit \
+    --driver-memory=3g \
+    --master spark://cn0443:7077 \
+    --deploy-mode client \
+    --executor-cores=2 \
+    --executor-memory=3g \
+    ./pi.py</b>
+
+[...snip...]
+/pi.py:36, took 562.603120 s
+PI=3.141584232000
+</pre>
+
+<p><code>spark clean</code> will delete metadata of finished spark clusters
+from the spark metadata directory.</p>
+
+
+<!-- =============================================================================== -->
+<a Name="pseudo"></a><div class="heading">Local pseudo clusters for debugging</div>
+
+<p>For development and debugging it can be convenient to run spark in local
+pseudo cluster mode. This is how the interactive shells start up when
+no master is provided on the command line. In order to use this a node
+has to be allocated exclusively.</p>
+
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive --exclusive --ntasks=1 --cpus-per-task=32 \
+                         --constraint cpu32</b>
+[user@cn0182 ~]$ <b>module load spark</b>
+[user@cn0182 ~]$ <b>pyspark</b>
+</pre>
+
+<p>After some initialization output, you will see the following:</p>
+
+<pre class="term">
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /__ / .__/\_,_/_/ /_/\_\   version 2.4.0
+      /_/
+
+Using Python version 3.6.8 (default, Dec 30 2018 01:22:34)
+SparkSession available as 'spark'.
+&gt;&gt;&gt; spark.sparkContext.master
+'local[32]'
+&gt;&gt;&gt;
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

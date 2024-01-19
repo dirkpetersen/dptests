@@ -1,0 +1,155 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'jellyfish on Biowulf';</script>
+<div class="title">jellyfish on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> Jellyfish counts k-mers in fasta or fastq files (and sam/bam/cram starting
+at version 2.2.7). k-mer counts are saved in a binary format that can be
+queried or dumped to text based format.  </p>
+
+<h3>References:</h3>
+<ul>
+    <li>G. Marcais and C. Kingsford. 
+    <em>A fast, lock-free approach for efficient parallel counting of occurrences of k-mers</em>. 
+    Bioinformatics 2011, 27:764-770.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/21217122">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3051319/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btr011">Journal</a>
+    </li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/gmarcais/Jellyfish">GitHub</a> </li>
+    <li><a href="http://www.genome.umd.edu/docs/JellyfishUserGuide.pdf">Manual [pdf]</a></li>
+    <li><a href="http://www.genome.umd.edu/jellyfish.html">Home page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: jellyfish (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+<li>jellyfish is a multithreaded application. Please match the number of threads to the 
+number of allocated CPUs</li>
+<li>Example files can be found in <code>$JELLYFISH_TEST_DATA</code></li>
+<li>Some versions of jellyfish have a but when counting 7- or 8-mers.</li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=6 --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load jellyfish</b>
+[user@cn3144 ~]$ <b>cp -L $JELLYFISH_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>ls -lh</b>
+total 445M
+-rw-r--r-- 1 user group 387M Feb 24 13:59 ENCFF001NGB.bam
+-rw-r--r-- 1 user group  56M Feb 24 13:59 ERR458495.fastq.gz
+
+[user@cn3144 ~]$ <b># count 16-mers in fastq file (S. cerevisiae RNA-Seq data)</b>
+[user@cn3144 ~]$ <b># jellyfish does not natively read compressed data - uncompress on the fly</b>
+[user@cn3144 ~]$ <b>jellyfish count -t $SLURM_CPUS_PER_TASK \
+                        -m 16 -s 10M -C -o 16mer.jf &lt;(zcat ERR458495.fastq.gz)</b>
+[user@cn3144 ~]$ <b>ls -lh 16mer.jf</b>
+-rw-r--r-- 1 user group 51M Feb 26 07:54 16mer.jf
+[user@cn3144 ~]$ <b>jellyfish stats 16mer.jf</b>
+Unique:    3319471
+Distinct:  6625582
+Total:     38369851
+Max_count: 2284
+
+[user@cn3144 ~]$ <b>jellyfish dump -L 2 -o 16mer.fa 16mer.jf</b>
+[user@cn3144 ~]$ <b>head 16mer.fa</b>
+&gt;259
+AAAAAAAAAAAAAAAA
+&gt;3
+CAATTTAGCCTTTCGC
+&gt;2
+CTCATCCATGTGAAAA
+&gt;2
+AAGTCAGGCACAAATC
+&gt;2
+CTTCATTTTGCCACCA
+
+[user@cn3144 ~]$ <b>jellyfish query 16mer.jf AGCCAATTTGACTTCA</b>
+AGCCAATTTGACTTCA 45
+[user@cn3144 ~]$ <b>jellyfish histo -t $SLURM_CPUS_PER_TASK 16mer.jf > hist</b>
+[user@cn3144 ~]$ <b>head -5 hist</b>
+1 3319471
+2 1114139
+3 594139
+4 359875
+5 238815
+
+[user@cn3144 ~]$ <b># count 16mers in alinged mouse data in bam format</b>
+[user@cn3144 ~]$ <b>jellyfish count -t $SLURM_CPUS_PER_TASK -m 16 -s 10M -C \
+                        -o mouse_16mers.jf --sam ENCFF001NGB.bam</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. jellyfish.sh), which uses the input file 'jellyfish.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load jellyfish/2.2.7 || exit 1
+jellyfish count -t $SLURM_CPUS_PER_TASK -m 16 -s 10M -C \
+    -o mouse_16mers.jf --sam ENCFF001NGB.bam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=6 --mem=10g jellyfish.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. jellyfish.swarm). For example:</p>
+
+<pre class="term">
+jellyfish count -t $SLURM_CPUS_PER_TASK -m 12 -s 10M -o sample1_12.jf --sam sample1.bam
+jellyfish count -t $SLURM_CPUS_PER_TASK -m 12 -s 10M -o sample2_12.jf --sam sample2.bam
+jellyfish count -t $SLURM_CPUS_PER_TASK -m 12 -s 10M -o sample3_12.jf --sam sample3.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f jellyfish.swarm -g 10 -t 4 --module jellyfish/2.2.7</pre>
+where
+<table border=0>
+  <tr><td width=20%>-g # <td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td>-t # <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td>--module jellyfish <td>Loads the jellyfish module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

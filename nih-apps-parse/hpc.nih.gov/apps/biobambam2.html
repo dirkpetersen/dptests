@@ -1,0 +1,124 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'BIOBAMBAM2 on Biowulf';</script>
+<div class="title">BIOBAMBAM2 on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Biobambam2 is a toolkit that contains tools for early stage alignment file processing. The following tools are provided: 
+<ul>
+<li>bamsormadup: parallel sorting and duplicate marking
+<li>bamcollate2: reads BAM and writes BAM reordered such that alignment or collated by query name
+<li>bammarkduplicates: reads BAM and writes BAM with duplicate alignments marked using the BAM flags field
+<li>bammaskflags: reads BAM and writes BAM while masking (removing) bits from the flags column
+<li>bamrecompress: reads BAM and writes BAM with a defined compression setting. This tool is capable of multi-threading.
+<li>bamsort: reads BAM and writes BAM resorted by coordinates or query name
+<li>bamtofastq: reads BAM and writes FastQ; output can be collated or uncollated by query name
+</ul>
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://gitlab.com/german.tischler/biobambam2">biobambam2 Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>biobambam2</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session with <tt>bamsort</tt> example (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load biobambam2</b>
+
+[user@cn3144 ~]$ <b>bamsort SO=queryname &lt;wgEncodeUwRepliSeqBg02esG1bAlnRep1.bam &gt;out.bam</b>
+[V] Reading alignments from source.
+[V] 1M
+[V] read 1784867 alignments
+[V] producing sorted output
+[V]1
+[V] wrote 1784867 alignments
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. biobambam2.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load biobambam2
+cd /data/username
+bamsort SO=queryname &lt;wgEncodeUwRepliSeqBg02esG1bAlnRep1.bam &gt;out.bam
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] biobambam2.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. biobambam2.swarm). For example:</p>
+
+<pre class="term">
+bamsort SO=queryname &lt;input1.bam &gt;output1.bam
+bamsort SO=queryname &lt;input2.bam &gt;output2.bam
+bamsort SO=queryname &lt;input3.bam &gt;output3.bam
+bamsort SO=queryname &lt;input4.bam &gt;output4.bam
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f biobambam2.swarm [-g #] [-t #] --module biobambam2</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module biobambam2</tt> <td>Loads the biobambam2 module for each subjob in the swarm 
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

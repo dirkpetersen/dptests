@@ -1,0 +1,103 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Htgts on HPC';</script>
+    <div class="title">Htgts on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> HTGTS represents High-Throughput Genome-Wide Translocation Sequencing pipeline 
+      - provided by the <a href="http://www.idi.harvard.edu/investigators_research/investigator/alt_lab/">Alt 
+      Lab</a></p>    <h3>&nbsp;</h3>
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="http://robinmeyers.github.io/transloc_pipeline/thedocs.html">http://robinmeyers.github.io/transloc_pipeline/thedocs.html</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>    <ul>
+      <li>Module Name: <tt>htgts</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Multithreaded</li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>    
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=20g --cpus-per-task=6</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load htgts</strong>
+[user@cn3144 ~]$ <strong>GENOME_DB=/fdb/htgts/genomes</strong>
+[user@cn3144 ~]$ <strong>BOWTIE2_INDEXES=/fdb/htgts/genomes/bowtie2_indexes/hg19</strong>
+[user@cn3144 ~]$ <strong>SPECIES=hg19</strong>
+[user@cn3144 ~]$ <strong>cp -r /usr/local/apps/htgts/tutorial_data/ /data/$USER/</strong>
+[user@cn3144 ~]$ <strong>cd /data/$USER/tutorial_data</strong>
+[user@cn3144 ~]$ <strong>TranslocPreprocess.pl tutorial_metadata.txt preprocess/ --threads $SLURM_CPUS_PER_TASK --read1 pooled_R1.fastq.gz --read2 pooled_R2.fastq.gz</strong>
+[user@cn3144 ~]$ <strong>TranslocWrapper.pl tutorial_metadata.txt preprocess/ results/ --threads $SLURM_CPUS_PER_TASK</strong>
+[user@cn3144 ~]$ <strong>TranslocFilter.pl results/RAG1A_IR_SRep1/RAG1A_IR_SRep1.tlx results/RAG1A_IR_SRep1/RAG1A_IR_SRep1_filtered.tlx --filters "f.unaligned=1"</strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. batch.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load htgts
+TranslocPreprocess.pl tutorial_metadata.txt preprocess/ --threads $SLURM_CPUS_PER_TASK --read1 poole\
+d_R1.fastq.gz --read2 pooled_R2.fastq.gz                                                                                     TranslocWrapper.pl tutorial_metadata.txt preprocess/ results/ --threads $SLURM_CPUS_PER_TASK
+TranslocFilter.pl results/RAG1A_IR_SRep1/RAG1A_IR_SRep1.tlx results/RAG1A_IR_SRep1/RAG1A_IR_SRep1_fi\
+ltered.tlx --filters "f.unaligned=1"
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch --cpus-per-task=6 --mem=20g batch.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; TranslocPreprocess.pl...;TranslocWrapper.pl...;TranslocFilter.pl...
+cd dir2; TranslocPreprocess.pl...;TranslocWrapper.pl...;TranslocFilter.pl...
+cd dir3; TranslocPreprocess.pl...;TranslocWrapper.pl...;TranslocFilter.pl...
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm -g 20 -t 6 --module htgts</pre>
+where
+    <table width="63%" border=0>
+      <tr><td width=18%><tt>-g <i>#</i> </tt></td><td width="82%">Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  </td></tr><tr><td><tt>-t <i>#</i></tt> </td><td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  </td></tr><tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr></table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

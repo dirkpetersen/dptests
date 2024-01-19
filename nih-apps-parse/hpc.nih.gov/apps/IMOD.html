@@ -1,0 +1,153 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'IMOD on Biowulf';</script>
+<div class="title">IMOD on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+		<div class="tocItem"><a href="#etomo">etomo </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+IMOD is a set of image processing, modeling and display programs used for tomographic reconstruction and for 3D reconstruction of EM serial sections and optical sections. The package contains tools for assembling and aligning data within multiple types and sizes of image stacks, viewing 3-D data from any orientation, and modeling and display of the image files. IMOD was developed primarily by David Mastronarde, Rick Gaudette, Sue Held, Jim Kremer, Quanren Xiong, and John Heumann at the University of Colorado. 
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="http://bio3d.colorado.edu/imod/#Guides">IMOD Guides</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>IMOD</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Environment variables set: IMOD_PROCESSORS is set to the number of CPUs allocated.
+<li>Example files in <tt>/usr/local/apps/IMOD/imod_data.tar.gz</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session (user input in bold):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4 --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>module load IMOD</b>
+[+] Loading IMOD 4.11.5 . Running with 4 CPUs
+
+# note: loading the module will cause the environment variable IMOD_PROCESSORS to be set to the number of 
+#   allocated CPUs. i.e. 4 in this example.
+
+[user@cn3144]$ <b>tar xvzf /usr/local/apps/IMOD/imod_data.tar.gz</b>
+
+[user@cn3144]$ <b>mrc2tif imod_data/golgi.mrc imod_data/golgi.tif</b>
+Writing TIFF images. ................................
+
+[user@cn3144]$ <b>newstack golgi.mrc golgi.st</b>
+
+ RO image file on unit   1 : golgi.mrc     Size=       2049 K
+
+                    This is a byte-swapped file.
+
+                    This file has an old-style MRC header.
+
+ Number of columns, rows, sections .....     256     256      32
+ Map mode ..............................    0   (byte)
+ Start cols, rows, sects, grid x,y,z ...    0     0     0     256    256     32
+ Pixel spacing (Angstroms)..............   1.000      1.000      1.000
+ Cell angles ...........................   90.000   90.000   90.000
+ Fast, medium, slow axes ...............    X    Y    Z
+ Origin on x,y,z .......................    0.000       0.000       0.000
+ Minimum density .......................   17.000
+ Maximum density .......................   195.00
+ Mean density ..........................   83.733
+ tilt angles (original,current) ........   0.0   0.0   0.0   0.0   0.0   0.0
+ Space group,# extra bytes,idtype,lens .        0        0        0        0
+[...]      
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="etomo"></a><div class="heading">etomo &amp; graphics programs</div>
+<P>
+To run etomo or other IMOD graphics applications, you need a graphics connection to Biowulf. We recommend
+<a href="https://hpc.nih.gov/docs/nx.html">NX for Windows, Mac or Linux</a>. 
+<P>
+Once you have an NX connection to Biowulf, start an interactive session, load the IMOD module, and then run etomo. Sample session
+following the  <a href="https://bio3d.colorado.edu/imod/doc/etomoTutorial.html">etomoTutorial</a>.
+<center><img src="/images/etomo1.png"></center>
+<p>
+<center><img src="/images/etomo2.png"></center>
+<P>
+If you are having trouble seeing the entire etomo window, here is an NX tip: move your mouse over your name in the
+top right corner of the NX window. It will appear to 'peel back'.  You can then see the NX options: select 'Display' and then
+'Resize remote display'.
+<P>
+<center><img src="/images/etomo_NX.png"></center>
+<center><img src="/images/etomo_NX2.png"></center>
+<P>
+You should then be able to work through the entire tutorial.
+<center><img src="/images/etomo3.png"></center>
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. IMOD.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load IMOD
+
+cd /data/$USER/myimagedir
+tif2mrc cell*.tif cell.mrc
+newstack cell*.mrc cell.st 
+
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] IMOD.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. IMOD.swarm). For example:</p>
+
+<pre class="term">
+newstack cell*.mrc
+newstack cell2*.mrc
+newstack cell3*.mrc
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f IMOD.swarm [-g #] [-t #] --module IMOD</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module IMOD</tt> <td>Loads the IMOD module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

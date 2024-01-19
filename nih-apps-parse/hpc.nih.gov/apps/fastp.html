@@ -1,0 +1,189 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'fastp on Biowulf';</script>
+<div class="title">fastp on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+A tool designed to provide fast all-in-one preprocessing for FastQ files.
+This tool is developed in C++ with multithreading supported to afford high performance.
+</p>
+<p>
+Features
+<ul>
+  <li>0.comprehensive quality profiling for both before and after filtering data (quality curves, base contents, KMER, Q20/Q30, GC Ratio, duplication, adapter contents...)
+  <li>1.filter out bad reads (too low quality, too short, or too many N...)
+  <li>2.cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
+  <li>3.trim all reads in front and tail
+  <li>4.cut adapters. Adapter sequences can be automatically detected, which means you don't have to input the adapter sequences to trim them.
+  <li>5.correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
+  <li>6.trim polyG in 3' ends, which is commonly seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
+  <li>7.preprocess unique molecular identifier (UMI) enabled data, shift UMI to sequence name.
+  <li>8.report JSON format result for further interpreting.
+  <li>9.visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
+  <li>10.split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
+  <li>11.support long reads (data from PacBio / Nanopore devices).
+  <li>12.support reading from STDIN and writing to STDOUT
+  <li>13.support interleaved input
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Chen S, Zhou Y, Chen Y, Gu J. <em>fastp: an ultra-fast all-in-one FASTQ
+preprocessor</em>. Bioinformatics. 2018 Sep 1;34(17):i884-i890. doi:
+10.1093/bioinformatics/bty560. PubMed PMID: 30423086; PubMed Central PMCID:
+PMC6129281.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/30423086">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6129281/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/article/34/17/i884/5093234">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>fastp Main Site:<a href="https://github.com/OpenGene/fastp">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>fastp</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Multithreaded
+	<li>This application produces HTML reports. You can use <a href="/docs/hpcdrive.html">hpcdrive</a> to view these reports on your local workstation.</li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$FASTP_TEST_DATA</tt></li>
+  </ul>
+<li>Example files in $FASTP_TEST_DATA<tt></tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fastp</b>
+[user@cn3144 ~]$ <b>cp $FASTP_TEST_DATA/* .</b>
+[user@cn3144 ~]$ <b>fastp --in1 R1.fq --in2 R2.fq</b>
+Read1 before filtering:
+total reads: 9
+total bases: 1208
+Q20 bases: 1078(89.2384%)
+Q30 bases: 1005(83.1954%)
+
+Read2 before filtering:
+total reads: 9
+total bases: 1359
+Q20 bases: 1100(80.9419%)
+Q30 bases: 959(70.5666%)
+
+Read1 after filtering:
+total reads: 8
+total bases: 1208
+Q20 bases: 1078(89.2384%)
+Q30 bases: 1005(83.1954%)
+
+Read2 aftering filtering:
+total reads: 8
+total bases: 1208
+Q20 bases: 991(82.0364%)
+Q30 bases: 874(72.351%)
+
+Filtering result:
+reads passed filter: 16
+reads failed due to low quality: 0
+reads failed due to too many N: 0
+reads failed due to too short: 2
+reads with adapter trimmed: 0
+bases trimmed due to adapters: 0
+
+Duplication rate: 62.5%
+
+Insert size peak (evaluated by paired-end reads): 187
+
+JSON report: fastp.json
+HTML report: fastp.html
+
+fastp --in1 R1.fq --in2 R2.fq
+fastp v0.20.1, time used: 0 seconds
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fastp.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load fastp
+fastp --in1 R1.fq --in2 R2.fq
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=12 --mem=2g fastp.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. fastp.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;fastp --in1 R1.fq --html R1.html
+cd dir2;fastp --in1 R2.fq --html R2.html
+cd dir3;fastp --in1 R3.fq --html R3.html
+cd dir4;fastp --in1 R4.fq --html R4.html
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fastp.swarm [-g #] [-t #] --module fastp</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module fastp</tt> <td>Loads the fastp module for each subjob in the swarm
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

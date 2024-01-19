@@ -1,0 +1,203 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'spaceranger on Biowulf';</script>
+<div class="title">spaceranger on Biowulf</div>
+
+<table width=25% align=right>
+    <tr>
+        <td>
+            <div class="toc">
+                <div class="tocHeading">Quick Links</div>
+                <div class="tocItem"><A href="#doc">Documentation</a></div>
+                <div class="tocItem"><a href="#notes">Notes</a></div>
+                <div class="tocItem"><a href="#int">Interactive job </a></div>
+                <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="width:70%">
+    <p>
+    From the 10x spaceranger documentation:
+    </p>
+    <blockquote> Space Ranger is a set of analysis pipelines that process
+    Visium spatial RNA-seq output and brightfield microscope images in
+    order to detect tissue, align reads, generate feature-spot matrices,
+    perform clustering and gene expression analysis, and place spots in
+    spatial context on the slide image </blockquote>
+</div>
+
+<!--
+<h3>References:</h3>
+<ul>
+<li>Paper</li>
+</ul>
+-->
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>Spaceranger<a href="https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/what-is-space-ranger">Manual</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: spaceranger (see <a href="/apps/modules.html">the modules page</a> 
+    for more information)</li>
+    <li>spaceranger can operate in <span style="background-color: #ffff99">local mode</span> or 
+    <span style="background-color: #ffff99">cluster mode</span>. In both cases, the local part of the job will use
+    multiple CPUs. Users have to specify the number of allocated CPUs and amount of memory
+    with <code style="background-color: #ffff99">--localcores=# --localmem=#</code> to spaceranger.</li>
+    <li style="background-color: #ffff99">spaceranger may attempt to start more processes or open more files than the default limits
+    on our compute nodes allow. If you encounter errors or strange results, you may have to raise these limits.
+    See below for more deails.</li>
+    <li>Test data can be found in  <code>$SPACERANGER_TEST_DATA</code></li>
+    <li>Reference data can be found in  <code>$SPACERANGER_REF</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program.</p>
+
+<p>First step is to generate fastq files from bcl using the spaceranger
+adapter. This is similar to all the 10x tools. For this example we will
+use the tiny bcl data set used in the 10x genomics manual.</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16 --mem=38g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144]$ <b>ml spaceranger</b>
+[user@cn3144]$ <b>cp -r $SPACERANGER_TEST_DATA/mkfastq data1</b>
+[user@cn3144]$ <b>ls -lh data1</b>
+total 1.3G
+-rw-r--r-- 1 user group 1.3G Dec 11 15:53 spaceranger-tiny-bcl-1.0.0.tar.gz
+-rw-r--r-- 1 user group  552 Dec 11 15:53 spaceranger-tiny-bcl-samplesheet-1.0.0.csv
+-rw-r--r-- 1 user group   41 Dec 11 15:53 spaceranger-tiny-bcl-simple-1.0.0.csv
+[user@cn3144]$ <b>cat data1/spaceranger-tiny-bcl-simple-1.0.0.csv</b>
+Lane,Sample,Index
+1,test_sample,SI-TT-D9
+[user@cn3144]$ <b>cd data1 && tar -xzf spaceranger-tiny-bcl-1.0.0.tar.gz && cd ..</b>
+[user@cn3144]$ <b>spaceranger mkfastq --id=tiny-bcl \
+                      --run=data1/spaceranger-tiny-bcl-1.0.0 \
+                      --csv=data1/spaceranger-tiny-bcl-simple-1.0.0.csv</b>
+spaceranger mkfastq (spaceranger-1.2.2)
+Copyright (c) 2021 10x Genomics, Inc.  All rights reserved.
+-------------------------------------------------------------------------------
+
+The --qc option is deprecated and will be removed in a future version.
+Most qc metrics can be found in the web summary.
+Martian Runtime - v4.0.2
+
+Running preflight checks (please wait)...
+Checking run folder...
+Checking RunInfo.xml...
+Checking system environment...
+Emitting run information...
+Checking read specification...
+Checking samplesheet specs...
+[...snip...]
+Pipestance completed successfully!
+
+</pre>
+<p>Next - counting reads for the capture areas. Note that for this step
+we will use already demultiplexted data from a mouse brain section obtained
+from <a href="https://support.10xgenomics.com/spatial-gene-expression/datasets/1.0.0/V1_Mouse_Brain_Sagittal_Posterior">10X genomics</a>.</p>
+<pre class="term">
+[user@cn3144]$ <b>cp -rL $SPACERANGER_TEST_DATA/count data2</b> 
+[user@cn3144]$ <b> spaceranger count --id=test \
+                   --transcriptome=${SPACERANGER_REF}/refdata-gex-mm10-2020-A \
+                   --fastqs=data2/V1_Mouse_Brain_Sagittal_Posterior_Section_1_fastqs \
+                   --sample=V1_Mouse_Brain_Sagittal_Posterior_Section_1 \
+                   --image=data2/V1_Mouse_Brain_Sagittal_Posterior_image.tif \
+                   --slide=V19L29-035 \
+                   --area=A1 --localcores=$SLURM_CPUS_PER_TASK --localmem=37</b>
+...many hours later...
+Waiting 6 seconds for UI to do final refresh.
+Pipestance completed successfully!
+
+2019-12-12 21:27:20 Shutting down.
+Saving pipestance info to "test/test.mri.tgz"
+</pre>
+
+<p style="background-color: #ffff99">Note that it is necessary to specify
+<code>--localcores</code> and <code>--localmem</code>.</p>
+
+<p>Spaceranger may start an unreasonable number of processes or open too many
+files. If you encounter errors that include</p>
+
+<pre class="term">
+...
+ self.pid = os.fork()
+OSError: [Errno 11] Resource temporarily unavailable 
+</pre>
+
+<p>or see unexpected results despite specifying <code>--localcores</code> and
+<code>--localmem</code>, you may have to raise the limit on the number of
+processes and/or open files allowed in your batch script:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>ulimit -u 10240 -n 16384</b>
+</pre>
+
+
+<p>The same job could also be run in cluster mode where pipeline tasks
+are submitted as batch jobs. This can be done by setting jobmode to slurm
+and limiting the max. number of concurrent jobs:</p>
+
+<pre class="term">
+[user@cn3144]$ <b> spaceranger count --id=test \
+                   --transcriptome=${SPACERANGER_REF}/refdata-gex-mm10-2020-A \
+                   --fastqs=data2/V1_Mouse_Brain_Sagittal_Posterior_Section_1_fastqs \
+                   --sample=V1_Mouse_Brain_Sagittal_Posterior_Section_1 \
+                   --image=data2/V1_Mouse_Brain_Sagittal_Posterior_image.tif \
+                   --slide=V19L29-035 \
+                   --area=A1 --localcores=$SLURM_CPUS_PER_TASK --localmem=37 \
+                   --jobmode=slurm --maxjobs=20</b>
+...many hours later...
+Waiting 6 seconds for UI to do final refresh.
+Pipestance completed successfully!
+
+2019-12-12 21:27:20 Shutting down.
+Saving pipestance info to "test/test.mri.tgz"
+[user@cn3144]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf]$
+</pre>
+
+
+
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. spaceranger.sh), which uses the input file 'spaceranger.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load spaceranger
+spaceranger count --id=test \
+    --transcriptome=${SPACERANGER_REF}/refdata-gex-mm10-2020-A \
+    --fastqs=data2/V1_Mouse_Brain_Sagittal_Posterior_Section_1_fastqs \
+    --sample=V1_Mouse_Brain_Sagittal_Posterior_Section_1 \
+    --image=data2/V1_Mouse_Brain_Sagittal_Posterior_image.tif \
+    --slide=V19L29-035 \
+    --area=A1 --localcores=$SLURM_CPUS_PER_TASK --localmem=37 \
+    --jobmode=slurm --maxjobs=20
+</pre>
+<p>Again, please remember to include <code>--localcores</code> and <code>--localmem</code></p>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=8 --mem=38g spaceranger.sh</pre>
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

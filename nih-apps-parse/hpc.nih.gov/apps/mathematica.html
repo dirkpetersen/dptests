@@ -1,0 +1,176 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Mathematica on Biowulf ';</script>
+<div class="title">Mathematica on Biowulf </div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#gui">Run Mathematica GUI Interactively</a></div>
+        <div class="tocItem"><a href="#nogui">Run Mathematica without GUI</a></div>
+        <div class="tocItem"><a href="#math">Run Mathematica using math file</a></div>
+        <div class="tocItem"><a href="#jobs">Run Mathematica jobs on Biowulf</a></div>
+        <div class="tocItem"><a href="#trouble">Troubleshooting</a></div>
+        <div class="tocItem"><a href="#docs">Documentation</a></div>
+      </div>
+</table>
+
+<p>Mathematica is a fully integrated environment for
+technical and scientific computing. Mathematica combines numerical and
+symbolic computation, visualization, and programming in a single,
+flexible interactive system.
+The Mathematica system is very broad, and provides a systematic
+interface to all sorts of computations, from traditional numeric and
+symbolic computation, to visualization, to data format conversion, and
+the creation of user interfaces.</p>
+
+<a Name="gui"></a><div class="heading">Running the Mathematica GUI Interactively</div>
+
+<p>To run the Mathematica graphics interface, an X-Windows connection is required (preferably using <a href="/docs/nx.html">Nomachine</a>). Open an X-Windows connection to biowulf.nih.gov, and check that it is working by typing 'xclock' at the prompt.</p>
+<p>
+Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load mathematica</b>
+[+] Loading mathematica 12.1  on cn3144 
+
+[user@cn3144 ~]$ <b>mathematica &</b>
+</pre>
+<p>You should see the Mathematica Welcome Screen as below:</p>
+
+<p align=center><img src="/images/mathematica_12.1_splash_screen.png" border=1 alt="Mathematica Welcome Screen" width=75%></p>
+
+<p>The main Mathematica Notebook window will appear when you open a file by clicking Open or a file listed on the Welcome screen.</p>
+
+<p>To run a demo, in the main Mathematica window, click Open. Enter the file name <tt>/usr/local/apps/Mathematica/12.1/Documentation/English/System/HowTos/CustomizeMyGraphics.nb</tt>. You should see a window appear with a mathematica notebook example:</p>
+
+<p align=center><img src="/images/mathematica_12.1_example.png" border=1 alt="Mathematica demo image" width=75%></p>
+
+<a Name="nogui"></a><div class="heading">Run Mathematica interactively without the GUI</div>
+
+<p>It is also possible to run Mathematica interactively on the command-line, without the GUI. This would be useful if you do not wish to use Xwindows, and is obviously most useful for calculations rather than interactive graphics. Sample session (user input in bold):</p>
+<p>
+Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load mathematica</b>
+[+] Loading mathematica 12.1  on cn3144 
+
+[user@cn3144 ~]$ <b>math</b>
+Mathematica 12.1.0 Kernel for Linux x86 (64-bit)
+Copyright 1988-2020 Wolfram Research, Inc.
+
+In[1]:=  <b>data=ReadList["rmsdplot.list",{Number,Number,Number}];</b>
+
+In[2]:= [..enter other Mathematica commands..]
+
+In[22]:= <b>Exit[]</b>
+[user@cn3144 ~]$
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<a Name="math"></a><div class="heading">Run Mathematica using a math command file</div>
+
+<p>You can insert Mathematica commands into a math command file, and run
+that file interactively at the prompt. This is convenient if you
+perform the same Mathematica tasks frequently. Let us use the following 
+Math command file <tt>test.m</tt>.</p>
+
+<div class="term"><pre>
+------------------------ test.m -------------------------------
+A = Sum[i, {i,1,100}]
+B = Mean[{25, 36, 22, 16, 8, 42}]
+Answer = A + B
+Print["Answer=", Answer]
+Exit[]
+-------------------- test.m -----------------------------------
+</pre></div>
+
+<br>
+Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load mathematica</b>
+[+] Loading mathematica 12.1  on cn3144 
+
+[user@cn3144 ~]$ <b>math</b>
+Mathematica 12.1.0 Kernel for Linux x86 (64-bit)
+Copyright 1988-2020 Wolfram Research, Inc.
+
+In[1]:= <b>&lt;&lt;test.m</b>
+
+       30449
+Answer=-----
+         6
+
+[user@cn3144 ~]$
+</pre>
+
+<p>Alternatively, you can type directly at the command prompt:
+
+<pre class="term">
+[user@cn3144~] <b>math -noprompt -run "&lt;&lt;test.m"</b>
+Answer=30449/6
+[user@cn3144 ~]
+</pre>
+
+<a Name="jobs"></a><div class="heading">Running Mathematica Jobs on Biowulf</div>
+
+<p>Mathematica provides a seamless, integrated and automated environment for parallel computing. To submit a Mathematica job to the batch system, you must create a .m file containing the mathematica commands. The .m script will be passed to the math command in an sbatch file. 
+
+<p>The above example can be sent to batch with the following script:
+
+<div class="term"><pre>
+------------------------ test.sh-------------------------------
+#!/bin/bash
+
+module load mathematica
+
+math -run < test.m > outputfile.out
+--------------------end test.sh -------------------------------
+</pre></div>
+
+<p>Submit with <b>sbatch test.sh</b>
+
+<a Name="trouble"></a><div class="heading">Troubleshooting</div>
+
+<p>If Mathematica prompts you for an Activation Key:
+
+<p align=center><img src="/images/mathematica_activation_screenshot.jpg" border=1 alt="Mathematica Activation Screen"></p>
+
+Click on "Other ways to activate", and set the licenses server to <b>badmin.cit.nih.gov</b>.
+
+
+<a Name="docs"></a><div class="heading">Documentation</div>
+
+<p><a href="https://reference.wolfram.com/language">Wolfram Mathematica Documentation Center</a>
+<br><a href="https://www.wolfram.com/FAQs/">Mathematica FAQs</a></p>
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

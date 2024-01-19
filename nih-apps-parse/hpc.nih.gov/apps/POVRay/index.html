@@ -1,0 +1,107 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'POVRay on Biowulf';</script>
+<div class="title">POVRay on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p>
+POV-Ray is a high-quality tool for creating three-dimensional graphics.
+Raytraced images are publication-quality and 'photo-realistic', but are
+computationally expensive so that large images can take many hours to create.
+POV-Ray images can also require more memory than many desktop machines can
+handle. To address these concerns, a parallelized version of POV-Ray has been
+installed on Biowulf.
+</p>
+
+<p>POV-Ray output is limited to only .png, .tga, or .ppm image formats. There
+are number of programs which can convert images from one format to another
+available on Helix Systems (e.g., convert, <a href=
+"http://www.gimp.org">gimp</a>, <a href=
+"http://www.imagemagick.org/script/index.php">imagemagick</a>, <a href=
+"http://www.xnview.com">xnview</a>).</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="http://www.povray.org/">POV-Ray Main Site</a></li>
+  <li>Type <tt><b>man povray</b></tt> after loading the module</li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>POVRay</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded/MPI...
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>PATH</tt></li>
+    <li><tt>MANPATH</tt></li>
+    <li><tt>POVRAY_EXAMPLES</tt></li>
+  </ul>
+  <li>Example files in <tt>$POVRAY_EXAMPLES</tt></li>
+</ul>
+
+<p class="alert">By default, POV-Ray attempts to display the image as it is being rendered to the screen.  This feature requires an <a href="/docs/connect.html">X-Windows connection</a>.  To disable the display, you must include <b>-D</b> in the POV-Ray command line.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16 --threads-per-core=1</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>cp $POVRAY_EXAMPLES/1asy.pov .</b>
+[user@cn3144 ~]$ <b>povray +H542 +W456 -I1asy.pov -O1asy.pov.tga +P +X +A +FT +C -D +wt${SLURM_CPUS_PER_TASK}</b>
+...
+Render Time:
+  Photon Time:      No photons
+  Radiosity Time:   No radiosity
+  Trace Time:       0 hours  0 minutes  0 seconds (0.349 seconds)
+              using 30 thread(s) with 8.276 CPU-seconds total
+POV-Ray finished
+</pre>
+
+<p>Once the image render is completed, convert the file into a JPEG and then display it via X11:</p>
+
+<pre class="term">
+[user@cn3144 ~]$ <b>convert 1asy.pov.tga 1asy.jpg</b>
+[user@cn3144 ~]$ <b>display 1asy.jpg</b>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p align="center"><img border=1 src="1asy.jpg" alt="1asy image"></p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. POVRay.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load POVRay
+povray +H1125 +W858 -Iag9.pov -O1ag9.pov.tga +P +X +A +FT +C +wt${SLURM_CPUS_PER_TASK}
+povray +H2170 +W1826 -I1asy.pov -O1asy.pov.tga +P +A +FT +wt${SLURM_CPUS_PER_TASK}
+</pre>
+
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.  <b><tt>--threads-per-core=1</tt></b> disables hyperthreading on the node.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] --threads-per-core=1 POVRay.sh</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

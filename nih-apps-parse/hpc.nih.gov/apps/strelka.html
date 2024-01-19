@@ -1,0 +1,151 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Strelka on Biowulf';</script>
+<div class="title">Strelka on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Strelka is an analysis package designed to detect somatic SNVs and small indels from the aligned sequencing reads of matched tumor-normal samples. 
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Saunders et al.Strelka: accurate somatic small-variant calling from sequenced tumor–normal sample pairs. Bioinformatics (2015). <a href="https://academic.oup.com/bioinformatics/article/28/14/1811/218573">Link</a></li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Illumina/strelka">Strelka Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>strelka</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded app
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$STRELKA_INSTALL_DIR</tt></li>
+  </ul>
+<li>Example files in <tt>$STRELKA_TEST_DATA</tt>
+</ul>
+<P>
+
+<p>Running strelka is a two step process:</p>
+<ol>
+    <li>Configure the workflow with <code>configureStrelkaWorkflow.pl</code>.
+    Example configuration files for this step can be found in 
+    <code>$STRELKA_INSTALL_DIR/etc</code>.</li>
+    <li>Run the makefile generated in step 1</li>
+</ol>
+<p> The current version
+still does not support parallelization across more than one node (i.e. the
+workflow engine used does not support submitting tasks as jobs with SLURM).</p>
+
+<p class="didyouknow">Illumina recommends first running <a
+    href="https://hpc.nih.gov/apps/manta.html">manta</a> on the samples and
+supplying manta's candidate indels as input to strelka with the --indelCandidates
+command line option. The example below skips this step.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=10 --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load strelka/2.7.1</b>
+
+[user@cn3144 ~]$ <b>cp -r $STRELKA_TEST_DATA/demo . # copy example data</b>
+
+[user@cn3144 ~]$ <b>cd demo</b>
+
+[user@cn3144 ~]$ # configure the workflow with 'configureStrelka${type}Workflow.py'
+                 # where type is Starling, Germline, or Somatic
+
+[user@cn3144 ~]$ <b>configureStrelkaSomaticWorkflow.py \</b>
+              <b>--normalBam=data/NA12892_dupmark_chr20_region.bam \</b>
+              <b>--tumorBam=data/NA12891_dupmark_chr20_region.bam \</b>
+              <b>--referenceFasta=data/chr20_860k_only.fa \</b>
+              <b>--runDir demo_out</b>
+
+[user@cn3144 ~]$ <b>demo_out/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. strelka.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load strelka/1.0.15 || exit 1
+
+configureStrelkaSomaticWorkflow.py \
+  --normalBam=/path/to/normal.bam \
+  --tumorBam=/path/to/tumor.bam \
+  --referenceFasta=/path/to/hg19.fa \
+  --runDir=/path/to/myAnalysis
+
+# -j N allows make to use up to N parallel processes
+
+demo_out/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=24 --mem=100g strelka.sh</pre>
+
+<p>Several things must be changed in this script:</p>
+<ul>
+    <li><b><tt>/path/to/normal.bam</tt></b> : Alignment (BAM) file for normal reads</li>
+    <li><b><tt>/path/to/tumor.bam </tt></b> : Alignment (BAM) file for tumor reads</li>
+    <li><b><tt>/path/to/hg19.fa</tt></b> : Reference (FASTA) file for the alignment</li>
+    <li><b><tt>/path/to/myAnalysis</tt></b> : Output directory</li>
+</ul> 
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. strelka.swarm). For example:</p>
+
+<pre class="term">
+demo_out1/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK
+demo_out2/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK
+demo_out3/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f strelka.swarm -g 100 -t 24 --module strelka</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module strelka</tt> <td>Loads the strelka module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

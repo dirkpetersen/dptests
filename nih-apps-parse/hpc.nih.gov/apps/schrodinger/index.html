@@ -1,0 +1,168 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Schr&ouml;dinger on Biowulf';</script>
+<div class="title">Schr&ouml;dinger on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#desmond">Running Desmond </a></div>
+      </div>
+</table>
+
+<p>
+    We have a limited number licenses for Schr&ouml;dinger applications
+    on the Biowulf cluster. Due to heavy demand, high cost, and limited
+    availability, license usage for some applications will be restricted
+    in order to ensure fair usage.  <b>In particular, users can run a maximum
+    of 12 Glide jobs and 4 Prime jobs at a given time. </b>
+    <br><br>
+<font color=red><b>The use
+    of Schr&ouml;dinger applications is limited to intramural NIH users
+    only.</b></font>
+    <br><br>
+    Schr&ouml;dinger applications can be run from the command line, through the
+    batch system, and interactively through the Maestro GUI. See the documentation
+    link below for more information, particularly the Job Control Guide.
+</p>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+  <li><a href="https://www.schrodinger.com/supportdocs/18/" target="_blank">Online documentation (requires registration)</a></li>
+  <li><a href="https://hpc.nih.gov/apps/schrodinger/presentations/" target="_blank">Schrodinger Presentations and Tutorials given at NIH</a></li>
+  <li><a href="http://www.schrodinger.com" target="_blank">http://www.schrodinger.com</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <b><tt>schrodinger</tt></b> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded/MPI
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>SCHRODINGER_TMPDIR</tt> - custom location for temporary files created during jobs</li>
+    <li><tt>SCHRODINGER_JOBDB2</tt> - location of the job database, must be a permanent and shared location (e.g. /data/$USER/jobdb2)</li>
+  </ul>
+</ul>
+
+<p class="alert">Maestro is a graphical, interactive application.  It requires a <a href="https://hpc.nih.gov/docs/connect.html">X11 connection</a>.</p>
+
+<!-- ======================================================================= -->
+<!-- local scratch space                                                     -->
+<!-- ======================================================================= -->
+
+<div class="subheading"><a name="lscratch"></a>Local Scratch Disk Space</div>
+
+<p>Schr&ouml;dinger applications make extensive use of local scratch disk space.  These are defined in
+two environment variables: <b><tt>SCHRODINGER_TMPDIR</tt></b> and <b><tt>TMPDIR</tt></b>.  For the best
+I/O performance, allocate local scratch space to use, rather than shared space.</p>
+
+<p>For both interactive sessions and batch jobs, including</p>
+
+<pre class="term">--gres lscratch:<b><em>N</em></b></pre>
+
+<p>will allocate <b><em>N</em></b> GB of local scratch space.  Loading the schrodinger module will set
+the environment to use this space.  The amount of space necessary depends on the jobs to be run; 20GB is
+a good minimal value.</p>
+
+<p class="alert"><b>NOTE:</b> When Schr&ouml;dinger jobs are submitted to the batch system, a jserver
+process is started and run in the background.  This jserver process ensures that files created in the
+scratch directory are copied and incorporated into the job database.  If the jserver process dies before
+the submitted job finishes, files in the scratch directory are not copied back and incorporated into
+the job database.  If the scratch directory is deleted, as will happen when using dynamically allocated
+scratch space (/lscratch/$SLURM_JOB_ID), <b>THE FILES ARE LOST</b>.<br><br>
+Be aware that if a job is launched from an interactive Biowulf session, the remote jobs must finish within
+the time allocated to the interactive session, or the results of the jobs launched may be lost.</p>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=lscratch:50 --cpus-per-task=8</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load schrodinger</b>
+
+[user@cn3144 ~]$ <b>maestro &amp;</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<div><center><img src="maestro.png" border=1 alt="Maestro Window" width="800px"/></div>
+
+<p class="alert">Due to incompatibilities between the OpenGL/GLX commands given by the Maestro GUI and the X11 server running on your desktop client machine, the interface may hang or crash with errors. If this is the case, Maestro can be run with the -SGL option:</p>
+
+<pre class="term">[user@cn3144 ~]$ maestro -SGL &amp;</pre>
+
+<div class="subheading"><a name="localhost"></a>Running Locally</div>
+
+<p>For the majority of uses, Schr&ouml;dinger jobs should be run locally.  To do so, make sure that the "Run Settings" host is set to localhost.  Right-click on the small downward arrow next to the six-pointed gear near the 'Run' button:</p>
+
+<div><center><img src="job_settings.png" border=1 alt="Job Settings" /></div>
+
+<p>Then choose 'localhost' as the Host:</p>
+
+<div><center><img src="job_settings_desmond.png" border=1 alt="Job Settings for Desmond" /></div>
+
+<p>The number of processors should not exceed the number of CPUs allocated for the job.</p>
+
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+
+<p>Schr&ouml;dinger jobs can be submitted to the Biowulf batch system from the Maestro GUI.  In this case, an appropriate host entry should be chosen from those available:</p>
+
+<div><center><img src="job_settings_glide.png" border=1 alt="Job Settings for Glide" /></div>
+
+<p>In this case, the number of subjobs equals the number of batch jobs to submit.</p>
+
+<p>After clicking 'Run', the job monitor window will show the job state:</p>
+
+<div><center><img src="submit_job.png" border=1 alt="Job Settings" /></div>
+
+<a Name="desmond"></a><div class="heading">Running Desmond</div>
+<p>A free academic version of <a href="https://www.deshawresearch.com/resources_desmond.html">Desmond</a> has been installed.</p>
+
+<p class="alert"><b>NOTE:</b> Desmond DOES NOT SCALE BEYOND ONE NODE.  Worse, it requires a single core be reserved for monitoring, so the most CPUs you can allocate per node is <b>54</b>.</p>
+
+<p> To use this version, first allocate an interactive session using a <a href="https://hpc.nih.gov/docs/connect.html">graphical terminal session</a>, then load the desmond module and launch maestro:</p>
+
+<pre class="term">$ <b>sinteractive</b>
+...
+$ <b>ml desmond</b>
+$ <b>maestro</b></pre>
+
+<p>Import the molecules and set up the system, then launch the Molecular Dynamics task window.  Configure your dynamics job and then click on the gear icon to open the Job Settings panel.
+Choose the 'batch' host entry, and select <b>54 processors -- NOT 56, as this will cause desmond to stall</b>.  <b>Click 'OK' not 'Run'</b>.  Next click on the icon again, and choose 'Write'.  Now quit out of maestro.</p>
+
+<p>Change directories to the subdirectory created by the write function.  The subdirectory is the same name as the job.  In this example, the name is <em>desmond_md_job_1</em>.  Edit the script created by maestro like so:</p>
+
+<p><b>BEFORE:</b>
+<pre class="term">"${SCHRODINGER}/utilities/multisim" -JOBNAME <em>desmond_md_job_1</em> -HOST batch -maxjob 1 -cpu 54 -m <em>desmond_md_job_1</em>.msj -c <em>desmond_md_job_1</em>.cfg -description "Molecular Dynamics" <em>desmond_md_job_1</em>.cms -mode umbrella -o <em>desmond_md_job_1</em>-out.cms -ATTACHED</pre>
+
+<p><b>AFTER:</b>
+<pre class="term">#!/bin/bash
+module load desmond
+unset SLURM_JOB_ID
+"${SCHRODINGER}/utilities/multisim" -JOBNAME <em>desmond_md_job_1</em> -HOST <b>${SLURM_JOB_NODELIST}:54</b> -maxjob 1 -cpu 54 -m <em>desmond_md_job_1</em>.msj -c <em>desmond_md_job_1</em>.cfg -description "Molecular Dynamics" <em>desmond_md_job_1</em>.cms -mode umbrella -o <em>desmond_md_job_1</em>-out.cms -ATTACHED <b>-WAIT</b>
+sleep 120</pre>
+
+<p>Then submit to the batch system like so:</p>
+
+<pre class="term">$ <b>sbatch --ntasks=1 --ntasks-per-node=56 --nodes=1 --time=60 <em>desmond_md_job_1</em>.sh</b></pre>
+
+<p>The amount of time allocated should probably be increased beyond one hour.</p>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

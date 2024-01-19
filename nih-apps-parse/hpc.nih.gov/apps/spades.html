@@ -1,0 +1,107 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Spades on HPC';</script>
+    <div class="title">Spades on HPC</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</td></tr></table>    <p> SPAdes St. Petersburg genome assembler is intended for both standard isolate 
+      and single-cell MDA bacteria assemblies. 
+    <h3>References:</h3>
+    <ul>
+      <li>If you use SPAdes in your research, please include <a href="http://link.springer.com/chapter/10.1007/978-3-642-37195-0_13">Nurk, 
+        Bankevich et al., 2013</a> in your reference list. You can also add <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021">Bankevich, 
+        Nurk et al., 2012</a> instead.</li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+    <ul>
+      <li><a href="http://spades.bioinf.spbau.ru/release3.6.1/manual.html#sec4">http://spades.bioinf.spbau.ru/release3.6.1/manual.html#sec4</a></li>
+    </ul>
+
+<a Name="notes"></a>
+    <div class="heading"><a name="notes" id="notes"></a>Important Notes</div>
+    <ul>
+      <li>Module Name: <tt>spades</tt> (see <a href="/apps/modules.html">the modules 
+        page</a> for more information) </li>
+      <li>Multithreaded</li>
+      <li>Example files in <tt>/usr/local/apps/spades/3.11.0/share/spades/</tt> 
+      </li>
+    </ul>
+<P>
+
+<a Name="int"></a></p><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>    
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=4</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load spades
+</strong>[user@cn3144 ~]$ <strong>spades.py -t $SLURM_CPUS_PER_TASK -o outfile -1 infile_1.fq.gz -2 infile_2.fq.gz</strong>
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a></p><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+    <p>Create a batch input file (e.g. spades.sh). For example:</p>
+
+    <pre class="term">
+#!/bin/bash
+set -e
+module load spades
+spades.py -t $SLURM_CPUS_PER_TASK -o outfile -1 infile_1.fq.gz -2 infile_2.fq.gz</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">sbatch --cpus-per-task=4 spades.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. spades.swarm). For example:</p>
+
+<pre class="term">
+cd dir1; spades.py -t $SLURM_CPUS_PER_TASK -o outfile -1 infile_1.fq.gz -2 infile_2.fq.gz
+cd dir2; spades.py -t $SLURM_CPUS_PER_TASK -o outfile -1 infile_1.fq.gz -2 infile_2.fq.gz
+cd dir3; spades.py -t $SLURM_CPUS_PER_TASK -o outfile -1 infile_1.fq.gz -2 infile_2.fq.gz
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f spades.swarm -t 4 --module spades</pre>
+where
+    <table width="55%" border=0>
+      <tr>
+        <td width="12%"><tt>-t <i>#</i></tt> </td>
+        <td width="88%">Number of threads/CPUs required for each process (1 line 
+          in the swarm command file). </td>
+      </tr>
+      <tr> 
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

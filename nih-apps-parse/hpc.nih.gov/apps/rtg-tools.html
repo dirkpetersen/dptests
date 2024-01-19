@@ -1,0 +1,173 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'rtg-tools: utilities for dealing with VCF files and sequence data';</script>
+<div class="title"><b>rtg-tools: utilities for dealing with VCF files and sequence data</b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+RTG Tools is a subset of RTG Core that includes several useful utilities 
+for dealing with VCF files and sequence data. Notably, it includes the vcfeval command 
+that performs sophisticated comparison of VCF files.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>John G. Cleary, Ross Braithwaite, Kurt Gaastra, Brian S. Hilbush, Stuart Inglis,
+Sean A. Irvine, Alan Jackson, Richard Littin, Mehul Rathod, David Ware, Justin M.
+Zook, Len Trigg, and Francisco M. De La Vega<br />
+<i>Comparing Variant Call Files for Performance Benchmarking of
+Next-Generation Sequencing Variant Calling Pipelines</i> <br />
+<a href="://www.biorxiv.org/content/10.1101/023754v2.full">bioRxiv preprint doi: https://doi.org/10.1101/023754</a>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/RealTimeGenomics/rtg-tools">rtg-tools GitHub page</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>rtg-tools</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf ~]$ <b>sinteractive</b>
+[user@cn0868 ~]$ <b>module load rtg-tools</b>
+[+] Loading java 1.8.0_211  ...
+[+] Loading Graphviz v 2.40.1  ...
+[+] Loading rtg-tools  3.12.1
+
+[user@cn0868 ~]$ <b>rtg vcfeval -h</b>
+Usage: rtg vcfeval [OPTION]... -b FILE -c FILE -o DIR -t SDF
+
+Evaluates called variants for genotype agreement with a baseline variant set irrespective of representational
+differences. Outputs a weighted ROC file which can be viewed with rtg rocplot and VCF files containing false
+positives (called variants not matched in the baseline), false negatives (baseline variants not matched in the
+call set), and true positives (variants that match between the baseline and calls).
+
+File Input/Output
+  -b, --baseline=FILE           VCF file containing baseline variants
+      --bed-regions=FILE        if set, only read VCF records that overlap the ranges contained in the
+                                specified BED file
+  -c, --calls=FILE              VCF file containing called variants
+  -e, --evaluation-regions=FILE if set, evaluate within regions contained in the supplied BED file, allowing
+                                transborder matches. To be used for truth-set high-confidence regions or other
+                                regions of interest where region boundary effects should be minimized
+  -o, --output=DIR              directory for output
+      --region=REGION           if set, only read VCF records within the specified range. The format is one of
+                                &lt;sequence_name&gt;, &lt;sequence_name&gt;:&lt;start&gt;-&lt;end&gt;, &lt;sequence_name&gt;:&lt;pos&gt;+&lt;length&gt;
+                                or &lt;sequence_name&gt;:&lt;pos&gt;~&lt;padding&gt;
+  -t, --template=SDF            SDF of the reference genome the variants are called against
+
+Filtering
+      --all-records             use all records regardless of filter status (Default is to only process
+                                variants passing filters)
+      --decompose               decompose complex variants into smaller constituents to allow partial credit
+      --ref-overlap             allow alleles to overlap where bases of either allele are same-as-ref (Default
+                                is to only allow VCF anchor base overlap)
+      --sample=STRING           the name of the sample to select. Use &lt;baseline_sample&gt;,&lt;calls_sample&gt; to
+                                select different sample names for baseline and calls. (Required when using
+                                multi-sample VCF files)
+      --sample-ploidy=INT       expected ploidy of samples (Default is 2)
+      --squash-ploidy           treat heterozygous genotypes as homozygous ALT in both baseline and calls, to
+                                allow matches that ignore zygosity differences
+
+Reporting
+      --at-precision=FLOAT      output summary statistics where precision &gt;= supplied value (Default is to
+                                summarize at maximum F-measure)
+      --at-sensitivity=FLOAT    output summary statistics where sensitivity &gt;= supplied value (Default is to
+                                summarize at maximum F-measure)
+      --no-roc                  do not produce ROCs
+  -m, --output-mode=STRING      output reporting mode. Allowed values are [split, annotate, combine, ga4gh,
+                                roc-only] (Default is split)
+      --roc-expr=STRING         output ROC file for variants matching custom JavaScript expression. Use the
+                                form &lt;LABEL&gt;=&lt;EXPRESSION&gt;. May be specified 0 or more times
+      --roc-regions=STRING      output ROC file for variants overlapping custom regions supplied in BED file.
+                                Use the form &lt;LABEL&gt;=&lt;FILENAME&gt;. May be specified 0 or more times
+      --roc-subset=STRING       output ROC file for preset variant subset. Allowed values are [hom, het, snp,
+                                non-snp, mnp, indel]. May be specified 0 or more times, or as a comma separated
+                                list
+  -O, --sort-order=STRING       the order in which to sort the ROC scores so that "good" scores come before
+                                "bad" scores. Allowed values are [ascending, descending] (Default is
+                                descending)
+  -f, --vcf-score-field=STRING  the name of the VCF FORMAT field to use as the ROC score. Also valid are
+                                "QUAL", "INFO.&lt;name&gt;" or "FORMAT.&lt;name&gt;" to select the named VCF FORMAT or INFO
+                                field (Default is GQ)
+
+Utility
+  -h, --help                    print help on command-line flag usage
+  -Z, --no-gzip                 do not gzip the output
+  -T, --threads=INT             number of threads (Default is the number of available cores)
+[user@cn0868 ~]$ <b>demo-tools.sh rtg</b>
+Making directory for demo data: demo-tools
+Checking RTG is executable
+Checking if Graphviz is installed
+
+RTG Tools Simulation and Variant Processing Demonstration
+=========================================================
+
+In this demo we will give you a taste of the capabilities of RTG with
+a demonstration of simulated dataset generation and variant processing.
+
+To start with we will use RTG simulation utilities to generate a
+synthetic dataset from scratch:
+
+* `genomesim` - simulate a reference genome
+* `popsim` - simulate population variants
+* `samplesim` - generate two founder individuals
+* `childsim` - simulate offspring of the two founders
+* `denovosim` - simulate de novo mutations in some of the offspring
+* `readsim` - simulate next-gen sequencing of the individuals
+
+We will also demonstrate RTG variant processing and other analysis with
+the following commands:
+
+* `mendelian` - check variants for Mendelian consistency
+* `vcffilter` - VCF record filtering
+* `vcfsubset` - Columnwise VCF alterations
+* `vcfeval` - compare two VCF call sets for agreement
+* `rocplot` - produce static or interactive ROC graphs
+* `sdfstats` - output information about data stored in SDF
+* `pedfilter` - convert pedigree information between PED and VCF
+* `pedstats` - display summary pedigree information
+
+Press enter to continue...
+
+
+Genome Simulation
+-----------------
+
+First we simulate a reference genome by generating random DNA, in this
+case 10 chromosomes with lengths between 40kb and 50kb.  We will be
+using fixed random number seeds during this demo in order to ensure we
+have deterministic results.  (We take reproducability seriously - so you
+can be sure that you get repeatable results with RTG).
+
+
+Press enter to continue...
+...`
+[user@cn0868 ~]$ <b>exit</b>
+exit
+salloc.exe: Relinquishing job allocation 49998864
+
+[user@biowulf ~]$ 
+</pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

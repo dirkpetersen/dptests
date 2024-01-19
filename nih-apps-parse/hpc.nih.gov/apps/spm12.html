@@ -1,0 +1,100 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'SPM on Biowulf';</script>
+<div class="title">SPM on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <A href="https://www.fil.ion.ucl.ac.uk/spm/software/spm12/"><img src="/images/spm12.png" alt="SPM12 logo" align="center" width=125 height=125></a></p>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+      </div>
+</table>
+
+<p>
+SPM (Statistical Parametric Mapping) is an interactive application that performs statistical analyses of brain imaging data. 
+Statistical Parametric Mapping refers to the construction and assessment of spatially extended statistical processes used to 
+test hypotheses about functional imaging data.
+The data that can be analyzed by SPM can be a series of images from different cohorts or time-series from the same subject. 
+The current release is designed for the analysis of fMRI, PET, SPECT, EEG and MEG. The current version of SPM is SPM12 which has had several updates since 2014.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>K.J. Friston, A.P. Holmes, K.J. Worsley, J.B. Poline, C. Frith, and R.S.J. Frackowiak. 
+  <a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/hbm.460020402">
+  <em>Statistical Parametric Maps in Functional Imaging: A General Linear Approach</em></a> 
+  Human Brain Mapping, 2:189-210, 1995.</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://www.fil.ion.ucl.ac.uk/spm/">SPM12 main website</a></li>
+<li><a href="https://www.fil.ion.ucl.ac.uk/spm/doc/manual.pdf">SPM12 manual</a></li>
+</ul>
+
+<br>
+<p class="alert"><B>IMPORTANT: The documentation and examples below refer to the compiled/stand-alone version of SPM.</b> <br>
+For the uncompiled version of SPM you will need to run Matlab first, then load the SPM toolbox using <tt>nih_matmode load spm</tt>. For more details and an example of how to run the uncompiled version of SPM please refer to our <a href="/apps/Matlab.html">Matlab documentation</a>.
+</p>
+
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>spm12</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+    <li>SPM12 is a GUI-based interactive application and requires a graphical connection
+to biowulf. Please use the <a href="/docs/nx.html">NoMachine NX client</a> 
+to create the graphical connection as it is the most reliable for SPM12.
+    <li>SPM12 is a compiled MATLAB application so you do not need to have an open matlab session to run it. 
+    <li>It might be necessary to allocate more memory and CPUs than the default shown in the examples below. This depends on the datasets that will be used with SPM12. Please allocate more resources as needed.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1234 are ready for job
+
+[user@cn1234 ~]$ <b>module load spm12</b>
+[+] Loading spm12 7870  on cn1234 
+
+[user@cn1234 ~]$ <b>spm12 &</b>
+Loading SPM12, please wait...
+</pre>
+
+<p>
+You should be able to see the main SPM12 GUI window, and, after choosing a modality, the main SPM12 window for that modality:
+</p>
+
+<p align=center><img src="/images/spm12_GUI.png" border=1 alt="SPM12 Welcome Screen" width=50%></p>
+
+<p align=center><img src="/images/spm12_GUI2.png" border=1 alt="SPM12 fMRI Screen" width=100%></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

@@ -1,0 +1,129 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Subread on Biowulf';</script>
+    <div class="title">Subread on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+  <P>Subread package: high-performance read alignment, quantification and mutation discovery
+  <p>The Subread package comprises a suite of software programs for processing next-gen sequencing read data including:</p>
+  <ul>
+      <li>Subread: an accurate and efficient aligner for 
+        mapping both genomic DNA-seq reads and RNA-seq reads (for the purpose 
+        of expression analysis).</li>
+      <li>Subjunc: an RNA-seq aligner suitable for all purposes 
+        of RNA-seq analyses.</li>
+      <li>featureCounts: a highly efficient and accurate 
+        read summarization program.</li>
+    <li>exactSNP: a SNP caller that discovers SNPs by testing signals against local background noises.</li>
+  </ul>
+  
+  <P>Subread can be run multi-threaded using -T flag on biowulf. See example below.<p>
+
+<h3>References:</h3>    <ul>
+      <li><a href="https://www.ncbi.nlm.nih.gov/pubmed/23558742">https://www.ncbi.nlm.nih.gov/pubmed/23558742</a></li>
+      <li><a href="http://www.ncbi.nlm.nih.gov/pubmed/24227677">http://www.ncbi.nlm.nih.gov/pubmed/24227677</a></li>
+    </ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>    <ul>
+      <li><a href="http://subread.sourceforge.net/">http://subread.sourceforge.net/</a></li>
+    </ul>
+
+<div class="heading">Important Notes</div>    <ul>
+      <li>Module Name: <tt>subread</tt> (see <a href="/apps/modules.html">the 
+        modules page</a> for more information) 
+      <li>Subread can be run multi-threaded using -T flag on biowulf. See example 
+        below.
+    </ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+    <pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <strong>module load subread</strong>
+[user@cn3144 ~]$ <strong>cd /data/$USER/dir</strong>
+[user@cn3144 ~]$ <strong>subread-align -i indexfile -r inputfile -o outputfile</strong>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>    <p>Create a batch input file (e.g. subread.sh). For example:</p>    
+    <pre class="term">
+#!/bin/bash
+set -e
+module load subread
+cd /data/$USER/dir
+subread-align -i indexfile -r inputfile -o outputfile</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+    <pre class="term">$ sbatch subread.sh</pre>
+	
+	
+	  <p>To run multi-threaded subread on biowulf:</p>
+  <pre class="term">
+#!/bin/bash
+
+module load subread
+cd /data/$USER/
+subread-align -T $SLURM_CPUS_PER_TASK -i indexfile -r inputfile -o output</pre>
+  <p>
+Submit the script:
+  <pre class="term">$ sbatch --cpus-per-task=4 jobscript</pre>
+  <p>
+  --cpus-per-task: allocate 4 cpus. This number will be assigned to $SLURM_CPUS_PER_TASK automatically  
+  <p>For more memory requirement (default 4gb), use --mem flag: 
+  <pre class="term">$ sbatch --cpus-per-task=4 --mem=10g jobscript</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. subread.swarm). For example:</p>
+
+<pre class="term">
+cd dir1;subread-align -i indexfile -r inputfile -o outputfile
+cd dir2;subread-align -i indexfile -r inputfile -o outputfile
+cd dir3;subread-align -i indexfile -r inputfile -o outputfile
+cd dir4;subread-align -i indexfile -r inputfile -o outputfile
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f subread.swarm [-g #] [-t #] --module subread</pre>
+where
+<table width="62%" border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr>
+        <td><tt>--module subread</tt> 
+        <td>Loads the subread module for each subjob in the swarm </table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

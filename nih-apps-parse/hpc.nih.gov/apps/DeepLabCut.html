@@ -1,0 +1,191 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'DeepLabCut: Markerless pose estimation of user-defined features with deep learning for all animals, including humans ';</script>
+<div class="title"><b>DeepLabCut: Markerless pose estimation of user-defined features with deep learning for all animals, including humans </b></div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+DeepLabCut is an open source toolbox
+that builds on a state-of-the-art animal pose estimation algorithm.
+It allows training of a deep neural network by using limited training data 
+to precisely track user-defined features, so that the human labeling accuracy will be matched.
+</p>
+
+<h3>References:</h3>
+<ul>
+<li>Alexander Mathis, Pranav Mamidanna, Kevin M. Cury, Taiga Abe, Venkatesh N. Murthy,
+Mackenzie Weygandt Mathis and Matthias Bethge, <br />
+<i>DeepLabCut: markerless pose estimation of user-defined body parts with deep learning.</i> <br />
+<a href="https://www.nature.com/articles/s41593-018-0209-y">Nature Neuroscience v.21, p.1281–1289 (2018)</a>
+<li>T.Nath, A.Mathis, A.C.Chen, A.Patel, M.Bethge, and M.W.Mathis, <br />
+<i>Using DeepLabCut for 3D markerless pose estimation across species and behaviors.</i> <br />
+<a href="https://www.biorxiv.org/content/10.1101/476531v1">bioRxiv Nov. 24, 2018; doi: http://dx.doi.org/10.1101/476531</a>
+<li>Alexander Mathis, Mert Yüksekgönül, Byron Rogers, Matthias Bethge, Mackenzie W. Mathis, <br />
+<i>Using DeepLabCut for 3D markerless pose estimation across species and behaviors.</i> <br />
+<a href="https://arxiv.org/abs/1909.11229">arXiv:1909.11229</a>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/DeepLabCut/DeepLabCut/blob/master/docs/UseOverviewGuide.md">DeepLabCut User Overview Guide</a></li>
+<li><a href="https://pypi.org/project/deeplabcut/">DeepLabCut Home page</a></li>
+<li><a href="https://github.com/AlexEMG/DeepLabCut">DeepLabCut GitHub page</a></li>
+<li><a href="https://www.youtube.com/watch?v=7xwOhUcIGio">DeepLabCut video tutorial</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>DeepLabCut</tt> (see <a href="https://hpc.nih.gov/apps/modules.html">the modules page</a> for more information)
+<li>Unusual environment variables set 
+  <ul>
+    <li><b>DLC_MODEL</b>&nbsp; include pretrained model, has to be copied to /data/$USER</li>
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<br />
+<p>The DeepLabCut application installed on Biowulf is supposed to be run using GPU. 
+As the first step, please allocate an <a href="/docs/userguide.html#int">interactive session</a>:</p>
+
+
+<div class="tabs-container">
+    <ul class="tabs">
+        <li data-tab="tab-2">deeplabcut/2</li>
+        <li class="current" data-tab="tab-3">deeplabcut/2.3.4</li>
+    </ul>
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+    <!--                                   DLC/2.2                               -->
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+    <div id="tab-2" class="tab-content">
+
+
+<p class="alert">Interactive use of DeepLabCut via the GUI requires a 
+<a href="https://hpc.nih.gov/docs/connect.html">graphical X11 connection</a>. <br />
+Both NX and MobaXterm work well for Windows users, <br /> while XQuartz works well for Mac users.</p>
+
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1,lscratch:10 --mem=20g -c14</b>
+[user@cn4469 ~]$ <b>module load DeepLabCut/2.2.2 </b>
+[+] Loading singularity  3.10.0  on cn3063
+[+] Loading CUDA Toolkit  11.2.2  ...
+[+] Loading cuDNN/8.1.0.77/CUDA-11.2.2 libraries...
+[+] Loading DeepLabCut  2.2.2
+</pre>
+Clone the DeepLabCut GitHub repository, which contains some examples:
+<pre class="term">
+[user@cn4469 user]$ <b>mkdir -p /data/$USER/DLC && cd /data/$USER/DLC</b>
+[user@cn4469 user]$ <b>cp -r $DLC_MODEL/pretrained .</b>
+[user@cn4469 user]$ <b>git clone https://github.com/AlexEMG/DeepLabCut</b>
+[user@cn4469 user]$ <b>cd DeepLabCut</b>
+</pre>
+Checkout the version with specific tag corresponding to the version of the module you loaded:     
+<pre class="term">
+[user@cn4469 user]$ <b>git checkout tags/v2.2.2</b>
+...
+HEAD is now at 2f5d328... DLC 2.2.2 
+</pre>
+The repository contains several videos:
+<pre class="term">
+[user@cn4469 ~]$ <b>ls examples/*/videos/* </b>
+examples/openfield-Pranav-2018-10-30/videos/m3v1mp4.mp4
+examples/Reaching-Mackenzie-2018-08-30/videos/MovieS2_Perturbation_noLaser_compressed.avi
+examples/Reaching-Mackenzie-2018-08-30/videos/reachingvideo1.avi
+</pre>
+Use these data in an interactive python session:
+<pre class="term">
+[user@cn4469 ~]$ <b>ipython</b>
+Python 3.8.10 (default, Jun 22 2022, 20:18:18)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 8.4.0 -- An enhanced Interactive Python. Type '?' for help.
+
+<b><font color="#12AD2B">In [1]:</font> import deeplabcut</b>
+
+<b><font color="#12AD2B">In [2]:</font> config_path = deeplabcut.create_new_project("MyFirstProject", "Me", ["examples/Reaching-Mackenzie-2018-08-30/videos/MovieS2_Perturbation_noLaser_compressed.avi", "examples/Reaching-Mackenzie-2018-08-30/videos/reachingvideo1.avi"], '.', copy_videos=True)</b>
+Created "/gpfs/gsfs7/users/user/DeepLabCut/test_dir/DeepLabCut/MyFirstProject-Me-2022-08-31/videos"
+Created "/gpfs/gsfs7/users/user/DeepLabCut/test_dir/DeepLabCut/MyFirstProject-Me-2022-08-31/labeled-data"
+Created "/gpfs/gsfs7/users/user/DeepLabCut/test_dir/DeepLabCut/MyFirstProject-Me-2022-08-31/training-datasets"
+Created "/gpfs/gsfs7/users/user/DeepLabCut/test_dir/DeepLabCut/MyFirstProject-Me-2022-08-31/dlc-models"
+Copying the videos
+...
+A new project with name MyFirstProject-Me-2022-08-31 is created at /gpfs/gsfs7/users/user/DeepLabCut/test_dir/DeepLabCut and a configurable file (config.yaml) is stored there. Change the parameters in this file to adapt to your project's needs.
+ Once you have changed the configuration file, use the function 'extract_frames' to select frames for labeling.
+. [OPTIONAL] Use the function 'add_new_videos' to add new videos to your project (at any stage).
+<b><font color="#12AD2B">In [3]:</font> deeplabcut.extract_frames(config_path,"automatic","uniform")</b>
+...
+Config file read successfully.
+...
+Extracting frames based on uniform ...
+Uniformly extracting of frames from 0.0  seconds to 8.53  seconds.
+
+Frames were selected.
+You can now label the frames using the function 'label_frames' (if you extracted enough frames for all videos).
+<b><font color="#12AD2B">In [4]:</font> deeplabcut.label_frames(config_path) </b>
+</pre>
+<img src="deeplabcut/Labeling_toolbox.png" width="800" border="0" alt="">
+<br /><br />...
+<pre class="term">
+In [5]: <b>quit() </b>
+
+[user@cn4469 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+</pre>
+
+ </div>
+
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+    <!--                                 DLC/2.3                                 -->
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+    <div id="tab-3" class="tab-content current">
+
+
+<li> Deeplabcut/2.3.4 (available on biowulf) command lines should be run on gpu with python-DLC instead of python:
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --gres=gpu:p100:1,lscratch:10 --mem=20g -c14</b>
+[user@cn4469 ~]$ <b>module load DeepLabCut/2.3.4 </b>
+[+] Loading singularity  3.10.5  on cn4469
+[+] Loading DeepLabCut  2.3.4
+</pre>
+<li> It is essential to create a module directory under /data/$USER/DLC and put the model there so that the program can have write right to the directory:
+<pre class="term">
+[user@cn4469 user]$ <b>mkdir -p /data/$USER/DLC && cd /data/$USER/DLC</b>
+[user@cn4469 user]$ <b>cp -r $DLC_MODEL/pretrained .</b>
+
+</pre>
+<li> Clone the DeepLabCut GitHub repository, which contains some examples (optional):
+<pre class="term">
+[user@cn4469]$ <b>git clone https://github.com/AlexEMG/DeepLabCut</b>
+[user@cn4469]$ <b>cd DeepLabCut/examples</b>
+</pre>
+Test run in a terminal:
+<pre class="term">
+[user@cn4469]$ <b>python-DLC testscript.py</b>
+[user@cn4469]$ <b>python-DLC testscript_multianimal.py</b>
+</pre>
+
+</pre>
+        <li>deeplabcut GUI could to be opened through <a href="https://hpc.nih.gov/docs/nx.html">NoMachine</a>: 
+       <pre class="term">
+       python-DLC -m "deeplabcut"
+       </pre>
+
+        <li>deeplabcut GUI could also be opened through visual partition <A href="https://hpc.nih.gov/docs/svis.html">svis</a> desktop session:
+       <pre class="term">
+       vglrun python-DLC -m "deeplabcut"
+       </pre>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

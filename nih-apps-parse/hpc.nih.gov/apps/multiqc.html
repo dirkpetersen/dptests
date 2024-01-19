@@ -1,0 +1,111 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'multiqc on Biowulf';</script>
+<div class="title">multiqc on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+      </div>
+</table>
+
+<p> MultiQC searches a directory tree for summary output or logs of many well
+known bioinformatics tools and compiles them into a single html report across
+all detected samples and tools.  </p>
+
+<p>The tools MultiQC knows about fall into three groups:</p>
+<dl>
+    <dt><strong>Pre-alignment tools</strong></dt>
+    <dd>FastQC, Skewer, Cutadapt, ...</dd>
+    <dt><strong>Alignment tools</strong></dt>
+    <dd>Bowtie1, Bowtie2, STAR, ...</dd>
+    <dt><strong>Post-alignment tools</strong></dt>
+    <dd>Samtools, Samblaster, Picard, featureCounts, ...</dd>
+</dl>
+
+<h3>References:</h3>
+<ul>
+    <li>P. Ewels, M. Magnusson, S. Lundin and M. Käller. <em>MultiQC: Summarize analysis results for multiple tools and samples in a single report</em>. Bioinformatics 2016.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/27312411">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5039924/">PMC</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/article/32/19/3047/2196507">Journal</a>
+    </li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="http://multiqc.info/">Manual</a> </li>
+    <li><a href="https://www.github.com/ewels/MultiQC">GitHub</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: multiqc (see <a href="/apps/modules.html">the modules page</a> for more information)</li>
+    <li>Example files can be found in <code>$MULTIQC_TEST_DATA</code></li>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load multiqc</b>
+[+] Loading multiqc  1.9
+[user@cn3144 ~]$ <b>cp -r $MULTIQC_TEST_DATA/wgs .</b>
+[user@cn3144 ~]$ <b>multiqc --title 'WGS_test' wgs</b>
+[INFO   ]         multiqc : This is MultiQC v1.9
+[INFO   ]         multiqc : Template    : default
+[INFO   ]         multiqc : Report title: WGS_test
+[INFO   ]         multiqc : Searching   : wgs
+Searching 1346 files..  [####################################]  100%
+[INFO   ]        qualimap : Found 12 BamQC reports
+[INFO   ]          snpeff : Found 6 reports
+[INFO   ]     varianteval : Found 6 VariantEval reports
+[INFO   ]          picard : Found 6 MarkDuplicates reports
+[INFO   ]    fastq_screen : Found 12 reports
+[INFO   ]          fastqc : Found 12 reports
+[INFO   ]         multiqc : Compressing plot data
+[INFO   ]         multiqc : Report      : WGS_test_multiqc_report.html
+[INFO   ]         multiqc : Data        : WGS_test_multiqc_report_data
+[INFO   ]         multiqc : MultiQC complete
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<p>This generates a comprehensive <a href="https://multiqc.info/">report</a> with
+a number of metrics summarized across all samples.</p>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. multiqc.sh), which uses the input file 'multiqc.in'. For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load multiqc || exit 1
+multiqc --title 'tenure here i come' /path/to/awsome/project
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=2 --mem=4g multiqc.sh</pre>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

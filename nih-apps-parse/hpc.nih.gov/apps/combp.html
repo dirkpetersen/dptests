@@ -1,0 +1,159 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'combp on Biowulf';</script>
+<div class="title">combp on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Combp is a library to combine, analyze, group and correct p-values in BED files. Unique tools involve correction for spatial autocorrelation. This is useful for ChIP-Seq probes and Tiling arrays, or any data with spatial correlation. 
+</p>
+<p>
+<ul>
+  
+</p>
+</ul>
+
+<h3>References:</h3>
+<ul>
+<li>
+Pedersen BS, Schwartz DA, Yang IV, Kechris KJ. <em>Comb-p: software for combining, analyzing, grouping and correcting spatially correlated P-values.</em>
+Bioinformatics. 2012 Nov 15;28(22):2986-8. doi: 10.1093/bioinformatics/bts545. Epub 2012 Sep 5.
+    <a href="https://www.ncbi.nlm.nih.gov/pubmed/22954632">PubMed</a>&nbsp;|&nbsp;
+    <a href="https://academic.oup.com/bioinformatics/article/28/22/2986/240603">Journal</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>combp Main Site:<a href="https://github.com/brentp/combined-pvalues">Main Site</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>combp</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<pre class="term">
+	comb-p --help</pre>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li>$COMBP_TESTDATA
+  </ul>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=2 --mem=2G</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load combp</b>
+[user@cn3144 ~]$ <b>comb-p</b>
+Tools for viewing and adjusting p-values in BED files.
+
+   Contact: Brent Pedersen - bpederse@gmail.com
+   License: BSD
+
+To run, indicate one of:
+
+   acf       - calculate autocorrelation within BED file
+   slk       - Stouffer-Liptak-Kechris correction of correlated p-values
+   fdr       - Benjamini-Hochberg correction of p-values
+   peaks     - find peaks in a BED file.
+   region_p  - generate SLK p-values for a region (of p-values)
+   filter    - filter region_p output on size and p and add coef/t
+   hist      - plot a histogram of a column and check for uniformity.
+   manhattan - a manhattan plot of values in a BED file.
+   pipeline  - run acf, slk, fdr, peaks, region_p in succesion
+
+NOTE: most of these assume *sorted* BED files.
+SEE: https://github.com/brentp/combined-pvalues for documentation
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. combp.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=2G
+#SBATCH --time=2:00:00
+#SBATCH --partition=norm
+
+set -e
+module load combp
+cp $COMBP_TESTDATA/pvals.bed .
+comb-p acf -d 1:500:50 -c 5 pvals.bed > acf.txt
+</pre>
+<p> Submit the job:
+<pre class="term">sbatch combp.sh</pre>
+
+
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+    <p>Create a swarmfile (e.g. job.swarm). For example:</p>
+
+    <pre class="term">
+
+       cd dir1; comb-p peaks --seed 0.05 --dist 1000 pvals1.bed >pvals.peaks1.bed
+       cd dir2; comb-p peaks --seed 0.05 --dist 1000 pvals2.bed >pvals.peaks2.bed
+
+    </pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+    <pre class="term">swarm -f job.swarm [-g #] --module combp</pre>
+where
+    <table width="63%" border=0>
+      <tr>
+        <td width=18%><tt>-g <i>#</i> </tt></td>
+        <td width="82%">Number of Gigabytes of memory required for each process
+          (1 line in the swarm command file) </td>
+      </tr>
+      <tr>
+        <td><tt>--module </tt></td>
+        <td>Loads the module for each subjob in the swarm </td>
+      </tr>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

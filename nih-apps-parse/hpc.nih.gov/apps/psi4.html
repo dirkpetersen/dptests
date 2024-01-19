@@ -1,0 +1,91 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Psi4 on Biowulf';</script>
+<div class="title">Psi4 on Biowulf</div>
+<P>
+<table width=25% align=right> <tr><td>
+<div class="toc">
+<div class="tocHeading">Quick Links</div>
+<div class="tocItem"><a href="#helix">On Helix</a></div>
+<div class="tocItem"><a href="#thread">Multithreaded job on Biowulf</a></div>
+<div class="tocItem"><A href="#doc">Documentation</a></div>
+</div></table>
+
+Psi4 is an ab-initio electronic structure code that supports various methods
+for calculating energies and gradients of molecular systems. It is designed
+to be highly flexible and extensible, with performance-critical code implemented
+in C++ that can be accessed via either Python language bindings or a domain-specific 
+input script language. Specific features include:
+
+<ul>
+<li>Support for various ab initio and Density Functional Theory (DFT) methods
+<li>Numerous coupled cluster methods implemented
+<li>Broad support for Symmetry Adapted Perturbation (SAPT) methods
+<li>Gradients (first derivatives) and Hessian (second derivatives) implemented - allows for efficient geometry optimization of systems
+<li>Allows exporting frequencies in Molden format for visualization of normal modes
+<li>Shared-memory parallelization to run efficiently on multi-core machines
+</ul>
+<P>
+Psi4 is distributed under the GNU Lesser General Public License (LGPL)
+version 3. 
+<P>
+Example input files may be found in /usr/local/apps/psi4/1.1/share/psi4/samples.
+<P>
+<a Name="helix"></a><div class="heading">On Helix</div>
+<P>
+Psi4 is a cpu-intensive program that is not allowed to be run on Helix.
+<P>
+
+<a Name="openmp"></a><div class="heading">Multithreaded Batch job on Biowulf</div>
+<P>
+<P>
+Sample batch script: (this file is called run_psi4)
+<div class="term"><pre>
+#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --threads-per-core=1
+#SBATCH --gres=lscratch:50
+#SBATCH --partition=norm
+
+cd $SLURM_SUBMIT_DIR
+
+module load psi4
+
+psi4 -n $SLURM_CPUS_PER_TASK saptest.in
+</pre></div>
+
+<P>Submit this job with 
+<div class="term"><pre>
+biowulf% sbatch run_psi4
+</pre></div>
+<P>
+where:
+<table border=0 cellpadding=5>
+<tr><td width=250>-n $SLURM_CPUS_PER_TASK<td>tells Psi4 to run  $SLURM_CPUS_PER_TASK threads. This is only defined if --cpus-per-task is specified to sbatch
+<tr><td>--ntasks=1 <td>Tells Slurm to allocate a single task
+<tr><td>--cpus-per-task=4 <td>tells Slurm how many CPUs to allocate to the task
+<tr><td>--threads-per-core=1 <td>specifies that one thread should be run on each physical core (i.e. ignore hyperthreading). This is usually recommended for 
+cpu-intensive parallel jobs.
+<tr><td>--gres=lscratch:100<td>specifies that 100 GB of local scratch on the node should be allocated to this job. This parameter is <b>required</b> for all Psi4 job submissions,
+including interactive jobs. 
+
+</table>
+<P>
+
+The Psi4 module <b>must</b> be loaded from within a batch job. It sets the environment variable $PSI_SCRATCH to '/lscratch/$SLURM_JOBID'. This directory is
+only created if you submit the job with <tt>--gres=lscratch:#</tt>. (see the <A href="http://hpc.nih.gov/docs/userguide.html#local">User Guide section on
+using local disk</a>. <b>If you do not allocate local scratch space, your job will fail.</b>
+
+<P>
+Running Psi4 on the Biowulf login node or Helix is not permitted and will fail.
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+
+<P>
+<a href="http://psicode.org/psi4manual/master/index.html">Psi4 Manual</a>
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

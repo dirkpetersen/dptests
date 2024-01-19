@@ -1,0 +1,161 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'MEGAHIT on Biowulf';</script>
+<div class="title">MEGAHIT on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+MEGAHIT is a single node assembler for large and complex metagenomics NGS reads, such as soil. It makes use of succinct de Bruijn graph (SdBG) to achieve low memory assembly.
+</p>
+
+<h3>References:</h3>
+<ul>
+    <li>Li, D., Luo, R., Liu, C.M., Leung, C.M., Ting, H.F., Sadakane, K., Yamashita, H. and Lam, T.W., 2016. <b>MEGAHIT v1.0: A Fast and Scalable Metagenome Assembler driven by Advanced Methodologies and Community Practices.</b> Methods. doi: <a href="https://doi.org/10.1016/j.ymeth.2016.02.020">10.1016/j.ymeth.2016.02.020</a> </li>
+    <li>Li, D., Liu, C-M., Luo, R., Sadakane, K., and Lam, T-W., (2015) <b>MEGAHIT: An ultra-fast single-node solution for large and complex metagenomics assembly via succinct de Bruijn graph.</b> Bioinformatics, doi: <a href="https://doi.org/10.1093/bioinformatics/btv033">10.1093/bioinformatics/btv033</a></li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+    <li><a href="https://github.com/voutcn/megahit">MEGAHIT Main Site</a></li>
+    <li><a href="https://github.com/voutcn/megahit/wiki">MEGAHIT wiki</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+    <li>Module Name: <tt>megahit</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+	<li>Be sure to set the max memory, threads, and <a href="/docs/userguide.html#local">local scratch</a> temporary directory. See the example interactive job below.</li>
+<li>Environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>MEGAHIT_HOME</tt></li>
+  </ul>
+<li>Example files in <tt>$MEGAHIT_HOME/share/megahit/test_data</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. <br>Sample session (user input in <b>bold</b>):</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem 8g --cpus-per-task 2 --gres lscratch:10</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+[user@cn3144 ~]$ <b>module load megahit</b>
+[+] Loading megahit, version 1.1.4... 
+[user@cn3144 ~]$ <b>cd /lscratch/$SLURM_JOB_ID</b>
+[user@cn3144 46116226]$ <b>cp -a $MEGAHIT_HOME/share/megahit/test_data/* .</b>
+[user@cn3144 46116226]$ <b>SLURM_MEM_PER_NODE_BYTES="${SLURM_MEM_PER_NODE}000000"</b>
+[user@cn3144 46116226]$ <b>megahit --12 r1.il.fa.gz --memory ${SLURM_MEM_PER_NODE_BYTES} `# max memory to use` -t $SLURM_CPUS_PER_TASK --tmp-dir /lscratch/$SLURM_JOB_ID</b>
+--- [Fri Feb  1 19:59:29 2019] Start assembly. Number of CPU threads 2 ---
+--- [Fri Feb  1 19:59:29 2019] Available memory: 270168522752, used: 8192000000
+--- [Fri Feb  1 19:59:29 2019] Converting reads to binaries ---
+    [read_lib_functions-inl.h  : 209]     Lib 0 (readsInterleaved1.fa.gz): interleaved, 200 reads, 100 max length
+    [utils.h                   : 126]     Real: 0.0035	user: 0.0010	sys: 0.0029	maxrss: 6964
+--- [Fri Feb  1 19:59:30 2019] k-max reset to: 119 ---
+--- [Fri Feb  1 19:59:30 2019] k list: 21,29,39,59,79,99,119 ---
+--- [Fri Feb  1 19:59:30 2019] Extracting solid (k+1)-mers for k = 21 ---
+--- [Fri Feb  1 19:59:30 2019] Building graph for k = 21 ---
+--- [Fri Feb  1 19:59:30 2019] Assembling contigs from SdBG for k = 21 ---
+--- [Fri Feb  1 19:59:30 2019] Local assembling k = 21 ---
+--- [Fri Feb  1 19:59:30 2019] Extracting iterative edges from k = 21 to 29 ---
+--- [Fri Feb  1 19:59:30 2019] Building graph for k = 29 ---
+--- [Fri Feb  1 19:59:30 2019] Assembling contigs from SdBG for k = 29 ---
+--- [Fri Feb  1 19:59:30 2019] Local assembling k = 29 ---
+--- [Fri Feb  1 19:59:30 2019] Extracting iterative edges from k = 29 to 39 ---
+--- [Fri Feb  1 19:59:30 2019] Building graph for k = 39 ---
+--- [Fri Feb  1 19:59:30 2019] Assembling contigs from SdBG for k = 39 ---
+--- [Fri Feb  1 19:59:30 2019] Local assembling k = 39 ---
+--- [Fri Feb  1 19:59:31 2019] Extracting iterative edges from k = 39 to 59 ---
+--- [Fri Feb  1 19:59:31 2019] Building graph for k = 59 ---
+--- [Fri Feb  1 19:59:31 2019] Assembling contigs from SdBG for k = 59 ---
+--- [Fri Feb  1 19:59:31 2019] Local assembling k = 59 ---
+--- [Fri Feb  1 19:59:31 2019] Extracting iterative edges from k = 59 to 79 ---
+--- [Fri Feb  1 19:59:31 2019] Building graph for k = 79 ---
+--- [Fri Feb  1 19:59:31 2019] Assembling contigs from SdBG for k = 79 ---
+--- [Fri Feb  1 19:59:31 2019] Local assembling k = 79 ---
+--- [Fri Feb  1 19:59:31 2019] Extracting iterative edges from k = 79 to 99 ---
+--- [Fri Feb  1 19:59:31 2019] Merging to output final contigs ---
+--- [STAT] 1 contigs, total 1207 bp, min 1207 bp, max 1207 bp, avg 1207 bp, N50 1207 bp
+--- [Fri Feb  1 19:59:31 2019] ALL DONE. Time elapsed: 1.405510 seconds ---
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. megahit.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load megahit
+
+test -n "$SLURM_CPUS_PER_TASK" || SLURM_CPUS_PER_TASK=2
+test -n "$SLURM_MEM_PER_NODE" || SLURM_MEM_PER_NODE=1500
+
+SLURM_MEM_PER_NODE_BYTES=${SLURM_MEM_PER_NODE}000000
+
+megahit --12 readsInterleaved1.fa.gz --memory ${SLURM_MEM_PER_NODE_BYTES} -t $SLURM_CPUS_PER_TASK --tmp-dir /lscratch/$SLURM_JOB_ID
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch [--cpus-per-task=#] [--mem=#] --gres lscratch:10 megahit.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. megahit.swarm). For example:</p>
+
+<pre class="term">
+megahit --12 readsInterleaved1.fa.gz --memory ${SLURM_MEM_PER_NODE}000000 -t $SLURM_CPUS_PER_TASK --tmp-dir /lscratch/$SLURM_JOB_ID
+megahit --12 readsInterleaved2.fa.gz --memory ${SLURM_MEM_PER_NODE}000000 -t $SLURM_CPUS_PER_TASK --tmp-dir /lscratch/$SLURM_JOB_ID
+megahit --12 readsInterleaved3.fa.gz --memory ${SLURM_MEM_PER_NODE}000000 -t $SLURM_CPUS_PER_TASK --tmp-dir /lscratch/$SLURM_JOB_ID
+megahit --12 readsInterleaved4.fa.gz --memory ${SLURM_MEM_PER_NODE}000000 -t $SLURM_CPUS_PER_TASK --tmp-dir /lscratch/$SLURM_JOB_ID
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f megahit.swarm -g # -t # --gres lscratch:# --module megahit</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+      <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+	  <tr><td><tt>--gres lscratch:#</tt> <td>Number of gigabytes of <a href="/docs/userguide.html#local">local scratch space</a> for each subjob in the swarm.
+	  <tr><td><tt>--module megahit</tt> <td>Loads the MEGAHIT module for each subjob in the swarm
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

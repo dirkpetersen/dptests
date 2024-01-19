@@ -1,0 +1,126 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'RStudio Server on Biowulf';</script>
+<div class="title">RStudio Server on Biowulf</div>
+
+<a href="http://www.rstudio.com"><img alt="RStudio Logo" src="/images/RStudio-Ball.png"
+align="right" border="0" vspace="10" hspace="10" /></a>
+
+<p><a href="https://www.rstudio.com/">RStudio</a> is an integrated development
+environment (IDE)for R. It includes a console, syntax-highlighting editor that
+supports direct code execution, as well as tools for plotting, history,
+debugging and workspace management.</p>
+<p>This is RStudio Server, a browser-based
+interface very similar to the standard RStudio desktop environment. RStudio Server
+can be much more responsive and a generally-better experience when used remotely,
+especially over a VPN.
+ <span style="background-color: #ff9;">RStudio Server is
+used interactively and requires an SSH tunnel connection
+to biowulf.</span> Please use an <a href="/docs/tunneling">sinteractive tunnel</a> 
+to create the tunnel necessary to access RStudio Server.</p>
+
+<p class="alert" ;="" width="940px">
+  This module is currently experimental and may change or disappear without warning. Please contact <a href="mailto:staff@hpc.nih.gov">staff@hpc.nih.gov</a> if you run into issues while following the below steps. 
+</p>
+
+<div class="heading"><a name="gotcha"></a>Common pitfalls</div>
+<div class="btt"><a href="#top">top</a></div>
+
+<dl>
+<dd>   
+ <dt><b>working directory is /home</b></dt>
+    <dd>By default, the working directory is /home no matter where the interactive session is started. This could be changed by setwd(), which will set the workding directory to desired location. 
+<div class="term">
+setwd("/data/somewhere")
+</div>
+<br>
+Another way (more recommended) is using <a href="https://support.posit.co/hc/en-us/articles/200526207-Using-RStudio-Projects">project</a>, which will set it's own working directory.
+ File -> New Project -> New Directory -> Create New Project (assign directory name, and choose the directory location such as "/data/XXX/")
+<br>
+</dd>
+
+<dd>
+ <dt><b>My R sessions are/aren't being restored when I reconnect</b></dt>
+  <dd>R sessions inside RStudio server are persistent within a single sinteractive session.
+      Different sinteractive jobs cannot share R sessions and job sessions are not persistent
+       between jobs. Please save your work to disk or explicitly save your session to an RData
+       file by manually saving the workspace with the Session -> Save Workspace As... menu.
+  </dd>
+</dd>
+
+<dd>
+ <dt><b>I am getting a permission denied error</b></dt>
+  <dd>R sessions inside RStudio server are persistent within a single sinteractive session.
+      Every time you run rstudio-server, you will receive a new randomized password. Please make
+       sure to use the new link or password each time you restart the server.
+  </dd>
+</dd>
+
+</dl>
+<P>
+<div class="heading">Running RStudio Server interactively</div>
+
+<p>Allocate an <a href="https://hpc.nih.gov/docs/userguide.html#int">sinteractive</a>
+session. It is required to allocate at least a small amount of <a
+href="/docs/userguide.html#local">lscratch</a> for temporary storage for R.</p>
+
+<p>It is also required to set up an <a href="/docs/tunneling">sinteractive tunnel</a>.</p>
+
+<div class="term">
+<pre>
+[user@biowulf ~]$ <b>sinteractive --mem=10g --gres=lscratch:5 --tunnel</b>
+salloc.exe: Pending job allocation 15323416
+salloc.exe: job 15323416 queued and waiting for resources
+salloc.exe: job 15323416 has been allocated resources
+salloc.exe: Granted job allocation 15323416salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn1640 are ready for job
+
+Created 1 generic SSH tunnel(s) from this compute node to
+biowulf for your use at port numbers defined
+in the $PORTn ($PORT1, ...) environment variables.
+
+
+Please create a SSH tunnel from your workstation to these ports on biowulf.
+On Linux/MacOS, open a terminal and run:
+
+    ssh  -L 39689:localhost:39689 user@biowulf.nih.gov
+
+For Windows instructions, see https://hpc.nih.gov/docs/tunneling
+[user@cn1640 ~]$ <b>module load rstudio-server</b>
+[+] Loading gcc  9.2.0  ...
+[-] Unloading gcc  9.2.0  ...
+[+] Loading gcc  9.2.0  ...
+[+] Loading openmpi 4.0.5  for GCC 9.2.0
+[+] Loading ImageMagick  7.0.8  on cn4280
+[+] Loading HDF5  1.10.4
+[-] Unloading gcc  9.2.0  ...
+[+] Loading gcc  9.2.0  ...
+[+] Loading NetCDF 4.7.4_gcc9.2.0
+[+] Loading pandoc  2.17.1.1  on cn4280
+[+] Loading pcre2 10.21  ...
+[+] Loading R 4.2.2
+[+] Loading rstudio-server  2023.03.0-386
+[user@cn1640 dir]$ <b>rstudio-server</b>
+
+Please ensure you have set up the SSH port forwarding as described in the sinteractive instructions.
+
+Please connect to http://localhost:39689/auth-sign-in?user=test2&password=nRmzfPWh_X8Z-03hbDjPz3bm
+Use your username 'user' and the pasword 'nRmzfPWh_X8Z-03hbDjPz3bm' to login
+
+</pre></div>
+
+<p>If you have set up the SSH tunnel with the command or instructions provided (please make sure to
+use the specific port/command given by <i>your</i> interactive session) you should be able to
+load the link and have RStudio Server load in your browser.</p>
+<p>If you are presented with a login screen, please use your username and the password provided</p>
+
+
+<div class="heading">Documentation</div>
+<ul>
+<li><a href="http://www.rstudio.com">RStudio Web Site</a>
+<li><a href="https://www.rstudio.com/online-learning/#R">RStudio Resources</a>
+<li><a href="https://posit.co/products/open-source/rstudio-server/">RStudio Server Web Site</a>
+</ul>
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

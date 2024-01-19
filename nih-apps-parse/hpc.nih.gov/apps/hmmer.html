@@ -1,0 +1,163 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'HMMER on Biowulf';</script>
+<div class="title">HMMER on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+<a href="http://hmmer.janelia.org"><img alt="hammer_sm" src=
+"/images/hammer_sm.gif" align="left" border="0" /></a>
+<h3>Profile hidden Markov models for biological sequence analysis</h3>
+Profile hidden Markov models (profile HMMs) can be used to do sensitive
+database searching using statistical descriptions of a sequence family's
+consensus. HMMER uses profile HMMs, and can be useful in situations like:
+<ul>
+<li>if you are working with an evolutionarily diverse protein family, a BLAST
+search with any individual sequence may not find the rest of the sequences in
+the family.</li>
+<li>the top hits in a BLAST search are hypothetical sequences from genome
+projects.</li>
+<li>your protein consists of several domains which are of different types.</li>
+</ul>
+</p>
+
+<h3>References:</h3>
+HMMER (pronounced 'hammer', as in a more precise mining tool than BLAST) was
+developed by Sean Eddy at Washington University in St. Louis. 
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li>The HMMER website
+is <a href="http://hmmer.janelia.org/">hmmer.janelia.org</a>.</li>
+<li><a href="http://hmmer.janelia.org/#documentation">HMMER User Guide</a>
+(PDF)<br /></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>hmmer</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>HMMER is a cpu-intensive program and is parallelized using threads, so
+that each instance of hmmsearch or the other search programs can use all the cpus allocated on a
+node.
+<li>An MPI version is also available, but given that most Biowulf nodes have 56 CPUs, only very large jobs may benefit from using the MPI version.
+<li>environment variables set <!--for ones users should be aware of -->
+<li>Example files in <tt>/usr/local/apps/hmmer/tutorial</tt>
+<li>Reference data in <tt>/fdb/fastadb/</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --cpus-per-task=16 --mem=10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load hmmer</b>
+
+[user@cn3144 ~]$ <b>hmmsearch --cpu $SLURM_CPUS_PER_TASK /usr/local/apps/hmmer/tutorial/globins4.hmm /fdb/fastadb/nr.fas</b>
+# hmmsearch :: search profile(s) against a sequence database
+# HMMER 3.1b2 (February 2015); http://hmmer.org/
+# Copyright (C) 2015 Howard Hughes Medical Institute.
+# Freely distributed under the GNU General Public License (GPLv3).
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# query HMM file:                  /usr/local/apps/hmmer/tutorial/globins4.hmm
+# target sequence database:        /fdb/fastadb/nr.fas
+# number of worker threads:        16
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Query:       globins4  [M=149]
+[...]
+  Alignments for each domain:
+  == domain 1  score: 18.2 bits;  conditional E-value: 0.0014
+        globins4  41 qefFekFkdLstedelkksadvkkHgkkvldAlsdalakld..ekleaklkdLselHakklkvdpkyfkllsevlvdvlaarlpkeftadvqaal 133
+                     q++F++  +L+   ++   +     g+ + +A+++  +++d  + l ++++ ++++H ++++++ ++++++++ l+++l +  +  ft dv+ a
+  WP_087017392.1  30 QRMFDHNPELKDIFNMSH-QRTGRQGVALFEAVAAYAKNIDnlGALTTAVERIAHKH-TSFNIQAEHYQIVGHHLIETLRELASDAFTKDVEEAW 122
+                     677777777873333333.3345679999***********87889999*********.58*******************************9886 PP
+
+        globins4 134 e 134
+
+  WP_087017392.1 123 T 123
+                     5 PP
+
+
+
+Internal pipeline statistics summary:
+-------------------------------------
+Query model(s):                              1  (149 nodes)
+Target sequences:                    145198384  (53182534605 residues searched)
+Passed MSV filter:                   4463369  (0.0307398); expected 2903967.7 (0.02)
+Passed bias filter:                  3672241  (0.0252912); expected 2903967.7 (0.02)
+Passed Vit filter:                    255552  (0.00176002); expected 145198.4 (0.001)
+Passed Fwd filter:                     17247  (0.000118782); expected 1452.0 (1e-05)
+Initial search space (Z):          145198384  [actual number of targets]
+Domain search space  (domZ):           10862  [number of targets reported over threshold]
+# CPU time: 1306.00u 76.30s 00:23:02.30 Elapsed: 00:11:03.54
+# Mc/sec: 11942.31
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. HMMER.sh). The following example uses the query sequence set globins4.hmm in the example directory, run against the NCBI nr protein database.
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load hmmer
+hmmsearch --cpu $SLURM_CPUS_PER_TASK /usr/local/apps/hmmer/tutorial/globins4.hmm /fdb/fastadb/nr.fas
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=16 --mem=10g HMMER.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. HMMER.swarm). For example:</p>
+
+<pre class="term">
+
+hmmsearch --cpu $SLURM_CPUS_PER_TASK  file1.fas  /fdb/fastadb/nr.fas
+hmmsearch --cpu $SLURM_CPUS_PER_TASK  file2.fas  /fdb/fastadb/nr.fas
+hmmsearch --cpu $SLURM_CPUS_PER_TASK  file3.fas  /fdb/fastadb/nr.fas
+[...]
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f HMMER.swarm -g 10 -t 32 --module hmmer</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module hmmer</tt> <td>Loads the HMMER module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

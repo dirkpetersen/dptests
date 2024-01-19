@@ -1,0 +1,147 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Fastsurfer on Biowulf';</script>
+<div class="title">Fastsurfer on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p>
+Fastsurfer is a neuroimaging pipeline based on deep learning. 
+</p>
+
+<a Name="doc"></a><div class="heading">References</div>
+<ul>
+<li>Henschel L, Conjeti S, Estrada S, Diers K, Fischl B, Reuter M. <a href="https://pubmed.ncbi.nlm.nih.gov/32526386/">FastSurfer - A fast and accurate deep learning based neuroimaging pipeline</a>, Neuroimage. 2020;219:117012</li>
+</ul>
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Deep-MI/FastSurfer">Fastsurfer github page</a></li>
+</ul>
+
+<a Name="notes"></a><div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>fastsurfer</tt> (see <a href="/apps/modules.html">the modules page</a> for more information). Note that you have to load the <tt>freesurfer</tt> and <tt>python</tt> modules as well. The freesurfer initialization scripts need to be run in addition to loading the module. 
+
+<li>Freesurfer uses temporary files for some calculations. By default, these will go to /scratch (i.e. the top level of the shared scratch directory) which is low-performance (i.e. reading and writing to /scratch is slowing down your jobs). Instead, you should allocate local disk (/lscratch) and set the environment variable $tmpdir=/lscratch/${SLURM_JOBID} to speed up your jobs. See the examples below.
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> with 5 GB of local disk and run the program. Sample session below::</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive --mem=35g --cpus-per-task=64 --gres=lscratch:5</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load fastsurfer freesurfer python</b>
+[+] Loading fastsurfer  c5e9677  on cn3144 
+[+] Loading freesurfer  7.1.1  on cn3144 
+[+] Loading python 3.7  ...
+
+[user@cn3144 ~]$ <b>cd /lscratch/${SLURM_JOB_ID}</b>
+
+[user@cn3144 ~]$ <b>source $FREESURFER_HOME/SetUpFreeSurfer.sh</b>
+-------- freesurfer-linux-centos7_x86_64-7.1.1-20200723-8b40551 --------
+Setting up environment for FreeSurfer/FS-FAST (and FSL)
+FREESURFER_HOME   /usr/local/apps/freesurfer/7.1.1
+FSFAST_HOME       /usr/local/apps/freesurfer/7.1.1/fsfast
+FSF_OUTPUT_FORMAT nii.gz
+SUBJECTS_DIR      /usr/local/apps/freesurfer/7.1.1/subjects
+MNI_DIR           /usr/local/apps/freesurfer/7.1.1/mni
+
+[user@cn3144 ~]$ <b>export tmpdir=/lscratch/${SLURM_JOBID}</b>
+
+[user@cn3144 ~]$ <b>run_fastsurfer.sh --t1 $SUBJECTS_DIR/bert/mri/orig.mgz \
+                  --sid bert \
+                  --sd /lscratch/${SLURM_JOB_ID}/analysis \
+                  --parallel --threads 64</b>
+Thu Aug  6 15:17:30 EDT 2020
+
+/usr/local/apps/fastsurfer/c5e9677/FastSurferCNN /lscratch/46116226
+python eval.py --in_name /usr/local/apps/freesurfer/7.1.1/subjects/bert/mri/orig.mgz --out_name /lscratch/46116226/analysis/bert/mri/aparc.DKTatlas+aseg.deep.mgz --order 1 --network_sagittal_path ../checkpoints/Sagittal_Weights_FastSurferCNN/ckpts/Epoch_30_training_state.pkl --network_axial_path ../checkpoints/Axial_Weights_FastSurferCNN/ckpts/Epoch_30_training_state.pkl --network_coronal_path ../checkpoints/Coronal_Weights_FastSurferCNN/ckpts/Epoch_30_training_state.pkl --batch_size 8 --simple_run
+Reading volume /usr/local/apps/freesurfer/7.1.1/subjects/bert/mri/orig.mgz
+Loading Axial
+Successfully loaded Image from /usr/local/apps/freesurfer/7.1.1/subjects/bert/mri/orig.mgz
+Loading Sagittal
+Successfully loaded Image from /usr/local/apps/freesurfer/7.1.1/subjects/bert/mri/orig.mgz
+Loading Coronal.
+Successfully loaded Image from /usr/local/apps/freesurfer/7.1.1/subjects/bert/mri/orig.mgz
+
+[...]
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. fastsurfer.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+set -e
+module load fastsurfer freesurfer python
+source $FREESURFER_HOME/SetUpFreeSurfer.sh
+# set the environment variable tmpdir to local scratch for better performance
+export tmpdir=/lscratch/$SLURM_JOBID
+
+run_fastsurfer.sh --t1 $SUBJECTS_DIR/bert/mri/orig.mgz \
+                  --sid bert \
+                  --sd /lscratch/${SLURM_JOB_ID}/analysis \
+                  --parallel --threads 64
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch  [--mem=#] --gres=lscratch:5 fastsurfer.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>For swarm jobs, it might be simplest to have the line
+<pre class="term">
+module load fastsurfer freesurfer python > /dev/null 2>&1 ; source $FREESURFER_HOME/SetUpFreeSurfer.sh
+</pre>
+in a bash script file. Alternatively, you can add this line to <i>each line</i> in your swarm command file.
+<P>
+
+Create a swarmfile (e.g. fastsurfer.swarm). For example:</p>
+
+<pre class="term">
+export tmpdir=/lscratch/$SLURM_JOBID;run_fastsurfer.sh --t1 $SUBJECTS_DIR/bert/mri/orig.mgz --sid bert --sd /lscratch/${SLURM_JOB_ID}/analysis
+export tmpdir=/lscratch/$SLURM_JOBID;run_fastsurfer.sh --t1 $SUBJECTS_DIR/bert/mri/orig.mgz --sid bert --sd /lscratch/${SLURM_JOB_ID}/analysis 
+export tmpdir=/lscratch/$SLURM_JOBID;run_fastsurfer.sh --t1 $SUBJECTS_DIR/bert/mri/orig.mgz --sid bert --sd /lscratch/${SLURM_JOB_ID}/analysis 
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f fastsurfer.swarm [-t #] --gres=lscratch:5</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td width=20%><tt>--gres=lscratch:5</tt> <td>allocate 5 GB of local disk for each swarm subjob
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>

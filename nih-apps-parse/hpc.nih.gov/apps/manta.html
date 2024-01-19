@@ -1,0 +1,139 @@
+<script type="text/javascript" language="JavaScript" src='/js/header.js'></script>
+<!-- Start content - do not edit above this line  -->
+<script type='text/javascript' language='JavaScript'>document.querySelector('title').textContent = 'Manta on Biowulf';</script>
+<div class="title">Manta on Biowulf</div>
+
+<table width=25% align=right>
+  <tr>
+    <td>
+      <div class="toc">
+        <div class="tocHeading">Quick Links</div>
+        <div class="tocItem"><A href="#doc">Documentation</a></div>
+        <div class="tocItem"><a href="#notes">Notes</a></div>
+        <div class="tocItem"><a href="#int">Interactive job </a></div>
+        <div class="tocItem"><a href="#sbatch">Batch job </a></div>
+        <div class="tocItem"><a href="#swarm">Swarm of jobs </a></div>
+      </div>
+</table>
+
+<p> Manta is a packaged used to discover structural variants and indels from
+next generation sequencing data. It is optimized for rapid clinical
+analysis, calling structural variants, medium-sized indels and large insertions.
+Manta makes use of split read and paired end information and includes scoring
+models optimized for germline analysis of diploid genomes and tumor-normal 
+genome comparisons. Major use cases (as listed in the manta manual):
+</p>
+
+<ul>
+    <li>Joint analysis of small sets of diploid individuals (where 'small' 
+    means family-scale -- roughly 10 or fewer samples)</li>
+    <li>Subtractive analysis of a matched tumor/normal sample pair</li>
+    <li>Analysis of an individual tumor sample</li>
+</ul>
+
+<p>There is also experimental RNA-Seq support.</p>
+
+<h3>References:</h3>
+<ul>
+<li>Chen et al. Manta: Rapid detection of structural variants and indels for clinical sequencing applications. 2015: http://dx.doi.org/10.1101/024232 <a href="http://biorxiv.org/content/early/2015/08/10/024232">BioRxiv</a>
+</li>
+</ul>
+
+
+<a Name="doc"></a><div class="heading">Documentation</div>
+<ul>
+<li><a href="https://github.com/Illumina/manta">Manta Main Site</a></li>
+</ul>
+
+<div class="heading">Important Notes</div>
+<ul>
+<li>Module Name: <tt>manta</tt> (see <a href="/apps/modules.html">the modules page</a> for more information)
+<li>Multithreaded/singlethreaded/MPI...
+<li>environment variables set <!--for ones users should be aware of -->
+  <ul>
+    <li><tt>$MANTA_TEST_DATA</tt></li>
+  </ul>
+<li>Example files in <tt>$MANTA_TEST_DATA</tt>
+</ul>
+<P>
+
+<a Name="int"></a><div class="heading">Interactive job</div>
+<div class="nudgeblock"><a href="/docs/userguide.html#int">Interactive jobs</a> should be used for debugging, graphics, or applications that cannot be run as batch jobs.</div>
+<p>Allocate an <a href="/docs/userguide.html#int">interactive session</a> and run the program. Sample session:</p>
+<pre class="term">
+[user@biowulf]$ <b>sinteractive -c 10 --mem 10g</b>
+salloc.exe: Pending job allocation 46116226
+salloc.exe: job 46116226 queued and waiting for resources
+salloc.exe: job 46116226 has been allocated resources
+salloc.exe: Granted job allocation 46116226
+salloc.exe: Waiting for resource configuration
+salloc.exe: Nodes cn3144 are ready for job
+
+[user@cn3144 ~]$ <b>module load manta</b>
+
+[user@cn3144 ~]$ <b>configManta.py \</b>
+  <b>--normalBam=${MANTA_TEST_DATA}/HCC1954.NORMAL.30x.compare.COST16011_region.bam \</b>
+  <b>--tumorBam=${MANTA_TEST_DATA}/G15512.HCC1954.1.COST16011_region.bam \</b>
+  <b>--referenceFasta=${MANTA_TEST_DATA}/Homo_sapiens_assembly19.COST16011_region.fa \</b>
+  <b>--region=8:107652000-107655000 \</b>
+  <b>--region=11:94974000-94989000 \</b>
+  <b>--candidateBins=4 --exome --runDir=./test</b>
+
+[user@cn3144 ~]$ <b>tree test</b>
+test
+|-- [user   4.0K]  results
+|   |-- [user   4.0K]  stats
+|   `-- [user   4.0K]  variants
+|-- [user   7.0K]  runWorkflow.py
+|-- [user   3.0K]  runWorkflow.py.config.pickle
+`-- [user   4.0K]  workspace
+
+[user@cn3144 ~]$ <b>test/runWorkflow.py -m local -j 10 -g 10</b>
+
+[user@cn3144 ~]$ <b>exit</b>
+salloc.exe: Relinquishing job allocation 46116226
+[user@biowulf ~]$
+</pre>
+
+<P>The workflow is executed by running the generated runWorkflow.py script. In our case, this is wrapped into a slurm batch script</P>
+
+<P>
+<a Name="sbatch"></a><div class="heading">Batch job</div>
+<div class="nudgeblock">Most jobs should be run as <A href="/docs/userguide.html#submit">batch jobs</a>.</div>
+<p>Create a batch input file (e.g. manta.sh). For example:</p>
+
+<pre class="term">
+#!/bin/bash
+module load manta || exit 1
+test/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK -g $((SLURM_MEM_PER_NODE / 1024))
+</pre>
+<p>Submit this job using the Slurm <a href="/docs/userguide.html">sbatch</a> command.</p>
+
+<pre class="term">sbatch --cpus-per-task=4 --mem=10g manta.sh</pre>
+
+<a Name="swarm"></a><div class="heading">Swarm of Jobs </div>
+<div class="nudgeblock">A <a href="/apps/swarm.html">swarm of jobs</a> is an easy way to submit a set of independent commands requiring identical resources.</div>
+
+<p>Create a swarmfile (e.g. manta.swarm). For example:</p>
+
+<pre class="term">
+normal1_vs_tumor1/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK -g $((SLURM_MEM_PER_NODE / 1024))
+normal2_vs_tumor2/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK -g $((SLURM_MEM_PER_NODE / 1024))
+normal3_vs_tumor3/runWorkflow.py -m local -j $SLURM_CPUS_PER_TASK -g $((SLURM_MEM_PER_NODE / 1024))
+</pre>
+
+<p>Submit this job using the <a href='/apps/swarm.html'>swarm</a> command.</p>
+
+<pre class="term">swarm -f manta.swarm -g 10 -t 10 --module manta</pre>
+where
+<table border=0>
+  <tr><td width=20%><tt>-g <i>#</i> </tt><td>Number of Gigabytes of memory required for each process (1 line in the swarm command file)
+  <tr><td><tt>-t <i>#</i></tt> <td>Number of threads/CPUs required for each process (1 line in the swarm command file).
+  <tr><td><tt>--module manta</tt> <td>Loads the manta module for each subjob in the swarm 
+</table>
+
+
+
+
+<!-- End content area - do not edit below this line -->
+<script type="text/javascript" language="JavaScript" src='/js/footer.js'></script>
