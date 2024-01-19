@@ -19,8 +19,9 @@ class BigBadClass:
         return tuples
 
 # Example usage
-cmd = "pixi search -c bioconda -q -l 10000 '*'"
+cmd = "pixi --color never search -c bioconda -q -l 25000 '*'"
 big_bad = BigBadClass()
 result = big_bad.execute_and_parse(cmd)
+for line in result:
+    print(line[0])
 print(result)
-

@@ -904,7 +904,7 @@ class Builder:
                     self.cfg.printdbg(f'version_dir: {version_dir}, package_dir: {package_dir}, package_root: {package_root}, tarball_name: {tarball_name}, tarball_path: {tarball_path}')   
                 
                 if os.path.exists(f'{tarball_path}.stub'):
-                    print(f'  {tarball_path} was previously downloaded, skipping ...')
+                    #print(f'  {tarball_path} was previously downloaded, skipping ...')
                     continue
 
                 all_tars.append(tarball_path)
