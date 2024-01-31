@@ -1,5 +1,6 @@
 AmazonRDSFullAccess
 AmazonSESFullAccess
+AmazonRoute53FullAccess
 AWSLambda_FullAccess
 SecretsManagerReadWrite
 AWSServiceCatalogEndUserFullAccess

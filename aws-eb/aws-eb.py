@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.03'
+__version__ = '0.40.04'
 
 def main():
         
@@ -293,6 +293,9 @@ def subcmd_launch(args,cfg,bld,aws):
     rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
     print(f'rclone mount pid: {rpid}')
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
+    if args.lifesciences:
+        fhroot = os.path.join(cfg.home_dir, 'easybuild-life-sciences', 'fh_easyconfigs')
+        bld.build_all_eb(fhroot, s3_prefix, include=args.include, exclude=args.exclude)
     if not args.keeprunning:
         rclone.unmount(f'{bld.eb_root}/sources_s3')
     
@@ -2697,7 +2700,7 @@ class AWSBoto:
         ''').strip()
         if not self.args.ebrelease:
             rc += '\n' + textwrap.dedent(f'''
-            export EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/easybuild-easyconfigs/easybuild/easyconfigs
+            export EASYBUILD_ROBOT_PATHS=/home/{self.cfg.defuser}/easybuild-easyconfigs/easybuild/easyconfigs:/home/{self.cfg.defuser}/easybuild-life-sciences/fh_easyconfigs
             ''').strip()
         return rc
     
@@ -2787,6 +2790,7 @@ class AWSBoto:
         mkdir -p /opt/eb/tmp
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
         git clone https://github.com/easybuilders/easybuild-easyconfigs  
+        git clone https://github.com/FredHutch/easybuild-life-sciences
         $PYBIN -m pip install --user easybuild 
         $PYBIN -m pip install --user --upgrade packaging boto3 requests 
         $PYBIN -m pip install --user psutil
@@ -4702,6 +4706,8 @@ def parse_arguments():
     #     help="Do not pre-download sources from build cache, let EB download them.")      
     parser_launch.add_argument('--eb-release', '-e', dest='ebrelease', action='store_true', default=False,
         help="Use official Easybuild release instead of dev repos from Github.")  
+    parser_launch.add_argument('--life-sciences', '-l', dest='lifesciences', action='store_true', default=False,
+        help="Also use easybuild-life-sciences repo for building.")
     parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
         help="Re-check all previously skipped software packages and build them if possible.")    
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="", metavar='<include-list>',
