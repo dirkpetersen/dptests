@@ -293,11 +293,13 @@ def subcmd_launch(args,cfg,bld,aws):
     rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
     print(f'rclone mount pid: {rpid}')
     bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
-    if args.lifesciences:
+    if not args.skiplifesciences:
         fhroot = os.path.join(cfg.home_dir, 'easybuild-life-sciences', 'fh_easyconfigs')
-        bld.build_all_eb(fhroot, s3_prefix, include=args.include, exclude=args.exclude)
+        bld.build_all_eb(fhroot, s3_prefix, include=args.include, exclude=args.exclude)        
     if not args.keeprunning:
         rclone.unmount(f'{bld.eb_root}/sources_s3')
+        if cfg.is_systemd_service_running('redis6') or cfg.is_systemd_service_running('redis'):
+            ret=subprocess.run(f'sudo juicefs umount --flush /mnt/share', shell=True, text=True)        
     
 def subcmd_download(args,cfg,bld,aws):
 
@@ -783,10 +785,8 @@ class Builder:
             print(f" Final upload using checksums ... ", flush=True)
             self.rclone_upload_compare = '--checksum'
             self.upload(self.eb_root, f':s3:{self.cfg.archivepath}', s3_prefix)
-            if self.cfg.is_systemd_service_running('redis6') or self.cfg.is_systemd_service_running('redis'):
-                if not self.args.keeprunning:
-                    ret=subprocess.run(f'sudo juicefs umount --flush /mnt/share', shell=True, text=True)
-            msg = f'BUILD FINISHED. Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
+            msg = f'BUILD FINISHED in {easyconfigroot}.'
+            msg += f'Tried {ebcnt} viable easyconfigs ({ebskipped} skipped), {bldcnt} packages built, {errcnt} builds failed.'
             if errpkg:
                 msg += f'\nFailed easyconfigs: {", ".join(errpkg)}'
             self.aws.send_email_ses('', '', f'AWS-EB build for {s3_prefix} finished.', msg)
@@ -4706,8 +4706,8 @@ def parse_arguments():
     #     help="Do not pre-download sources from build cache, let EB download them.")      
     parser_launch.add_argument('--eb-release', '-e', dest='ebrelease', action='store_true', default=False,
         help="Use official Easybuild release instead of dev repos from Github.")  
-    parser_launch.add_argument('--life-sciences', '-l', dest='lifesciences', action='store_true', default=False,
-        help="Also use easybuild-life-sciences repo for building.")
+    parser_launch.add_argument('--skip-life-sciences', '-l', dest='skiplifesciences', action='store_true', default=False,
+        help="Skip the optional easybuild-life-sciences repository for building.")
     parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
         help="Re-check all previously skipped software packages and build them if possible.")    
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="", metavar='<include-list>',
