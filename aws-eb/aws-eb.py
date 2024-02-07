@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.04'
+__version__ = '0.40.05'
 
 def main():
         
@@ -292,10 +292,10 @@ def subcmd_launch(args,cfg,bld,aws):
     print(f'Mounting rclone ":s3:{cfg.archivepath}/sources" at "{bld.eb_root}/sources_s3" ...')
     rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
     print(f'rclone mount pid: {rpid}')
-    bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
     if not args.skiplifesciences:
         fhroot = os.path.join(cfg.home_dir, 'easybuild-life-sciences', 'fh_easyconfigs')
-        bld.build_all_eb(fhroot, s3_prefix, include=args.include, exclude=args.exclude)        
+        bld.build_all_eb(fhroot, s3_prefix, include=args.include, exclude=args.exclude)      
+    bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)      
     if not args.keeprunning:
         rclone.unmount(f'{bld.eb_root}/sources_s3')
         if cfg.is_systemd_service_running('redis6') or cfg.is_systemd_service_running('redis'):
@@ -2686,7 +2686,7 @@ class AWSBoto:
         # export MODULEPATH=/opt/eb/modules/tools:/opt/eb/modules/lang:/opt/eb/modules/compiler:/opt/eb/modules/bio
         #
         export EASYBUILD_JOB_CORES={self.args.vcpus}
-        export EASYBUILD_CUDA_COMPUTE_CAPABILITIES=7.5,8.0,8.6,9.0
+        # export EASYBUILD_CUDA_COMPUTE_CAPABILITIES=7.5,8.0,8.6,9.0 #9.0 does not work with NCCL/2.12.12
         # export EASYBUILD_BUILDPATH=/dev/shm/$USER # could run out of space
         export EASYBUILD_PREFIX=/opt/eb
         export EASYBUILD_SOURCEPATH=${{EASYBUILD_PREFIX}}/sources:${{EASYBUILD_PREFIX}}/sources_s3
@@ -2789,8 +2789,8 @@ class AWSBoto:
         fi
         mkdir -p /opt/eb/tmp
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
-        git clone https://github.com/easybuilders/easybuild-easyconfigs  
         git clone https://github.com/FredHutch/easybuild-life-sciences
+        git clone https://github.com/easybuilders/easybuild-easyconfigs          
         $PYBIN -m pip install --user easybuild 
         $PYBIN -m pip install --user --upgrade packaging boto3 requests 
         $PYBIN -m pip install --user psutil
