@@ -36,6 +36,13 @@ fi
 
 ```
 
+you do not require a json file but can pass the json structure as a string
+
+```
+JSON='{"Changes":[{"Action":"CREATE","ResourceRecordSet":{"Name":"example.com","Type":"A","TTL":300,"ResourceRecords":[{"Value":"192.0.2.1"}]}}]}'
+aws route53 change-resource-record-sets --hosted-zone-id ZONEID --change-batch $JSON
+```
+
 ## Certbot
 
 ### register cert 

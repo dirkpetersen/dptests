@@ -2796,6 +2796,14 @@ class AWSBoto:
         $PYBIN -m pip install --user psutil
         source ~/easybuildrc
         $PYBIN ~/.local/bin/{self.scriptname} config --monitor '{emailaddr}'
+        dnszones=$(aws route53 list-hosted-zones)
+        dns_zone_id=$(echo $dns_zones | jq -r '.HostedZones[0].Id' | cut -d'/' -f3)
+        dns_zone_name=$(echo $dns_zones | jq -r '.HostedZones[0].Name')
+        if [[ -n ${{dns_zone_id}} ]]; then
+          # JSON53='{{"Comment":"UPSERT a record","Changes":[{"Action":"UPSERT","ResourceRecordSet":{{"Name":"$(hostname -s).${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}]}}'
+          JSON53='{{"Comment":"UPSERT a record","Changes":[{"Action":"UPSERT","ResourceRecordSet":{{"Name":"moinmoin.${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}]}}'
+          aws route53 change-resource-record-sets --hosted-zone-id ${{dns_zone_id}} --change-batch ${{JSON53}}
+        fi
         echo ""
         echo -e "CPU info:"
         lscpu | head -n 20
