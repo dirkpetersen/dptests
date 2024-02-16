@@ -2806,7 +2806,7 @@ class AWSBoto:
           host_s='moinmoinmoin'
           # JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"$(hostname -s).${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}}]}}'
           # JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"moinmoin.${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}}]}}'
-          JSON53='{{\"Comment\":\"DNS update\",\"Changes\":[{{\"Action\":\"UPSERT\",\"ResourceRecordSet\":{{\"Name\":\"${{host_s}}.${{dns_zone_name}}\",\"Type\":\"A\",\"TTL\":60,\"ResourceRecords\":[{{\"Value\":\"$pub_ip\"}}]}}}}]}}'
+          JSON53="{{\"Comment\":\"DNS update\",\"Changes\":[{{\"Action\":\"UPSERT\",\"ResourceRecordSet\":{{\"Name\":\"${{host_s}}.${{dns_zone_name}}\",\"Type\":\"A\",\"TTL\":60,\"ResourceRecords\":[{{\"Value\":\"$pub_ip\"}}]}}}}]}}"
           aws route53 change-resource-record-sets --hosted-zone-id ${{dns_zone_id}} --change-batch "${{JSON53}}"
         fi
         echo ""
