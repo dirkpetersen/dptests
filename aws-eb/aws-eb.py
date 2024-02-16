@@ -2751,6 +2751,8 @@ class AWSBoto:
         sed -i 's/aws_access_key_id [^ ]*/aws_access_key_id /' {bscript}
         sed -i 's/aws_secret_access_key [^ ]*/aws_secret_access_key /' {bscript}
         sed -i 's/^aws configure /#&/' {bscript}
+        export AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id)
+        export AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key)        
         curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | bash -s - ~/.local
         echo '#! /bin/bash' > ~/.local/bin/get-public-ip
         echo 'ETOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")' >> ~/.local/bin/get-public-ip
@@ -2807,15 +2809,10 @@ class AWSBoto:
           aws route53 change-resource-record-sets --hosted-zone-id ${{dns_zone_id}} --change-batch "${{JSON53}}"
         fi
         # create certificates with letsencrypt
-        if ! sudo test -d /root/.aws; then
-          # temp access to AWS creds for root user if not set for root
-          sudo ln -s /home/{self.cfg.defuser}/.aws /root/.aws
-        fi
         python3 -m venv le
         . le/bin/activate
         pip install certbot-dns-route53
-        sudo /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d ${{host_s}}.${{dns_zone_name}}
-        sudo rm -f /root/.aws
+        sudo -E /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d ${{host_s}}.${{dns_zone_name}}
         echo ""
         echo -e "CPU info:"
         lscpu | head -n 20
