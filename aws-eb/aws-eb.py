@@ -2527,11 +2527,11 @@ class AWSBoto:
 
         return lowest_price, lowest_az
 
-    def _ec2_get_cheapest_spot_instance(self, cpu_type, vcpus=1, memory_gb=1, region=None):        
+    def _ec2_get_cheapest_spot_instance(self, cpu_type, vcpus=1, memory_gb=1, region=None):
         ec2 = boto3.client('ec2', region_name=region) if region else self.awssession.client('ec2')
         # Validate CPU type
         if cpu_type not in self.cpu_types:
-            return "Invalid CPU type.", None, None    
+            return "Invalid CPU type.", None, None
       
         try:
             # Filter instances by vCPUs, memory, and CPU type
@@ -2803,12 +2803,19 @@ class AWSBoto:
           dns_zone_id=$(echo $dnszones | jq -r '.HostedZones[0].Id' | cut -d'/' -f3)
           pub_ip=$(~/.local/bin/get-public-ip)
           host_s=$(hostname -s)
-          host_s='moinmoinmoin'
-          # JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"$(hostname -s).${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}}]}}'
-          # JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"moinmoin.${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}}]}}'
           JSON53="{{\\"Comment\\":\\"DNS update\\",\\"Changes\\":[{{\\"Action\\":\\"UPSERT\\",\\"ResourceRecordSet\\":{{\\"Name\\":\\"${{host_s}}.${{dns_zone_name}}\\",\\"Type\\":\\"A\\",\\"TTL\\":60,\\"ResourceRecords\\":[{{\\"Value\\":\\"$pub_ip\\"}}]}}}}]}}"
           aws route53 change-resource-record-sets --hosted-zone-id ${{dns_zone_id}} --change-batch "${{JSON53}}"
         fi
+        # create certificates with letsencrypt
+        if ! sudo test -d /root/.aws; then
+          # temp access to AWS creds for root user if not set for root
+          sudo ln -s /home/{self.cfg.defuser}/.aws /root/.aws
+        fi
+        python3 -m venv le
+        . le/bin/activate
+        pip install certbot-dns-route53
+        sudo /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d aws-eb.aws.internetchen.de
+        sudo rm -f /root/.aws
         echo ""
         echo -e "CPU info:"
         lscpu | head -n 20

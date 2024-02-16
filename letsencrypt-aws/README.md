@@ -55,7 +55,7 @@ python3 -m venv le
 . le/bin/activate
 pip install certbot-dns-route53
 sudo /home/ec2-user/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d aws-eb.aws.internetchen.de
-rm -f /root/.aws
+sudo rm -f /root/.aws
 ```
 
 ### renew cert 
