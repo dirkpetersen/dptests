@@ -2814,7 +2814,7 @@ class AWSBoto:
         python3 -m venv le
         . le/bin/activate
         pip install certbot-dns-route53
-        sudo /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d aws-eb.aws.internetchen.de
+        sudo /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d ${{host_s}}.${{dns_zone_name}}
         sudo rm -f /root/.aws
         echo ""
         echo -e "CPU info:"
