@@ -2796,13 +2796,18 @@ class AWSBoto:
         $PYBIN -m pip install --user psutil
         source ~/easybuildrc
         $PYBIN ~/.local/bin/{self.scriptname} config --monitor '{emailaddr}'
+        # update DNS if hosted zone is available in route53
         dnszones=$(aws route53 list-hosted-zones)
-        dns_zone_id=$(echo $dns_zones | jq -r '.HostedZones[0].Id' | cut -d'/' -f3)
-        dns_zone_name=$(echo $dns_zones | jq -r '.HostedZones[0].Name')
-        if [[ -n ${{dns_zone_id}} ]]; then
-          # JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"$(hostname -s).${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}]}}'
-          JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"moinmoin.${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}]}}'
-          aws route53 change-resource-record-sets --hosted-zone-id ${{dns_zone_id}} --change-batch ${{JSON53}}
+        dns_zone_name=$(echo $dnszones | jq -r '.HostedZones[0].Name')
+        if [[ -n ${{dns_zone_name}} ]]; then
+          dns_zone_id=$(echo $dnszones | jq -r '.HostedZones[0].Id' | cut -d'/' -f3)
+          pub_ip=$(~/.local/bin/get-public-ip)
+          host_s=$(hostname -s)
+          host_s='moinmoinmoin'
+          # JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"$(hostname -s).${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}}]}}'
+          # JSON53='{{"Comment":"UPSERT a record","Changes":[{{"Action":"UPSERT","ResourceRecordSet":{{"Name":"moinmoin.${{dns_zone_name}}","Type":"A","TTL":60,"ResourceRecords":[{{"Value":"$(~/.local/bin/get-public-ip)"}}]}}}}]}}'
+          JSON53='{{\"Comment\":\"DNS update\",\"Changes\":[{{\"Action\":\"UPSERT\",\"ResourceRecordSet\":{{\"Name\":\"${{host_s}}.${{dns_zone_name}}\",\"Type\":\"A\",\"TTL\":60,\"ResourceRecords\":[{{\"Value\":\"$pub_ip\"}}]}}}}]}}'
+          aws route53 change-resource-record-sets --hosted-zone-id ${{dns_zone_id}} --change-batch "${{JSON53}}"
         fi
         echo ""
         echo -e "CPU info:"
