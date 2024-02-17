@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.05'
+__version__ = '0.40.06'
 
 def main():
         
@@ -80,6 +80,15 @@ def args_version(cfg):
 def subcmd_config(args, cfg, aws):
     # configure user and / or team settings 
     # arguments are Class instances passed from main
+
+    if args.test:
+        id = aws.get_highest_numbered_nodeid('moinmoin')
+        print('Node id:', id)
+        nodes = aws.get_short_nodenames(['35.87.193.26', '54.188.2.212', '35.83.253.36', '34.213.227.239'])
+        print('Short names:', nodes)
+        print('Frist Domain:', aws.route53_get_first_domain())
+
+        return True
 
     if args.list:
         # list all folders in the archive
@@ -423,11 +432,11 @@ def subcmd_ssh(args, cfg, aws):
         return True
 
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    ips = [sublist[0] for sublist in ilist if sublist]
+    hosts = [sublist[0] for sublist in ilist if sublist]
  
     if args.list:
         print ('Listing machines ... ', flush=True, end='')
-        if ips:                                
+        if hosts:                                
             aws.print_aligned_lists(ilist,"Running EC2 Instances:")      
         else:
             print('No running instances detected')
@@ -457,12 +466,12 @@ def subcmd_ssh(args, cfg, aws):
         print('Please specify a host name or IP address')
         return False
 
-    if ips and not myhost in ips:
+    if hosts and not myhost in hosts:
         if '/' in myhost:
             print(f'{myhost} not found')
         else:    
-            print(f'{myhost} is not running, you could replace it with {ips[-1]}')
-        return False            
+            print(f'{myhost} is not running, you could replace it with {hosts[-1]}')
+        return False
     
     sshuser = aws.ec2_get_default_user(myhost, ilist)
 
@@ -477,10 +486,10 @@ def subcmd_ssh(args, cfg, aws):
         return ret
 
     if scpmode:
-        if scpmode == 'upload':                
+        if scpmode == 'upload':
             ret=aws.ssh_upload(sshuser, myhost, args.sshargs[0], remote_path, False, False)
             #print(ret)  #stdout,ret.stderr
-        elif scpmode == 'download':    
+        elif scpmode == 'download':
             ret=aws.ssh_download(sshuser, myhost, remote_path, args.sshargs[1], False)
             #print(ret)  #stdout,ret.stderr
         return True
@@ -1486,6 +1495,7 @@ class AWSBoto:
         self.cfg = cfg
         self.awsprofile = self.cfg.awsprofile
         self.scriptname = os.path.basename(__file__)
+        self.basehostname = 'aws-eb'
         self.cpu_types = {
             "graviton-2": ('c6g', 'c6gd', 'c6gn', 'm6g', 'm6gd', 'r6g', 'r6gd', 't4g' ,'g5g'),
             "graviton-3": ('c7g', 'c7gd', 'c7gn', 'm7g', 'm7gd', 'r7g', 'r7gd'),
@@ -1605,7 +1615,8 @@ class AWSBoto:
 
         except Exception as e:
             print(f"Error retrieving instance types: {e}")
-            return None
+            return 
+        None
 
     def get_aws_regions(self, profile=None, provider='AWS'):
         # returns a list of AWS regions 
@@ -2584,7 +2595,14 @@ class AWSBoto:
         else:
             pkgm = 'yum'
         long_timezone = self.cfg.get_time_zone()
-        userdata = textwrap.dedent(f'''
+        nodenum = self.get_highest_numbered_nodeid()
+        if not nodenum:
+            nodenum = 1
+        else:
+            nodenum += 1
+        ##
+        newhostname = self.basehostname + str(nodenum)
+        userdata = textwrap.dedent(f'''                                   
         #! /bin/bash
         format_largest_unused_block_devices() {{
             # format the largest unused block device(s) and mount it to /opt or /mnt/scratch
@@ -2653,9 +2671,9 @@ class AWSBoto:
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
-        {pkgm} update -y                                   
+        {pkgm} update -y
         {pkgm} install -y at gcc vim wget python3-psutil
-        hostnamectl set-hostname aws-eb
+        hostnamectl set-hostname {newhostname}
         timedatectl set-timezone '{long_timezone}'
         loginctl enable-linger {self.cfg.defuser}
         systemctl start atd
@@ -3155,7 +3173,78 @@ class AWSBoto:
                        ]
                 ilist.append(row)
         ilist.sort(key=lambda x: x[-2],reverse=True)  # Assuming the last element in each row is the launch time
+        ilist = self.get_short_hostnames([], ilist)
         return ilist
+    
+    def _route53_get_a_records(self):
+        try:
+            r53 = self.awssession.client('route53')        
+            hosted_zones = r53.list_hosted_zones()['HostedZones']
+            if not hosted_zones:
+                return None
+            paginator = r53.get_paginator('list_resource_record_sets')
+            for page in paginator.paginate(HostedZoneId=hosted_zones[0]['Id']):
+                for record_set in page['ResourceRecordSets']:
+                    if record_set['Type'] == 'A':
+                        yield record_set
+        except Exception as e:
+            print(f'Error in _route53_get_a_records: {e}')
+            return None
+
+    def _route53_extract_short_hostnames(self, base_name, dns_records=None):
+        if not dns_records:
+            dns_records = self._route53_get_a_records()
+        pattern = rf"^{base_name}.*?(\d+)\."
+        hostnames = []
+        for record in dns_records:
+            match = re.search(pattern, record['Name'])
+            if match:
+                hostnames.append(match.group(1))
+        return hostnames
+    
+    def route53_get_first_domain(self):
+        try:
+            r53 = self.awssession.client('route53')        
+            hosted_zones = r53.list_hosted_zones()['HostedZones']
+            if not hosted_zones:
+                return None
+            return hosted_zones[0]['Name']
+        except Exception as e:
+            print(f'Error in route53_get_first_domain: {e}')
+            return None
+
+    def get_highest_numbered_nodeid(self, base_name, nodenames=None):
+        if not nodenames:
+            nodenames = self._route53_extract_short_hostnames(base_name)
+        if not nodenames:
+            return None
+        return max(nodenames, key=int)
+    
+    def get_short_hostnames(self, ip_addresses, ilist=None):
+        """
+        Returns a list of short hostnames based on 'A' records for given IP addresses.
+        If a short hostname cannot be found, returns the IP address instead.
+        If ip_addresses is an empty list and ilist is not None, processes ilist where each
+        sublist's first element is an IP address.
+        """
+        a_records = list(self._route53_get_a_records())  # Assuming _route53_get_a_records is a generator
+        ip_to_hostname = {rec['ResourceRecords'][0]['Value']: rec['Name'] for rec in a_records if rec['Type'] == 'A'}
+
+        if not ip_addresses and ilist is not None:
+            for sublist in ilist:
+                if sublist and isinstance(sublist, list):
+                    ip = sublist[0]
+                    hostname = ip_to_hostname.get(ip, ip)
+                    short_hostname = hostname.rstrip('.').split('.')[0] if hostname != ip else ip
+                    sublist[0] = short_hostname
+            return ilist
+        else:
+            short_hostnames = []
+            for ip in ip_addresses:
+                hostname = ip_to_hostname.get(ip, ip)
+                short_hostname = hostname.rstrip('.').split('.')[0] if hostname != ip else ip
+                short_hostnames.append(short_hostname)
+            return short_hostnames        
 
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
@@ -3163,6 +3252,10 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
+        if not self.cfg.is_ipv4_address(host):
+            dom = self.route53_get_first_domain()
+            if dom:
+                host = f'{host}.{dom}'        
         cmd = f"ssh {SSH_OPTIONS} -i '{key_path}' {user}@{host}"
         if command:
             cmd += f" '{command}'"
@@ -3187,6 +3280,10 @@ class AWSBoto:
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
                 temp.write(local_path)
                 local_path = temp.name
+        if not self.cfg.is_ipv4_address(host):
+            dom = self.route53_get_first_domain()
+            if dom:
+                host = f'{host}.{dom}'
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {local_path} {user}@{host}:{remote_path}"
         #cmdlist = shlex.split(cmd)        
         try:
@@ -3204,6 +3301,10 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
+        if not self.cfg.is_ipv4_address(host):
+            dom = self.route53_get_first_domain()
+            if dom:
+                host = f'{host}.{dom}'
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
         try:
             result = subprocess.run(cmd, shell=True, text=True, capture_output=cap_output)
@@ -3989,6 +4090,14 @@ class ConfigManager:
             os_type = os_type.split(' ')[0]  # Get the first 'like' identifier
         return os_type
 
+    def is_ipv4_address(self, string):
+        """
+        Checks if the given string is a valid IPv4 address using regular expression.
+        Returns True if it is, False otherwise.
+        """
+        pattern = re.compile(r'^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+        return pattern.match(string) is not None
+
     def install_os_packages(self, pkg_list, package_skip_set=[]):
         # pkg_list can be a simple list of strings or a list of tuples 
         # if a package has a different name on different OSes
@@ -4685,7 +4794,9 @@ def parse_arguments():
     parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',                               
         metavar='<email@address.org>', help='setup aws-eb as a monitoring cronjob ' +
         'on an ec2 instance and notify an email address')
-
+    parser_config.add_argument( '--test', '-t', dest='test', action='store_true', default=False,
+        help="Test option simply for software debugging")        
+        
     # ***
     parser_launch = subparsers.add_parser('launch', aliases=['lau'],
         help=textwrap.dedent(f'''

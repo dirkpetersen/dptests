@@ -100,8 +100,13 @@ systemctl enable certbot-renew.timer
 systemctl start certbot-renew.timer
 ```
 
+### Problems 
 
-
-
+```
+Requesting a certificate for aws-eb.aws.internetchen.de
+An unexpected error occurred:
+Error creating new order :: too many certificates (5) already issued for this exact set of domains in the last 168 hours: aws-eb.aws.internetchen.de, retry after 2024-02-18T02:58:58Z: see https://letsencrypt.org/docs/duplicate-certificate-limit/
+Ask for help or search for solutions at https://community.letsencrypt.org. See the logfile /var/log/letsencrypt/letsencrypt.log or re-run Certbot with -v for more details.
+```
 
 
