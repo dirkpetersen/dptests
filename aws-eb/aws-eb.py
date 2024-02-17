@@ -2595,7 +2595,7 @@ class AWSBoto:
         else:
             pkgm = 'yum'
         long_timezone = self.cfg.get_time_zone()
-        nodenum = self.get_highest_numbered_nodeid()
+        nodenum = self.get_highest_numbered_nodeid(self.basehostname)
         if not nodenum:
             nodenum = 1
         else:
@@ -2730,6 +2730,7 @@ class AWSBoto:
         #short_timezone = datetime.datetime.now().astimezone().tzinfo
         long_timezone = self.cfg.get_time_zone()
         juiceid = f'juice{instance_id.replace("-","")}'
+        myhostname = socket.gethostname().split('.')[0]
         return textwrap.dedent(f'''
         #! /bin/bash
         echo "Bootstrapping AWS-EB on {instance_id} ..."
@@ -2739,7 +2740,7 @@ class AWSBoto:
         fi
         mkdir -p ~/.config/aws-eb
         mkdir -p ~/.local/bin
-        echo 'PS1="\\u@aws-eb:\\w$ "' >> ~/.bashrc
+        echo 'PS1="\\u@{myhostname}:\\w$ "' >> ~/.bashrc
         echo 'source ~/easybuildrc' >> ~/.bashrc
         echo '#export EC2_INSTANCE_ID={instance_id}' >> ~/.bashrc
         echo '#export AWS_DEFAULT_REGION={self.cfg.aws_region}' >> ~/.bashrc
