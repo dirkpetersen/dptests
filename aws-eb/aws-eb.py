@@ -1990,13 +1990,13 @@ class AWSBoto:
         if not awsprofile: 
             awsprofile = self.cfg.awsprofile
         prof = self._ec2_create_iam_policy_roles_ec2profile()            
-        iid, ip = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)
+        iid, fqdn = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)
         if not iid:
             return False
         print(' Waiting for ssh host to become ready ...')
-        if not self.cfg.wait_for_ssh_ready(socket.gethostbyname(ip)):
+        if not self.cfg.wait_for_ssh_ready(socket.gethostbyname(fqdn)):
             return False
-        bootstrap_build = self._ec2_user_space_script(iid)        
+        bootstrap_build = self._ec2_user_space_script(iid, fqdn)        
 
         ### this block may need to be moved to a function
         cmdlist = [item for item in sys.argv]
@@ -2011,28 +2011,28 @@ class AWSBoto:
         cmdline = self.scriptname + " " + " ".join(map(shlex.quote, cmdlist[1:])) #original cmdline
         ### end block 
 
-        print(f" will execute '{cmdline}' on {ip} ... ")
-        bootstrap_build += '\n$PYBIN ~/.local/bin/' + cmdline + f' >> ~/out.easybuild.{ip}.txt 2>&1'        
+        print(f" will execute '{cmdline}' on {fqdn} ... ")
+        bootstrap_build += '\n$PYBIN ~/.local/bin/' + cmdline + f' >> ~/out.easybuild.{iid}.txt 2>&1'        
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         if not self.args.keeprunning:
             bootstrap_build += f'\n[ ! -f ~/no-terminate ] && $PYBIN ~/.local/bin/{self.scriptname} ssh --terminate {iid}'
-        sshuser = self.ec2_get_default_user(ip)
-        ret = self.ssh_upload(sshuser, ip,
+        sshuser = self.ec2_get_default_user(socket.gethostbyname(fqdn))
+        ret = self.ssh_upload(sshuser, fqdn,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
-        ret = self.ssh_upload(sshuser, ip,
+        ret = self.ssh_upload(sshuser, fqdn,
             bootstrap_build, "bootstrap.sh", is_string=True)        
         #if ret.stdout or ret.stderr:
             #print(ret.stdout, ret.stderr)
-        ret = self.ssh_execute(sshuser, ip, 
+        ret = self.ssh_execute(sshuser, fqdn, 
             'mkdir -p ~/.config/aws-eb/general')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)        
-        ret = self.ssh_upload(sshuser, ip,
+        ret = self.ssh_upload(sshuser, fqdn,
             "~/.config/aws-eb/general/*", ".config/aws-eb/general/")
         #if ret.stdout or ret.stderr:
             #print(ret.stdout, ret.stderr)        
-        ret = self.ssh_execute(sshuser, ip, 
-            f'nohup bash bootstrap.sh < /dev/null > out.bootstrap.{ip}.txt 2>&1 &')
+        ret = self.ssh_execute(sshuser, fqdn, 
+            f'nohup bash bootstrap.sh < /dev/null > out.bootstrap.{iid}.txt 2>&1 &')
         if ret.stdout or ret.stderr:
             print(ret.stdout, ret.stderr)
         print(' Executed bootstrap and build script ... you may have to wait a while ...')
@@ -2043,18 +2043,18 @@ class AWSBoto:
         qt = "'"
         os.system(f'echo "touch ~/no-terminate && pkill -f aws-eb" >> ~/.bash_history.tmp')
         os.system(f'echo "pkill -f easybuild.main # skip the currently building easyconfig" >> ~/.bash_history.tmp')        
-        os.system(f'echo "grep -B1 -A1 {qt}chars): Couldn.t find file{qt} ~/out.easybuild.{ip}.txt | grep FAILED:" >> ~/.bash_history.tmp')        
-        os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
-        os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
-        os.system(f'echo "tail -n 100 -f ~/out.easybuild.{ip}.txt" >> ~/.bash_history.tmp')
-        os.system(f'echo "tail -n 30 -f ~/out.bootstrap.{ip}.txt" >> ~/.bash_history.tmp')
-        ret = self.ssh_upload(sshuser, ip,
+        os.system(f'echo "grep -B1 -A1 {qt}chars): Couldn.t find file{qt} ~/out.easybuild.txt | grep FAILED:" >> ~/.bash_history.tmp')        
+        os.system(f'echo "grep -A1 {qt}^== FAILED:{qt} ~/out.easybuild.{iid}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "grep -A1 {qt}^== COMPLETED:{qt} ~/out.easybuild.{iid}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "tail -n 100 -f ~/out.easybuild.{iid}.txt" >> ~/.bash_history.tmp')
+        os.system(f'echo "tail -n 30 -f ~/out.bootstrap.{iid}.txt" >> ~/.bash_history.tmp')
+        ret = self.ssh_upload(sshuser, fqdn,
             "~/.bash_history.tmp", ".bash_history")
         if ret.stdout or ret.stderr:
             #print(ret.stdout, ret.stderr)
             pass
 
-        self.send_email_ses('', '', 'AWS-EB build on EC2', f'this command line was executed on host {ip}:\n{cmdline}')
+        self.send_email_ses('', '', 'AWS-EB build on EC2', f'this command line was executed on host {fqdn}:\n{cmdline}')
 
 
     def _ec2_describe_instance_families(self, cpu_type, vcpus=1, memory_gb=1, region=None):
@@ -2716,7 +2716,7 @@ class AWSBoto:
             ''').strip()
         return rc
     
-    def _ec2_user_space_script(self, instance_id='', bscript='~/bootstrap.sh'):
+    def _ec2_user_space_script(self, instance_id, fqdn, bscript='~/bootstrap.sh'):
         # Define script that will be installed by ec2-user 
         emailaddr = self.cfg.read('general','email')
         if not emailaddr:
@@ -2724,7 +2724,7 @@ class AWSBoto:
         #short_timezone = datetime.datetime.now().astimezone().tzinfo
         long_timezone = self.cfg.get_time_zone()
         juiceid = f'juice{instance_id.replace("-","")}'
-        myhostname = socket.gethostname().split('.')[0]
+        myhostname = fqdn.split('.')[0]
         return textwrap.dedent(f'''
         #! /bin/bash
         echo "Bootstrapping AWS-EB on {instance_id} ..."
