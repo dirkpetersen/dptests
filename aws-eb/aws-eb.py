@@ -82,11 +82,11 @@ def subcmd_config(args, cfg, aws):
     # arguments are Class instances passed from main
 
     if args.test:
-        id = aws.get_highest_numbered_nodeid('moinmoin')
-        print('Node id:', id)
-        nodes = aws.get_short_nodenames(['35.87.193.26', '54.188.2.212', '35.83.253.36', '34.213.227.239'])
+        print("r53_get_next_nodename('moinmoin')", aws.r53_get_next_nodename('moinmoin'))
+        print("r53_get_next_nodename('ec2-user')", aws.r53_get_next_nodename('ec2-user'))
+        nodes = aws.r53_get_short_hostnames(['35.87.193.26', '54.188.2.212', '35.83.253.36', '34.213.227.239'])
         print('Short names:', nodes)
-        print('Frist Domain:', aws.route53_get_first_domain())
+        print('First Domain:', aws.r53_get_first_domain())
 
         return True
 
@@ -1994,7 +1994,7 @@ class AWSBoto:
         if not iid:
             return False
         print(' Waiting for ssh host to become ready ...')
-        if not self.cfg.wait_for_ssh_ready(ip):
+        if not self.cfg.wait_for_ssh_ready(socket.gethostbyname(ip)):
             return False
         bootstrap_build = self._ec2_user_space_script(iid)        
 
@@ -2595,13 +2595,7 @@ class AWSBoto:
         else:
             pkgm = 'yum'
         long_timezone = self.cfg.get_time_zone()
-        nodenum = self.get_highest_numbered_nodeid(self.basehostname)
-        if not nodenum:
-            nodenum = 1
-        else:
-            nodenum += 1
-        ##
-        newhostname = self.basehostname + str(nodenum)
+        newhostname = self.r53_get_next_nodename(self.basehostname)
         userdata = textwrap.dedent(f'''                                   
         #! /bin/bash
         format_largest_unused_block_devices() {{
@@ -2991,12 +2985,14 @@ class AWSBoto:
                     sys.exit(3) 
                 else:
                     print(f'ClientError in _ec2_launch_instance: {e}')
+                    raise(e)
                     sys.exit(1)
                 continue
         
             except Exception as e:
-                print(f'Error in _ec2_launch_instance: {e}')
-                sys.exit(1)
+                #print(f'Error in _ec2_launch_instance: {e}')
+                raise(e)
+                #sys.exit(1)
     
         # Use a waiter to ensure the instance is running before trying to access its properties
         instance_id = instance.id    
@@ -3039,9 +3035,14 @@ class AWSBoto:
         instance.wait_until_running()
         print(f'Instance IP: {instance.public_ip_address}')
 
-        self.cfg.write('cloud', 'ec2_last_instance', instance.public_ip_address)
+        last_instance = self.r53_register_host(self.basehostname, instance.public_ip_address)
 
-        return instance_id, instance.public_ip_address
+        if last_instance != instance.public_ip_address:
+            print(f'FQDN: {last_instance}')
+
+        self.cfg.write('cloud', 'ec2_last_instance', last_instance)
+
+        return instance_id, last_instance
 
     def ec2_terminate_instance(self, ip, profile=None):
         # terminate instance  
@@ -3049,7 +3050,7 @@ class AWSBoto:
 
         session = boto3.Session(profile_name=profile) if profile else boto3.Session()        
         ec2 = session.client('ec2')
-        #ips = self.ec2_list_ips(self, 'Name', 'AWSEBSelfDestruct')    
+        #ips = self.ec2_list_ips(self, 'Name', 'AWSEBSelfDestruct')
         # Use describe_instances with a filter for the public IP address to find the instance ID
         filters = [{
             'Name': 'network-interface.addresses.association.public-ip',
@@ -3174,12 +3175,13 @@ class AWSBoto:
                        ]
                 ilist.append(row)
         ilist.sort(key=lambda x: x[-2],reverse=True)  # Assuming the last element in each row is the launch time
-        ilist = self.get_short_hostnames([], ilist)
+        ilist = self.r53_get_short_hostnames([], ilist)
         return ilist
     
-    def _route53_get_a_records(self):
+    def _r53_get_a_records(self, r53=None):
         try:
-            r53 = self.awssession.client('route53')        
+            if not r53:
+                r53 = self.awssession.client('route53')        
             hosted_zones = r53.list_hosted_zones()['HostedZones']
             if not hosted_zones:
                 return None
@@ -3189,46 +3191,95 @@ class AWSBoto:
                     if record_set['Type'] == 'A':
                         yield record_set
         except Exception as e:
-            print(f'Error in _route53_get_a_records: {e}')
+            print(f'Error in _r53_get_a_records: {e}')
             return None
 
-    def _route53_extract_short_hostnames(self, base_name, dns_records=None):
+    def r53_get_next_nodename(self, base_name, dns_records=None):
+        # check if basename exists in dns and add the highest not existing number to it
         if not dns_records:
-            dns_records = self._route53_get_a_records()
-        pattern = rf"^{base_name}.*?(\d+)\."
-        hostnames = []
+            dns_records = self._r53_get_a_records()
+        pattern = rf"^{base_name}(\d*)\." # Match the base name and any number following it up to dot
+        nodeids = []
         for record in dns_records:
             match = re.search(pattern, record['Name'])
             if match:
-                hostnames.append(match.group(1))
-        return hostnames
-    
-    def route53_get_first_domain(self):
+                num = match.group(1)
+                if not num:
+                    num = '0'
+                nodeids.append(int(num))
+        if not nodeids:
+            return base_name
+        next_id = max(nodeids, key=int) + 1
+        return base_name + str(next_id)
+
+    def r53_get_first_domain(self):
         try:
             r53 = self.awssession.client('route53')        
             hosted_zones = r53.list_hosted_zones()['HostedZones']
             if not hosted_zones:
                 return None
-            return hosted_zones[0]['Name']
+            return hosted_zones[0]['Name'].rstrip('.')
         except Exception as e:
-            print(f'Error in route53_get_first_domain: {e}')
+            print(f'Error in r53_get_first_domain: {e}')
             return None
 
-    def get_highest_numbered_nodeid(self, base_name, nodenames=None):
-        if not nodenames:
-            nodenames = self._route53_extract_short_hostnames(base_name)
-        if not nodenames:
-            return None
-        return max(nodenames, key=int)
+    def r53_register_host(self, node_basename, ip_address):
+        """
+        Registers a nodename as a host name A record in the first found hosted zone on Route 53.
+        increments the number in the nodename if it already exists.
+        :param nodename: The name of the node to register.
+        :param ip_address: IP address for the A record, default is '0.0.0.0'.
+        :return: FQDN if successful, original ip address otherwise.
+        """
+
+        try:
+            r53 = self.awssession.client('route53')
+            hosted_zones = r53.list_hosted_zones()['HostedZones']
+
+            if not hosted_zones:
+                return None
+
+            # Use the first hosted zone
+            zone_id = hosted_zones[0]['Id']
+            zone_name = hosted_zones[0]['Name']
+
+            a_records = self._r53_get_a_records(r53)
+            newhost = self.r53_get_next_nodename(node_basename, a_records)
+
+            response = r53.change_resource_record_sets(
+                HostedZoneId=zone_id,
+                ChangeBatch={
+                    'Changes': [
+                        {
+                            'Action': 'UPSERT',
+                            'ResourceRecordSet': {
+                                'Name': newhost + '.' + zone_name,
+                                'Type': 'A',
+                                'TTL': 60,
+                                'ResourceRecords': [{'Value': ip_address}]
+                            }
+                        }
+                    ]
+                }
+            )
+
+            # Check if the request was successful
+            if response['ChangeInfo']['Status'] == 'PENDING':
+                return newhost + '.' + zone_name.rstrip('.')
+        except Exception as e:
+            print(f'Error in r53_register_host: {e}')
+
+        return ip_address
+
     
-    def get_short_hostnames(self, ip_addresses, ilist=None):
+    def r53_get_short_hostnames(self, ip_addresses, ilist=None):
         """
         Returns a list of short hostnames based on 'A' records for given IP addresses.
         If a short hostname cannot be found, returns the IP address instead.
         If ip_addresses is an empty list and ilist is not None, processes ilist where each
         sublist's first element is an IP address.
         """
-        a_records = list(self._route53_get_a_records())  # Assuming _route53_get_a_records is a generator
+        a_records = list(self._r53_get_a_records())  # Assuming _r53_get_a_records is a generator
         ip_to_hostname = {rec['ResourceRecords'][0]['Value']: rec['Name'] for rec in a_records if rec['Type'] == 'A'}
 
         if not ip_addresses and ilist is not None:
@@ -3254,7 +3305,7 @@ class AWSBoto:
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
         if not self.cfg.is_ipv4_address(host):
-            dom = self.route53_get_first_domain()
+            dom = self.r53_get_first_domain()
             if dom:
                 host = f'{host}.{dom}'        
         cmd = f"ssh {SSH_OPTIONS} -i '{key_path}' {user}@{host}"
@@ -3282,7 +3333,7 @@ class AWSBoto:
                 temp.write(local_path)
                 local_path = temp.name
         if not self.cfg.is_ipv4_address(host):
-            dom = self.route53_get_first_domain()
+            dom = self.r53_get_first_domain()
             if dom:
                 host = f'{host}.{dom}'
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {local_path} {user}@{host}:{remote_path}"
@@ -3303,7 +3354,7 @@ class AWSBoto:
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
         if not self.cfg.is_ipv4_address(host):
-            dom = self.route53_get_first_domain()
+            dom = self.r53_get_first_domain()
             if dom:
                 host = f'{host}.{dom}'
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
