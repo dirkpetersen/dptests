@@ -2649,8 +2649,10 @@ class AWSBoto:
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y redis6 
         {pkgm} install -y redis
-        {pkgm} install -y python3.11-pip python3.11-devel
-        {pkgm} install -y gcc mdadm jq git python3-pip python3-devel
+        {pkgm} install -y python3.11-pip 
+        {pkgm} install -y python3.11-devel
+        {pkgm} install -y python3.11-dev
+        {pkgm} install -y gcc mdadm jq git python3-pip 
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
