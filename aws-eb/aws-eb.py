@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.06'
+__version__ = '0.40.07'
 
 def main():
         
@@ -88,6 +88,10 @@ def subcmd_config(args, cfg, aws):
         print('Short names:', nodes)
         print('First Domain:', aws.r53_get_first_domain())
         print('Default User:', aws.ec2_get_default_user('aws-eb10.aws.internetchen.de'))        
+        return True
+    
+    if args.dnscleanup:
+        aws.r53_cleanup(aws.basehostname)
         return True
 
     if args.list:
@@ -300,11 +304,11 @@ def subcmd_launch(args,cfg,bld,aws):
     rclone = Rclone(args, cfg)
     print(f'Mounting rclone ":s3:{cfg.archivepath}/sources" at "{bld.eb_root}/sources_s3" ...')
     rpid = rclone.mount(f':s3:{cfg.archivepath}/sources', f'{bld.eb_root}/sources_s3')
-    print(f'rclone mount pid: {rpid}')
+    print(f'rclone mount pid: {rpid}')    
+    bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)
     if not args.skiplifesciences:
         fhroot = os.path.join(cfg.home_dir, 'easybuild-life-sciences', 'fh_easyconfigs')
-        bld.build_all_eb(fhroot, s3_prefix, include=args.include, exclude=args.exclude)      
-    bld.build_all_eb(ecfgroot, s3_prefix, include=args.include, exclude=args.exclude)      
+        bld.build_all_eb(fhroot, s3_prefix, include=args.include, exclude=args.exclude)        
     if not args.keeprunning:
         rclone.unmount(f'{bld.eb_root}/sources_s3')
         if cfg.is_systemd_service_running('redis6') or cfg.is_systemd_service_running('redis'):
@@ -2649,8 +2653,9 @@ class AWSBoto:
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y redis6 
         {pkgm} install -y redis
-        {pkgm} install -y python3.11-pip python3.11-devel
+        {pkgm} install -y python3.11-pip python3.11-devel # for RHEL
         {pkgm} install -y gcc mdadm jq git python3-pip 
+        {pkgm} install -y python3-venv python3-dev # for Ubuntu
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
@@ -3045,6 +3050,19 @@ class AWSBoto:
 
         return instance_id, last_instance, instance.public_ip_address
 
+    def _ec2_get_running_paused_instance_ips(self):
+        ec2 = self.awssession.client('ec2')
+        instance_ips = set()
+        response = ec2.describe_instances(
+            Filters=[{'Name': 'instance-state-name', 'Values': ['running', 'stopped']}]
+        )
+        for reservation in response['Reservations']:
+            for instance in reservation['Instances']:
+                public_ip = instance.get('PublicIpAddress')
+                if public_ip:
+                    instance_ips.add(public_ip)
+        return instance_ips
+
     def ec2_terminate_instance(self, ip, profile=None):
         # terminate instance  
         # with ephemeral (local) disk for a temporary restore 
@@ -3182,7 +3200,7 @@ class AWSBoto:
         ilist = self.r53_get_short_hostnames([], ilist)
         return ilist
     
-    def _r53_get_a_records(self, r53=None):
+    def _r53_get_a_records(self, r53=None, host_basename=None):
         try:
             if not r53:
                 r53 = self.awssession.client('route53')        
@@ -3192,7 +3210,7 @@ class AWSBoto:
             paginator = r53.get_paginator('list_resource_record_sets')
             for page in paginator.paginate(HostedZoneId=hosted_zones[0]['Id']):
                 for record_set in page['ResourceRecordSets']:
-                    if record_set['Type'] == 'A':
+                    if record_set['Type'] == 'A' and re.match(rf"^{host_basename}", record_set['Name']):
                         yield record_set
         except Exception as e:
             print(f'Error in _r53_get_a_records: {e}')
@@ -3312,7 +3330,53 @@ class AWSBoto:
         except Exception as e:
             print(f'Error in r53_get_ip: {e}')
             return ip_or_hostname
-    
+        
+    def r53_get_fqdn_or_ip(self, ip_or_hostname):
+        if self.cfg.is_ipv4_address(ip_or_hostname):
+            return ip_or_hostname
+        if '.' in ip_or_hostname:
+            return ip_or_hostname
+        else:
+            dom = self.r53_get_first_domain()
+            if dom:
+                return f'{ip_or_hostname}.{dom}'
+            else:
+                return ip_or_hostname
+            
+    def r53_cleanup(self, host_basename):
+        try:
+            r53 = self.awssession.client('route53')
+            active_ips = self._ec2_get_running_paused_instance_ips()
+            a_records = self._r53_get_a_records(r53, host_basename)
+
+            hosted_zones = r53.list_hosted_zones()['HostedZones']
+            if not hosted_zones:
+                return None
+            
+            # Use the first hosted zone
+            zone_id = hosted_zones[0]['Id']
+            unused_records = []
+            cleaned_ips = []    
+
+            for record in a_records:
+                for record_value in record.get('ResourceRecords', []):
+                    ip = record_value['Value']
+                    if ip not in active_ips:
+                        cleaned_ips.append(ip)
+                        unused_records.append({'Action': 'DELETE', 'ResourceRecordSet': record})
+
+            if unused_records:
+                r53.change_resource_record_sets(
+                    HostedZoneId=zone_id,
+                    ChangeBatch={'Changes': unused_records}
+                )
+            print(f'Route 53 cleanup complete.')
+            if cleaned_ips:
+                   print(f'Removed entries: {", ".join(cleaned_ips)}')
+        except Exception as e:
+            print(f'Error in r53_cleanup: {e}')
+            return None
+
     def r53_get_short_host_or_ip(self, ip_or_hostname):
         if self.cfg.is_ipv4_address(ip_or_hostname):
             return ip_or_hostname
@@ -3327,10 +3391,7 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
-        if not self.cfg.is_ipv4_address(host) and not '.' in host:
-            dom = self.r53_get_first_domain()
-            if dom:
-                host = f'{host}.{dom}'        
+        host = self.r53_get_fqdn_or_ip(host)
         cmd = f"ssh {SSH_OPTIONS} -i '{key_path}' {user}@{host}"
         if command:
             cmd += f" '{command}'"
@@ -3355,10 +3416,7 @@ class AWSBoto:
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
                 temp.write(local_path)
                 local_path = temp.name
-        if not self.cfg.is_ipv4_address(host) and not '.' in host:
-            dom = self.r53_get_first_domain()
-            if dom:
-                host = f'{host}.{dom}'
+        host = self.r53_get_fqdn_or_ip(host)
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {local_path} {user}@{host}:{remote_path}"
         #cmdlist = shlex.split(cmd)        
         try:
@@ -3376,10 +3434,7 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
-        if not self.cfg.is_ipv4_address(host) and not '.' in host:
-            dom = self.r53_get_first_domain()
-            if dom:
-                host = f'{host}.{dom}'
+        host = self.r53_get_fqdn_or_ip(host)
         cmd = f"scp {SSH_OPTIONS} -i '{key_path}' {user}@{host}:{remote_path} {local_path}"        
         try:
             result = subprocess.run(cmd, shell=True, text=True, capture_output=cap_output)
@@ -4757,6 +4812,7 @@ class ConfigManager:
         while time.time() - start_time < timeout:
             if time.time() - start_time >= dnstimeout:
                 hostname = ip
+                print(f" Waiting for host to be ready: {hostname} ...")
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(3)  # Set a timeout on the socket operations            
             try:
@@ -4876,6 +4932,8 @@ def parse_arguments():
     parser_config.add_argument( '--monitor', '-m', dest='monitor', action='store', default='',                               
         metavar='<email@address.org>', help='setup aws-eb as a monitoring cronjob ' +
         'on an ec2 instance and notify an email address')
+    parser_config.add_argument( '--dns-cleanup', '-d', dest='dnscleanup', action='store_true', default=False,
+        help="Clean unused A records from Route53 DNS")    
     parser_config.add_argument( '--test', '-t', dest='test', action='store_true', default=False,
         help="Test option simply for software debugging")        
         
