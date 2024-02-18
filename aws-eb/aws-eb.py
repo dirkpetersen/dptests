@@ -87,7 +87,7 @@ def subcmd_config(args, cfg, aws):
         nodes = aws.r53_get_short_hostnames(['35.87.193.26', '54.188.2.212', '35.83.253.36', '34.213.227.239'])
         print('Short names:', nodes)
         print('First Domain:', aws.r53_get_first_domain())
-
+        print('Default User:', aws.ec2_get_default_user('aws-eb10.aws.internetchen.de'))        
         return True
 
     if args.list:
@@ -432,17 +432,17 @@ def subcmd_ssh(args, cfg, aws):
         return True
 
     ilist = aws.ec2_list_instances('Name', 'AWSEBSelfDestruct')
-    hosts = [sublist[0] for sublist in ilist if sublist]
+    shorthosts = [sublist[0] for sublist in ilist if sublist]
  
     if args.list:
         print ('Listing machines ... ', flush=True, end='')
-        if hosts:                                
+        if shorthosts:                                
             aws.print_aligned_lists(ilist,"Running EC2 Instances:")      
         else:
             print('No running instances detected')
         return True 
            
-    myhost = myhost = cfg.read('cloud', 'ec2_last_instance')
+    myhost = cfg.read('cloud', 'ec2_last_instance')
     remote_path = ''; scpmode = ''
     if args.sshargs:
         testpath = os.path.expanduser(args.sshargs[0]).replace('*', '')
@@ -466,13 +466,14 @@ def subcmd_ssh(args, cfg, aws):
         print('Please specify a host name or IP address')
         return False
 
-    if hosts and not myhost in hosts:
-        if '/' in myhost:
-            print(f'{myhost} not found')
-        else:    
-            print(f'{myhost} is not running, you could replace it with {hosts[-1]}')
-        return False
-    
+    if shorthosts: 
+        if not myhost.split('.')[0] in shorthosts and not myhost in shorthosts:
+            if '/' in myhost:
+                print(f'{myhost} not found')
+            else:    
+                print(f'{myhost} is not running')
+            return False
+        
     sshuser = aws.ec2_get_default_user(myhost, ilist)
 
     # adding anoter public key to host
@@ -1993,8 +1994,8 @@ class AWSBoto:
         iid, fqdn = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)
         if not iid:
             return False
-        print(' Waiting for ssh host to become ready ...')
-        if not self.cfg.wait_for_ssh_ready(socket.gethostbyname(fqdn)):
+        print(f' Waiting for ssh host {fqdn} to become ready ...')
+        if not self.cfg.wait_for_ssh_ready(fqdn):  # socket.gethostbyname(fqdn)
             return False
         bootstrap_build = self._ec2_user_space_script(iid, fqdn)        
 
@@ -2016,7 +2017,7 @@ class AWSBoto:
         # once everything is done, commit suicide, but only if ~/no-terminate does not exist:
         if not self.args.keeprunning:
             bootstrap_build += f'\n[ ! -f ~/no-terminate ] && $PYBIN ~/.local/bin/{self.scriptname} ssh --terminate {iid}'
-        sshuser = self.ec2_get_default_user(socket.gethostbyname(fqdn))
+        sshuser = self.ec2_get_default_user(fqdn)
         ret = self.ssh_upload(sshuser, fqdn,
             self._ec2_easybuildrc(), "easybuildrc", is_string=True)
         ret = self.ssh_upload(sshuser, fqdn,
@@ -3025,7 +3026,7 @@ class AWSBoto:
                 progress(attempt)
                 continue
         print('')
-        instance.reload()        
+        instance.reload()    
 
         grpid = self._ec2_create_and_attach_security_group(instance_id, profile)
         if grpid:
@@ -3048,8 +3049,9 @@ class AWSBoto:
         # terminate instance  
         # with ephemeral (local) disk for a temporary restore 
 
-        session = boto3.Session(profile_name=profile) if profile else boto3.Session()        
-        ec2 = session.client('ec2')
+        ip = self.r53_get_ip(ip)
+
+        ec2 = self.awssession.client('ec2')
         #ips = self.ec2_list_ips(self, 'Name', 'AWSEBSelfDestruct')
         # Use describe_instances with a filter for the public IP address to find the instance ID
         filters = [{
@@ -3077,12 +3079,13 @@ class AWSBoto:
         
         print(f"EC2 Instance {instance_id} ({ip}) is being terminated !")
 
-    def ec2_get_default_user(self, ip_addr, instance_list=None):
-        # get the default user for the OS, e.g. ubuntu, ec2-user, centos, ...
+    def ec2_get_default_user(self, ip_or_host, instance_list=None):
+        # get the default user for the OS, e.g. ubuntu, ec2-user, centos, ...        
+        ip_or_host = self.r53_get_short_host_or_ip(ip_or_host)        
         if not instance_list:
             instance_list = self.ec2_list_instances('Name', 'AWSEBSelfDestruct')
         for inst in instance_list:
-            if inst[0] == ip_addr:
+            if inst[0] == ip_or_host:
                 if inst[3].startswith('ubuntu'):
                     return 'ubuntu'
                 elif inst[3].startswith('rhel'):
@@ -3095,6 +3098,7 @@ class AWSBoto:
                     return 'rocky'
                 else:
                     return 'ec2-user'
+        return 'unknown'
 
     def ec2_list_instances(self, tag_name, tag_value):
         """
@@ -3296,7 +3300,26 @@ class AWSBoto:
                 hostname = ip_to_hostname.get(ip, ip)
                 short_hostname = hostname.rstrip('.').split('.')[0] if hostname != ip else ip
                 short_hostnames.append(short_hostname)
-            return short_hostnames        
+            return short_hostnames       
+
+    def r53_get_ip(self, ip_or_hostname):
+        try:
+            if self.cfg.is_ipv4_address(ip_or_hostname):
+                return ip_or_hostname
+            if '.' in ip_or_hostname:
+                return socket.gethostbyname(ip_or_hostname)
+            return socket.gethostbyname(f'{ip_or_hostname}.{self.r53_get_first_domain()}')
+        except Exception as e:
+            print(f'Error in r53_get_ip: {e}')
+            return ip_or_hostname
+    
+    def r53_get_short_host_or_ip(self, ip_or_hostname):
+        if self.cfg.is_ipv4_address(ip_or_hostname):
+            return ip_or_hostname
+        if not '.' in ip_or_hostname:
+            return ip_or_hostname
+        else:
+            return ip_or_hostname.split('.')[0]
 
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
@@ -3304,7 +3327,7 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
-        if not self.cfg.is_ipv4_address(host):
+        if not self.cfg.is_ipv4_address(host) and not '.' in host:
             dom = self.r53_get_first_domain()
             if dom:
                 host = f'{host}.{dom}'        
@@ -3332,7 +3355,7 @@ class AWSBoto:
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
                 temp.write(local_path)
                 local_path = temp.name
-        if not self.cfg.is_ipv4_address(host):
+        if not self.cfg.is_ipv4_address(host) and not '.' in host:
             dom = self.r53_get_first_domain()
             if dom:
                 host = f'{host}.{dom}'
@@ -3353,7 +3376,7 @@ class AWSBoto:
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
-        if not self.cfg.is_ipv4_address(host):
+        if not self.cfg.is_ipv4_address(host) and not '.' in host:
             dom = self.r53_get_first_domain()
             if dom:
                 host = f'{host}.{dom}'
@@ -4730,15 +4753,20 @@ class ConfigManager:
     
     def wait_for_ssh_ready(self, hostname, port=22, timeout=60):
         start_time = time.time()
+        time.sleep(1)
         while time.time() - start_time < timeout:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(3)  # Set a timeout on the socket operations
-            result = s.connect_ex((hostname, port))
+            s.settimeout(3)  # Set a timeout on the socket operations            
+            try:
+                result = s.connect_ex((hostname, port))
+            except socket.gaierror:
+                print(f" Waiting for host name to populate in DNS: {hostname} ...")
+                result = 1 
             if result == 0:
                 s.close()
                 return True
             else:
-                time.sleep(5)  # Wait for 5 seconds before retrying
+                time.sleep(3)  # Wait for 5 seconds before retrying
                 s.close()
         print("Timeout reached without SSH server being ready.")
         return False
