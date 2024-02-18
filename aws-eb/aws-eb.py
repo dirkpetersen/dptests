@@ -1991,11 +1991,11 @@ class AWSBoto:
         if not awsprofile: 
             awsprofile = self.cfg.awsprofile
         prof = self._ec2_create_iam_policy_roles_ec2profile()            
-        iid, fqdn = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)
+        iid, fqdn, ip = self._ec2_launch_instance(disk_gib, instance_type, prof, awsprofile)
         if not iid:
             return False
         print(f' Waiting for ssh host {fqdn} to become ready ...')
-        if not self.cfg.wait_for_ssh_ready(fqdn):  # socket.gethostbyname(fqdn)
+        if not self.cfg.wait_for_ssh_ready(fqdn, ip):  # socket.gethostbyname(fqdn)
             return False
         bootstrap_build = self._ec2_user_space_script(iid, fqdn)        
 
@@ -2649,9 +2649,7 @@ class AWSBoto:
         export DEBIAN_FRONTEND=noninteractive
         {pkgm} install -y redis6 
         {pkgm} install -y redis
-        {pkgm} install -y python3.11-pip 
-        {pkgm} install -y python3.11-devel
-        {pkgm} install -y python3.11-dev
+        {pkgm} install -y python3.11-pip python3.11-devel
         {pkgm} install -y gcc mdadm jq git python3-pip 
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
@@ -3045,7 +3043,7 @@ class AWSBoto:
 
         self.cfg.write('cloud', 'ec2_last_instance', last_instance)
 
-        return instance_id, last_instance
+        return instance_id, last_instance, instance.public_ip_address
 
     def ec2_terminate_instance(self, ip, profile=None):
         # terminate instance  
@@ -4753,10 +4751,12 @@ class ConfigManager:
             print(f'  Switched configuration path to "{self.config_root}"')
         return True
     
-    def wait_for_ssh_ready(self, hostname, port=22, timeout=60):
+    def wait_for_ssh_ready(self, hostname, ip, port=22, dnstimeout=11, timeout=60):
         start_time = time.time()
         time.sleep(1)
         while time.time() - start_time < timeout:
+            if time.time() - start_time >= dnstimeout:
+                hostname = ip
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(3)  # Set a timeout on the socket operations            
             try:
