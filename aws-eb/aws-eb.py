@@ -81,14 +81,25 @@ def subcmd_config(args, cfg, aws):
     # configure user and / or team settings 
     # arguments are Class instances passed from main
 
-    if args.test:
-        print("r53_get_next_nodename('moinmoin')", aws.r53_get_next_nodename('moinmoin'))
+    if args.test:        
         print("r53_get_next_nodename('ec2-user')", aws.r53_get_next_nodename('ec2-user'))
+        print("r53_get_next_nodename('aws-eb')", aws.r53_get_next_nodename('aws-eb'))
         nodes = aws.r53_get_short_hostnames(['35.87.193.26', '54.188.2.212', '35.83.253.36', '34.213.227.239'])
         print('Short names:', nodes)
         print('First Domain:', aws.r53_get_first_domain())
-        print('Default User:', aws.ec2_get_default_user('aws-eb10.aws.internetchen.de'))        
+        print('Default User:', aws.ec2_get_default_user('aws-eb.aws.internetchen.de'))        
+        recs = aws._r53_get_a_records('aws-eb')
+        for rec in recs:
+            print('A rec:', rec)
+        print("r53_get_ip('aws-eb.aws.internetchen.de'):", aws.r53_get_ip('aws-eb.aws.internetchen.de'))
+        print("r53_get_ip('aws-eb'):", aws.r53_get_ip('aws-eb'))
+        print("r53_get_fqdn_or_ip('aws-eb'):", aws.r53_get_fqdn_or_ip('aws-eb'))
+        print("r53_get_fqdn_or_ip('18.246.13.66'):", aws.r53_get_fqdn_or_ip('18.246.13.66'))
+        print("r53_get_short_host_or_ip('aws-eb.aws.internetchen.de'):", aws.r53_get_short_host_or_ip('aws-eb.aws.internetchen.de'))
+        print("r53_get_short_host_or_ip('18.246.13.66'):", aws.r53_get_short_host_or_ip('18.246.13.66'))
+
         return True
+
     
     if args.dnscleanup:
         aws.r53_cleanup(aws.basehostname)
@@ -470,6 +481,7 @@ def subcmd_ssh(args, cfg, aws):
         print('Please specify a host name or IP address')
         return False
 
+    # if the list of hosts is an ipaddress and myhost is fqdn this will not work
     if shorthosts: 
         if not myhost.split('.')[0] in shorthosts and not myhost in shorthosts:
             if '/' in myhost:
@@ -1557,6 +1569,7 @@ class AWSBoto:
             print('python3 -m pip install --user --upgrade boto3')
             sys.exit(1)
         self.awssession = boto3.Session(profile_name=self.awsprofile) 
+        self.r53 = self.awssession.client('route53')
         
     def get_ec2_instance_families_from_cputype(self, cpu_type):
         return self.cpu_types.get(cpu_type,[])
@@ -3200,18 +3213,17 @@ class AWSBoto:
         ilist = self.r53_get_short_hostnames([], ilist)
         return ilist
     
-    def _r53_get_a_records(self, r53=None, host_basename=None):
+    def _r53_get_a_records(self, host_basename=None):
         try:
-            if not r53:
-                r53 = self.awssession.client('route53')        
-            hosted_zones = r53.list_hosted_zones()['HostedZones']
+            hosted_zones = self.r53.list_hosted_zones()['HostedZones']
             if not hosted_zones:
                 return None
-            paginator = r53.get_paginator('list_resource_record_sets')
+            paginator = self.r53.get_paginator('list_resource_record_sets')
+            pattern = rf"^(?:{host_basename})" if host_basename else r"^"
             for page in paginator.paginate(HostedZoneId=hosted_zones[0]['Id']):
                 for record_set in page['ResourceRecordSets']:
-                    if record_set['Type'] == 'A' and re.match(rf"^{host_basename}", record_set['Name']):
-                        yield record_set
+                        if record_set['Type'] == 'A' and re.match(pattern, record_set['Name']):
+                            yield record_set
         except Exception as e:
             print(f'Error in _r53_get_a_records: {e}')
             return None
@@ -3219,7 +3231,7 @@ class AWSBoto:
     def r53_get_next_nodename(self, base_name, dns_records=None):
         # check if basename exists in dns and add the highest not existing number to it
         if not dns_records:
-            dns_records = self._r53_get_a_records()
+            dns_records = self._r53_get_a_records(base_name)
         pattern = rf"^{base_name}(\d*)\." # Match the base name and any number following it up to dot
         nodeids = []
         for record in dns_records:
@@ -3235,9 +3247,8 @@ class AWSBoto:
         return base_name + str(next_id)
 
     def r53_get_first_domain(self):
-        try:
-            r53 = self.awssession.client('route53')        
-            hosted_zones = r53.list_hosted_zones()['HostedZones']
+        try:            
+            hosted_zones = self.r53.list_hosted_zones()['HostedZones']
             if not hosted_zones:
                 return None
             return hosted_zones[0]['Name'].rstrip('.')
@@ -3254,10 +3265,8 @@ class AWSBoto:
         :return: FQDN if successful, original ip address otherwise.
         """
 
-        try:
-            r53 = self.awssession.client('route53')
-            hosted_zones = r53.list_hosted_zones()['HostedZones']
-
+        try:            
+            hosted_zones = self.r53.list_hosted_zones()['HostedZones']
             if not hosted_zones:
                 return None
 
@@ -3265,10 +3274,10 @@ class AWSBoto:
             zone_id = hosted_zones[0]['Id']
             zone_name = hosted_zones[0]['Name']
 
-            a_records = self._r53_get_a_records(r53)
+            a_records = self._r53_get_a_records()
             newhost = self.r53_get_next_nodename(node_basename, a_records)
 
-            response = r53.change_resource_record_sets(
+            response = self.r53.change_resource_record_sets(
                 HostedZoneId=zone_id,
                 ChangeBatch={
                     'Changes': [
@@ -3344,12 +3353,11 @@ class AWSBoto:
                 return ip_or_hostname
             
     def r53_cleanup(self, host_basename):
-        try:
-            r53 = self.awssession.client('route53')
+        try:            
             active_ips = self._ec2_get_running_paused_instance_ips()
-            a_records = self._r53_get_a_records(r53, host_basename)
+            a_records = self._r53_get_a_records(host_basename)
 
-            hosted_zones = r53.list_hosted_zones()['HostedZones']
+            hosted_zones = self.r53.list_hosted_zones()['HostedZones']
             if not hosted_zones:
                 return None
             
@@ -3366,13 +3374,15 @@ class AWSBoto:
                         unused_records.append({'Action': 'DELETE', 'ResourceRecordSet': record})
 
             if unused_records:
-                r53.change_resource_record_sets(
+                self.r53.change_resource_record_sets(
                     HostedZoneId=zone_id,
                     ChangeBatch={'Changes': unused_records}
                 )
             print(f'Route 53 cleanup complete.')
             if cleaned_ips:
                    print(f'Removed entries: {", ".join(cleaned_ips)}')
+            else:
+                print('No entries removed.')
         except Exception as e:
             print(f'Error in r53_cleanup: {e}')
             return None
@@ -3387,7 +3397,7 @@ class AWSBoto:
 
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
-        SSH_OPTIONS = "-o StrictHostKeyChecking=no"
+        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
@@ -3407,7 +3417,7 @@ class AWSBoto:
                 
     def ssh_upload(self, user, host, local_path, remote_path, is_string=False, cap_output=True):
         """Upload a file to the remote server using SCP."""
-        SSH_OPTIONS = "-o StrictHostKeyChecking=no -o BatchMode=yes"
+        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o BatchMode=yes"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
@@ -3430,7 +3440,7 @@ class AWSBoto:
 
     def ssh_download(self, user, host, remote_path, local_path, cap_output=True):
         """Upload a file to the remote server using SCP."""
-        SSH_OPTIONS = "-o StrictHostKeyChecking=no -o BatchMode=yes"
+        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o BatchMode=yes"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
@@ -4806,13 +4816,13 @@ class ConfigManager:
             print(f'  Switched configuration path to "{self.config_root}"')
         return True
     
-    def wait_for_ssh_ready(self, hostname, ip, port=22, dnstimeout=11, timeout=60):
+    def wait_for_ssh_ready(self, hostname, ip, port=22, dnstimeout=33, timeout=60):
         start_time = time.time()
         time.sleep(1)
         while time.time() - start_time < timeout:
-            if time.time() - start_time >= dnstimeout:
-                hostname = ip
-                print(f" Waiting for host to be ready: {hostname} ...")
+            # if time.time() - start_time >= dnstimeout:
+            #     hostname = ip
+            #     print(f" Waiting for host to be ready: {hostname} ... ")
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(3)  # Set a timeout on the socket operations            
             try:
