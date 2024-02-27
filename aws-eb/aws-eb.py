@@ -83,10 +83,9 @@ def subcmd_config(args, cfg, aws):
 
     if args.test:        
         # IAM
-        roles = aws.iam_list_my_roles()
-        print('iam_list_my_roles()',roles)
-        for role in roles:
-            print(f'iam_list_external_accounts({role})', aws.iam_list_external_accounts(role))
+        # roles = aws.iam_list_my_roles()
+        # print('iam_list_my_roles()',roles)        
+        print(f'iam_list_external_accounts()', aws.iam_list_external_accounts())
         return True
 
 
@@ -3828,7 +3827,7 @@ class AWSBoto:
     #                 account_ids.append(account_id)                    
     #     return account_ids
 
-    def iam_list_external_accounts(self, role_name):
+    def iam_list_external_accounts_for_role(self, role_name):
         iam = self.awssession.client('iam')
         myaccount, *_ = self.get_aws_account_and_user_id()
         account_ids = []
@@ -3851,6 +3850,59 @@ class AWSBoto:
             account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
 
         return list(set(account_ids))  # Remove duplicates
+    
+    def iam_list_external_accounts(self):
+        iam = self.awssession.client('iam')
+        myaccount, _, username = self.get_aws_account_and_user_id()
+        account_ids = []
+        accounts_and_roles = []
+
+        # Check managed policies attached to user
+        user_policies = iam.list_attached_user_policies(UserName=username)['AttachedPolicies']
+        for policy in user_policies:
+            account_ids.extend(self._iam_process_latest_policy_version(iam, policy, myaccount))
+
+        # Check inline policies attached to user
+        inline_policies = iam.list_user_policies(UserName=username)['PolicyNames']
+        for policy_name in inline_policies:
+            policy_document = iam.get_user_policy(UserName=username, PolicyName=policy_name)['PolicyDocument']
+            account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
+
+        # Check policies from groups the user is a part of
+        groups = iam.list_groups_for_user(UserName=username)['Groups']
+        for group in groups:
+            group_name = group['GroupName']
+            # Managed policies in group
+            group_policies = iam.list_attached_group_policies(GroupName=group_name)['AttachedPolicies']
+            for policy in group_policies:
+                account_ids.extend(self._iam_process_latest_policy_version(iam, policy, myaccount))
+
+            # Inline policies in group
+            inline_group_policies = iam.list_group_policies(GroupName=group_name)['PolicyNames']
+            for policy_name in inline_group_policies:
+                policy_document = iam.get_group_policy(GroupName=group_name, PolicyName=policy_name)['PolicyDocument']
+                account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
+
+        #account_ids = [account_id for account_id in set(account_ids) if account_id and account_id != '*']
+
+        # # Instead of returning account_ids, process them to extract roles                
+        # for account_id in set(account_ids):
+        #     if account_id and account_id != '*':
+        #         split_id = account_id.split(':')
+        #         if len(split_id) > 5:  # Check if the ARN contains a role
+        #             account_dict = {'account': split_id[4], 'role': split_id[5]}
+        #         else:
+        #             account_dict = {'account': account_id, 'role': None}
+        #         accounts_and_roles.append(account_dict)
+
+        # return accounts_and_roles        
+        return account_ids  # Remove duplicates
+
+    def _iam_process_latest_policy_version(self, iam, policy, myaccount):
+        policy_arn = policy['PolicyArn']
+        policy_version = iam.get_policy(PolicyArn=policy_arn)['Policy']['DefaultVersionId']
+        policy_document = iam.get_policy_version(PolicyArn=policy_arn, VersionId=policy_version)['PolicyVersion']['Document']
+        return self._iam_extract_account_ids(policy_document, myaccount)    
 
     def _iam_extract_account_ids(self, policy_document, myaccount):
         account_ids = []
@@ -3859,12 +3911,37 @@ class AWSBoto:
                 resources = statement['Resource']
                 if not isinstance(resources, list):
                     resources = [resources]  # Ensure it's a list
+                # for resource in resources:
+                #     if isinstance(resource, str) and resource.startswith('arn:aws'):
+                #         account_id = resource.split(':')[4]  # Extract account ID from ARN
+                #         if account_id != myaccount:
+                #             account_ids.append(account_id)
                 for resource in resources:
-                    if isinstance(resource, str) and resource.startswith('arn:aws'):
-                        account_id = resource.split(':')[4]  # Extract account ID from ARN
-                        if account_id != myaccount:
-                            account_ids.append(account_id)
-        return account_ids        
+                    if isinstance(resource, str) and resource.startswith('arn:aws:iam::') and 'role/' in resource:
+                        parts = resource.split(':')
+                        account_id = parts[4]
+                        role_name = parts[-1].split('/')[-1]
+                        if account_id == '*' or account_id == myaccount:
+                            continue  # Skip if account is '*' or the same as myaccount
+                        account_ids.append({'account': account_id, 'role': role_name})               
+        return account_ids
+
+    # def _iam_extract_account_ids(self, policy_document, myaccount):
+    #     account_ids = []
+    #     # ... [existing code to extract account IDs]
+    #     # Now also append the role part of the ARN if available
+    #     for resource in resources:
+    #         if isinstance(resource, str) and resource.startswith('arn:aws'):
+    #             arn_parts = resource.split(':')
+    #             account_id = arn_parts[4]
+    #             role_name = arn_parts[-1] if len(arn_parts) > 5 else None
+    #             account_and_role = f"{account_id}:{role_name}" if role_name else account_id
+    #             if account_id != myaccount:
+    #                 account_ids.append(account_and_role)
+    #     return account_ids
+
+
+
 
     def print_aligned_lists(self, list_of_lists, title):
         """

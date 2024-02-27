@@ -16,6 +16,8 @@
 		"iam:ListUserPolicies",
                 "iam:ListAttachedUserPolicies",
                 "iam:ListGroupPolicies",
+                "iam:GetUserPolicy",
+                "iam:GetGroupPolicy",
                 "iam:GetAccountSummary",
                 "iam:ListAccountAliases",
                 "iam:ListEntitiesForPolicy"                
