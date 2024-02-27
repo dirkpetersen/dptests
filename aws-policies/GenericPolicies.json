@@ -6,7 +6,19 @@
             "Action": [
                 "pricing:GetProducts",
                 "ce:*",
-                "aws-portal:ViewBilling"
+                "aws-portal:ViewBilling",
+                "iam:ListGroupsForUser",
+                "iam:ListAttachedGroupPolicies",
+                "iam:CreateGroup",
+                "iam:DeleteGroup",
+                "iam:AddUserToGroup",
+                "iam:ListPolicies",
+		"iam:ListUserPolicies",
+                "iam:ListAttachedUserPolicies",
+                "iam:ListGroupPolicies",
+                "iam:GetAccountSummary",
+                "iam:ListAccountAliases",
+                "iam:ListEntitiesForPolicy"                
             ],
             "Resource": "*"
         }

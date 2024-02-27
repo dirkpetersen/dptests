@@ -82,6 +82,15 @@ def subcmd_config(args, cfg, aws):
     # arguments are Class instances passed from main
 
     if args.test:        
+        # IAM
+        roles = aws.iam_list_my_roles()
+        print('iam_list_my_roles()',roles)
+        for role in roles:
+            print(f'iam_list_external_accounts({role})', aws.iam_list_external_accounts(role))
+        return True
+
+
+        # Route53
         print("r53_get_next_nodename('ec2-user')", aws.r53_get_next_nodename('ec2-user'))
         print("r53_get_next_nodename('aws-eb')", aws.r53_get_next_nodename('aws-eb'))
         nodes = aws.r53_get_short_hostnames(['35.87.193.26', '54.188.2.212', '35.83.253.36', '34.213.227.239'])
@@ -97,9 +106,6 @@ def subcmd_config(args, cfg, aws):
         print("r53_get_fqdn_or_ip('18.246.13.66'):", aws.r53_get_fqdn_or_ip('18.246.13.66'))
         print("r53_get_short_host_or_ip('aws-eb.aws.internetchen.de'):", aws.r53_get_short_host_or_ip('aws-eb.aws.internetchen.de'))
         print("r53_get_short_host_or_ip('18.246.13.66'):", aws.r53_get_short_host_or_ip('18.246.13.66'))
-
-        return True
-
     
     if args.dnscleanup:
         aws.r53_cleanup(aws.basehostname)
@@ -3268,7 +3274,7 @@ class AWSBoto:
         try:            
             hosted_zones = self.r53.list_hosted_zones()['HostedZones']
             if not hosted_zones:
-                return None
+                return ip_address
 
             # Use the first hosted zone
             zone_id = hosted_zones[0]['Id']
@@ -3397,7 +3403,7 @@ class AWSBoto:
 
     def ssh_execute(self, user, host, command=None):
         """Execute an SSH command on the remote server."""
-        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
@@ -3417,7 +3423,7 @@ class AWSBoto:
                 
     def ssh_upload(self, user, host, local_path, remote_path, is_string=False, cap_output=True):
         """Upload a file to the remote server using SCP."""
-        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o BatchMode=yes"
+        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR -o BatchMode=yes"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
@@ -3440,7 +3446,7 @@ class AWSBoto:
 
     def ssh_download(self, user, host, remote_path, local_path, cap_output=True):
         """Upload a file to the remote server using SCP."""
-        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o BatchMode=yes"
+        SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR -o BatchMode=yes"
         awsacc, _, username = self.get_aws_account_and_user_id()
         key_path = os.path.join(self.cfg.config_root,'cloud',
                 f'{self.cfg.ssh_key_name}-{awsacc}-{username}.pem')
@@ -3715,7 +3721,151 @@ class AWSBoto:
     def get_ec2_my_instance_family(self):
         instance_type =self._get_ec2_metadata('instance-type')
         return instance_type.split('.')[0]
+
+
+    def iam_get_current_user_arn(self):
+        try:
+            iam = self.awssession.client('iam')
+            user = iam.get_user()
+            return user['User']['Arn']
+        except iam.exceptions.ClientError as e:
+            # This might happen if you're using root credentials or an assumed role
+            return self.awssession.client('sts').get_caller_identity()['Arn']
+
+    def iam_can_principal_assume_role(self, principal_arn, trust_policy):
+        try:
+            policy_doc = json.loads(trust_policy)
+            for statement in policy_doc.get("Statement", []):
+                if statement.get("Effect") == "Allow":
+                    principal = statement.get("Principal")
+                    if isinstance(principal, dict):
+                        # Check if principal is directly mentioned in the principal
+                        if "AWS" in principal:
+                            principal_aws = principal["AWS"]
+                            if isinstance(principal_aws, list):
+                                if principal_arn in principal_aws:
+                                    return True
+                            elif principal_aws == principal_arn:
+                                return True
+        except json.JSONDecodeError:
+            pass
+        return False
+
+    def iam_list_roles_for_principal(self, principal_arn):
+        iam = self.awssession.client('iam')
+        roles_for_principal = []
+
+        try:
+            # List all roles
+            roles = iam.list_roles()
+            for role in roles.get('Roles', []):
+                role_name = role['RoleName']
+                # Get the trust policy of each role
+                trust_policy = role['AssumeRolePolicyDocument']
+                if self.iam_can_principal_assume_role(principal_arn, json.dumps(trust_policy)):
+                    roles_for_principal.append(role_name)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+        
+        return roles_for_principal
+
+    def iam_list_roles_for_user_groups(self, user_name):
+        iam = self.awssession.client('iam')
+        roles_for_user_groups = []
+
+        try:
+            # List groups for the user
+            groups = iam.list_groups_for_user(UserName=user_name)
+            for group in groups.get('Groups', []):
+                group_policies = iam.list_attached_group_policies(GroupName=group['GroupName'])
+                for policy in group_policies.get('AttachedPolicies', []):
+                    policy_arn = policy['PolicyArn']
+                    policy_version = iam.get_policy_version(
+                        PolicyArn=policy_arn,
+                        VersionId=iam.get_policy(PolicyArn=policy_arn)['Policy']['DefaultVersionId']
+                    )
+                    policy_document = policy_version['PolicyVersion']['Document']
+                    roles_for_user_groups.extend(self.iam_list_roles_for_principal(json.dumps(policy_document)))
+        except Exception as e:
+            print(f"Error: {str(e)}")
+        
+        return roles_for_user_groups
     
+    def iam_list_my_roles(self):
+
+        # Get the current user's ARN
+        current_user_arn = self.iam_get_current_user_arn()
+
+        # If the current user is root, handle accordingly
+        if current_user_arn.split(':')[5].startswith('root'):
+            print("Currently using root user.")
+            # Note: Root user has implicit access and does not have groups
+            roles_for_current_user = self.iam_list_roles_for_principal(current_user_arn)
+        else:
+            # Extract user name from ARN for non-root users
+            current_user_name = current_user_arn.split('/')[-1]
+            
+            # List roles that the user can assume directly or through groups
+            roles_for_current_user = list(set(
+                self.iam_list_roles_for_principal(current_user_arn) + 
+                self.iam_list_roles_for_user_groups(current_user_name)
+            ))
+        return roles_for_current_user
+    
+    # def iam_list_external_accounts(self, role_name):
+    #     # for a role list all external accounts that it may have access to
+    #     iam = self.awssession.client('iam')
+
+    #     myaccount, *_ = self.get_aws_account_and_user_id()
+    #     response = iam.get_role_policy(RoleName=role_name)
+    #     policy_document = response['PolicyDocument']
+    #     account_ids = []
+    #     for statement in policy_document['Statement']:
+    #         if 'Resource' in statement:
+    #             resource_arn = statement['Resource']
+    #             account_id = resource_arn.split(':')[4]  # Extract account ID from ARN
+    #             if account_id != myaccount:
+    #                 account_ids.append(account_id)                    
+    #     return account_ids
+
+    def iam_list_external_accounts(self, role_name):
+        iam = self.awssession.client('iam')
+        myaccount, *_ = self.get_aws_account_and_user_id()
+        account_ids = []
+
+        # Get role details
+        role_details = iam.get_role(RoleName=role_name)
+        role_policies = role_details['Role'].get('AttachedPolicies', [])
+
+        # Check managed policies
+        for policy in role_policies:
+            policy_arn = policy['PolicyArn']
+            policy_version = iam.get_policy(PolicyArn=policy_arn)['Policy']['DefaultVersionId']
+            policy_document = iam.get_policy_version(PolicyArn=policy_arn, VersionId=policy_version)['PolicyVersion']['Document']
+            account_ids.extend(self.extract_account_ids(policy_document, myaccount))
+
+        # Check inline policies
+        inline_policies = iam.list_role_policies(RoleName=role_name)['PolicyNames']
+        for policy_name in inline_policies:
+            policy_document = iam.get_role_policy(RoleName=role_name, PolicyName=policy_name)['PolicyDocument']
+            account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
+
+        return list(set(account_ids))  # Remove duplicates
+
+    def _iam_extract_account_ids(self, policy_document, myaccount):
+        account_ids = []
+        for statement in policy_document['Statement']:
+            if 'Resource' in statement:
+                resources = statement['Resource']
+                if not isinstance(resources, list):
+                    resources = [resources]  # Ensure it's a list
+                for resource in resources:
+                    if isinstance(resource, str) and resource.startswith('arn:aws'):
+                        account_id = resource.split(':')[4]  # Extract account ID from ARN
+                        if account_id != myaccount:
+                            account_ids.append(account_id)
+        return account_ids        
+
     def print_aligned_lists(self, list_of_lists, title):
         """
         Print a list of lists with each column aligned. Each inner list is joined into a string.
