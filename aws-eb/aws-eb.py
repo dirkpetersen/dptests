@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.07'
+__version__ = '0.40.08'
 
 def main():
         
@@ -84,10 +84,10 @@ def subcmd_config(args, cfg, aws):
     if args.test:        
         # IAM
         # roles = aws.iam_list_my_roles()
-        # print('iam_list_my_roles()',roles)        
-        print(f'iam_list_external_accounts()', aws.iam_list_external_accounts())
-        return True
-
+        # print('iam_list_my_roles()',roles)
+    
+        print(f'get_aws_account_and_user_id()', aws.get_aws_account_and_user_id())
+        print(f'iam_list_external_accounts_and_roles()', aws.iam_list_external_accounts_and_roles())
 
         # Route53
         print("r53_get_next_nodename('ec2-user')", aws.r53_get_next_nodename('ec2-user'))
@@ -1573,6 +1573,7 @@ class AWSBoto:
             print('Error: boto3 package not found. Install it first, please run:')
             print('python3 -m pip install --user --upgrade boto3')
             sys.exit(1)
+        #print("PROFILE:", self.awsprofile)
         self.awssession = boto3.Session(profile_name=self.awsprofile) 
         self.r53 = self.awssession.client('route53')
         
@@ -1668,8 +1669,8 @@ class AWSBoto:
             user_name = arn.split(':')[-1].split('/')[-1]
             return account_id, user_id, user_name
         except Exception as e:
-            print(f"Error retrieving AWS account ID: {e}")
-            return None, None, None
+            print(f"Error in get_aws_account_and_user_id(): {e}")
+            sys.exit(1)            
 
     def check_bucket_access(self, bucket_name, readwrite=False, profile=None):
         
@@ -2749,6 +2750,8 @@ class AWSBoto:
         long_timezone = self.cfg.get_time_zone()
         juiceid = f'juice{instance_id.replace("-","")}'
         myhostname = fqdn.split('.')[0]
+        if not os.getenv('AWS_ACCESS_KEY_ID'):
+            print('No AWS credentials in envionment vars, are you using SSO?')
         return textwrap.dedent(f'''
         #! /bin/bash
         echo "Bootstrapping AWS-EB on {instance_id} ..."
@@ -2779,11 +2782,11 @@ class AWSBoto:
         fi
         $PYBIN -m pip install --upgrade --user pip
         $PYBIN -m pip install --upgrade --user wheel awscli
-        aws configure set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
-        aws configure set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
+        aws configure set aws_access_key_id {os.getenv('AWS_ACCESS_KEY_ID', '')}
+        aws configure set aws_secret_access_key {os.getenv('AWS_SECRET_ACCESS_KEY')}
         aws configure set region {self.cfg.aws_region}
-        aws configure --profile {self.cfg.awsprofile} set aws_access_key_id {os.environ['AWS_ACCESS_KEY_ID']}
-        aws configure --profile {self.cfg.awsprofile} set aws_secret_access_key {os.environ['AWS_SECRET_ACCESS_KEY']}
+        aws configure --profile {self.cfg.awsprofile} set aws_access_key_id {os.getenv('AWS_ACCESS_KEY_ID','')}
+        aws configure --profile {self.cfg.awsprofile} set aws_secret_access_key {os.getenv('AWS_SECRET_ACCESS_KEY', '')}
         aws configure --profile {self.cfg.awsprofile} set region {self.cfg.aws_region}
         sed -i 's/aws_access_key_id [^ ]*/aws_access_key_id /' {bscript}
         sed -i 's/aws_secret_access_key [^ ]*/aws_secret_access_key /' {bscript}
@@ -2813,7 +2816,7 @@ class AWSBoto:
         until [ -f /usr/share/lmod/lmod/init/bash ]; do sleep 3; done; echo "lmod exists, please wait ..."
         if systemctl is-active --quiet redis6 || systemctl is-active --quiet redis; then
           juicefs format --storage s3 --bucket https://s3.{self.cfg.aws_region}.amazonaws.com/{self.cfg.bucket} redis://localhost:6379 {juiceid}
-          juicefs config -y --access-key={os.environ['AWS_ACCESS_KEY_ID']} --secret-key={os.environ['AWS_SECRET_ACCESS_KEY']} --trash-days 0 redis://localhost:6379
+          juicefs config -y --access-key={os.getenv('AWS_ACCESS_KEY_ID', '')} --secret-key={os.getenv('AWS_SECRET_ACCESS_KEY','')} --trash-days 0 redis://localhost:6379
           sudo mkdir -p /mnt/share
           cachedir=/opt/jfsCache
           if [[ -d /mnt/scratch ]]; then
@@ -3810,112 +3813,84 @@ class AWSBoto:
                 self.iam_list_roles_for_user_groups(current_user_name)
             ))
         return roles_for_current_user
-    
-    # def iam_list_external_accounts(self, role_name):
-    #     # for a role list all external accounts that it may have access to
+
+    # def iam_list_external_accounts_for_role(self, role_name):
     #     iam = self.awssession.client('iam')
-
     #     myaccount, *_ = self.get_aws_account_and_user_id()
-    #     response = iam.get_role_policy(RoleName=role_name)
-    #     policy_document = response['PolicyDocument']
     #     account_ids = []
-    #     for statement in policy_document['Statement']:
-    #         if 'Resource' in statement:
-    #             resource_arn = statement['Resource']
-    #             account_id = resource_arn.split(':')[4]  # Extract account ID from ARN
-    #             if account_id != myaccount:
-    #                 account_ids.append(account_id)                    
-    #     return account_ids
 
-    def iam_list_external_accounts_for_role(self, role_name):
-        iam = self.awssession.client('iam')
-        myaccount, *_ = self.get_aws_account_and_user_id()
-        account_ids = []
+    #     # Get role details
+    #     role_details = iam.get_role(RoleName=role_name)
+    #     role_policies = role_details['Role'].get('AttachedPolicies', [])
 
-        # Get role details
-        role_details = iam.get_role(RoleName=role_name)
-        role_policies = role_details['Role'].get('AttachedPolicies', [])
+    #     # Check managed policies
+    #     for policy in role_policies:
+    #         policy_arn = policy['PolicyArn']
+    #         policy_version = iam.get_policy(PolicyArn=policy_arn)['Policy']['DefaultVersionId']
+    #         policy_document = iam.get_policy_version(PolicyArn=policy_arn, VersionId=policy_version)['PolicyVersion']['Document']
+    #         account_ids.extend(self.extract_account_ids(policy_document, myaccount))
 
-        # Check managed policies
-        for policy in role_policies:
-            policy_arn = policy['PolicyArn']
-            policy_version = iam.get_policy(PolicyArn=policy_arn)['Policy']['DefaultVersionId']
-            policy_document = iam.get_policy_version(PolicyArn=policy_arn, VersionId=policy_version)['PolicyVersion']['Document']
-            account_ids.extend(self.extract_account_ids(policy_document, myaccount))
+    #     # Check inline policies
+    #     inline_policies = iam.list_role_policies(RoleName=role_name)['PolicyNames']
+    #     for policy_name in inline_policies:
+    #         policy_document = iam.get_role_policy(RoleName=role_name, PolicyName=policy_name)['PolicyDocument']
+    #         account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
 
-        # Check inline policies
-        inline_policies = iam.list_role_policies(RoleName=role_name)['PolicyNames']
-        for policy_name in inline_policies:
-            policy_document = iam.get_role_policy(RoleName=role_name, PolicyName=policy_name)['PolicyDocument']
-            account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
-
-        return list(set(account_ids))  # Remove duplicates
+    #     return list(set(account_ids))  # Remove duplicates
     
-    def iam_list_external_accounts(self):
+    def iam_list_external_accounts_and_roles(self):
+        # returns a list of dictionaries of external accounts and roles that the current user has access to
         iam = self.awssession.client('iam')
         myaccount, _, username = self.get_aws_account_and_user_id()
-        account_ids = []
+        #print(myaccount, username)
         accounts_and_roles = []
 
-        # Check managed policies attached to user
-        user_policies = iam.list_attached_user_policies(UserName=username)['AttachedPolicies']
-        for policy in user_policies:
-            account_ids.extend(self._iam_process_latest_policy_version(iam, policy, myaccount))
+        try:
+            # Check managed policies attached to user
+            user_policies = iam.list_attached_user_policies(UserName=username)['AttachedPolicies']
+            for policy in user_policies:
+                accounts_and_roles.extend(self._iam_process_latest_policy_version(iam, policy, myaccount))
 
-        # Check inline policies attached to user
-        inline_policies = iam.list_user_policies(UserName=username)['PolicyNames']
-        for policy_name in inline_policies:
-            policy_document = iam.get_user_policy(UserName=username, PolicyName=policy_name)['PolicyDocument']
-            account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
+            # Check inline policies attached to user
+            inline_policies = iam.list_user_policies(UserName=username)['PolicyNames']
+            for policy_name in inline_policies:
+                policy_document = iam.get_user_policy(UserName=username, PolicyName=policy_name)['PolicyDocument']
+                accounts_and_roles.extend(self._iam_extract_accounts_roles(policy_document, myaccount))
 
-        # Check policies from groups the user is a part of
-        groups = iam.list_groups_for_user(UserName=username)['Groups']
-        for group in groups:
-            group_name = group['GroupName']
-            # Managed policies in group
-            group_policies = iam.list_attached_group_policies(GroupName=group_name)['AttachedPolicies']
-            for policy in group_policies:
-                account_ids.extend(self._iam_process_latest_policy_version(iam, policy, myaccount))
+            # Check policies from groups the user is a part of
+            groups = iam.list_groups_for_user(UserName=username)['Groups']
+            for group in groups:
+                group_name = group['GroupName']
+                # Managed policies in group
+                group_policies = iam.list_attached_group_policies(GroupName=group_name)['AttachedPolicies']
+                for policy in group_policies:
+                    accounts_and_roles.extend(self._iam_process_latest_policy_version(iam, policy, myaccount))
 
-            # Inline policies in group
-            inline_group_policies = iam.list_group_policies(GroupName=group_name)['PolicyNames']
-            for policy_name in inline_group_policies:
-                policy_document = iam.get_group_policy(GroupName=group_name, PolicyName=policy_name)['PolicyDocument']
-                account_ids.extend(self._iam_extract_account_ids(policy_document, myaccount))
+                # Inline policies in group
+                inline_group_policies = iam.list_group_policies(GroupName=group_name)['PolicyNames']
+                for policy_name in inline_group_policies:
+                    policy_document = iam.get_group_policy(GroupName=group_name, PolicyName=policy_name)['PolicyDocument']
+                    accounts_and_roles.extend(self._iam_extract_accounts_roles(policy_document, myaccount))
 
-        #account_ids = [account_id for account_id in set(account_ids) if account_id and account_id != '*']
-
-        # # Instead of returning account_ids, process them to extract roles                
-        # for account_id in set(account_ids):
-        #     if account_id and account_id != '*':
-        #         split_id = account_id.split(':')
-        #         if len(split_id) > 5:  # Check if the ARN contains a role
-        #             account_dict = {'account': split_id[4], 'role': split_id[5]}
-        #         else:
-        #             account_dict = {'account': account_id, 'role': None}
-        #         accounts_and_roles.append(account_dict)
-
-        # return accounts_and_roles        
-        return account_ids  # Remove duplicates
+            # return accounts_and_roles        
+            return list(set(accounts_and_roles))  # Remove duplicates
+        except Exception as e:          
+            print(f"Error in iam_list_external_accounts_and_roles(): {str(e)}")
+            return []
 
     def _iam_process_latest_policy_version(self, iam, policy, myaccount):
         policy_arn = policy['PolicyArn']
         policy_version = iam.get_policy(PolicyArn=policy_arn)['Policy']['DefaultVersionId']
         policy_document = iam.get_policy_version(PolicyArn=policy_arn, VersionId=policy_version)['PolicyVersion']['Document']
-        return self._iam_extract_account_ids(policy_document, myaccount)    
+        return self._iam_extract_accounts_roles(policy_document, myaccount)    
 
-    def _iam_extract_account_ids(self, policy_document, myaccount):
+    def _iam_extract_accounts_roles(self, policy_document, myaccount):
         account_ids = []
         for statement in policy_document['Statement']:
             if 'Resource' in statement:
                 resources = statement['Resource']
                 if not isinstance(resources, list):
                     resources = [resources]  # Ensure it's a list
-                # for resource in resources:
-                #     if isinstance(resource, str) and resource.startswith('arn:aws'):
-                #         account_id = resource.split(':')[4]  # Extract account ID from ARN
-                #         if account_id != myaccount:
-                #             account_ids.append(account_id)
                 for resource in resources:
                     if isinstance(resource, str) and resource.startswith('arn:aws:iam::') and 'role/' in resource:
                         parts = resource.split(':')
@@ -3925,23 +3900,6 @@ class AWSBoto:
                             continue  # Skip if account is '*' or the same as myaccount
                         account_ids.append({'account': account_id, 'role': role_name})               
         return account_ids
-
-    # def _iam_extract_account_ids(self, policy_document, myaccount):
-    #     account_ids = []
-    #     # ... [existing code to extract account IDs]
-    #     # Now also append the role part of the ARN if available
-    #     for resource in resources:
-    #         if isinstance(resource, str) and resource.startswith('arn:aws'):
-    #             arn_parts = resource.split(':')
-    #             account_id = arn_parts[4]
-    #             role_name = arn_parts[-1] if len(arn_parts) > 5 else None
-    #             account_and_role = f"{account_id}:{role_name}" if role_name else account_id
-    #             if account_id != myaccount:
-    #                 account_ids.append(account_and_role)
-    #     return account_ids
-
-
-
 
     def print_aligned_lists(self, list_of_lists, title):
         """
@@ -4284,6 +4242,7 @@ class ConfigManager:
         self.archiveroot = self.read('general','archiveroot', 'aws')
         self.archivepath = f'{self.bucket}/{self.archiveroot}'
         self.awsprofile = os.getenv('AWS_PROFILE', 'default')
+        #print('PROFILE1:', self.awsprofile)
         self.defuser = 'ec2-user'
         profs = self.get_aws_profiles()
         if "aws" in profs:
@@ -4292,12 +4251,15 @@ class ConfigManager:
             self.awsprofile = os.getenv('AWS_PROFILE', 'AWS')
         if hasattr(self.args, "awsprofile") and args.awsprofile:
             self.awsprofile = self.args.awsprofile
+        
+        #print('PROFILE2:', self.awsprofile)
         self.aws_region = self.get_aws_region(self.awsprofile)
         self.envrn = os.environ.copy()
         if not self._set_env_vars(self.awsprofile):
-            self.awsprofile = ''
+            self.awsprofile = None
         self.ssh_key_name = 'aws-eb-ec2'
         self.scriptname = os.path.basename(__file__)
+        #print('PROFILE:', self.awsprofile)
         
     def _set_env_vars(self, profile):
         
@@ -4412,7 +4374,7 @@ class ConfigManager:
             return False
 
     def _get_home_paths(self):
-        path_dirs = os.environ['PATH'].split(os.pathsep)
+        path_dirs = os.getenv('PATH','').split(os.pathsep)
         # Filter the directories in the PATH that are inside the home directory
         dirs_inside_home = {
             directory for directory in path_dirs
@@ -4807,18 +4769,22 @@ class ConfigManager:
         # get the full list of profiles from ~/.aws/ profile folder
         config = configparser.ConfigParser()        
         # Read the AWS config file ---- optional, we only require a creds file
-        if os.path.exists(self.awsconfigfile):
-            config.read(self.awsconfigfile)        
-        # Read the AWS credentials file
-        if os.path.exists(self.awscredsfile):
-            config.read(self.awscredsfile)        
-        # Get the list of profiles
-        profiles = []
-        for section in config.sections():
-            profile_name = section.replace("profile ", "") #.replace("default", "default")
-            profiles.append(profile_name)
-        # convert list to set and back to list to remove dups
-        return list(set(profiles))
+        try:
+            if os.path.exists(self.awsconfigfile):
+                config.read(self.awsconfigfile)        
+            # Read the AWS credentials file
+            if os.path.exists(self.awscredsfile):
+                config.read(self.awscredsfile)        
+            # Get the list of profiles
+            profiles = []
+            for section in config.sections():
+                profile_name = section.replace("profile ", "") #.replace("default", "default")
+                profiles.append(profile_name)
+            # convert list to set and back to list to remove dups
+            return list(set(profiles))
+        except Exception as e:
+            print(f"Error: {e}")
+            return []
 
     def create_aws_configs(self,access_key=None, secret_key=None, region=None):
 
