@@ -28,7 +28,6 @@ class SSHConnection:
     def __init__(self, hostname, username=None):
         self.hostname = hostname
         self.username = username or getpass.getuser()
-        # ... (Existing code)
 
     def __enter__(self):  
         self.process = subprocess.Popen(
@@ -44,5 +43,6 @@ class SSHConnection:
 
     def setup_port_forwarding(self, local_port, remote_host, remote_port):
         command = f" -L {local_port}:localhost:{remote_port} {remote_host}"
+        print('setting up port forwarding:', command)
         self.process.stdin.write(command + "\n")
         self.process.stdin.flush() 
