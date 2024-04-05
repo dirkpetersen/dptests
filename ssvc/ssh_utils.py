@@ -24,13 +24,15 @@ def setup_ssh_key(hostname):
         print("SSH key setup failed.")
         return False
 
-
 class SSHConnection:
-    # ... (Existing __init__)
+    def __init__(self, hostname, username=None):
+        self.hostname = hostname
+        self.username = username or getpass.getuser()
+        # ... (Existing code)
 
     def __enter__(self):  
         self.process = subprocess.Popen(
-            ["ssh", SSH_OPTIONS, self.hostname, "-l", self.username],
+            ["ssh", SSH_OPTIONS, self.hostname, "-l", self.username, "-i", KEY_PATH],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             universal_newlines=True  # Work with text 
