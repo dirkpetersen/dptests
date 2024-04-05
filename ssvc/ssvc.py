@@ -1,0 +1,6 @@
+import ssh_utils 
+
+# ... other code ...
+ssh_utils.setup_ssh_key("exacloud.ohsu.edu") 
+# ... rest of your ssvc tool's logic ...
+

@@ -8,6 +8,7 @@ mkdir -p ./wiki-acc
 wget -r -l10 -np -e robots=off -P ./wiki-acc https://wiki.ohsu.edu/display/ACC
 
 
+# Run a service on slurm 
 
-
+Check out the slurm service controller [ssvc](../../ssvc/ssvc.md) 
 
