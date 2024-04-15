@@ -1,0 +1,508 @@
+[root@dirk1 ~]# history
+    1  clear
+    2  exit
+    3  clear
+    4  dnf install docker
+    5  get clone https://github.com/dvcrn/chatgpt-ui
+    6  git clone https://github.com/dvcrn/chatgpt-ui
+    7  dnf install git
+    8  git clone https://github.com/dvcrn/chatgpt-ui
+    9  cd chatgpt-ui/
+   10  ls
+   11  cd config/
+   12  ls
+   13  vi config.exs
+   14  vi runtime.exs
+   15  vi set-environ.sh
+   16  vi config.exs
+   17  mix deps.get
+   18  ls
+   19  cd ..
+   20  ls
+   21  dnf install yarn
+   22  dnf search yarn
+   23  dnf search Elixir
+   24  dnf search erlang
+   25  vi config/runtime.exs
+   26  . config/set-environ.sh
+   27  vi config/set-environ.sh
+   28  . config/set-environ.sh
+   29  docker build . -t chatgpt
+   30  cd .
+   31  cd ..
+   32  git clone https://github.com/xtekky/chatgpt-clone
+   33  cd chatgpt-clone/
+   34  ls -l
+   35  python -m venv venv
+   36  source venv/bin/activate
+   37  pip install -r requirements.txt
+   38  python -m pip install --upgrade pip
+   39  cp ../chatgpt-ui/config/set-environ.sh .
+   40  vi ./set-environ.sh
+   41  . ./set-environ.sh
+   42  ls
+   43  vi run.py
+   44  vi server/app.py
+   45  python run.py --help
+   46  grep -r . 1338
+   47  grep -r 1338 .
+   48  ls
+   49  vi config.json
+   50  python run.py
+   51  . ./set-environ.sh
+   52  vi ./set-environ.sh
+   53  source ./set-environ.sh
+   54  python run.py
+   55  wget
+   56  dnf install curl
+   57  curl https://api.openai.com/v1/chat/completions
+   58  exit
+   59  mc
+   60  source ./set-environ.sh
+   61  python run.py
+   62  vi ./set-environ.sh
+   63  source ./set-environ.sh
+   64  python run.py
+   65  vi config.json
+   66  python run.py
+   67  exit
+   68  adduser --help
+   69  adduser -u 5827 peterdir
+   70  su - peterdir
+   71  dnf installl keychain
+   72  dnf install keychain
+   73  exit
+   74  tail /var/log/messages
+   75  tail /var/log/secure-20240331
+   76  less /var/log/secure-20240331
+   77  time
+   78  date
+   79  loginctl enable-linger peterdir
+   80  loginctl enable-linger peterdi
+   81  loginctl enable-linger peterdir
+   82   timedatectl set-timezone 'America/Los_Angeles'
+   83  timedatectl set-timezone 'America/Los_Angele'
+   84   timedatectl set-timezone 'America/Los_Angeles'
+   85  date
+   86  less /var/log/secure-20240331
+   87  reboot
+   88  less /var/log/secure-20240331
+   89  tail -f /var/log/secure-20240331
+   90  exit
+   91  passwd peterdir
+   92  exitr
+   93  exit
+   94  vi /etc/passwd
+   95  vi /etc/group
+   96  exit
+   97  tail -f /var/log/secure-20240331
+   98  vi /etc/shadow
+   99  vi /etc/passwd
+  100  tail -f /var/log/secure-20240331
+  101  exit
+  102  vi  /etc/ssh/ssh_config
+  103  vi  /etc/ssh/ssh_config.d/50-redhat.conf
+  104  grep -r rocky /etc/ssh/*
+  105  grep -r ss /etc/ssh/*
+  106  grep -r rocky /etc/ssh/*
+  107  tail -f /var/log/secure-20240331
+  108  tail -f /var/log/secure
+  109  exit
+  110  tail -f /var/log/secure
+  111  vi /etc/ssh/sshd_config
+  112  systemctl restart sshd
+  113  systemctl restart ssh
+  114  exit
+  115  dnf update
+  116  ls
+  117  vi cert-pw.txt
+  118  ls /etc/pki/tls/certs/
+  119  ls -l /etc/pki/tls/certs/
+  120  exit
+  121  cp /home/rocky/dirk1.ohsu.edu.pem /etc/pki/tls/certs/
+  122  ls -l  /etc/pki/tls/certs/
+  123  dnf install nginx
+  124  vi /etc/nginx/nginx.conf
+  125  cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.org
+  126  vi /etc/nginx/nginx.conf
+  127  ls -l  /etc/pki/tls/certs/
+  128  vi /etc/nginx/nginx.conf
+  129  ls
+  130  cat cert-pw.txt > /etc/pki/tls/certs/dirk1.ohsu.edu.pw
+  131  vi /etc/pki/tls/certs/dirk1.ohsu.edu.pw
+  132  systemctl restart nginx
+  133  journalctl -xeu nginx.service
+  134  q
+  135  vi /etc/nginx/nginx.conf
+  136  systemctl restart nginx
+  137  journalctl -xeu nginx.service
+  138  docker compose
+  139  dnf search podman
+  140  dnf install podman-docker
+  141  docker-compose
+  142  wget https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-linux-x86_64
+  143  dnf install wget
+  144  curl
+  145  wget https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-linux-x86_64
+  146  ls -l
+  147  mv docker-compose-linux-x86_64 docker-compose
+  148  chmod +x docker-compose
+  149  ./docker-compose
+  150  mv ./docker-compose /usr/local/bin/
+  151  docker-compose
+  152  podman compose --version
+  153  podman compose
+  154  docker compose
+  155  df -h
+  156  user add librechat
+  157  useradd librechat
+  158  exit
+  159  ls
+  160  vi keys.txt
+  161  exit
+  162  chsh -s /bin/bash librechat
+  163  vi /etc/passwd
+  164  loginctl enable-linger librechat
+  165  sudo su - librechat
+  166  systemctl start podman
+  167  loginctl enable-linger librechat
+  168  systemctl start podman
+  169  systemctl status podman
+  170  sudo su - librechat
+  171  reboot
+  172  podman stop $(podman ps -aq)
+  173  podman stop
+  174  posman ps
+  175  podman ps
+  176  podman rmi $(podman images -aq)
+  177  podman volume rm $(podman volume ls -q)
+  178  podman volume ls
+  179  clear
+  180  dnf install docker
+  181  clear
+  182  exit
+  183  ssh ubuntu@10.96.14.188
+  184  exit
+  185  lsexit
+  186  exit
+  187  dnf remove podman
+  188  vi /etc/yum.repos.d/docker.repo
+  189  sudo yum install docker-ce --nobest
+  190  clear
+  191  exit
+  192  sudo usermod -aG docker librechat
+  193  systemctl status docker
+  194  systemctl enable docker
+  195  systemctl status docker
+  196  systemctl start docker
+  197  systemctl status docker
+  198  exit
+  199  journalctl -xeu nginx.service
+  200  journalctl -xeu
+  201  journalctl
+  202  wget 10.96.14.188
+  203  docker ps
+  204  systemctl status docker
+  205  docker ps
+  206  netstat -t
+  207  dnf install netstat
+  208  dnf search netstat
+  209  netstat
+  210  dnf install net-tools
+  211  netstat -t
+  212  exit
+  213  systemctl stop docker
+  214  sudo rm -rf /var/lib/docker
+  215  sudo rm -rf /var/lib/containerd
+  216  systemctl start docker
+  217  systemctl status docker
+  218  dnf install git nodejs npm
+  219  sudo usermod -aG docker librechat
+  220  exit
+  221  history
+  222  exit
+  223  ls /var/lib/containers/
+  224  ls -lr /var/lib/containers/
+  225  ls -lR /var/lib/containers/
+  226  exit
+  227  docker ps
+  228  vi /etc/nginx/nginx.conf
+  229  systemctl restart nginx
+  230  systemctl status nginx.service
+  231  journalctl -xeu nginx.service
+  232  docker ps
+  233  netstat -t
+  234  systemctl stop nginx
+  235  docker container ls --format "table {{.Names}}\t{{.Ports}}"
+  236  dnf search nginx ldap
+  237  dnf search nginx
+  238  clear
+  239  vi /etc/nginx/nginx.conf
+  240  exit
+  241  netstat
+  242  netstat -t
+  243  netstat -ano
+  244  netstat -anot
+  245  wget http://dirk1.ohsu.edu
+  246  wget http://dirk1.ohsu.edu:2080
+  247  wget http://localhost:2080
+  248  vi index.html
+  249  vi /etc/nginx/nginx.conf
+  250  systemctl start nginx
+  251  systemctl status nginx
+  252  vi /etc/nginx/nginx.conf
+  253  dnf install vim
+  254  vi /etc/nginx/nginx.conf
+  255  vim ~/.vimrc
+  256  exit
+  257  vi /etc/nginx/nginx.conf
+  258  vim ~/.vimrc
+  259  vi /etc/nginx/nginx.conf
+  260  vim ~/.vimrc
+  261  vi /etc/nginx/nginx.conf
+  262  systemctl restart nginx
+  263  journalctl -u nginx
+  264  journalctl -u nginx -f
+  265  systemctl restart nginx
+  266  systemctl status nginx
+  267  systemctl restart nginx
+  268  sudo setenforce 0
+  269  sudo setenforce 1
+  270  sudo setsebool -P httpd_can_network_connect 1
+  271  ls
+  272  vi README.md
+  273  vi /etc/nginx/nginx.conf
+  274  systemctl restart nginx
+  275  wget http://localhost:2080
+  276  vi index.html.1
+  277  vi /etc/nginx/nginx.conf
+  278  systemctl restart nginx
+  279  vi /etc/nginx/nginx.conf
+  280  systemctl restart nginx
+  281  systemctl status nginx
+  282  vi /etc/nginx/nginx.conf
+  283  systemctl restart nginx
+  284  vi /etc/nginx/nginx.conf
+  285  systemctl restart nginx
+  286  vi /etc/nginx/nginx.conf
+  287  telnet
+  288  netcat
+  289  dnf install nmap
+  290  nmap -sV -p 2080 localhost
+  291  dnf install telnet
+  292  telnet localhost 2080
+  293  telnet ds2.acc.ohsu.edu 686
+  294  ping 192.168.110.141
+  295  telnet ds2.acc.ohsu.edu 389
+  296  telnet ds2.acc.ohsu.edu 636
+  297  ldapsearch -x -h ds2.acc.ohsu.edu -s base -b "" "(&)" +
+  298  dnf install ldapsearch
+  299  dnf install ldap-client
+  300  dnf search ldap
+  301  dnf install openldap-clients
+  302  ldapsearch -x -h ds2.acc.ohsu.edu -s base -b "" "(&)" +
+  303  ldapsearch -x -h 192.168.111.14 -s base -b "" "(&)" +
+  304  ldapsearch -x -h ds2.acc.ohsu.edu -s base -b "" "(&)" +
+  305  ldapsearch -x -h ds2.acc.ohsu.edu -s base -b "" "(uid=peterdir)" +
+  306  ldapsearch -x -h ds2.acc.ohsu.edu -s base -b "" "(uid=peterdir)"
+  307  ldapsearch -x -h ds2.acc.ohsu.edu -s base -b "" "(uid=peterdir)" dn
+  308  ldapsearch -x -h ds2.acc.ohsu.edu -s base -b "" "(uid=peterdir)" *
+  309  ldapsearch -x -h ds2.acc.ohsu.edu  -b "" "(uid=peterdir)" *
+  310  ldapsearch -x -H ldaps://ds2.acc.ohsu.edu -D "uid=peterdir,ou=Users,dc=acc,dc=ohsu,dc=edu" -W -b "dc=acc,dc=ohsu,dc=edu" "(objectclass=*)"
+  311  ldapsearch -x -H ldap://ds2.acc.ohsu.edu -D "uid=peterdir,ou=Users,dc=acc,dc=ohsu,dc=edu" -W -b "dc=acc,dc=ohsu,dc=edu" "(objectclass=*)"
+  312  ldapsearch -x -H ldaps://ds2.acc.ohsu.edu -p 636 -D "uid=peterdir,ou=Users,dc=acc,dc=ohsu,dc=edu" -W -b "dc=acc,dc=ohsu,dc=edu" "(objectclass=*)"
+  313  ldapsearch -x -h ds2.acc.ohsu.edu -p 636 -D "uid=peterdir,ou=Users,dc=acc,dc=ohsu,dc=edu" -W -b "dc=acc,dc=ohsu,dc=edu" "(objectclass=*)"
+  314  telnet ds2.acc.ohsu.edu 636
+  315  ldapsearch -x -H ldaps://ds2.acc.ohsu.edu -p 636 -D "uid=peterdir,ou=Users,dc=acc,dc=ohsu,dc=edu" -W -b "dc=acc,dc=ohsu,dc=edu" "(objectclass=*)"
+  316  ldapsearch -x -H ldaps://ds2.acc.ohsu.edu -D "uid=peterdir,ou=Users,dc=acc,dc=ohsu,dc=edu" -W -b "dc=acc,dc=ohsu,dc=edu" "(objectclass=*)"
+  317  vi /etc/nginx/nginx.conf
+  318  python -m venv ldapauth
+  319  . ldapauth/bin/activate
+  320  pip install ldap
+  321  desctivate
+  322  deactivate
+  323  dnf search python | grep ldap
+  324  dnf search python | grep flask
+  325  dnf search flask
+  326*
+  327  python3
+  328  . ldapauth/bin/activate
+  329  pip install flask
+  330  pip install --upgrade pip
+  331  . ldapauth/bin/activate
+  332  ls
+  333  cd ldapauth/
+  334  ls
+  335  vi bin/flask-ldap.py
+  336  python bin/flask-ldap.py
+  337  cp bin/flask-ldap.py ~/
+  338  mc
+  339  deactivate
+  340  cd ~
+  341  ls
+  342  rm -rf ldapauth
+  343  pip3
+  344  which pip3
+  345  pip3 install flask
+  346  ls
+  347  python flask-ldap.py
+  348  mv flask-ldap.py flask-ldap-auth.py
+  349  vi /etc/systemd/system/flask-ldap-auth.service
+  350  sudo systemctl daemon-reload
+  351  sudo systemctl enable flask-ldap-auth.service
+  352  sudo systemctl start flask-ldap-auth.service
+  353  systemctl status flask-ldap-auth.service
+  354  vi /etc/nginx/nginx.conf
+  355  systemctl restart nginx
+  356  vi /etc/nginx/nginx.conf
+  357  systemctl restart nginx
+  358  ls
+  359  vi README.md
+  360  curl localhost:8999:/auth
+  361  curl http://localhost:8999:/auth
+  362  curl http://localhost:8999/auth
+  363  curl http://localhost:8999/
+  364  curl http://localhost:8999/auth
+  365  history | less
+  366   sudo setenforce 0
+  367  sudo setenforce 0
+  368  systemctl restart nginx
+  369  sudo setenforce 1
+  370  vi /etc/nginx/nginx.conf
+  371  systemctl restart nginx
+  372  systemctl status flask-ldap-auth.service
+  373  curl http://localhost:8999/auth
+  374  curl http://127.0.0.1:8999/auth
+  375  curl http://127.0.0.1:8999/
+  376  curl http://127.0.0.1:8999/auth
+  377  systemctl restart nginx
+  378  clear
+  379  ls
+  380  rm index.html*
+  381  ls
+  382  vi keys.txt
+  383  vi cert-pw.txt
+  384  vi keys.txt
+  385  vi cert-pw.txt
+  386  vi keys.txt
+  387  vi cert-pw.txt
+  388  vi keys.txt
+  389  rm cert-pw.txt
+  390  ls
+  391  vi flask-ldap-auth.py
+  392  vi .pw
+  393  chmod 600 .pw
+  394  curl -H "Authorization: Basic $(echo -n peterdir:$(<~/.pw) | base64)" http://127.0.0.1:8999/auth
+  395  curl -H "Authorization: Basic $(echo -n peterdi:$(<~/.pw) | base64)" http://127.0.0.1:8999/auth
+  396  curl -H "Authorization: Basic $(echo -n peterdir:$(<~/.pww) | base64)" http://127.0.0.1:8999/auth
+  397  curl -u peterdir:$(<~/.pw) http://127.0.0.1:8999/au
+  398  th
+  399  curl -u peterdir:$(<~/.pw) http://127.0.0.1:8999/auth
+  400  curl -u peterdir:$(<~/.w) http://127.0.0.1:8999/auth
+  401  vi flask-ldap-auth.py
+  402  systemctl restart flask-ldap-auth
+  403  curl -u peterdir:$(<~/.pw) http://127.0.0.1:8999/auth
+  404  vi flask-ldap-auth.py
+  405  systemctl restart flask-ldap-auth
+  406  vi flask-ldap-auth.py
+  407  systemctl restart flask-ldap-auth
+  408  curl -u peterdir:$(<~/.pw) http://127.0.0.1:8999/auth
+  409  vi flask-ldap-auth.py
+  410  systemctl restart flask-ldap-auth
+  411  curl -u peterdir:$(<~/.pw) http://127.0.0.1:8999/auth
+  412  vi /etc/systemd/system/flask-ldap-auth.service
+  413  sudo systemctl daemon-reload
+  414  sudo systemctl restart flask-ldap-auth.service
+  415  curl -u peterdir:$(<~/.pw) http://127.0.0.1:8999/auth
+  416  vi /etc/nginx/nginx.conf
+  417  systemctl restart nginx
+  418  vi /etc/nginx/nginx.conf
+  419  systemctl restart nginx
+  420  vi /etc/nginx/nginx.conf
+  421  vi /etc/nginx/sites-enabled/default
+  422  vi /etc/nginx/nginx.conf
+  423  systemctl restart nginx
+  424  vi /etc/nginx/nginx.conf
+  425  ls /etc/nginx/conf.d/
+  426  vi /etc/nginx/nginx.conf
+  427  systemctl restart nginx
+  428  journalctl -xeu nginx.service
+  429  vi /etc/nginx/nginx.conf
+  430  systemctl restart nginx
+  431  journalctl -xeu nginx.service
+  432  vi /etc/sysctl.conf
+  433  sudo sysctl -p
+  434  systemctl restart nginx
+  435  journalctl -xeu nginx.service
+  436  curl https://dirk1.ohsu.edu
+  437  curl -u peterdir:$(<~/.pw) http://127.0.0.1:8999/auth
+  438  curl -u peterdir:$(<~/.pw) https://dirk1.ohsu.edu
+  439  curl -u peterdi:$(<~/.pw) https://dirk1.ohsu.edu
+  440  vi /etc/nginx/nginx.conf
+  441  systemctl restart nginx
+  442  journalctl -xeu nginx.service
+  443  vi /etc/nginx/nginx.conf
+  444  systemctl restart nginx
+  445  vi /etc/nginx/nginx.conf
+  446  ls
+  447  vi flask-ldap-auth.py
+  448  mv flask-ldap-auth.py
+  449  mv flask-ldap-auth.py  flask-ldap-auth.py.bak
+  450  vi flask-ldap-auth.py
+  451  vi flask-ldap-auth.py.bak
+  452  vi flask-ldap-auth.py
+  453  journalctl -xeu flask-ldap-auth
+  454  systemctl restart flask-ldap-auth
+  455  journalctl -xeu flask-ldap-auth
+  456  sudo systemctl daemon-reload
+  457  systemctl restart flask-ldap-auth
+  458  vi /etc/nginx/nginx.conf
+  459  systemctl restart nginx
+  460  systemctl stop nginx
+  461  vi flask-ldap-auth.py
+  462  systemctl restart flask-ldap-auth
+  463  vi flask-ldap-auth.py
+  464  systemctl restart flask-ldap-auth
+  465  vi flask-ldap-auth.py
+  466  systemctl restart flask-ldap-auth
+  467  vi flask-ldap-auth.py
+  468  systemctl restart flask-ldap-auth
+  469  vi flask-ldap-auth.py
+  470  systemctl restart flask-ldap-auth
+  471  vi flask-ldap-auth.py
+  472  systemctl restart flask-ldap-auth
+  473  vi flask-ldap-auth.py
+  474  systemctl restart flask-ldap-auth
+  475  vi flask-ldap-auth.py
+  476  systemctl restart flask-ldap-auth
+  477  vi flask-ldap-auth.py
+  478  systemctl restart flask-ldap-auth
+  479  vi flask-ldap-auth.py
+  480  systemctl restart flask-ldap-auth
+  481  vi /etc/nginx/nginx.conf
+  482  vi flask-ldap-auth.py
+  483  cat flask-ldap-auth.py
+  484  systemctl restart flask-ldap-auth
+  485  systemctl restart nginx
+  486  vi /etc/nginx/nginx.conf
+  487  systemctl restart nginx
+  488  vi /etc/nginx/nginx.conf
+  489  systemctl restart nginx
+  490  vi /etc/nginx/nginx.conf
+  491  systemctl restart nginx
+  492  systemctl restart flask-ldap-auth
+  493  journalctl -xeu flask-ldap-auth
+  494  journalctl -xeu nginx
+  495  vi /etc/nginx/nginx.conf
+  496  systemctl restart nginx
+  497  vi /etc/nginx/nginx.conf
+  498  systemctl restart nginx
+  499  vi /etc/nginx/nginx.conf
+  500  systemctl restart nginx
+  501  vi /etc/nginx/nginx.conf
+  502  systemctl restart nginx
+  503  vi /etc/nginx/nginx.conf
+  504  cat /etc/nginx/nginx.conf
+  505  cat flask-ldap-auth.py
+  506  cat /etc/nginx/nginx.conf
+  507  history
