@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-04-26T02:13:29.749Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="tahiVoRlkrjHZLSCOM1S" version="24.3.0" type="github">
+<mxfile host="app.diagrams.net" modified="2024-04-26T02:18:38.779Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="AlrL99FXtBIguwIDoGSZ" version="24.3.0" type="github">
   <diagram name="Page-1" id="PzWr_ITz2VBm-gPowUCU">
     <mxGraphModel dx="1792" dy="612" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -269,6 +269,9 @@
         </mxCell>
         <mxCell id="u1lTLjvW7j8U5U-2YG72-146" value="6" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=2;fontFamily=Tahoma;spacingBottom=4;spacingRight=2;strokeColor=#d3d3d3;" vertex="1" parent="1">
           <mxGeometry x="455" y="390.73" width="20" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u1lTLjvW7j8U5U-2YG72-185" value="Newest LLM&amp;nbsp; API (Startup Vendors)" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="731.26" y="217" width="102.53" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
