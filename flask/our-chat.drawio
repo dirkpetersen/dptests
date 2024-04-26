@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-04-26T02:18:38.779Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="AlrL99FXtBIguwIDoGSZ" version="24.3.0" type="github">
+<mxfile host="app.diagrams.net" modified="2024-04-26T02:22:08.772Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="31PsmZiY_wNW7iahpJgH" version="24.3.0" type="github">
   <diagram name="Page-1" id="PzWr_ITz2VBm-gPowUCU">
     <mxGraphModel dx="1792" dy="612" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -168,7 +168,7 @@
         <mxCell id="u1lTLjvW7j8U5U-2YG72-143" value="5" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=2;fontFamily=Tahoma;spacingBottom=4;spacingRight=2;strokeColor=#d3d3d3;" vertex="1" parent="1">
           <mxGeometry x="130" y="391" width="20" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="u1lTLjvW7j8U5U-2YG72-144" value="PHI approved LLM API (mature Vendor)" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="u1lTLjvW7j8U5U-2YG72-144" value="PHI approved LLM API (mature Vendors)" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="717.27" y="650" width="120" height="30" as="geometry" />
         </mxCell>
         <mxCell id="u1lTLjvW7j8U5U-2YG72-147" value="7" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=2;fontFamily=Tahoma;spacingBottom=4;spacingRight=2;strokeColor=#d3d3d3;" vertex="1" parent="1">
@@ -243,8 +243,8 @@
         <mxCell id="u1lTLjvW7j8U5U-2YG72-173" value="Check on-premises LLM if user entered PHI or for general cost savings&amp;nbsp;" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
           <mxGeometry x="67" y="925" width="530" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="u1lTLjvW7j8U5U-2YG72-174" value="Log chat content to SQL server (or Splunk) based on predetermined rules&amp;nbsp;" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="67" y="965" width="530" height="30" as="geometry" />
+        <mxCell id="u1lTLjvW7j8U5U-2YG72-174" value="Log chat content to SQL server (or Splunk) based on pre-determined rules&amp;nbsp;" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="67" y="965" width="543" height="30" as="geometry" />
         </mxCell>
         <mxCell id="u1lTLjvW7j8U5U-2YG72-175" value="If no concerns are found, pass through chats to LLM of less mature vendors&amp;nbsp;" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
           <mxGeometry x="67" y="1005" width="563" height="30" as="geometry" />
@@ -271,7 +271,7 @@
           <mxGeometry x="455" y="390.73" width="20" height="20" as="geometry" />
         </mxCell>
         <mxCell id="u1lTLjvW7j8U5U-2YG72-185" value="Newest LLM&amp;nbsp; API (Startup Vendors)" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
-          <mxGeometry x="731.26" y="217" width="102.53" height="30" as="geometry" />
+          <mxGeometry x="731.26" y="214" width="102.53" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
