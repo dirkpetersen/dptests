@@ -126,7 +126,7 @@ def subcmd_config(args, cfg, aws):
             print(f'{c}: {" ".join(i)}')
         print('\nSupported OS, versions and CPU types (s3_prefixes)')
         print("--------------------------------------------------")
-        prefixes = ['amzn-2023_graviton-3', 'amzn-2023_epyc-gen-4', 'amzn-2023_xeon-gen-4', 'rhel-9_xeon-gen-1', 'ubuntu-22.04_xeon-gen-1']
+        prefixes = ['amzn-2023_graviton-3', 'amzn-2023_epyc-gen-4', 'amzn-2023_xeon-gen-4', 'rhel-9_xeon-gen-1', 'ubuntu-22.04_xeon-gen-1', 'ubuntu-24.04_xeon-gen-1']
         print("\n".join(prefixes))
         return True
     
@@ -2401,6 +2401,8 @@ class AWSBoto:
         # Sort images by creation date to get the latest
         images = sorted(response['Images'], key=lambda k: k['CreationDate'], reverse=True)
         if images:
+            iname = images[0]["Name"].split('/')[-1]
+            print(f'Using AMI image {iname}')            
             return images[0]['ImageId']
         else:
             return None       
@@ -2416,7 +2418,7 @@ class AWSBoto:
         response = ec2_client.describe_images(
             Owners=['099720109477'],  # Ubuntu's owner ID
             Filters=[
-                {'Name': 'name', 'Values': ['ubuntu/images/hvm-ssd/ubuntu-*']},
+                {'Name': 'name', 'Values': ['ubuntu/images/hvm-*/ubuntu-*']},
                 {'Name': 'description', 'Values': ['*LTS*']},
                 {'Name': 'architecture', 'Values': [myarch]},
                 {'Name': 'virtualization-type', 'Values': ['hvm']},
@@ -2429,6 +2431,8 @@ class AWSBoto:
         # Sort images by creation date / Description to get the latest
         images = sorted(response['Images'], key=lambda k: k['Description'], reverse=True)  
         if images:
+            iname = images[0]["Name"].split('/')[-1]
+            print(f'Using AMI image {iname}')            
             return images[0]['ImageId']
         else:
             return None        
@@ -2461,6 +2465,8 @@ class AWSBoto:
         #print(images[0])
         #sys.exit(1)
         if images:
+            iname = images[0]["Name"].split('/')[-1]
+            print(f'Using AMI image {iname}')            
             return images[0]['ImageId']
         else:
             return None 
@@ -2484,6 +2490,8 @@ class AWSBoto:
         # Sort images by creation date to get the latest
         images = sorted(response['Images'], key=lambda k: k['DeprecationTime'], reverse=True) 
         if images:
+            iname = images[0]["Name"].split('/')[-1]
+            print(f'Using AMI image {iname}')            
             return images[0]['ImageId']
         else:
             return None 
@@ -2673,8 +2681,8 @@ class AWSBoto:
         {pkgm} install -y redis6 
         {pkgm} install -y redis
         {pkgm} install -y python3.11-pip python3.11-devel # for RHEL
-        {pkgm} install -y gcc mdadm jq git python3-pip 
-        {pkgm} install -y python3-venv python3-dev # for Ubuntu
+        {pkgm} install -y gcc mdadm jq git python3-pip mc
+        {pkgm} install -y python3-venv python3-dev rpm2cpio lmod # for Ubuntu
         format_largest_unused_block_devices /opt
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
@@ -2697,10 +2705,10 @@ class AWSBoto:
         loginctl enable-linger {self.cfg.defuser}
         systemctl start atd
         {pkgm} upgrade -y
-        {pkgm} install -y Lmod
-        {pkgm} install -y mc docker nodejs-npm
+        {pkgm} install -y docker nodejs-npm Lmod # RHEL
+        {pkgm} install -y docker.io nodejs npm # Ubuntu
         {pkgm} install -y lua lua-posix lua-devel tcl-devel
-        {pkgm} install -y build-essential rpm2cpio tcl-dev tcl #lmod #Ubuntu 22.04 only has lmod 6.6 and EB5 requires 8.0
+        {pkgm} install -y build-essential tcl-dev tcl 
         {pkgm} install -y lua5.3 lua-bit32 lua-posix lua-posix-dev liblua5.3-0 liblua5.3-dev tcl8.6 tcl8.6-dev libtcl8.6
         dnf group install -y 'Development Tools'
         cd /tmp
@@ -2780,6 +2788,8 @@ class AWSBoto:
           export PYBIN=/usr/bin/python3.11
           ln -s /usr/bin/python3.11 ~/.local/bin/python3
         fi
+        mkdir -p ~/.config/pip
+        echo "[global]\nbreak-system-packages = true" > ~/.config/pip/pip.conf        
         $PYBIN -m pip install --upgrade --user pip
         $PYBIN -m pip install --upgrade --user wheel awscli
         aws configure set aws_access_key_id {os.getenv('AWS_ACCESS_KEY_ID', '')}
@@ -2848,11 +2858,11 @@ class AWSBoto:
           JSON53="{{\\"Comment\\":\\"DNS update\\",\\"Changes\\":[{{\\"Action\\":\\"UPSERT\\",\\"ResourceRecordSet\\":{{\\"Name\\":\\"${{host_s}}.${{dns_zone_name}}\\",\\"Type\\":\\"A\\",\\"TTL\\":60,\\"ResourceRecords\\":[{{\\"Value\\":\\"$pub_ip\\"}}]}}}}]}}"
           aws route53 change-resource-record-sets --hosted-zone-id ${{dns_zone_id}} --change-batch "${{JSON53}}"
         fi
-        # create certificates with letsencrypt
-        python3 -m venv le
-        . le/bin/activate
-        pip install certbot-dns-route53
-        sudo -E /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d ${{host_s}}.${{dns_zone_name}}
+        # deactivated - create certificates with letsencrypt
+        #python3 -m venv le
+        #. le/bin/activate
+        #pip install certbot-dns-route53
+        #sudo -E /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d ${{host_s}}.${{dns_zone_name}}
         echo ""
         echo -e "CPU info:"
         lscpu | head -n 20
@@ -2918,9 +2928,10 @@ class AWSBoto:
         
         if not imageid:
             print(f'No {self.args.os} image found that matches the criteria.')
-            return None, None
+            sys.exit(1)
+            #return None, None
 
-        print(f'Using {self.args.os} image id: {imageid}')
+        #print(f'Using {self.args.os} image id: {imageid}')
 
         #print(f'*** userdata-script:\n{self._ec2_user_data_script()}')
 
@@ -3196,7 +3207,7 @@ class AWSBoto:
                 #os_info = ami_info.get('Description') or ami_info.get('Name')
                 os_info = ami_info.get('Name')
                 if os_info:
-                    os_info = self.cfg.parse_version_string(os_info) #.replace('ubuntu/images/hvm-ssd/','').strip()
+                    os_info = self.cfg.parse_version_string(os_info.split('/')[-1]) #.replace('ubuntu/images/hvm-ssd/','').strip()
                 
                 # lt = ''
                 # if instance['LaunchTime']:
@@ -5212,7 +5223,7 @@ def parse_arguments():
         help=textwrap.dedent(f'''
             Show stats on eb-build-status.json in this S3 folder (including prefix), e.g.
             'amzn-2023_graviton-3', 'amzn-2023_epyc-gen-4', 'amzn-2023_xeon-gen-4'
-            rhel-9_xeon-gen-1 or ubuntu-22.04_xeon-gen-1.
+            rhel-9_xeon-gen-1 or ubuntu-24.04_xeon-gen-1.
         '''), formatter_class=argparse.RawTextHelpFormatter) 
     parser_buildstatus.add_argument('prefix', action='store', default='', 
         metavar='<s3_prefix>', help='your prefix, e.g. amzn-2023_graviton-3')    

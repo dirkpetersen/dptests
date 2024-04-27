@@ -19,9 +19,9 @@ bedrock_runtime = boto3.client(
 # Let's see all available Anthropic Models
 available_models = bedrock.list_foundation_models()
 
-for model in available_models['modelSummaries']:
-  if 'anthropic' in model['modelId']:
-    print(model)
+#for model in available_models['modelSummaries']:
+#  if 'anthropic' in model['modelId']:
+#    print(model)
 
 
 # Define prompt and model parameters
@@ -38,8 +38,11 @@ body = {"prompt": "Human: " + prompt_data + " \\nAssistant:",
 
 body = json.dumps(body) # Encode body as JSON string
 
+
 #modelId = 'anthropic.claude-3-haiku-20240307-v1:0' 
-modelId = 'anthropic.claude-instant-v1' 
+#modelId = 'anthropic.claude-3-sonnet-20240229-v1:0' 
+modelId = 'anthropic.claude-3-opus-20240229-v1:0' 
+#modelId = 'meta.llama3-70b-instruct-v1:0'
 accept = 'application/json'
 contentType = 'application/json'
 
