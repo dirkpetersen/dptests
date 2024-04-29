@@ -792,7 +792,7 @@ Resources:
         - !Ref 'Client1PrivateSubnet'
       LaunchConfigurationName: !Sub ${EnvironmentName}-Client1LaunchConfiguration-${AWS::AccountId}-${AWS::Region}
       MinSize: '1'
-      MaxSize: '4'
+      MaxSize: '2'
       DesiredCapacity: '1'
       Tags:
         - Key: Name
@@ -924,7 +924,7 @@ Resources:
         - !Ref 'Client2PrivateSubnet'
       LaunchConfigurationName: !Sub ${EnvironmentName}-Client2LaunchConfiguration-${AWS::AccountId}-${AWS::Region}
       MinSize: '1'
-      MaxSize: '4'
+      MaxSize: '2'
       DesiredCapacity: '1'
       Tags:
         - Key: Name
