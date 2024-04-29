@@ -1,0 +1,1025 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create a VPC and an assumable role for cross account VPC peering.
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: 'Network'
+        Parameters:
+          - MasterVpcCIDR
+          - MasterPublicSubnetCIDR
+          - MasterPrivateSubnetCIDR
+          - Client1VpcCIDR
+          - Client1PublicSubnetCIDR
+          - Client1PrivateSubnetCIDR
+          - Client2VpcCIDR
+          - Client2PublicSubnetCIDR
+          - Client2PrivateSubnetCIDR
+      - Label:
+          default: 'Flare Master Server'
+        Parameters:
+          - MasterInstanceType
+          - ClientInstanceType
+          - LatestAmiId
+          - FlareAdminEmail
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+    Default: nvflare
+  MasterVpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.1.0.0/16
+  MasterPublicSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.1.10.0/24
+  MasterPrivateSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.1.20.0/24
+  Client1VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.11.0.0/16
+  Client1PublicSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.11.10.0/24
+  Client1PrivateSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.11.20.0/24
+  Client2VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.12.0.0/16
+  Client2PublicSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.12.10.0/24
+  Client2PrivateSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.12.20.0/24
+  MasterInstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t3.xlarge
+    AllowedValues: [
+      t2.small, t2.medium, t2.large, t2.xlarge, t2.2xlarge,
+      t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge,
+      m3.large, m3.xlarge, m3.2xlarge,
+      c3.large, c3.xlarge, c3.2xlarge, c3.4xlarge, c3.8xlarge,
+      c4.large, c4.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge,
+      c5.large, c5.xlarge, c5.2xlarge, c5.4xlarge, c5.9xlarge, c5.12xlarge, c5.18xlarge,
+      c5n.large, c5n.xlarge, c5n.2xlarge, c5n.4xlarge, c5n.9xlarge, c5n.18xlarge,
+      g3.4xlarge, g3.8xlarge, g3.16xlarge, g3s.xlarge,
+      g4dn.xlarge, g4dn.2xlarge, g4dn.4xlarge, g4dn.8xlarge, g4dn.12xlarge, g4dn.16xlarge, g4dn.metal,
+      g5.xlarge, g5.2xlarge, g5.4xlarge, g5.8xlarge, g5.16xlarge, g5.12xlarge, g5.24xlarge, g5.48xlarge,
+      h1.2xlarge, h1.4xlarge, h1.8xlarge, h1.16xlarge,
+      i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge,
+      inf1.xlarge, inf1.2xlarge, inf1.6xlarge, inf1.24xlarge,
+      m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.16xlarge,
+      m5.large, m5.xlarge, m5.2xlarge, m5.4xlarge, m5.12xlarge, m5.24xlarge,
+      m5d.large, m5d.xlarge, m5d.2xlarge, m5d.4xlarge, m5d.8xlarge, m5d.12xlarge, m5d.16xlarge, m5d.24xlarge,
+      p2.xlarge, p2.8xlarge, p2.16xlarge,
+      p3.2xlarge, p3.8xlarge, p3.16xlarge,
+      p3dn.24xlarge, p4d.24xlarge,
+      r4.large, r4.xlarge, r4.2xlarge, r4.4xlarge, r4.8xlarge, r4.16xlarge,
+      r5.large, r5.xlarge, r5.2xlarge, r5.4xlarge, r5.8xlarge, r5.12xlarge, r5.16xlarge, r5.24xlarge,
+      r5d.large, r5d.xlarge, r5d.2xlarge, r5d.4xlarge, r5d.8xlarge, r5d.12xlarge, r5d.16xlarge, r5d.24xlarge,
+      x1.16xlarge, x1.32xlarge, x1e.xlarge, x1e.2xlarge, x1e.4xlarge, x1e.8xlarge, x1e.16xlarge, x1e.32xlarge,
+      z1d.large, z1d.xlarge, z1d.2xlarge, z1d.3xlarge, z1d.6xlarge, z1d.12xlarge
+    ]
+    ConstraintDescription: Please choose a valid instance type.
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/marketplace/prod-tr5tzpvue3lus/latest'
+    Description: The AMI Alias for AWS Deep Learning AMI
+  FlareAdminEmail:
+    Type: String
+    Default: admin@nvidia.com
+  ClientInstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: g4dn.xlarge
+    AllowedValues: [
+      t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge,
+      g4dn.xlarge, g4dn.2xlarge, g4dn.4xlarge, g4dn.8xlarge, g4dn.12xlarge, g4dn.16xlarge, g4dn.metal,
+      g5.xlarge, g5.2xlarge, g5.4xlarge, g5.8xlarge, g5.16xlarge, g5.12xlarge, g5.24xlarge, g5.48xlarge,
+      p2.xlarge, p2.8xlarge, p2.16xlarge,
+      p3.2xlarge, p3.8xlarge, p3.16xlarge,
+      p3dn.24xlarge, p4d.24xlarge,
+    ]
+    ConstraintDescription: Please choose a valid instance type.
+  MyIPAddress:
+    Type: String 
+    Description: My local IP Address for port forwarding that is used to visualize Tensorboard monitor locally
+    Default: 0.0.0.0/0
+  
+Resources:        
+  MasterVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref MasterVpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Master VPC
+
+  MasterPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MasterVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref MasterPublicSubnetCIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Master Public Subnet
+
+  MasterPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MasterVPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref MasterPrivateSubnetCIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Master Private Subnet 
+
+  MasterInternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  MasterInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref MasterInternetGateway
+      VpcId: !Ref MasterVPC
+  
+  MasterNatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: MasterInternetGatewayAttachment
+    Properties:
+      Domain: mastervpc
+  
+  MasterNatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt MasterNatGatewayEIP.AllocationId
+      SubnetId: !Ref MasterPublicSubnet
+   
+  MasterPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MasterVPC
+  
+  MasterDefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: MasterInternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref MasterPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MasterInternetGateway
+
+  MasterPublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref MasterPublicRouteTable
+      SubnetId: !Ref MasterPublicSubnet
+
+  MasterPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MasterVPC
+
+  MasterDefaultPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MasterPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref MasterNatGateway
+
+  MasterPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref MasterPrivateRouteTable
+      SubnetId: !Ref MasterPrivateSubnet
+  
+  MasterPeeringPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MasterPrivateRouteTable
+      DestinationCidrBlock: !Ref Client1VpcCIDR
+      VpcPeeringConnectionId: !Ref Client1VpcPeeringConnection
+
+  MasterPeeringPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MasterPrivateRouteTable
+      DestinationCidrBlock: !Ref Client2VpcCIDR
+      VpcPeeringConnectionId: !Ref Client2VpcPeeringConnection
+
+
+  ############### client 1 vpc #################
+  Client1VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref Client1VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Client1 VPC
+
+  Client1VpcPeeringConnection:
+    Type: 'AWS::EC2::VPCPeeringConnection'
+    Properties:
+      VpcId: !Ref Client1VPC
+      PeerVpcId: !Ref MasterVPC
+
+  Client1PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Client1VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref Client1PublicSubnetCIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Client1 Public Subnet
+
+  Client1PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Client1VPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref Client1PrivateSubnetCIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Client1 Private Subnet
+
+  Client1InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  Client1InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Client1InternetGateway
+      VpcId: !Ref Client1VPC
+
+  Client1NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: Client1InternetGatewayAttachment
+    Properties:
+      Domain: client1vpc
+  
+  Client1NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt Client1NatGatewayEIP.AllocationId
+      SubnetId: !Ref Client1PublicSubnet
+   
+  Client1PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Client1VPC
+  
+  Client1DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: Client1InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref Client1PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Client1InternetGateway
+
+  Client1PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Client1PublicRouteTable
+      SubnetId: !Ref Client1PublicSubnet
+
+  Client1PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Client1VPC
+
+  Client1DefaultPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Client1PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref Client1NatGateway
+
+  Client1PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Client1PrivateRouteTable
+      SubnetId: !Ref Client1PrivateSubnet
+  
+  Client1PeeringPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Client1PrivateRouteTable
+      DestinationCidrBlock: !Ref MasterVpcCIDR
+      VpcPeeringConnectionId: !Ref Client1VpcPeeringConnection
+
+
+  ############### client 2 vpc #################
+  Client2VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref Client2VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Client2 VPC
+
+  Client2VpcPeeringConnection:
+    Type: 'AWS::EC2::VPCPeeringConnection'
+    Properties:
+      VpcId: !Ref Client2VPC
+      PeerVpcId: !Ref MasterVPC
+
+  Client2PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Client2VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref Client2PublicSubnetCIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Client2 Public Subnet
+
+  Client2PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Client2VPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref Client2PrivateSubnetCIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Client2 Private Subnet
+
+  Client2InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  Client2InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Client2InternetGateway
+      VpcId: !Ref Client2VPC
+
+  Client2NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: Client2InternetGatewayAttachment
+    Properties:
+      Domain: Client2vpc
+  
+  Client2NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt Client2NatGatewayEIP.AllocationId
+      SubnetId: !Ref Client2PublicSubnet
+   
+  Client2PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Client2VPC
+  
+  Client2DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: Client2InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref Client2PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Client2InternetGateway
+
+  Client2PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Client2PublicRouteTable
+      SubnetId: !Ref Client2PublicSubnet
+
+  Client2PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Client2VPC
+
+  Client2DefaultPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Client2PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref Client2NatGateway
+
+  Client2PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref Client2PrivateRouteTable
+      SubnetId: !Ref Client2PrivateSubnet
+  
+  Client2PeeringPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Client2PrivateRouteTable
+      DestinationCidrBlock: !Ref MasterVpcCIDR
+      VpcPeeringConnectionId: !Ref Client2VpcPeeringConnection
+
+
+
+  ############ master instance ####################
+  ProvisionBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+            - '-'
+            - - fl-provision-singleaccount
+              - !Ref EnvironmentName
+              - !Ref AWS::AccountId
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+  MasterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for Flare master server
+      GroupName: !Sub ${EnvironmentName}-MasterSecurityGroup-${AWS::AccountId}-${AWS::Region}
+      SecurityGroupIngress:
+        - CidrIp: !Ref Client1VpcCIDR
+          Description: client:8002/tcp
+          FromPort: 8002
+          IpProtocol: TCP
+          ToPort: 8002
+        - CidrIp: !Ref Client2VpcCIDR
+          Description: client:8002/tcp
+          FromPort: 8002
+          IpProtocol: TCP
+          ToPort: 8002
+        - CidrIp: !Ref Client1VpcCIDR
+          Description: admin:8003/tcp
+          FromPort: 8003
+          IpProtocol: TCP
+          ToPort: 8003
+        - CidrIp: !Ref Client2VpcCIDR
+          Description: admin:8003/tcp
+          FromPort: 8003
+          IpProtocol: TCP
+          ToPort: 8003
+        - CidrIp: !Ref Client1VpcCIDR
+          Description: admin:8443/tcp for overseer
+          FromPort: 8443
+          IpProtocol: TCP
+          ToPort: 8443
+        - CidrIp: !Ref Client2VpcCIDR
+          Description: admin:8443/tcp for overseer
+          FromPort: 8443
+          IpProtocol: TCP
+          ToPort: 8443
+        - CidrIp: !Ref MyIPAddress
+          Description: admin:8080/tcp for tensorboard
+          FromPort: 8080
+          IpProtocol: TCP
+          ToPort: 8080
+        - CidrIp: !Ref MyIPAddress
+          Description: admin:80/tcp for tensorboard
+          FromPort: 80
+          IpProtocol: TCP
+          ToPort: 80
+        - CidrIp: !Ref MyIPAddress
+          Description: admin:443/tcp for tensorboard
+          FromPort: 443
+          IpProtocol: TCP
+          ToPort: 443
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: project
+          Value: !Sub "${EnvironmentName}-flareonaws"
+      VpcId: !Ref 'MasterVPC'
+  MasterSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow communication within network
+      GroupId: !Ref 'MasterSecurityGroup'
+      IpProtocol: '-1'
+      SourceSecurityGroupId: !Ref 'MasterSecurityGroup'
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /flareonaws
+
+  MasterAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn:
+      - MasterLaunchConfiguration
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref 'MasterPrivateSubnet'
+      LaunchConfigurationName: !Sub ${EnvironmentName}-MasterLaunchConfiguration-${AWS::AccountId}-${AWS::Region}
+      MinSize: '1'
+      MaxSize: '4'
+      DesiredCapacity: '1'
+      Tags:
+        - Key: Name
+          Value: MasterInstance
+          PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+        Count: 1
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+
+  MasterLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: !Sub ${EnvironmentName}-MasterLaunchConfiguration-${AWS::AccountId}-${AWS::Region}
+      ImageId: !Ref LatestAmiId
+      AssociatePublicIpAddress: false
+      SecurityGroups:
+        - !Ref 'MasterSecurityGroup'
+      InstanceType: !Ref 'MasterInstanceType'
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 200
+            VolumeType: "gp3"
+            DeleteOnTermination: true
+      IamInstanceProfile: !Ref 'EC2InstanceProfile'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          until git clone https://github.com/aws-quickstart/quickstart-linux-utilities.git; do echo "Retrying"; done
+          cd quickstart-linux-utilities
+          source quickstart-cfn-tools.source
+          qs_update-os || qs_err
+          qs_bootstrap_pip || qs_err
+          qs_aws-cfn-bootstrap || qs_err
+          cfn-signal -e $? --stack ${AWS::StackName} --resource MasterAutoScalingGroup --region ${AWS::Region} || echo "failed to notify stack"
+          apt update -y
+          apt install -y python3.8
+          update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+          apt install -y python3-setuptools nfs-common python3.8-venv python3-pip python3-apt python-apt git binutils awscli
+          ln -s apt_pkg.cpython-36m-x86_64-linux-gnu.so apt_pkg.so
+          python3 -m pip install -U pip setuptools
+          python3 -m pip install monai torch torchvision pytorch-ignite numpy itk-io pandas kaleido plotly tensorboard tqdm nibabel nvflare==2.2.1 cffi --ignore-installed
+          python3 -m pip install pyOpenSSL --upgrade
+
+  
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: EC2S3Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - ec2:DescribeTags
+                Effect: Allow
+                Resource: '*'
+              - Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                  - s3:CreateBucket
+                Effect: Allow
+                Resource: '*'
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - logs:GetLogEvents
+                Effect: Allow
+                Resource: '*'
+        - PolicyName: CloudWatchPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Sid: CloudWatchPutMetricData
+              Effect: Allow
+              Action:
+              - cloudwatch:PutMetricData
+              Resource:
+              - "*"
+        - PolicyName: CloudFormationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Sid: SignalResource
+              Effect: Allow
+              Action:
+              - cloudformation:SignalResource
+              - cloudformation:DescribeStacks
+              Resource:
+              - "*"
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref 'EC2Role'
+  MasterScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref 'MasterAutoScalingGroup'
+      Cooldown: '60'
+      ScalingAdjustment: '-1'
+  MasterScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref 'MasterAutoScalingGroup'
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+  MasterCPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref 'MasterScaleUpPolicy'
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref 'MasterAutoScalingGroup'
+      EvaluationPeriods: '2'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: '90'
+  MasterCPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref 'MasterScaleDownPolicy'
+      AlarmDescription: Scale-down if CPU < 70% for 10 minutes
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref 'MasterAutoScalingGroup'
+      EvaluationPeriods: '2'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: '70'
+  
+  
+  ############### ssm for port forwarding ####################
+  SSMInterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ssm'
+      VpcId: !Ref MasterVPC
+      PrivateDnsEnabled: true
+      SubnetIds: 
+        - !Ref MasterPrivateSubnet
+      SecurityGroupIds:
+        - !Ref MasterSecurityGroup       
+
+  EC2messagesInterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ec2messages'
+      VpcId: !Ref MasterVPC
+      PrivateDnsEnabled: true
+      SubnetIds: 
+        - !Ref MasterPrivateSubnet
+      SecurityGroupIds:
+        - !Ref MasterSecurityGroup 
+
+  EC2InterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ec2'
+      VpcId: !Ref MasterVPC
+      PrivateDnsEnabled: true
+      SubnetIds: 
+        - !Ref MasterPrivateSubnet
+      SecurityGroupIds:
+        - !Ref MasterSecurityGroup 
+
+  SSMmessagesInterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ssmmessages'
+      VpcId: !Ref MasterVPC
+      PrivateDnsEnabled: true
+      SubnetIds: 
+        - !Ref MasterPrivateSubnet
+      SecurityGroupIds:
+        - !Ref MasterSecurityGroup 
+
+
+  ############### client1 instance ###################
+  Client1SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for Flare client server
+      GroupName: !Sub ${EnvironmentName}-Client1SecurityGroup-${AWS::AccountId}-${AWS::Region}
+      SecurityGroupIngress:
+        - CidrIp: '0.0.0.0/0'
+          Description: ssh:22/tcp
+          FromPort: 22
+          IpProtocol: TCP
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: project
+          Value: !Sub "${EnvironmentName}-flareonaws"
+      VpcId: !Ref 'Client1VPC'
+  Client1SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow communication within network
+      GroupId: !Ref 'Client1SecurityGroup'
+      IpProtocol: '-1'
+      SourceSecurityGroupId: !Ref 'Client1SecurityGroup'
+
+  Client1AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn:
+      - Client1LaunchConfiguration
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref 'Client1PrivateSubnet'
+      LaunchConfigurationName: !Sub ${EnvironmentName}-Client1LaunchConfiguration-${AWS::AccountId}-${AWS::Region}
+      MinSize: '1'
+      MaxSize: '4'
+      DesiredCapacity: '1'
+      Tags:
+        - Key: Name
+          Value: Client1Instance
+          PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+        Count: 1
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+
+  Client1LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: !Sub ${EnvironmentName}-Client1LaunchConfiguration-${AWS::AccountId}-${AWS::Region}
+      ImageId: !Ref LatestAmiId
+      AssociatePublicIpAddress: false
+      SecurityGroups:
+        - !Ref 'Client1SecurityGroup'
+      InstanceType: !Ref 'ClientInstanceType'
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 200
+            VolumeType: "gp3"
+            DeleteOnTermination: true
+      IamInstanceProfile: !Ref 'EC2InstanceProfile'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          until git clone https://github.com/aws-quickstart/quickstart-linux-utilities.git; do echo "Retrying"; done
+          cd quickstart-linux-utilities
+          source quickstart-cfn-tools.source
+          qs_update-os || qs_err
+          qs_bootstrap_pip || qs_err
+          qs_aws-cfn-bootstrap || qs_err
+          cfn-signal -e $? --stack ${AWS::StackName} --resource Client1AutoScalingGroup --region ${AWS::Region} || echo "failed to notify stack"
+          apt update -y
+          apt install -y python3.8
+          update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+          apt install -y python3-setuptools nfs-common python3.8-venv python3-pip python3-apt python-apt git binutils awscli
+          python3 -m pip install -U pip setuptools
+          python3 -m pip install monai torch torchvision pytorch-ignite numpy itk-io pandas kaleido plotly tensorboard tqdm nibabel nvflare==2.2.1 cffi --ignore-installed
+          python3 -m pip install pyOpenSSL --upgrade
+  
+  Client1ScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref 'Client1AutoScalingGroup'
+      Cooldown: '60'
+      ScalingAdjustment: '-1'
+  Client1ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref 'Client1AutoScalingGroup'
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+  Client1CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref 'Client1ScaleUpPolicy'
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref 'Client1AutoScalingGroup'
+      EvaluationPeriods: '2'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: '90'
+  Client1CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref 'Client1ScaleDownPolicy'
+      AlarmDescription: Scale-down if CPU < 70% for 10 minutes
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref 'Client1AutoScalingGroup'
+      EvaluationPeriods: '2'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: '70'
+
+
+  ################ client 2 instance ######################
+  Client2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for Flare client server
+      GroupName: !Sub ${EnvironmentName}-Client2SecurityGroup-${AWS::AccountId}-${AWS::Region}
+      SecurityGroupIngress:
+        - CidrIp: '0.0.0.0/0'
+          Description: ssh:22/tcp
+          FromPort: 22
+          IpProtocol: TCP
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: project
+          Value: !Sub "${EnvironmentName}-flareonaws"
+      VpcId: !Ref 'Client2VPC'
+  Client2SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow communication within network
+      GroupId: !Ref 'Client2SecurityGroup'
+      IpProtocol: '-1'
+      SourceSecurityGroupId: !Ref 'Client2SecurityGroup'
+
+  Client2AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn:
+      - Client2LaunchConfiguration
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref 'Client2PrivateSubnet'
+      LaunchConfigurationName: !Sub ${EnvironmentName}-Client2LaunchConfiguration-${AWS::AccountId}-${AWS::Region}
+      MinSize: '1'
+      MaxSize: '4'
+      DesiredCapacity: '1'
+      Tags:
+        - Key: Name
+          Value: Client2Instance
+          PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+        Count: 1
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+
+  Client2LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: !Sub ${EnvironmentName}-Client2LaunchConfiguration-${AWS::AccountId}-${AWS::Region}
+      ImageId: !Ref LatestAmiId
+      AssociatePublicIpAddress: false
+      SecurityGroups:
+        - !Ref 'Client2SecurityGroup'
+      InstanceType: !Ref 'ClientInstanceType'
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 200
+            VolumeType: "gp3"
+            DeleteOnTermination: true
+      IamInstanceProfile: !Ref 'EC2InstanceProfile'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          until git clone https://github.com/aws-quickstart/quickstart-linux-utilities.git; do echo "Retrying"; done
+          cd quickstart-linux-utilities
+          source quickstart-cfn-tools.source
+          qs_update-os || qs_err
+          qs_bootstrap_pip || qs_err
+          qs_aws-cfn-bootstrap || qs_err
+          cfn-signal -e $? --stack ${AWS::StackName} --resource Client2AutoScalingGroup --region ${AWS::Region} || echo "failed to notify stack"
+          apt update -y
+          apt install -y python3.8
+          update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+          apt install -y python3-setuptools nfs-common python3.8-venv python3-pip python3-apt python-apt git binutils awscli
+          python3 -m pip install -U pip setuptools
+          python3 -m pip install monai torch torchvision pytorch-ignite numpy itk-io pandas kaleido plotly tensorboard tqdm nibabel nvflare==2.2.1 cffi --ignore-installed
+          python3 -m pip install pyOpenSSL --upgrade
+  
+  Client2ScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref 'Client2AutoScalingGroup'
+      Cooldown: '60'
+      ScalingAdjustment: '-1'
+  Client2ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref 'Client2AutoScalingGroup'
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+  Client2CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref 'Client2ScaleUpPolicy'
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref 'Client2AutoScalingGroup'
+      EvaluationPeriods: '2'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: '90'
+  Client2CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref 'Client2ScaleDownPolicy'
+      AlarmDescription: Scale-down if CPU < 70% for 10 minutes
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref 'Client2AutoScalingGroup'
+      EvaluationPeriods: '2'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: '70'
+
+
+Outputs:
+  ProvisionBucketName:
+    Value: !Ref ProvisionBucket
