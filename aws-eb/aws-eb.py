@@ -601,8 +601,8 @@ class Builder:
                         print(f'    Remove from eb-build-status.json to try again ...', flush=True)
                         continue
                     else:
-                        print(f"  * --check-skipped: {self.args.checkskipped}", frush=True) 
-                        print(f"  * --check-failed: {self.args.checkfailed}", frush=True) 
+                        print(f"  * --check-skipped: {self.args.checkskipped}", flush=True) 
+                        print(f"  * --check-failed: {self.args.checkfailed}", flush=True) 
                         print(f'  * trying {ebfile} again ...', flush=True) 
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
                 if ebfile not in statdict.keys():
@@ -2686,8 +2686,9 @@ class AWSBoto:
         }}
         {pkgm} update -y
         export DEBIAN_FRONTEND=noninteractive
-        {pkgm} install -y redis6 
-        {pkgm} install -y redis
+        # disable juicefs 
+        # {pkgm} install -y redis6 
+        # {pkgm} install -y redis
         {pkgm} install -y python3.11-pip python3.11-devel # for RHEL
         {pkgm} install -y gcc mdadm jq git python3-pip mc
         {pkgm} install -y python3-venv python3-dev rpm2cpio lmod # for Ubuntu
@@ -2695,15 +2696,14 @@ class AWSBoto:
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
         chown {self.cfg.defuser} /mnt/scratch
-        # disable juicefs
-        # if [[ -f /usr/bin/redis6-server ]]; then
-        #   systemctl enable redis6
-        #   systemctl restart redis6  # juicefs on Amazon linux
-        # fi
-        # if [[ -f /usr/bin/redis-server ]]; then
-        #   systemctl enable redis
-        #   # systemctl restart redis # juicefs on RHEL/Ubuntu
-        # fi
+        if [[ -f /usr/bin/redis6-server ]]; then
+          systemctl enable redis6
+          systemctl restart redis6  # juicefs on Amazon linux
+        fi
+        if [[ -f /usr/bin/redis-server ]]; then
+          systemctl enable redis
+          # systemctl restart redis # juicefs on RHEL/Ubuntu
+        fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
