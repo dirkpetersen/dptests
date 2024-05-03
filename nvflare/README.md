@@ -17,6 +17,12 @@ catalog.workshops.aws/nvflareonaws/en-US/deployment
 Single Account 
 https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=nvflarestack&templateURL=https://monailabelonaws.s3.amazonaws.com/flareonaccountall.yaml
 
+Modified for OHSU 
+https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=nvflarestack2&templateURL=https://dpcri-nvflare.s3.amazonaws.com/flareonaccountall.yaml
+
+OHSU-NO-IAM
+https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=nvflarestack&templateURL=https://dpcri-nvflare.s3.amazonaws.com/flareonaccountall-no-iam.yaml
+
 
 Multi-Account Network
 

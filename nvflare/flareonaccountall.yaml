@@ -102,7 +102,7 @@ Parameters:
     Description: The AMI Alias for AWS Deep Learning AMI
   FlareAdminEmail:
     Type: String
-    Default: admin@nvidia.com
+    Default: peterdir@ohsu.edu
   ClientInstanceType:
     Description: EC2 instance type
     Type: String

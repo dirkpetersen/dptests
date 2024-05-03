@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.08'
+__version__ = '0.40.09'
 
 def main():
         
@@ -253,9 +253,9 @@ def subcmd_launch(args,cfg,bld,aws):
     cfg.printdbg ("build:", args.awsprofile)
     cfg.printdbg(f'default cmdline: aws-eb build')
 
-    if args.untar:
-        bld._untar_eb_software(args.untar)
-        return True
+    # if args.untar:
+    #     bld._untar_eb_software(args.untar)
+    #     return True
 
     if args.monitor:
         # aws inactivity and cost monitoring
@@ -550,9 +550,9 @@ class Builder:
         # install a lot of required junk 
         #if not self.args.debug:
             #self._install_os_dependencies(easyconfigroot, minimal=True)        
-        untar = os.path.join(self.cfg.binfolderx,'untar')
-        if os.path.exists(f'{untar}.go'):
-            subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
+        # untar = os.path.join(self.cfg.binfolderx,'untar')
+        # if os.path.exists(f'{untar}.go'):
+        #     subprocess.run(['go', 'build', '-o', untar, f'{untar}.go'], shell=True)
         # set up easybuild config 
         opts, _ = set_up_configuration(args=[], silent=True)
         softwaredir = os.path.join(self.eb_root, 'software')
@@ -589,13 +589,21 @@ class Builder:
                 retcode=-1; ebcnt+=1; ebskipped+=1            
                 print(f'  * Current time (trydate): {trydate}')
                 if ebfile in statdict.keys():
-                    if statdict[ebfile]['status'] != 'skipped' or self.args.checkskipped == False:
-                        print(f'  * ignoring {ebfile}, it was run with status {statdict[ebfile]["status"]} at {statdict[ebfile]["trydate"]}.', flush=True)
+                    if statdict[ebfile]['status'] == 'success':
+                        print(f'  * ignoring {ebfile}, it was already built successfully at {statdict[ebfile]["trydate"]}.', flush=True)
+                        continue
+                    elif statdict[ebfile]['status'] == 'skipped' and self.args.checkskipped == False:
+                        print(f'  * ignoring {ebfile}, it was skipped at {statdict[ebfile]["trydate"]}.', flush=True)
+                        print(f'    Remove from eb-build-status.json to try again ...', flush=True)
+                        continue
+                    elif statdict[ebfile]['status'] == 'error' and self.args.checkfailed == False:
+                        print(f'  * ignoring {ebfile}, it failed at {statdict[ebfile]["trydate"]}.', flush=True)
                         print(f'    Remove from eb-build-status.json to try again ...', flush=True)
                         continue
                     else:
-                        if self.args.checkskipped: # checkskipped = re-run previously checked skipped builds
-                            print(f'  * checkskipped is set, trying {ebfile} again ...', flush=True) 
+                        print(f"  * --check-skipped: {self.args.checkskipped}", frush=True) 
+                        print(f"  * --check-failed: {self.args.checkfailed}", frush=True) 
+                        print(f'  * trying {ebfile} again ...', flush=True) 
                 statdict = self.aws.s3_get_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json')
                 if ebfile not in statdict.keys():
                     statdict[ebfile] = statdict_template        
@@ -721,7 +729,7 @@ class Builder:
                     now1=int(time.time())
                     if 'CUDA' in ebf: # CUDA is a special case, we may not have a GPU installed 
                         print(f'  * running "{cmdline} --ignore-test-failure {ebf}" ... ', flush=True)
-                        ret = subprocess.run(f'{cmdline} --ignore-test-failure {ebf}', shell=True, text=True)
+                        ret = subprocess.run(f'{cmdline} --ignore-test-failure --accept-eula-for=CUDA {ebf}', shell=True, text=True)
                     else:
                         print(f'  * running "{cmdline} {ebf}" ... ', flush=True)
                         ret = subprocess.run(f'{cmdline} {ebf}', shell=True, text=True)
@@ -967,70 +975,70 @@ class Builder:
                     print(f"An error occurred while creating tarball: {e}")
         return all_tars, new_tars
     
-    def _untar_eb_software(self, folder):
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        new_tars = []
-        all_tars = []
+    # def _untar_eb_software(self, folder):
+    #     from concurrent.futures import ThreadPoolExecutor, as_completed
+    #     new_tars = []
+    #     all_tars = []
 
-        subprocess.run(['untar', folder, self.args.vcpus*100])
-        return all_tars, new_tars
+    #     subprocess.run(['untar', folder, self.args.vcpus*100])
+    #     return all_tars, new_tars
 
-        def untar_file(file_path, root):
-            print(f"Unpacking {file_path} into {root}...", flush=True)
-            try:
-                # # Check if pigz is available
-                # if shutil.which("pigz"):
-                #     decompress_command = f"pigz -p {self.args.vcpus}"
-                # else:
-                #     # Fallback to gzip if pigz is not available
-                #     decompress_command = "gzip -d"
+    #     def untar_file(file_path, root):
+    #         print(f"Unpacking {file_path} into {root}...", flush=True)
+    #         try:
+    #             # # Check if pigz is available
+    #             # if shutil.which("pigz"):
+    #             #     decompress_command = f"pigz -p {self.args.vcpus}"
+    #             # else:
+    #             #     # Fallback to gzip if pigz is not available
+    #             #     decompress_command = "gzip -d"
 
-                # # Decompress and unpack the file
-                # subprocess.run([
-                #     "tar",
-                # #    "-I", decompress_command,
-                #     "-xf", file_path,
-                #     "-C", root 
-                # ], check=True)
-                with tarfile.open(file_path, 'r:gz') as tar:
-                    tar.extractall(path=root)
-                print(f"Successfully unpacked: {file_path}")
-                return file_path            
-            #except subprocess.CalledProcessError as e:
-            except tarfile.TarError as e:            
-                print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
-                return False
-            except Exception as e:
-                print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
-                return False
+    #             # # Decompress and unpack the file
+    #             # subprocess.run([
+    #             #     "tar",
+    #             # #    "-I", decompress_command,
+    #             #     "-xf", file_path,
+    #             #     "-C", root 
+    #             # ], check=True)
+    #             with tarfile.open(file_path, 'r:gz') as tar:
+    #                 tar.extractall(path=root)
+    #             print(f"Successfully unpacked: {file_path}")
+    #             return file_path            
+    #         #except subprocess.CalledProcessError as e:
+    #         except tarfile.TarError as e:            
+    #             print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
+    #             return False
+    #         except Exception as e:
+    #             print(f"untar_file: An error occurred while unpacking {file_path}: {e}")
+    #             return False
 
-        # Create a list of tasks for parallel execution
-        tasks = []
-        for root, dirs, files in self.cfg._walker(folder):
-            package_name = os.path.basename(root)
-            for filename in files:
-                if filename.endswith('.eb.tar.gz'):
-                    version = filename.replace('.eb.tar.gz', '').replace(package_name + '-', '')
-                    version_dir_path = os.path.join(root, version)
-                    easybuild_path = os.path.join(version_dir_path, 'easybuild')
-                    file_path = os.path.join(root, filename)
-                    all_tars.append(file_path)
-                    if not os.path.exists(easybuild_path):
-                        tasks.append((file_path, root))
+    #     # Create a list of tasks for parallel execution
+    #     tasks = []
+    #     for root, dirs, files in self.cfg._walker(folder):
+    #         package_name = os.path.basename(root)
+    #         for filename in files:
+    #             if filename.endswith('.eb.tar.gz'):
+    #                 version = filename.replace('.eb.tar.gz', '').replace(package_name + '-', '')
+    #                 version_dir_path = os.path.join(root, version)
+    #                 easybuild_path = os.path.join(version_dir_path, 'easybuild')
+    #                 file_path = os.path.join(root, filename)
+    #                 all_tars.append(file_path)
+    #                 if not os.path.exists(easybuild_path):
+    #                     tasks.append((file_path, root))
 
-        # Execute the tasks in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=self.args.vcpus*100) as executor:
-            future_to_file = {executor.submit(untar_file, file_path, root): file_path for file_path, root in tasks}
-            for future in as_completed(future_to_file):
-                file_path = future_to_file[future]
-                try:
-                    unpacked_file = future.result()
-                    if unpacked_file:
-                        new_tars.append(unpacked_file)
-                except Exception as e:
-                    print(f"An error occurred while executing task for {file_path}: {e}")
+    #     # Execute the tasks in parallel using ThreadPoolExecutor
+    #     with ThreadPoolExecutor(max_workers=self.args.vcpus*100) as executor:
+    #         future_to_file = {executor.submit(untar_file, file_path, root): file_path for file_path, root in tasks}
+    #         for future in as_completed(future_to_file):
+    #             file_path = future_to_file[future]
+    #             try:
+    #                 unpacked_file = future.result()
+    #                 if unpacked_file:
+    #                     new_tars.append(unpacked_file)
+    #             except Exception as e:
+    #                 print(f"An error occurred while executing task for {file_path}: {e}")
 
-        return all_tars, new_tars
+    #     return all_tars, new_tars
 
 
     def _get_latest_easyconfig(self,directory):
@@ -2628,7 +2636,7 @@ class AWSBoto:
             pkgm = 'yum'
         long_timezone = self.cfg.get_time_zone()
         newhostname = self.r53_get_next_nodename(self.basehostname)
-        userdata = textwrap.dedent(f'''                                   
+        userdata = textwrap.dedent(rf'''                                   
         #! /bin/bash
         format_largest_unused_block_devices() {{
             # format the largest unused block device(s) and mount it to /opt or /mnt/scratch
@@ -2687,14 +2695,15 @@ class AWSBoto:
         chown {self.cfg.defuser} /opt
         format_largest_unused_block_devices /mnt/scratch
         chown {self.cfg.defuser} /mnt/scratch
-        if [[ -f /usr/bin/redis6-server ]]; then
-          systemctl enable redis6
-          systemctl restart redis6  # juicefs on Amazon linux
-        fi
-        if [[ -f /usr/bin/redis-server ]]; then
-          systemctl enable redis
-          # systemctl restart redis # juicefs on RHEL/Ubuntu
-        fi
+        # disable juicefs
+        # if [[ -f /usr/bin/redis6-server ]]; then
+        #   systemctl enable redis6
+        #   systemctl restart redis6  # juicefs on Amazon linux
+        # fi
+        # if [[ -f /usr/bin/redis-server ]]; then
+        #   systemctl enable redis
+        #   # systemctl restart redis # juicefs on RHEL/Ubuntu
+        # fi
         dnf config-manager --enable crb # enable powertools for RHEL
         {pkgm} install -y epel-release
         {pkgm} check-update
@@ -2775,7 +2784,7 @@ class AWSBoto:
         echo '#export AWS_DEFAULT_REGION={self.cfg.aws_region}' >> ~/.bashrc
         echo '#export TZ={long_timezone}' >> ~/.bashrc
         echo '#alias singularity="apptainer"' >> ~/.bashrc
-        # Install JuiceFS
+        # Install JuiceFS - disabled 
         curl -sSL https://d.juicefs.com/install | sh -
         # Install Pixi package manager (Conda alternative)
         export PIXI_HOME=~/.local && curl -fsSL https://pixi.sh/install.sh | bash
@@ -2816,7 +2825,7 @@ class AWSBoto:
         chmod +x ~/.local/bin/spot-termination-time
         #curl -Ls https://raw.githubusercontent.com/dirkpetersen/scibob/main/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/aws-eb.py?token=$(date +%s) -o ~/.local/bin/{self.scriptname}
-        curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/untar.go?token=$(date +%s) -o ~/.local/bin/untar.go
+        #curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/aws-eb/untar.go?token=$(date +%s) -o ~/.local/bin/untar.go
         curl -Ls https://raw.githubusercontent.com/dirkpetersen/dptests/main/simple-benchmark.py?token=$(date +%s) -o ~/.local/bin/simple-benchmark.py
         chmod +x ~/.local/bin/{self.scriptname}
         chmod +x ~/.local/bin/simple-benchmark.py
@@ -5190,16 +5199,18 @@ def parse_arguments():
         help="Use official Easybuild release instead of dev repos from Github.")  
     parser_launch.add_argument('--skip-life-sciences', '-l', dest='skiplifesciences', action='store_true', default=False,
         help="Skip the optional easybuild-life-sciences repository for building.")
-    parser_launch.add_argument('--check-skipped', '-k', dest='checkskipped', action='store_true', default=False,
+    parser_launch.add_argument('--check-skipped', dest='checkskipped', action='store_true', default=False,
         help="Re-check all previously skipped software packages and build them if possible.")    
+    parser_launch.add_argument('--check-failed', dest='checkfailed', action='store_true', default=False,
+        help="Re-check all previously failed software packages and build them if possible.")    
     parser_launch.add_argument('--include', '-i', dest='include', action='store', default="", metavar='<include-list>',
         help='limit builds to certain module classes, e.g "bio" or "bio,lib,tools"')     
     parser_launch.add_argument('--exclude', '-x', dest='exclude', action='store', default="", metavar='<exclude-list>',
         help='exclude certain module classes, e.g "lib" or "dev,lib", only works if --include is not set')
     parser_launch.add_argument('--force-sshkey', '-r', dest='forcesshkey', action='store_true', default=False,
         help='This option will overwrite the ssh key pair in AWS with a new one and download it.')    
-    parser_launch.add_argument('--untar', dest='untar', action='store', default='',  metavar='<untar_folder>',
-        help='the name of a folder that contains tarballs to be extracted in place.')       
+    # parser_launch.add_argument('--untar', dest='untar', action='store', default='',  metavar='<untar_folder>',
+    #     help='the name of a folder that contains tarballs to be extracted in place.')       
     
     # ***
     parser_download = subparsers.add_parser('download', aliases=['dld'],
