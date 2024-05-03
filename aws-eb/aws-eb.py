@@ -670,7 +670,7 @@ class Builder:
                     self.aws.s3_put_json(f'{self.cfg.archiveroot}/{s3_prefix}/eb-build-status.json',statdict)
                     continue
                 errmiss = self._errors_in_missing(themissing, statdict)
-                if errmiss:
+                if errmiss and self.args.checkfailed == False:
                     print(f'  ******** {ebfile} has missing dependencies with errors: {", ".join(errmiss)}', flush=True)
                     statdict[ebfile]['status'] = 'skipped'
                     statdict[ebfile]['reason'] = 'dependencies have errors'
