@@ -2873,6 +2873,8 @@ class AWSBoto:
         #pip install certbot-dns-route53
         #sudo -E /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d ${{host_s}}.${{dns_zone_name}}
         echo ""
+        mkdir -p /opt/eb/tmp
+        export TMPDIR=/opt/eb/tmp
         echo -e "CPU info:"
         lscpu | head -n 20
         printf " CPUs:" && grep -c "processor" /proc/cpuinfo
