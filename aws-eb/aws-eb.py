@@ -2851,9 +2851,9 @@ class AWSBoto:
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
         mkdir -p /opt/gh
         git clone https://github.com/easybuilders/easybuild-easyconfigs /opt/gh/easybuild-easyconfigs
-        ln -s /opt/gh/easybuild-easyconfigs/easybuild/easyconfigs ~/easybuild-easyconfigs
+        ln -s /opt/gh/easybuild-easyconfigs ~/easybuild-easyconfigs
         git clone https://github.com/FredHutch/easybuild-life-sciences /opt/gh/easybuild-life-sciences
-        ln -s /opt/gh/easybuild-life-sciences/fh_easyconfigs ~/easybuild-life-sciences
+        ln -s /opt/gh/easybuild-life-sciences ~/easybuild-life-sciences
         $PYBIN -m pip install --user easybuild 
         $PYBIN -m pip install --user --upgrade packaging boto3 requests 
         $PYBIN -m pip install --user psutil
