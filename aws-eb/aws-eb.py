@@ -28,7 +28,7 @@ except:
     #print('Error: EasyBuild not found. Please install it first.')
 
 __app__ = 'AWS-EB, a user friendly build tool for AWS EC2'
-__version__ = '0.40.09'
+__version__ = '0.40.10'
 
 def main():
         
@@ -2847,11 +2847,13 @@ class AWSBoto:
           sed -i 's/--access-key=[^ ]*/--access-key=xxx /' {bscript}
           sed -i 's/--secret-key=[^ ]*/--secret-key=yyy /' {bscript}
           sed -i 's/^  juicefs config /#&/' {bscript}
-        fi
-        mkdir -p /opt/eb/tmp
+        fi        
         mkdir -p /opt/eb/sources_s3 # rclone mount point 
-        git clone https://github.com/FredHutch/easybuild-life-sciences
-        git clone https://github.com/easybuilders/easybuild-easyconfigs          
+        mkdir -p /opt/gh
+        git clone https://github.com/easybuilders/easybuild-easyconfigs /opt/gh/easybuild-easyconfigs
+        ln -s /opt/gh/easybuild-easyconfigs/easybuild/easyconfigs ~/easybuild-easyconfigs
+        git clone https://github.com/FredHutch/easybuild-life-sciences /opt/gh/easybuild-life-sciences
+        ln -s /opt/gh/easybuild-life-sciences/fh_easyconfigs ~/easybuild-life-sciences
         $PYBIN -m pip install --user easybuild 
         $PYBIN -m pip install --user --upgrade packaging boto3 requests 
         $PYBIN -m pip install --user psutil
@@ -2873,8 +2875,8 @@ class AWSBoto:
         #pip install certbot-dns-route53
         #sudo -E /home/{self.cfg.defuser}/le/bin/certbot certonly --dns-route53 --register-unsafely-without-email --agree-tos -d ${{host_s}}.${{dns_zone_name}}
         echo ""
-        mkdir -p /opt/eb/tmp
-        export TMPDIR=/opt/eb/tmp
+        mkdir -p /opt/tmp
+        export TMPDIR=/opt/tmp
         echo -e "CPU info:"
         lscpu | head -n 20
         printf " CPUs:" && grep -c "processor" /proc/cpuinfo
