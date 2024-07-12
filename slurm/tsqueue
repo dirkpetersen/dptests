@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+# puts a terminal interface on slurm squeue
+# to debug install package: textual-dev and run a console in a separate shell:
+# > textual console -x SYSTEM -x EVENT -x DEBUG -x INFO
+# Then launch tsqueue in dev mode
+# > textual run --dev ~/gh/slurm-gui/bin/tsqueue
+# This will show all print statements in the console
+
 import os, re, subprocess as sp, asyncio
 from typing import List, Dict
 from textual import events
@@ -8,73 +15,6 @@ from textual.widgets import DataTable, Button, Header, Footer, Label, ProgressBa
 from textual.binding import Binding
 from textual.containers import Vertical, Horizontal
 from textual.screen import ModalScreen
-
-class JobDetailsScreen(ModalScreen):
-    BINDINGS = [
-        ("q", "request_quit", "Quit"),
-    ]    
-    DEFAULT_CSS = """
-    JobDetailsScreen {
-        align: center middle;
-    }
-    JobDetailsScreen > Vertical {
-        background: $panel;
-        width: 90;
-        height: 90%;
-        border: thick $primary;
-        padding: 2 4;
-    }
-    JobDetailsScreen > Vertical > * {
-        width: auto;
-        height: auto;
-    }
-    JobDetailsScreen > Vertical > Label {
-        padding-bottom: 2;
-    }
-    JobDetailsScreen > Vertical > Horizontal {
-        align: right top;
-        padding-bottom: 2;
-    }
-    JobDetailsScreen Button {
-        margin-left: 0;
-    }
-    JobDetailsScreen .key {
-        text-style: bold;
-    }
-    """
-
-    def __init__(self, job_id: str, details: Dict[str, List[str]]):
-        super().__init__()
-        self.job_id = job_id
-        self.details = details
-
-    def compose(self) -> ComposeResult:
-
-        #with Horizontal():
-        #    yield Button("Close", id="close", variant="primary")
-        #    yield Label(f"  Details for job {self.job_id}", id="title")            
-
-        with Vertical(): 
-            # Scrollable DataTable for details
-            with Horizontal():
-                yield Button("Close", id="close", variant="primary")
-                yield Label(f"  Details for job {self.job_id}", id="title")
-            details_table = DataTable()
-            details_table.zebra_stripes = True
-            details_table.cursor_type = "none"
-            details_table.styles.max_height = "99vh"
-            details_table.add_column("Key", width=20)
-            details_table.add_column("Value") 
-            for key, values in self.details.items():
-                for value in values:
-                    if value not in [None, '', 'Unknown']:
-                        details_table.add_row(key, value) 
-            yield details_table  
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss()
-
-
 
 class TSQueue(App):
     BINDINGS = [
@@ -95,8 +35,8 @@ class TSQueue(App):
 
     def update_data(self) -> None:
         columns, data = self.get_squeue_data()
-        print('*** columns:', columns)
-        print('*** data:', data)
+        #print('*** columns:', columns)
+        #print('*** data:', data)
         self.data_table.add_columns(*columns)
         self.data_table.add_rows(data)
 
@@ -109,8 +49,151 @@ class TSQueue(App):
         data = [re.split(r'\s+', line.strip()) for line in lines[1:]]
         return columns, data
     
+    async def get_job_details(self, job_id: str) -> Dict[str, List[str]]:
+
+        user = os.getlogin()  # Get the current username
+        if '[' in job_id:
+            job_id = job_id.split('_')[0]        
+        details = {}
+
+        # Use squeue  first
+        cmd = f'squeue -j {job_id} --format=%all'
+        process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await process.communicate()
+
+        lines = stdout.decode().strip().split('\n')
+        keys = lines[0].split('|')
+        values = [line.split('|') for line in lines[1:2]]
+        for i, key in enumerate(keys):
+            details[key] = [value[i] for value in values]             
+        sorted_details = dict(sorted(details.items()))       
+
+        # then add sstat output
+        cmd = f'sstat -j {job_id} -a -P'
+        process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await process.communicate()
+
+        # Check if sstat indicated an error (assuming it would mention 'Invalid user id or unknown job id')
+        if any(s in stderr.decode() for s in ["Invalid user id", "couldn't get steps for job"]):
+            # Fallback to sacct since it likely wasn't your job
+            cmd = f'sacct -j {job_id} -l -P -X'            
+            process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+            stdout, stderr = await process.communicate()
+
+        lines = stdout.decode().strip().split('\n')
+        keys = lines[0].split('|')
+        values = [line.split('|') for line in lines[1:2]]
+        for i, key in enumerate(keys):
+            sorted_details[key] = [value[i] for value in values]
+        
+        #print("Job Details:")
+        # print(sorted_details)
+        return sorted_details
+
+    async def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        job_id = self.data_table.get_row(event.row_key)[0]
+        details = await self.get_job_details(job_id)
+        screen = JobDetailsScreen(job_id, details)
+        await self.push_screen(screen)
+
+    def action_request_quit(self) -> None:
+        self.app.exit()
+
+class JobDetailsScreen(ModalScreen):
+    BINDINGS = [
+        ("q", "request_quit", "Quit"),
+    ]    
+    DEFAULT_CSS = """
+    JobDetailsScreen {
+        align: center middle;
+    }
+    JobDetailsScreen > Vertical {
+        width: 90%;
+        height: 90%;        
+        padding: 1 1;
+    }
+    JobDetailsScreen > Vertical > * {        
+        height: auto; 
+    }
+    JobDetailsScreen > Vertical > Horizontal {
+        align: left top;
+        padding-bottom: 1;
+    }
+    JobDetailsScreen > Vertical > Horizontal > Label {
+        width: 80%;
+        padding: 1;
+        overflow: auto;
+    }    
+    """
+
+    def __init__(self, job_id: str, details: Dict[str, List[str]]):
+        super().__init__()
+        self.job_id = job_id
+        if '[' in job_id:
+            self.job_id = job_id.split('_')[0]
+        self.details = details
+
+    def compose(self) -> ComposeResult:
+        reasons = self.details.get('REASON', [])
+        job_states = self.details.get('STATE', [])
+        reason = 'None'
+        job_state = 'Unknown'
+        if len(reasons) > 0:
+            reason = reasons[0]
+        if len(job_states) > 0:
+            job_state = job_states[0]
+
+        with Vertical():
+            # Scrollable DataTable for details
+            with Horizontal():
+                yield Button("(q)uit", id="close", variant="primary")
+
+                if job_state.lower() == 'running':
+                    yield Button("Cancel Job", id="cancel_job", variant="error")
+
+                self.status_label = Label(f"  Details for job {self.job_id}", id="title")
+                if reason != 'None':
+                    self.status_label.update(f"Job {self.job_id} is pending, reason: {self.explain_reason_code(reason)}")
+                yield self.status_label
+               
+            details_table = DataTable()
+            details_table.focus()
+            details_table.zebra_stripes = True
+            details_table.cursor_type = "none"
+            details_table.styles.max_height = "99vh"
+            details_table.add_column("Setting", width=20)
+            details_table.add_column("Value")
+            for key, values in self.details.items():
+                for value in values:
+                    if value not in [None, '', 'Unknown', '(null)', 'N/A', '*', 'None', '0', '00:00:00']:
+                        details_table.add_row(key, value)
+            yield details_table
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close":
+            self.dismiss()
+        elif event.button.id == "cancel_job":
+            asyncio.create_task(self.cancel_job())
+
+    async def cancel_job(self) -> None:
+        cmd = f'scancel {self.job_id}'
+        process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await process.communicate()
+
+        if process.returncode == 0:
+            self.dismiss()
+        else:
+            error_message = stderr.decode().strip()
+            # Display an error message or handle the cancellation failure appropriately
+            self.status_label.update(f"Failed to cancel job {self.job_id}: {error_message}")
+            print(f"Failed to cancel job {self.job_id}: {error_message}")    
+
+    def action_request_quit(self) -> None:
+        self.dismiss()
+
     def explain_reason_code(self, reason_code: str) -> str:
         reason_explanations = {
+            'Resources': 'The resources for the job are not yet available. This could be due to other jobs running on the system or resource limits being reached. The job will start once the required resources become available. If this is a job array, some of your array jobs may already be running. You can check the job status using the squeue command or job management interface.',
             'DependencyNeverSatisfied': 'The job you submitted has dependencies that were never satisfied. This means that the job was waiting for other jobs to complete before it could start, but those jobs did not finish successfully. To resolve this, review the dependencies of your job and ensure that the dependent jobs are able to complete successfully. You may need to resubmit the dependent jobs or adjust their requirements.',
             'PartitionTimeLimit': 'The job exceeded the time limit set for the partition it was submitted to. Each partition has a maximum time limit, and if your job runs longer than this limit, it will be terminated. To resolve this, you can either request a partition with a longer time limit or adjust your job to complete within the given time limit. If you need more time, consider breaking your job into smaller tasks or optimizing your code.',
             'TimeLimit': 'The job exceeded the time limit specified in your job submission. You can set a time limit for your job using the --time option when submitting the job. If your job exceeds this limit, it will be terminated. To resolve this, you can either increase the time limit for your job or optimize your code to complete within the specified time limit.',            
@@ -163,42 +246,7 @@ class TSQueue(App):
             'LicenseJobLimit': 'The job reached the limit of licenses. Check the license availability and resubmit the job when licenses are available.',
             'AssocMaxJobsSubmitLimit': 'The job exceeded the maximum number of jobs that can be submitted for an association. Check the association limits and resubmit the job within the allowed limits.',
         }
-        return reason_explanations.get(reason_code, 'Reason code explanation not available.')    
-
-    async def get_job_details(self, job_id: str) -> Dict[str, List[str]]:
-
-        user = os.getlogin()  # Get the current username
-
-        # Attempt to use sstat first
-        cmd = f'sstat -j {job_id} -a -P'
-        process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-        stdout, stderr = await process.communicate()
-
-        # Check if sstat indicated an error (assuming it would mention 'Invalid user')
-        if "Invalid user id" in stderr.decode():
-            # Fallback to sacct since it likely wasn't your job
-            cmd = f'sacct -j {job_id} -l -P -X'
-            process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-            stdout, stderr = await process.communicate()
-
-        lines = stdout.decode().strip().split('\n')
-        details = {}
-        keys = lines[0].split('|')
-        values = [line.split('|') for line in lines[1:]]
-        for i, key in enumerate(keys):
-            details[key] = [value[i] for value in values]
-        print("Job Details:")
-        print(details)
-        return details
-
-    async def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        job_id = self.data_table.get_row(event.row_key)[0]
-        details = await self.get_job_details(job_id)
-        screen = JobDetailsScreen(job_id, details)
-        await self.push_screen(screen)
-
-    def action_request_quit(self) -> None:
-        self.app.exit()
+        return reason_explanations.get(reason_code, f'No details for code {reason_code} available.')
 
 if __name__ == '__main__':
     TSQueue().run()
