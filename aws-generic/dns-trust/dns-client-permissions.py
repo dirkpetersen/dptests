@@ -2,9 +2,9 @@
 
 import boto3, json
 
-core_account_id = "45488595XXXX"
+core_account_id = "454885954148"
 aws_profile = 'sudo'
-group_name = "dpcriDevs"
+group_name = 'dpcriDevs'
 
 # THIS IS ONLY FOR ROLE CHAINING
 # 
@@ -52,7 +52,7 @@ group_name = "dpcriDevs"
 
 
 def create_remote_role_policy(iam, core_account_id):
-    policy_document = {        
+    policy_document = {
         "Version": "2012-10-17",
         "Statement": [
             {
@@ -99,7 +99,7 @@ def attach_policy_to_group(iam, group, policy_arn):
 
 def main():
 
-    session = boto3.Session(profile_name=aws_profile)
+    session = boto3.Session(profile_name=aws_profile) if aws_profile else boto3.Session()
     iam = session.client('iam')    
     print('My Account:', session.client('sts').get_caller_identity().get('Account'))
 

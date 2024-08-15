@@ -2,10 +2,11 @@
 
 import boto3, json
 
-client_account_id = '70174744XXXX'
-aws_profile = 'dipeXX'
+domain = 'r.internetchen.de'
+client_account_id = '701747442027'
+aws_profile = 'aws-dipeit'
 
-def create_route53_policy(iam, hosted_zone, core_account):
+def create_route53_policy(iam, hosted_zone_id, core_account):
     policy_document = {
         "Version": "2012-10-17",
         "Statement": [
@@ -14,11 +15,14 @@ def create_route53_policy(iam, hosted_zone, core_account):
                 "Action": [
                     "route53:ChangeResourceRecordSets"
                 ],
-                "Resource": f"arn:aws:route53:::hostedzone/{hosted_zone}",
+                "Resource": f"arn:aws:route53:::hostedzone/{hosted_zone_id}",
                 "Condition": {
                     "ForAllValues:StringEquals": {
                         "route53:ChangeResourceRecordSetsActions": [
                             "CREATE"
+                        ],
+                        "route53:ChangeResourceRecordSetsRecordTypes": [
+                            "A", "AAAA", "CNAME"
                         ]
                     }
                 }
@@ -26,32 +30,22 @@ def create_route53_policy(iam, hosted_zone, core_account):
             {
                 "Effect": "Allow",
                 "Action": [
-                    "route53:ListResourceRecordSets"
+                    "route53:ListResourceRecordSets",
+                    "route53:ListHostedZones",
+                    "route53:GetHostedZone"
                 ],
-                "Resource": f"arn:aws:route53:::hostedzone/{hosted_zone}"
+                "Resource": f"arn:aws:route53:::hostedzone/{hosted_zone_id}"
             },
             {
                 "Effect": "Allow",
                 "Action": [
-                    "route53:ListHostedZones"
+                    "route53:ListHostedZones",              
                 ],
                 "Resource": "*"
-            }                        
+            }
+
         ]
     }
-
-    # policy_document = {
-    #     "Version": "2012-10-17",
-    #     "Statement": [
-    #         {
-    #             "Effect": "Allow",
-    #             "Action": [
-    #                 "route53:*"
-    #             ],
-    #              "Resource": "*"
-    #         }
-    #     ]
-    # }    
 
     try:
         response = iam.create_policy(
@@ -72,13 +66,16 @@ def create_role_with_trust(iam, client_account, policy_arn):
                 "Effect": "Allow",
                 "Principal": {
                     "AWS": [
-                        f"arn:aws:iam::{client_account}:root" # allow all users in the account to use the role
+                        f"arn:aws:iam::{client_account}:root"
                     ]
-                },                
+                },
                 "Action": "sts:AssumeRole"
             }
         ]
     }
+    #:group/dpcriDevs
+    #:user/peterdir
+    #:root  # allow all users in the account to use the role
     print(f'Creating role "dns-creator-core" for account {client_account} to assume the role')
     try:
         role = iam.create_role(
@@ -97,25 +94,31 @@ def create_role_with_trust(iam, client_account, policy_arn):
 
     return role['Role']['Arn']
 
-def main():
-    session = boto3.Session(profile_name=aws_profile)
-    iam = session.client('iam')    
+def get_hosted_zone_id(session, domain):
     r53 = session.client('route53')
+    hosted_zones = r53.list_hosted_zones()['HostedZones']
+    for zone in hosted_zones:
+        if zone['Name'].rstrip('.') == domain:
+            return zone['Id'].split('/')[-1]
+    return None
+
+def main():
+    session = boto3.Session(profile_name=aws_profile) if aws_profile else boto3.Session()
+    iam = session.client('iam')    
+    
     core_account = session.client('sts').get_caller_identity().get('Account')
     print('My Account:', core_account)
 
-    hosted_zones = r53.list_hosted_zones()['HostedZones']
-    if not hosted_zones:
-        print('No hosted zones found, cannot create DNS record')
-        return    
-    hosted_zone = hosted_zones[0]['Id'].split('/')[-1]
+    hosted_zone_id = get_hosted_zone_id(session, domain)
+    if hosted_zone_id is None:
+        print(f"No hosted zone found for domain '{domain}', cannot create DNS record")
+        return
 
-    policy_arn = create_route53_policy(iam, hosted_zone, core_account)
+    policy_arn = create_route53_policy(iam, hosted_zone_id, core_account)
     print(f"Policy ARN: {policy_arn}")
     role_arn = create_role_with_trust(iam, client_account_id, policy_arn)
     print(f"Role ARN: {role_arn}")
     
-
 if __name__ == '__main__':
     main()
 
