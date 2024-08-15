@@ -77,9 +77,10 @@ lmql serve-model --cuda --host ${host} --port ${port} llama.cpp:/arc/scratch1/dp
 
 ```
 
-then you check the job output file to see which node and port the server is listening on:
+then you run the job and check the job output file to see which node and port the server is listening on:
 
 ```
+sbatch lmql-server.sub
 tail lmqlsvr-1234567.out
 
 [Serving LMTP endpoint on ws://cnode-11-16:19000/]
