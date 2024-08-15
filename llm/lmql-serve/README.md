@@ -49,7 +49,7 @@ or you install a precompiled wheel on ARC
 pip install /arc/scratch1/dpcri/llm/whl/cuda-12.5/llama_cpp_python-0.2.88-cp312-cp312-linux_x86_64.whl
 ```
 
-Now we create a slurm batch job that loads 2 inference servers, one with a specific model and the other one in auto mode so that you can load a model. 
+Now we create a slurm batch job that loads an inference server, you can either load one with a specific model or you choose auto mode so that you can load different models at run time. 
 
 vi lmql-server.sub 
 
