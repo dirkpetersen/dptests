@@ -38,7 +38,7 @@ curl -fsSL https://pixi.sh/install.sh | bash
 
 Once you can use the pixi command (you might have to login again)  you run 
 
-```
+```bash
 cd /my/conda/environments
 pixi init llama-cpp
 cd llama-cpp
@@ -68,7 +68,7 @@ Now we create a slurm batch job that loads an openai API compatible inference se
 
 vi llama-cpp-server.sub 
 
-```
+```bash 
 #! /bin/bash
 #SBATCH --job-name "llama-cpp-server"
 #SBATCH --time 1-00:00:00
@@ -84,18 +84,20 @@ host=$(hostname)
 port=$(/usr/local/bin/get-open-port.py)
 scontrol update JobId=${SLURM_JOB_ID} Comment="llama-cpp-server:${host}:${port}"
 
+python3 -m llama_cpp.server --api_key ${OPENAI_API_KEY} --cache true \
+ --host ${host} --port ${port} --n_gpu_layers -1 --verbose false \
+ --model Meta-Llama-3.1-70B-Instruct.Q4_K_M.gguf
+
+
+```
+
+if you have or require  conda / pixi environment, the last command in the submission script is a bit different: 
+
+```
 pixi run --manifest-path /my/conda/environments/llama-cpp/pixi.toml \
  HOST=${host} python3 -m llama_cpp.server --api_key ${OPENAI_API_KEY} --cache true \
  --host ${host} --port ${port} --n_gpu_layers -1 --verbose false \
  --model Meta-Llama-3.1-70B-Instruct.Q4_K_M.gguf   # This is the largest model fitting into a A40 GPU
-```
-
-if you do not require a conda / pixi environment, the last command in the submission script is simpler: 
-
-```
-python3 -m llama_cpp.server --api_key ${OPENAI_API_KEY} --cache true \
- --host ${host} --port ${port} --n_gpu_layers -1 --verbose false \
- --model Meta-Llama-3.1-70B-Instruct.Q4_K_M.gguf
 ```
 
 `--n_gpu_layers -1` means that everything should be offloaded to GPU, use `--n_gpu_layers 0` to run all inference in CPU. Use a positive integer number to run partially in GPU and CPU. The higher the number, the more GPU 
@@ -162,6 +164,8 @@ create a python script `llama-openai-client.py` with the content below
 
 import os, sys, openai
 
+streaming=True
+
 if len(sys.argv) < 3:
     print(f"Usage: {sys.argv[0]} <server:port> <prompt>")
     sys.exit(1)
@@ -174,9 +178,9 @@ client = openai.OpenAI(
     api_key=os.getenv('OPENAI_API_KEY', os.getenv('USER') or os.getenv('USERNAME')),
 )
 
-def get_openai_response(client, prompt):
+def get_openai_response(client, prompt, streaming):
     try:
-        chat_completion = client.chat.completions.create(
+        response = client.chat.completions.create(
             messages=[
                 {
                     "role": "user",
@@ -184,14 +188,28 @@ def get_openai_response(client, prompt):
                 }
             ],
             model="whatever",
+            stream=streaming
         )
-        return chat_completion.choices[0].message.content
+        # Process the stream
+        if streaming:
+            full_response = ""
+            for chunk in response:
+                chunk_message = chunk.choices[0].delta.content
+                if chunk_message:
+                    full_response += chunk_message
+                    print(chunk_message, end='', flush=True)
+
+            print()  # Print a newline after streaming is complete
+            return full_response
+        else:
+            return response.choices[0].message.content
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return None
 
-response = get_openai_response(client, prompt)
-print(response)
+response = get_openai_response(client, prompt, streaming)
+if not streaming: 
+    print(response)
 ```
 
 and then make it executable, and run it with the server and port name as the first argument and the prompt as the second command line argument. 
