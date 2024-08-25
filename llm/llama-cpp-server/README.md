@@ -42,7 +42,7 @@ Once you can use the pixi command (you might have to login again)  you run
 cd /my/conda/environments
 pixi init llama-cpp
 cd llama-cpp
-pixi add python=3.9 pip ipython gcc=13 gxx=13 cuda=12.5
+pixi add python=3.9 pip ipython gcc=13 gxx=13 cuda=12.6
 pixi add --pypi openai
 pixi shell
 ```
@@ -58,7 +58,7 @@ CMAKE_ARGS="-DGGML_CUDA=on" pip install --upgrade llama-cpp-python[server]
 or you install a precompiled llama-cpp-python wheel on ARC using a Python 3.9 package either in a venv or in the default path in your home directory. Python 3.9 is the default Python on ARC.  
 
 ```
-python3 -m pip install --upgrade /arc/scratch1/dpcri/llm/whl/cuda-12.5/llama_cpp_python-0.2.88-cp39-cp39-linux_x86_64.whl[server]
+python3 -m pip install --upgrade /arc/scratch1/dpcri/llm/whl/cuda-12.6/llama_cpp_python-0.2.89-cp39-cp39-linux_x86_64.whl[server]
 python3 -m pip install openai
 ```
 
@@ -125,7 +125,7 @@ nvidia-smi
 
 Thu Aug 15 15:50:07 2024
 +-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 555.42.06              Driver Version: 555.42.06      CUDA Version: 12.5     |
+| NVIDIA-SMI 555.42.06              Driver Version: 555.42.06      CUDA Version: 12.6     |
 |-----------------------------------------+------------------------+----------------------+
 | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
 | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
