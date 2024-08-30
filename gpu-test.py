@@ -2,45 +2,72 @@
 
 import os
 import sys
+
+cuda_available = False
+pycuda_available = False
+
 try:
-    import pycuda.autoinit
     import pycuda.driver as drv
+    drv.init()
+    cuda_available = True
+    
+    import pycuda.autoinit
     from pycuda import gpuarray
+    pycuda_available = True
+except ImportError:
+    print('PyCUDA not found. Please run: python3 -m pip install --upgrade --no-cache pycuda')
+    sys.exit(1)
+except Exception as e:
+    print(f"CUDA Error: {str(e)}")
+    print("No CUDA-capable device is detected. The script will continue with limited functionality.")
+
+try:
     import pynvml
 except ImportError:
-    print('please run first: python3 -m pip install --upgrade --no-cache pycuda pynvml')
+    print('pynvml not found. Please run: python3 -m pip install --upgrade --no-cache pynvml')
     sys.exit(1)
 
 def get_free_gpu_memory(device):
-    return device.total_memory() - pycuda.driver.mem_get_info()[1]
+    if pycuda_available:
+        return device.total_memory() - pycuda.driver.mem_get_info()[1]
+    return 0
 
 def decode_if_bytes(value):
     return value.decode('utf-8') if isinstance(value, bytes) else value
 
 def get_gpu_info():
-    pynvml.nvmlInit()
-    num_gpus = pynvml.nvmlDeviceGetCount()
-    gpu_info = []
-    for i in range(num_gpus):
-        handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-        name = decode_if_bytes(pynvml.nvmlDeviceGetName(handle))
-        uuid = decode_if_bytes(pynvml.nvmlDeviceGetUUID(handle))
-        memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        gpu_info.append((i, name, uuid, memory.free))
-    pynvml.nvmlShutdown()
-    return gpu_info
+    try:
+        pynvml.nvmlInit()
+        num_gpus = pynvml.nvmlDeviceGetCount()
+        gpu_info = []
+        for i in range(num_gpus):
+            handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+            name = decode_if_bytes(pynvml.nvmlDeviceGetName(handle))
+            uuid = decode_if_bytes(pynvml.nvmlDeviceGetUUID(handle))
+            memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            gpu_info.append((i, name, uuid, memory.free))
+        pynvml.nvmlShutdown()
+        return gpu_info
+    except pynvml.NVMLError:
+        print("Unable to retrieve GPU information using NVML.")
+        return []
 
 def test_gpu():
     cuda_visible_devices = os.environ.get('CUDA_VISIBLE_DEVICES')
     print(f"CUDA_VISIBLE_DEVICES: {cuda_visible_devices}")
-    print(f"PyCUDA version: {'.'.join(map(str, drv.get_version()))}")
-    print(f"CUDA available: {drv.get_version() != (0, 0, 0)}")
+    if cuda_available:
+        print(f"PyCUDA version: {'.'.join(map(str, drv.get_version()))}")
+    print(f"CUDA available: {cuda_available}")
 
     print("\nSystem GPU Information:")
-    for gpu in get_gpu_info():
-        print(f"  GPU {gpu[0]}: {gpu[1]}, UUID: ....{gpu[2][-4:]}, Free Memory: {gpu[3] / (1024**2):.0f} MB")
+    gpu_info = get_gpu_info()
+    if gpu_info:
+        for gpu in gpu_info:
+            print(f"  GPU {gpu[0]}: {gpu[1]}, UUID: ....{gpu[2][-4:]}, Free Memory: {gpu[3] / (1024**2):.0f} MB")
+    else:
+        print("  No GPUs detected or unable to retrieve GPU information.")
 
-    if drv.get_version() != (0, 0, 0):
+    if cuda_available and pycuda_available:
         print(f"\nCUDA version: {'.'.join(map(str, drv.get_version()))}")
         print(f"Number of CUDA devices visible to PyCUDA: {drv.Device.count()}")
 
@@ -50,22 +77,27 @@ def test_gpu():
             print(f"  Name: {device.name()}")
             print(f"  Capability: {device.compute_capability()}")
 
-            pynvml.nvmlInit()
-            handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-            uuid = decode_if_bytes(pynvml.nvmlDeviceGetUUID(handle))
-            pynvml.nvmlShutdown()
-            print(f"  UUID: ....{uuid[-4:]}")
+            try:
+                pynvml.nvmlInit()
+                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                uuid = decode_if_bytes(pynvml.nvmlDeviceGetUUID(handle))
+                pynvml.nvmlShutdown()
+                print(f"  UUID: ....{uuid[-4:]}")
+            except pynvml.NVMLError:
+                print("  Unable to retrieve UUID information.")
 
         current_device = pycuda.autoinit.device
         current_device_index = current_device.get_attribute(drv.device_attribute.PCI_DEVICE_ID)
         print(f"\nCurrent CUDA device index: {current_device_index}")
 
-        pynvml.nvmlInit()
-        handle = pynvml.nvmlDeviceGetHandleByIndex(current_device_index)
-        actual_gpu_uuid = decode_if_bytes(pynvml.nvmlDeviceGetUUID(handle))
-        pynvml.nvmlShutdown()
-
-        print(f"UUID of GPU PyCUDA is using: ....{actual_gpu_uuid[-4:]}")
+        try:
+            pynvml.nvmlInit()
+            handle = pynvml.nvmlDeviceGetHandleByIndex(current_device_index)
+            actual_gpu_uuid = decode_if_bytes(pynvml.nvmlDeviceGetUUID(handle))
+            pynvml.nvmlShutdown()
+            print(f"UUID of GPU PyCUDA is using: ....{actual_gpu_uuid[-4:]}")
+        except pynvml.NVMLError:
+            print("Unable to retrieve UUID of current GPU.")
 
         if cuda_visible_devices is not None:
             specified_gpu_ids = [int(x) for x in cuda_visible_devices.split(',')]
