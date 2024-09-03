@@ -26,9 +26,10 @@ cd auto_tmpdir
 mkdir build 
 cd build 
 
+# cmake -DCMAKE_BUILD_TYPE=Release \                                                                      #    -DAUTO_TMPDIR_ENABLE_SHARED_TMPDIR=On \                                                              #    -DAUTO_TMPDIR_DEFAULT_SHARED_PREFIX=/arc/scratch1/jobs \                                             #    -DSLURM_MODULES_DIR=/usr/lib64/slurm \                                                               #     ..
+
 cmake -DCMAKE_BUILD_TYPE=Release \
-  -DAUTO_TMPDIR_ENABLE_SHARED_TMPDIR=On \
-  -DSLURM_MODULES_DIR=/usr/lib64/slurm \
+  -DSLURM_MODULES_DIR=/usr/lib64/slurm \  
   ..
 
 make 
@@ -42,6 +43,12 @@ chown slurm /var/tmp/auto_tmpdir_cache
 ```
 
 and finally we edit /etc/slurm/plugstack.conf and add a line 
+
+```
+optional    auto_tmpdir.so  mount=/tmp mount=/var/tmp local_prefix=/mnt/scratch/tmpdir- state_dir=/var/tmp/auto_tmpdir_cache
+```
+
+but not 
 
 ```
 optional    auto_tmpdir.so  mount=/tmp mount=/var/tmp local_prefix=/mnt/scratch/tmpdir- shared_prefix=/arc/scratch1/slurm/job- no_rm_shared_only state_dir=/var/tmp/auto_tmpdir_cache
