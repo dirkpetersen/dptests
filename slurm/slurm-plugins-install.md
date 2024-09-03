@@ -71,12 +71,13 @@ ls $TMPDIR /tmp /var/tmp /dev/shm
 
 This does not seem to work : 
 
+```
 cmake -DCMAKE_BUILD_TYPE=Release \
    -DAUTO_TMPDIR_ENABLE_SHARED_TMPDIR=On \
    -DAUTO_TMPDIR_DEFAULT_SHARED_PREFIX=/arc/scratch1/jobs \
    -DSLURM_MODULES_DIR=/usr/lib64/slurm \
    ..
-
+```
 
 in /etc/slurm/plugstack.conf 
 
