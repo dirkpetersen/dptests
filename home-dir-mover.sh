@@ -3,8 +3,6 @@
 # ToDoList 
 # 1) insert PATH in crontab 
 # 2) echo "/arc/scratch1/dpcri/peterdir/.local/lib/python3.12/site-packages" > $HOME/.local/lib/python3.12/site-packages/custom.pth
-# 3) symlink to original ~/.ssh instead of copy 
-# 3) symlink to original ~/.config/systemd dir instead of copy
 
 # Check if a destination folder is provided
 if [ $# -eq 0 ]; then
@@ -19,8 +17,7 @@ DEST=$1
 mkdir -p "$DEST"
 
 # List of files and directories to copy
-COPY_LIST=".aws .cache .config .keychain .local .ssh .vim .vscode-server bin .Xauthority .bash_history .gitconfig .lesshst .viminfo .vimrc"
-
+COPY_LIST=".aws .cache .keychain .local .vim .vscode-server bin"
 
 # Copy files and directories
 for item in $COPY_LIST; do
@@ -28,12 +25,13 @@ for item in $COPY_LIST; do
     cp -R "$HOME/$item" "$DEST/"
 done
 
-# Create symlinks for .bashrc, .bash_profile, and .profile
-for file in .bashrc .bash_profile .profile; do
-    if [ -f "$HOME/$file" ]; then
-        mv "$HOME/$file" "$DEST/"
-        ln -s "$DEST/$file" "$HOME/$file"
-        echo "Created symlink for $file"
+# Create symlinks in new homedir pointing back to original home 
+for file in .bashrc .bash_profile .profile .ssh .config .Xauthority .bash_history .gitconfig .lesshst .viminfo .vimrc; do
+    if [[ -f "$HOME/$file" ]]; then
+        #mv "$HOME/$file" "$DEST/"
+        #ln -s "$DEST/$file" "$HOME/$file"
+        ln -s "$HOME/$file" "$DEST/$file"
+        echo "Created symlink $DEST/$file for $HOME/$file"
     fi
 done
 
@@ -56,3 +54,4 @@ fi
 
 echo "Backup completed and symlinks created in $DEST"
 echo "The HOME variable has been set to $DEST in .bashrc"
+
