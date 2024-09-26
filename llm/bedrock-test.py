@@ -19,9 +19,9 @@ bedrock_runtime = boto3.client(
 # Let's see all available Anthropic Models
 available_models = bedrock.list_foundation_models()
 
-#for model in available_models['modelSummaries']:
-#  if 'anthropic' in model['modelId']:
-#    print(model)
+for model in available_models['modelSummaries']:
+  if 'anthropic' in model['modelId']:
+    print(model['modelId'])
 
 
 # Define prompt and model parameters
@@ -38,13 +38,13 @@ body = {"prompt": "Human: " + prompt_data + " \\nAssistant:",
 
 body = json.dumps(body) # Encode body as JSON string
 
-
-#modelId = 'anthropic.claude-3-haiku-20240307-v1:0' 
-#modelId = 'anthropic.claude-3-sonnet-20240229-v1:0' 
-modelId = 'anthropic.claude-3-opus-20240229-v1:0' 
+#modelId = 'anthropic.claude-3-5-sonnet-20240620-v1:0:200k' 
+modelId = 'anthropic.claude-3-5-sonnet-20240620-v1:0'
+#modelId = 'anthropic.claude-3-opus-20240229-v1:0:200k'
 #modelId = 'meta.llama3-70b-instruct-v1:0'
 accept = 'application/json'
 contentType = 'application/json'
+
 
 #Invoke the model
 response = bedrock_runtime.invoke_model(body=body.encode('utf-8'), # Encode to bytes
@@ -56,13 +56,16 @@ response_body = json.loads(response.get('body').read())
 print(response_body.get('completion'))
 
 
-#We can also call the Anthropic Claude models via the streaming API
 
+
+
+#We can also call the Anthropic Claude models via the streaming API
 response = bedrock_runtime.invoke_model_with_response_stream(body=body.encode('utf-8'), # Encode to bytes
-                                 modelId=modelId, 
-                                 accept=accept, 
+                                 modelId=modelId,
+                                 accept=accept,
                                  contentType=contentType)
 
 for event in response['body']:
     data = json.loads(event['chunk']['bytes'])
     print(data['completion'])
+
