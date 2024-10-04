@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# This script is used to stage an image from an OCI registry to a local SIF file.
+# It will pull the image only if it's newer than the local SIF file.
+# The script will also set the registry credentials for MYREGISTRY
+# The apptainer-stage command can be added to an HPC job script 
+
+# Constants
+REGISTRY_AUTH_FILE="${HOME}/.registry"
+MYREGISTRY="hpcregistry.ohsu.edu"
+
+# Function to add "oci://" to the image URL if no protocol is specified
+normalize_image_url() {
+  local image_url=$1
+  if [[ ! "${image_url}" =~ "://" ]]; then
+    image_url="oci://${image_url}"
+  fi
+  echo "${image_url}"
+}
+
+# Function to get the image digest from the OCI registry
+get_remote_image_digest() {
+  local image_url=$1
+  apptainer inspect --type oci "${image_url}" | grep "digest" | awk '{print $2}'
+}
+
+# Function to get the image digest of the local SIF file
+get_local_image_digest() {
+  local sif_file=$1
+  apptainer inspect --type sif "${sif_file}" 2>/dev/null | grep "digest" | awk '{print $2}'
+}
+
+# Function to set environment variables for registry login if URL contains 'hpcregistry.ohsu.edu'
+set_registry_credentials() {
+  if [[ $1 == *"${MYREGISTRY}"* && -f "${REGISTRY_AUTH_FILE}" ]]; then
+    echo "Setting credentials for hpcregistry.ohsu.edu"
+    local username password
+    username=$(grep "Username:" "${REGISTRY_AUTH_FILE}" | awk '{print $2}')
+    password=$(grep "Password:" "${REGISTRY_AUTH_FILE}" | awk '{print $2}')
+    
+    export APPTAINER_DOCKER_USERNAME="${username}"
+    export APPTAINER_DOCKER_PASSWORD="${password}"
+  fi
+}
+
+# Function to pull the image only if it's newer than the local SIF file
+pull_if_newer() {
+  local image_url=$1
+  local local_sif_file=$2
+  local remote_digest local_digest
+  
+  remote_digest=$(get_remote_image_digest "${image_url}")
+
+  if [[ ! -f "${local_sif_file}" ]]; then
+    echo "Local SIF not found. Pulling image..."
+    apptainer pull --name "${local_sif_file}" "${image_url}"
+    return
+  fi
+
+  local_digest=$(get_local_image_digest "${local_sif_file}")
+
+  if [[ "${remote_digest}" != "${local_digest}" ]]; then
+    echo "Remote image is newer. Pulling updated image..."
+    apptainer pull --name "${local_sif_file}" "${image_url}"
+  else
+    echo "Local image is up-to-date."
+  fi
+}
+
+# Main script function
+apptainer_stage() {
+  local image_url=$1
+  local local_sif_file=$2
+
+  # Normalize image URL to add 'oci://' if missing
+  image_url=$(normalize_image_url "${image_url}")
+  
+  # Set credentials if needed
+  set_registry_credentials "${image_url}"
+
+  # Pull the image if it's newer
+  pull_if_newer "${image_url}" "${local_sif_file}"
+}
+
+# Script entry point
+if [[ $# -ne 2 ]]; then
+  echo "Usage: apptainer-stage oci://${MYREGISTRY}/examplelab/testimage:latest <local-sif-file>"
+  exit 1
+fi
+
+apptainer_stage "$1" "$2"
+
