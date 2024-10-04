@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 
-import os
-import subprocess
-import shutil
-import sys
-import time
+import os, subprocess, shutil, sys, time, re
 import openai
 
 # Function to load OpenAI API key from environment or file
 def load_openai_api_key():
-    # Check if OPENAI_API_KEY is in environment variables
     api_key = os.getenv("OPENAI_API_KEY")
     
     if api_key:
         return api_key
 
-    # If not found, check for ~/.openairc file
     openairc_path = os.path.expanduser("~/.openairc")
     
     if os.path.exists(openairc_path):
@@ -26,10 +20,8 @@ def load_openai_api_key():
                     if api_key:
                         return api_key
 
-    # If no key found, prompt the user for input
     api_key = input("Please enter your OpenAI API key: ")
 
-    # Create the ~/.openairc file with the key
     with open(openairc_path, 'w') as f:
         f.write(f"export OPENAI_API_KEY={api_key}\n")
     
@@ -37,95 +29,151 @@ def load_openai_api_key():
     
     return api_key
 
-# Function to get an improvement of the code using GPT-4-turbo
-def improve_code(original_code, error_output=None):
-    prompt = f"Please improve the following code:\n\n{original_code}"
-    if error_output:
-        prompt += f"\n\nHere is the error message:\n\n{error_output}\n\nPlease fix it."
-
-    # Send the code to OpenAI GPT-4-turbo API for improvement
-    response = openai.Completion.create(
-        engine="gpt-4o",  # Using gpt-4o
-        prompt=prompt,
-        max_tokens=1500,
-        temperature=0.7,
-        n=1,
-        stop=None
-    )
+# Function to get an improvement of the code using GPT-4
+def improve_code(client, prompt, error_output=None, streaming=False):
+    messages = [
+        {"role": "system", "content": "You are a highest-end software engineer that improves code, predominantly Python or Bash."},
+        {"role": "user", "content": f"Please improve the following code:\n\n{prompt}"}
+    ]
     
-    improved_code = response['choices'][0]['text'].strip()
-    return improved_code
+    if error_output:
+        messages.append({"role": "user", "content": f"but your priority is fixing, Here is the error message:\n\n{error_output}\n"})
+
+    try:
+        print(f'Connecting to openai API ... ')
+        response = client.chat.completions.create(
+            messages=messages,
+            model="gpt-4o",  # Use the model you need
+            stream=streaming
+        )
+
+        if streaming:
+            full_response = ""
+            for chunk in response:
+                chunk_message = chunk.choices[0].delta.content
+                if chunk_message:
+                    full_response += chunk_message
+                    print(chunk_message, end='', flush=True)
+            print()  # Newline after streaming is done
+            return full_response
+        else:
+            return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
+
+
+# Function to parse code from markdown-style blocks (e.g., ```python ... ```
+def parse_code_block(response_text):
+    # Regex to capture code blocks for Python and Bash
+    code_block_pattern = r"```(python|bash)\n(.*?)```"
+    match = re.search(code_block_pattern, response_text, re.DOTALL)
+
+    if match:
+        language = match.group(1)  # 'python' or 'bash'
+        code = match.group(2).strip()  # The actual code
+        print(f"Extracted {language} code block:\n{code}\n")
+        return code
+    else:
+        print("No code block found in the response.")
+        return response_text  # Return the original if no code block was found
 
 # Function to check if a file is executable
-def is_executable(file_path):
-    return os.access(file_path, os.X_OK)
+def is_executable(script_path):
+    # This only checks if the file has the executable flag
+    return os.access(script_path, os.X_OK)
+
+# Function to ensure the script is executable, with better logic
+def ensure_executable(script_path):
+    if not is_executable(script_path):
+        print(f"Script {script_path} is not executable. Fixing permissions...")
+        os.chmod(script_path, 0o755)
 
 # Main function to handle the bad-coder process
-def bad_coder(script_path, script_args):
+def bad_coder(client, script_path, script_args, streaming=False):
     script_version = 0
     base_script_name = os.path.basename(script_path)
     script_dir = os.path.dirname(script_path)
     
+    # Ensure the script is executable
+    ensure_executable(script_path)
+    code_to_improve = None
+    
     while True:
         # Read the script content
-        with open(script_path, 'r') as f:
-            original_code = f.read()
-        
-        # Send the code to GPT-4-turbo for improvement
-        print(f"Improving script: {script_path}")
-        improved_code = improve_code(original_code)
-        
+        if not code_to_improve:
+            with open(script_path, 'r') as f:
+                code_to_improve = f.read()
+
+        try:
+            result = subprocess.run([script_path] + script_args, capture_output=True, text=True, check=True)
+            print("Standard Output:", result.stdout)
+            if result.stderr:
+                print("Standard Error:", result.stderr)
+                print(f"({script_version}) Improving script: {script_path}")
+                code_to_improve = improve_code(client, code_to_improve, error_output=result.stderr, streaming=streaming)
+            else:
+                print("Script executed successfully.")
+                break
+        except subprocess.CalledProcessError as e:
+            print(f"Subprocess failed with error: {e}")
+            print(f"Standard Error Output:\n\n{e.stderr}")
+
+            # Send the error and the script to GPT-4 for improvement
+            print(f"({script_version}) Improving script: {script_path}")
+            code_to_improve = improve_code(client, code_to_improve, error_output=e.stderr, streaming=streaming)
+
+        if code_to_improve is None:
+            print("Failed to get an improved code from OpenAI. Exiting...")
+            break
+
+        # Parse the response to extract the code block
+        ret = parse_code_block(code_to_improve)
+        if ret == code_to_improve:
+            break  # No code block found, so we stop here
+        else:
+            code_to_improve = ret
+
         # Backup the old script and increment the version
         script_version += 1
         backup_script = os.path.join(script_dir, f"{base_script_name}.{script_version}")
-        shutil.move(script_path, backup_script)
+        shutil.copy(script_path, backup_script)
 
         # Write the improved script
         with open(script_path, 'w') as f:
-            f.write(improved_code)
+            f.write(code_to_improve)
 
         # Preserve the executable permission if the original was executable
-        if is_executable(backup_script):
-            os.chmod(script_path, 0o755)
+        ensure_executable(script_path)
 
-        # Run the improved script and capture the output
-        result = subprocess.run([script_path] + script_args, capture_output=True, text=True)
-
-        # Check for standard error output
-        if result.stderr:
-            print(f"Error encountered in version {script_version}:\n{result.stderr}\n")
-            print("Waiting for 5 seconds before retrying...")
-            
-            # Give 3 seconds for reviewing the error message
-            time.sleep(5)
-            
-            # Send the error and the script to GPT-4-turbo for improvement
-            improved_code = improve_code(improved_code, error_output=result.stderr)
-            continue  # Go back and retry with improved code
-
-        # Output the result if there's no error
-        print(result.stdout)
-        
         # Sleep for a short time to avoid rapid retries
         time.sleep(2)
 
 # Entry point for the script
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: bad-coder <script_path> [<args>...]")
+        print(f"Usage: {sys.argv[0]} <script_path> [<args>...]")
         sys.exit(1)
-    
+
+    # Extract script path and arguments
     script_path = sys.argv[1]
     script_args = sys.argv[2:]
 
     if not os.path.isfile(script_path):
         print(f"Error: Script {script_path} not found.")
         sys.exit(1)
-    
+
     # Load the OpenAI API key
     openai.api_key = load_openai_api_key()
 
+    # Initialize OpenAI client with the standard OpenAI API endpoint
+    client = openai.OpenAI(
+        base_url="https://api.openai.com/v1",  # Standard OpenAI API endpoint
+        api_key=openai.api_key  # API key loaded from environment or file
+    )
+
     try:
-        bad_coder(script_path, script_args)
+        bad_coder(client, script_path, script_args, streaming=False)
     except KeyboardInterrupt:
         print("\nBad coder stopped by user.")

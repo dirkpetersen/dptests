@@ -1,3 +1,88 @@
 #!/bin/bash
 
-# This script is used to 
+# Constants
+REGISTRY_AUTH_FILE="${HOME}/.registry"
+MYREGISTRY="hpcregistry.ohsu.edu"
+
+# Function to read username and password from the registry auth file
+read_registry_auth() {
+  local username password
+  username=$(grep 'Username' "${REGISTRY_AUTH_FILE}" | awk '{print $2}')
+  password=$(grep 'Password' "${REGISTRY_AUTH_FILE}" | awk '{print $2}')
+  echo "${username}:${password}"
+}
+
+# Function to list Docker images in reverse order of most recently changed
+list_docker_images() {
+  podman images --format "{{.Repository}}:{{.Tag}}" --sort created #| tac
+}
+
+# Function to upload the selected image
+upload_image() {
+  local image=$1
+  local department=$2
+  local image_name=$3
+  local credentials
+
+  credentials=$(read_registry_auth)
+  IFS=':' read -r username password <<< "${credentials}"
+  
+  podman login --username "${username}" --password "${password}" "${MYREGISTRY}"
+  
+  # Ensure the department and image name are lowercase
+  department=$(echo "${department}" | tr '[:upper:]' '[:lower:]')
+  image_name=$(echo "${image_name}" | tr '[:upper:]' '[:lower:]')
+
+  # Extract the image tag (if any)
+  image_tag=$(echo "${image}" | awk -F':' '{print $2}')
+  if [[ -z "${image_tag}" ]]; then
+    image_tag="latest"
+  fi
+
+  # Construct the full image name correctly
+  full_image="${MYREGISTRY}/${department}/${image_name}:${image_tag}"
+  echo "Uploading image to ${full_image}"
+  
+  podman tag "${image}" "${full_image}"
+  podman push "${full_image}"
+
+}
+
+# Prompt user to select an image
+select_image() {
+  echo "Available Docker images (sorted by recent changes):"
+  images=$(list_docker_images)
+  
+  select selected_image in ${images}; do
+    if [[ -n "${selected_image}" ]]; then
+      echo "You have selected: ${selected_image}"
+      break
+    else
+      echo "Invalid selection. Please try again."
+    fi
+  done
+  echo "${selected_image}"
+}
+
+# Main execution
+main() {
+  local selected_image department image_name
+  
+  # Uncomment for interactive selection (currently using a default image)
+  selected_image=$(select_image)
+  #selected_image='docker.io/library/ubuntu:latest'
+  department='dpcri'
+  image_name='doh'
+  
+  # Ensure image_name is not empty
+  if [[ -z "${image_name}" ]]; then
+    echo "Error: Image name must not be empty."
+    exit 1
+  fi
+
+  upload_image "${selected_image}" "${department}" "${image_name}"
+  echo "Upload completed successfully by $(whoami)"
+}
+
+# Run the main function
+main "$@"
