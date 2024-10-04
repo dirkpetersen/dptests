@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+import shutil
+import sys
+import time
+import openai
+
+# Function to load OpenAI API key from environment or file
+def load_openai_api_key():
+    # Check if OPENAI_API_KEY is in environment variables
+    api_key = os.getenv("OPENAI_API_KEY")
+    
+    if api_key:
+        return api_key
+
+    # If not found, check for ~/.openairc file
+    openairc_path = os.path.expanduser("~/.openairc")
+    
+    if os.path.exists(openairc_path):
+        with open(openairc_path, 'r') as f:
+            for line in f:
+                if line.startswith("export OPENAI_API_KEY="):
+                    api_key = line.split("=", 1)[1].strip()
+                    if api_key:
+                        return api_key
+
+    # If no key found, prompt the user for input
+    api_key = input("Please enter your OpenAI API key: ")
+
+    # Create the ~/.openairc file with the key
+    with open(openairc_path, 'w') as f:
+        f.write(f"export OPENAI_API_KEY={api_key}\n")
+    
+    print(f"API key saved to {openairc_path}")
+    
+    return api_key
+
+# Function to get an improvement of the code using GPT-4-turbo
+def improve_code(original_code, error_output=None):
+    prompt = f"Please improve the following code:\n\n{original_code}"
+    if error_output:
+        prompt += f"\n\nHere is the error message:\n\n{error_output}\n\nPlease fix it."
+
+    # Send the code to OpenAI GPT-4-turbo API for improvement
+    response = openai.Completion.create(
+        engine="gpt-4o",  # Using gpt-4o
+        prompt=prompt,
+        max_tokens=1500,
+        temperature=0.7,
+        n=1,
+        stop=None
+    )
+    
+    improved_code = response['choices'][0]['text'].strip()
+    return improved_code
+
+# Function to check if a file is executable
+def is_executable(file_path):
+    return os.access(file_path, os.X_OK)
+
+# Main function to handle the bad-coder process
+def bad_coder(script_path, script_args):
+    script_version = 0
+    base_script_name = os.path.basename(script_path)
+    script_dir = os.path.dirname(script_path)
+    
+    while True:
+        # Read the script content
+        with open(script_path, 'r') as f:
+            original_code = f.read()
+        
+        # Send the code to GPT-4-turbo for improvement
+        print(f"Improving script: {script_path}")
+        improved_code = improve_code(original_code)
+        
+        # Backup the old script and increment the version
+        script_version += 1
+        backup_script = os.path.join(script_dir, f"{base_script_name}.{script_version}")
+        shutil.move(script_path, backup_script)
+
+        # Write the improved script
+        with open(script_path, 'w') as f:
+            f.write(improved_code)
+
+        # Preserve the executable permission if the original was executable
+        if is_executable(backup_script):
+            os.chmod(script_path, 0o755)
+
+        # Run the improved script and capture the output
+        result = subprocess.run([script_path] + script_args, capture_output=True, text=True)
+
+        # Check for standard error output
+        if result.stderr:
+            print(f"Error encountered in version {script_version}:\n{result.stderr}\n")
+            print("Waiting for 5 seconds before retrying...")
+            
+            # Give 3 seconds for reviewing the error message
+            time.sleep(5)
+            
+            # Send the error and the script to GPT-4-turbo for improvement
+            improved_code = improve_code(improved_code, error_output=result.stderr)
+            continue  # Go back and retry with improved code
+
+        # Output the result if there's no error
+        print(result.stdout)
+        
+        # Sleep for a short time to avoid rapid retries
+        time.sleep(2)
+
+# Entry point for the script
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: bad-coder <script_path> [<args>...]")
+        sys.exit(1)
+    
+    script_path = sys.argv[1]
+    script_args = sys.argv[2:]
+
+    if not os.path.isfile(script_path):
+        print(f"Error: Script {script_path} not found.")
+        sys.exit(1)
+    
+    # Load the OpenAI API key
+    openai.api_key = load_openai_api_key()
+
+    try:
+        bad_coder(script_path, script_args)
+    except KeyboardInterrupt:
+        print("\nBad coder stopped by user.")
