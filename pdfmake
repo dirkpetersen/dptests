@@ -1,0 +1,29 @@
+#! /bin/bash
+
+# Constants for pandoc command and options
+PDF_ENGINE="xelatex"  # requires debian package: texlive-xetex
+MARGIN_SETTINGS="geometry:margin=0.5in,top=1in,bottom=1in"
+
+# Function to convert input file to PDF
+convert_to_pdf() {
+  local input_file=$1
+  local output_file=$2
+
+  if [[ -z ${input_file} || -z ${output_file} ]]; then
+    echo "Usage: pdfmake <input_file> <output_file>"
+    return 1
+  fi
+
+  pandoc --pdf-engine=${PDF_ENGINE} "${input_file}" \
+    -V ${MARGIN_SETTINGS} -s -o "${output_file}"
+
+  if [[ $? -eq 0 ]]; then
+    echo "PDF created successfully: ${output_file}"
+  else
+    echo "Error in creating PDF."
+    return 1
+  fi
+}
+
+# Call the function with arguments
+convert_to_pdf "$1" "$2"
