@@ -1,0 +1,94 @@
+#! /bin/bash
+
+function prompt() {
+  # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
+  local __resultvar=$1
+  local __prompt=$2
+  local __default=${3:-}
+  local __result
+  read -e -i "$__default" -p "$__prompt: " __result
+  eval $__resultvar="'$__result'"
+}
+
+function find_instance_type() {
+  local instance_types
+  local filtered_types
+
+  instance_types=$(aws ec2 describe-instance-types \
+    --region ${AWS_REGION} \
+    --query 'InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, `'${ARCH}'`)] && \
+              VCpuInfo.DefaultVCpus>=`'${VCPUS}'` && MemoryInfo.SizeInMiB>=`'${MEM_MB}'` && \
+              (GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Count|[0])>=`'${GPUS}'`]' \
+    --output json)
+
+  filtered_types=$(echo ${instance_types} | jq -r 'min_by(.VCpuInfo.DefaultVCpus).InstanceType')
+  if [[ -n ${filtered_types} ]]; then
+    echo "Instance type found: ${filtered_types}"
+    EC2_TYPE=${filtered_types}
+  else
+    echo "No suitable instance type found."
+    exit 1
+  fi
+}
+
+function find_ami_image() {
+  local images
+  images=$(aws ec2 describe-images \
+    --region ${AWS_REGION} \
+    --owners ${AMI_OWNER} \
+    --filters "Name=name,Values=${OS}-*" "Name=architecture,Values=${ARCH}" \
+    --query 'Images | sort_by(.CreationDate) | [-1].ImageId' \
+    --output text)
+  if [[ -n ${images} ]]; then
+    echo "AMI Image found: ${images}"
+    AMI_IMAGE=${images}
+  else
+    echo "No suitable AMI image found."
+    exit 1
+  fi
+}
+
+function configure_security_group() {
+  sg_id=$(aws ec2 create-security-group \
+    --region ${AWS_REGION} \
+    --group-name ${SECURITY_GROUP} \
+    --description "Security group for EC2 instance" \
+    --query 'GroupId' --output text)
+
+  aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+    --group-id ${sg_id} --protocol tcp --port 22 --cidr ${IP}/32
+  aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+    --group-id ${sg_id} --protocol tcp --port 80 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+    --group-id ${sg_id} --protocol tcp --port 443 --cidr 0.0.0.0/0
+}
+
+# User Inputs
+prompt ARCH "CPU Architecture (x86_64 or arm64)" "x86_64"
+prompt VCPUS "Number of VCPUs" "2"
+prompt MEMORY "Memory in GB" "4"
+MEM_MB=$((MEMORY * 1024))
+prompt DISK_SIZE "Disk Size in GB" "50"
+prompt GPUS "Number of NVIDIA GPUs" "0"
+prompt OS "Operating System" "ubuntu-24.04"
+prompt AWS_REGION "AWS Region" "us-west-2"
+prompt SPOT "Spot Market (yes or no)" "no"
+
+# Define constants
+AMI_OWNER="099720109477"
+SECURITY_GROUP="ec2_cli_group"
+
+# Instance and AMI Selection
+find_instance_type
+find_ami_image
+
+# Configure Security Group and Launch EC2 Instance
+configure_security_group
+
+aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
+  --count 1 --instance-type ${EC2_TYPE} --key-name ${KEY_PAIR} \
+  --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize=${DISK_SIZE}} \
+  --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]'
+  
+echo "Instance successfully created and configured."
+
