@@ -212,6 +212,26 @@ instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IM
   --query 'Instances[0].InstanceId' \
   --output text)
 
+# Check for cloud-init.txt file
+cloud_init_file=""
+if [ -f "./cloud-init.txt" ]; then
+  cloud_init_file="./cloud-init.txt"
+elif [ -f "$(dirname "$0")/cloud-init.txt" ]; then
+  cloud_init_file="$(dirname "$0")/cloud-init.txt"
+fi
+
+# If cloud-init.txt exists, use it
+if [ -n "$cloud_init_file" ]; then
+  echo "Using cloud-init script from $cloud_init_file"
+  instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
+    --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
+    --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}$([ "$EPHEMERAL_SIZE" -gt 0 ] && echo ",{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}")]" \
+    --security-group-ids ${sg_id} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
+    --user-data file://${cloud_init_file} \
+    --query 'Instances[0].InstanceId' \
+    --output text)
+fi
+
 instance_id=$instance_info
 
 echo "Instance $instance_id is starting. Waiting for public DNS..."
