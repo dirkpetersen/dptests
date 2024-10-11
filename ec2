@@ -75,7 +75,9 @@ SECURITY_GROUP="ec2_cli_group"
 KEY_PAIR='key-peterdir@ohsu.edu'
 
 # User Inputs
-echo -e "\n* What does your EC2 instance need?\n"
+if [ "$ACCEPT_DEFAULTS" = false ]; then
+  echo -e "\n* What does your EC2 instance need?\n"
+fi
 prompt VCPUS "Number of VCPUs" "2"
 prompt ARCH "CPU type (x86_64 or arm64)" "x86_64"
 prompt MEMORY "Memory in GB" "4"
@@ -86,7 +88,17 @@ prompt OS "Operating System" "ubuntu-24.04"
 prompt AWS_REGION "AWS Region" "us-west-2"
 prompt SPOT "Spot Market (yes or no)" "no"
 
+if [ "$ACCEPT_DEFAULTS" = true ]; then
+  echo "Using default values for all inputs."
+fi
+
 MEM_MB=$((MEMORY * 1024))
+
+# Check AWS CLI authentication
+if ! aws sts get-caller-identity &>/dev/null; then
+  echo "Error: AWS CLI is not authenticated. Please run 'aws configure' or set up your credentials."
+  exit 1
+fi
 
 # Instance and AMI Selection
 find_instance_type
