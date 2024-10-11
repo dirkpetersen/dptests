@@ -98,6 +98,9 @@ function find_ami_image() {
 
 }
 
+# Set EC2_USER and EC2_AMI_OWNER based on AMI_NAME
+set_ec2_user_and_owner
+
 function configure_security_group() {
   # Check if the security group already exists
   existing_sg=$(aws ec2 describe-security-groups \
