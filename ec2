@@ -24,7 +24,7 @@ function find_instance_type() {
 
   instance_types=$(aws ec2 describe-instance-types \
     --region ${AWS_REGION} \
-    --query "InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>='${VCPUS}' && MemoryInfo.SizeInMiB>='${MEM_MB}' && (GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0])>='${GPUS}']" \
+    --query "InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>=${VCPUS} && MemoryInfo.SizeInMiB>=${MEM_MB} && (GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0])>=${GPUS}]" \
     --output json)
 
   filtered_types=$(echo ${instance_types} | jq -r 'min_by(.VCpuInfo.DefaultVCpus).InstanceType')
@@ -79,11 +79,16 @@ if [ "$ACCEPT_DEFAULTS" = false ]; then
   echo -e "\n* What does your EC2 instance need?\n"
 fi
 prompt VCPUS "Number of VCPUs" "2"
+VCPUS=$((VCPUS))
 prompt ARCH "CPU type (x86_64 or arm64)" "x86_64"
 prompt MEMORY "Memory in GB" "4"
+MEMORY=$((MEMORY))
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
+EBS_SIZE=$((EBS_SIZE))
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
+EPHEMERAL_SIZE=$((EPHEMERAL_SIZE))
 prompt GPUS "Number of NVIDIA GPUs" "0"
+GPUS=$((GPUS))
 prompt OS "Operating System" "ubuntu-24.04"
 prompt AWS_REGION "AWS Region" "us-west-2"
 prompt SPOT "Spot Market (yes or no)" "no"
