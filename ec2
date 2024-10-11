@@ -34,13 +34,13 @@ function find_instance_type() {
 
   # echo "Instance types found: ${instance_types}"
 
-  filtered_types=$(echo ${instance_types} | jq -r 'min_by(.VCpuInfo.DefaultVCpus).InstanceType')
+  filtered_types=$(echo ${instance_types} | jq -r '[.[] | select(.InstanceType | startswith("t3") or startswith("m5") or startswith("c5"))] | min_by(.VCpuInfo.DefaultVCpus).InstanceType')
   if [[ -n ${filtered_types} && ${filtered_types} != "null" ]]; then
     echo "Instance type found: ${filtered_types}"
     EC2_TYPE=${filtered_types}
   else
-    echo "No suitable instance type found."
-    exit 1
+    echo "No suitable instance type found. Defaulting to t3.medium."
+    EC2_TYPE="t3.medium"
   fi
 }
 
@@ -132,7 +132,7 @@ prompt MEMORY "Memory in GB" "4"
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
-prompt OS "Operating System" "ubuntu-*-22.04-amd64-pro-server"
+prompt OS "Operating System" "ubuntu-*-22.04-amd64-server"
 prompt AWS_REGION "AWS Region" "us-west-2"
 prompt SPOT "Spot Market (yes or no)" "no"
 
