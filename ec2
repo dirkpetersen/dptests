@@ -24,9 +24,9 @@ function find_instance_type() {
   local query
 
   if [ "${GPUS}" -gt 0 ]; then
-    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>=${VCPUS} && MemoryInfo.SizeInMiB>=${MEM_MB} && (GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0])>=${GPUS}]"
+    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>='${VCPUS}' && MemoryInfo.SizeInMiB>='${MEM_MB}' && (GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0])>='${GPUS}']"
   else
-    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>=${VCPUS} && MemoryInfo.SizeInMiB>=${MEM_MB}]"
+    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>='${VCPUS}' && MemoryInfo.SizeInMiB>='${MEM_MB}']"
   fi
 
   instance_types=$(aws ec2 describe-instance-types \
@@ -35,7 +35,7 @@ function find_instance_type() {
     --output json)
 
   filtered_types=$(echo ${instance_types} | jq -r 'min_by(.VCpuInfo.DefaultVCpus).InstanceType')
-  if [[ -n ${filtered_types} ]]; then
+  if [[ -n ${filtered_types} && ${filtered_types} != "null" ]]; then
     echo "Instance type found: ${filtered_types}"
     EC2_TYPE=${filtered_types}
   else
