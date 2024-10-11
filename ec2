@@ -9,24 +9,6 @@ EC2_KEY_NAME=${EC2_KEY_NAME:-'asm-ec2-peterdir'} # asm-ec2-peterdir key-peterdir
 EC2_KEY_FILE=${EC2_KEY_FILE:-~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem}
 AWS_REGION=${AWS_REGION:-'us-west-2'}
 
-# Function to set EC2_USER and EC2_AMI_OWNER based on AMI_NAME
-function set_ec2_user_and_owner() {
-  local ami_name_lower=$(echo "$AMI_NAME" | tr '[:upper:]' '[:lower:]')
-  if [[ $ami_name_lower == *"al202"* ]]; then
-    EC2_USER="ec2-user"
-    EC2_AMI_OWNER="1234"
-  elif [[ $ami_name_lower == *"ubuntu"* ]]; then
-    EC2_USER="ubuntu"
-    EC2_AMI_OWNER="099720109477"
-  elif [[ $ami_name_lower == *"rocky"* ]]; then
-    EC2_USER="rocky"
-    EC2_AMI_OWNER="5678"
-  else
-    EC2_USER="ec2-user"
-    EC2_AMI_OWNER="099720109477"
-  fi
-}
-
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
   local __resultvar=$1
@@ -39,6 +21,24 @@ function prompt() {
     read -e -i "$__default" -p "$__prompt: " __result
   fi
   eval $__resultvar="'$__result'"
+}
+
+# Function to set EC2_USER and EC2_AMI_OWNER based on AMI_NAME
+function set_ec2_user_and_owner() {
+  local os_lower=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
+  if [[ $os_lower == *"al202"* ]]; then
+    EC2_USER="ec2-user"
+    EC2_AMI_OWNER="137112412989"
+  elif [[ $ami_name_lower == *"ubuntu"* ]]; then
+    EC2_USER="ubuntu"
+    EC2_AMI_OWNER="099720109477" 
+  elif [[ $ami_name_lower == *"rocky"* ]]; then
+    EC2_USER="rocky"
+    EC2_AMI_OWNER="792107900819" # Rocky's owner ID
+  else
+    echo "Error: Unsupported AMI name. Please use 'Amazon Linux' ,'Ubuntu' or 'Rocky'"
+    exit 1
+  fi
 }
 
 function find_instance_type() {
@@ -78,10 +78,11 @@ function find_ami_image() {
   images=$(aws ec2 describe-images \
     --region ${AWS_REGION} \
     --owners ${EC2_AMI_OWNER} \
-    --filters "Name=name,Values=*${OS}*" "Name=architecture,Values=${ARCH}" \
+    --filters "Name=name,Values=${OS}" "Name=architecture,Values=${ARCH}" \
     --query "${query}" \
     --output json)
-  
+
+  # echo "aws ec2 describe-images --region ${AWS_REGION} --owners ${EC2_AMI_OWNER} --filters \"Name=name,Values=*${OS}*\" \"Name=architecture,Values=${ARCH}\" --query \"${query}\" --output json"
   # echo "General AMI search result: ${images}"
 
   if [[ "${#images}" -lt 30 ]]; then 
@@ -97,9 +98,6 @@ function find_ami_image() {
   fi
 
 }
-
-# Set EC2_USER and EC2_AMI_OWNER based on AMI_NAME
-set_ec2_user_and_owner
 
 function configure_security_group() {
   # Check if the security group already exists
@@ -140,14 +138,16 @@ prompt MEMORY "Memory in GB" "4"
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
-echo "Pick 'al202*-ami-*', 'ubuntu-*-24.04-*-server', or 'Rocky-9-EC2-Base*':"
+if [[ "$ACCEPT_DEFAULTS" = false ]]; then
+  echo "Pick 'al202*-ami-*', '*ubuntu-*-24.04-*-server*', or 'Rocky-9-EC2-Base*':"
+fi
 prompt OS "Operating System" "al202*-ami-*"
 prompt AWS_REGION "AWS Region" ${AWS_REGION}
 prompt SPOT "Spot Market (yes or no)" "no"
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
-  echo "Using default values for all inputs."
-  echo "Chosen Variables:"
+  echo ""
+  echo "Using default values for all inputs:"  
   echo "VCPUS: $VCPUS"
   echo "ARCH: $ARCH"
   echo "MEMORY: $MEMORY GB"
@@ -157,6 +157,7 @@ if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "OS: $OS"
   echo "AWS_REGION: $AWS_REGION"
   echo "SPOT: $SPOT"
+  echo ""
 fi
 
 VCPUS=$((VCPUS))
@@ -176,7 +177,8 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
-# Instance and AMI Selection
+# Instance and AMI Selection and set EC2_USER and EC2_AMI_OWNER
+set_ec2_user_and_owner
 find_instance_type
 find_ami_image
 
@@ -242,5 +244,6 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
-echo "run: ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}"
-
+echo "run this ssh command: "
+echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}"
+ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}
