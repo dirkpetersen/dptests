@@ -18,9 +18,7 @@ function find_instance_type() {
 
   instance_types=$(aws ec2 describe-instance-types \
     --region ${AWS_REGION} \
-    --query 'InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, `'${ARCH}'`)] && \
-              VCpuInfo.DefaultVCpus>=`'${VCPUS}'` && MemoryInfo.SizeInMiB>=`'${MEM_MB}'` && \
-              (GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Count|[0])>=`'${GPUS}'`]' \
+    --query "InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>='${VCPUS}' && MemoryInfo.SizeInMiB>='${MEM_MB}' && (GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0])>='${GPUS}']" \
     --output json)
 
   filtered_types=$(echo ${instance_types} | jq -r 'min_by(.VCpuInfo.DefaultVCpus).InstanceType')
