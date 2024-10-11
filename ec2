@@ -49,10 +49,10 @@ function find_ami_image() {
   images=$(aws ec2 describe-images \
     --region ${AWS_REGION} \
     --owners ${AMI_OWNER} \
-    --filters "Name=name,Values=${OS}-*" "Name=architecture,Values=${ARCH}" \
-    --query 'Images | sort_by(.CreationDate) | [-1].ImageId' \
+    --filters "Name=name,Values=${OS}" "Name=architecture,Values=${ARCH}" \
+    --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
     --output text)
-  if [[ -n ${images} ]]; then
+  if [[ -n ${images} && ${images} != "None" ]]; then
     echo "AMI Image found: ${images}"
     AMI_IMAGE=${images}
   else
