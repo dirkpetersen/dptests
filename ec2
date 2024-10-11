@@ -244,6 +244,26 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
-echo "run this ssh command: "
+echo "Waiting for SSH port to become available..."
+
+# Wait for SSH port to become available
+max_ssh_attempts=30
+ssh_attempt=0
+while [ $ssh_attempt -lt $max_ssh_attempts ]; do
+  if nc -z -w 5 ${public_dns_name} 22; then
+    echo "SSH port is now available."
+    break
+  fi
+  echo "Waiting for SSH port... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
+  sleep 10
+  ssh_attempt=$((ssh_attempt+1))
+done
+
+if [ $ssh_attempt -eq $max_ssh_attempts ]; then
+  echo "Error: SSH port did not become available within the expected time."
+  exit 1
+fi
+
+echo "Run this SSH command to connect:"
 echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}"
 ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}
