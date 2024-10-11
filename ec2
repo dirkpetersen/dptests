@@ -29,10 +29,10 @@ function set_ec2_user_and_owner() {
   if [[ $os_lower == *"al202"* ]]; then
     EC2_USER="ec2-user"
     EC2_AMI_OWNER="137112412989"
-  elif [[ $ami_name_lower == *"ubuntu"* ]]; then
+  elif [[ $os_lower == *"ubuntu"* ]]; then
     EC2_USER="ubuntu"
     EC2_AMI_OWNER="099720109477" 
-  elif [[ $ami_name_lower == *"rocky"* ]]; then
+  elif [[ $os_lower == *"rocky"* ]]; then
     EC2_USER="rocky"
     EC2_AMI_OWNER="792107900819" # Rocky's owner ID
   else
@@ -59,7 +59,8 @@ function find_instance_type() {
 
   # echo "Instance types found: ${instance_types}"
 
-  filtered_types=$(echo ${instance_types} | jq -r '[.[] | select(.InstanceType | startswith("t3") or startswith("m5") or startswith("c5"))] | min_by(.VCpuInfo.DefaultVCpus).InstanceType')
+  #filtered_types=$(echo ${instance_types} | jq -r '[.[] | select(.InstanceType | startswith("t3") or startswith("m5") or startswith("c5"))] | min_by(.VCpuInfo.DefaultVCpus).InstanceType')
+  filtered_types=$(echo ${instance_types} | jq -r '[.[] | select(.InstanceType)] | min_by(.VCpuInfo.DefaultVCpus).InstanceType')
   if [[ -n ${filtered_types} && ${filtered_types} != "null" ]]; then
     echo "Instance type found: ${filtered_types}"
     EC2_TYPE=${filtered_types}
@@ -128,6 +129,13 @@ function configure_security_group() {
   fi
 }
 
+# Get user's IP address
+function get_user_ip() {
+  IP=$(curl -s https://checkip.amazonaws.com)
+  echo "Your IP address is: ${IP}"
+}
+
+
 # User Inputs
 if [ "$ACCEPT_DEFAULTS" = false ]; then
   echo -e "\n* What does your EC2 instance need?\n"
@@ -144,6 +152,7 @@ fi
 prompt OS "Operating System" "al202*-ami-*"
 prompt AWS_REGION "AWS Region" ${AWS_REGION}
 prompt SPOT "Spot Market (yes or no)" "no"
+prompt NAME "Instance Name" "MyInstance"
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo ""
@@ -157,6 +166,7 @@ if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "OS: $OS"
   echo "AWS_REGION: $AWS_REGION"
   echo "SPOT: $SPOT"
+  echo "NAME: $NAME"
   echo ""
 fi
 
@@ -173,38 +183,33 @@ AMI_NAME=""
 
 # Check AWS CLI authentication
 if ! aws sts get-caller-identity &>/dev/null; then
-  echo "Error: AWS CLI is not authenticated. Please run 'aws configure' or set up your credentials."
+  echo "Error: AWS CLI is not authenticated. Please run 'aws sso login --no-browser' or set up your credentials."
   exit 1
 fi
 
-# Instance and AMI Selection and set EC2_USER and EC2_AMI_OWNER
+# Setup required dependencies 
 set_ec2_user_and_owner
 find_instance_type
 find_ami_image
+get_user_ip
+configure_security_group
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "EC2_TYPE: $EC2_TYPE"
   echo "AMI_IMAGE: $AMI_IMAGE"
   echo "AMI_NAME: $AMI_NAME"
-  echo "EC2_USER: $EC2_USER"
-  echo "EC2_AMI_OWNER: $EC2_AMI_OWNER"
+  echo "EC2_USER: $EC2_USER"  
 fi
 
-# Get user's IP address
-function get_user_ip() {
-  IP=$(curl -s https://checkip.amazonaws.com)
-  echo "Your IP address is: ${IP}"
-}
 
 # Configure Security Group and Launch EC2 Instance
-get_user_ip
-configure_security_group
+
 
 instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
   --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
   --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}]" \
   $([ "$EPHEMERAL_SIZE" -gt 0 ] && echo "--block-device-mappings \"[{\\\"DeviceName\\\":\\\"/dev/sdb\\\",\\\"Ebs\\\":{\\\"VolumeSize\\\":${EPHEMERAL_SIZE},\\\"VolumeType\\\":\\\"gp2\\\"}}]\"") \
-  --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]' \
+  --security-group-ids ${sg_id} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
   --query 'Instances[0].InstanceId' \
   --output text)
 
@@ -213,7 +218,7 @@ instance_id=$instance_info
 echo "Instance $instance_id is starting. Waiting for public DNS..."
 
 # Initial delay to allow instance to initialize
-sleep 10
+sleep 5
 
 # Wait for the instance to be in the "running" state and have a public DNS name
 max_attempts=30
@@ -250,12 +255,12 @@ echo "Waiting for SSH to become available..."
 max_ssh_attempts=30
 ssh_attempt=0
 while [ $ssh_attempt -lt $max_ssh_attempts ]; do
-  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_dns_name} exit 2>/dev/null; then
+  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_dns_name} exit 2>/dev/null; then
     echo "SSH is now available."
     break
   fi
   echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
-  sleep 10
+  sleep 5
   ssh_attempt=$((ssh_attempt+1))
 done
 
@@ -266,4 +271,5 @@ fi
 
 echo "Run this SSH command to connect:"
 echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}"
+alias ssh='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}
