@@ -172,7 +172,8 @@ configure_security_group
 
 aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
   --count 1 --instance-type ${EC2_TYPE} --key-name ${KEY_PAIR} \
-  --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}${EPHEMERAL_SIZE:+,{\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":${EPHEMERAL_SIZE},\"VolumeType\":\"gp2\"}}}]" \
+  --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}]" \
+  ${EPHEMERAL_SIZE:+--block-device-mappings "[{\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":${EPHEMERAL_SIZE},\"VolumeType\":\"gp2\"}}]"} \
   --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]'
   
 echo "Instance successfully created and configured."
