@@ -21,10 +21,17 @@ function prompt() {
 function find_instance_type() {
   local instance_types
   local filtered_types
+  local query
+
+  if [ "${GPUS}" -gt 0 ]; then
+    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>=${VCPUS} && MemoryInfo.SizeInMiB>=${MEM_MB} && (GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0])>=${GPUS}]"
+  else
+    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>=${VCPUS} && MemoryInfo.SizeInMiB>=${MEM_MB}]"
+  fi
 
   instance_types=$(aws ec2 describe-instance-types \
     --region ${AWS_REGION} \
-    --query "InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && VCpuInfo.DefaultVCpus>=${VCPUS} && MemoryInfo.SizeInMiB>=${MEM_MB} && (GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0])>=${GPUS}]" \
+    --query "${query}" \
     --output json)
 
   filtered_types=$(echo ${instance_types} | jq -r 'min_by(.VCpuInfo.DefaultVCpus).InstanceType')
@@ -89,7 +96,7 @@ prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 EPHEMERAL_SIZE=$((EPHEMERAL_SIZE))
 prompt GPUS "Number of NVIDIA GPUs" "0"
 GPUS=$((GPUS))
-prompt OS "Operating System" "ubuntu-24.04"
+prompt OS "Operating System" "ubuntu-*-22.04-amd64-pro-server"
 prompt AWS_REGION "AWS Region" "us-west-2"
 prompt SPOT "Spot Market (yes or no)" "no"
 
