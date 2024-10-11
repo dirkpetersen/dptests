@@ -87,18 +87,32 @@ function find_ami_image() {
 }
 
 function configure_security_group() {
-  sg_id=$(aws ec2 create-security-group \
+  # Check if the security group already exists
+  existing_sg=$(aws ec2 describe-security-groups \
     --region ${AWS_REGION} \
-    --group-name ${SECURITY_GROUP} \
-    --description "Security group for EC2 instance" \
-    --query 'GroupId' --output text)
+    --filters "Name=group-name,Values=${SECURITY_GROUP}" \
+    --query 'SecurityGroups[0].GroupId' \
+    --output text)
 
-  aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
-    --group-id ${sg_id} --protocol tcp --port 22 --cidr ${IP}/32
-  aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
-    --group-id ${sg_id} --protocol tcp --port 80 --cidr 0.0.0.0/0
-  aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
-    --group-id ${sg_id} --protocol tcp --port 443 --cidr 0.0.0.0/0
+  if [ "$existing_sg" != "None" ] && [ -n "$existing_sg" ]; then
+    echo "Using existing security group: ${existing_sg}"
+    sg_id=$existing_sg
+  else
+    echo "Creating new security group"
+    sg_id=$(aws ec2 create-security-group \
+      --region ${AWS_REGION} \
+      --group-name ${SECURITY_GROUP} \
+      --description "Security group for EC2 instance" \
+      --query 'GroupId' --output text)
+
+    # Add ingress rules only for newly created security group
+    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+      --group-id ${sg_id} --protocol tcp --port 22 --cidr ${IP}/32
+    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+      --group-id ${sg_id} --protocol tcp --port 80 --cidr 0.0.0.0/0
+    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+      --group-id ${sg_id} --protocol tcp --port 443 --cidr 0.0.0.0/0
+  fi
 }
 
 # Define constants
@@ -142,7 +156,14 @@ fi
 find_instance_type
 find_ami_image
 
+# Get user's IP address
+function get_user_ip() {
+  IP=$(curl -s https://checkip.amazonaws.com)
+  echo "Your IP address is: ${IP}"
+}
+
 # Configure Security Group and Launch EC2 Instance
+get_user_ip
 configure_security_group
 
 aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
