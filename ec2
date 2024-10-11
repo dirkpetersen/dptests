@@ -170,11 +170,17 @@ function get_user_ip() {
 get_user_ip
 configure_security_group
 
-aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
+instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
   --count 1 --instance-type ${EC2_TYPE} --key-name ${KEY_PAIR} \
   --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}]" \
   $([ "$EPHEMERAL_SIZE" -gt 0 ] && echo "--block-device-mappings \"[{\\\"DeviceName\\\":\\\"/dev/sdb\\\",\\\"Ebs\\\":{\\\"VolumeSize\\\":${EPHEMERAL_SIZE},\\\"VolumeType\\\":\\\"gp2\\\"}}]\"") \
-  --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]'
-  
-echo "Instance successfully created and configured."
+  --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]' \
+  --query 'Instances[0].{PublicDnsName:PublicDnsName,InstanceId:InstanceId,InstanceType:InstanceType}' \
+  --output json)
+
+instance_id=$(echo $instance_info | jq -r '.InstanceId')
+public_dns_name=$(echo $instance_info | jq -r '.PublicDnsName')
+instance_type=$(echo $instance_info | jq -r '.InstanceType')
+
+echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
 
