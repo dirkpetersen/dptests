@@ -49,41 +49,28 @@ function find_ami_image() {
   local query="sort_by(Images, &CreationDate)[-1].{Id:ImageId,Name:Name}"
   
   echo "Searching for AMI with OS: ${OS}, Architecture: ${ARCH}"
-  
+    
   images=$(aws ec2 describe-images \
     --region ${AWS_REGION} \
     --owners ${AMI_OWNER} \
-    --filters "Name=name,Values=${OS}" "Name=architecture,Values=${ARCH}" \
+    --filters "Name=name,Values=*${OS}*" "Name=architecture,Values=${ARCH}" \
     --query "${query}" \
     --output json)
   
-  echo "AMI search result: ${images}"
-  
-  if [[ -n ${images} && ${images} != "null" ]]; then
+  # echo "General AMI search result: ${images}"
+
+  if [[ "${#images}" -lt 30 ]]; then 
+    echo "No suitable AMI image found."
+    exit 1
+  elif [[ -n ${images} && ${images} != "null" ]]; then
     AMI_IMAGE=$(echo ${images} | jq -r '.Id')
     AMI_NAME=$(echo ${images} | jq -r '.Name')
     echo "AMI Image found: ${AMI_IMAGE} (${AMI_NAME})"
   else
-    echo "No suitable AMI image found. Trying with a more general search..."
-    
-    images=$(aws ec2 describe-images \
-      --region ${AWS_REGION} \
-      --owners ${AMI_OWNER} \
-      --filters "Name=name,Values=*${OS}*" "Name=architecture,Values=${ARCH}" \
-      --query "${query}" \
-      --output json)
-    
-    # echo "General AMI search result: ${images}"
-    
-    if [[ -n ${images} && ${images} != "null" ]]; then
-      AMI_IMAGE=$(echo ${images} | jq -r '.Id')
-      AMI_NAME=$(echo ${images} | jq -r '.Name')
-      echo "AMI Image found: ${AMI_IMAGE} (${AMI_NAME})"
-    else
-      echo "No suitable AMI image found."
-      exit 1
-    fi
+    echo "No suitable AMI image found."
+    exit 1
   fi
+
 }
 
 function configure_security_group() {
@@ -118,21 +105,20 @@ function configure_security_group() {
 # Define constants that can be overridden by environment variables
 ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
 AMI_OWNER=${AMI_OWNER:-'099720109477'}
-SECURITY_GROUP=${SECURITY_GROUP:-'default'}  # ec2_cli_group
-KEY_PAIR=${KEY_PAIR:-'key-peterdir@ohsu.edu'}
+SECURITY_GROUP=${SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group default
+KEY_PAIR=${KEY_PAIR:-'asm-ec2-peterdir'} # asm-ec2-peterdir key-peterdir@ohsu.edu
 
 # User Inputs
 if [ "$ACCEPT_DEFAULTS" = false ]; then
   echo -e "\n* What does your EC2 instance need?\n"
 fi
 prompt VCPUS "Number of VCPUs" "2"
-
 prompt ARCH "CPU type (x86_64 or arm64)" "x86_64"
 prompt MEMORY "Memory in GB" "4"
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
-prompt OS "Operating System" "ubuntu-*-22.04-amd64-server"
+prompt OS "Operating System" "ubuntu-*-24.04-amd64-server"
 prompt AWS_REGION "AWS Region" "us-west-2"
 prompt SPOT "Spot Market (yes or no)" "no"
 
@@ -201,4 +187,5 @@ while true; do
 done
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
+echo "run: ssh -i ~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem ec2-user@${public_dns_name}"
 
