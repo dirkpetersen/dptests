@@ -2,6 +2,15 @@
 
 # Quickly deploy ec2 instance after answering a few questions
 
+# Define constants that can be overridden by environment variables
+ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
+EC2_AMI_OWNER=${EC2_AMI_OWNER:-'099720109477'}
+EC2_USER=${EC2_USER:-'ec2-user'}
+EC2_SECURITY_GROUP=${EC2_SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group default
+EC2_KEY_NAME=${EC2_KEY_NAME:-'asm-ec2-peterdir'} # asm-ec2-peterdir key-peterdir@ohsu.edu
+EC2_KEY_FILE=${EC2_KEY_FILE:-~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem}
+AWS_REGION=${AWS_REGION:-'us-west-2'}
+
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
   local __resultvar=$1
@@ -52,7 +61,7 @@ function find_ami_image() {
     
   images=$(aws ec2 describe-images \
     --region ${AWS_REGION} \
-    --owners ${AMI_OWNER} \
+    --owners ${EC2_AMI_OWNER} \
     --filters "Name=name,Values=*${OS}*" "Name=architecture,Values=${ARCH}" \
     --query "${query}" \
     --output json)
@@ -77,7 +86,7 @@ function configure_security_group() {
   # Check if the security group already exists
   existing_sg=$(aws ec2 describe-security-groups \
     --region ${AWS_REGION} \
-    --filters "Name=group-name,Values=${SECURITY_GROUP}" \
+    --filters "Name=group-name,Values=${EC2_SECURITY_GROUP}" \
     --query 'SecurityGroups[0].GroupId' \
     --output text)
 
@@ -88,7 +97,7 @@ function configure_security_group() {
     echo "Creating new security group"
     sg_id=$(aws ec2 create-security-group \
       --region ${AWS_REGION} \
-      --group-name ${SECURITY_GROUP} \
+      --group-name ${EC2_SECURITY_GROUP} \
       --description "Security group for EC2 instance" \
       --query 'GroupId' --output text)
 
@@ -102,12 +111,6 @@ function configure_security_group() {
   fi
 }
 
-# Define constants that can be overridden by environment variables
-ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
-AMI_OWNER=${AMI_OWNER:-'099720109477'}
-SECURITY_GROUP=${SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group default
-KEY_PAIR=${KEY_PAIR:-'asm-ec2-peterdir'} # asm-ec2-peterdir key-peterdir@ohsu.edu
-
 # User Inputs
 if [ "$ACCEPT_DEFAULTS" = false ]; then
   echo -e "\n* What does your EC2 instance need?\n"
@@ -118,8 +121,9 @@ prompt MEMORY "Memory in GB" "4"
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
-prompt OS "Operating System" "ubuntu-*-24.04-amd64-server"
-prompt AWS_REGION "AWS Region" "us-west-2"
+echo "Pick 'al202*-ami-*', 'ubuntu-*-24.04-*-server', or 'Rocky-9-EC2-Base*':"
+prompt OS "Operating System" "al202*-ami-*"
+prompt AWS_REGION "AWS Region" ${AWS_REGION}
 prompt SPOT "Spot Market (yes or no)" "no"
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
@@ -135,6 +139,7 @@ if [ "$EPHEMERAL_SIZE" -lt 0 ]; then
   EPHEMERAL_SIZE=0
 fi
 GPUS=$((GPUS))
+AMI_NAME=""
 
 # Check AWS CLI authentication
 if ! aws sts get-caller-identity &>/dev/null; then
@@ -157,7 +162,7 @@ get_user_ip
 configure_security_group
 
 instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
-  --count 1 --instance-type ${EC2_TYPE} --key-name ${KEY_PAIR} \
+  --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
   --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}]" \
   $([ "$EPHEMERAL_SIZE" -gt 0 ] && echo "--block-device-mappings \"[{\\\"DeviceName\\\":\\\"/dev/sdb\\\",\\\"Ebs\\\":{\\\"VolumeSize\\\":${EPHEMERAL_SIZE},\\\"VolumeType\\\":\\\"gp2\\\"}}]\"") \
   --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]' \
@@ -200,5 +205,5 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
-echo "run: ssh -i ~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem ec2-user@${public_dns_name}"
+echo "run: ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}"
 
