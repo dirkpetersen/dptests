@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# Quickly deploy ec2 instance after answering a few questions
+
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
   local __resultvar=$1
@@ -63,20 +65,23 @@ function configure_security_group() {
     --group-id ${sg_id} --protocol tcp --port 443 --cidr 0.0.0.0/0
 }
 
+# Define constants
+AMI_OWNER="099720109477"
+SECURITY_GROUP="ec2_cli_group"
+KEY_PAIR='key-peterdir@ohsu.edu'
+
 # User Inputs
-prompt ARCH "CPU Architecture (x86_64 or arm64)" "x86_64"
+echo -e "\n* What does your EC2 instance need?\n"
 prompt VCPUS "Number of VCPUs" "2"
+prompt ARCH "CPU type (x86_64 or arm64)" "x86_64"
 prompt MEMORY "Memory in GB" "4"
-MEM_MB=$((MEMORY * 1024))
 prompt DISK_SIZE "Disk Size in GB" "50"
 prompt GPUS "Number of NVIDIA GPUs" "0"
 prompt OS "Operating System" "ubuntu-24.04"
 prompt AWS_REGION "AWS Region" "us-west-2"
 prompt SPOT "Spot Market (yes or no)" "no"
 
-# Define constants
-AMI_OWNER="099720109477"
-SECURITY_GROUP="ec2_cli_group"
+MEM_MB=$((MEMORY * 1024))
 
 # Instance and AMI Selection
 find_instance_type
