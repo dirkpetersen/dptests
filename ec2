@@ -4,12 +4,28 @@
 
 # Define constants that can be overridden by environment variables
 ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
-EC2_AMI_OWNER=${EC2_AMI_OWNER:-'099720109477'}
-EC2_USER=${EC2_USER:-'ec2-user'}
 EC2_SECURITY_GROUP=${EC2_SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group default
 EC2_KEY_NAME=${EC2_KEY_NAME:-'asm-ec2-peterdir'} # asm-ec2-peterdir key-peterdir@ohsu.edu
 EC2_KEY_FILE=${EC2_KEY_FILE:-~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem}
 AWS_REGION=${AWS_REGION:-'us-west-2'}
+
+# Function to set EC2_USER and EC2_AMI_OWNER based on AMI_NAME
+function set_ec2_user_and_owner() {
+  local ami_name_lower=$(echo "$AMI_NAME" | tr '[:upper:]' '[:lower:]')
+  if [[ $ami_name_lower == *"al202"* ]]; then
+    EC2_USER="ec2-user"
+    EC2_AMI_OWNER="1234"
+  elif [[ $ami_name_lower == *"ubuntu"* ]]; then
+    EC2_USER="ubuntu"
+    EC2_AMI_OWNER="099720109477"
+  elif [[ $ami_name_lower == *"rocky"* ]]; then
+    EC2_USER="rocky"
+    EC2_AMI_OWNER="5678"
+  else
+    EC2_USER="ec2-user"
+    EC2_AMI_OWNER="099720109477"
+  fi
+}
 
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
