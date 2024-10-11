@@ -175,12 +175,30 @@ instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IM
   --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}]" \
   $([ "$EPHEMERAL_SIZE" -gt 0 ] && echo "--block-device-mappings \"[{\\\"DeviceName\\\":\\\"/dev/sdb\\\",\\\"Ebs\\\":{\\\"VolumeSize\\\":${EPHEMERAL_SIZE},\\\"VolumeType\\\":\\\"gp2\\\"}}]\"") \
   --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]' \
-  --query 'Instances[0].{PublicDnsName:PublicDnsName,InstanceId:InstanceId,InstanceType:InstanceType}' \
-  --output json)
+  --query 'Instances[0].InstanceId' \
+  --output text)
 
-instance_id=$(echo $instance_info | jq -r '.InstanceId')
-public_dns_name=$(echo $instance_info | jq -r '.PublicDnsName')
-instance_type=$(echo $instance_info | jq -r '.InstanceType')
+instance_id=$instance_info
+
+echo "Instance $instance_id is starting. Waiting for public DNS..."
+
+# Wait for the instance to be in the "running" state and have a public DNS name
+while true; do
+  instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
+    --query 'Reservations[0].Instances[0].{State:State.Name,PublicDnsName:PublicDnsName,InstanceType:InstanceType}' \
+    --output json)
+  
+  state=$(echo $instance_info | jq -r '.State')
+  public_dns_name=$(echo $instance_info | jq -r '.PublicDnsName')
+  instance_type=$(echo $instance_info | jq -r '.InstanceType')
+  
+  if [ "$state" = "running" ] && [ "$public_dns_name" != "null" ] && [ -n "$public_dns_name" ]; then
+    break
+  fi
+  
+  echo "Waiting for instance to be ready..."
+  sleep 5
+done
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
 
