@@ -75,7 +75,8 @@ echo -e "\n* What does your EC2 instance need?\n"
 prompt VCPUS "Number of VCPUs" "2"
 prompt ARCH "CPU type (x86_64 or arm64)" "x86_64"
 prompt MEMORY "Memory in GB" "4"
-prompt DISK_SIZE "Disk Size in GB" "50"
+prompt EBS_SIZE "EBS Volume Size in GB" "50"
+prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
 prompt OS "Operating System" "ubuntu-24.04"
 prompt AWS_REGION "AWS Region" "us-west-2"
@@ -92,7 +93,7 @@ configure_security_group
 
 aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
   --count 1 --instance-type ${EC2_TYPE} --key-name ${KEY_PAIR} \
-  --block-device-mappings DeviceName=/dev/sda1,Ebs={VolumeSize=${DISK_SIZE}} \
+  --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}},{\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":${EPHEMERAL_SIZE},\"VolumeType\":\"gp2\"}}]" \
   --security-group-ids ${sg_id} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=MyInstance}]'
   
 echo "Instance successfully created and configured."
