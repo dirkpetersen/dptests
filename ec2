@@ -2,13 +2,19 @@
 
 # Quickly deploy ec2 instance after answering a few questions
 
+ACCEPT_DEFAULTS=false
+
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
   local __resultvar=$1
   local __prompt=$2
   local __default=${3:-}
   local __result
-  read -e -i "$__default" -p "$__prompt: " __result
+  if [ "$ACCEPT_DEFAULTS" = true ]; then
+    __result="$__default"
+  else
+    read -e -i "$__default" -p "$__prompt: " __result
+  fi
   eval $__resultvar="'$__result'"
 }
 
