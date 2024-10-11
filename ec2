@@ -115,11 +115,11 @@ function configure_security_group() {
   fi
 }
 
-# Define constants
+# Define constants that can be overridden by environment variables
 ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
-AMI_OWNER="099720109477"
-SECURITY_GROUP="ec2_cli_group"
-KEY_PAIR='key-peterdir@ohsu.edu'
+AMI_OWNER=${AMI_OWNER:-'099720109477'}
+SECURITY_GROUP=${SECURITY_GROUP:-'default'}  # ec2_cli_group
+KEY_PAIR=${KEY_PAIR:-'key-peterdir@ohsu.edu'}
 
 # User Inputs
 if [ "$ACCEPT_DEFAULTS" = false ]; then
