@@ -269,6 +269,6 @@ if [ $ssh_attempt -eq $max_ssh_attempts ]; then
 fi
 
 echo "Run this SSH command to connect:"
-echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}"
+echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
 alias ssh='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}
