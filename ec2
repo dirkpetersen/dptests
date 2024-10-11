@@ -2,8 +2,6 @@
 
 # Quickly deploy ec2 instance after answering a few questions
 
-ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
-
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
   local __resultvar=$1
@@ -34,6 +32,8 @@ function find_instance_type() {
     --query "${query}" \
     --output json)
 
+  echo "Instance types found: ${instance_types}"
+
   filtered_types=$(echo ${instance_types} | jq -r 'min_by(.VCpuInfo.DefaultVCpus).InstanceType')
   if [[ -n ${filtered_types} && ${filtered_types} != "null" ]]; then
     echo "Instance type found: ${filtered_types}"
@@ -46,18 +46,43 @@ function find_instance_type() {
 
 function find_ami_image() {
   local images
+  local query="sort_by(Images, &CreationDate)[-1].{Id:ImageId,Name:Name}"
+  
+  echo "Searching for AMI with OS: ${OS}, Architecture: ${ARCH}"
+  
   images=$(aws ec2 describe-images \
     --region ${AWS_REGION} \
     --owners ${AMI_OWNER} \
     --filters "Name=name,Values=${OS}" "Name=architecture,Values=${ARCH}" \
-    --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
-    --output text)
-  if [[ -n ${images} && ${images} != "None" ]]; then
-    echo "AMI Image found: ${images}"
-    AMI_IMAGE=${images}
+    --query "${query}" \
+    --output json)
+  
+  echo "AMI search result: ${images}"
+  
+  if [[ -n ${images} && ${images} != "null" ]]; then
+    AMI_IMAGE=$(echo ${images} | jq -r '.Id')
+    AMI_NAME=$(echo ${images} | jq -r '.Name')
+    echo "AMI Image found: ${AMI_IMAGE} (${AMI_NAME})"
   else
-    echo "No suitable AMI image found."
-    exit 1
+    echo "No suitable AMI image found. Trying with a more general search..."
+    
+    images=$(aws ec2 describe-images \
+      --region ${AWS_REGION} \
+      --owners ${AMI_OWNER} \
+      --filters "Name=name,Values=*${OS}*" "Name=architecture,Values=${ARCH}" \
+      --query "${query}" \
+      --output json)
+    
+    echo "General AMI search result: ${images}"
+    
+    if [[ -n ${images} && ${images} != "null" ]]; then
+      AMI_IMAGE=$(echo ${images} | jq -r '.Id')
+      AMI_NAME=$(echo ${images} | jq -r '.Name')
+      echo "AMI Image found: ${AMI_IMAGE} (${AMI_NAME})"
+    else
+      echo "No suitable AMI image found."
+      exit 1
+    fi
   fi
 }
 
@@ -77,6 +102,7 @@ function configure_security_group() {
 }
 
 # Define constants
+ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
 AMI_OWNER="099720109477"
 SECURITY_GROUP="ec2_cli_group"
 KEY_PAIR='key-peterdir@ohsu.edu'
@@ -86,16 +112,12 @@ if [ "$ACCEPT_DEFAULTS" = false ]; then
   echo -e "\n* What does your EC2 instance need?\n"
 fi
 prompt VCPUS "Number of VCPUs" "2"
-VCPUS=$((VCPUS))
+
 prompt ARCH "CPU type (x86_64 or arm64)" "x86_64"
 prompt MEMORY "Memory in GB" "4"
-MEMORY=$((MEMORY))
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
-EBS_SIZE=$((EBS_SIZE))
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
-EPHEMERAL_SIZE=$((EPHEMERAL_SIZE))
 prompt GPUS "Number of NVIDIA GPUs" "0"
-GPUS=$((GPUS))
 prompt OS "Operating System" "ubuntu-*-22.04-amd64-pro-server"
 prompt AWS_REGION "AWS Region" "us-west-2"
 prompt SPOT "Spot Market (yes or no)" "no"
@@ -104,7 +126,11 @@ if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "Using default values for all inputs."
 fi
 
+VCPUS=$((VCPUS))
 MEM_MB=$((MEMORY * 1024))
+EBS_SIZE=$((EBS_SIZE))
+EPHEMERAL_SIZE=$((EPHEMERAL_SIZE))
+GPUS=$((GPUS))
 
 # Check AWS CLI authentication
 if ! aws sts get-caller-identity &>/dev/null; then
