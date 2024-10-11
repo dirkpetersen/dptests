@@ -2,7 +2,7 @@
 
 # Quickly deploy ec2 instance after answering a few questions
 
-ACCEPT_DEFAULTS=false
+ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
 
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
