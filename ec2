@@ -168,23 +168,36 @@ instance_id=$instance_info
 
 echo "Instance $instance_id is starting. Waiting for public DNS..."
 
+# Initial delay to allow instance to initialize
+sleep 10
+
 # Wait for the instance to be in the "running" state and have a public DNS name
-while true; do
+max_attempts=30
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
   instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
     --query 'Reservations[0].Instances[0].{State:State.Name,PublicDnsName:PublicDnsName,InstanceType:InstanceType}' \
-    --output json)
+    --output json 2>/dev/null)
   
-  state=$(echo $instance_info | jq -r '.State')
-  public_dns_name=$(echo $instance_info | jq -r '.PublicDnsName')
-  instance_type=$(echo $instance_info | jq -r '.InstanceType')
-  
-  if [ "$state" = "running" ] && [ "$public_dns_name" != "null" ] && [ -n "$public_dns_name" ]; then
-    break
+  if [ $? -eq 0 ]; then
+    state=$(echo $instance_info | jq -r '.State')
+    public_dns_name=$(echo $instance_info | jq -r '.PublicDnsName')
+    instance_type=$(echo $instance_info | jq -r '.InstanceType')
+    
+    if [ "$state" = "running" ] && [ "$public_dns_name" != "null" ] && [ -n "$public_dns_name" ]; then
+      break
+    fi
   fi
   
-  echo "Waiting for instance to be ready..."
-  sleep 5
+  echo "Waiting for instance to be ready... (Attempt $((attempt+1))/$max_attempts)"
+  sleep 10
+  attempt=$((attempt+1))
 done
+
+if [ $attempt -eq $max_attempts ]; then
+  echo "Error: Instance did not become ready within the expected time."
+  exit 1
+fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
 echo "run: ssh -i ~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem ec2-user@${public_dns_name}"
