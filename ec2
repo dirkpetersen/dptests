@@ -147,6 +147,16 @@ prompt SPOT "Spot Market (yes or no)" "no"
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "Using default values for all inputs."
+  echo "Chosen Variables:"
+  echo "VCPUS: $VCPUS"
+  echo "ARCH: $ARCH"
+  echo "MEMORY: $MEMORY GB"
+  echo "EBS_SIZE: $EBS_SIZE GB"
+  echo "EPHEMERAL_SIZE: $EPHEMERAL_SIZE GB"
+  echo "GPUS: $GPUS"
+  echo "OS: $OS"
+  echo "AWS_REGION: $AWS_REGION"
+  echo "SPOT: $SPOT"
 fi
 
 VCPUS=$((VCPUS))
@@ -169,6 +179,14 @@ fi
 # Instance and AMI Selection
 find_instance_type
 find_ami_image
+
+if [ "$ACCEPT_DEFAULTS" = true ]; then
+  echo "EC2_TYPE: $EC2_TYPE"
+  echo "AMI_IMAGE: $AMI_IMAGE"
+  echo "AMI_NAME: $AMI_NAME"
+  echo "EC2_USER: $EC2_USER"
+  echo "EC2_AMI_OWNER: $EC2_AMI_OWNER"
+fi
 
 # Get user's IP address
 function get_user_ip() {
