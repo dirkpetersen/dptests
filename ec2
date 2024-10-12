@@ -87,7 +87,7 @@ function find_instance_type() {
   local query
 
   # Base query for CPU and Memory
-  query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && to_number(VCpuInfo.DefaultVCpus) >= \`${VCPUS}\` && to_number(MemoryInfo.SizeInMiB) >= \`${MEM_MB}\`]"
+  query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && to_number(VCpuInfo.DefaultVCpus) >= \`${VCPUS}\` && to_number(MemoryInfo.SizeInMiB) >= \`${MEM_MB}\`"
 
   # Add GPU requirement if needed
   if [ "${GPUS}" -gt 0 ]; then
@@ -96,13 +96,23 @@ function find_instance_type() {
 
   # Add ephemeral disk requirement if needed
   if [ "${EPHEMERAL_SIZE}" -gt 0 ]; then
-    query="${query} && (InstanceStorageInfo.TotalSizeInGB >= \`${EPHEMERAL_SIZE}\`)"
+    #query="${query} && (InstanceStorageInfo.TotalSizeInGB || \`0\`) >= \`${EPHEMERAL_SIZE}\`"
+    query="${query} && (not_null(InstanceStorageInfo) && InstanceStorageInfo.TotalSizeInGB >= \`${EPHEMERAL_SIZE}\`)"
   fi
+
+  # Close last bracket
+  query="${query}]"
+
+  echo "Query: $query"
+  # exit 1
 
   instance_types=$(aws ec2 describe-instance-types \
     --region ${AWS_REGION} \
     --query "${query}" \
     --output json)
+
+
+  echo "$instance_types" > instance_types.json 
 
   if [ -z "$instance_types" ] || [ "$instance_types" == "[]" ]; then
     echo "No instance types found matching the criteria. Defaulting to t3.small."
@@ -121,6 +131,9 @@ function find_instance_type() {
   fi
 
   echo "Selected instance type: ${EC2_TYPE}"
+
+  exit
+
 }
 
 function find_ami_image() {
