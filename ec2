@@ -86,10 +86,17 @@ function find_instance_type() {
   local filtered_types
   local query
 
+  # Base query for CPU and Memory
+  query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && to_number(VCpuInfo.DefaultVCpus) >= \`${VCPUS}\` && to_number(MemoryInfo.SizeInMiB) >= \`${MEM_MB}\`]"
+
+  # Add GPU requirement if needed
   if [ "${GPUS}" -gt 0 ]; then
-    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && to_number(VCpuInfo.DefaultVCpus) >= \`${VCPUS}\` && to_number(MemoryInfo.SizeInMiB) >= \`${MEM_MB}\` && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`)]"
-  else
-    query="InstanceTypes[?ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')] && to_number(VCpuInfo.DefaultVCpus) >= \`${VCPUS}\` && to_number(MemoryInfo.SizeInMiB) >= \`${MEM_MB}\`]"
+    query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`)"
+  fi
+
+  # Add ephemeral disk requirement if needed
+  if [ "${EPHEMERAL_SIZE}" -gt 0 ]; then
+    query="${query} && (InstanceStorageInfo.TotalSizeInGB >= \`${EPHEMERAL_SIZE}\`)"
   fi
 
   instance_types=$(aws ec2 describe-instance-types \
@@ -97,20 +104,23 @@ function find_instance_type() {
     --query "${query}" \
     --output json)
 
-  # echo "Instance types found: ${instance_types}"
-
-  #filtered_types=$(echo ${instance_types} | jq -r '[.[] | select(.InstanceType | startswith("t3") or startswith("m5") or startswith("c5"))] | min_by(.VCpuInfo.DefaultVCpus).InstanceType')
-  filtered_types=$(echo ${instance_types} | jq -r '[.[] | select(.InstanceType)] | min_by(.VCpuInfo.DefaultVCpus).InstanceType')
-  if [[ -n ${filtered_types} && ${filtered_types} != "null" ]]; then
-    echo "Instance type found: ${filtered_types}"
-    EC2_TYPE=${filtered_types}
-  else
-    echo "No suitable instance type found. Defaulting to t3.medium."
+  if [ -z "$instance_types" ] || [ "$instance_types" == "[]" ]; then
+    echo "No instance types found matching the criteria. Defaulting to t3.small."
     EC2_TYPE="t3.small"
+  else
+    # Sort by vCPUs (ascending), then by memory (ascending), then by price (ascending)
+    filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB, .InstanceType) | .[0].InstanceType')
+    
+    if [[ -n ${filtered_types} && ${filtered_types} != "null" ]]; then
+      echo "Instance type found: ${filtered_types}"
+      EC2_TYPE=${filtered_types}
+    else
+      echo "No suitable instance type found after filtering. Defaulting to t3.small."
+      EC2_TYPE="t3.small"
+    fi
   fi
 
-  EC2_TYPE="t3.small"
-
+  echo "Selected instance type: ${EC2_TYPE}"
 }
 
 function find_ami_image() {
