@@ -19,8 +19,11 @@ function list_instances() {
 
 function terminate_instance() {
     local instance_id=$1
-    aws ec2 terminate-instances --region ${AWS_REGION} --instance-ids ${instance_id}
-    echo "Instance ${instance_id} termination request sent."
+    if aws ec2 terminate-instances --region ${AWS_REGION} --instance-ids ${instance_id}; then
+        echo "Instance ${instance_id} termination request sent."
+    else
+        echo "Failed to terminate instance ${instance_id}."
+    fi
 }
 
 function prompt() {
@@ -239,6 +242,7 @@ elif [ "$1" = "term" ]; then
         echo "Usage: $0 term <instance-id>"
         exit 1
     fi
+    echo "Attempting to terminate instance $2..."
     terminate_instance "$2"
     exit 0
 fi
