@@ -91,7 +91,7 @@ function find_instance_type() {
 
   # Add GPU requirement if needed
   if [ "${GPUS}" -gt 0 ]; then
-    query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`)"
+    query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`) && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].MemoryInfo.SizeInMiB | [0]) >= \`$((GPU_VRAM * 1024))\`)"
   fi
 
   # Add ephemeral disk requirement if needed
@@ -280,6 +280,9 @@ prompt MEMORY "Memory in GB" "2"
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
+if [ "$GPUS" -gt 0 ]; then
+  prompt GPU_VRAM "GPU VRAM in GB" "16"
+fi
 if [[ "$ACCEPT_DEFAULTS" = false ]]; then
   echo "Pick 'al202*-ami-*', '*ubuntu-*-24.04-*-server*', or 'Rocky-9-EC2-Base*':"
 fi
@@ -297,6 +300,9 @@ if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "EBS_SIZE: $EBS_SIZE GB"
   echo "EPHEMERAL_SIZE: $EPHEMERAL_SIZE GB"
   echo "GPUS: $GPUS"
+  if [ "$GPUS" -gt 0 ]; then
+    echo "GPU_VRAM: $GPU_VRAM GB"
+  fi
   echo "OS: $OS"
   echo "AWS_REGION: $AWS_REGION"
   echo "SPOT: $SPOT"
