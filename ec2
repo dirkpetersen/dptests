@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 # Quickly deploy ec2 instance after answering a few questions
 
@@ -8,6 +8,20 @@ EC2_SECURITY_GROUP=${EC2_SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group defau
 EC2_KEY_NAME=${EC2_KEY_NAME:-'asm-ec2-peterdir'} # asm-ec2-peterdir key-peterdir@ohsu.edu
 EC2_KEY_FILE=${EC2_KEY_FILE:-~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem}
 AWS_REGION=${AWS_REGION:-'us-west-2'}
+
+function list_instances() {
+    aws ec2 describe-instances \
+        --region ${AWS_REGION} \
+        --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value | [0], InstanceId, PublicDnsName]' \
+        --filters "Name=instance-state-name,Values=running" \
+        --output table
+}
+
+function terminate_instance() {
+    local instance_id=$1
+    aws ec2 terminate-instances --region ${AWS_REGION} --instance-ids ${instance_id}
+    echo "Instance ${instance_id} termination request sent."
+}
 
 function prompt() {
   # usage:  prompt NEW_VAR "Prompt message" ["${PROMPT_DEFAULT_VALUE}"]
@@ -214,6 +228,20 @@ launch_instance() {
 # Main script
 
 check_aws
+
+# Check for command line arguments
+if [ "$1" = "list" ]; then
+    list_instances
+    exit 0
+elif [ "$1" = "term" ]; then
+    if [ -z "$2" ]; then
+        echo "Error: Instance ID is required for termination."
+        echo "Usage: $0 term <instance-id>"
+        exit 1
+    fi
+    terminate_instance "$2"
+    exit 0
+fi
 
 # User Inputs
 if [ "$ACCEPT_DEFAULTS" = false ]; then
