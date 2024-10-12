@@ -23,6 +23,29 @@ function prompt() {
   eval $__resultvar="'$__result'"
 }
 
+check_aws() {
+  if ! command -v aws >/dev/null 2>&1; then
+    echo "AWS CLI is not installed. Installing..."
+    tmpdir=$(mktemp -d -t awscli-XXX)
+
+    # Download, unzip, and install AWS CLI v2 using full paths
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$tmpdir/awscliv2.zip" \
+      && unzip "$tmpdir/awscliv2.zip" -d "$tmpdir" \
+      && "$tmpdir/aws/install" -i ~/.local/share/aws-cli -b ~/.local/bin
+     # Clean up by removing the temporary directory
+    rm -rf "$tmpdir"
+    export PATH=~/.local/bin:$PATH
+  fi
+  
+  # Check AWS CLI authentication
+  if ! aws sts get-caller-identity &>/dev/null; then
+    echo "Error: AWS CLI is not authenticated. Please run 'aws sso login --no-browser' or set up your credentials."
+    exit 1
+  fi
+
+}
+
+
 # Function to set EC2_USER and EC2_AMI_OWNER based on AMI_NAME
 function set_ec2_user_and_owner() {
   local os_lower=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
@@ -66,8 +89,11 @@ function find_instance_type() {
     EC2_TYPE=${filtered_types}
   else
     echo "No suitable instance type found. Defaulting to t3.medium."
-    EC2_TYPE="t3.medium"
+    EC2_TYPE="t3.small"
   fi
+
+  EC2_TYPE="t3.small"
+
 }
 
 function find_ami_image() {
@@ -100,6 +126,12 @@ function find_ami_image() {
 
 }
 
+# Get user's IP address
+function get_user_ip() {
+  IP=$(curl -s https://checkip.amazonaws.com)
+  echo "Your IP address is: ${IP}"
+}
+
 function configure_security_group() {
   # Check if the security group already exists
   existing_sg=$(aws ec2 describe-security-groups \
@@ -129,12 +161,59 @@ function configure_security_group() {
   fi
 }
 
-# Get user's IP address
-function get_user_ip() {
-  IP=$(curl -s https://checkip.amazonaws.com)
-  echo "Your IP address is: ${IP}"
+launch_instance() {
+  # Check for cloud-init.txt file
+  cloud_init_file="cloud-init.txt"
+  if [ -f "./${cloud_init_file}" ]; then
+    cloud_init_path="${cloud_init_file}"
+  elif [ -f "$(dirname "$0")/${cloud_init_file}" ]; then
+    cloud_init_path="$(dirname "$0")/${cloud_init_file}"
+  fi
+  # base64file=$(mktemp)
+  # base64 < ${cloud_init_path} > ${base64file}
+  # If cloud-init.txt exists, use it
+  userdata=""
+  if [[ -n "$cloud_init_path" ]]; then  
+    userdata="--user-data file://${cloud_init_path}"
+    echo "Using cloud-init script from $cloud_init_path"
+  fi
+  # Configure Security Group and Launch EC2 Instance
+
+  # construct block device mapping JSON
+  BLK_DEV_JSON="["
+  if [[ $EBS_SIZE -gt 0 ]]; then
+      BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}"
+  fi
+  if [[ $EPHEMERAL_SIZE -gt 0 ]]; then
+      [[ $EBS_SIZE -gt 0 ]] && BLK_DEV_JSON+=","
+      BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}"
+  fi
+  BLK_DEV_JSON+="]"
+
+  # x="aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
+    # --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
+    # --security-group-ids ${sg_id} --block-device-mappings "${BLK_DEV_JSON}" ${userdata} \
+    # --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
+    # --query 'Instances[0].InstanceId' --output text
+  #   "
+
+  # printf "Running: $x\n"
+
+  #exit 1
+
+  INSTANCE_INFO=$(
+    aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
+    --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
+    --security-group-ids ${sg_id} --block-device-mappings "${BLK_DEV_JSON}" ${userdata} \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
+    --query 'Instances[0].InstanceId' --output text
+    )
 }
 
+#########################################################################################################
+# Main script
+
+check_aws
 
 # User Inputs
 if [ "$ACCEPT_DEFAULTS" = false ]; then
@@ -142,7 +221,7 @@ if [ "$ACCEPT_DEFAULTS" = false ]; then
 fi
 prompt VCPUS "Number of VCPUs" "2"
 prompt ARCH "CPU type (x86_64 or arm64)" "x86_64"
-prompt MEMORY "Memory in GB" "4"
+prompt MEMORY "Memory in GB" "2"
 prompt EBS_SIZE "EBS Volume Size in GB" "50"
 prompt EPHEMERAL_SIZE "Ephemeral Disk Size in GB" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
@@ -152,7 +231,7 @@ fi
 prompt OS "Operating System" "al202*-ami-*"
 prompt AWS_REGION "AWS Region" ${AWS_REGION}
 prompt SPOT "Spot Market (yes or no)" "no"
-prompt NAME "Instance Name" "MyInstance"
+prompt NAME "Instance/Host Name" "server-x"
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo ""
@@ -181,11 +260,6 @@ fi
 GPUS=$((GPUS))
 AMI_NAME=""
 
-# Check AWS CLI authentication
-if ! aws sts get-caller-identity &>/dev/null; then
-  echo "Error: AWS CLI is not authenticated. Please run 'aws sso login --no-browser' or set up your credentials."
-  exit 1
-fi
 
 # Setup required dependencies 
 set_ec2_user_and_owner
@@ -193,6 +267,7 @@ find_instance_type
 find_ami_image
 get_user_ip
 configure_security_group
+launch_instance
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "EC2_TYPE: $EC2_TYPE"
@@ -202,42 +277,17 @@ if [ "$ACCEPT_DEFAULTS" = true ]; then
 fi
 
 
-# Configure Security Group and Launch EC2 Instance
-
-
-instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
-  --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
-  --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}$([ "$EPHEMERAL_SIZE" -gt 0 ] && echo ",{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}")]" \
-  --security-group-ids ${sg_id} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
-  --query 'Instances[0].InstanceId' \
-  --output text)
-
-# Check for cloud-init.txt file
-cloud_init_file=""
-if [ -f "./cloud-init.txt" ]; then
-  cloud_init_file="./cloud-init.txt"
-elif [ -f "$(dirname "$0")/cloud-init.txt" ]; then
-  cloud_init_file="$(dirname "$0")/cloud-init.txt"
+# Check if INSTANCE_INFO starts with "i-"
+if [[ ${INSTANCE_INFO} == i-* ]]; then
+    instance_id=${INSTANCE_INFO}
+else
+    echo "Error: Failed to create instance. $instance_info"
+    exit 1
 fi
-
-# If cloud-init.txt exists, use it
-if [ -n "$cloud_init_file" ]; then
-  echo "Using cloud-init script from $cloud_init_file"
-  instance_info=$(aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
-    --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
-    --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}$([ "$EPHEMERAL_SIZE" -gt 0 ] && echo ",{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}")]" \
-    --security-group-ids ${sg_id} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
-    --user-data file://${cloud_init_file} \
-    --query 'Instances[0].InstanceId' \
-    --output text)
-fi
-
-instance_id=$instance_info
-
 echo "Instance $instance_id is starting. Waiting for public DNS..."
 
 # Initial delay to allow instance to initialize
-sleep 5
+sleep 3
 
 # Wait for the instance to be in the "running" state and have a public DNS name
 max_attempts=30
@@ -268,13 +318,17 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
-echo "Waiting for SSH to become available..."
+echo -e "\nRun this SSH command to connect:"
+history -a
+echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
+history -r
+echo -e "\nWaiting for SSH to become available..."
 
 # Wait for SSH to become available
 max_ssh_attempts=30
 ssh_attempt=0
 while [ $ssh_attempt -lt $max_ssh_attempts ]; do
-  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_dns_name} exit 2>/dev/null; then
+  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_dns_name} exit 2>/dev/null; then # 2>/dev/null
     echo "SSH is now available."
     break
   fi
@@ -287,8 +341,5 @@ if [ $ssh_attempt -eq $max_ssh_attempts ]; then
   echo "Error: SSH did not become available within the expected time."
   exit 1
 fi
-
-echo "Run this SSH command to connect:"
-echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
 alias ssh='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}
