@@ -161,13 +161,13 @@ function find_instance_type() {
   if [[ "$price" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] && [[ $(awk "BEGIN {print ($price != 0)}") -eq 1 ]]; then
     # Convert to 4 decimal places
     price=$(printf "%.4f" "$price")
-    price="$ ${price}/h"
+    price=", $ ${price}/h"
   else
     # Set to an empty string
     price=""
   fi
 
-  echo "Selected instance type: ${EC2_TYPE} (Architecture: ${ARCH}, vCPUs: ${vcpus}, Mem: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB), ${price})"
+  echo "Selected instance type: ${EC2_TYPE} (Architecture: ${ARCH}, vCPUs: ${vcpus}, Mem: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB)${price})"
 
 }
 
