@@ -33,7 +33,7 @@ function prompt() {
   local __prompt=$2
   local __default=${3:-}
   local __result
-  if [ "$ACCEPT_DEFAULTS" = true ]; then
+  if [[ "$ACCEPT_DEFAULTS" = true ]]; then
     __result="$__default"
   else
     read -e -i "$__default" -p "$__prompt: " __result
@@ -75,7 +75,7 @@ function check_aws() {
 }
 
 function setup_ec2_key() {
-  if [ ! -f "${EC2_KEY_FILE}" ]; then
+  if [[ ! -f "${EC2_KEY_FILE}" ]]; then
     read -p "EC2 key file ${EC2_KEY_FILE} does not exist. You can set environment variables EC2_KEY_NAME EC2_KEY_FILE to use other keys or create a new key now. Do you want to create a new AWS key? (y/n) " create_key
     if [[ $create_key =~ ^[Yy]$ ]]; then
       mkdir -p "$(dirname "${EC2_KEY_FILE}")"
@@ -131,8 +131,8 @@ function find_instance_type() {
   fi
 
   # Add GPU requirement if needed
-  if [ "${GPUS}" -gt 0 ]; then
-    if [ "$GPU_MODEL" = "any" ]; then
+  if [[ "${GPUS}" -gt 0 ]]; then
+    if [[ "$GPU_MODEL" = "any" ]]; then
       query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`) && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].MemoryInfo.SizeInMiB | [0]) >= \`$((GPU_VRAM * 1024))\`)"
     else
       query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA' && Name=='${GPU_MODEL}'].Count | [0]) >= \`${GPUS}\`)"
@@ -140,7 +140,7 @@ function find_instance_type() {
   fi
 
   # Add ephemeral disk requirement if needed
-  if [ "${EPHEMERAL_SIZE}" -gt 0 ]; then    
+  if [[ "${EPHEMERAL_SIZE}" -gt 0 ]]; then    
     query="${query} && (not_null(InstanceStorageInfo) && InstanceStorageInfo.TotalSizeInGB >= \`${EPHEMERAL_SIZE}\`)"
   fi
 
@@ -157,7 +157,7 @@ function find_instance_type() {
 
   echo "$instance_types" > ec2_instance_types.json 
 
-  if [ -z "$instance_types" ] || [ "$instance_types" == "[]" ]; then
+  if [[ -z "$instance_types" || "$instance_types" == "[]" ]]; then
     echo "No instance types found matching the criteria. Defaulting to t3.small."
     EC2_TYPE="t3.small"
   else
@@ -308,7 +308,7 @@ function launch_instance() {
 function register_dns() {
   # Check for Route 53 hosted zone and register DNS if available
   hosted_zone_id=$(aws route53 list-hosted-zones --query 'HostedZones[0].Id' --output text)
-  if [ -n "$hosted_zone_id" ] && [ "$hosted_zone_id" != "None" ]; then
+  if [[ -n "$hosted_zone_id" && "$hosted_zone_id" != "None" ]]; then
     domain_name=$(aws route53 get-hosted-zone --id $hosted_zone_id --query 'HostedZone.Name' --output text)
     domain_name=${domain_name%%.} # Remove trailing dot
     fqdn="${NAME}.${domain_name}"
@@ -356,11 +356,11 @@ EOF
 check_aws
 
 # Check for command line arguments
-if [ "$1" = "list" ]; then
+if [[ "$1" = "list" ]]; then
     list_instances
     exit 0
 elif [[ "$1" = "term" || "$1" = "terminate" || "$1" = "kill" ]]; then
-    if [ -z "$2" ]; then
+    if [[ -z "$2" ]]; then
         echo "Error: Instance ID is required for termination."
         echo "Usage: $0 term <instance-id>"
         exit 1
@@ -371,7 +371,7 @@ elif [[ "$1" = "term" || "$1" = "terminate" || "$1" = "kill" ]]; then
 fi
 
 # User Inputs
-if [ "$ACCEPT_DEFAULTS" = false ]; then
+if [[ "$ACCEPT_DEFAULTS" = false ]]; then
   echo -e "\n* What does your EC2 instance need?\n"
 fi
 prompt VCPUS "Number of VCPUs" "2"
@@ -380,7 +380,7 @@ prompt MEMORY "Memory (GB)" "2"
 prompt EBS_SIZE "EBS Volume Size (GB)" "50"
 prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
-if [ "$GPUS" -gt 0 ]; then
+if [[ "$GPUS" -gt 0 ]]; then
   echo "  Fetching available GPU models..."
   GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
   prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
@@ -395,7 +395,7 @@ prompt OS "Operating System" "al202*-ami-*"
 prompt AWS_REGION "AWS Region" ${AWS_REGION}
 prompt NAME "Instance/Host Name" "server-x"
 
-if [ "$ACCEPT_DEFAULTS" = true ]; then
+if [[ "$ACCEPT_DEFAULTS" = true ]]; then
   echo ""
   echo "Using default values for all inputs:"  
   echo "VCPUS: $VCPUS"
@@ -404,7 +404,7 @@ if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "EBS_SIZE: $EBS_SIZE GB"
   echo "EPHEMERAL_SIZE: $EPHEMERAL_SIZE GB"
   echo "GPUS: $GPUS"
-  if [ "$GPUS" -gt 0 ]; then
+  if [[ "$GPUS" -gt 0 ]]; then
     echo "GPU_VRAM: $GPU_VRAM GB"
   fi
   echo "OS: $OS"
@@ -418,7 +418,7 @@ VCPUS=$((VCPUS))
 MEM_MB=$((MEMORY * 1024))
 EBS_SIZE=$((EBS_SIZE))
 EPHEMERAL_SIZE=$((EPHEMERAL_SIZE))
-if [ "$EPHEMERAL_SIZE" -lt 0 ]; then
+if [[ "$EPHEMERAL_SIZE" -lt 0 ]]; then
   echo "Error: Ephemeral disk size cannot be negative. Setting to 0."
   EPHEMERAL_SIZE=0
 fi
@@ -434,7 +434,7 @@ configure_security_group
 
 launch_instance
 
-if [ "$ACCEPT_DEFAULTS" = true ]; then
+if [[ "$ACCEPT_DEFAULTS" = true ]]; then
   echo "EC2_TYPE: $EC2_TYPE"
   echo "AMI_IMAGE: $AMI_IMAGE"
   echo "AMI_NAME: $AMI_NAME"
@@ -461,12 +461,12 @@ while [ $attempt -lt $max_attempts ]; do
     --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
     --output json 2>/dev/null)
   
-  if [ $? -eq 0 ]; then
+  if [[ $? -eq 0 ]]; then
     state=$(echo $instance_info | jq -r '.State')
     public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
     instance_type=$(echo $instance_info | jq -r '.InstanceType')
     
-    if [ "$state" = "running" ] && [ "$public_ip" != "null" ] && [ -n "$public_ip" ]; then
+    if [[ "$state" = "running" && "$public_ip" != "null" && -n "$public_ip" ]]; then
       break
     fi
   fi
@@ -476,7 +476,7 @@ while [ $attempt -lt $max_attempts ]; do
   attempt=$((attempt+1))
 done
 
-if [ $attempt -eq $max_attempts ]; then
+if [[ $attempt -eq $max_attempts ]]; then
   echo "Error: Instance did not become ready within the expected time."
   exit 1
 fi
@@ -493,7 +493,7 @@ dns_propagated=false
 while [ $dns_attempt -lt $max_dns_attempts ]; do
   # Use AWS CLI to check DNS record
   dns_check=$(aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --record-name $FQDN --record-type A --query 'RecordData[0]' --output text 2>/dev/null)
-  if [ "$dns_check" = "$public_ip" ]; then
+  if [[ "$dns_check" = "$public_ip" ]]; then
     echo "DNS has propagated, wait a few more seconds..."
     sleep 5    
     dns_propagated=true
@@ -504,7 +504,7 @@ while [ $dns_attempt -lt $max_dns_attempts ]; do
   dns_attempt=$((dns_attempt+1))
 done
 
-if [ "$dns_propagated" = false ]; then
+if [[ "$dns_propagated" = false ]]; then
   echo "Warning: DNS propagation is taking longer than expected. We'll proceed using the public IP address."
   public_dns_name=$public_ip
 fi
@@ -533,7 +533,7 @@ while [ $ssh_attempt -lt $max_ssh_attempts ]; do
   ssh_attempt=$((ssh_attempt+1))
 done
 
-if [ "$ssh_available" = false ]; then
+if [[ "$ssh_available" = false ]]; then
   echo "Error: SSH did not become available within the expected time."
   exit 1
 fi
