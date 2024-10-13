@@ -160,6 +160,8 @@ function find_instance_type() {
 
   if [ -z "$price" ]; then
     price="N/A"
+  else
+    price=$(printf "%.4f" $price)
   fi
 
   echo "Selected instance type: ${EC2_TYPE} (vCPUs: ${vcpus}, Memory: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB VRAM), Price: \$${price}/hour)"
