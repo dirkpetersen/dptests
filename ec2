@@ -279,17 +279,13 @@ function launch_instance() {
   elif [ -f "$(dirname "$0")/${cloud_init_file}" ]; then
     cloud_init_path="$(dirname "$0")/${cloud_init_file}"
   fi
-  # base64file=$(mktemp)
-  # base64 < ${cloud_init_path} > ${base64file}
-  # If cloud-init.txt exists, use it
   userdata=""
   if [[ -n "$cloud_init_path" ]]; then  
     userdata="--user-data file://${cloud_init_path}"
     echo "Using cloud-init script from $cloud_init_path"
   fi
-  # Configure Security Group and Launch EC2 Instance
 
-  # construct block device mapping JSON
+  # Construct block device mapping JSON
   BLK_DEV_JSON="["
   if [[ $EBS_SIZE -gt 0 ]]; then
       BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}"
@@ -300,28 +296,16 @@ function launch_instance() {
   fi
   BLK_DEV_JSON+="]"
 
-  # x="aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
-    # --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
-    # --security-group-ids ${sg_id} --block-device-mappings "${BLK_DEV_JSON}" ${userdata} \
-    # --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
-    # --query 'Instances[0].InstanceId' --output text
-  #   "
-
-  # printf "Running: $x\n"
-
-  #exit 1
-
   INSTANCE_INFO=$(
     aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
     --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
     --security-group-ids ${sg_id} --block-device-mappings "${BLK_DEV_JSON}" ${userdata} \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
     --query 'Instances[0].InstanceId' --output text
-    )
+  )
 }
 
 function register_dns() {
-
   # Check for Route 53 hosted zone and register DNS if available
   hosted_zone_id=$(aws route53 list-hosted-zones --query 'HostedZones[0].Id' --output text)
   if [ -n "$hosted_zone_id" ] && [ "$hosted_zone_id" != "None" ]; then
@@ -393,7 +377,6 @@ prompt EBS_SIZE "EBS Volume Size (GB)" "50"
 prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
 if [ "$GPUS" -gt 0 ]; then
-  # Retrieve GPU models early
   echo "  Fetching available GPU models..."
   GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
   prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
@@ -454,34 +437,32 @@ if [ "$ACCEPT_DEFAULTS" = true ]; then
   echo "EC2_USER: $EC2_USER"  
 fi
 
-
 # Check if INSTANCE_INFO starts with "i-"
 if [[ ${INSTANCE_INFO} == i-* ]]; then
     instance_id=${INSTANCE_INFO}
 else
-    echo "Error: Failed to create instance. $instance_info"
+    echo "Error: Failed to create instance. $INSTANCE_INFO"
     exit 1
 fi
-echo "Instance $instance_id is starting. Waiting for public DNS..."
+echo "Instance $instance_id is starting. Waiting for public IP..."
 
 # Initial delay to allow instance to initialize
 sleep 3
 
-# Wait for the instance to be in the "running" state and have a public DNS name
+# Wait for the instance to be in the "running" state and have a public IP
 max_attempts=30
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
   instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
-    --query 'Reservations[0].Instances[0].{State:State.Name,PublicDnsName:PublicDnsName,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress}' \
+    --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
     --output json 2>/dev/null)
   
   if [ $? -eq 0 ]; then
     state=$(echo $instance_info | jq -r '.State')
-    public_dns_name=$(echo $instance_info | jq -r '.PublicDnsName')
-    instance_type=$(echo $instance_info | jq -r '.InstanceType')
     public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
+    instance_type=$(echo $instance_info | jq -r '.InstanceType')
     
-    if [ "$state" = "running" ] && [ "$public_dns_name" != "null" ] && [ -n "$public_dns_name" ]; then
+    if [ "$state" = "running" ] && [ "$public_ip" != "null" ] && [ -n "$public_ip" ]; then
       break
     fi
   fi
@@ -496,7 +477,27 @@ if [ $attempt -eq $max_attempts ]; then
   exit 1
 fi
 
+# Register DNS early
 register_dns
+
+echo "Instance $instance_id is running. Waiting for DNS propagation..."
+
+# Wait for DNS propagation
+max_dns_attempts=30
+dns_attempt=0
+while [ $dns_attempt -lt $max_dns_attempts ]; do
+  if nslookup $public_dns_name >/dev/null 2>&1; then
+    echo "DNS has propagated."
+    break
+  fi
+  echo "Waiting for DNS propagation... (Attempt $((dns_attempt+1))/$max_dns_attempts)"
+  sleep 10
+  dns_attempt=$((dns_attempt+1))
+done
+
+if [ $dns_attempt -eq $max_dns_attempts ]; then
+  echo "Warning: DNS propagation took longer than expected. Proceeding anyway."
+fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
 echo -e "\nRun this SSH command to connect:"
@@ -509,7 +510,7 @@ echo -e "\nWaiting for SSH to become available..."
 max_ssh_attempts=30
 ssh_attempt=0
 while [ $ssh_attempt -lt $max_ssh_attempts ]; do
-  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_dns_name} exit 2>/dev/null; then # 2>/dev/null
+  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_dns_name} exit 2>/dev/null; then
     echo "SSH is now available."
     break
   fi
@@ -522,5 +523,6 @@ if [ $ssh_attempt -eq $max_ssh_attempts ]; then
   echo "Error: SSH did not become available within the expected time."
   exit 1
 fi
+
 alias ssh='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}
