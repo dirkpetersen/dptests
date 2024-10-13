@@ -97,10 +97,6 @@ function find_instance_type() {
     query="${query} && ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')]"
   fi
 
-  # Query for GPU types
-  # aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(", ")'
-  # A100, A10G, H100, K80, L4, L40S, M60, T4, T4g, V100
-
   # Add GPU requirement if needed
   if [ "${GPUS}" -gt 0 ]; then
     if [ "$GPU_MODEL" = "any" ]; then
@@ -133,7 +129,11 @@ function find_instance_type() {
     EC2_TYPE="t3.small"
   else
     # Sort by vCPUs (ascending), then by memory (ascending), then by price (ascending)
-    filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB, .ProcessorInfo.SupportedArchitectures) | .[0].InstanceType // empty') # replaced .InstanceType with ProcessorInfo.SupportedArchitectures
+    if [[ "${GPUS}" -gt 0 ]]; then
+      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB, .GpuInfo.Gpus.MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
+    else
+      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB, .ProcessorInfo.SupportedArchitectures) | .[0].InstanceType // empty') # replaced .InstanceType with ProcessorInfo.SupportedArchitectures
+    fi
     
     if [[ -n ${filtered_types} ]]; then
       echo "Instance type found: ${filtered_types}"
@@ -295,10 +295,10 @@ prompt EBS_SIZE "EBS Volume Size (GB)" "50"
 prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
 if [ "$GPUS" -gt 0 ]; then
-  GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(", ")')
-  prompt GPU_MODEL "GPU Model (${GPU_MODELS}, or 'any')" "any"
+  GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
+  prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
   if [ "$GPU_MODEL" = "any" ]; then
-    prompt GPU_VRAM "GPU VRAM (GB)" "16"
+    prompt GPU_VRAM "GPU VRAM (GB)" "8"
   fi
 fi
 if [[ "$ACCEPT_DEFAULTS" = false ]]; then
