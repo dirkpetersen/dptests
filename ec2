@@ -13,7 +13,7 @@ AWS_REGION=${AWS_REGION:-'us-west-2'}
 function list_instances() {
     aws ec2 describe-instances \
         --region ${AWS_REGION} \
-        --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value | [0], InstanceId, PublicDnsName]' \
+        --query 'Reservations[*].Instances[*].[InstanceId, Tags[?Key==`Name`].Value | [0], PublicDnsName]' \
         --filters "Name=instance-state-name,Values=running" \
         --output table
 }
@@ -64,23 +64,29 @@ function check_aws() {
   fi
   # Extract the account ID and the username/role name if the command succeeded
   AWSACCOUNT=$(echo "$identity_info" | awk '{print $1}')
-  AWSUSER=$(echo "$identity_info" | awk '{print $2}' | awk -F'/' '{print $NF}' | sed 's/@/_/g')
+  AWSUSER=$(echo "$identity_info" | awk '{print $2}' | awk -F'/' '{print $NF}')
   AWSUSER2=$(echo "$AWSUSER" | sed 's/@/_/g')
 
   # Set EC2_KEY_NAME and EC2_KEY_FILE
-  EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER2}"}
-  EC2_KEY_FILE=${EC2_KEY_FILE:-"~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem"}
+  EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER}"}
+  EC2_KEY_FILE=${EC2_KEY_FILE:-~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem}
 
   setup_ec2_key
 }
 
 function setup_ec2_key() {
   if [ ! -f "${EC2_KEY_FILE}" ]; then
-    read -p "EC2 key file ${EC2_KEY_FILE} does not exist. Do you want to create a new AWS key? (y/n) " create_key
+    read -p "EC2 key file ${EC2_KEY_FILE} does not exist. You can set environment variables EC2_KEY_NAME EC2_KEY_FILE to use other keys or create a new key now. Do you want to create a new AWS key? (y/n) " create_key
     if [[ $create_key =~ ^[Yy]$ ]]; then
       mkdir -p "$(dirname "${EC2_KEY_FILE}")"
-      aws ec2 create-key-pair --key-name "${EC2_KEY_NAME}" --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
+      aws ec2 create-key-pair --key-name "${EC2_KEY_NAME}" --key-type ed25519 --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
+      if ! [[ -f "${EC2_KEY_FILE}" ]]; then 
+        echo "Error: Failed to create EC2 key file. Exiting."
+        exit 1
+      fi
       chmod 600 "${EC2_KEY_FILE}"
+      ssh-keygen -y -f "${EC2_KEY_FILE}" > "${EC2_KEY_FILE}.pub"
+      chmod 600 "${EC2_KEY_FILE}.pub"
       echo "New EC2 key created and saved to ${EC2_KEY_FILE}"
     else
       echo "EC2 key file not found and not created. Exiting."
@@ -231,7 +237,7 @@ function find_ami_image() {
 # Get user's IP address
 function get_user_ip() {
   IP=$(curl -s https://checkip.amazonaws.com)
-  echo "Your IP address is: ${IP}"
+  echo "Your IP address is: ${IP}. SSH access of your instance will be restricted to this IP."
 }
 
 function configure_security_group() {
@@ -254,12 +260,14 @@ function configure_security_group() {
       --query 'GroupId' --output text)
 
     # Add ingress rules only for newly created security group
-    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \  
       --group-id ${sg_id} --protocol tcp --port 22 --cidr ${IP}/32
     aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
       --group-id ${sg_id} --protocol tcp --port 80 --cidr 0.0.0.0/0
     aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
       --group-id ${sg_id} --protocol tcp --port 443 --cidr 0.0.0.0/0
+    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
+      --group-id ${sg_id} --protocol icmp --port -1 --cidr 0.0.0.0/0      
   fi
 }
 
@@ -343,7 +351,7 @@ function register_dns() {
 EOF
 )
 
-    if aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch "$change_batch"; then
+    if aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch "$change_batch" > /dev/null; then
       echo "DNS record created: ${fqdn}"
       public_dns_name=$fqdn
     else
