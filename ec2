@@ -5,8 +5,9 @@
 # Define constants that can be overridden by environment variables
 ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
 EC2_SECURITY_GROUP=${EC2_SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group default
-EC2_KEY_NAME=${EC2_KEY_NAME:-'asm-ec2-peterdir'} # asm-ec2-peterdir key-peterdir@ohsu.edu
-EC2_KEY_FILE=${EC2_KEY_FILE:-~/.config/asm/cloud/asm-ec2-701747442027-peterdir.pem}
+# These variables will be set after check_aws() is called
+EC2_KEY_NAME=""
+EC2_KEY_FILE=""
 AWS_REGION=${AWS_REGION:-'us-west-2'}
 
 function list_instances() {
@@ -40,7 +41,7 @@ function prompt() {
   eval $__resultvar="'$__result'"
 }
 
-check_aws() {
+function check_aws() {
   if ! command -v aws >/dev/null 2>&1; then
     echo "AWS CLI is not installed. Installing..."
     tmpdir=$(mktemp -d -t awscli-XXX)
@@ -54,12 +55,36 @@ check_aws() {
     export PATH=~/.local/bin:$PATH
   fi
   
-  # Check AWS CLI authentication
-  if ! aws sts get-caller-identity &>/dev/null; then
-    echo "Error: AWS CLI is not authenticated. Please run 'aws sso login --no-browser' or set up your credentials."
-    exit 1
+  # Attempt to retrieve AWS identity information
+  identity_info=$(aws sts get-caller-identity --query '[Account, Arn]' --output text 2>/dev/null)
+  # Check if the command succeeded
+  if [ $? -ne 0 ]; then
+      echo "Error: AWS CLI is not authenticated. Please run 'aws sso login --no-browser' or set up your credentials."
+      exit 1
   fi
+  # Extract the account ID and the username/role name if the command succeeded
+  AWSACCOUNT=$(echo "$identity_info" | awk '{print $1}')
+  AWSUSER=$(echo "$identity_info" | awk '{print $2}' | awk -F'/' '{print $NF}' | sed 's/@/_/g')
 
+  # Set EC2_KEY_NAME and EC2_KEY_FILE
+  EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER}"}
+  EC2_KEY_FILE=${EC2_KEY_FILE:-"~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER}.pem"}
+
+  setup_ec2_key
+}
+
+function setup_ec2_key() {
+  if [ ! -f "${EC2_KEY_FILE}" ]; then
+    read -p "EC2 key file ${EC2_KEY_FILE} does not exist. Do you want to create a new AWS key? (y/n) " create_key
+    if [[ $create_key =~ ^[Yy]$ ]]; then
+      aws ec2 create-key-pair --key-name "${EC2_KEY_NAME}" --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
+      chmod 600 "${EC2_KEY_FILE}"
+      echo "New EC2 key created and saved to ${EC2_KEY_FILE}"
+    else
+      echo "EC2 key file not found and not created. Exiting."
+      exit 1
+    fi
+  fi
 }
 
 
@@ -236,7 +261,7 @@ function configure_security_group() {
   fi
 }
 
-launch_instance() {
+function launch_instance() {
   # Check for cloud-init.txt file
   cloud_init_file="cloud-init.txt"
   if [ -f "./${cloud_init_file}" ]; then
@@ -285,13 +310,52 @@ launch_instance() {
     )
 }
 
+function register_dns() {
+
+  # Check for Route 53 hosted zone and register DNS if available
+  hosted_zone_id=$(aws route53 list-hosted-zones --query 'HostedZones[0].Id' --output text)
+  if [ -n "$hosted_zone_id" ] && [ "$hosted_zone_id" != "None" ]; then
+    domain_name=$(aws route53 get-hosted-zone --id $hosted_zone_id --query 'HostedZone.Name' --output text)
+    domain_name=${domain_name%%.} # Remove trailing dot
+    fqdn="${NAME}.${domain_name}"
+    
+    # Create Route 53 DNS record
+    change_batch=$(cat <<EOF
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "${fqdn}",
+        "Type": "A",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "${public_ip}"
+          }
+        ]
+      }
+    }
+  ]
+}
+EOF
+)
+
+    if aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch "$change_batch"; then
+      echo "DNS record created: ${fqdn}"
+      public_dns_name=$fqdn
+    else
+      echo "Failed to create DNS record. Using public DNS name."
+    fi
+  else
+    echo "No Route 53 hosted zone found. Using public DNS name."
+  fi
+}
+
 #########################################################################################################
-# Main script
+### Main script ####
 
 check_aws
-
-# Retrieve GPU models early
-GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
 
 # Check for command line arguments
 if [ "$1" = "list" ]; then
@@ -319,13 +383,16 @@ prompt EBS_SIZE "EBS Volume Size (GB)" "50"
 prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
 if [ "$GPUS" -gt 0 ]; then
+  # Retrieve GPU models early
+  echo "  Fetching available GPU models..."
+  GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
   prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
   if [ "$GPU_MODEL" = "any" ]; then
     prompt GPU_VRAM "GPU VRAM (GB)" "8"
   fi
 fi
 if [[ "$ACCEPT_DEFAULTS" = false ]]; then
-  echo "Pick 'al202*-ami-*', '*ubuntu-*-24.04-*-server*', or 'Rocky-9-EC2-Base*':"
+  echo "  Pick 'al202*-ami-*', '*ubuntu-*-24.04-*-server*', or 'Rocky-9-EC2-Base*':"
 fi
 prompt OS "Operating System" "al202*-ami-*"
 prompt AWS_REGION "AWS Region" ${AWS_REGION}
@@ -361,13 +428,13 @@ fi
 GPUS=$((GPUS))
 AMI_NAME=""
 
-
 # Setup required dependencies 
 set_ec2_user_and_owner
 find_instance_type
 find_ami_image
 get_user_ip
 configure_security_group
+
 launch_instance
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
@@ -419,44 +486,7 @@ if [ $attempt -eq $max_attempts ]; then
   exit 1
 fi
 
-# Check for Route 53 hosted zone and register DNS if available
-hosted_zone_id=$(aws route53 list-hosted-zones --query 'HostedZones[0].Id' --output text)
-if [ -n "$hosted_zone_id" ] && [ "$hosted_zone_id" != "None" ]; then
-  domain_name=$(aws route53 get-hosted-zone --id $hosted_zone_id --query 'HostedZone.Name' --output text)
-  domain_name=${domain_name%%.} # Remove trailing dot
-  fqdn="${NAME}.${domain_name}"
-  
-  # Create Route 53 DNS record
-  change_batch=$(cat <<EOF
-{
-  "Changes": [
-    {
-      "Action": "UPSERT",
-      "ResourceRecordSet": {
-        "Name": "${fqdn}",
-        "Type": "A",
-        "TTL": 300,
-        "ResourceRecords": [
-          {
-            "Value": "${public_ip}"
-          }
-        ]
-      }
-    }
-  ]
-}
-EOF
-)
-
-  if aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch "$change_batch"; then
-    echo "DNS record created: ${fqdn}"
-    public_dns_name=$fqdn
-  else
-    echo "Failed to create DNS record. Using public DNS name."
-  fi
-else
-  echo "No Route 53 hosted zone found. Using public DNS name."
-fi
+register_dns
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
 echo -e "\nRun this SSH command to connect:"
