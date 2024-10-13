@@ -153,6 +153,7 @@ function find_instance_type() {
   gpu_info=$(echo $instance_info | jq -r '.GpuInfo.Gpus[0].Name // "N/A"')
   gpu_vram=$(echo $instance_info | jq -r '.GpuInfo.Gpus[0].MemoryInfo.SizeInMiB // 0')
   gpu_vram_gb=$(awk "BEGIN {printf \"%.1f\", $gpu_vram/1024}")
+  ARCH=$(echo $instance_info | jq -r '.ProcessorInfo.SupportedArchitectures[0]')
 
   # Costs are unreliable ,review later 
   price=$(aws pricing get-products --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=location,Value=US West (Oregon)" --region us-east-1 | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD')
@@ -166,7 +167,7 @@ function find_instance_type() {
     price=""
   fi
 
-  echo "Selected instance type: ${EC2_TYPE} (vCPUs: ${vcpus}, Mem: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB), ${price})"
+  echo "Selected instance type: ${EC2_TYPE} (Architecture: ${ARCH}, vCPUs: ${vcpus}, Mem: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB), ${price})"
 
 }
 
