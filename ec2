@@ -154,9 +154,13 @@ function find_instance_type() {
   gpu_vram=$(echo $instance_info | jq -r '.GpuInfo.Gpus[0].MemoryInfo.SizeInMiB // 0')
   gpu_vram_gb=$(awk "BEGIN {printf \"%.1f\", $gpu_vram/1024}")
 
-  # Get the hourly on-demand price
-  price_info=$(aws pricing get-products --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=regionCode,Value=${AWS_REGION}" --max-results 1 --output json)
+  # Get the hourly on-demand price from us-east-1
+  price_info=$(aws pricing get-products --region us-east-1 --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=regionCode,Value=${AWS_REGION}" --max-results 1 --output json)
   price=$(echo $price_info | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD')
+
+  if [ -z "$price" ]; then
+    price="N/A"
+  fi
 
   echo "Selected instance type: ${EC2_TYPE} (vCPUs: ${vcpus}, Memory: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB VRAM), Price: \$${price}/hour)"
 
