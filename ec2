@@ -65,10 +65,11 @@ function check_aws() {
   # Extract the account ID and the username/role name if the command succeeded
   AWSACCOUNT=$(echo "$identity_info" | awk '{print $1}')
   AWSUSER=$(echo "$identity_info" | awk '{print $2}' | awk -F'/' '{print $NF}' | sed 's/@/_/g')
+  AWSUSER2=$(echo "$AWSUSER" | sed 's/@/_/g')
 
   # Set EC2_KEY_NAME and EC2_KEY_FILE
-  EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER}"}
-  EC2_KEY_FILE=${EC2_KEY_FILE:-"~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER}.pem"}
+  EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER2}"}
+  EC2_KEY_FILE=${EC2_KEY_FILE:-"~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem"}
 
   setup_ec2_key
 }
@@ -77,6 +78,7 @@ function setup_ec2_key() {
   if [ ! -f "${EC2_KEY_FILE}" ]; then
     read -p "EC2 key file ${EC2_KEY_FILE} does not exist. Do you want to create a new AWS key? (y/n) " create_key
     if [[ $create_key =~ ^[Yy]$ ]]; then
+      mkdir -p "$(dirname "${EC2_KEY_FILE}")"
       aws ec2 create-key-pair --key-name "${EC2_KEY_NAME}" --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
       chmod 600 "${EC2_KEY_FILE}"
       echo "New EC2 key created and saved to ${EC2_KEY_FILE}"

@@ -1,3 +1,5 @@
 # dptests
 
-Just a bit of test code here and tere
+Just a bit of test code here and there
+
+
