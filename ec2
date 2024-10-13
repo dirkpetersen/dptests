@@ -269,6 +269,9 @@ launch_instance() {
 
 check_aws
 
+# Retrieve GPU models early
+GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
+
 # Check for command line arguments
 if [ "$1" = "list" ]; then
     list_instances
@@ -295,7 +298,6 @@ prompt EBS_SIZE "EBS Volume Size (GB)" "50"
 prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
 prompt GPUS "Number of NVIDIA GPUs" "0"
 if [ "$GPUS" -gt 0 ]; then
-  GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
   prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
   if [ "$GPU_MODEL" = "any" ]; then
     prompt GPU_VRAM "GPU VRAM (GB)" "8"
