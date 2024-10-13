@@ -313,6 +313,10 @@ function register_dns() {
     domain_name=${domain_name%%.} # Remove trailing dot
     fqdn="${NAME}.${domain_name}"
     
+    # Store hosted_zone_id and fqdn as global variables
+    export HOSTED_ZONE_ID=$hosted_zone_id
+    export FQDN=$fqdn
+    
     # Create Route 53 DNS record
     change_batch=$(cat <<EOF
 {
@@ -486,7 +490,9 @@ echo "Instance $instance_id is running. Waiting for DNS propagation..."
 max_dns_attempts=30
 dns_attempt=0
 while [ $dns_attempt -lt $max_dns_attempts ]; do
-  if nslookup $public_dns_name >/dev/null 2>&1; then
+  # Use AWS CLI to check DNS record
+  dns_check=$(aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --record-name $FQDN --record-type A --query 'RecordData[0]' --output text 2>/dev/null)
+  if [ "$dns_check" = "$public_ip" ]; then
     echo "DNS has propagated."
     break
   fi
