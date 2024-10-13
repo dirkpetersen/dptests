@@ -159,13 +159,18 @@ function find_instance_type() {
   price=$(echo $price_info | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD')
 
   if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
-    price=$(aws ec2 describe-spot-price-history --instance-types ${EC2_TYPE} --product-descriptions "Linux/UNIX" --start-time $(date -u +"%Y-%m-%dT%H:%M:%SZ") --region ${AWS_REGION} --query 'SpotPriceHistory[0].SpotPrice' --output text)
-    if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
-      price="N/A"
+    if [ "${SPOT,,}" = "yes" ]; then
+      price=$(aws ec2 describe-spot-price-history --instance-types ${EC2_TYPE} --product-descriptions "Linux/UNIX" --start-time $(date -u +"%Y-%m-%dT%H:%M:%SZ") --region ${AWS_REGION} --query 'SpotPriceHistory[0].SpotPrice' --output text)
+      if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
+        price="N/A"
+      else
+        price=$(printf "%.4f" $price)
+      fi
+      price_type="(spot estimate)"
     else
-      price=$(printf "%.4f" $price)
+      price="N/A"
+      price_type="(on-demand)"
     fi
-    price_type="(spot estimate)"
   else
     price=$(printf "%.4f" $price)
     price_type="(on-demand)"
