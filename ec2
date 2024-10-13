@@ -487,49 +487,55 @@ register_dns
 echo "Instance $instance_id is running. Waiting for DNS propagation..."
 
 # Wait for DNS propagation
-max_dns_attempts=30
+max_dns_attempts=60
 dns_attempt=0
+dns_propagated=false
 while [ $dns_attempt -lt $max_dns_attempts ]; do
   # Use AWS CLI to check DNS record
   dns_check=$(aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --record-name $FQDN --record-type A --query 'RecordData[0]' --output text 2>/dev/null)
   if [ "$dns_check" = "$public_ip" ]; then
     echo "DNS has propagated."
+    dns_propagated=true
     break
   fi
   echo "Waiting for DNS propagation... (Attempt $((dns_attempt+1))/$max_dns_attempts)"
-  sleep 10
+  sleep 20
   dns_attempt=$((dns_attempt+1))
 done
 
-if [ $dns_attempt -eq $max_dns_attempts ]; then
-  echo "Warning: DNS propagation took longer than expected. Proceeding anyway."
+if [ "$dns_propagated" = false ]; then
+  echo "Warning: DNS propagation is taking longer than expected. We'll proceed using the public IP address."
+  public_dns_name=$public_ip
 fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
-echo -e "\nRun this SSH command to connect:"
+echo -e "\nRun one of these SSH commands to connect:"
 history -a
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 echo "ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
+echo "ssh -i ${FILE2} ${EC2_USER}@${public_ip}" | tee -a ~/.bash_history
 history -r
 echo -e "\nWaiting for SSH to become available..."
 
 # Wait for SSH to become available
 max_ssh_attempts=30
 ssh_attempt=0
+ssh_available=false
 while [ $ssh_attempt -lt $max_ssh_attempts ]; do
-  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_dns_name} exit 2>/dev/null; then
+  if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>/dev/null; then
     echo "SSH is now available."
+    ssh_available=true
     break
   fi
   echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
-  sleep 5
+  sleep 10
   ssh_attempt=$((ssh_attempt+1))
 done
 
-if [ $ssh_attempt -eq $max_ssh_attempts ]; then
+if [ "$ssh_available" = false ]; then
   echo "Error: SSH did not become available within the expected time."
   exit 1
 fi
 
 alias ssh='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}
+ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_ip}
