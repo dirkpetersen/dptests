@@ -130,9 +130,9 @@ function find_instance_type() {
   else
     # Sort by vCPUs (ascending), then by memory (ascending), then by price (ascending)
     if [[ "${GPUS}" -gt 0 ]]; then
-      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB, .GpuInfo.Gpus.MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
+      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB) | map(select(.GpuInfo.Gpus != null)) | sort_by(.GpuInfo.Gpus[0].MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
     else
-      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB, .ProcessorInfo.SupportedArchitectures) | .[0].InstanceType // empty') # replaced .InstanceType with ProcessorInfo.SupportedArchitectures
+      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
     fi
     
     if [[ -n ${filtered_types} ]]; then
