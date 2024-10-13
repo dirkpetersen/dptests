@@ -154,37 +154,7 @@ function find_instance_type() {
   gpu_vram=$(echo $instance_info | jq -r '.GpuInfo.Gpus[0].MemoryInfo.SizeInMiB // 0')
   gpu_vram_gb=$(awk "BEGIN {printf \"%.1f\", $gpu_vram/1024}")
 
-  # Get the hourly on-demand price
-  price_json=$(aws pricing get-products --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=location,Value=US West (Oregon)" --region us-east-1)
-  #             aws pricing get-products --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=g3s.xlarge" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=location,Value=US West (Oregon)" --region us-east-1 | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD'
-  
-  if [ $? -eq 0 ] && [ -n "$price_json" ]; then
-    price=$(echo "$price_json" | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD' 2>/dev/null)
-  else
-    price=""
-  fi
-
-  echo "Price: $price"
-
-  if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
-    if [ "${SPOT,,}" = "yes" ]; then
-      price=$(aws ec2 describe-spot-price-history --instance-types ${EC2_TYPE} --product-descriptions "Linux/UNIX" --start-time $(date -u +"%Y-%m-%dT%H:%M:%SZ") --region ${AWS_REGION} --query 'SpotPriceHistory[0].SpotPrice' --output text)
-      if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
-        price="N/A"
-      else
-        price=$(printf "%.4f" $price)
-      fi
-      price_type="(spot estimate)"
-    else
-      price="N/A"
-      price_type="(on-demand)"
-    fi
-  else
-    price=$(printf "%.4f" $price)
-    price_type="(on-demand)"
-  fi
-
-  echo "Selected instance type: ${EC2_TYPE} (vCPUs: ${vcpus}, Memory: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB VRAM), Price: \$${price}/hour ${price_type})"
+  echo "Selected instance type: ${EC2_TYPE} (vCPUs: ${vcpus}, Memory: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB VRAM))"
 
 }
 
@@ -346,7 +316,6 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
 fi
 prompt OS "Operating System" "al202*-ami-*"
 prompt AWS_REGION "AWS Region" ${AWS_REGION}
-prompt SPOT "Spot Market (yes or no)" "no"
 prompt NAME "Instance/Host Name" "server-x"
 
 if [ "$ACCEPT_DEFAULTS" = true ]; then
