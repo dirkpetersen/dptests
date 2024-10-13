@@ -155,7 +155,13 @@ function find_instance_type() {
   gpu_vram_gb=$(awk "BEGIN {printf \"%.1f\", $gpu_vram/1024}")
 
   # Get the hourly on-demand price
-  price=$(aws pricing get-products --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=location,Value=${AWS_REGION}" --region us-east-1 | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD')
+  price_json=$(aws pricing get-products --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=location,Value=${AWS_REGION}" --region us-east-1)
+  
+  if [ $? -eq 0 ] && [ -n "$price_json" ]; then
+    price=$(echo "$price_json" | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD' 2>/dev/null)
+  else
+    price=""
+  fi
 
   if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
     if [ "${SPOT,,}" = "yes" ]; then
