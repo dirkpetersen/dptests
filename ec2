@@ -168,7 +168,13 @@ function find_instance_type() {
       fi
       price_type="(spot estimate)"
     else
-      price="N/A"
+      # Attempt to get on-demand price from a different region (us-east-1)
+      price=$(aws pricing get-products --region us-east-1 --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=regionCode,Value=${AWS_REGION}" --max-results 1 --output json | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD')
+      if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
+        price="N/A"
+      else
+        price=$(printf "%.4f" $price)
+      fi
       price_type="(on-demand)"
     fi
   else
