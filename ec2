@@ -158,7 +158,7 @@ function find_instance_type() {
   price_info=$(aws pricing get-products --region us-east-1 --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=regionCode,Value=${AWS_REGION}" --max-results 1 --output json)
   price=$(echo $price_info | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD')
 
-  if [ -z "$price" ] || [ "$price" = "null" ] || [ $(echo "$price <= 0" | bc -l) -eq 1 ]; then
+  if [ -z "$price" ] || [ "$price" = "null" ] || [ $(awk 'BEGIN {print ('$price' <= 0)}') -eq 1 ]; then
     price="N/A"
   else
     price=$(printf "%.4f" $price)
