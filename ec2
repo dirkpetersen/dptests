@@ -395,13 +395,14 @@ max_attempts=30
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
   instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
-    --query 'Reservations[0].Instances[0].{State:State.Name,PublicDnsName:PublicDnsName,InstanceType:InstanceType}' \
+    --query 'Reservations[0].Instances[0].{State:State.Name,PublicDnsName:PublicDnsName,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress}' \
     --output json 2>/dev/null)
   
   if [ $? -eq 0 ]; then
     state=$(echo $instance_info | jq -r '.State')
     public_dns_name=$(echo $instance_info | jq -r '.PublicDnsName')
     instance_type=$(echo $instance_info | jq -r '.InstanceType')
+    public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
     
     if [ "$state" = "running" ] && [ "$public_dns_name" != "null" ] && [ -n "$public_dns_name" ]; then
       break
@@ -416,6 +417,45 @@ done
 if [ $attempt -eq $max_attempts ]; then
   echo "Error: Instance did not become ready within the expected time."
   exit 1
+fi
+
+# Check for Route 53 hosted zone and register DNS if available
+hosted_zone_id=$(aws route53 list-hosted-zones --query 'HostedZones[0].Id' --output text)
+if [ -n "$hosted_zone_id" ] && [ "$hosted_zone_id" != "None" ]; then
+  domain_name=$(aws route53 get-hosted-zone --id $hosted_zone_id --query 'HostedZone.Name' --output text)
+  domain_name=${domain_name%%.} # Remove trailing dot
+  fqdn="${NAME}.${domain_name}"
+  
+  # Create Route 53 DNS record
+  change_batch=$(cat <<EOF
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "${fqdn}",
+        "Type": "A",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "${public_ip}"
+          }
+        ]
+      }
+    }
+  ]
+}
+EOF
+)
+
+  if aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch "$change_batch"; then
+    echo "DNS record created: ${fqdn}"
+    public_dns_name=$fqdn
+  else
+    echo "Failed to create DNS record. Using public DNS name."
+  fi
+else
+  echo "No Route 53 hosted zone found. Using public DNS name."
 fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
