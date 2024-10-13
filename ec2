@@ -487,19 +487,20 @@ register_dns
 echo "Instance $instance_id is running. Waiting for DNS propagation..."
 
 # Wait for DNS propagation
-max_dns_attempts=60
+max_dns_attempts=30
 dns_attempt=0
 dns_propagated=false
 while [ $dns_attempt -lt $max_dns_attempts ]; do
   # Use AWS CLI to check DNS record
   dns_check=$(aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --record-name $FQDN --record-type A --query 'RecordData[0]' --output text 2>/dev/null)
   if [ "$dns_check" = "$public_ip" ]; then
-    echo "DNS has propagated."
+    echo "DNS has propagated, wait a few more seconds..."
+    sleep 5    
     dns_propagated=true
     break
   fi
   echo "Waiting for DNS propagation... (Attempt $((dns_attempt+1))/$max_dns_attempts)"
-  sleep 20
+  sleep 3
   dns_attempt=$((dns_attempt+1))
 done
 
@@ -513,7 +514,7 @@ echo -e "\nRun one of these SSH commands to connect:"
 history -a
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 echo "ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
-echo "ssh -i ${FILE2} ${EC2_USER}@${public_ip}" | tee -a ~/.bash_history
+echo "ssh -i ${FILE2} ${EC2_USER}@${public_ip}"
 history -r
 echo -e "\nWaiting for SSH to become available..."
 
@@ -528,7 +529,7 @@ while [ $ssh_attempt -lt $max_ssh_attempts ]; do
     break
   fi
   echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
-  sleep 10
+  sleep 3
   ssh_attempt=$((ssh_attempt+1))
 done
 
