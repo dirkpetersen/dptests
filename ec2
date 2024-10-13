@@ -154,7 +154,19 @@ function find_instance_type() {
   gpu_vram=$(echo $instance_info | jq -r '.GpuInfo.Gpus[0].MemoryInfo.SizeInMiB // 0')
   gpu_vram_gb=$(awk "BEGIN {printf \"%.1f\", $gpu_vram/1024}")
 
-  echo "Selected instance type: ${EC2_TYPE} (vCPUs: ${vcpus}, Memory: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB VRAM))"
+  # Costs are unreliable ,review later 
+  price=$(aws pricing get-products --service-code AmazonEC2 --filters "Type=TERM_MATCH,Field=instanceType,Value=${EC2_TYPE}" "Type=TERM_MATCH,Field=operatingSystem,Value=Linux" "Type=TERM_MATCH,Field=preInstalledSw,Value=NA" "Type=TERM_MATCH,Field=location,Value=US West (Oregon)" --region us-east-1 | jq -r '.PriceList[0] | fromjson | .terms.OnDemand[].priceDimensions[].pricePerUnit.USD')
+  # Check if the input is a valid number and not zero
+  if [[ "$price" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] && [[ $(awk "BEGIN {print ($price != 0)}") -eq 1 ]]; then
+    # Convert to 4 decimal places
+    price=$(printf "%.4f" "$price")
+    price="$ ${price}/h"
+  else
+    # Set to an empty string
+    price=""
+  fi
+
+  echo "Selected instance type: ${EC2_TYPE} (vCPUs: ${vcpus}, Mem: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB), ${price})"
 
 }
 
@@ -163,7 +175,7 @@ function find_ami_image() {
   local query="sort_by(Images, &CreationDate)[-1].{Id:ImageId,Name:Name}"
   
   echo "Searching for AMI with OS: ${OS}, Architecture: ${ARCH}"
-    
+
   images=$(aws ec2 describe-images \
     --region ${AWS_REGION} \
     --owners ${EC2_AMI_OWNER} \
