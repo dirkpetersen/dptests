@@ -359,7 +359,7 @@ check_aws
 if [ "$1" = "list" ]; then
     list_instances
     exit 0
-elif [ "$1" = "term" ]; then
+elif [[ "$1" = "term" || "$1" = "terminate" || "$1" = "kill" ]]; then
     if [ -z "$2" ]; then
         echo "Error: Instance ID is required for termination."
         echo "Usage: $0 term <instance-id>"
@@ -508,7 +508,8 @@ fi
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
 echo -e "\nRun this SSH command to connect:"
 history -a
-echo "ssh -i ${EC2_KEY_FILE} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
+FILE2=~${EC2_KEY_FILE#"$HOME"}
+echo "ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
 history -r
 echo -e "\nWaiting for SSH to become available..."
 
