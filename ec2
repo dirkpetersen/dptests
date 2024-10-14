@@ -74,10 +74,30 @@ function check_aws() {
   setup_ec2_key
 }
 
+key_pair_exists() {
+  aws ec2 describe-key-pairs \
+    --region "${AWS_REGION}" \
+    --key-names "${EC2_KEY_NAME}" \
+    --query "KeyPairs[?KeyName=='${EC2_KEY_NAME}']" \
+    --output text > /dev/null 2>&1
+
+  if [[ $? -eq 0 ]]; then
+    #echo "Key pair '${EC2_KEY_NAME}' already exists."
+    return 0
+  else
+    echo "Key pair '${KEY_NAME}' does not exist."
+    return 1  
+  fi
+}
+
 function setup_ec2_key() {
   if [[ ! -f "${EC2_KEY_FILE}" ]]; then
     read -p "EC2 key file ${EC2_KEY_FILE} does not exist. You can set environment variables EC2_KEY_NAME EC2_KEY_FILE to use other keys or create a new key now. Do you want to create a new AWS key? (y/n) " create_key
     if [[ $create_key =~ ^[Yy]$ ]]; then
+      if key_pair_exists; then
+        echo "Key pair ${EC2_KEY_NAME} already exists and you must have that key file to use it. Please copy it to ${EC2_KEY_FILE}"
+        exit 1
+      fi
       mkdir -p "$(dirname "${EC2_KEY_FILE}")"
       aws ec2 create-key-pair --key-name "${EC2_KEY_NAME}" --key-type ed25519 --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
       if ! [[ -f "${EC2_KEY_FILE}" ]]; then 
