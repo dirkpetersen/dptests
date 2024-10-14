@@ -6,8 +6,8 @@
 ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
 EC2_SECURITY_GROUP=${EC2_SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group default
 # These variables will be set after check_aws() is called
-EC2_KEY_NAME=""
-EC2_KEY_FILE=""
+# EC2_KEY_NAME=""
+# EC2_KEY_FILE=""
 AWS_REGION=${AWS_REGION:-'us-west-2'}
 
 function list_instances() {
