@@ -368,6 +368,51 @@ elif [[ "$1" = "term" || "$1" = "terminate" || "$1" = "kill" ]]; then
     echo "Attempting to terminate instance $2..."
     terminate_instance "$2"
     exit 0
+elif [[ -f "$1" ]]; then
+    # Function to upload and execute file
+    upload_and_execute() {
+        local file="$1"
+        local remote_file="/tmp/$(basename "$file")"
+        scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "$file" "${EC2_USER}@${public_ip}:$remote_file"
+        if [[ $? -ne 0 ]]; then
+            echo "Error: Failed to upload file."
+            exit 1
+        fi
+        if [[ $(head -n 1 "$file" | grep -c '^#!') -eq 1 ]]; then
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "${EC2_USER}@${public_ip}" "chmod +x $remote_file && nohup $remote_file > /dev/null 2>&1 &"
+        else
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "${EC2_USER}@${public_ip}" "nohup bash $remote_file > /dev/null 2>&1 &"
+        fi
+        if [[ $? -eq 0 ]]; then
+            echo "File uploaded and executed in the background."
+        else
+            echo "Error: Failed to execute file."
+        fi
+    }
+
+    # Wait for the instance to be ready before uploading and executing
+    wait_for_instance() {
+        echo "Waiting for instance to be ready..."
+        while true; do
+            instance_state=$(aws ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[0].Instances[0].State.Name' --output text)
+            if [[ "$instance_state" == "running" ]]; then
+                public_ip=$(aws ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+                if [[ -n "$public_ip" ]]; then
+                    echo "Instance is ready. Public IP: $public_ip"
+                    break
+                fi
+            fi
+            sleep 5
+        done
+    }
+
+    # Launch instance first
+    launch_instance
+    wait_for_instance
+
+    # Now upload and execute the file
+    upload_and_execute "$1"
+    exit 0
 fi
 
 # User Inputs
