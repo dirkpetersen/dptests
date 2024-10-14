@@ -506,10 +506,11 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
             prompt GPU_VRAM "GPU VRAM (GB)" "8"
         fi
     fi
-    echo "  Pick 'al202*-ami-*', '*ubuntu-*-24.04-*-server*', or 'Rocky-9-EC2-Base*':"
+    echo "  Amazon Linux (default) or enter '*ubuntu-*-24.04-*-server*' or 'Rocky-9-EC2-Base*':"
     prompt OS "Operating System" "al202*-ami-*"
     prompt AWS_REGION "AWS Region" ${AWS_REGION}
-    prompt NAME "Instance/Host Name" "server-x"
+    rnd=$((RANDOM % 900 + 100))
+    prompt NAME "Instance/Host Name" "server-${rnd}"
 else
     echo ""
     echo "Using default values for all inputs:"  
