@@ -93,7 +93,7 @@ key_pair_exists() {
 function setup_ec2_key() {
   if [[ ! -f "${EC2_KEY_FILE}" ]]; then
     if key_pair_exists; then
-      echo "EC2 Key pair ${EC2_KEY_NAME} exists in your AWS account but the required EC2 key file ${EC2_KEY_FILE} does not exist, likely because you used this tool already on a different machine. Please copy the key file from that other machine to ${EC2_KEY_FILE} or delete the key pair in your AWS account and start from scratch. You can set also set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before."
+      echo "EC2 Key pair ${EC2_KEY_NAME} is setup in your AWS account but the associated SSH key file ${EC2_KEY_FILE} does not exist, likely because you used this tool already on a different machine. Please copy the key file from that other machine to ${EC2_KEY_FILE} or delete the key pair in your AWS account and start from scratch. You can also set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before."
       exit 1
     fi
     read -p "EC2 key ${EC2_KEY_NAME} with file ${EC2_KEY_FILE} does not exist. You can set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before or create a new key now. Do you want to create a new AWS key? (y/n) " create_key
