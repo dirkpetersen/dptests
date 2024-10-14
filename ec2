@@ -381,21 +381,23 @@ elif [[ -f "$1" ]]; then
     upload_and_execute() {
         local file="$1"
         local remote_file="/tmp/$(basename "$file")"
-        scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "$file" "${EC2_USER}@${public_ip}:$remote_file"
-        if [[ $? -ne 0 ]]; then
+        if ! scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "$file" "${EC2_USER}@${public_ip}:$remote_file"; then
             echo "Error: Failed to upload file."
-            exit 1
+            return 1
         fi
         if [[ $(head -n 1 "$file" | grep -c '^#!') -eq 1 ]]; then
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "${EC2_USER}@${public_ip}" "chmod +x $remote_file && nohup $remote_file > /dev/null 2>&1 &"
+            if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "${EC2_USER}@${public_ip}" "chmod +x $remote_file && nohup $remote_file > /dev/null 2>&1 &"; then
+                echo "Error: Failed to execute file."
+                return 1
+            fi
         else
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "${EC2_USER}@${public_ip}" "nohup bash $remote_file > /dev/null 2>&1 &"
+            if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no "${EC2_USER}@${public_ip}" "nohup bash $remote_file > /dev/null 2>&1 &"; then
+                echo "Error: Failed to execute file."
+                return 1
+            fi
         fi
-        if [[ $? -eq 0 ]]; then
-            echo "File uploaded and executed in the background."
-        else
-            echo "Error: Failed to execute file."
-        fi
+        echo "File uploaded and executed in the background."
+        return 0
     }
 
 function wait_for_instance() {
@@ -427,6 +429,22 @@ function wait_for_instance() {
         echo "Error: Instance did not become ready within the expected time."
         exit 1
     fi
+
+    echo "Waiting for SSH to become available..."
+    max_ssh_attempts=30
+    ssh_attempt=0
+    while [ $ssh_attempt -lt $max_ssh_attempts ]; do
+        if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>/dev/null; then
+            echo "SSH is now available."
+            return 0
+        fi
+        echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
+        sleep 10
+        ssh_attempt=$((ssh_attempt+1))
+    done
+
+    echo "Error: SSH did not become available within the expected time."
+    exit 1
 }
 
     # Set default values for instance creation
@@ -459,11 +477,15 @@ function wait_for_instance() {
     fi
     echo "Instance $instance_id is starting. Waiting for public IP..."
 
-    # Wait for the instance to be ready
+    # Wait for the instance to be ready and SSH to be available
     wait_for_instance
 
     # Now upload and execute the file
-    upload_and_execute "$1"
+    if upload_and_execute "$1"; then
+        echo "File uploaded and executed successfully."
+    else
+        echo "Error: Failed to upload or execute file."
+    fi
     exit 0
 fi
 
