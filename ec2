@@ -115,68 +115,73 @@ function set_ec2_user_and_owner() {
 }
 
 function find_instance_type() {
-  local instance_types
-  local filtered_types
-  local query
-
-  # Base query for CPU and Memory
-  query="InstanceTypes[?to_number(VCpuInfo.DefaultVCpus) >= \`${VCPUS}\` && to_number(MemoryInfo.SizeInMiB) >= \`${MEM_MB}\`"
-
-  # Add CPU architecture if needed
-  if [[ "${ARCH}" == "x86" || "${ARCH}" == "amd64" ]]; then ARCH="x86_64"; fi
-  if [[ "${ARCH}" == "arm" || "${ARCH}" == "graviton" ]]; then ARCH="arm64"; fi
-    
-  if [[ "${ARCH}" == "arm64" || "${ARCH}" == "x86_64" ]]; then
-    query="${query} && ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')]"
-  fi
-
-  # Add GPU requirement if needed
-  if [[ "${GPUS}" -gt 0 ]]; then
-    if [[ "$GPU_MODEL" = "any" ]]; then
-      query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`)"
-      if [[ -n "${GPU_VRAM}" ]]; then
-        query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].MemoryInfo.SizeInMiB | [0]) >= \`$((GPU_VRAM * 1024))\`)"
-      fi
-    else
-      query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA' && Name=='${GPU_MODEL}'].Count | [0]) >= \`${GPUS}\`)"
-    fi
-  fi
-
-  # Add ephemeral disk requirement if needed
-  if [[ "${EPHEMERAL_SIZE}" -gt 0 ]]; then    
-    query="${query} && (not_null(InstanceStorageInfo) && InstanceStorageInfo.TotalSizeInGB >= \`${EPHEMERAL_SIZE}\`)"
-  fi
-
-  # Close last bracket
-  query="${query}]"
-
-  echo "$query" > ec2_query.txt
-  # exit 1
-
-  instance_types=$(aws ec2 describe-instance-types \
-    --region ${AWS_REGION} \
-    --query "${query}" \
-    --output json)
-
-  echo "$instance_types" > ec2_instance_types.json 
-
-  if [[ -z "$instance_types" || "$instance_types" == "[]" ]]; then
-    echo "No instance types found matching the criteria. Defaulting to t3.small."
-    EC2_TYPE="t3.small"
+  if [[ "$INSTTYPE" != "any" ]]; then
+    EC2_TYPE="$INSTTYPE"
+    echo "Using specified instance type: $EC2_TYPE"
   else
-    # Sort by vCPUs (ascending), then by memory (ascending), then by price (ascending)
-    if [[ "${GPUS}" -gt 0 ]]; then
-      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB) | map(select(.GpuInfo.Gpus != null)) | sort_by(.GpuInfo.Gpus[0].MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
-    else
-      filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
+    local instance_types
+    local filtered_types
+    local query
+
+    # Base query for CPU and Memory
+    query="InstanceTypes[?to_number(VCpuInfo.DefaultVCpus) >= \`${VCPUS}\` && to_number(MemoryInfo.SizeInMiB) >= \`${MEM_MB}\`"
+
+    # Add CPU architecture if needed
+    if [[ "${ARCH}" == "x86" || "${ARCH}" == "amd64" ]]; then ARCH="x86_64"; fi
+    if [[ "${ARCH}" == "arm" || "${ARCH}" == "graviton" ]]; then ARCH="arm64"; fi
+      
+    if [[ "${ARCH}" == "arm64" || "${ARCH}" == "x86_64" ]]; then
+      query="${query} && ProcessorInfo.SupportedArchitectures[?contains(@, '${ARCH}')]"
     fi
-    
-    if [[ -n ${filtered_types} ]]; then
-      echo "Instance type found: ${filtered_types}"
-      EC2_TYPE=${filtered_types}
-    else
-      echo "No suitable instance type found after filtering. Defaulting to t3.small."
+
+    # Add GPU requirement if needed
+    if [[ "${GPUS}" -gt 0 ]]; then
+      if [[ "$GPU_MODEL" = "any" ]]; then
+        query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`)"
+        if [[ -n "${GPU_VRAM}" ]]; then
+          query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].MemoryInfo.SizeInMiB | [0]) >= \`$((GPU_VRAM * 1024))\`)"
+        fi
+      else
+        query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA' && Name=='${GPU_MODEL}'].Count | [0]) >= \`${GPUS}\`)"
+      fi
+    fi
+
+    # Add ephemeral disk requirement if needed
+    if [[ "${EPHEMERAL_SIZE}" -gt 0 ]]; then    
+      query="${query} && (not_null(InstanceStorageInfo) && InstanceStorageInfo.TotalSizeInGB >= \`${EPHEMERAL_SIZE}\`)"
+    fi
+
+    # Close last bracket
+    query="${query}]"
+
+    echo "$query" > ec2_query.txt
+    # exit 1
+
+    instance_types=$(aws ec2 describe-instance-types \
+      --region ${AWS_REGION} \
+      --query "${query}" \
+      --output json)
+
+    echo "$instance_types" > ec2_instance_types.json 
+
+    if [[ -z "$instance_types" || "$instance_types" == "[]" ]]; then
+      echo "No instance types found matching the criteria. Defaulting to t3.small."
       EC2_TYPE="t3.small"
+    else
+      # Sort by vCPUs (ascending), then by memory (ascending), then by price (ascending)
+      if [[ "${GPUS}" -gt 0 ]]; then
+        filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB) | map(select(.GpuInfo.Gpus != null)) | sort_by(.GpuInfo.Gpus[0].MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
+      else
+        filtered_types=$(echo ${instance_types} | jq -r 'sort_by(.VCpuInfo.DefaultVCpus, .MemoryInfo.SizeInMiB) | .[0].InstanceType // empty')
+      fi
+      
+      if [[ -n ${filtered_types} ]]; then
+        echo "Instance type found: ${filtered_types}"
+        EC2_TYPE=${filtered_types}
+      else
+        echo "No suitable instance type found after filtering. Defaulting to t3.small."
+        EC2_TYPE="t3.small"
+      fi
     fi
   fi
 
@@ -204,7 +209,6 @@ function find_instance_type() {
   fi
 
   echo "Selected instance type: ${EC2_TYPE} (Architecture: ${ARCH}, vCPUs: ${vcpus}, Mem: ${memory_gb} GB, Ephemeral: ${ephemeral} GB, GPU: ${gpu_info} (${gpu_vram_gb} GB)${price})"
-
 }
 
 function find_ami_image() {
@@ -492,20 +496,25 @@ fi
 # User Inputs
 if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     echo -e "\n* What does your EC2 instance need?\n"
-    prompt VCPUS "Number of VCPUs" "2"
-    prompt ARCH "CPU type (x86, arm or any)" "any"
-    prompt MEMORY "Memory (GB)" "2"
-    prompt EBS_SIZE "EBS Volume Size (GB)" "50"
-    prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
-    prompt GPUS "Number of NVIDIA GPUs" "0"
-    if [[ "$GPUS" -gt 0 ]]; then
-        echo "  Fetching available GPU models..."
-        GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
-        prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
-        if [ "$GPU_MODEL" = "any" ]; then
-            prompt GPU_VRAM "GPU VRAM (GB)" "8"
+    prompt INSTTYPE "Instance Type (or 'any' for custom configuration)" "any"
+    if [[ "$INSTTYPE" == "any" ]]; then
+        prompt VCPUS "Number of VCPUs" "2"
+        prompt ARCH "CPU type (x86, arm or any)" "any"
+        prompt MEMORY "Memory (GB)" "2"
+        prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
+        prompt GPUS "Number of NVIDIA GPUs" "0"
+        if [[ "$GPUS" -gt 0 ]]; then
+            echo "  Fetching available GPU models..."
+            GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
+            prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
+            if [ "$GPU_MODEL" = "any" ]; then
+                prompt GPU_VRAM "GPU VRAM (GB)" "8"
+            fi
         fi
+    else
+        EC2_TYPE="$INSTTYPE"
     fi
+    prompt EBS_SIZE "EBS Volume Size (GB)" "50"
     echo "  Amazon Linux (default) or enter '*ubuntu-*-24.04-*-server*' or 'Rocky-9-EC2-Base*':"
     prompt OS "Operating System" "al202*-ami-*"
     prompt AWS_REGION "AWS Region" ${AWS_REGION}
@@ -513,7 +522,8 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     prompt NAME "Instance/Host Name" "server-${rnd}"
 else
     echo ""
-    echo "Using default values for all inputs:"  
+    echo "Using default values for all inputs:"
+    echo "INSTTYPE: any"
     echo "VCPUS: $VCPUS"
     echo "ARCH: $ARCH"
     echo "MEMORY: $MEMORY GB"
