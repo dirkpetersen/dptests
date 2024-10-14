@@ -3,12 +3,15 @@
 # Quickly deploy ec2 instance after answering a few questions
 
 # Define constants that can be overridden by environment variables
-ACCEPT_DEFAULTS=${ACCEPT_DEFAULTS:-false}
-EC2_SECURITY_GROUP=${EC2_SECURITY_GROUP:-'SSH-HTTP-ICMP'}  # ec2_cli_group default
+
+# Set EC2_KEY_NAME and EC2_KEY_FILE
+: "${ACCEPT_DEFAULTS:="false"
+: "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
+: "${AWS_REGION:="us-west-2"}"
 # These variables will be set after check_aws() is called
 # EC2_KEY_NAME=""
 # EC2_KEY_FILE=""
-AWS_REGION=${AWS_REGION:-'us-west-2'}
+
 
 function list_instances() {
     aws ec2 describe-instances \
@@ -69,11 +72,8 @@ function check_aws() {
 
   # Set EC2_KEY_NAME and EC2_KEY_FILE
   : "${EC2_KEY_NAME:="auto-ec2-${AWSUSER}"}"
-  : "${EC2_KEY_FILE:="~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem}"}"
+  : "${EC2_KEY_FILE:="~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem"}"
   EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
-
-  # EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER}"}
-  # EC2_KEY_FILE=${EC2_KEY_FILE:-~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem}
 
   setup_ec2_key
 }
@@ -86,10 +86,8 @@ key_pair_exists() {
     --output text > /dev/null 2>&1
 
   if [[ $? -eq 0 ]]; then
-    #echo "Key pair '${EC2_KEY_NAME}' already exists."
     return 0
-  else
-    echo "Key pair '${KEY_NAME}' does not exist."
+  else    
     return 1  
   fi
 }
