@@ -154,7 +154,7 @@ function find_instance_type() {
     # Close last bracket
     query="${query}]"
 
-    echo "$query" > ec2_query.txt
+    # echo "$query" > ec2_query.txt
     # exit 1
 
     instance_types=$(aws ec2 describe-instance-types \
@@ -162,7 +162,7 @@ function find_instance_type() {
       --query "${query}" \
       --output json)
 
-    echo "$instance_types" > ec2_instance_types.json 
+    # echo "$instance_types" > ec2_instance_types.json 
 
     if [[ -z "$instance_types" || "$instance_types" == "[]" ]]; then
       echo "No instance types found matching the criteria. Defaulting to t3.small."
@@ -515,7 +515,7 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
         EC2_TYPE="$INSTTYPE"
     fi
     prompt EBS_SIZE "EBS Volume Size (GB)" "50"
-    echo "  Amazon Linux (default) or enter '*ubuntu-*-24.04-*-server*' or 'Rocky-9-EC2-Base*':"
+    echo "  Amazon Linux (default) or enter *ubuntu-*-24.04-*-server* or Rocky-9-EC2-Base* :"
     prompt OS "Operating System" "al202*-ami-*"
     prompt AWS_REGION "AWS Region" ${AWS_REGION}
     rnd=$((RANDOM % 900 + 100))
@@ -617,8 +617,8 @@ while [ $dns_attempt -lt $max_dns_attempts ]; do
   # Use AWS CLI to check DNS record
   dns_check=$(aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --record-name $FQDN --record-type A --query 'RecordData[0]' --output text 2>/dev/null)
   if [[ "$dns_check" = "$public_ip" ]]; then
-    echo "DNS has propagated, wait a few more seconds..."
-    sleep 5    
+    echo "DNS has propagated ..."
+    sleep 1    
     dns_propagated=true
     break
   fi
@@ -639,7 +639,6 @@ SSH_COMMAND="ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}"
 echo "$SSH_COMMAND"
 history -a
 echo "$SSH_COMMAND" >> ~/.bash_history
-history -n
 history -r
 echo "ssh -i ${FILE2} ${EC2_USER}@${public_ip}"
 
@@ -652,11 +651,12 @@ ssh_available=false
 while [ $ssh_attempt -lt $max_ssh_attempts ]; do
   if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>/dev/null; then
     echo "SSH is now available."
+    sleep 1
     ssh_available=true
     break
   fi
   echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
-  sleep 3
+  sleep 5
   ssh_attempt=$((ssh_attempt+1))
 done
 
