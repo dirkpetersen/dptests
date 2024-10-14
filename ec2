@@ -5,7 +5,7 @@
 # Define constants that can be overridden by environment variables
 
 # Set EC2_KEY_NAME and EC2_KEY_FILE
-: "${ACCEPT_DEFAULTS:="false"
+: "${ACCEPT_DEFAULTS:="false"}"
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 : "${AWS_REGION:="us-west-2"}"
 # These variables will be set after check_aws() is called
