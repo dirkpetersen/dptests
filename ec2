@@ -133,7 +133,10 @@ function find_instance_type() {
   # Add GPU requirement if needed
   if [[ "${GPUS}" -gt 0 ]]; then
     if [[ "$GPU_MODEL" = "any" ]]; then
-      query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`) && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].MemoryInfo.SizeInMiB | [0]) >= \`$((GPU_VRAM * 1024))\`)"
+      query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].Count | [0]) >= \`${GPUS}\`)"
+      if [[ -n "${GPU_VRAM}" ]]; then
+        query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA'].MemoryInfo.SizeInMiB | [0]) >= \`$((GPU_VRAM * 1024))\`)"
+      fi
     else
       query="${query} && (to_number(GpuInfo.Gpus[?Manufacturer=='NVIDIA' && Name=='${GPU_MODEL}'].Count | [0]) >= \`${GPUS}\`)"
     fi
@@ -430,6 +433,7 @@ function wait_for_instance() {
     VCPUS=2
     ARCH="x86_64"
     MEMORY=2
+    MEM_MB=$((MEMORY * 1024))
     EBS_SIZE=50
     EPHEMERAL_SIZE=0
     GPUS=0
