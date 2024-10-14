@@ -496,7 +496,7 @@ fi
 # User Inputs
 if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     echo -e "\n* What does your EC2 instance need?\n"
-    prompt INSTTYPE "Instance Type (or 'any' for custom configuration)" "any"
+    prompt INSTTYPE "Instance Type (or 'any' to pick CPU, Mem, etc)" "any"
     if [[ "$INSTTYPE" == "any" ]]; then
         prompt VCPUS "Number of VCPUs" "2"
         prompt ARCH "CPU type (x86, arm or any)" "any"
@@ -637,9 +637,12 @@ echo -e "\nRun one of these SSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 SSH_COMMAND="ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}"
 echo "$SSH_COMMAND"
+history -a
 echo "$SSH_COMMAND" >> ~/.bash_history
-echo "ssh -i ${FILE2} ${EC2_USER}@${public_ip}"
 history -n
+history -r
+echo "ssh -i ${FILE2} ${EC2_USER}@${public_ip}"
+
 echo -e "\nWaiting for SSH to become available..."
 
 # Wait for SSH to become available
