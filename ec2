@@ -511,11 +511,12 @@ fi
 
 echo "Starting ${public_dns_name} (${instance_id}) on ${instance_type} with ${AMI_NAME}"
 echo -e "\nRun one of these SSH commands to connect:"
-history -a
 FILE2=~${EC2_KEY_FILE#"$HOME"}
-echo "ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}" | tee -a ~/.bash_history
+SSH_COMMAND="ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}"
+echo "$SSH_COMMAND"
+echo "$SSH_COMMAND" >> ~/.bash_history
 echo "ssh -i ${FILE2} ${EC2_USER}@${public_ip}"
-history -r
+history -n
 echo -e "\nWaiting for SSH to become available..."
 
 # Wait for SSH to become available
