@@ -68,8 +68,12 @@ function check_aws() {
   AWSUSER2=$(echo "$AWSUSER" | sed 's/@/_/g')
 
   # Set EC2_KEY_NAME and EC2_KEY_FILE
-  EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER}"}
-  EC2_KEY_FILE=${EC2_KEY_FILE:-~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem}
+  : "${EC2_KEY_NAME:="auto-ec2-${AWSUSER}"}"
+  : "${EC2_KEY_FILE:="~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem}"}"
+  EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
+
+  # EC2_KEY_NAME=${EC2_KEY_NAME:-"auto-ec2-${AWSUSER}"}
+  # EC2_KEY_FILE=${EC2_KEY_FILE:-~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem}
 
   setup_ec2_key
 }
