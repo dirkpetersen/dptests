@@ -303,6 +303,11 @@ function launch_instance() {
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
     --query 'Instances[0].InstanceId' --output text
   )
+
+  if [[ -z "$INSTANCE_INFO" ]]; then
+    echo "Error: Failed to launch instance. Check your AWS credentials and permissions."
+    exit 1
+  fi
 }
 
 function register_dns() {
@@ -390,24 +395,67 @@ elif [[ -f "$1" ]]; then
         fi
     }
 
-    # Wait for the instance to be ready before uploading and executing
-    wait_for_instance() {
-        echo "Waiting for instance to be ready..."
-        while true; do
-            instance_state=$(aws ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[0].Instances[0].State.Name' --output text)
-            if [[ "$instance_state" == "running" ]]; then
-                public_ip=$(aws ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-                if [[ -n "$public_ip" ]]; then
-                    echo "Instance is ready. Public IP: $public_ip"
-                    break
-                fi
+function wait_for_instance() {
+    echo "Waiting for instance to be ready..."
+    local max_attempts=30
+    local attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
+            --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
+            --output json 2>/dev/null)
+        
+        if [[ $? -eq 0 ]]; then
+            state=$(echo $instance_info | jq -r '.State')
+            public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
+            instance_type=$(echo $instance_info | jq -r '.InstanceType')
+            
+            if [[ "$state" = "running" && "$public_ip" != "null" && -n "$public_ip" ]]; then
+                echo "Instance is ready. Public IP: $public_ip"
+                break
             fi
-            sleep 5
-        done
-    }
+        fi
+        
+        echo "Waiting for instance to be ready... (Attempt $((attempt+1))/$max_attempts)"
+        sleep 10
+        attempt=$((attempt+1))
+    done
 
-    # Launch instance first
+    if [[ $attempt -eq $max_attempts ]]; then
+        echo "Error: Instance did not become ready within the expected time."
+        exit 1
+    fi
+}
+
+    # Set default values for instance creation
+    VCPUS=2
+    ARCH="x86_64"
+    MEMORY=2
+    EBS_SIZE=50
+    EPHEMERAL_SIZE=0
+    GPUS=0
+    OS="al202*-ami-*"
+    NAME="server-x"
+
+    # Setup required dependencies 
+    set_ec2_user_and_owner
+    find_instance_type
+    find_ami_image
+    get_user_ip
+    configure_security_group
+
+    # Launch instance
     launch_instance
+
+    # Check if INSTANCE_INFO starts with "i-"
+    if [[ ${INSTANCE_INFO} == i-* ]]; then
+        instance_id=${INSTANCE_INFO}
+    else
+        echo "Error: Failed to create instance. $INSTANCE_INFO"
+        exit 1
+    fi
+    echo "Instance $instance_id is starting. Waiting for public IP..."
+
+    # Wait for the instance to be ready
     wait_for_instance
 
     # Now upload and execute the file
@@ -417,46 +465,41 @@ fi
 
 # User Inputs
 if [[ "$ACCEPT_DEFAULTS" = false ]]; then
-  echo -e "\n* What does your EC2 instance need?\n"
-fi
-prompt VCPUS "Number of VCPUs" "2"
-prompt ARCH "CPU type (x86, arm or any)" "any"
-prompt MEMORY "Memory (GB)" "2"
-prompt EBS_SIZE "EBS Volume Size (GB)" "50"
-prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
-prompt GPUS "Number of NVIDIA GPUs" "0"
-if [[ "$GPUS" -gt 0 ]]; then
-  echo "  Fetching available GPU models..."
-  GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
-  prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
-  if [ "$GPU_MODEL" = "any" ]; then
-    prompt GPU_VRAM "GPU VRAM (GB)" "8"
-  fi
-fi
-if [[ "$ACCEPT_DEFAULTS" = false ]]; then
-  echo "  Pick 'al202*-ami-*', '*ubuntu-*-24.04-*-server*', or 'Rocky-9-EC2-Base*':"
-fi
-prompt OS "Operating System" "al202*-ami-*"
-prompt AWS_REGION "AWS Region" ${AWS_REGION}
-prompt NAME "Instance/Host Name" "server-x"
-
-if [[ "$ACCEPT_DEFAULTS" = true ]]; then
-  echo ""
-  echo "Using default values for all inputs:"  
-  echo "VCPUS: $VCPUS"
-  echo "ARCH: $ARCH"
-  echo "MEMORY: $MEMORY GB"
-  echo "EBS_SIZE: $EBS_SIZE GB"
-  echo "EPHEMERAL_SIZE: $EPHEMERAL_SIZE GB"
-  echo "GPUS: $GPUS"
-  if [[ "$GPUS" -gt 0 ]]; then
-    echo "GPU_VRAM: $GPU_VRAM GB"
-  fi
-  echo "OS: $OS"
-  echo "AWS_REGION: $AWS_REGION"
-  echo "SPOT: $SPOT"
-  echo "NAME: $NAME"
-  echo ""
+    echo -e "\n* What does your EC2 instance need?\n"
+    prompt VCPUS "Number of VCPUs" "2"
+    prompt ARCH "CPU type (x86, arm or any)" "any"
+    prompt MEMORY "Memory (GB)" "2"
+    prompt EBS_SIZE "EBS Volume Size (GB)" "50"
+    prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
+    prompt GPUS "Number of NVIDIA GPUs" "0"
+    if [[ "$GPUS" -gt 0 ]]; then
+        echo "  Fetching available GPU models..."
+        GPU_MODELS=$(aws ec2 describe-instance-types --query 'InstanceTypes[*].GpuInfo.Gpus[?Manufacturer==`NVIDIA`].Name' --output json | jq -r 'flatten | unique | join(",")')
+        prompt GPU_MODEL "GPU Model (${GPU_MODELS} or any)" "any"
+        if [ "$GPU_MODEL" = "any" ]; then
+            prompt GPU_VRAM "GPU VRAM (GB)" "8"
+        fi
+    fi
+    echo "  Pick 'al202*-ami-*', '*ubuntu-*-24.04-*-server*', or 'Rocky-9-EC2-Base*':"
+    prompt OS "Operating System" "al202*-ami-*"
+    prompt AWS_REGION "AWS Region" ${AWS_REGION}
+    prompt NAME "Instance/Host Name" "server-x"
+else
+    echo ""
+    echo "Using default values for all inputs:"  
+    echo "VCPUS: $VCPUS"
+    echo "ARCH: $ARCH"
+    echo "MEMORY: $MEMORY GB"
+    echo "EBS_SIZE: $EBS_SIZE GB"
+    echo "EPHEMERAL_SIZE: $EPHEMERAL_SIZE GB"
+    echo "GPUS: $GPUS"
+    if [[ "$GPUS" -gt 0 ]]; then
+        echo "GPU_VRAM: $GPU_VRAM GB"
+    fi
+    echo "OS: $OS"
+    echo "AWS_REGION: $AWS_REGION"
+    echo "NAME: $NAME"
+    echo ""
 fi
 
 VCPUS=$((VCPUS))
@@ -464,8 +507,8 @@ MEM_MB=$((MEMORY * 1024))
 EBS_SIZE=$((EBS_SIZE))
 EPHEMERAL_SIZE=$((EPHEMERAL_SIZE))
 if [[ "$EPHEMERAL_SIZE" -lt 0 ]]; then
-  echo "Error: Ephemeral disk size cannot be negative. Setting to 0."
-  EPHEMERAL_SIZE=0
+    echo "Error: Ephemeral disk size cannot be negative. Setting to 0."
+    EPHEMERAL_SIZE=0
 fi
 GPUS=$((GPUS))
 AMI_NAME=""
@@ -479,12 +522,10 @@ configure_security_group
 
 launch_instance
 
-if [[ "$ACCEPT_DEFAULTS" = true ]]; then
-  echo "EC2_TYPE: $EC2_TYPE"
-  echo "AMI_IMAGE: $AMI_IMAGE"
-  echo "AMI_NAME: $AMI_NAME"
-  echo "EC2_USER: $EC2_USER"  
-fi
+echo "EC2_TYPE: $EC2_TYPE"
+echo "AMI_IMAGE: $AMI_IMAGE"
+echo "AMI_NAME: $AMI_NAME"
+echo "EC2_USER: $EC2_USER"  
 
 # Check if INSTANCE_INFO starts with "i-"
 if [[ ${INSTANCE_INFO} == i-* ]]; then
