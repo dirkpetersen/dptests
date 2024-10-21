@@ -523,7 +523,7 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     prompt INSTTYPE "Instance Type (or 'any' to pick CPU, Mem, etc)" "any"
     if [[ "$INSTTYPE" == "any" ]]; then
         prompt VCPUS "Number of VCPUs" "2"
-        prompt ARCH "CPU type (x86, arm or any)" "any"
+        prompt ARCH "CPU type (arm, x86 or any)" "arm"
         prompt MEMORY "Memory (GB)" "1"
         prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
         prompt GPUS "Number of NVIDIA GPUs" "0"
