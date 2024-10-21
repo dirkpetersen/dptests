@@ -41,7 +41,7 @@ body = json.dumps(body) # Encode body as JSON string
 #modelId = 'anthropic.claude-3-5-sonnet-20240620-v1:0:200k' 
 modelId = 'anthropic.claude-3-5-sonnet-20240620-v1:0'
 #modelId = 'anthropic.claude-3-opus-20240229-v1:0:200k'
-#modelId = 'meta.llama3-70b-instruct-v1:0'
+modelId = 'meta.llama3-2-90b-instruct-v1:0'
 accept = 'application/json'
 contentType = 'application/json'
 

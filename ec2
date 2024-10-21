@@ -68,7 +68,7 @@ function check_aws() {
   # Extract the account ID and the username/role name if the command succeeded
   AWSACCOUNT=$(echo "$identity_info" | awk '{print $1}')
   AWSUSER=$(echo "$identity_info" | awk '{print $2}' | awk -F'/' '{print $NF}')
-  AWSUSER2=$(echo "$AWSUSER" | sed 's/@/_/g')
+  AWSUSER2="${AWSUSER%@*}"
 
   # Set EC2_KEY_NAME and EC2_KEY_FILE
   : "${EC2_KEY_NAME:="auto-ec2-${AWSUSER}"}"
@@ -98,7 +98,7 @@ function setup_ec2_key() {
       echo "EC2 Key pair ${EC2_KEY_NAME} is setup in your AWS account but the associated SSH key file ${EC2_KEY_FILE} does not exist, likely because you used this tool already on a different machine. Please copy the key file from that other machine to ${EC2_KEY_FILE} or delete the key pair in your AWS account and start from scratch. You can also set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before."
       exit 1
     fi
-    read -p "EC2 key ${EC2_KEY_NAME} with file ${EC2_KEY_FILE} does not exist. You can set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before or create a new key now. Do you want to create a new AWS key? (y/n) " create_key
+    read -p "EC2 key ${EC2_KEY_NAME} with file ${EC2_KEY_FILE} does not exist. You can set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before, or create a new key now. Do you want to create a new AWS key? (y/n) " create_key
     if [[ $create_key =~ ^[Yy]$ ]]; then
       mkdir -p "$(dirname "${EC2_KEY_FILE}")"
       aws ec2 create-key-pair --key-name "${EC2_KEY_NAME}" --key-type ed25519 --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
@@ -459,11 +459,13 @@ function wait_for_instance() {
     echo "Waiting for SSH to become available..."
     max_ssh_attempts=30
     ssh_attempt=0
+    sshout=$(mktemp -t ec2-XXX)
     while [ $ssh_attempt -lt $max_ssh_attempts ]; do
-        if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>/dev/null; then
+        if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>${sshout}; then
             echo "SSH is now available."
             return 0
         fi
+        printf "Debug: " && cat $sshout
         echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
         sleep 10
         ssh_attempt=$((ssh_attempt+1))
@@ -536,7 +538,7 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     else
         EC2_TYPE="$INSTTYPE"
     fi
-    prompt EBS_SIZE "EBS Volume Size (GB)" "50"
+    prompt EBS_SIZE "EBS Volume Size (GB)" "25"
     echo "  Amazon Linux (default) or enter *ubuntu-*-24.04-*-server* or Rocky-9-EC2-Base* :"
     prompt OS "Operating System" "al202*-ami-*"
     prompt AWS_REGION "AWS Region" ${AWS_REGION}
