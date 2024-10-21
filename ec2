@@ -477,10 +477,10 @@ function wait_for_instance() {
 
     # Set default values for instance creation
     VCPUS=2
-    ARCH="x86_64"
-    MEMORY=2
+    ARCH="arm64"
+    MEMORY=1
     MEM_MB=$((MEMORY * 1024))
-    EBS_SIZE=50
+    EBS_SIZE=25
     EPHEMERAL_SIZE=0
     GPUS=0
     OS="al202*-ami-*"
@@ -524,7 +524,7 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     if [[ "$INSTTYPE" == "any" ]]; then
         prompt VCPUS "Number of VCPUs" "2"
         prompt ARCH "CPU type (x86, arm or any)" "any"
-        prompt MEMORY "Memory (GB)" "2"
+        prompt MEMORY "Memory (GB)" "1"
         prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
         prompt GPUS "Number of NVIDIA GPUs" "0"
         if [[ "$GPUS" -gt 0 ]]; then
