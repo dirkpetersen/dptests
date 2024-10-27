@@ -301,12 +301,15 @@ function configure_security_group() {
 }
 
 function launch_instance() {
-  # Check for cloud-init.txt file
-  cloud_init_file="cloud-init.txt"
+  # Check for ec2-cloud-init.txt file
+  cloud_init_file="ec2-cloud-init.txt"
+  SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f "${BASH_SOURCE[0]}")")" &> /dev/null && pwd)"
   if [[ -f "./${cloud_init_file}" ]]; then
     cloud_init_path="${cloud_init_file}"
-  elif [[ -f "$(dirname "$0")/${cloud_init_file}" ]]; then
-    cloud_init_path="$(dirname "$0")/${cloud_init_file}"
+  elif [[ -f "${SCRIPT_DIR}/${cloud_init_file}" ]]; then
+    cloud_init_path="${SCRIPT_DIR}/${cloud_init_file}"
+  else
+    echo "WARNING: ${cloud_init_file} script not found. Instance will be launched without user data."
   fi
   userdata=""
   if [[ -n "$cloud_init_path" ]]; then  
