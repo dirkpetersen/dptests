@@ -62,7 +62,8 @@ function check_aws() {
   identity_info=$(aws sts get-caller-identity --query '[Account, Arn]' --output text 2>/dev/null)
   # Check if the command succeeded
   if [ $? -ne 0 ]; then
-      echo "Error: AWS CLI is not authenticated. Please run 'aws sso login --no-browser' or set up your credentials."
+      echo "Error: AWS CLI is not authenticated. Executing 'aws sso login --no-browser' or set up your credentials."
+      aws sso login --no-browser
       exit 1
   fi
   # Extract the account ID and the username/role name if the command succeeded
