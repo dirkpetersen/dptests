@@ -1,5 +1,11 @@
 #! /bin/bash
 
+# Script to setup NFS server or client for testing
+# usage: ./nfs-test.sh [nfs_server_fqdn]
+# when invoked without arguments, it sets up NFS server
+# when invoked with an argument, it sets up NFS client 
+# mounts server and runs scratch-dna benchmark
+
 set -e
 
 # Function to install common dependencies
