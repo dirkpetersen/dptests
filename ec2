@@ -9,6 +9,7 @@
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 : "${AWS_DEFAULT_REGION:=$(aws configure get region)}"
 : "${AWS_REGION:=${AWS_DEFAULT_REGION}}"
+: "${AWS_AZ:=""}"  # Empty string means no specific AZ
 # These variables will be set after check_aws() is called
 # EC2_KEY_NAME=""
 # EC2_KEY_FILE=""
@@ -338,18 +339,46 @@ function launch_instance() {
   fi
   BLK_DEV_JSON+="]"
 
-  INSTANCE_INFO=$(
-    aws ec2 run-instances --region ${AWS_REGION} --image-id ${AMI_IMAGE} \
-    --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_KEY_NAME} \
-    --security-group-ids ${sg_id} --block-device-mappings "${BLK_DEV_JSON}" ${userdata} \
+  # Add availability zone parameter if specified
+  az_param=""
+  if [[ -n "${AWS_AZ}" ]]; then
+    az_param="--placement AvailabilityZone=${AWS_AZ}"
+    echo "Using specified availability zone: ${AWS_AZ}"
+  fi
+
+  launch_output=$(
+    aws ec2 run-instances --region ${AWS_REGION} \
+    --image-id ${AMI_IMAGE} \
+    --count 1 \
+    --instance-type ${EC2_TYPE} \
+    --key-name ${EC2_KEY_NAME} \
+    --security-group-ids ${sg_id} \
+    --block-device-mappings "${BLK_DEV_JSON}" \
+    ${userdata} \
+    ${az_param} \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
-    --query 'Instances[0].InstanceId' --output text
+    --query 'Instances[0].{InstanceId:InstanceId,AvailabilityZone:Placement.AvailabilityZone}' \
+    --output json
   )
 
-  if [[ -z "$INSTANCE_INFO" ]]; then
+  if [[ -z "$launch_output" ]]; then
     echo "Error: Failed to launch instance. Check your AWS credentials and permissions."
     exit 1
   fi
+
+  # Extract instance ID and AZ from the JSON response
+  instance_id=$(echo "$launch_output" | jq -r '.InstanceId')
+  az=$(echo "$launch_output" | jq -r '.AvailabilityZone')
+  
+  if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
+    echo "Error: Failed to create instance. $launch_output"
+    exit 1
+  fi
+
+  echo "Instance launched in availability zone: ${az}"
+  
+  # Set INSTANCE_INFO to just the instance ID for compatibility with the rest of the script
+  INSTANCE_INFO="$instance_id"
 }
 
 function register_dns() {
@@ -502,10 +531,10 @@ elif [[ -f "$1" ]]; then
 
     # Setup required dependencies 
     set_ec2_user_and_owner
+    get_user_ip
+    configure_security_group    
     find_instance_type
     find_ami_image
-    get_user_ip
-    configure_security_group
 
     # Launch instance
     launch_instance
@@ -594,10 +623,10 @@ AMI_NAME=""
 
 # Setup required dependencies 
 set_ec2_user_and_owner
-find_instance_type
-find_ami_image
 get_user_ip
 configure_security_group
+find_instance_type
+find_ami_image
 
 launch_instance
 

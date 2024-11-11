@@ -63,7 +63,7 @@ setup_nfs_client() {
     sudo mkdir -p /mnt/test
     
     # Mount NFS share
-    sudo mount -t nfs4 ${nfs_server}:/opt /mnt/test
+    sudo mount -t nfs4  -o noac,sync,actimeo=0 ${nfs_server}:/opt /mnt/test
     
     # Run benchmark
     echo "Running scratch-dna benchmark..."
