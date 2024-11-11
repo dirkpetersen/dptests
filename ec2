@@ -7,11 +7,11 @@
 # Set EC2_KEY_NAME and EC2_KEY_FILE
 : "${ACCEPT_DEFAULTS:="false"}"
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
-: "${AWS_REGION:="us-west-2"}"
+: "${AWS_DEFAULT_REGION:=$(aws configure get region)}"
+: "${AWS_REGION:=${AWS_DEFAULT_REGION}}"
 # These variables will be set after check_aws() is called
 # EC2_KEY_NAME=""
 # EC2_KEY_FILE=""
-
 
 function list_instances() {
     aws ec2 describe-instances \
@@ -80,29 +80,38 @@ function check_aws() {
 }
 
 key_pair_exists() {
+  local region="${AWS_REGION}"
+  if [[ -n "${1}" ]]; then
+    region="${1}"
+  fi
   aws ec2 describe-key-pairs \
-    --region "${AWS_REGION}" \
+    --region "${region}" \
     --key-names "${EC2_KEY_NAME}" \
     --query "KeyPairs[?KeyName=='${EC2_KEY_NAME}']" \
     --output text > /dev/null 2>&1
-
   if [[ $? -eq 0 ]]; then
     return 0
-  else    
+  else
     return 1  
   fi
 }
 
 function setup_ec2_key() {
-  if [[ ! -f "${EC2_KEY_FILE}" ]]; then
-    if key_pair_exists; then
+  if key_pair_exists; then
+    if [[ ! -f "${EC2_KEY_FILE}" ]]; then
       echo "EC2 Key pair ${EC2_KEY_NAME} is setup in your AWS account but the associated SSH key file ${EC2_KEY_FILE} does not exist, likely because you used this tool already on a different machine. Please copy the key file from that other machine to ${EC2_KEY_FILE} or delete the key pair in your AWS account and start from scratch. You can also set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before."
       exit 1
+    fi
+  else
+    if [[ -f "${EC2_KEY_FILE}" ]]; then
+      # import key
+      aws ec2 import-key-pair --region ${AWS_REGION} --key-name "${EC2_KEY_NAME}" --public-key-material "$(base64 "${EC2_KEY_FILE}.pub")"
+      return 0
     fi
     read -p "EC2 key ${EC2_KEY_NAME} with file ${EC2_KEY_FILE} does not exist. You can set environment variables EC2_KEY_NAME and EC2_KEY_FILE to use other keys you created before, or create a new key now. Do you want to create a new AWS key? (y/n) " create_key
     if [[ $create_key =~ ^[Yy]$ ]]; then
       mkdir -p "$(dirname "${EC2_KEY_FILE}")"
-      aws ec2 create-key-pair --key-name "${EC2_KEY_NAME}" --key-type ed25519 --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
+      aws ec2 create-key-pair --region ${AWS_REGION} --key-name "${EC2_KEY_NAME}" --key-type ed25519 --query 'KeyMaterial' --output text > "${EC2_KEY_FILE}"
       if ! [[ -f "${EC2_KEY_FILE}" ]]; then 
         echo "Error: Failed to create EC2 key file. Exiting."
         exit 1
@@ -290,14 +299,14 @@ function configure_security_group() {
       --query 'GroupId' --output text)
 
     # Add ingress rules only for newly created security group
-    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \  
+    aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
       --group-id ${sg_id} --protocol tcp --port 22 --cidr ${IP}/32
     aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
       --group-id ${sg_id} --protocol tcp --port 80 --cidr 0.0.0.0/0
     aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
       --group-id ${sg_id} --protocol tcp --port 443 --cidr 0.0.0.0/0
     aws ec2 authorize-security-group-ingress --region ${AWS_REGION} \
-      --group-id ${sg_id} --protocol icmp --port -1 --cidr 0.0.0.0/0      
+      --group-id ${sg_id} --protocol icmp --port -1 --cidr 0.0.0.0/0
   fi
 }
 
@@ -388,6 +397,56 @@ EOF
   fi
 }
 
+function wait_for_instance() {
+  echo "Waiting for instance to be ready..."
+  local max_attempts=30
+  local attempt=0
+  while [ $attempt -lt $max_attempts ]; do
+      instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
+          --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
+          --output json 2>/dev/null)
+      
+      if [[ $? -eq 0 ]]; then
+          state=$(echo $instance_info | jq -r '.State')
+          public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
+          instance_type=$(echo $instance_info | jq -r '.InstanceType')
+          
+          if [[ "$state" = "running" && "$public_ip" != "null" && -n "$public_ip" ]]; then
+              echo "Instance is ready. Public IP: $public_ip"
+              break
+          fi
+      fi
+      
+      echo "Waiting for instance to be ready... (Attempt $((attempt+1))/$max_attempts)"
+      sleep 10
+      attempt=$((attempt+1))
+  done
+
+  if [[ $attempt -eq $max_attempts ]]; then
+      echo "Error: Instance did not become ready within the expected time."
+      exit 1
+  fi
+
+  echo "Waiting for SSH to become available..."
+  max_ssh_attempts=30
+  ssh_attempt=0
+  sshout=$(mktemp -t ec2-XXX)
+  while [ $ssh_attempt -lt $max_ssh_attempts ]; do
+      if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>${sshout}; then
+          echo "SSH is now available."
+          return 0
+      fi
+      printf "Debug: " && cat $sshout
+      echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
+      sleep 10
+      ssh_attempt=$((ssh_attempt+1))
+  done
+
+  echo "Error: SSH did not become available within the expected time."
+  exit 1
+}
+
+
 #########################################################################################################
 ### Main script ####
 
@@ -429,55 +488,6 @@ elif [[ -f "$1" ]]; then
         echo "File uploaded and executed in the background."
         return 0
     }
-
-function wait_for_instance() {
-    echo "Waiting for instance to be ready..."
-    local max_attempts=30
-    local attempt=0
-    while [ $attempt -lt $max_attempts ]; do
-        instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
-            --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
-            --output json 2>/dev/null)
-        
-        if [[ $? -eq 0 ]]; then
-            state=$(echo $instance_info | jq -r '.State')
-            public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
-            instance_type=$(echo $instance_info | jq -r '.InstanceType')
-            
-            if [[ "$state" = "running" && "$public_ip" != "null" && -n "$public_ip" ]]; then
-                echo "Instance is ready. Public IP: $public_ip"
-                break
-            fi
-        fi
-        
-        echo "Waiting for instance to be ready... (Attempt $((attempt+1))/$max_attempts)"
-        sleep 10
-        attempt=$((attempt+1))
-    done
-
-    if [[ $attempt -eq $max_attempts ]]; then
-        echo "Error: Instance did not become ready within the expected time."
-        exit 1
-    fi
-
-    echo "Waiting for SSH to become available..."
-    max_ssh_attempts=30
-    ssh_attempt=0
-    sshout=$(mktemp -t ec2-XXX)
-    while [ $ssh_attempt -lt $max_ssh_attempts ]; do
-        if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>${sshout}; then
-            echo "SSH is now available."
-            return 0
-        fi
-        printf "Debug: " && cat $sshout
-        echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
-        sleep 10
-        ssh_attempt=$((ssh_attempt+1))
-    done
-
-    echo "Error: SSH did not become available within the expected time."
-    exit 1
-}
 
     # Set default values for instance creation
     VCPUS=2
@@ -526,8 +536,8 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     echo -e "\n* What does your EC2 instance need?\n"
     prompt INSTTYPE "Instance Type (or 'any' to pick CPU, Mem, etc)" "any"
     if [[ "$INSTTYPE" == "any" ]]; then
+        prompt ARCH "CPU type (arm, x86 or any)" "any"
         prompt VCPUS "Number of VCPUs" "2"
-        prompt ARCH "CPU type (arm, x86 or any)" "arm"
         prompt MEMORY "Memory (GB)" "1"
         prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
         prompt GPUS "Number of NVIDIA GPUs" "0"
@@ -545,7 +555,7 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     prompt EBS_SIZE "EBS Volume Size (GB)" "25"
     echo "  Amazon Linux (default) or enter *ubuntu-*-24.04-*-server* or Rocky-9-EC2-Base* :"
     prompt OS "Operating System" "al202*-ami-*"
-    prompt AWS_REGION "AWS Region" ${AWS_REGION}
+    prompt AWS_REGION "AWS Region" ${AWS_DEFAULT_REGION}
     rnd=$((RANDOM % 900 + 100))
     prompt NAME "Instance/Host Name" "server-${rnd}"
 else
@@ -565,6 +575,10 @@ else
     echo "AWS_REGION: $AWS_REGION"
     echo "NAME: $NAME"
     echo ""
+fi
+
+if [[ ${AWS_DEFAULT_REGION} != ${AWS_REGION} ]]; then
+  setup_ec2_key
 fi
 
 VCPUS=$((VCPUS))
