@@ -26,10 +26,14 @@ setup_nfs_server() {
         # Create exports entries
         if [ -d "/opt" ]; then
             echo "/opt *(rw,sync,no_root_squash,no_subtree_check)" | sudo tee -a /etc/exports
+            mkdir -p /opt/temp
+            chown 1000:1000 /opt/temp
         fi
         
         if [ -d "/mnt/scratch" ]; then
             echo "/mnt/scratch *(rw,sync,no_root_squash,no_subtree_check)" | sudo tee -a /etc/exports
+            mkdir -p /mnt/scratch/temp
+            chown 1000:1000 /mnt/scratch/temp
         fi
         
         # Apply exports
@@ -66,8 +70,8 @@ setup_nfs_client() {
     sudo mount -t nfs4  -o noac,sync,actimeo=0 ${nfs_server}:/opt /mnt/test
     
     # Run benchmark
-    echo "Running scratch-dna benchmark..."
-    scratch-dna /mnt/test
+    echo "Running scratch-dna benchmark, writing 1MB files ..."
+    scratch-dna -v -p 1 4096 1048576 1 /mnt/test/temp/
 }
 
 # Main script
