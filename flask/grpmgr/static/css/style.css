@@ -1,0 +1,72 @@
+.search-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.user-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.user-card:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.user-card.selected {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+}
+
+.group-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.group-card:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.group-card.selected {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+}
+
+.selected-items {
+    min-height: 100px;
+    border: 1px dashed #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+
+.selected-item {
+    display: inline-block;
+    background-color: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    margin: 0.25rem;
+}
+
+.selected-item .remove-btn {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    color: #f44336;
+}
+
+.nav-tabs .nav-link {
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    color: #2196f3;
+    font-weight: 500;
+}
