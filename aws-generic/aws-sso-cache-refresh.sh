@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Function to check if service is already installed
+check_service_installed() {
+    local service_name="aws-sso-cache-refresh"
+    if systemctl --user list-unit-files | grep -q "^$service_name.service"; then
+        return 0
+    fi
+    return 1
+}
+
 # Function to check if running as a systemd service
 check_systemd() {
     if [[ -n "${INVOCATION_ID:-}" ]] || [[ -n "${USER_INVOCATION_ID:-}" ]]; then
@@ -45,7 +54,13 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c "while true; do $script_path; sleep 1800; done"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="HOME=$HOME"
+ExecStart=/bin/bash -c "$script_path"
+Restart=always
+RestartSec=60
+StandardOutput=journal
+StandardError=journal
 RemainAfterExit=no
 
 [Install]
@@ -55,16 +70,20 @@ EOF
     # Reload systemd daemon
     systemctl --user daemon-reload
 
-    # Enable the service
+    # Enable and start the service
     systemctl --user enable "$service_name.service"
+    systemctl --user restart "$service_name.service"
 
     # Add to user crontab if not already present
     if ! crontab -l 2>/dev/null | grep -q "$service_name"; then
         (crontab -l 2>/dev/null; echo "@reboot systemctl --user start $service_name.service") | crontab -
     fi
 
-    echo "Service installed successfully!"
-    echo "It will run at boot time via crontab"
+    echo "Service installed and started successfully!"
+    echo "It will also run at boot time via crontab"
+    
+    # Show service status
+    systemctl --user status "$service_name.service"
 }
 
 # Function to check if jq is installed
@@ -160,25 +179,37 @@ main() {
         exit 0
     fi
 
-    # If not running as service, install self as service
+    # If not running as service, check if already installed
     if ! check_systemd; then
-        echo "Installing as systemd user service..."
-        install_service "$(realpath "$0")"
-        exit 0
+        if check_service_installed; then
+            echo "Service is already installed!"
+            echo "Use --remove option to uninstall if needed"
+            exit 1
+        else
+            echo "Installing as systemd user service..."
+            install_service "$(realpath "$0")"
+            exit 0
+        fi
     fi
 
     # Check for jq
     check_jq
 
-    # Find the latest cache file
-    cache_file=$(find_latest_cache_file)
-    echo "Using cache file: $cache_file"
+    while true; do
+        # Find the latest cache file
+        cache_file=$(find_latest_cache_file)
+        echo "Using cache file: $cache_file"
 
-    # Parse the cache file
-    IFS='|' read -r client_id client_secret refresh_token region <<< "$(parse_cache_file "$cache_file")"
+        # Parse the cache file
+        IFS='|' read -r client_id client_secret refresh_token region <<< "$(parse_cache_file "$cache_file")"
 
-    # Refresh the token
-    refresh_token "$client_id" "$client_secret" "$refresh_token" "$region"
+        # Refresh the token
+        refresh_token "$client_id" "$client_secret" "$refresh_token" "$region"
+
+        # Wait for 30 minutes before next refresh
+        echo "Waiting 1800 seconds before next refresh..."
+        sleep 1800
+    done
 }
 
 # Run the script
