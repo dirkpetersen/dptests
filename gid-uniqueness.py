@@ -6,7 +6,7 @@ from collections import defaultdict
 # Initialize structures to count occurrences and store units
 gid_count = defaultdict(int)
 gid_units = defaultdict(list)
-MEMBERS_ONLY = True
+MEMBERS_ONLY = False
 
 # Read the CSV file
 with open('/mnt/d/GID-Inventory-Export.csv', 'r', encoding='utf-8-sig') as file:  # Handle potential BOM
