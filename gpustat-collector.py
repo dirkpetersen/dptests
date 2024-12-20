@@ -2,17 +2,18 @@
 
 import os, sys, time, json, sqlite3, subprocess, shutil
 
+# Get the hostname of the system
+hostname = os.uname().nodename
+
 # Path to the SQLite database file
-db_file = "gpu_stats.sqlite"
+db_file = f"{hostname}-gpu_stats.sqlite"
 
 # Name of the table in the database
 table_name = "gpu_stats"
 
 # Path to the JSON file where gpustat output is stored
-json_file = "gpu-stat-x.json"
+json_file = f"{hostname}-gpu-stat-x.json"
 
-# Get the hostname of the system
-hostname = os.uname().nodename
 
 # Ensure the database and table exist
 def initialize_database():
