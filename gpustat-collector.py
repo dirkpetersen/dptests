@@ -68,7 +68,12 @@ if __name__ == "__main__":
     while first_pass or interval is not None:
         # Run the gpustat command and save the JSON output to a file
         try:
-            result = subprocess.run(["gpustat", "--show-full-cmd", "--json"], capture_output=True, text=True)
+            result = subprocess.run(
+                ["gpustat", "--show-full-cmd", "--json"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
             if result.returncode != 0:
                 print("Error running gpustat:", result.stderr)
                 if interval is None:
