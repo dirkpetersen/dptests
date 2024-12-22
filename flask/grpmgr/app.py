@@ -1,22 +1,26 @@
 from flask import Flask, render_template, jsonify, request
 from datetime import datetime
+from ldap3 import Server, Connection, SUBTREE
+from dotenv import load_dotenv
+import os
 import json
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 
-# Mock data - in production this would come from a database
-USERS = [
-    {"id": 1, "name": "John Doe", "email": "john@example.com", "department": "IT"},
-    {"id": 2, "name": "Jane Smith", "email": "jane@example.com", "department": "HR"},
-    {"id": 3, "name": "Bob Wilson", "email": "bob@example.com", "department": "Finance"},
-    {"id": 4, "name": "Alice Brown", "email": "alice@example.com", "department": "IT"},
-]
-
-GROUPS = [
-    {"id": 1, "name": "IT Admin", "description": "IT Administrators"},
-    {"id": 2, "name": "HR Team", "description": "Human Resources Team"},
-    {"id": 3, "name": "Finance Users", "description": "Finance Department Users"},
-]
+def get_ldap_connection():
+    server = Server(
+        host=os.getenv('LDAP_HOST'),
+        port=int(os.getenv('LDAP_PORT'))
+    )
+    return Connection(
+        server,
+        user=os.getenv('LDAP_BIND_DN'),
+        password=os.getenv('LDAP_PASSWORD'),
+        auto_bind=True
+    )
 
 @app.route('/')
 def index():
@@ -24,29 +28,104 @@ def index():
 
 @app.route('/api/users/search')
 def search_users():
-    query = request.args.get('q', '').lower()
-    results = [user for user in USERS if query in user['name'].lower() or 
-               query in user['email'].lower() or 
-               query in user['department'].lower()]
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+    
+    ldap_filter = f"(&(objectClass=person)(|(cn=*{query}*)(mail=*{query}*)(ou=*{query}*)))"
+    
+    with get_ldap_connection() as conn:
+        conn.search(
+            os.getenv('LDAP_BASE_DN'),
+            ldap_filter,
+            SUBTREE,
+            attributes=['uid', 'cn', 'mail', 'ou']
+        )
+        
+        results = []
+        for entry in conn.entries:
+            results.append({
+                "id": entry.uid.value,
+                "name": entry.cn.value,
+                "email": entry.mail.value if hasattr(entry, 'mail') else '',
+                "department": entry.ou.value if hasattr(entry, 'ou') else ''
+            })
+            
     return jsonify(results)
 
 @app.route('/api/groups/search')
 def search_groups():
-    query = request.args.get('q', '').lower()
-    results = [group for group in GROUPS if query in group['name'].lower() or 
-               query in group['description'].lower()]
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+    
+    ldap_filter = f"(&(objectClass=groupOfNames)(cn=*{query}*)))"
+    
+    with get_ldap_connection() as conn:
+        conn.search(
+            os.getenv('LDAP_BASE_DN'),
+            ldap_filter,
+            SUBTREE,
+            attributes=['cn', 'description']
+        )
+        
+        results = []
+        for entry in conn.entries:
+            results.append({
+                "id": entry.cn.value,
+                "name": entry.cn.value,
+                "description": entry.description.value if hasattr(entry, 'description') else ''
+            })
+            
     return jsonify(results)
 
 @app.route('/api/submit-changes', methods=['POST'])
 def submit_changes():
     data = request.json
-    # In a real application, you would process the changes here
-    # For now, we'll just return a success message
-    return jsonify({
-        "status": "success",
-        "message": "Changes submitted successfully",
-        "timestamp": datetime.now().isoformat()
-    })
+    group_id = data.get('group')
+    user_ids = data.get('users', [])
+    
+    if not group_id or not user_ids:
+        return jsonify({
+            "status": "error",
+            "message": "Missing group or users"
+        }), 400
+    
+    try:
+        with get_ldap_connection() as conn:
+            # Find the group DN
+            group_filter = f"(&(objectClass=groupOfNames)(cn={group_id}))"
+            conn.search(
+                os.getenv('LDAP_BASE_DN'),
+                group_filter,
+                SUBTREE,
+                attributes=['member']
+            )
+            
+            if not conn.entries:
+                return jsonify({
+                    "status": "error",
+                    "message": "Group not found"
+                }), 404
+                
+            group_dn = conn.entries[0].entry_dn
+            
+            # Add users to group
+            for user_id in user_ids:
+                user_dn = f"uid={user_id},{os.getenv('LDAP_BASE_DN')}"
+                conn.modify(group_dn, {'member': [(2, [user_dn])]})  # 2 = MODIFY_ADD
+                
+        return jsonify({
+            "status": "success",
+            "message": "Changes submitted successfully",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=5555,debug=True)
