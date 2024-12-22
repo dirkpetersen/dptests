@@ -11,15 +11,14 @@ load_dotenv()
 app = Flask(__name__)
 
 def get_ldap_connection():
-    host = os.getenv('LDAP_HOST', 'localhost')
-    port = int(os.getenv('LDAP_PORT', '10389'))
+    ldap_url = os.getenv('LDAP_URL', 'ldap://localhost:10389')
     bind_dn = os.getenv('LDAP_BIND_DN', 'uid=svc-dri-lookup,ou=Specials,o=orst.edu')
     password = os.getenv('LDAP_PASSWORD')
     
     if not password:
         raise ValueError("LDAP_PASSWORD environment variable must be set")
         
-    server = Server(host=host, port=port)
+    server = Server(ldap_url)
     return Connection(
         server,
         user=bind_dn,
