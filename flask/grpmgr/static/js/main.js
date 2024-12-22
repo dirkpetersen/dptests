@@ -3,49 +3,84 @@ let selectedGroup = null;
 
 function searchUsers() {
     const query = document.getElementById('userSearchInput').value;
+    const spinner = document.getElementById('userSpinner');
+    const results = document.getElementById('userSearchResults');
+    
+    spinner.style.display = 'block';
+    results.style.display = 'none';
+    
     fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
         .then(response => response.json())
         .then(users => {
             const resultsDiv = document.getElementById('userSearchResults');
-            resultsDiv.innerHTML = users.map(user => `
+            if (users.length === 0) {
+                resultsDiv.innerHTML = '<div class="alert alert-info">No users found</div>';
+            } else {
+                resultsDiv.innerHTML = users.map(user => `
                 <div class="user-card ${selectedUsers.has(user.id) ? 'selected' : ''}" 
-                     onclick="toggleUser(${user.id}, '${user.name}', '${user.email}')">
+                     onclick="toggleUser('${user.id}')">
                     <h5>${user.name}</h5>
-                    <p>${user.email}</p>
-                    <small>${user.department}</small>
+                    <p>${user.email}${user.email.split('@')[0] === user.id ? '' : ` (${user.id})`}<br>
+                    ${user.title}<br>
+                    ${user.department}</p>
                 </div>
             `).join('');
+            }
+            spinner.style.display = 'none';
+            results.style.display = 'grid';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            spinner.style.display = 'none';
+            results.style.display = 'grid';
         });
 }
 
 function searchGroups() {
     const query = document.getElementById('groupSearchInput').value;
+    const spinner = document.getElementById('groupSpinner');
+    const results = document.getElementById('groupSearchResults');
+    
+    spinner.style.display = 'block';
+    results.style.display = 'none';
+    
     fetch(`/api/groups/search?q=${encodeURIComponent(query)}`)
         .then(response => response.json())
         .then(groups => {
             const resultsDiv = document.getElementById('groupSearchResults');
-            resultsDiv.innerHTML = groups.map(group => `
+            if (groups.length === 0) {
+                resultsDiv.innerHTML = '<div class="alert alert-info">No groups found</div>';
+            } else {
+                resultsDiv.innerHTML = groups.map(group => `
                 <div class="group-card ${selectedGroup?.id === group.id ? 'selected' : ''}"
-                     onclick="selectGroup(${group.id}, '${group.name}')">
+                     onclick="selectGroup('${group.id}', '${group.name}')">
                     <h5>${group.name}</h5>
-                    <p>${group.description}</p>
+                    <p>Members: ${group.members.join(', ') || 'None'}</p>
                 </div>
             `).join('');
+            }
+            spinner.style.display = 'none';
+            results.style.display = 'grid';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            spinner.style.display = 'none';
+            results.style.display = 'grid';
         });
 }
 
-function toggleUser(id, name, email) {
+function toggleUser(id) {
     if (selectedUsers.has(id)) {
         selectedUsers.delete(id);
     } else {
         selectedUsers.add(id);
     }
     updateSelectedUsers();
-    document.querySelectorAll(`.user-card`).forEach(card => {
-        if (card.onclick.toString().includes(`${id}`)) {
-            card.classList.toggle('selected');
-        }
-    });
+    // Update the clicked card's selected state
+    const selectedCard = document.querySelector(`.user-card[onclick*="${id}"]`);
+    if (selectedCard) {
+        selectedCard.classList.toggle('selected');
+    }
 }
 
 function selectGroup(id, name) {
@@ -62,12 +97,10 @@ function selectGroup(id, name) {
 function updateSelectedUsers() {
     const container = document.getElementById('selectedUsers');
     container.innerHTML = Array.from(selectedUsers).map(id => {
-        const userCard = document.querySelector(`.user-card[onclick*="${id}"]`);
-        const name = userCard.querySelector('h5').textContent;
         return `
             <span class="selected-item">
-                ${name}
-                <span class="remove-btn" onclick="toggleUser(${id})">×</span>
+                ${id}
+                <span class="remove-btn" onclick="toggleUser('${id}')">×</span>
             </span>
         `;
     }).join('');

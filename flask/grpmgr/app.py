@@ -32,45 +32,77 @@ def index():
 
 @app.route('/api/users/search')
 def search_users():
-    query = request.args.get('q', '')
+    query = request.args.get('q', '').strip()
     if not query:
         return jsonify([])
     
-    ldap_filter = f"(&(objectClass=person)(|(cn=*{query}*)(mail=*{query}*)(ou=*{query}*)))"
+    # Split the query into words
+    words = query.split()
+    
+    # Create an AND filter that requires all words to be present in any field
+    word_filters = []
+    for word in words:
+        # Check if word is numeric for uidNumber search
+        is_numeric = word.isdigit()
+        # Include uidNumber only if the word is numeric
+        base_filter = f"(|(cn=*{word}*)(mail=*{word}*)(uid=*{word}*)(title=*{word}*)(osuDepartment=*{word}*))"
+        word_filter = f"(|{base_filter}(uidNumber={word}))" if is_numeric else base_filter
+        word_filters.append(word_filter)
+    
+    # Combine with AND to require all words
+    ldap_filter = f"(&(objectClass=person){''.join(word_filters)})"
     
     with get_ldap_connection() as conn:
         conn.search(
-            os.getenv('LDAP_BASE_DN'),
+            os.getenv('LDAP_BASE_DN_USER'),
             ldap_filter,
             SUBTREE,
-            attributes=['uid', 'cn', 'mail', 'ou']
+            attributes=['uid', 'cn', 'mail', 'title', 'osuDepartment', 'uidNumber']
         )
         
         results = []
         for entry in conn.entries:
-            results.append({
-                "id": entry.uid.value,
-                "name": entry.cn.value,
-                "email": entry.mail.value if hasattr(entry, 'mail') else '',
-                "department": entry.ou.value if hasattr(entry, 'ou') else ''
-            })
+            if (hasattr(entry, 'mail') and entry.mail.value and 
+                hasattr(entry, 'uid') and entry.uid.value and 
+                entry.uid.value.lower() not in ['null', 'none']):  # Only include entries with email and valid UID
+                results.append({
+                    "id": entry.uid.value,
+                    "name": entry.cn.value,
+                    "email": entry.mail.value,
+                    "title": entry.title.value if hasattr(entry, 'title') and entry.title.value not in ['null', 'NULL', None] else '',
+                    "department": entry.osuDepartment.value if hasattr(entry, 'osuDepartment') and entry.osuDepartment.value not in ['null', 'NULL', None] else ''
+                })
             
     return jsonify(results)
 
 @app.route('/api/groups/search')
 def search_groups():
-    query = request.args.get('q', '')
+    query = request.args.get('q', '').strip()
     if not query:
         return jsonify([])
     
-    ldap_filter = f"(&(objectClass=groupOfNames)(cn=*{query}*)))"
+    # Split the query into words
+    words = query.split()
+    word_filters = []
+    for word in words:
+        # Check if word is numeric for gidNumber search
+        is_numeric = word.isdigit()
+        # Include gidNumber only if the word is numeric
+        if is_numeric:
+            word_filter = f"(gidNumber={word})"
+        else:
+            word_filter = f"(cn=*{word}*)"
+        word_filters.append(word_filter)
+    
+    # Combine with AND to require all words
+    ldap_filter = f"(&(objectClass=posixGroup){''.join(word_filters)})"
     
     with get_ldap_connection() as conn:
         conn.search(
-            os.getenv('LDAP_BASE_DN'),
+            "ou=group,o=orst.edu",
             ldap_filter,
             SUBTREE,
-            attributes=['cn', 'description']
+            attributes=['cn', 'gidNumber', 'memberUid']
         )
         
         results = []
@@ -78,7 +110,9 @@ def search_groups():
             results.append({
                 "id": entry.cn.value,
                 "name": entry.cn.value,
-                "description": entry.description.value if hasattr(entry, 'description') else ''
+                "description": "",
+                "gidNumber": entry.gidNumber.value if hasattr(entry, 'gidNumber') else None,
+                "members": entry.memberUid.values if hasattr(entry, 'memberUid') else []
             })
             
     return jsonify(results)
@@ -98,9 +132,9 @@ def submit_changes():
     try:
         with get_ldap_connection() as conn:
             # Find the group DN
-            group_filter = f"(&(objectClass=groupOfNames)(cn={group_id}))"
+            group_filter = f"(&(objectClass=posixGroup)(cn={group_id}))"
             conn.search(
-                os.getenv('LDAP_BASE_DN'),
+                os.getenv('LDAP_BASE_DN_GROUP'),
                 group_filter,
                 SUBTREE,
                 attributes=['member']
@@ -116,8 +150,8 @@ def submit_changes():
             
             # Add users to group
             for user_id in user_ids:
-                user_dn = f"uid={user_id},{os.getenv('LDAP_BASE_DN')}"
-                conn.modify(group_dn, {'member': [(2, [user_dn])]})  # 2 = MODIFY_ADD
+                user_dn = f"uid={user_id},{os.getenv('LDAP_BASE_DN_USER')}"
+                conn.modify(group_dn, {'memberUid': [(2, [user_id])]})  # 2 = MODIFY_ADD
                 
         return jsonify({
             "status": "success",
