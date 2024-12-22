@@ -104,6 +104,44 @@ function updateSelectedUsers() {
             </span>
         `;
     }).join('');
+    
+    // Update recipients textarea
+    updateRecipients();
+}
+
+function updateRecipients() {
+    const recipientsArea = document.getElementById('recipientsArea');
+    if (!recipientsArea) return;
+
+    const emails = Array.from(selectedUsers).map(id => {
+        const userCard = document.querySelector(`.user-card[onclick*="${id}"]`);
+        if (userCard) {
+            const emailElement = userCard.querySelector('p');
+            const emailText = emailElement.textContent.split('\n')[0];
+            // Extract just the email part before any parentheses
+            const email = emailText.split(' (')[0].trim();
+            return email;
+        }
+        return null;
+    }).filter(email => email);
+
+    recipientsArea.value = emails.join('; ');
+}
+
+function copyRecipients() {
+    const recipientsArea = document.getElementById('recipientsArea');
+    recipientsArea.select();
+    document.execCommand('copy');
+    // Deselect the text
+    window.getSelection().removeAllRanges();
+    
+    // Optional: Show feedback
+    const button = document.querySelector('[onclick="copyRecipients()"]');
+    const originalText = button.textContent;
+    button.textContent = 'Copied!';
+    setTimeout(() => {
+        button.textContent = originalText;
+    }, 2000);
 }
 
 function updateSelectedGroup() {

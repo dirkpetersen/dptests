@@ -23,6 +23,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups" type="button">Group Assignment</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="recipients-tab" data-bs-toggle="tab" data-bs-target="#recipients" type="button">Recipients</button>
+                </li>
             </ul>
 
             <div class="tab-content" id="mainTabsContent">
@@ -64,6 +67,18 @@
 
                     <div class="mt-4">
                         <button class="btn btn-success" onclick="submitChanges()">Submit Changes</button>
+                    </div>
+                </div>
+
+                <!-- Recipients Tab -->
+                <div class="tab-pane fade" id="recipients">
+                    <div class="mt-3">
+                        <h5>Email Recipients</h5>
+                        <p class="text-muted">Email addresses of selected users (semicolon-separated)</p>
+                        <div class="input-group">
+                            <textarea id="recipientsArea" class="form-control" rows="3" readonly></textarea>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyRecipients()">Copy</button>
+                        </div>
                     </div>
                 </div>
             </div>
