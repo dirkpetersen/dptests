@@ -41,10 +41,7 @@ MEMORY_SAFETY_MARGIN = 0.9
 BYTES_PER_ATOM = 4 * (3 * 2 + 1 + 1)  # positions, new_positions, sequence, energies
 
 # Calculate maximum atoms while keeping memory usage reasonable
-ATOMS_PER_GPU = min(
-    10000,  # Hard limit of 10k atoms for safety
-    int((GPU_MEMORY_PER_DEVICE * MEMORY_SAFETY_MARGIN) / BYTES_PER_ATOM)
-)
+ATOMS_PER_GPU = int((GPU_MEMORY_PER_DEVICE * MEMORY_SAFETY_MARGIN) / BYTES_PER_ATOM)
 
 print(f"Maximum atoms per GPU: {ATOMS_PER_GPU:,}")
 MAX_TOTAL_ATOMS = ATOMS_PER_GPU * AVAILABLE_GPUS
@@ -177,7 +174,7 @@ class MemoryEfficientProteinFolding:
 def main():
     try:
         print("Initializing simulation...")
-        simulator = MemoryEfficientProteinFolding(sequence_length=100)  # Start very small
+        simulator = MemoryEfficientProteinFolding(sequence_length=100000)  # Use more atoms
         
         print("Starting simulation...")
         simulator.run_simulation(n_steps=100)  # Run for just 100 steps
