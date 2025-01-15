@@ -46,7 +46,7 @@ MEMORY_SAFETY_MARGIN = 0.9
 # - sequence (int32)
 # - energies (float32)
 # - chunk_buffer overhead (float32 * 3 * 1000 / atoms_per_gpu)
-BYTES_PER_ATOM = 4 * (3 * 4 + 1 + 1) + (4 * 3 * 100)  # Reduced chunk buffer overhead from 1000 to 100
+BYTES_PER_ATOM = 4 * (3 * 4 + 1 + 1) + (4 * 3 * 50)  # Reduced chunk buffer overhead from 100 to 50
 
 # Calculate maximum atoms while keeping memory usage reasonable
 def calculate_safe_atoms():
@@ -54,6 +54,8 @@ def calculate_safe_atoms():
         mem_info = cp.cuda.runtime.memGetInfo()
         initial_free = mem_info[0]  # Use free memory instead of total
         safe_memory = initial_free * MEMORY_SAFETY_MARGIN
+        # Add additional 10% safety factor for runtime allocations
+        safe_memory *= 0.9
         return int(safe_memory / BYTES_PER_ATOM)
 
 ATOMS_PER_GPU = calculate_safe_atoms()
@@ -134,7 +136,7 @@ class MemoryEfficientProteinFolding:
                     'energies': cp.zeros(self.atoms_per_gpu, dtype=cp.float32),
                     # Calculate distances and interactions in chunks instead of storing full matrices
                     'chunk_buffer': cp.zeros(
-                        (100, self.atoms_per_gpu, 3),  # Reduced from 1000 to 100 atoms at a time
+                        (50, self.atoms_per_gpu, 3),  # Reduced from 100 to 50 atoms at a time
                         dtype=cp.float32
                     )
                 }
