@@ -481,6 +481,13 @@ function wait_for_instance() {
 
 check_aws
 
+# Check for jq command
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: 'jq' command not found. Please install jq to continue."
+    echo "You can install it with: sudo apt-get install jq"
+    exit 1
+fi
+
 # Check for command line arguments
 if [[ "$1" = "list" ]]; then
     list_instances
