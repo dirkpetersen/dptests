@@ -2,6 +2,26 @@
 
 import cupy as cp
 import threading
+from typing import Optional, Dict, Any
+
+def check_nvlink_topology() -> bool:
+    """
+    Check if GPUs are connected via NVLink/NVSwitch
+    
+    Returns:
+        bool: True if NVLink/NVSwitch is available and GPUs support unified memory
+    """
+    try:
+        # Check for NVLink connections between GPUs
+        nvlink_status = cp.cuda.runtime.deviceGetNvSMEMConfig()
+        if nvlink_status is not None:
+            print("NVLink/NVSwitch detected - using unified memory mode")
+            return True
+        print("Traditional GPU setup detected - using separate memory mode")
+        return False
+    except Exception as e:
+        print(f"Error checking NVLink topology: {str(e)}")
+        return False
 
 def check_gpu_availability():
     """Check if CUDA GPU is available and return device count"""
@@ -87,7 +107,15 @@ class GPUMemoryTracker:
                   f"({our_usage/safe_free*100:.1f}% of {MEMORY_SAFETY_MARGIN*100:.0f}% margin)")
 
 class MemoryEfficientProteinFolding:
-    def __init__(self, sequence_length=None):
+    def __init__(self, sequence_length: Optional[int] = None):
+        """
+        Initialize protein folding simulation with architecture-aware memory management
+        
+        Args:
+            sequence_length: Number of atoms to simulate. If None, uses conservative default.
+        """
+        # Check hardware architecture
+        self.using_nvlink = check_nvlink_topology()
         self.n_gpus = AVAILABLE_GPUS
         
         # Use a very conservative sequence length if none provided
@@ -112,7 +140,54 @@ class MemoryEfficientProteinFolding:
         self._initialize_gpu_memory()
     
     def _initialize_gpu_memory(self):
-        """Initialize GPU memory across all available GPUs"""
+        """
+        Initialize GPU memory with architecture-specific optimizations
+        
+        For NVL72 (NVLink/NVSwitch):
+            - Uses unified memory space across GPUs
+            - Enables direct GPU-to-GPU access
+            - Optimizes for high-bandwidth GPU interconnect
+        
+        For traditional systems:
+            - Allocates separate memory per GPU
+            - Manages explicit memory transfers
+        """
+        try:
+            if self.using_nvlink:
+                self._initialize_unified_memory()
+            else:
+                self._initialize_separate_memory()
+        except Exception as e:
+            print(f"Error initializing GPU memory: {str(e)}")
+            raise
+
+    def _initialize_unified_memory(self):
+        """Initialize unified memory for NVL72 architecture"""
+        try:
+            # Allocate unified memory accessible by all GPUs
+            self.unified_data = {
+                'positions': cp.cuda.managed_memory((self.sequence_length, 3), dtype=cp.float32),
+                'new_positions': cp.cuda.managed_memory((self.sequence_length, 3), dtype=cp.float32),
+                'velocities': cp.cuda.managed_memory((self.sequence_length, 3), dtype=cp.float32),
+                'forces': cp.cuda.managed_memory((self.sequence_length, 3), dtype=cp.float32),
+                'sequence': cp.cuda.managed_memory(self.sequence_length, dtype=cp.int32),
+                'energies': cp.cuda.managed_memory(self.sequence_length, dtype=cp.float32)
+            }
+            
+            # Initialize unified memory with data
+            with cp.cuda.Device(0):  # Can use any GPU for initialization
+                self.unified_data['positions'][:] = cp.random.uniform(-1, 1, (self.sequence_length, 3))
+                self.unified_data['sequence'][:] = cp.array([i % 2 for i in range(self.sequence_length)])
+            
+            print("Initialized unified memory for NVL72 architecture")
+            GPUMemoryTracker.print_memory_usage(0)
+
+        except Exception as e:
+            print(f"Error initializing unified memory: {str(e)}")
+            raise
+
+    def _initialize_separate_memory(self):
+        """Initialize separate memory for traditional GPU architecture"""
         try:
             atom_offset = 0
             for gpu_id in range(self.n_gpus):
@@ -184,12 +259,27 @@ class MemoryEfficientProteinFolding:
             print(f"Error in energy calculation: {str(e)}")
             return 0.0
 
-    def _simulation_step(self, gpu_id, step, temperature):
-        """Perform one simulation step"""
+    def _simulation_step(self, gpu_id: int, step: int, temperature: float):
+        """
+        Perform one simulation step with architecture-aware memory access
+        
+        Args:
+            gpu_id: GPU ID to run this step on
+            step: Current simulation step number
+            temperature: Current simulation temperature
+        """
         try:
             with cp.cuda.Device(gpu_id):
-                positions = self.gpu_data[gpu_id]['positions']
-                sequence = self.gpu_data[gpu_id]['sequence']
+                if self.using_nvlink:
+                    # Direct access to unified memory
+                    start_idx = self.gpu_atom_counts[gpu_id] * gpu_id
+                    end_idx = start_idx + self.gpu_atom_counts[gpu_id]
+                    positions = self.unified_data['positions'][start_idx:end_idx]
+                    sequence = self.unified_data['sequence'][start_idx:end_idx]
+                else:
+                    # Traditional separate memory access
+                    positions = self.gpu_data[gpu_id]['positions']
+                    sequence = self.gpu_data[gpu_id]['sequence']
                 
                 # Small random movement
                 displacement = cp.random.uniform(-0.1, 0.1, positions.shape)
@@ -215,8 +305,33 @@ class MemoryEfficientProteinFolding:
         except Exception as e:
             print(f"Error in GPU {gpu_id} thread: {str(e)}")
 
-    def run_simulation(self, n_steps=1000):
-        """Run a parallel simulation across all available GPUs"""
+    def _sync_gpus(self):
+        """
+        Synchronize GPU memory based on architecture
+        
+        For NVL72:
+            - Uses hardware-level synchronization
+            - Takes advantage of unified memory coherence
+        
+        For traditional systems:
+            - Explicit synchronization through host memory
+        """
+        if self.using_nvlink:
+            # Hardware-level synchronization for NVL72
+            cp.cuda.runtime.deviceSynchronize()
+        else:
+            # Traditional explicit synchronization
+            for gpu_id in range(self.n_gpus):
+                with cp.cuda.Device(gpu_id):
+                    cp.cuda.runtime.deviceSynchronize()
+
+    def run_simulation(self, n_steps: int = 1000):
+        """
+        Run a parallel simulation across all available GPUs
+        
+        Args:
+            n_steps: Number of simulation steps to run
+        """
         try:
             threads = []
             for gpu_id in range(self.n_gpus):
