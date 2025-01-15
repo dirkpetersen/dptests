@@ -114,12 +114,9 @@ class MemoryEfficientProteinFolding:
                         dtype=cp.int32
                     ),
                     'energies': cp.zeros(self.atoms_per_gpu, dtype=cp.float32),
-                    'distances': cp.zeros(
-                        (self.atoms_per_gpu, self.atoms_per_gpu),
-                        dtype=cp.float32
-                    ),
-                    'interaction_matrix': cp.zeros(
-                        (self.atoms_per_gpu, self.atoms_per_gpu),
+                    # Calculate distances and interactions in chunks instead of storing full matrices
+                    'chunk_buffer': cp.zeros(
+                        (1000, self.atoms_per_gpu, 3),  # Process 1000 atoms at a time
                         dtype=cp.float32
                     )
                 }
@@ -190,7 +187,7 @@ class MemoryEfficientProteinFolding:
 def main():
     try:
         print("Initializing simulation...")
-        simulator = MemoryEfficientProteinFolding(sequence_length=10000000)  # Use 10M atoms
+        simulator = MemoryEfficientProteinFolding(sequence_length=1000000)  # Use 1M atoms
         
         print("Starting simulation...")
         simulator.run_simulation(n_steps=100)  # Run for just 100 steps
