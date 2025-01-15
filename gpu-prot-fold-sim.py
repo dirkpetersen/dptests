@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 import cupy as cp
-#import threading
+import threading
 #import math
 
 def check_gpu_availability():
@@ -104,15 +104,16 @@ class MemoryEfficientProteinFolding:
         self._initialize_gpu_memory()
     
     def _initialize_gpu_memory(self):
-        """Initialize GPU memory with conservative sizes"""
+        """Initialize GPU memory across all available GPUs"""
         try:
-            with cp.cuda.Device(0):  # Only use first GPU for now
-                # Small test allocation to verify memory
-                test_array = cp.zeros((10, 3), dtype=cp.float32)
-                del test_array
-                
-                # Initialize actual data with small sizes
-                self.gpu_data[0] = {
+            for gpu_id in range(self.n_gpus):
+                with cp.cuda.Device(gpu_id):
+                    # Small test allocation to verify memory
+                    test_array = cp.zeros((10, 3), dtype=cp.float32)
+                    del test_array
+                    
+                    # Initialize actual data with small sizes
+                    self.gpu_data[gpu_id] = {
                     'positions': cp.random.uniform(
                         -1, 1, 
                         (self.atoms_per_gpu, 3),
@@ -192,21 +193,41 @@ class MemoryEfficientProteinFolding:
         except Exception as e:
             print(f"Error in simulation step: {str(e)}")
 
-    def run_simulation(self, n_steps=1000):
-        """Run a short simulation"""
+    def _run_gpu_thread(self, gpu_id, n_steps, temperature=1.0):
+        """Run simulation steps on a specific GPU"""
         try:
             for step in range(n_steps):
-                self._simulation_step(0, step, 1.0)
-                
+                self._simulation_step(gpu_id, step, temperature)
                 if step % 100 == 0:
-                    GPUMemoryTracker.print_memory_usage(0)
+                    GPUMemoryTracker.print_memory_usage(gpu_id)
+        except Exception as e:
+            print(f"Error in GPU {gpu_id} thread: {str(e)}")
+
+    def run_simulation(self, n_steps=1000):
+        """Run a parallel simulation across all available GPUs"""
+        try:
+            threads = []
+            for gpu_id in range(self.n_gpus):
+                thread = threading.Thread(
+                    target=self._run_gpu_thread,
+                    args=(gpu_id, n_steps)
+                )
+                threads.append(thread)
+                thread.start()
+
+            # Wait for all GPU threads to complete
+            for thread in threads:
+                thread.join()
+                
         except Exception as e:
             print(f"Error in simulation: {str(e)}")
 
 def main():
     try:
         print("Initializing simulation...")
-        simulator = MemoryEfficientProteinFolding(sequence_length=ATOMS_PER_GPU)  # Use calculated safe limit
+        # Distribute atoms across all available GPUs
+        total_atoms = ATOMS_PER_GPU * AVAILABLE_GPUS
+        simulator = MemoryEfficientProteinFolding(sequence_length=total_atoms)
         
         print("Starting simulation...")
         simulator.run_simulation(n_steps=100)  # Run for just 100 steps
