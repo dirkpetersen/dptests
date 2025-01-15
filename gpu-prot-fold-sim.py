@@ -196,8 +196,6 @@ class MemoryEfficientProteinFolding:
         """Run a short simulation"""
         try:
             for step in range(n_steps):
-                if step % 100 == 0:
-                    print(f"Step {step}/{n_steps}")
                 self._simulation_step(0, step, 1.0)
                 
                 if step % 100 == 0:
