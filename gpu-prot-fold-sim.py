@@ -72,9 +72,10 @@ class GPUMemoryTracker:
         if total > 0:
             used = total - free
             initial_free = 3.5e9  # Initial free memory from first check
+            safe_free = initial_free * MEMORY_SAFETY_MARGIN  # Apply safety margin
             our_usage = initial_free - free
-            print(f"GPU {gpu_id}: Using {our_usage/1e9:.2f}GB of available {initial_free/1e9:.2f}GB "
-                  f"({our_usage/initial_free*100:.1f}%)")
+            print(f"GPU {gpu_id}: Using {our_usage/1e9:.2f}GB of safe limit {safe_free/1e9:.2f}GB "
+                  f"({our_usage/safe_free*100:.1f}% of {MEMORY_SAFETY_MARGIN*100:.0f}% margin)")
 
 class MemoryEfficientProteinFolding:
     def __init__(self, sequence_length=None):
