@@ -1,10 +1,8 @@
 #! /usr/bin/env python3
 
 import cupy as cp
-#import numpy as np
-import threading
-#from queue import Queue
-import math
+#import threading
+#import math
 
 def check_gpu_availability():
     """Check if CUDA GPU is available and return device count"""
@@ -37,7 +35,7 @@ with cp.cuda.Device(0):
     GPU_MEMORY_PER_DEVICE = mem_info[1]  # Total memory
     
 # Very conservative memory usage - only use 50% of available memory
-MEMORY_SAFETY_MARGIN = 0.9
+MEMORY_SAFETY_MARGIN = 0.97
 # Memory calculation:
 # - positions (float32 * 3)
 # - new_positions (float32 * 3) 
@@ -155,7 +153,7 @@ class MemoryEfficientProteinFolding:
             
             for i in range(0, len(positions), chunk_size):
                 chunk_pos = positions[i:i+chunk_size]
-                chunk_seq = sequence[i:i+chunk_size]
+                #chunk_seq = sequence[i:i+chunk_size]
                 
                 # Simple distance calculation
                 diff = chunk_pos[:, None, :] - chunk_pos[None, :, :]
