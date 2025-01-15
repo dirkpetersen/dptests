@@ -198,7 +198,7 @@ class MemoryEfficientProteinFolding:
 def main():
     try:
         print("Initializing simulation...")
-        simulator = MemoryEfficientProteinFolding(sequence_length=1000000)  # Use 1M atoms
+        simulator = MemoryEfficientProteinFolding(sequence_length=ATOMS_PER_GPU)  # Use calculated safe limit
         
         print("Starting simulation...")
         simulator.run_simulation(n_steps=100)  # Run for just 100 steps
