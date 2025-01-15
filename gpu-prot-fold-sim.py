@@ -16,7 +16,10 @@ def check_gpu_availability():
             mem_info = cp.cuda.runtime.memGetInfo()
             free_memory = mem_info[0]
             total_memory = mem_info[1]
+            device_props = cp.cuda.runtime.getDeviceProperties(0)
+            device_name = device_props["name"].decode('utf-8')
             print(f"Found {device_count} CUDA device(s)")
+            print(f"GPU 0: {device_name}")
             print(f"GPU 0: {free_memory/1e9:.1f}GB free of {total_memory/1e9:.1f}GB total")
         
         return device_count
