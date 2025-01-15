@@ -114,6 +114,9 @@ class MemoryEfficientProteinFolding:
         Args:
             sequence_length: Number of atoms to simulate. If None, uses conservative default.
         """
+        self.total_energy = 0.0
+        self.accepted_moves = 0
+        self.total_moves = 0
         # Check hardware architecture
         self.using_nvlink = check_nvlink_topology()
         self.n_gpus = AVAILABLE_GPUS
@@ -290,8 +293,18 @@ class MemoryEfficientProteinFolding:
                     old_energy = self._calculate_energy(positions, sequence)
                     new_energy = self._calculate_energy(new_positions, sequence)
                     
-                    if new_energy < old_energy:
+                    # Track energy changes and acceptance ratio
+                    delta_energy = new_energy - old_energy
+                    self.total_moves += 1
+                    
+                    if delta_energy < 0:  # Accept if energy decreases
                         self.gpu_data[gpu_id]['positions'] = new_positions
+                        self.total_energy = new_energy
+                        self.accepted_moves += 1
+                    elif cp.random.random() < cp.exp(-delta_energy / temperature):  # Metropolis criterion
+                        self.gpu_data[gpu_id]['positions'] = new_positions
+                        self.total_energy = new_energy
+                        self.accepted_moves += 1
         except Exception as e:
             print(f"Error in simulation step: {str(e)}")
 
@@ -362,6 +375,12 @@ def main():
     except Exception as e:
         print(f"Error during simulation: {str(e)}")
     finally:
+        print("\nSimulation Results:")
+        print(f"Final Energy: {simulator.total_energy:.2f}")
+        acceptance_rate = (simulator.accepted_moves / simulator.total_moves * 100) if simulator.total_moves > 0 else 0
+        print(f"Move Acceptance Rate: {acceptance_rate:.1f}%")
+        print(f"Accepted Moves: {simulator.accepted_moves:,} of {simulator.total_moves:,}")
+        
         print("\nFinal memory usage:")
         GPUMemoryTracker.print_memory_usage(0)
 
