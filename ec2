@@ -481,11 +481,18 @@ function wait_for_instance() {
 
 check_aws
 
-# Check for jq command
+# Check for jq command and install locally if not found
 if ! command -v jq >/dev/null 2>&1; then
-    echo "Error: 'jq' command not found. Please install jq to continue."
-    echo "You can install it with: sudo apt-get install jq"
-    exit 1
+    echo "'jq' command not found. Installing locally..."
+    mkdir -p ~/.local/bin
+    curl -L https://github.com/stedolan/jq/releases/download/jq-1.7/jq-linux-amd64 -o ~/.local/bin/jq
+    chmod +x ~/.local/bin/jq
+    export PATH=~/.local/bin:$PATH
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "Error: Failed to install jq. Please install it manually."
+        exit 1
+    fi
+    echo "jq installed successfully in ~/.local/bin"
 fi
 
 # Check for command line arguments
