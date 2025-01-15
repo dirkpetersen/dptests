@@ -94,18 +94,18 @@ class MemoryEfficientProteinFolding:
                 self.gpu_data[0] = {
                     'positions': cp.random.uniform(
                         -1, 1, 
-                        (min(1000, self.atoms_per_gpu), 3),
+                        (self.atoms_per_gpu, 3),
                         dtype=cp.float32
                     ),
                     'new_positions': cp.zeros(
-                        (min(1000, self.atoms_per_gpu), 3),
+                        (self.atoms_per_gpu, 3),
                         dtype=cp.float32
                     ),
                     'sequence': cp.array(
-                        [i % 2 for i in range(min(1000, self.atoms_per_gpu))],
+                        [i % 2 for i in range(self.atoms_per_gpu)],
                         dtype=cp.int32
                     ),
-                    'energies': cp.zeros(min(1000, self.atoms_per_gpu), dtype=cp.float32)
+                    'energies': cp.zeros(self.atoms_per_gpu, dtype=cp.float32)
                 }
                 
                 GPUMemoryTracker.print_memory_usage(0)
@@ -174,7 +174,7 @@ class MemoryEfficientProteinFolding:
 def main():
     try:
         print("Initializing simulation...")
-        simulator = MemoryEfficientProteinFolding(sequence_length=100000)  # Use more atoms
+        simulator = MemoryEfficientProteinFolding(sequence_length=1000000)  # Use 1M atoms
         
         print("Starting simulation...")
         simulator.run_simulation(n_steps=100)  # Run for just 100 steps
