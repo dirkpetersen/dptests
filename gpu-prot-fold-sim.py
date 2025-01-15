@@ -2,7 +2,6 @@
 
 import cupy as cp
 import threading
-#import math
 
 def check_gpu_availability():
     """Check if CUDA GPU is available and return device count"""
