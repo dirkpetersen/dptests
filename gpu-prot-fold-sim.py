@@ -376,7 +376,7 @@ def main():
         print(f"Error during simulation: {str(e)}")
     finally:
         print("\nSimulation Results:")
-        print(f"Final Energy: {simulator.total_energy:.2f}")
+        print(f"Final Energy: {simulator.total_energy:,.2f}")
         acceptance_rate = (simulator.accepted_moves / simulator.total_moves * 100) if simulator.total_moves > 0 else 0
         print(f"Move Acceptance Rate: {acceptance_rate:.1f}%")
         print(f"Accepted Moves: {simulator.accepted_moves:,} of {simulator.total_moves:,}")
