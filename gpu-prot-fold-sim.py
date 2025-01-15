@@ -239,7 +239,19 @@ class MemoryEfficientProteinFolding:
             raise
 
     def _calculate_energy(self, positions, sequence):
-        """Calculate energy using simple operations"""
+        """
+        Calculate potential energy of the protein conformation
+        
+        This is a simplified energy function that:
+        1. Calculates pairwise distances between all atoms
+        2. Uses a simple 1/r potential (inverse distance)
+        3. Could be extended to include:
+           - Backbone constraints
+           - Side chain interactions
+           - Hydrogen bonding
+           - Van der Waals forces
+           - Electrostatic interactions
+        """
         try:
             # Use smaller chunks for calculation
             chunk_size = 100
@@ -264,12 +276,22 @@ class MemoryEfficientProteinFolding:
 
     def _simulation_step(self, gpu_id: int, step: int, temperature: float):
         """
-        Perform one simulation step with architecture-aware memory access
+        Perform one Monte Carlo step of protein folding simulation
+        
+        This implements the Metropolis-Hastings algorithm:
+        1. Make small random movements of atoms
+        2. Calculate energy change
+        3. Accept or reject based on Boltzmann criterion
+        
+        The actual folding happens through:
+        - Random perturbations of atom positions
+        - Acceptance of energetically favorable states
+        - Occasional acceptance of unfavorable states (to escape local minima)
         
         Args:
             gpu_id: GPU ID to run this step on
             step: Current simulation step number
-            temperature: Current simulation temperature
+            temperature: Controls acceptance of unfavorable moves
         """
         try:
             with cp.cuda.Device(gpu_id):
@@ -284,7 +306,12 @@ class MemoryEfficientProteinFolding:
                     positions = self.gpu_data[gpu_id]['positions']
                     sequence = self.gpu_data[gpu_id]['sequence']
                 
-                # Small random movement
+                # Protein folding: Make small random movements of atoms
+                # This is where the actual conformational changes happen
+                # Could be improved by:
+                # - Using proper bond angles/lengths
+                # - Respecting amino acid constraints
+                # - Adding secondary structure bias
                 displacement = cp.random.uniform(-0.1, 0.1, positions.shape)
                 new_positions = positions + displacement
                 
