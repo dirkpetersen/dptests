@@ -71,8 +71,10 @@ class GPUMemoryTracker:
         free, total = GPUMemoryTracker.get_memory_info(gpu_id)
         if total > 0:
             used = total - free
-            print(f"GPU {gpu_id}: Using {used/1e9:.2f}GB of {total/1e9:.2f}GB "
-                  f"({used/total*100:.1f}%)")
+            initial_free = 3.5e9  # Initial free memory from first check
+            our_usage = initial_free - free
+            print(f"GPU {gpu_id}: Using {our_usage/1e9:.2f}GB of available {initial_free/1e9:.2f}GB "
+                  f"({our_usage/initial_free*100:.1f}%)")
 
 class MemoryEfficientProteinFolding:
     def __init__(self, sequence_length=None):
