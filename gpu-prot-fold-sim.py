@@ -38,7 +38,15 @@ with cp.cuda.Device(0):
     
 # Very conservative memory usage - only use 50% of available memory
 MEMORY_SAFETY_MARGIN = 0.9
-BYTES_PER_ATOM = 4 * (3 * 2 + 1 + 1)  # positions, new_positions, sequence, energies
+# Memory calculation:
+# - positions (float32 * 3)
+# - new_positions (float32 * 3) 
+# - velocities (float32 * 3)
+# - forces (float32 * 3)
+# - sequence (int32)
+# - energies (float32)
+# - chunk_buffer overhead (float32 * 3 * 1000 / atoms_per_gpu)
+BYTES_PER_ATOM = 4 * (3 * 4 + 1 + 1) + (4 * 3 * 1000)  # Include chunk buffer overhead
 
 # Calculate maximum atoms while keeping memory usage reasonable
 ATOMS_PER_GPU = int((GPU_MEMORY_PER_DEVICE * MEMORY_SAFETY_MARGIN) / BYTES_PER_ATOM)
