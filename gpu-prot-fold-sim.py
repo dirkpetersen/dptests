@@ -49,7 +49,14 @@ MEMORY_SAFETY_MARGIN = 0.9
 BYTES_PER_ATOM = 4 * (3 * 4 + 1 + 1) + (4 * 3 * 100)  # Reduced chunk buffer overhead from 1000 to 100
 
 # Calculate maximum atoms while keeping memory usage reasonable
-ATOMS_PER_GPU = int((GPU_MEMORY_PER_DEVICE * MEMORY_SAFETY_MARGIN) / BYTES_PER_ATOM)
+def calculate_safe_atoms():
+    with cp.cuda.Device(0):
+        mem_info = cp.cuda.runtime.memGetInfo()
+        initial_free = mem_info[0]  # Use free memory instead of total
+        safe_memory = initial_free * MEMORY_SAFETY_MARGIN
+        return int(safe_memory / BYTES_PER_ATOM)
+
+ATOMS_PER_GPU = calculate_safe_atoms()
 
 print(f"Maximum atoms per GPU: {ATOMS_PER_GPU:,}")
 MAX_TOTAL_ATOMS = ATOMS_PER_GPU * AVAILABLE_GPUS
