@@ -97,8 +97,17 @@ class MemoryEfficientProteinFolding:
         else:
             self.sequence_length = min(sequence_length, MAX_TOTAL_ATOMS)
         
+        # Divide sequence evenly across GPUs
         self.atoms_per_gpu = max(1, self.sequence_length // self.n_gpus)
-        print(f"Atoms per GPU: {self.atoms_per_gpu:,}")
+        # Handle remainder atoms
+        self.gpu_atom_counts = [self.atoms_per_gpu] * self.n_gpus
+        remainder = self.sequence_length % self.n_gpus
+        for i in range(remainder):
+            self.gpu_atom_counts[i] += 1
+            
+        print(f"Total atoms: {self.sequence_length:,}")
+        for gpu_id in range(self.n_gpus):
+            print(f"GPU {gpu_id}: {self.gpu_atom_counts[gpu_id]:,} atoms")
         
         self.gpu_data = {}
         self._initialize_gpu_memory()
@@ -106,44 +115,48 @@ class MemoryEfficientProteinFolding:
     def _initialize_gpu_memory(self):
         """Initialize GPU memory across all available GPUs"""
         try:
+            atom_offset = 0
             for gpu_id in range(self.n_gpus):
+                n_atoms = self.gpu_atom_counts[gpu_id]
                 with cp.cuda.Device(gpu_id):
                     # Small test allocation to verify memory
                     test_array = cp.zeros((10, 3), dtype=cp.float32)
                     del test_array
                     
-                    # Initialize actual data with small sizes
+                    # Initialize actual data with proper atom counts per GPU
                     self.gpu_data[gpu_id] = {
                     'positions': cp.random.uniform(
                         -1, 1, 
-                        (self.atoms_per_gpu, 3),
+                        (n_atoms, 3),
                         dtype=cp.float32
                     ),
+                    'atom_offset': atom_offset,  # Track position in global sequence
                     'new_positions': cp.zeros(
-                        (self.atoms_per_gpu, 3),
+                        (n_atoms, 3),
                         dtype=cp.float32
                     ),
                     'velocities': cp.zeros(
-                        (self.atoms_per_gpu, 3),
+                        (n_atoms, 3),
                         dtype=cp.float32
                     ),
                     'forces': cp.zeros(
-                        (self.atoms_per_gpu, 3),
+                        (n_atoms, 3),
                         dtype=cp.float32
                     ),
                     'sequence': cp.array(
-                        [i % 2 for i in range(self.atoms_per_gpu)],
+                        [i % 2 for i in range(atom_offset, atom_offset + n_atoms)],
                         dtype=cp.int32
                     ),
-                    'energies': cp.zeros(self.atoms_per_gpu, dtype=cp.float32),
+                    'energies': cp.zeros(n_atoms, dtype=cp.float32),
                     # Calculate distances and interactions in chunks instead of storing full matrices
                     'chunk_buffer': cp.zeros(
-                        (50, self.atoms_per_gpu, 3),  # Reduced from 100 to 50 atoms at a time
+                        (50, n_atoms, 3),  # Reduced from 100 to 50 atoms at a time
                         dtype=cp.float32
                     )
                 }
                 
-                GPUMemoryTracker.print_memory_usage(0)
+                atom_offset += n_atoms
+                GPUMemoryTracker.print_memory_usage(gpu_id)
         except Exception as e:
             print(f"Error initializing GPU memory: {str(e)}")
             raise
