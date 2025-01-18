@@ -85,10 +85,8 @@ class TranscriptionApp:
     def quit_app(self):
         self.recording = False
         self.should_stop.set()
-        if self.recording_thread:
-            self.recording_thread.join(timeout=1)
-        if self.processing_thread:
-            self.processing_thread.join(timeout=1)
+        if self.wav_writer:
+            self.wav_writer.close()
         self.icon.stop()
 
     def start_async_loop(self):
