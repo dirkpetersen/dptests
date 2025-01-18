@@ -133,16 +133,22 @@ class TranscriptionApp:
 
         # Generate random websocket key for headers
         websocket_key = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=20))
-        extra_headers = {
+        headers = {
             "Origin": "https://localhost",
             "Sec-Websocket-Key": websocket_key,
             "Sec-Websocket-Version": "13",
             "Connection": "keep-alive"
         }
+        print(f"Connecting with headers: {headers}")
+        print(f"Request URL: {request_url}")
         async with websockets.connect(
             request_url,
-            extra_headers=extra_headers,
-            ping_timeout=None
+            extra_headers=headers,
+            subprotocols=None,
+            compression=None,
+            ping_interval=None,
+            ping_timeout=None,
+            close_timeout=None
         ) as websocket:
             print("WebSocket connection established")
             await asyncio.gather(
