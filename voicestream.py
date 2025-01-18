@@ -122,22 +122,39 @@ class TranscriptionApp:
         self.loop.run_until_complete(self.stream_audio())
 
     async def stream_audio(self):
-        print("Generating presigned URL for AWS Transcribe...")
-        request_url = self.transcribe_url_generator.get_request_url(
-            self.sample_rate,
-            "en-US",
-            "pcm",
-            number_of_channels=self.channels
-        )
-        print("Connecting to WebSocket...")
-
-        print(f"Request URL: {request_url}")
-        async with websockets.connect(request_url) as websocket:
-            print("WebSocket connection established")
-            await asyncio.gather(
-                self.receive_transcription(websocket),
-                self.send_audio(websocket)
-            )
+        while not self.should_stop.is_set():
+            try:
+                print("Generating presigned URL for AWS Transcribe...")
+                request_url = self.transcribe_url_generator.get_request_url(
+                    self.sample_rate,
+                    "en-US",
+                    "pcm",
+                    number_of_channels=self.channels
+                )
+                print("Connecting to WebSocket...")
+                print(f"Request URL: {request_url}")
+                
+                async with websockets.connect(request_url) as websocket:
+                    print("WebSocket connection established")
+                    try:
+                        await asyncio.gather(
+                            self.receive_transcription(websocket),
+                            self.send_audio(websocket)
+                        )
+                    except Exception as e:
+                        print(f"Error in audio streaming: {e}")
+                        if not self.should_stop.is_set():
+                            print("Attempting to reconnect...")
+                            await asyncio.sleep(1)
+                            continue
+                        break
+            except Exception as e:
+                print(f"Connection error: {e}")
+                if not self.should_stop.is_set():
+                    print("Attempting to reconnect...")
+                    await asyncio.sleep(1)
+                    continue
+                break
 
     async def send_audio(self, websocket):
         def audio_callback(indata, frames, time, status):
@@ -161,8 +178,12 @@ class TranscriptionApp:
                 if len(audio_data.shape) > 1 and audio_data.shape[1] > 1:
                     audio_data = audio_data[:, 0]
                 audio_data = audio_data.reshape(-1)  # Flatten to 1D array
-                # Ensure little-endian byte order
+                # Ensure little-endian byte order and pad if needed
                 audio_chunk = audio_data.tobytes('C')
+                # Pad to expected size if needed
+                if len(audio_chunk) < self.chunk_size * 2:  # 2 bytes per sample
+                    padding = b'\x00' * (self.chunk_size * 2 - len(audio_chunk))
+                    audio_chunk = audio_chunk + padding
                 print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
                 if len(audio_chunk) > 0:
