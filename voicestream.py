@@ -226,11 +226,16 @@ class TranscriptionApp:
                     try:
                         audio_event = create_audio_event(audio_chunk)
                         print(f"Created audio event of size: {len(audio_event)}")
+                        print(f"Audio event hex: {audio_event[:100].hex()}")
+                        print(f"Audio event bytes: {list(audio_event[:50])}")
+                    
                         try:
                             await websocket.send(audio_event)
                             print("Successfully sent audio event")
-                        except websockets.exceptions.ConnectionClosed:
-                            print("WebSocket connection closed while sending")
+                        except websockets.exceptions.ConnectionClosed as e:
+                            print(f"WebSocket connection closed while sending: {e}")
+                            print(f"Close code: {e.code}")
+                            print(f"Close reason: {e.reason}")
                             break
                     except Exception as e:
                         print(f"Error creating/sending audio event: {e}")
@@ -253,18 +258,41 @@ class TranscriptionApp:
                 print(f"Received raw response length: {len(response)}")
                 
                 try:
-                    print(f"Raw response (first 100 bytes): {response[:100].hex()}")
+                    print(f"Raw response length: {len(response)}")
+                    print(f"Raw response hex: {response.hex()}")
+                    print(f"Raw response bytes: {list(response)}")
+                    
                     try:
                         header, payload = decode_event(response)
-                        print(f"Decoded header: {header}")
-                        if isinstance(payload, bytes):
-                            payload = json.loads(payload.decode('utf-8'))
-                        print(f"Decoded payload: {payload}")
+                        print(f"Decoded header raw: {header}")
+                        print(f"Decoded payload raw: {payload}")
+                        print(f"Payload type: {type(payload)}")
                         
+                        if isinstance(payload, bytes):
+                            try:
+                                payload_str = payload.decode('utf-8')
+                                print(f"Decoded payload string: {payload_str}")
+                                payload = json.loads(payload_str)
+                            except UnicodeDecodeError as e:
+                                print(f"Unicode decode error: {e}")
+                                print(f"Payload bytes: {list(payload)}")
+                            except json.JSONDecodeError as e:
+                                print(f"JSON decode error: {e}")
+                                print(f"Attempted to parse: {payload_str}")
+                        
+                        print(f"Final payload: {payload}")
                         message_type = header.get(':message-type')
                         print(f"Message type: {message_type}")
+                        
+                        if ':exception-type' in header:
+                            print(f"Exception type: {header[':exception-type']}")
+                            if isinstance(payload, dict) and 'Message' in payload:
+                                print(f"Exception message: {payload['Message']}")
+                            
                     except Exception as e:
                         print(f"Error decoding event: {e}")
+                        print(f"Exception type: {type(e)}")
+                        print(f"Exception details: {str(e)}")
                         continue
 
                     if message_type == 'event':
