@@ -10,9 +10,10 @@ import threading
 import queue
 import time
 from pynput.keyboard import Controller
-import websockets
-import asyncio
-import json
+import wave
+import io
+import uuid
+import os
 
 class VoiceTranscriber:
     def __init__(self):
@@ -52,68 +53,66 @@ class VoiceTranscriber:
                 print(f"Error recording: {e}")
                 break
 
-    async def transcribe(self):
-            client = boto3.client('transcribe')
-            endpoint = await self._get_websocket_endpoint(client)
-            
-            async with websockets.connect(
-                endpoint,
-                ping_interval=5,
-                ping_timeout=20
-            ) as websocket:
-                # Send configuration
-                await websocket.send(json.dumps({
-                    "message-type": "event",
-                    "event": "start",
-                    "event-type": "start_transcription",
-                    "media-encoding": "pcm",
-                    "sample-rate": self.sample_rate
-                }))
+    def transcribe(self):
+        chunks = []
+        while self.recording:
+            try:
+                chunk = self.audio_queue.get(timeout=1)
+                chunks.append(chunk)
                 
-                # Start audio stream thread
-                audio_future = asyncio.create_task(self._stream_audio(websocket))
-                
-                try:
-                    while self.recording:
-                        msg = await websocket.recv()
-                        response = json.loads(msg)
-                        
-                        if response.get("message-type") == "event" and response.get("event") == "transcript":
-                            results = response["transcript"]["results"]
-                            if results and not results[0]["is_partial"]:
-                                transcript = results[0]["alternatives"][0]["transcript"]
-                                self.keyboard.type(transcript + ' ')
-                except Exception as e:
-                    print(f"Error in transcription: {e}")
-                finally:
-                    audio_future.cancel()
+                # Process every 5 seconds of audio
+                if len(chunks) >= (self.sample_rate * 5) // self.chunk:
+                    self._process_audio_chunk(chunks)
+                    chunks = []
                     
-    async def _stream_audio(self, websocket):
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"Error in transcription: {e}")
+                    
+    def _process_audio_chunk(self, chunks):
+        # Create a temporary WAV file
+        temp_filename = f"temp_{uuid.uuid4()}.wav"
+        with wave.open(temp_filename, 'wb') as wf:
+            wf.setnchannels(self.channels)
+            wf.setsampwidth(self.p.get_sample_size(self.format))
+            wf.setframerate(self.sample_rate)
+            wf.writeframes(b''.join(chunks))
+        
         try:
-            while self.recording:
-                try:
-                    chunk = self.audio_queue.get(timeout=1)
-                    await websocket.send(json.dumps({
-                        "message-type": "event",
-                        "event": "audio-event",
-                        "audio-chunk": chunk.hex()
-                    }))
-                except queue.Empty:
-                    continue
-        except Exception as e:
-            print(f"Error streaming audio: {e}")
+            # Start transcription job
+            job_name = f"transcribe_{uuid.uuid4()}"
+            self.transcribe_client.start_transcription_job(
+                TranscriptionJobName=job_name,
+                Media={'MediaFileUri': f"file://{os.path.abspath(temp_filename)}"},
+                MediaFormat='wav',
+                LanguageCode='en-US'
+            )
             
-    async def _get_websocket_endpoint(self, client):
-        response = client.start_streaming_transcription(
-            LanguageCode='en-US',
-            MediaEncoding='pcm',
-            MediaSampleRateHertz=self.sample_rate,
-            AudioStream={}
-        )
-        return response['WebsocketUrl']
+            # Wait for completion
+            while True:
+                status = self.transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+                if status['TranscriptionJob']['TranscriptionJobStatus'] in ['COMPLETED', 'FAILED']:
+                    break
+                time.sleep(0.5)
+            
+            # Get results
+            if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
+                transcript = status['TranscriptionJob']['Transcript']['Results'][0]['Alternatives'][0]['Transcript']
+                self.keyboard.type(transcript + ' ')
+                
+        except Exception as e:
+            print(f"Error processing chunk: {e}")
+        finally:
+            # Cleanup
+            try:
+                os.remove(temp_filename)
+                self.transcribe_client.delete_transcription_job(TranscriptionJobName=job_name)
+            except:
+                pass
 
     def process_audio(self):
-        asyncio.run(self.transcribe())
+        self.transcribe()
 
 def create_tray_icon():
     transcriber = VoiceTranscriber()
