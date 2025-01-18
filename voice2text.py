@@ -1,16 +1,17 @@
 import sys
 import boto3
-import sounddevice as sd
+import pyaudio
+import wave
 import numpy as np
 import pystray
 from PIL import Image
-import pyperclip
-import keyboard
-from io import BytesIO
+import win32gui
+import win32con
 import threading
 import queue
 import time
 from pynput.keyboard import Controller
+import os
 
 class VoiceTranscriber:
     def __init__(self):
@@ -19,49 +20,85 @@ class VoiceTranscriber:
         self.recording = False
         self.audio_queue = queue.Queue()
         self.sample_rate = 16000
+        self.chunk = 1024
+        self.format = pyaudio.paInt16
+        self.channels = 1
+        self.p = pyaudio.PyAudio()
         
     def start_recording(self):
         self.recording = True
-        self.stream = sd.InputStream(
-            channels=1,
-            samplerate=self.sample_rate,
-            callback=self.audio_callback
+        self.stream = self.p.open(
+            format=self.format,
+            channels=self.channels,
+            rate=self.sample_rate,
+            input=True,
+            frames_per_buffer=self.chunk
         )
-        self.stream.start()
+        threading.Thread(target=self._record_audio, daemon=True).start()
 
     def stop_recording(self):
         self.recording = False
-        self.stream.stop()
-        self.stream.close()
+        if hasattr(self, 'stream'):
+            self.stream.stop_stream()
+            self.stream.close()
 
-    def audio_callback(self, indata, frames, time, status):
-        if self.recording:
-            self.audio_queue.put(indata.copy())
+    def _record_audio(self):
+        while self.recording:
+            try:
+                data = self.stream.read(self.chunk)
+                self.audio_queue.put(data)
+            except Exception as e:
+                print(f"Error recording: {e}")
+                break
 
     def process_audio(self):
         while self.recording:
             try:
-                audio_chunk = self.audio_queue.get(timeout=1)
-                # Convert audio to bytes
-                audio_data = BytesIO()
-                np.save(audio_data, audio_chunk)
-                
-                # Send to Amazon Transcribe
-                response = self.transcribe_client.start_stream_transcription(
-                    LanguageCode='en-US',
-                    MediaSampleRateHertz=self.sample_rate,
-                    MediaEncoding='pcm'
-                )
+                # Collect about 1 second of audio
+                audio_data = b''
+                for _ in range(int(self.sample_rate / self.chunk)):
+                    chunk = self.audio_queue.get(timeout=1)
+                    audio_data += chunk
 
-                # Get transcription results
-                for event in response['TranscriptResults']:
-                    if not event['IsPartial']:
-                        text = event['Alternatives'][0]['Transcript']
-                        # Type the text
-                        self.keyboard.type(text + ' ')
+                # Save temporary WAV file
+                temp_wav = 'temp_audio.wav'
+                with wave.open(temp_wav, 'wb') as wf:
+                    wf.setnchannels(self.channels)
+                    wf.setsampwidth(self.p.get_sample_size(self.format))
+                    wf.setframerate(self.sample_rate)
+                    wf.writeframes(audio_data)
+
+                # Send to Amazon Transcribe
+                with open(temp_wav, 'rb') as audio_file:
+                    response = self.transcribe_client.start_transcription_job(
+                        TranscriptionJobName=f'RealTime_{int(time.time())}',
+                        Media={'MediaFileUri': f'file://{os.path.abspath(temp_wav)}'},
+                        MediaFormat='wav',
+                        LanguageCode='en-US'
+                    )
+
+                # Wait for transcription to complete
+                job_name = response['TranscriptionJob']['TranscriptionJobName']
+                while True:
+                    status = self.transcribe_client.get_transcription_job(
+                        TranscriptionJobName=job_name
+                    )
+                    if status['TranscriptionJob']['TranscriptionJobStatus'] in ['COMPLETED', 'FAILED']:
+                        break
+                    time.sleep(0.1)
+
+                if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
+                    transcript = status['TranscriptionJob']['Transcript']['Results'][0]['Alternatives'][0]['Transcript']
+                    # Type the text into the active window
+                    self.keyboard.type(transcript + ' ')
+
+                # Clean up
+                os.remove(temp_wav)
 
             except queue.Empty:
                 continue
+            except Exception as e:
+                print(f"Error processing audio: {e}")
 
 def create_tray_icon():
     transcriber = VoiceTranscriber()
