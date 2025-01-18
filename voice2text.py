@@ -5,6 +5,7 @@ import threading
 import uuid
 import boto3
 import pystray
+import requests
 from PIL import Image
 import pygetwindow as gw
 import pyautogui
@@ -93,8 +94,11 @@ class TranscriptionApp:
             try:
                 # Get transcription results
                 if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
-                    transcript = status['TranscriptionJob']['Transcript']
-                    text = transcript['Results'][0]['Alternatives'][0]['Transcript']
+                    transcript_uri = status['TranscriptionJob']['Transcript']['TranscriptFileUri']
+                    import requests
+                    transcript_response = requests.get(transcript_uri)
+                    transcript_data = transcript_response.json()
+                    text = transcript_data['results']['transcripts'][0]['transcript']
                     
                     # Type the transcribed text into the active window
                     active_window = gw.getActiveWindow()
