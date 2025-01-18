@@ -108,7 +108,8 @@ class TranscriptionApp:
             mode='w',
             samplerate=self.samplerate,
             channels=self.channels,
-            format='WAV'
+            format='WAV',
+            subtype='PCM_16'
         )
         return self.current_wav
 
@@ -139,7 +140,7 @@ class TranscriptionApp:
                     
                     # Save chunk to temporary file
                     with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
-                        sf.write(temp_file.name, chunk, self.samplerate)
+                        sf.write(temp_file.name, chunk, self.samplerate, subtype='PCM_16')
                         self.audio_queue.put(temp_file.name)
 
         try:
