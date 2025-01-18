@@ -54,7 +54,7 @@ class VoiceTranscriber:
                 break
 
     async def process_stream(self, stream):
-        async client = TranscribeStreamingClient(region="us-west-2")
+        client = TranscribeStreamingClient(region="us-west-2")
         
         class MyEventHandler(TranscriptResultStreamHandler):
             def __init__(self, keyboard):
