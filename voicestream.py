@@ -11,10 +11,47 @@ from PIL import Image
 import pygetwindow as gw
 import pyautogui
 import threading
+import configparser
+from pathlib import Path
 from eventstream import create_audio_event, decode_event
 from presigned_url import AWSTranscribePresignedURL
 
 class TranscriptionApp:
+    def load_aws_config(self):
+        """Load AWS credentials and config from files or environment."""
+        creds = {
+            'access_key': os.getenv("AWS_ACCESS_KEY_ID", ""),
+            'secret_key': os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+            'session_token': os.getenv("AWS_SESSION_TOKEN", ""),
+            'region': os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+        }
+        
+        # If environment variables are not set, try loading from files
+        if not (creds['access_key'] and creds['secret_key']):
+            config = configparser.ConfigParser()
+            credentials_path = Path.home() / '.aws' / 'credentials'
+            if credentials_path.exists():
+                config.read(credentials_path)
+                if 'default' in config:
+                    creds['access_key'] = config['default'].get('aws_access_key_id', '')
+                    creds['secret_key'] = config['default'].get('aws_secret_access_key', '')
+                    creds['session_token'] = config['default'].get('aws_session_token', '')
+        
+        # Try loading region from config if not in env
+        if creds['region'] == "us-east-1":  # default value
+            config = configparser.ConfigParser()
+            config_path = Path.home() / '.aws' / 'config'
+            if config_path.exists():
+                config.read(config_path)
+                if 'default' in config:
+                    creds['region'] = config['default'].get('region', 'us-east-1')
+                elif 'profile default' in config:
+                    creds['region'] = config['profile default'].get('region', 'us-east-1')
+        
+        if not (creds['access_key'] and creds['secret_key']):
+            raise ValueError("AWS credentials not found in environment or ~/.aws/credentials")
+            
+        return creds
     def __init__(self):
         self.recording = False
         self.should_stop = threading.Event()
@@ -27,16 +64,12 @@ class TranscriptionApp:
         self.chunk_size = int(self.sample_rate * self.chunk_duration)
         
         # AWS settings
-        self.region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
-        self.access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
-        self.secret_key = os.getenv("AWS_SECRET_ACCESS_KEY", "")
-        self.session_token = os.getenv("AWS_SESSION_TOKEN", "")
-        
+        self.aws_creds = self.load_aws_config()
         self.transcribe_url_generator = AWSTranscribePresignedURL(
-            self.access_key, 
-            self.secret_key,
-            self.session_token,
-            self.region
+            self.aws_creds['access_key'],
+            self.aws_creds['secret_key'],
+            self.aws_creds.get('session_token', ''),
+            self.aws_creds['region']
         )
         
         self.loop = asyncio.new_event_loop()
