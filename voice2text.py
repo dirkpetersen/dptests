@@ -211,10 +211,33 @@ class TranscriptionApp:
                         transcript_data = json.loads(json_text)
                         text = transcript_data['results']['transcripts'][0]['transcript']
                         
-                        # Type the transcribed text into the active window
+                        # Clean up duplicates and stutters
+                        sentences = text.split('.')
+                        cleaned_sentences = []
+                        seen_phrases = set()
+                        
+                        for sentence in sentences:
+                            # Split into phrases and clean
+                            phrases = sentence.strip().split(',')
+                            cleaned_phrases = []
+                            
+                            for phrase in phrases:
+                                phrase = phrase.strip()
+                                if phrase and phrase.lower() not in seen_phrases:
+                                    cleaned_phrases.append(phrase)
+                                    seen_phrases.add(phrase.lower())
+                            
+                            if cleaned_phrases:
+                                cleaned_sentences.append(', '.join(cleaned_phrases))
+                        
+                        cleaned_text = '. '.join(cleaned_sentences)
+                        if cleaned_text and not cleaned_text.endswith('.'):
+                            cleaned_text += '.'
+                        
+                        # Type the cleaned transcribed text into the active window
                         active_window = gw.getActiveWindow()
-                        if active_window and text.strip():
-                            pyautogui.write(text + ' ')
+                        if active_window and cleaned_text.strip():
+                            pyautogui.write(cleaned_text + ' ')
                         
                         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                         print(f"[{timestamp}] Transcription completed: {text[:50]}...")
