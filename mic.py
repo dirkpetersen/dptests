@@ -4,6 +4,9 @@ import argparse
 
 def record_audio(duration, samplerate=44100, channels=2, filename='recording.wav'):
     """Record audio from default microphone"""
+    # Get default input device info
+    device_info = sd.query_devices(kind='input')
+    print(f"Using input device: {device_info['name']}")
     print(f"Recording for {duration} seconds...")
     recording = sd.rec(
         int(duration * samplerate),
