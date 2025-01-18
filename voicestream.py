@@ -111,14 +111,6 @@ class TranscriptionApp:
         self.loop.run_until_complete(self.stream_audio())
 
     async def stream_audio(self):
-        websocket_key = str(uuid.uuid4())
-        extra_headers = {
-            "Origin": "https://localhost",
-            "Sec-Websocket-Key": websocket_key,
-            "Sec-Websocket-Version": "13",
-            "Connection": "keep-alive"
-        }
-        
         request_url = self.transcribe_url_generator.get_request_url(
             self.sample_rate,
             "en-US",
@@ -128,8 +120,9 @@ class TranscriptionApp:
 
         async with websockets.connect(
             request_url,
-            extra_headers=extra_headers,
-            ping_timeout=None
+            ping_timeout=None,
+            origin="https://localhost",
+            subprotocols=["mqtt"]
         ) as websocket:
             await asyncio.gather(
                 self.receive_transcription(websocket),
