@@ -134,7 +134,7 @@ class TranscriptionApp:
     async def send_audio(self, websocket):
         def audio_callback(indata, frames, time, status):
             if status:
-                print(f"Status: {status}")
+                print(f"Audio callback status: {status}")
             
             audio_chunk = indata.tobytes()
             if len(audio_chunk) > 0:
@@ -167,6 +167,7 @@ class TranscriptionApp:
                     continue
                 except Exception as e:
                     print(f"Error sending audio: {e}")
+                    print(f"WebSocket state: {websocket.state}")
                     break
 
     async def receive_transcription(self, websocket):
@@ -175,8 +176,15 @@ class TranscriptionApp:
         while not self.should_stop.is_set():
             try:
                 response = await websocket.recv()
+                print(f"Received response: {response[:200]}...")  # Print first 200 chars
                 header, payload = decode_event(response)
+                print(f"Decoded header: {header}")
+                print(f"Decoded payload: {payload}")
                 
+                if ':message-type' not in header:
+                    print(f"Warning: message-type not found in header")
+                    continue
+                    
                 if header[':message-type'] == 'event':
                     results = payload.get('Transcript', {}).get('Results', [])
                     if results and len(results) > 0:
