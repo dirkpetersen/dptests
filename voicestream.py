@@ -248,6 +248,13 @@ class TranscriptionApp:
                         
                         import zlib
 
+                        # Debug headers
+                        print("\nHeaders debug:")
+                        for key, value in headers.items():
+                            print(f"Header: {key} = {value}")
+                        print(f"Headers bytes length: {len(headers_bytes)}")
+                        print(f"Headers hex: {headers_bytes.hex()}")
+
                         # Create prelude (8 bytes)
                         headers_length = len(headers_bytes)
                         total_length = 8 + 4 + headers_length + len(audio_chunk) + 4  # prelude + preludeCRC + headers + payload + messageCRC
@@ -257,18 +264,45 @@ class TranscriptionApp:
                             headers_length.to_bytes(4, byteorder='big')
                         )
                         
+                        print("\nPrelude debug:")
+                        print(f"Total message length: {total_length}")
+                        print(f"Headers length: {headers_length}")
+                        print(f"Prelude bytes: {list(prelude)}")
+                        print(f"Prelude hex: {prelude.hex()}")
+                        
                         # Calculate prelude CRC32 (4 bytes)
                         prelude_crc = zlib.crc32(prelude) & 0xffffffff
                         prelude_with_crc = prelude + prelude_crc.to_bytes(4, byteorder='big')
                         
+                        print("\nPrelude CRC debug:")
+                        print(f"Prelude CRC: {prelude_crc:08x}")
+                        print(f"Prelude with CRC hex: {prelude_with_crc.hex()}")
+                        
                         # Combine headers and payload
                         message_content = headers_bytes + audio_chunk
+                        
+                        print("\nPayload debug:")
+                        print(f"Audio chunk length: {len(audio_chunk)}")
+                        print(f"Audio chunk first 16 bytes hex: {audio_chunk[:16].hex()}")
+                        print(f"Message content length: {len(message_content)}")
                         
                         # Calculate message CRC32 (4 bytes)
                         message_crc = zlib.crc32(prelude_with_crc + message_content) & 0xffffffff
                         
+                        print("\nMessage CRC debug:")
+                        print(f"Message CRC: {message_crc:08x}")
+                        
                         # Combine all parts with both CRCs
                         message = prelude_with_crc + message_content + message_crc.to_bytes(4, byteorder='big')
+                        
+                        print("\nFinal message debug:")
+                        print(f"Final message length: {len(message)}")
+                        print(f"Message structure:")
+                        print(f"- Prelude (8 bytes): {message[:8].hex()}")
+                        print(f"- Prelude CRC (4 bytes): {message[8:12].hex()}")
+                        print(f"- Headers ({headers_length} bytes): {message[12:12+headers_length].hex()}")
+                        print(f"- Payload ({len(audio_chunk)} bytes): {message[12+headers_length:12+headers_length+16].hex()}...")
+                        print(f"- Message CRC (4 bytes): {message[-4:].hex()}")
                         
                         print(f"Created audio event of size: {len(message)}")
                         print(f"Audio event hex: {message[:100].hex()}")
