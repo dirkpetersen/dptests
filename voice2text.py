@@ -52,8 +52,7 @@ class VoiceTranscriber:
                 print(f"Error recording: {e}")
                 break
 
-    def process_audio(self):
-        async def transcribe():
+    async def transcribe(self):
             client = boto3.client('transcribe')
             endpoint = await self._get_websocket_endpoint(client)
             
@@ -112,8 +111,9 @@ class VoiceTranscriber:
             AudioStream={}
         )
         return response['WebsocketUrl']
-        
-        asyncio.run(transcribe())
+
+    def process_audio(self):
+        asyncio.run(self.transcribe())
 
 def create_tray_icon():
     transcriber = VoiceTranscriber()
