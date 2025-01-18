@@ -263,7 +263,10 @@ class TranscriptionApp:
                         
                         message_type = header.get(':message-type')
                         print(f"Message type: {message_type}")
-                    
+                    except Exception as e:
+                        print(f"Error decoding event: {e}")
+                        continue
+
                     if message_type == 'event':
                         if isinstance(payload, dict):
                             print(f"Payload keys: {payload.keys()}")
