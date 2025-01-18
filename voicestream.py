@@ -145,18 +145,24 @@ class TranscriptionApp:
                 print(f"Audio callback status: {status}")
                 return  # Skip processing if there's an error
             
+            # Ensure input is not empty and has correct shape
+            if indata is None or indata.size == 0:
+                print("Empty audio input received")
+                return
+            
             # Check for audio activity
             audio_level = np.abs(indata).mean()
             if audio_level > self.silence_threshold:
                 self.last_audio_time = datetime.datetime.now().timestamp()
                 
-                # Convert float32 to 16-bit PCM and ensure mono
+                # Convert float32 to 16-bit PCM
                 audio_data = (indata * 32767).astype(np.int16)
-                if audio_data.shape[1] > 1:
-                    audio_data = audio_data[:, 0]  # Take first channel if stereo
-                # Ensure little-endian byte order and contiguous
-                audio_data = np.ascontiguousarray(audio_data)
-                audio_chunk = audio_data.tobytes()
+                # Ensure mono and correct shape
+                if len(audio_data.shape) > 1 and audio_data.shape[1] > 1:
+                    audio_data = audio_data[:, 0]
+                audio_data = audio_data.reshape(-1)  # Flatten to 1D array
+                # Ensure little-endian byte order
+                audio_chunk = audio_data.tobytes('C')
                 print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
                 if len(audio_chunk) > 0:
@@ -173,7 +179,9 @@ class TranscriptionApp:
             channels=self.channels,
             samplerate=self.sample_rate,
             callback=audio_callback,
-            blocksize=self.chunk_size
+            blocksize=self.chunk_size,
+            dtype=np.float32,  # Explicitly set dtype
+            latency='low'  # Reduce latency
         )
         
         with stream:
@@ -191,13 +199,18 @@ class TranscriptionApp:
                         continue
                         
                     try:
-                        audio_event = create_audio_event(audio_chunk)
-                        print(f"Created audio event of size: {len(audio_event)}")
-                        await websocket.send(audio_event)
-                        print("Successfully sent audio event")
+                        if len(audio_chunk) == self.chunk_size * 2:  # 16-bit = 2 bytes per sample
+                            audio_event = create_audio_event(audio_chunk)
+                            print(f"Created audio event of size: {len(audio_event)}")
+                            await websocket.send(audio_event)
+                            print("Successfully sent audio event")
+                        else:
+                            print(f"Skipping malformed audio chunk of size {len(audio_chunk)}")
                     except Exception as e:
                         print(f"Error creating/sending audio event: {e}")
-                        raise
+                        if "connection closed" in str(e).lower():
+                            break
+                        continue  # Try next chunk instead of raising
                 except asyncio.TimeoutError:
                     continue
                 except Exception as e:
