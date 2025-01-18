@@ -1,11 +1,12 @@
 import sys
 import os
-import time
-import threading
+import asyncio
 import uuid
 import boto3
 import pystray
 import requests
+import queue
+import aiohttp
 from PIL import Image
 import pygetwindow as gw
 import pyautogui
@@ -20,8 +21,10 @@ class TranscriptionApp:
         self.client = boto3.client('transcribe')
         self.s3_client = boto3.client('s3')
         self.bucket_name = 'voice-transcribe-temp'  # You need to create this bucket
+        self.audio_queue = queue.Queue()
         self.setup_tray()
         self.ensure_bucket_exists()
+        self.loop = asyncio.new_event_loop()
     
     def ensure_bucket_exists(self):
         try:
@@ -55,62 +58,98 @@ class TranscriptionApp:
     def toggle_recording(self):
         self.recording = not self.recording
         if self.recording:
-            threading.Thread(target=self.record_and_transcribe, daemon=True).start()
+            threading.Thread(target=self.start_async_loop, daemon=True).start()
+            threading.Thread(target=self.record_audio_chunks, daemon=True).start()
         
     def quit_app(self):
         self.recording = False
         self.icon.stop()
 
-    def record_and_transcribe(self):
+    def start_async_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_until_complete(self.process_audio_queue())
+
+    def record_audio_chunks(self):
         while self.recording:
-            # Create a temporary file for the audio
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
                 temp_filename = temp_file.name
             
-            # Record a 5-second chunk
-            record_audio(5, filename=temp_filename)
+            # Record a 3-second chunk
+            record_audio(3, filename=temp_filename)
+            self.audio_queue.put(temp_filename)
             
+            # Small overlap to ensure continuous recording
+            time.sleep(2.8)
+
+    async def process_audio_chunk(self, temp_filename):
+        try:
             # Upload to S3
             s3_key = f"audio_{uuid.uuid4()}.wav"
-            self.s3_client.upload_file(temp_filename, self.bucket_name, s3_key)
+            await self.loop.run_in_executor(
+                None, 
+                self.s3_client.upload_file,
+                temp_filename, 
+                self.bucket_name, 
+                s3_key
+            )
             s3_uri = f"s3://{self.bucket_name}/{s3_key}"
 
             # Start transcription job
             job_name = f"transcription_{uuid.uuid4()}"
-            self.client.start_transcription_job(
-                TranscriptionJobName=job_name,
-                Media={'MediaFileUri': s3_uri},
-                MediaFormat='wav',
-                LanguageCode='en-US'
+            await self.loop.run_in_executor(
+                None,
+                lambda: self.client.start_transcription_job(
+                    TranscriptionJobName=job_name,
+                    Media={'MediaFileUri': s3_uri},
+                    MediaFormat='wav',
+                    LanguageCode='en-US'
+                )
             )
             
             # Wait for transcription to complete
             while True:
-                status = self.client.get_transcription_job(TranscriptionJobName=job_name)
+                status = await self.loop.run_in_executor(
+                    None,
+                    lambda: self.client.get_transcription_job(TranscriptionJobName=job_name)
+                )
                 if status['TranscriptionJob']['TranscriptionJobStatus'] in ['COMPLETED', 'FAILED']:
                     break
-                time.sleep(0.5)
+                await asyncio.sleep(0.5)
             
+            if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
+                transcript_uri = status['TranscriptionJob']['Transcript']['TranscriptFileUri']
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(transcript_uri) as response:
+                        transcript_data = await response.json()
+                        text = transcript_data['results']['transcripts'][0]['transcript']
+                        
+                        # Type the transcribed text into the active window
+                        active_window = gw.getActiveWindow()
+                        if active_window and text.strip():
+                            pyautogui.write(text + ' ')
+
+        finally:
+            # Cleanup
+            os.unlink(temp_filename)
+            await self.loop.run_in_executor(
+                None,
+                lambda: self.s3_client.delete_object(Bucket=self.bucket_name, Key=s3_key)
+            )
+
+    async def process_audio_queue(self):
+        tasks = set()
+        while self.recording or not self.audio_queue.empty():
             try:
-                # Get transcription results
-                if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
-                    transcript_uri = status['TranscriptionJob']['Transcript']['TranscriptFileUri']
-                    import requests
-                    transcript_response = requests.get(transcript_uri)
-                    transcript_data = transcript_response.json()
-                    text = transcript_data['results']['transcripts'][0]['transcript']
-                    
-                    # Type the transcribed text into the active window
-                    active_window = gw.getActiveWindow()
-                    if active_window:
-                        pyautogui.write(text)
-            finally:
-                # Cleanup
-                os.unlink(temp_filename)
-                self.s3_client.delete_object(Bucket=self.bucket_name, Key=s3_key)
+                temp_filename = self.audio_queue.get_nowait()
+                task = asyncio.create_task(self.process_audio_chunk(temp_filename))
+                tasks.add(task)
+                task.add_done_callback(tasks.discard)
+            except queue.Empty:
+                await asyncio.sleep(0.1)
             
-            # Small delay before next recording
-            time.sleep(0.1)
+        # Wait for remaining tasks to complete
+        if tasks:
+            await asyncio.wait(tasks)
 
 def main():
     app = TranscriptionApp()
