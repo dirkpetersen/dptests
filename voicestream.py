@@ -154,8 +154,9 @@ class TranscriptionApp:
                             self.audio_queue.put_nowait, 
                             audio_chunk
                         )
-                except Exception as e:
-                    print(f"Error queuing audio: {e}")
+                        print(f"Queued audio chunk of size {len(audio_chunk)}")
+                    except Exception as e:
+                        print(f"Error queuing audio: {e}")
 
         stream = sd.InputStream(
             channels=self.channels,
