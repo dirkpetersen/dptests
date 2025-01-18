@@ -54,8 +54,10 @@ class TranscriptionApp:
             
         return creds
     def __init__(self):
+        print("Initializing TranscriptionApp...")
         self.recording = False
         self.should_stop = asyncio.Event()
+        print("Setting up system tray...")
         self.setup_tray()
         self.audio_queue = asyncio.Queue()
         
@@ -68,7 +70,9 @@ class TranscriptionApp:
         self.last_audio_time = None
         
         # AWS settings
+        print("Loading AWS configuration...")
         self.aws_creds = self.load_aws_config()
+        print(f"Using AWS region: {self.aws_creds['region']}")
         self.transcribe_url_generator = AWSTranscribePresignedURL(
             self.aws_creds['access_key'],
             self.aws_creds['secret_key'],
@@ -116,19 +120,26 @@ class TranscriptionApp:
         self.loop.run_until_complete(self.stream_audio())
 
     async def stream_audio(self):
+        print("Generating presigned URL for AWS Transcribe...")
         request_url = self.transcribe_url_generator.get_request_url(
             self.sample_rate,
             "en-US",
             "pcm",
             number_of_channels=self.channels
         )
+        print("Connecting to WebSocket...")
 
+        headers = {
+            "Origin": "https://localhost",
+            "Content-Type": "application/octet-stream"
+        }
         async with websockets.connect(
             request_url,
             ping_timeout=None,
-            origin="https://localhost",
+            extra_headers=headers,
             subprotocols=["mqtt"]
         ) as websocket:
+            print("WebSocket connection established")
             await asyncio.gather(
                 self.receive_transcription(websocket),
                 self.send_audio(websocket)
@@ -144,9 +155,11 @@ class TranscriptionApp:
             if audio_level > self.silence_threshold:
                 self.last_audio_time = datetime.datetime.now().timestamp()
                 
-                # Convert to 16-bit PCM
+                # Convert float32 to 16-bit PCM
                 audio_data = (indata * 32767).astype(np.int16)
-                audio_chunk = audio_data.tobytes()
+                # Ensure little-endian byte order
+                audio_chunk = audio_data.tobytes(order='C')
+                print(f"Audio format: shape={indata.shape}, dtype={indata.dtype}, level={audio_level:.4f}")
                 
                 if len(audio_chunk) > 0:
                     try:
