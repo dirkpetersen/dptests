@@ -1,7 +1,6 @@
 import sys
 import boto3
 import pyaudio
-import wave
 import numpy as np
 import pystray
 from PIL import Image
@@ -11,7 +10,10 @@ import threading
 import queue
 import time
 from pynput.keyboard import Controller
-import os
+import asyncio
+from amazon_transcribe.client import TranscribeStreamingClient
+from amazon_transcribe.handlers import TranscriptResultStreamHandler
+from amazon_transcribe.model import TranscriptEvent
 
 class VoiceTranscriber:
     def __init__(self):
@@ -51,54 +53,42 @@ class VoiceTranscriber:
                 print(f"Error recording: {e}")
                 break
 
-    def process_audio(self):
-        while self.recording:
-            try:
-                # Collect about 1 second of audio
-                audio_data = b''
-                for _ in range(int(self.sample_rate / self.chunk)):
+    async def process_stream(self, stream):
+        async client = TranscribeStreamingClient(region="us-west-2")
+        
+        class MyEventHandler(TranscriptResultStreamHandler):
+            def __init__(self, keyboard):
+                super().__init__()
+                self.keyboard = keyboard
+                
+            async def handle_transcript_event(self, transcript_event: TranscriptEvent):
+                results = transcript_event.transcript.results
+                for result in results:
+                    if not result.is_partial:
+                        transcript = result.alternatives[0].transcript
+                        self.keyboard.type(transcript + ' ')
+
+        handler = MyEventHandler(self.keyboard)
+        
+        async with client.start_stream_transcription(
+            language_code="en-US",
+            media_sample_rate_hz=self.sample_rate,
+            media_encoding="pcm"
+        ) as stream:
+            handler.handle_events(stream.output_stream)
+            while self.recording:
+                try:
                     chunk = self.audio_queue.get(timeout=1)
-                    audio_data += chunk
+                    await stream.input_stream.send_audio_event(audio_chunk=chunk)
+                except queue.Empty:
+                    continue
+                except Exception as e:
+                    print(f"Error processing audio: {e}")
+                    break
+            await stream.input_stream.end_stream()
 
-                # Save temporary WAV file
-                temp_wav = 'temp_audio.wav'
-                with wave.open(temp_wav, 'wb') as wf:
-                    wf.setnchannels(self.channels)
-                    wf.setsampwidth(self.p.get_sample_size(self.format))
-                    wf.setframerate(self.sample_rate)
-                    wf.writeframes(audio_data)
-
-                # Send to Amazon Transcribe
-                with open(temp_wav, 'rb') as audio_file:
-                    response = self.transcribe_client.start_transcription_job(
-                        TranscriptionJobName=f'RealTime_{int(time.time())}',
-                        Media={'MediaFileUri': f'file://{os.path.abspath(temp_wav)}'},
-                        MediaFormat='wav',
-                        LanguageCode='en-US'
-                    )
-
-                # Wait for transcription to complete
-                job_name = response['TranscriptionJob']['TranscriptionJobName']
-                while True:
-                    status = self.transcribe_client.get_transcription_job(
-                        TranscriptionJobName=job_name
-                    )
-                    if status['TranscriptionJob']['TranscriptionJobStatus'] in ['COMPLETED', 'FAILED']:
-                        break
-                    time.sleep(0.1)
-
-                if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
-                    transcript = status['TranscriptionJob']['Transcript']['Results'][0]['Alternatives'][0]['Transcript']
-                    # Type the text into the active window
-                    self.keyboard.type(transcript + ' ')
-
-                # Clean up
-                os.remove(temp_wav)
-
-            except queue.Empty:
-                continue
-            except Exception as e:
-                print(f"Error processing audio: {e}")
+    def process_audio(self):
+        asyncio.run(self.process_stream())
 
 def create_tray_icon():
     transcriber = VoiceTranscriber()
