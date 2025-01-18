@@ -149,11 +149,14 @@ class TranscriptionApp:
             if audio_level > self.silence_threshold:
                 self.last_audio_time = datetime.datetime.now().timestamp()
                 
-                # Convert float32 to 16-bit PCM
+                # Convert float32 to 16-bit PCM and ensure mono
                 audio_data = (indata * 32767).astype(np.int16)
-                # Ensure little-endian byte order
-                audio_chunk = audio_data.tobytes(order='C')
-                print(f"Audio format: shape={indata.shape}, dtype={indata.dtype}, level={audio_level:.4f}")
+                if audio_data.shape[1] > 1:
+                    audio_data = audio_data[:, 0]  # Take first channel if stereo
+                # Ensure little-endian byte order and contiguous
+                audio_data = np.ascontiguousarray(audio_data)
+                audio_chunk = audio_data.tobytes()
+                print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
                 if len(audio_chunk) > 0:
                     try:
@@ -201,37 +204,43 @@ class TranscriptionApp:
         while not self.should_stop.is_set():
             try:
                 response = await websocket.recv()
-                print(f"Received response: {response[:200]}...")  # Print first 200 chars
-                header, payload = decode_event(response)
-                print(f"Decoded header: {header}")
-                print(f"Decoded payload: {payload}")
+                print(f"Received raw response length: {len(response)}")
                 
-                if ':message-type' not in header:
-                    print(f"Warning: message-type not found in header")
+                try:
+                    header, payload = decode_event(response)
+                    print(f"Decoded event - message type: {header.get(':message-type')}")
+                    
+                    if header.get(':message-type') == 'event':
+                        if isinstance(payload, dict) and 'Transcript' in payload:
+                            results = payload['Transcript'].get('Results', [])
+                            if results and results[0].get('IsPartial', True) is False:
+                                transcript = results[0]['Alternatives'][0]['Transcript']
+                                print(f"Got transcript: {transcript}")
+                        
+                                if transcript != last_transcript:
+                                    # Only type new text
+                                    new_text = transcript[len(last_transcript):].strip()
+                                    if new_text:
+                                        print(f"Typing new text: {new_text}")
+                                        active_window = gw.getActiveWindow()
+                                        if active_window:
+                                            pyautogui.write(new_text + ' ')
+                                    last_transcript = transcript
+                    elif header.get(':message-type') == 'exception':
+                        error_msg = payload.get('Message', 'Unknown error')
+                        print(f"Received exception: {error_msg}")
+                        if "could not decode" in error_msg.lower():
+                            print("Audio format error - check sample rate and encoding")
+                        break
+                except Exception as e:
+                    print(f"Error decoding event: {e}")
                     continue
                     
-                if header[':message-type'] == 'event':
-                    results = payload.get('Transcript', {}).get('Results', [])
-                    if results and len(results) > 0:
-                        transcript = results[0]['Alternatives'][0]['Transcript']
-                        
-                        if transcript != last_transcript:
-                            # Only type new text
-                            new_text = transcript[len(last_transcript):].strip()
-                            if new_text:
-                                active_window = gw.getActiveWindow()
-                                if active_window:
-                                    pyautogui.write(new_text + ' ')
-                            last_transcript = transcript
-                            
-                elif header[":message-type"] == 'exception':
-                    print(f"Error: {payload.get('Message', 'Unknown error')}")
-                    
             except websockets.exceptions.ConnectionClosedError:
-                print("Connection closed")
+                print("WebSocket connection closed")
                 break
             except Exception as e:
-                print(f"Error: {str(e)}")
+                print(f"WebSocket error: {str(e)}")
                 break
 
 def main():
