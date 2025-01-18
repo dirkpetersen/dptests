@@ -178,12 +178,16 @@ class TranscriptionApp:
                 if len(audio_data.shape) > 1 and audio_data.shape[1] > 1:
                     audio_data = audio_data[:, 0]
                 audio_data = audio_data.reshape(-1)  # Flatten to 1D array
-                # Ensure little-endian byte order and pad if needed
+                
+                # Ensure we have exactly chunk_size samples
+                if len(audio_data) < self.chunk_size:
+                    padding = np.zeros(self.chunk_size - len(audio_data), dtype=np.int16)
+                    audio_data = np.concatenate([audio_data, padding])
+                elif len(audio_data) > self.chunk_size:
+                    audio_data = audio_data[:self.chunk_size]
+                
+                # Convert to bytes in little-endian format
                 audio_chunk = audio_data.tobytes('C')
-                # Pad to expected size if needed
-                if len(audio_chunk) < self.chunk_size * 2:  # 2 bytes per sample
-                    padding = b'\x00' * (self.chunk_size * 2 - len(audio_chunk))
-                    audio_chunk = audio_chunk + padding
                 print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
                 if len(audio_chunk) > 0:
@@ -220,13 +224,14 @@ class TranscriptionApp:
                         continue
                         
                     try:
-                        if len(audio_chunk) == self.chunk_size * 2:  # 16-bit = 2 bytes per sample
-                            audio_event = create_audio_event(audio_chunk)
-                            print(f"Created audio event of size: {len(audio_event)}")
+                        audio_event = create_audio_event(audio_chunk)
+                        print(f"Created audio event of size: {len(audio_event)}")
+                        try:
                             await websocket.send(audio_event)
                             print("Successfully sent audio event")
-                        else:
-                            print(f"Skipping malformed audio chunk of size {len(audio_chunk)}")
+                        except websockets.exceptions.ConnectionClosed:
+                            print("WebSocket connection closed while sending")
+                            break
                     except Exception as e:
                         print(f"Error creating/sending audio event: {e}")
                         if "connection closed" in str(e).lower():
@@ -249,12 +254,15 @@ class TranscriptionApp:
                 
                 try:
                     print(f"Raw response (first 100 bytes): {response[:100].hex()}")
-                    header, payload = decode_event(response)
-                    print(f"Decoded header: {header}")
-                    print(f"Decoded payload: {payload}")
-                    
-                    message_type = header.get(':message-type')
-                    print(f"Message type: {message_type}")
+                    try:
+                        header, payload = decode_event(response)
+                        print(f"Decoded header: {header}")
+                        if isinstance(payload, bytes):
+                            payload = json.loads(payload.decode('utf-8'))
+                        print(f"Decoded payload: {payload}")
+                        
+                        message_type = header.get(':message-type')
+                        print(f"Message type: {message_type}")
                     
                     if message_type == 'event':
                         if isinstance(payload, dict):
