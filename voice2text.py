@@ -1,6 +1,7 @@
 import sys
 import os
 import asyncio
+import numpy
 import datetime
 import uuid
 import boto3
@@ -40,6 +41,8 @@ class TranscriptionApp:
         self.wav_writer = None
         self.audio_buffer = []
         self.buffer_lock = threading.Lock()
+        self.last_audio_time = None
+        self.silence_threshold = 0.01  # Adjust this value based on testing
     
     def ensure_bucket_exists(self):
         try:
@@ -120,6 +123,10 @@ class TranscriptionApp:
                 if self.wav_writer is None or self.wav_writer.tell() >= self.max_file_size:
                     self.create_new_wav_file()
                 
+                # Check for audio activity
+                if numpy.abs(indata).mean() > self.silence_threshold:
+                    self.last_audio_time = time.time()
+                
                 self.wav_writer.write(indata)
                 self.audio_buffer.extend(indata[:, 0])  # Only take first channel
                 
@@ -148,6 +155,12 @@ class TranscriptionApp:
                 self.wav_writer.close()
 
     async def process_audio_chunk(self, temp_filename):
+        # Skip processing if no audio activity in last 3 seconds
+        if (self.last_audio_time is None or 
+            time.time() - self.last_audio_time > 3):
+            os.unlink(temp_filename)  # Clean up unused file
+            return
+
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         print(f"[{timestamp}] Processing new audio chunk: {temp_filename}")
         try:
