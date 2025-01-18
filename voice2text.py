@@ -123,7 +123,8 @@ class TranscriptionApp:
                 transcript_uri = status['TranscriptionJob']['Transcript']['TranscriptFileUri']
                 async with aiohttp.ClientSession() as session:
                     async with session.get(transcript_uri) as response:
-                        transcript_data = await response.json()
+                        json_text = await response.text()
+                        transcript_data = json.loads(json_text)
                         text = transcript_data['results']['transcripts'][0]['transcript']
                         
                         # Type the transcribed text into the active window
