@@ -186,8 +186,8 @@ class TranscriptionApp:
                 elif len(audio_data) > self.chunk_size:
                     audio_data = audio_data[:self.chunk_size]
                 
-                # Convert to bytes in little-endian format
-                audio_chunk = audio_data.tobytes('C')
+                # Convert to bytes in big-endian format for AWS Transcribe
+                audio_chunk = audio_data.astype('>i2').tobytes()
                 print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
                 if len(audio_chunk) > 0:
@@ -272,7 +272,11 @@ class TranscriptionApp:
                             try:
                                 payload_str = payload.decode('utf-8')
                                 print(f"Decoded payload string: {payload_str}")
-                                payload = json.loads(payload_str)
+                                # Fix malformed JSON by adding missing braces
+                                if payload_str.startswith('"Message"'):
+                                    payload_str = '{' + payload_str
+                                if payload_str.endswith('}'):
+                                    payload = json.loads(payload_str)
                             except UnicodeDecodeError as e:
                                 print(f"Unicode decode error: {e}")
                                 print(f"Payload bytes: {list(payload)}")
