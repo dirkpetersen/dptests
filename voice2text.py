@@ -1,6 +1,7 @@
 import sys
 import os
 import asyncio
+import datetime
 import uuid
 import boto3
 import pystray
@@ -85,6 +86,8 @@ class TranscriptionApp:
             time.sleep(2.8)
 
     async def process_audio_chunk(self, temp_filename):
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        print(f"[{timestamp}] Processing new audio chunk: {temp_filename}")
         try:
             # Upload to S3
             s3_key = f"audio_{uuid.uuid4()}.wav"
@@ -95,6 +98,10 @@ class TranscriptionApp:
                 self.bucket_name, 
                 s3_key
             )
+            # Delete local WAV file after upload
+            os.unlink(temp_filename)
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            print(f"[{timestamp}] Uploaded to S3: {s3_key}")
             s3_uri = f"s3://{self.bucket_name}/{s3_key}"
 
             # Start transcription job
@@ -108,6 +115,8 @@ class TranscriptionApp:
                     LanguageCode='en-US'
                 )
             )
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            print(f"[{timestamp}] Started transcription job: {job_name}")
             
             # Wait for transcription to complete
             while True:
@@ -131,14 +140,21 @@ class TranscriptionApp:
                         active_window = gw.getActiveWindow()
                         if active_window and text.strip():
                             pyautogui.write(text + ' ')
+                        
+                        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                        print(f"[{timestamp}] Transcription completed: {text[:50]}...")
 
         finally:
-            # Cleanup
-            os.unlink(temp_filename)
-            await self.loop.run_in_executor(
-                None,
-                lambda: self.s3_client.delete_object(Bucket=self.bucket_name, Key=s3_key)
-            )
+            # Cleanup S3
+            try:
+                await self.loop.run_in_executor(
+                    None,
+                    lambda: self.s3_client.delete_object(Bucket=self.bucket_name, Key=s3_key)
+                )
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                print(f"[{timestamp}] Cleaned up S3 object: {s3_key}")
+            except Exception as e:
+                print(f"Error cleaning up S3 object: {e}")
 
     async def process_audio_queue(self):
         tasks = set()
