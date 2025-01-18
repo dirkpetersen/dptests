@@ -7,6 +7,8 @@ import pystray
 import requests
 import queue
 import aiohttp
+import threading
+import time
 from PIL import Image
 import pygetwindow as gw
 import pyautogui
