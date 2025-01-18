@@ -1,6 +1,8 @@
 import os
 import asyncio
 import websockets
+import random
+import string
 import json
 import datetime
 import time
@@ -129,15 +131,18 @@ class TranscriptionApp:
         )
         print("Connecting to WebSocket...")
 
-        headers = {
+        # Generate random websocket key for headers
+        websocket_key = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=20))
+        extra_headers = {
             "Origin": "https://localhost",
-            "Content-Type": "application/octet-stream"
+            "Sec-Websocket-Key": websocket_key,
+            "Sec-Websocket-Version": "13",
+            "Connection": "keep-alive"
         }
         async with websockets.connect(
             request_url,
-            ping_timeout=None,
-            extra_headers=headers,
-            subprotocols=["mqtt"]
+            extra_headers=extra_headers,
+            ping_timeout=None
         ) as websocket:
             print("WebSocket connection established")
             await asyncio.gather(
