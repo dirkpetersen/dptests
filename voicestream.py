@@ -226,13 +226,44 @@ class TranscriptionApp:
                         continue
                         
                     try:
-                        audio_event = create_audio_event(audio_chunk)
-                        print(f"Created audio event of size: {len(audio_event)}")
-                        print(f"Audio event hex: {audio_event[:100].hex()}")
-                        print(f"Audio event bytes: {list(audio_event[:50])}")
-                    
+                        # Create event stream message with audio data
+                        headers = {
+                            ':content-type': 'application/octet-stream',
+                            ':event-type': 'AudioEvent',
+                            ':message-type': 'event'
+                        }
+                        
+                        # Calculate prelude and headers length
+                        headers_bytes = b''
+                        for key, value in headers.items():
+                            header_name = key.encode('utf-8')
+                            header_value = value.encode('utf-8')
+                            headers_bytes += (
+                                len(header_name).to_bytes(2, byteorder='big') +
+                                header_name +
+                                b'\x07' +  # String type
+                                len(header_value).to_bytes(2, byteorder='big') +
+                                header_value
+                            )
+                        
+                        # Create prelude
+                        headers_length = len(headers_bytes)
+                        total_length = 8 + 4 + headers_length + 4 + len(audio_chunk)  # prelude + preludeCRC + headers + messageCRC + payload
+                        
+                        prelude = (
+                            total_length.to_bytes(4, byteorder='big') +
+                            headers_length.to_bytes(4, byteorder='big')
+                        )
+                        
+                        # Combine all parts
+                        message = prelude + headers_bytes + audio_chunk
+                        
+                        print(f"Created audio event of size: {len(message)}")
+                        print(f"Audio event hex: {message[:100].hex()}")
+                        print(f"Audio event bytes: {list(message[:50])}")
+                        
                         try:
-                            await websocket.send(audio_event)
+                            await websocket.send(message)
                             print("Successfully sent audio event")
                         except websockets.exceptions.ConnectionClosed as e:
                             print(f"WebSocket connection closed while sending: {e}")
