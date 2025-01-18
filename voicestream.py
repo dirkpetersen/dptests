@@ -54,8 +54,9 @@ class TranscriptionApp:
         return creds
     def __init__(self):
         self.recording = False
-        self.should_stop = threading.Event()
+        self.should_stop = asyncio.Event()
         self.setup_tray()
+        self.audio_queue = asyncio.Queue()
         
         # Audio settings
         self.sample_rate = 16000
@@ -96,10 +97,11 @@ class TranscriptionApp:
     def toggle_recording(self):
         self.recording = not self.recording
         if self.recording:
-            self.should_stop.clear()
+            self.should_stop = asyncio.Event()  # Create new event
             threading.Thread(target=self.start_streaming, daemon=True).start()
         else:
-            self.should_stop.set()
+            if self.loop.is_running():
+                self.loop.call_soon_threadsafe(self.should_stop.set)
 
     def quit_app(self):
         self.recording = False
@@ -136,19 +138,36 @@ class TranscriptionApp:
             
             audio_chunk = indata.tobytes()
             if len(audio_chunk) > 0:
-                audio_event = create_audio_event(audio_chunk)
-                asyncio.run_coroutine_threadsafe(
-                    websocket.send(audio_event),
-                    self.loop
-                )
+                try:
+                    self.loop.call_soon_threadsafe(
+                        self.audio_queue.put_nowait, 
+                        audio_chunk
+                    )
+                except Exception as e:
+                    print(f"Error queuing audio: {e}")
 
-        with sd.InputStream(
+        stream = sd.InputStream(
             channels=self.channels,
             samplerate=self.sample_rate,
             callback=audio_callback,
             blocksize=self.chunk_size
-        ):
-            await self.should_stop.wait()
+        )
+        
+        with stream:
+            print("Started recording...")
+            while not self.should_stop.is_set():
+                try:
+                    audio_chunk = await asyncio.wait_for(
+                        self.audio_queue.get(),
+                        timeout=0.1
+                    )
+                    audio_event = create_audio_event(audio_chunk)
+                    await websocket.send(audio_event)
+                except asyncio.TimeoutError:
+                    continue
+                except Exception as e:
+                    print(f"Error sending audio: {e}")
+                    break
 
     async def receive_transcription(self, websocket):
         last_transcript = ""
