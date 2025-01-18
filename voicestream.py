@@ -173,22 +173,26 @@ class TranscriptionApp:
             if audio_level > self.silence_threshold:
                 self.last_audio_time = datetime.datetime.now().timestamp()
                 
-                # Convert float32 to 16-bit PCM
-                audio_data = (indata * 32767).astype('>i2')  # Big-endian 16-bit PCM
+                # Ensure mono first
+                if len(indata.shape) > 1:
+                    audio_data = indata.mean(axis=1)
+                else:
+                    audio_data = indata.flatten()
+
+                # Clip to [-1, 1] range
+                audio_data = np.clip(audio_data, -1.0, 1.0)
                 
-                # Ensure mono and correct shape
-                if len(audio_data.shape) > 1:
-                    audio_data = audio_data.mean(axis=1)
-                audio_data = audio_data.reshape(-1)  # Flatten to 1D array
+                # Convert float32 [-1,1] to int16 [-32768,32767]
+                audio_data = (audio_data * 32767).astype(np.int16)
                 
                 # Ensure we have exactly chunk_size samples
                 if len(audio_data) < self.chunk_size:
-                    padding = np.zeros(self.chunk_size - len(audio_data), dtype='>i2')
+                    padding = np.zeros(self.chunk_size - len(audio_data), dtype=np.int16)
                     audio_data = np.concatenate([audio_data, padding])
                 elif len(audio_data) > self.chunk_size:
                     audio_data = audio_data[:self.chunk_size]
                 
-                # Convert to raw PCM bytes (16-bit big-endian)
+                # Convert to raw PCM bytes (16-bit little-endian)
                 audio_chunk = audio_data.tobytes()
                 print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
