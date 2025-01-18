@@ -3,7 +3,7 @@ import soundfile as sf
 import argparse
 
 def record_audio(duration, samplerate=44100, channels=2, filename='recording.wav'):
-    """Record audio from default microphone"""
+    """Record audio from default microphone in PCM 16-bit format"""
     # Get default input device info
     device_info = sd.query_devices(kind='input')
     print(f"Using input device: {device_info['name']}")
@@ -12,13 +12,13 @@ def record_audio(duration, samplerate=44100, channels=2, filename='recording.wav
         int(duration * samplerate),
         samplerate=samplerate,
         channels=channels,
-        dtype='float64'
+        dtype='int16'
     )
     sd.wait()  # Wait until recording is finished
     print("Recording finished")
     
-    # Save to file
-    sf.write(filename, recording, samplerate)
+    # Save to file in PCM 16-bit format
+    sf.write(filename, recording, samplerate, subtype='PCM_16')
     print(f"Saved to {filename}")
 
 def main():
