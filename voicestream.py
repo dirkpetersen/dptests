@@ -68,6 +68,7 @@ class TranscriptionApp:
         self.channels = 1
         self.chunk_duration = 0.1  # 100ms chunks
         self.chunk_size = int(self.sample_rate * self.chunk_duration)
+        self.bytes_per_sample = 2  # 16-bit audio
         self.silence_threshold = 0.01  # Adjust this value based on testing
         self.last_audio_time = None
         
@@ -173,7 +174,7 @@ class TranscriptionApp:
                 self.last_audio_time = datetime.datetime.now().timestamp()
                 
                 # Convert float32 to 16-bit PCM
-                audio_data = (indata * 32767).astype(np.int16)
+                audio_data = (indata * 32767).astype('>i2')  # Big-endian 16-bit PCM
                 
                 # Ensure mono and correct shape
                 if len(audio_data.shape) > 1:
@@ -182,12 +183,12 @@ class TranscriptionApp:
                 
                 # Ensure we have exactly chunk_size samples
                 if len(audio_data) < self.chunk_size:
-                    padding = np.zeros(self.chunk_size - len(audio_data), dtype=np.int16)
+                    padding = np.zeros(self.chunk_size - len(audio_data), dtype='>i2')
                     audio_data = np.concatenate([audio_data, padding])
                 elif len(audio_data) > self.chunk_size:
                     audio_data = audio_data[:self.chunk_size]
                 
-                # Convert to raw PCM bytes (16-bit little-endian)
+                # Convert to raw PCM bytes (16-bit big-endian)
                 audio_chunk = audio_data.tobytes()
                 print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
@@ -205,8 +206,8 @@ class TranscriptionApp:
             channels=self.channels,
             samplerate=self.sample_rate,
             callback=audio_callback,
-            blocksize=self.chunk_size,
-            dtype=np.float32,  # Explicitly set dtype
+            blocksize=self.chunk_size * self.bytes_per_sample,  # Account for 16-bit samples
+            dtype=np.float32,  # Input as float32, we'll convert to int16
             latency='low'  # Reduce latency
         )
         
