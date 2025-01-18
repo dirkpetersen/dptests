@@ -210,7 +210,7 @@ class TranscriptionApp:
             channels=self.channels,
             samplerate=self.sample_rate,
             callback=audio_callback,
-            blocksize=self.chunk_size * self.bytes_per_sample,  # Account for 16-bit samples
+            blocksize=self.chunk_size,  # Changed from self.chunk_size * self.bytes_per_sample
             dtype=np.float32,  # Input as float32, we'll convert to int16
             latency='low'  # Reduce latency
         )
@@ -396,7 +396,7 @@ class TranscriptionApp:
                                     if not is_partial:
                                         transcript = results[0]['Alternatives'][0]['Transcript']
                                         print(f"Got final transcript: {transcript}")
-                            
+                                
                                 if transcript != last_transcript:
                                     # Only type new text
                                     new_text = transcript[len(last_transcript):].strip()
