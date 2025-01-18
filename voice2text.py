@@ -125,7 +125,7 @@ class TranscriptionApp:
                 
                 # Check for audio activity
                 if numpy.abs(indata).mean() > self.silence_threshold:
-                    self.last_audio_time = time.time()
+                    self.last_audio_time = time.time()  # Use time module directly
                 
                 self.wav_writer.write(indata)
                 self.audio_buffer.extend(indata[:, 0])  # Only take first channel
