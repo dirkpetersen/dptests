@@ -3,6 +3,7 @@ import asyncio
 import websockets
 import json
 import datetime
+import time
 import uuid
 import sounddevice as sd
 import numpy as np
@@ -63,6 +64,8 @@ class TranscriptionApp:
         self.channels = 1
         self.chunk_duration = 0.1  # 100ms chunks
         self.chunk_size = int(self.sample_rate * self.chunk_duration)
+        self.silence_threshold = 0.01  # Adjust this value based on testing
+        self.last_audio_time = None
         
         # AWS settings
         self.aws_creds = self.load_aws_config()
@@ -136,13 +139,21 @@ class TranscriptionApp:
             if status:
                 print(f"Audio callback status: {status}")
             
-            audio_chunk = indata.tobytes()
-            if len(audio_chunk) > 0:
-                try:
-                    self.loop.call_soon_threadsafe(
-                        self.audio_queue.put_nowait, 
-                        audio_chunk
-                    )
+            # Check for audio activity
+            audio_level = np.abs(indata).mean()
+            if audio_level > self.silence_threshold:
+                self.last_audio_time = datetime.datetime.now().timestamp()
+                
+                # Convert to 16-bit PCM
+                audio_data = (indata * 32767).astype(np.int16)
+                audio_chunk = audio_data.tobytes()
+                
+                if len(audio_chunk) > 0:
+                    try:
+                        self.loop.call_soon_threadsafe(
+                            self.audio_queue.put_nowait, 
+                            audio_chunk
+                        )
                 except Exception as e:
                     print(f"Error queuing audio: {e}")
 
@@ -161,6 +172,12 @@ class TranscriptionApp:
                         self.audio_queue.get(),
                         timeout=0.1
                     )
+                    
+                    # Skip sending if no recent audio activity
+                    if (self.last_audio_time is None or 
+                        time.time() - self.last_audio_time > 3):
+                        continue
+                        
                     audio_event = create_audio_event(audio_chunk)
                     await websocket.send(audio_event)
                 except asyncio.TimeoutError:
