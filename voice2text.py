@@ -7,6 +7,7 @@ import pystray
 import requests
 import queue
 import aiohttp
+import json
 import threading
 import time
 from PIL import Image
