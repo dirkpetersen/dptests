@@ -246,17 +246,29 @@ class TranscriptionApp:
                                 header_value
                             )
                         
-                        # Create prelude
+                        import zlib
+
+                        # Create prelude (8 bytes)
                         headers_length = len(headers_bytes)
-                        total_length = 8 + 4 + headers_length + 4 + len(audio_chunk)  # prelude + preludeCRC + headers + messageCRC + payload
+                        total_length = 8 + 4 + headers_length + len(audio_chunk) + 4  # prelude + preludeCRC + headers + payload + messageCRC
                         
                         prelude = (
                             total_length.to_bytes(4, byteorder='big') +
                             headers_length.to_bytes(4, byteorder='big')
                         )
                         
-                        # Combine all parts
-                        message = prelude + headers_bytes + audio_chunk
+                        # Calculate prelude CRC32 (4 bytes)
+                        prelude_crc = zlib.crc32(prelude) & 0xffffffff
+                        prelude_with_crc = prelude + prelude_crc.to_bytes(4, byteorder='big')
+                        
+                        # Combine headers and payload
+                        message_content = headers_bytes + audio_chunk
+                        
+                        # Calculate message CRC32 (4 bytes)
+                        message_crc = zlib.crc32(prelude_with_crc + message_content) & 0xffffffff
+                        
+                        # Combine all parts with both CRCs
+                        message = prelude_with_crc + message_content + message_crc.to_bytes(4, byteorder='big')
                         
                         print(f"Created audio event of size: {len(message)}")
                         print(f"Audio event hex: {message[:100].hex()}")
