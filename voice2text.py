@@ -29,6 +29,9 @@ class TranscriptionApp:
         self.setup_tray()
         self.ensure_bucket_exists()
         self.loop = asyncio.new_event_loop()
+        self.recording_thread = None
+        self.processing_thread = None
+        self.should_stop = threading.Event()
     
     def ensure_bucket_exists(self):
         try:
@@ -62,11 +65,25 @@ class TranscriptionApp:
     def toggle_recording(self):
         self.recording = not self.recording
         if self.recording:
-            threading.Thread(target=self.start_async_loop, daemon=True).start()
-            threading.Thread(target=self.record_audio_chunks, daemon=True).start()
+            self.should_stop.clear()
+            self.recording_thread = threading.Thread(target=self.record_audio_chunks, daemon=True)
+            self.processing_thread = threading.Thread(target=self.start_async_loop, daemon=True)
+            self.recording_thread.start()
+            self.processing_thread.start()
+        else:
+            self.should_stop.set()
+            if self.recording_thread:
+                self.recording_thread.join(timeout=1)
+            if self.processing_thread:
+                self.processing_thread.join(timeout=1)
         
     def quit_app(self):
         self.recording = False
+        self.should_stop.set()
+        if self.recording_thread:
+            self.recording_thread.join(timeout=1)
+        if self.processing_thread:
+            self.processing_thread.join(timeout=1)
         self.icon.stop()
 
     def start_async_loop(self):
@@ -74,16 +91,38 @@ class TranscriptionApp:
         self.loop.run_until_complete(self.process_audio_queue())
 
     def record_audio_chunks(self):
-        while self.recording:
-            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
-                temp_filename = temp_file.name
+        chunk_duration = 3  # seconds
+        next_recording_ready = threading.Event()
+        next_filename = None
+
+        def start_recording():
+            temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+            threading.Thread(
+                target=record_audio,
+                args=(chunk_duration, ),
+                kwargs={'filename': temp_file.name},
+                daemon=True
+            ).start()
+            return temp_file.name
+
+        # Start first recording
+        current_filename = start_recording()
+        
+        while not self.should_stop.is_set():
+            # Immediately start next recording
+            next_filename = start_recording()
             
-            # Record a 3-second chunk
-            record_audio(3, filename=temp_filename)
-            self.audio_queue.put(temp_filename)
+            # Wait for current chunk duration
+            time.sleep(chunk_duration)
             
-            # Small overlap to ensure continuous recording
-            time.sleep(2.8)
+            # Add current recording to queue and switch to next
+            self.audio_queue.put(current_filename)
+            current_filename = next_filename
+            
+        # Add final recording to queue
+        if next_filename:
+            time.sleep(chunk_duration)
+            self.audio_queue.put(next_filename)
 
     async def process_audio_chunk(self, temp_filename):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
