@@ -11,9 +11,6 @@ import queue
 import time
 from pynput.keyboard import Controller
 import asyncio
-from amazon_transcribe.client import TranscribeStreamingClient
-from amazon_transcribe.handlers import TranscriptResultStreamHandler
-from amazon_transcribe.model import TranscriptEvent
 
 class VoiceTranscriber:
     def __init__(self):
@@ -53,42 +50,36 @@ class VoiceTranscriber:
                 print(f"Error recording: {e}")
                 break
 
-    async def process_stream(self, stream):
-        client = TranscribeStreamingClient(region="us-west-2")
+    def process_audio(self):
+        client = boto3.client('transcribe')
         
-        class MyEventHandler(TranscriptResultStreamHandler):
-            def __init__(self, keyboard):
-                super().__init__()
-                self.keyboard = keyboard
-                
-            async def handle_transcript_event(self, transcript_event: TranscriptEvent):
-                results = transcript_event.transcript.results
-                for result in results:
-                    if not result.is_partial:
-                        transcript = result.alternatives[0].transcript
-                        self.keyboard.type(transcript + ' ')
-
-        handler = MyEventHandler(self.keyboard)
+        stream = client.start_stream_transcription(
+            LanguageCode='en-US',
+            MediaSampleRateHertz=self.sample_rate,
+            MediaEncoding='pcm'
+        )
         
-        async with client.start_stream_transcription(
-            language_code="en-US",
-            media_sample_rate_hz=self.sample_rate,
-            media_encoding="pcm"
-        ) as stream:
-            handler.handle_events(stream.output_stream)
+        try:
             while self.recording:
                 try:
                     chunk = self.audio_queue.get(timeout=1)
-                    await stream.input_stream.send_audio_event(audio_chunk=chunk)
+                    stream.input_stream.send_audio_event(
+                        AudioEvent={'AudioChunk': chunk}
+                    )
+                    
+                    for event in stream.output_stream:
+                        if not event['TranscriptEvent']['Transcript']['Results'][0]['IsPartial']:
+                            transcript = event['TranscriptEvent']['Transcript']['Results'][0]['Alternatives'][0]['Transcript']
+                            self.keyboard.type(transcript + ' ')
+                            
                 except queue.Empty:
                     continue
                 except Exception as e:
                     print(f"Error processing audio: {e}")
                     break
-            await stream.input_stream.end_stream()
-
-    def process_audio(self):
-        asyncio.run(self.process_stream())
+                    
+        finally:
+            stream.input_stream.end_stream()
 
 def create_tray_icon():
     transcriber = VoiceTranscriber()
