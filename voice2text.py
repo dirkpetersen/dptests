@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import threading
+import uuid
 import boto3
 import pystray
 from PIL import Image
@@ -16,7 +17,19 @@ class TranscriptionApp:
     def __init__(self):
         self.recording = False
         self.client = boto3.client('transcribe')
+        self.s3_client = boto3.client('s3')
+        self.bucket_name = 'voice-transcribe-temp'  # You need to create this bucket
         self.setup_tray()
+        self.ensure_bucket_exists()
+    
+    def ensure_bucket_exists(self):
+        try:
+            self.s3_client.head_bucket(Bucket=self.bucket_name)
+        except:
+            self.s3_client.create_bucket(
+                Bucket=self.bucket_name,
+                CreateBucketConfiguration={'LocationConstraint': self.s3_client.meta.region_name}
+            )
         
     def setup_tray(self):
         # Create a simple icon (you may want to replace this with a proper icon file)
@@ -56,11 +69,16 @@ class TranscriptionApp:
             # Record a 5-second chunk
             record_audio(5, filename=temp_filename)
             
+            # Upload to S3
+            s3_key = f"audio_{uuid.uuid4()}.wav"
+            self.s3_client.upload_file(temp_filename, self.bucket_name, s3_key)
+            s3_uri = f"s3://{self.bucket_name}/{s3_key}"
+
             # Start transcription job
-            job_name = f"transcription_{int(time.time())}"
+            job_name = f"transcription_{uuid.uuid4()}"
             self.client.start_transcription_job(
                 TranscriptionJobName=job_name,
-                Media={'MediaFileUri': f"file://{temp_filename}"},
+                Media={'MediaFileUri': s3_uri},
                 MediaFormat='wav',
                 LanguageCode='en-US'
             )
@@ -72,18 +90,20 @@ class TranscriptionApp:
                     break
                 time.sleep(0.5)
             
-            # Get transcription results
-            if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
-                result = status['TranscriptionJob']['Transcript']['TranscriptFileUri']
-                text = result['Results'][0]['Alternatives'][0]['Transcript']
-                
-                # Type the transcribed text into the active window
-                active_window = gw.getActiveWindow()
-                if active_window:
-                    pyautogui.write(text)
-            
-            # Cleanup
-            os.unlink(temp_filename)
+            try:
+                # Get transcription results
+                if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
+                    transcript = status['TranscriptionJob']['Transcript']
+                    text = transcript['Results'][0]['Alternatives'][0]['Transcript']
+                    
+                    # Type the transcribed text into the active window
+                    active_window = gw.getActiveWindow()
+                    if active_window:
+                        pyautogui.write(text)
+            finally:
+                # Cleanup
+                os.unlink(temp_filename)
+                self.s3_client.delete_object(Bucket=self.bucket_name, Key=s3_key)
             
             # Small delay before next recording
             time.sleep(0.1)
