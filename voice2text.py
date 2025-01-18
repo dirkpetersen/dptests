@@ -29,9 +29,17 @@ class TranscriptionApp:
         self.setup_tray()
         self.ensure_bucket_exists()
         self.loop = asyncio.new_event_loop()
-        self.recording_thread = None
-        self.processing_thread = None
         self.should_stop = threading.Event()
+        
+        # Audio recording settings
+        self.samplerate = 44100
+        self.channels = 1
+        self.chunk_duration = 3  # seconds
+        self.max_file_size = 100 * 1024 * 1024  # 100MB in bytes
+        self.current_wav = None
+        self.wav_writer = None
+        self.audio_buffer = []
+        self.buffer_lock = threading.Lock()
     
     def ensure_bucket_exists(self):
         try:
@@ -66,16 +74,13 @@ class TranscriptionApp:
         self.recording = not self.recording
         if self.recording:
             self.should_stop.clear()
-            self.recording_thread = threading.Thread(target=self.record_audio_chunks, daemon=True)
-            self.processing_thread = threading.Thread(target=self.start_async_loop, daemon=True)
-            self.recording_thread.start()
-            self.processing_thread.start()
+            self.audio_buffer = []  # Clear the buffer
+            # Start recording thread
+            threading.Thread(target=self.continuous_record, daemon=True).start()
+            # Start processing thread
+            threading.Thread(target=self.start_async_loop, daemon=True).start()
         else:
             self.should_stop.set()
-            if self.recording_thread:
-                self.recording_thread.join(timeout=1)
-            if self.processing_thread:
-                self.processing_thread.join(timeout=1)
         
     def quit_app(self):
         self.recording = False
@@ -90,39 +95,59 @@ class TranscriptionApp:
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.process_audio_queue())
 
-    def record_audio_chunks(self):
-        chunk_duration = 3  # seconds
-        next_recording_ready = threading.Event()
-        next_filename = None
-
-        def start_recording():
-            temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
-            threading.Thread(
-                target=record_audio,
-                args=(chunk_duration, ),
-                kwargs={'filename': temp_file.name},
-                daemon=True
-            ).start()
-            return temp_file.name
-
-        # Start first recording
-        current_filename = start_recording()
+    def create_new_wav_file(self):
+        """Create a new WAV file for recording"""
+        if self.current_wav:
+            self.wav_writer.close()
         
-        while not self.should_stop.is_set():
-            # Immediately start next recording
-            next_filename = start_recording()
+        temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+        self.current_wav = temp_file.name
+        self.wav_writer = sf.SoundFile(
+            self.current_wav, 
+            mode='w',
+            samplerate=self.samplerate,
+            channels=self.channels,
+            format='WAV'
+        )
+        return self.current_wav
+
+    def continuous_record(self):
+        """Record audio continuously with a callback"""
+        def audio_callback(indata, frames, time, status):
+            if status:
+                print(f"Status: {status}")
             
-            # Wait for current chunk duration
-            time.sleep(chunk_duration)
-            
-            # Add current recording to queue and switch to next
-            self.audio_queue.put(current_filename)
-            current_filename = next_filename
-            
-        # Add final recording to queue
-        if next_filename:
-            time.sleep(chunk_duration)
-            self.audio_queue.put(next_filename)
+            with self.buffer_lock:
+                # Write to current WAV file
+                if self.wav_writer is None or self.wav_writer.tell() >= self.max_file_size:
+                    self.create_new_wav_file()
+                
+                self.wav_writer.write(indata)
+                self.audio_buffer.extend(indata[:, 0])  # Only take first channel
+                
+                # Check if we have enough data for a chunk
+                chunk_size = int(self.samplerate * self.chunk_duration)
+                while len(self.audio_buffer) >= chunk_size:
+                    # Extract chunk
+                    chunk = self.audio_buffer[:chunk_size]
+                    self.audio_buffer = self.audio_buffer[chunk_size//2:]  # 50% overlap
+                    
+                    # Save chunk to temporary file
+                    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                        sf.write(temp_file.name, chunk, self.samplerate)
+                        self.audio_queue.put(temp_file.name)
+
+        try:
+            with sd.InputStream(
+                channels=self.channels,
+                samplerate=self.samplerate,
+                callback=audio_callback
+            ):
+                self.create_new_wav_file()  # Create first WAV file
+                self.should_stop.wait()
+        finally:
+            if self.wav_writer:
+                self.wav_writer.close()
 
     async def process_audio_chunk(self, temp_filename):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
