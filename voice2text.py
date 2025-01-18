@@ -62,14 +62,14 @@ class VoiceTranscriber:
         )
         
         async def write_chunks():
-            async with stream as stream:
+            async with stream as transcribe_stream:
                 while self.recording:
                     try:
                         chunk = self.audio_queue.get(timeout=1)
-                        await stream.input_stream.send_audio_event(
+                        await transcribe_stream.input_stream.send_audio_event(
                             audio_chunk=chunk
                         )
-                        async for event in stream.output_stream:
+                        async for event in transcribe_stream.output_stream:
                             if not event.transcript.results[0].is_partial:
                                 transcript = event.transcript.results[0].alternatives[0].transcript
                                 self.keyboard.type(transcript + ' ')
