@@ -143,6 +143,7 @@ class TranscriptionApp:
         def audio_callback(indata, frames, time, status):
             if status:
                 print(f"Audio callback status: {status}")
+                return  # Skip processing if there's an error
             
             # Check for audio activity
             audio_level = np.abs(indata).mean()
@@ -189,8 +190,14 @@ class TranscriptionApp:
                         time.time() - self.last_audio_time > 3):
                         continue
                         
-                    audio_event = create_audio_event(audio_chunk)
-                    await websocket.send(audio_event)
+                    try:
+                        audio_event = create_audio_event(audio_chunk)
+                        print(f"Created audio event of size: {len(audio_event)}")
+                        await websocket.send(audio_event)
+                        print("Successfully sent audio event")
+                    except Exception as e:
+                        print(f"Error creating/sending audio event: {e}")
+                        raise
                 except asyncio.TimeoutError:
                     continue
                 except Exception as e:
@@ -207,15 +214,28 @@ class TranscriptionApp:
                 print(f"Received raw response length: {len(response)}")
                 
                 try:
+                    print(f"Raw response (first 100 bytes): {response[:100].hex()}")
                     header, payload = decode_event(response)
-                    print(f"Decoded event - message type: {header.get(':message-type')}")
+                    print(f"Decoded header: {header}")
+                    print(f"Decoded payload: {payload}")
                     
-                    if header.get(':message-type') == 'event':
-                        if isinstance(payload, dict) and 'Transcript' in payload:
-                            results = payload['Transcript'].get('Results', [])
-                            if results and results[0].get('IsPartial', True) is False:
-                                transcript = results[0]['Alternatives'][0]['Transcript']
-                                print(f"Got transcript: {transcript}")
+                    message_type = header.get(':message-type')
+                    print(f"Message type: {message_type}")
+                    
+                    if message_type == 'event':
+                        if isinstance(payload, dict):
+                            print(f"Payload keys: {payload.keys()}")
+                            if 'Transcript' in payload:
+                                transcript_data = payload['Transcript']
+                                print(f"Transcript data: {transcript_data}")
+                                results = transcript_data.get('Results', [])
+                                print(f"Results: {results}")
+                                if results:
+                                    is_partial = results[0].get('IsPartial', True)
+                                    print(f"Is partial: {is_partial}")
+                                    if not is_partial:
+                                        transcript = results[0]['Alternatives'][0]['Transcript']
+                                        print(f"Got final transcript: {transcript}")
                         
                                 if transcript != last_transcript:
                                     # Only type new text
