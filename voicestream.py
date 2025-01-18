@@ -174,9 +174,10 @@ class TranscriptionApp:
                 
                 # Convert float32 to 16-bit PCM
                 audio_data = (indata * 32767).astype(np.int16)
+                
                 # Ensure mono and correct shape
-                if len(audio_data.shape) > 1 and audio_data.shape[1] > 1:
-                    audio_data = audio_data[:, 0]
+                if len(audio_data.shape) > 1:
+                    audio_data = audio_data.mean(axis=1)
                 audio_data = audio_data.reshape(-1)  # Flatten to 1D array
                 
                 # Ensure we have exactly chunk_size samples
@@ -186,8 +187,8 @@ class TranscriptionApp:
                 elif len(audio_data) > self.chunk_size:
                     audio_data = audio_data[:self.chunk_size]
                 
-                # Convert to bytes in big-endian format for AWS Transcribe
-                audio_chunk = audio_data.astype('>i2').tobytes()
+                # Convert to raw PCM bytes (16-bit little-endian)
+                audio_chunk = audio_data.tobytes()
                 print(f"Audio chunk: size={len(audio_chunk)}, shape={audio_data.shape}, level={audio_level:.4f}")
                 
                 if len(audio_chunk) > 0:
