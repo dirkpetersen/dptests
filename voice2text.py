@@ -10,9 +10,9 @@ import threading
 import queue
 import time
 from pynput.keyboard import Controller
-from amazon_transcribe.client import TranscribeStreamingClient
-from amazon_transcribe.handlers import TranscriptResultStreamHandler
-from amazon_transcribe.model import TranscriptEvent
+import websockets
+import asyncio
+import json
 
 class VoiceTranscriber:
     def __init__(self):
@@ -53,35 +53,67 @@ class VoiceTranscriber:
                 break
 
     def process_audio(self):
-        client = TranscribeStreamingClient(region_name="us-west-2")
-        
-        stream = client.start_stream_transcription(
-            language_code="en-US",
-            media_sample_rate_hz=self.sample_rate,
-            media_encoding="pcm"
-        )
-        
-        async def write_chunks():
-            async with stream as transcribe_stream:
-                while self.recording:
-                    try:
-                        chunk = self.audio_queue.get(timeout=1)
-                        await transcribe_stream.input_stream.send_audio_event(
-                            audio_chunk=chunk
-                        )
-                        async for event in transcribe_stream.output_stream:
-                            if not event.transcript.results[0].is_partial:
-                                transcript = event.transcript.results[0].alternatives[0].transcript
+        async def transcribe():
+            client = boto3.client('transcribe')
+            endpoint = await self._get_websocket_endpoint(client)
+            
+            async with websockets.connect(
+                endpoint,
+                ping_interval=5,
+                ping_timeout=20
+            ) as websocket:
+                # Send configuration
+                await websocket.send(json.dumps({
+                    "message-type": "event",
+                    "event": "start",
+                    "event-type": "start_transcription",
+                    "media-encoding": "pcm",
+                    "sample-rate": self.sample_rate
+                }))
+                
+                # Start audio stream thread
+                audio_future = asyncio.create_task(self._stream_audio(websocket))
+                
+                try:
+                    while self.recording:
+                        msg = await websocket.recv()
+                        response = json.loads(msg)
+                        
+                        if response.get("message-type") == "event" and response.get("event") == "transcript":
+                            results = response["transcript"]["results"]
+                            if results and not results[0]["is_partial"]:
+                                transcript = results[0]["alternatives"][0]["transcript"]
                                 self.keyboard.type(transcript + ' ')
-                    except queue.Empty:
-                        continue
-                    except Exception as e:
-                        print(f"Error processing audio: {e}")
-                        break
-                await stream.input_stream.end_stream()
-
-        import asyncio
-        asyncio.run(write_chunks())
+                except Exception as e:
+                    print(f"Error in transcription: {e}")
+                finally:
+                    audio_future.cancel()
+                    
+    async def _stream_audio(self, websocket):
+        try:
+            while self.recording:
+                try:
+                    chunk = self.audio_queue.get(timeout=1)
+                    await websocket.send(json.dumps({
+                        "message-type": "event",
+                        "event": "audio-event",
+                        "audio-chunk": chunk.hex()
+                    }))
+                except queue.Empty:
+                    continue
+        except Exception as e:
+            print(f"Error streaming audio: {e}")
+            
+    async def _get_websocket_endpoint(self, client):
+        response = client.start_streaming_transcription(
+            LanguageCode='en-US',
+            MediaEncoding='pcm',
+            MediaSampleRateHertz=self.sample_rate,
+            AudioStream={}
+        )
+        return response['WebsocketUrl']
+        
+        asyncio.run(transcribe())
 
 def create_tray_icon():
     transcriber = VoiceTranscriber()
