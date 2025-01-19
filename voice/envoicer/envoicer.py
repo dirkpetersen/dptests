@@ -121,22 +121,20 @@ class Envoicer:
                                     if is_partial:
                                         if text != self.last_text:
                                             self.partial_stability_counter = 0
+                                            # Clear line and reprint
+                                            print('\r' + ' ' * len(self.last_text) + '\r', end='', flush=True)
+                                            print(text, end='', flush=True)
+                                            self.last_text = text
                                         else:
                                             self.partial_stability_counter += 1
-                                        
-                                        if self.partial_stability_counter >= 1 and text != self.last_text:
-                                            if self.last_text:
-                                                self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
-                                            self.shell.SendKeys(text)
-                                            self.last_text = text
                                     else:
-                                        if self.last_text:
-                                            self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
-                                        self.shell.SendKeys(text + " ")
+                                        # Clear line and print final text with newline
+                                        print('\r' + ' ' * len(self.last_text) + '\r', end='', flush=True)
+                                        print(text)
                                         self.last_text = ""
                                         self.partial_stability_counter = 0
                                 except Exception as e:
-                                    logging.error(f"Error sending keys: {e}")
+                                    logging.error(f"Error printing text: {e}")
         except websockets.exceptions.ConnectionClosedError:
             logging.error("WebSocket connection closed")
         except Exception as e:
