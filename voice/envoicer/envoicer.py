@@ -118,18 +118,21 @@ class Envoicer:
                                 try:
                                     if is_partial:
                                         # Only update text if it ends with a complete word
-                                        # (no word fragments at the end)
                                         if text != self.last_text and (text.endswith(' ') or text.endswith('.')):
                                             self.partial_stability_counter = 0
-                                            # Delete previous text and type new text
                                             try:
                                                 active_window = gw.getActiveWindow()
                                                 if active_window:
-                                                    # Only proceed if window changed or no previous window
-                                                    if active_window != self.last_active_window:
-                                                        logging.info(f"Active window changed to: {active_window.title} (pid: {active_window._hWnd})")
-                                                        self.last_active_window = active_window
-                                                        pyautogui.sleep(0.1)  # Small pause when switching windows
+                                                    # Ensure window is active and ready
+                                                    active_window.activate()
+                                                    active_window.restore()
+                                                    pyautogui.sleep(0.1)
+                                                    
+                                                    # Type the new text
+                                                    new_text = text[len(self.last_text):].strip()
+                                                    if new_text:
+                                                        pyautogui.write(new_text + ' ')
+                                                        logging.info(f"Typed: {new_text}")
                                                 else:
                                                     # Log all windows to help debug
                                                     all_windows = gw.getAllWindows()
@@ -139,22 +142,7 @@ class Envoicer:
                                             except Exception as e:
                                                 logging.error(f"Error getting window info: {e}")
                                                 
-                                                try:
-                                                    # Ensure window is active and focused
-                                                    active_window.activate()
-                                                    active_window.restore()  # Ensure window isn't minimized
-                                                    pyautogui.sleep(0.05)  # Small pause after activation
-                                                    
-                                                    # Verify window is still active after activation
-                                                    current_window = gw.getActiveWindow()
-                                                    if current_window and current_window._hWnd == active_window._hWnd:
-                                                        if self.last_text:
-                                                            pyautogui.hotkey('ctrl', 'backspace')  # Delete last word
-                                                            logging.info(f"SEND to '{active_window.title}' (pid: {active_window._hWnd}): [DELETE WORD]")
-                                                        pyautogui.write(text, interval=0.01)  # Slightly slower typing
-                                                        logging.info(f"SEND to '{active_window.title}' (pid: {active_window._hWnd}): {text}")
-                                                    else:
-                                                        logging.error(f"Failed to activate window: {active_window.title}")
+                                                    self.last_text = text
                                                 except Exception as e:
                                                     logging.error(f"Failed to send text: {e}")
                                             self.last_text = text
