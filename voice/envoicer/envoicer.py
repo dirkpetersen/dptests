@@ -141,11 +141,7 @@ class Envoicer:
                                                         logging.warning(f"- {window.title} (pid: {window._hWnd})")
                                             except Exception as e:
                                                 logging.error(f"Error getting window info: {e}")
-                                                
-                                                    self.last_text = text
-                                                except Exception as e:
-                                                    logging.error(f"Failed to send text: {e}")
-                                            self.last_text = text
+                                                self.last_text = text
                                         else:
                                             self.partial_stability_counter += 1
                                     else:
