@@ -131,8 +131,14 @@ class Envoicer:
                                     logging.info("No active window")
                                     self._last_window_info = None
 
-                                # Print transcript
-                                print(f"\nTranscript: {text}")
+                                # Only print transcript if it's meaningfully different
+                                if not hasattr(self, '_last_printed_text'):
+                                    self._last_printed_text = ""
+                                
+                                # Check if new text is substantially different
+                                if len(text) > len(self._last_printed_text) + 3 or not text.startswith(self._last_printed_text):
+                                    print(f"\nTranscript: {text}")
+                                    self._last_printed_text = text
                             
                             if text:
                                 try:
