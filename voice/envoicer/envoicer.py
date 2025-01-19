@@ -130,14 +130,10 @@ class Envoicer:
                                                     # Ensure window is active and ready
                                                     active_window.activate()
                                                     active_window.restore()
-                                                    pyautogui.sleep(0.1)
                                                     
-                                                    # Verify window activation
-                                                    current_window = gw.getActiveWindow()
-                                                    if current_window and current_window._hWnd == active_window._hWnd:
-                                                        logging.info(f"Successfully activated window: {current_window.title}")
-                                                    else:
-                                                        logging.warning(f"Window activation may have failed - Current: {current_window.title if current_window else 'None'}")
+                                                    # Log detailed window info
+                                                    logging.info(f"Writing to window: {active_window.title}")
+                                                    logging.info(f"Window details - Handle: {active_window._hWnd}, Size: {active_window.size}, Position: {active_window.topleft}")
                                                     
                                                     # Type the new text
                                                     new_text = text[len(self.last_text):].strip()
@@ -166,8 +162,6 @@ class Envoicer:
                                                     logging.info(f"Active window changed to: {active_window.title} (PID: {active_window._hWnd})")
                                                     logging.info(f"Window properties - Size: {active_window.size}, Position: {active_window.topleft}")
                                                     self.last_active_window = active_window
-                                                    pyautogui.sleep(0.1)  # Small pause when switching windows
-                                                
                                                 try:
                                                     # Ensure window is active
                                                     active_window.activate()
@@ -175,7 +169,7 @@ class Envoicer:
                                                         pyautogui.hotkey('ctrl', 'backspace')  # Delete last word
                                                         logging.info(f"SEND to '{active_window.title}': [DELETE WORD]")
                                                     ending = ' ' if not text.endswith(('.', '!', '?')) else ''
-                                                    pyautogui.write(text + ending, interval=0.01)  # Slightly slower typing
+                                                    pyautogui.write(text + ending)  # No typing interval for faster output
                                                     logging.info(f"SEND to '{active_window.title}': {text}{ending}")
                                                 except Exception as e:
                                                     logging.error(f"Failed to send text: {e}")
