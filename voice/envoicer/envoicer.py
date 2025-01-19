@@ -15,16 +15,22 @@ from eventstream import create_audio_event, decode_event
 class Envoicer:
     def __init__(self):
         # Configure logging
-        logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+        logging.basicConfig(
+            stream=sys.stderr,
+            level=logging.INFO,
+            format='%(asctime)s.%(msecs)03d %(levelname)s: %(message)s',
+            datefmt='%H:%M:%S'
+        )
         
         # Audio settings optimized for lowest latency
         self.CHANNELS = 1
         self.RATE = 16000  # Higher quality for speech recognition
-        self.CHUNK = 1024  # Balanced chunk size for stability
+        self.CHUNK = 512   # Smaller chunks for more frequent updates
         self.FORMAT = pyaudio.paInt16
         self.running = False
         self.last_text = ""
         self.partial_stability_counter = 0
+        self.silence_threshold = 500  # Threshold for audio activity
         
         # AWS Configuration
         self.access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -38,7 +44,24 @@ class Envoicer:
         # Initialize Windows shell for typing
         self.shell = win32com.client.Dispatch("WScript.Shell")
         
+    def get_default_input_device_info(self):
+        """Get and log information about the default input device"""
+        try:
+            default_input = self.audio.get_default_input_device_info()
+            logging.info(f"Using input device: {default_input['name']}")
+            logging.info(f"Device info: {default_input}")
+            return default_input
+        except Exception as e:
+            logging.error(f"Error getting input device info: {e}")
+            return None
+
+    def is_audio_active(self, audio_data):
+        """Check if there's significant audio activity"""
+        return max(abs(int.from_bytes(audio_data[i:i+2], 'little', signed=True)) 
+                  for i in range(0, len(audio_data), 2)) > self.silence_threshold
+
     async def record_and_stream(self, websocket):
+        self.get_default_input_device_info()
         stream = self.audio.open(
             format=self.FORMAT,
             channels=self.CHANNELS,
@@ -46,13 +69,15 @@ class Envoicer:
             input=True,
             frames_per_buffer=self.CHUNK
         )
+        logging.info(f"Started recording with: {self.RATE}Hz, {self.CHANNELS} channels, chunk size: {self.CHUNK}")
         
         try:
             while self.running:
                 data = stream.read(self.CHUNK, exception_on_overflow=False)
                 if len(data) > 0:
-                    audio_event = create_audio_event(data)
-                    await websocket.send(audio_event)
+                    if self.is_audio_active(data):
+                        audio_event = create_audio_event(data)
+                        await websocket.send(audio_event)
                 # No sleep needed - we want to stream as fast as possible
         finally:
             stream.stop_stream()
@@ -77,8 +102,8 @@ class Envoicer:
                             else:
                                 self.partial_stability_counter += 1
                             
-                            # Update text only if it's stable for a few iterations
-                            if self.partial_stability_counter >= 2 and text != self.last_text:
+                            # Update text more quickly with less stability required
+                            if self.partial_stability_counter >= 1 and text != self.last_text:
                                 if self.last_text:  # Only backspace if we have previous text
                                     self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
                                 self.shell.SendKeys(text)
@@ -141,7 +166,8 @@ class Envoicer:
             # Register hotkey to stop the service
             keyboard.add_hotkey('ctrl+shift+x', self.stop)
             
-            print("Envoicer started. Press Ctrl+Shift+X to stop.")
+            print("\nEnvoicer started. Press Ctrl+Shift+X to stop.")
+            print("Listening for audio input...")
             loop.run_until_complete(self.connect_to_websocket())
         except KeyboardInterrupt:
             self.stop()
