@@ -119,7 +119,9 @@ class Envoicer:
                             if text:
                                 try:
                                     if is_partial:
-                                        if text != self.last_text:
+                                        # Only update text if it ends with a complete word
+                                        # (no word fragments at the end)
+                                        if text != self.last_text and (text.endswith(' ') or text.endswith('.')):
                                             self.partial_stability_counter = 0
                                             # Delete previous text and type new text
                                             if self.last_text:
@@ -132,13 +134,14 @@ class Envoicer:
                                         else:
                                             self.partial_stability_counter += 1
                                     else:
-                                        # For final text, add a space after
+                                        # For final text, add a space after if it doesn't end with punctuation
                                         if self.last_text:
                                             backspace_cmd = "{BS " + str(len(self.last_text)) + "}"
                                             self.shell.SendKeys(backspace_cmd)
                                             logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
-                                        self.shell.SendKeys(text + " ")
-                                        logging.info(f"SEND: {text} ")
+                                        ending = ' ' if not text.endswith(('.', '!', '?')) else ''
+                                        self.shell.SendKeys(text + ending)
+                                        logging.info(f"SEND: {text}{ending}")
                                         self.last_text = ""
                                         self.partial_stability_counter = 0
                                 except Exception as e:
