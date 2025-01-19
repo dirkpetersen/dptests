@@ -72,13 +72,22 @@ class Envoicer:
         logging.info(f"Started recording with: {self.RATE}Hz, {self.CHANNELS} channels, chunk size: {self.CHUNK}")
         
         try:
+            consecutive_errors = 0
             while self.running:
-                data = stream.read(self.CHUNK, exception_on_overflow=False)
-                if len(data) > 0:
-                    if self.is_audio_active(data):
-                        audio_event = create_audio_event(data)
-                        await websocket.send(audio_event)
-                # No sleep needed - we want to stream as fast as possible
+                try:
+                    data = stream.read(self.CHUNK, exception_on_overflow=False)
+                    if len(data) > 0:
+                        if self.is_audio_active(data):
+                            audio_event = create_audio_event(data)
+                            await websocket.send(audio_event)
+                            consecutive_errors = 0
+                    await asyncio.sleep(0.001)  # Small sleep to prevent CPU overload
+                except websockets.exceptions.ConnectionClosedError:
+                    consecutive_errors += 1
+                    if consecutive_errors > 5:
+                        logging.error("Too many consecutive connection errors")
+                        break
+                    continue
         finally:
             stream.stop_stream()
             stream.close()
@@ -121,40 +130,67 @@ class Envoicer:
             logging.exception("Error in receive_transcription")
 
     async def connect_to_websocket(self):
-        transcribe_url_generator = AWSTranscribePresignedURL(
-            self.access_key, self.secret_key, self.session_token, self.region
-        )
+        max_retries = 3
+        retry_delay = 2
+        attempt = 0
         
-        websocket_key = ''.join(random.choices(
-            string.ascii_uppercase + string.ascii_lowercase + string.digits, k=20
-        ))
-        
-        headers = {
-            "Origin": "https://localhost",
-            "Sec-Websocket-Key": websocket_key,
-            "Sec-Websocket-Version": "13",
-            "Connection": "keep-alive"
-        }
-        
-        request_url = transcribe_url_generator.get_request_url(
-            sample_rate=self.RATE,
-            language_code="en-US",
-            media_encoding="pcm",
-            number_of_channels=self.CHANNELS,
-            enable_channel_identification=False,
-            enable_partial_results_stabilization=True,
-            partial_results_stability="medium"
-        )
-        
-        async with websockets.connect(
-            request_url,
-            additional_headers=headers,
-            ping_timeout=None
-        ) as websocket:
-            await asyncio.gather(
-                self.record_and_stream(websocket),
-                self.receive_transcription(websocket)
-            )
+        while self.running and attempt < max_retries:
+            try:
+                attempt += 1
+                logging.info(f"Connecting to AWS Transcribe (attempt {attempt}/{max_retries})")
+                
+                transcribe_url_generator = AWSTranscribePresignedURL(
+                    self.access_key, self.secret_key, self.session_token, self.region
+                )
+                
+                websocket_key = ''.join(random.choices(
+                    string.ascii_uppercase + string.ascii_lowercase + string.digits, k=20
+                ))
+                
+                headers = {
+                    "Origin": "https://localhost",
+                    "Sec-Websocket-Key": websocket_key,
+                    "Sec-Websocket-Version": "13",
+                    "Connection": "keep-alive"
+                }
+                
+                request_url = transcribe_url_generator.get_request_url(
+                    sample_rate=self.RATE,
+                    language_code="en-US",
+                    media_encoding="pcm",
+                    number_of_channels=self.CHANNELS,
+                    enable_channel_identification=False,
+                    enable_partial_results_stabilization=True,
+                    partial_results_stability="medium"
+                )
+                
+                async with websockets.connect(
+                    request_url,
+                    additional_headers=headers,
+                    ping_timeout=None,
+                    close_timeout=5,
+                    max_size=2**24,  # Increase max message size
+                    compression=None  # Disable compression for better performance
+                ) as websocket:
+                    logging.info("Connected to AWS Transcribe")
+                    await asyncio.gather(
+                        self.record_and_stream(websocket),
+                        self.receive_transcription(websocket)
+                    )
+                    
+            except websockets.exceptions.ConnectionClosedError as e:
+                if attempt < max_retries:
+                    logging.warning(f"Connection closed, retrying in {retry_delay} seconds... ({e})")
+                    await asyncio.sleep(retry_delay)
+                else:
+                    logging.error(f"Failed to maintain connection after {max_retries} attempts")
+                    break
+            except Exception as e:
+                logging.exception(f"Unexpected error in connection: {e}")
+                if attempt < max_retries:
+                    await asyncio.sleep(retry_delay)
+                else:
+                    break
 
     def start(self):
         """Start the voice transcription service"""
