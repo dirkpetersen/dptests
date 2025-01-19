@@ -8,12 +8,29 @@ import random
 import pyaudio
 import wave
 import keyboard
-import pyautogui
 import pygetwindow as gw
+import win32con
+import win32api
+import win32gui
+import time
 from presigned_url import AWSTranscribePresignedURL
 from eventstream import create_audio_event, decode_event
 
 class Envoicer:
+    def send_keystrokes_win32(self, text):
+        """Send keystrokes using Win32 API"""
+        hwnd = win32gui.GetForegroundWindow()
+        
+        for char in text:
+            # Get virtual key code
+            vk = win32api.VkKeyScan(char)
+            
+            # Send key down
+            win32api.PostMessage(hwnd, win32con.WM_KEYDOWN, vk, 0)
+            # Send key up
+            win32api.PostMessage(hwnd, win32con.WM_KEYUP, vk, 0)
+            time.sleep(0.01)  # Small delay between keystrokes
+
     def __init__(self):
         # Configure logging
         logging.basicConfig(
@@ -164,7 +181,7 @@ class Envoicer:
                                                     # Type the new text
                                                     new_text = text[len(self.last_text):].strip()
                                                     if new_text:
-                                                        pyautogui.write(new_text + ' ')
+                                                        self.send_keystrokes_win32(new_text + ' ')
                                                         logging.info(f"Typed: {new_text}")
                                                 else:
                                                     # Log all windows to help debug
@@ -192,10 +209,10 @@ class Envoicer:
                                                     # Ensure window is active
                                                     active_window.activate()
                                                     if self.last_text:
-                                                        pyautogui.hotkey('ctrl', 'backspace')  # Delete last word
-                                                        logging.info(f"SEND to '{active_window.title}': [DELETE WORD]")
+                                                        # TODO: Implement backspace using Win32 API if needed
+                                                        pass
                                                     ending = ' ' if not text.endswith(('.', '!', '?')) else ''
-                                                    pyautogui.write(text + ending, interval=0.01)  # Slightly slower typing
+                                                    self.send_keystrokes_win32(text + ending)
                                                     logging.info(f"SEND to '{active_window.title}': {text}{ending}")
                                                 except Exception as e:
                                                     logging.error(f"Failed to send text: {e}")
