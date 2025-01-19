@@ -18,7 +18,7 @@ class Envoicer:
         # Configure logging
         logging.basicConfig(
             stream=sys.stderr,
-            level=logging.DEBUG,  # Changed to DEBUG level
+            level=logging.INFO,  # Change to INFO level to reduce debug messages
             format='%(asctime)s.%(msecs)03d %(levelname)s: %(message)s',
             datefmt='%H:%M:%S'
         )
