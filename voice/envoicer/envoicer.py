@@ -61,9 +61,7 @@ class Envoicer:
         # Initialize PyAudio
         self.audio = pyaudio.PyAudio()
         
-        # Configure pyautogui
-        pyautogui.FAILSAFE = True
-        pyautogui.PAUSE = 0.01  # Slightly longer delay for reliability
+        # Track last active window
         self.last_active_window = None
         
     def get_default_input_device_info(self):
@@ -169,7 +167,7 @@ class Envoicer:
                                                     # Ensure window is active and ready
                                                     active_window.activate()
                                                     active_window.restore() 
-                                                    pyautogui.sleep(0.1)
+                                                    time.sleep(0.1)
                                                     
                                                     # Verify window activation
                                                     current_window = gw.getActiveWindow()
@@ -203,7 +201,7 @@ class Envoicer:
                                                 # Only log if window changed
                                                 if active_window != self.last_active_window:
                                                     self.last_active_window = active_window
-                                                    pyautogui.sleep(0.1)  # Small pause when switching windows
+                                                    time.sleep(0.1)  # Small pause when switching windows
                                                 
                                                 try:
                                                     # Ensure window is active
