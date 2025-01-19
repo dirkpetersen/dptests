@@ -225,8 +225,12 @@ class Envoicer:
                 try:
                     response = await websocket.recv()
                     header, payload = decode_event(response)
+
+                    if header[":message-type"] == 'exception':
+                        logging.error(payload['Message'])
+                        await asyncio.sleep(0) # Yield to main loop
                 
-                    if header[':message-type'] == 'event':
+                    elif header[':message-type'] == 'event':
                         if 'Transcript' in payload and len(payload['Transcript']['Results']) > 0:
                             transcript = payload['Transcript']['Results'][0]
                             if 'Alternatives' in transcript and len(transcript['Alternatives']) > 0:
