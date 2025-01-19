@@ -112,12 +112,18 @@ class Envoicer:
                                 text = transcript['Alternatives'][0]['Transcript'].strip()
                                 is_partial = transcript.get('IsPartial', True)
                                 
-                                # Log current active window before showing transcript
+                                # Get current active window
                                 active_window = gw.getActiveWindow()
+                                
+                                # Only log window info if it changed
                                 if active_window:
-                                    logging.info(f"Active window: {active_window.title} (Handle: {active_window._hWnd})")
-                                else:
+                                    current_window_info = f"{active_window.title} (Handle: {active_window._hWnd})"
+                                    if not hasattr(self, '_last_window_info') or self._last_window_info != current_window_info:
+                                        logging.info(f"Active window: {current_window_info}")
+                                        self._last_window_info = current_window_info
+                                elif not hasattr(self, '_last_window_info') or self._last_window_info is not None:
                                     logging.info("No active window")
+                                    self._last_window_info = None
                                 
                                 print(f"\nTranscript: {text}")
                             
