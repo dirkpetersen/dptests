@@ -115,16 +115,22 @@ class Envoicer:
                                 # Get current active window
                                 active_window = gw.getActiveWindow()
                                 
-                                # Only log window info if it changed
+                                # Track window changes
                                 if active_window:
-                                    current_window_info = f"{active_window.title} (Handle: {active_window._hWnd})"
-                                    if not hasattr(self, '_last_window_info') or self._last_window_info != current_window_info:
-                                        logging.info(f"Active window: {current_window_info}")
-                                        self._last_window_info = current_window_info
+                                    current_window_title = active_window.title
+                                    if not hasattr(self, '_last_window_info'):
+                                        # First window detection - log full info
+                                        logging.info(f"Initial active window: {current_window_title} (Handle: {active_window._hWnd})")
+                                        self._last_window_info = current_window_title
+                                    elif self._last_window_info != current_window_title:
+                                        # Window changed - log just the title
+                                        logging.info(f"Active window changed to: {current_window_title}")
+                                        self._last_window_info = current_window_title
                                 elif not hasattr(self, '_last_window_info') or self._last_window_info is not None:
                                     logging.info("No active window")
                                     self._last_window_info = None
                                 
+                                # Print transcript with minimal formatting
                                 print(f"\nTranscript: {text}")
                             
                             if text:
@@ -136,13 +142,9 @@ class Envoicer:
                                             try:
                                                 active_window = gw.getActiveWindow()
                                                 if active_window:
-                                                    # Log window details before activation
-                                                    logging.info(f"Found active window: {active_window.title}")
-                                                    logging.info(f"Window details - PID: {active_window._hWnd}, Size: {active_window.size}, Position: {active_window.topleft}")
-                                                    
                                                     # Ensure window is active and ready
                                                     active_window.activate()
-                                                    active_window.restore()
+                                                    active_window.restore() 
                                                     pyautogui.sleep(0.1)
                                                     
                                                     # Verify window activation
