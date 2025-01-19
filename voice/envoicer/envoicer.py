@@ -46,7 +46,8 @@ class Envoicer:
         
         # Configure pyautogui
         pyautogui.FAILSAFE = True
-        pyautogui.PAUSE = 0.001  # Minimal delay between actions
+        pyautogui.PAUSE = 0.01  # Slightly longer delay for reliability
+        self.last_active_window = None
         
     def get_default_input_device_info(self):
         """Get and log information about the default input device"""
@@ -130,13 +131,22 @@ class Envoicer:
                                             # Delete previous text and type new text
                                             active_window = gw.getActiveWindow()
                                             if active_window:
-                                                window_title = active_window.title
-                                                if self.last_text:
-                                                    for _ in range(len(self.last_text)):
-                                                        pyautogui.press('backspace')
-                                                    logging.info(f"SEND to '{window_title}': [BACKSPACE x{len(self.last_text)}]")
-                                                pyautogui.write(text)
-                                                logging.info(f"SEND to '{window_title}': {text}")
+                                                # Only proceed if window changed or no previous window
+                                                if active_window != self.last_active_window:
+                                                    logging.info(f"Active window changed to: {active_window.title}")
+                                                    self.last_active_window = active_window
+                                                    pyautogui.sleep(0.1)  # Small pause when switching windows
+                                                
+                                                try:
+                                                    # Ensure window is active
+                                                    active_window.activate()
+                                                    if self.last_text:
+                                                        pyautogui.hotkey('ctrl', 'backspace')  # Delete last word
+                                                        logging.info(f"SEND to '{active_window.title}': [DELETE WORD]")
+                                                    pyautogui.write(text, interval=0.01)  # Slightly slower typing for reliability
+                                                    logging.info(f"SEND to '{active_window.title}': {text}")
+                                                except Exception as e:
+                                                    logging.error(f"Failed to send text: {e}")
                                             else:
                                                 logging.warning("No active window found - text not sent")
                                             self.last_text = text
@@ -148,14 +158,23 @@ class Envoicer:
                                             # For final text, add a space after if it doesn't end with punctuation
                                             active_window = gw.getActiveWindow()
                                             if active_window:
-                                                window_title = active_window.title
-                                                if self.last_text:
-                                                    for _ in range(len(self.last_text)):
-                                                        pyautogui.press('backspace')
-                                                    logging.info(f"SEND to '{window_title}': [BACKSPACE x{len(self.last_text)}]")
-                                                ending = ' ' if not text.endswith(('.', '!', '?')) else ''
-                                                pyautogui.write(text + ending)
-                                                logging.info(f"SEND to '{window_title}': {text}{ending}")
+                                                # Only proceed if window changed or no previous window
+                                                if active_window != self.last_active_window:
+                                                    logging.info(f"Active window changed to: {active_window.title}")
+                                                    self.last_active_window = active_window
+                                                    pyautogui.sleep(0.1)  # Small pause when switching windows
+                                                
+                                                try:
+                                                    # Ensure window is active
+                                                    active_window.activate()
+                                                    if self.last_text:
+                                                        pyautogui.hotkey('ctrl', 'backspace')  # Delete last word
+                                                        logging.info(f"SEND to '{active_window.title}': [DELETE WORD]")
+                                                    ending = ' ' if not text.endswith(('.', '!', '?')) else ''
+                                                    pyautogui.write(text + ending, interval=0.01)  # Slightly slower typing
+                                                    logging.info(f"SEND to '{active_window.title}': {text}{ending}")
+                                                except Exception as e:
+                                                    logging.error(f"Failed to send text: {e}")
                                             else:
                                                 logging.warning("No active window found - text not sent")
                                             self.sent_sentences.add(text)  # Add to sent sentences
