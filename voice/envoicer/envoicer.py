@@ -104,33 +104,39 @@ class Envoicer:
             while self.running:
                 response = await websocket.recv()
                 header, payload = decode_event(response)
+                logging.debug(f"Received response - header: {header}")
+                logging.debug(f"Payload: {payload}")
                 
-                if header[':message-type'] == 'event' and len(payload['Transcript']['Results']) > 0:
-                    transcript = payload['Transcript']['Results'][0]
-                    text = transcript['Alternatives'][0]['Transcript'].strip()
-                    is_partial = transcript.get('IsPartial', True)
-                    
-                    if text:
-                        if is_partial:
-                            # Only update partial results after some stability
-                            if text != self.last_text:
-                                self.partial_stability_counter = 0
-                            else:
-                                self.partial_stability_counter += 1
+                if header[':message-type'] == 'event':
+                    if 'Transcript' in payload and len(payload['Transcript']['Results']) > 0:
+                        transcript = payload['Transcript']['Results'][0]
+                        if 'Alternatives' in transcript and len(transcript['Alternatives']) > 0:
+                            text = transcript['Alternatives'][0]['Transcript'].strip()
+                            is_partial = transcript.get('IsPartial', True)
                             
-                            # Update text more quickly with less stability required
-                            if self.partial_stability_counter >= 1 and text != self.last_text:
-                                if self.last_text:  # Only backspace if we have previous text
-                                    self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
-                                self.shell.SendKeys(text)
-                                self.last_text = text
-                        else:
-                            # For final results, always update
-                            if self.last_text:  # Clear any partial text
-                                self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
-                            self.shell.SendKeys(text + " ")
-                            self.last_text = ""
-                            self.partial_stability_counter = 0
+                            logging.info(f"Transcribed{'(partial)' if is_partial else ''}: {text}")
+                            
+                            if text:
+                                try:
+                                    if is_partial:
+                                        if text != self.last_text:
+                                            self.partial_stability_counter = 0
+                                        else:
+                                            self.partial_stability_counter += 1
+                                        
+                                        if self.partial_stability_counter >= 1 and text != self.last_text:
+                                            if self.last_text:
+                                                self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
+                                            self.shell.SendKeys(text)
+                                            self.last_text = text
+                                    else:
+                                        if self.last_text:
+                                            self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
+                                        self.shell.SendKeys(text + " ")
+                                        self.last_text = ""
+                                        self.partial_stability_counter = 0
+                                except Exception as e:
+                                    logging.error(f"Error sending keys: {e}")
         except websockets.exceptions.ConnectionClosedError:
             logging.error("WebSocket connection closed")
         except Exception as e:
