@@ -112,25 +112,26 @@ class Envoicer:
                                 text = transcript['Alternatives'][0]['Transcript'].strip()
                                 is_partial = transcript.get('IsPartial', True)
                                 
-                                # Get current active window
+                                # Get current active window and track changes
                                 active_window = gw.getActiveWindow()
-                                
-                                # Track window changes
                                 if active_window:
                                     current_window_title = active_window.title
                                     if not hasattr(self, '_last_window_info'):
-                                        # First window detection - log full info
+                                        # First window detection - log full info once
+                                        self._last_window_info = {
+                                            'title': current_window_title,
+                                            'handle': active_window._hWnd
+                                        }
                                         logging.info(f"Initial active window: {current_window_title} (Handle: {active_window._hWnd})")
-                                        self._last_window_info = current_window_title
-                                    elif self._last_window_info != current_window_title:
-                                        # Window changed - log just the title
-                                        logging.info(f"Active window changed to: {current_window_title}")
-                                        self._last_window_info = current_window_title
-                                elif not hasattr(self, '_last_window_info') or self._last_window_info is not None:
+                                    elif self._last_window_info['title'] != current_window_title:
+                                        # Only log when window changes
+                                        logging.info(f"Window changed to: {current_window_title}")
+                                        self._last_window_info['title'] = current_window_title
+                                elif hasattr(self, '_last_window_info') and self._last_window_info is not None:
                                     logging.info("No active window")
                                     self._last_window_info = None
-                                
-                                # Print transcript with minimal formatting
+
+                                # Print transcript
                                 print(f"\nTranscript: {text}")
                             
                             if text:
@@ -176,13 +177,8 @@ class Envoicer:
                                             # For final text, add a space after if it doesn't end with punctuation
                                             active_window = gw.getActiveWindow()
                                             if active_window:
-                                                # Log window details before proceeding
-                                                logging.info(f"Current active window: {active_window.title}")
-                                                logging.info(f"Window details - Handle: {active_window._hWnd}, Size: {active_window.size}, Position: {active_window.topleft}")
-                                                    
-                                                # Only proceed if window changed or no previous window
+                                                # Only log if window changed
                                                 if active_window != self.last_active_window:
-                                                    logging.info(f"Window changed from: {self.last_active_window.title if self.last_active_window else 'None'}")
                                                     self.last_active_window = active_window
                                                     pyautogui.sleep(0.1)  # Small pause when switching windows
                                                 
