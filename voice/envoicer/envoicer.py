@@ -112,7 +112,7 @@ class Envoicer:
                                 text = transcript['Alternatives'][0]['Transcript'].strip()
                                 is_partial = transcript.get('IsPartial', True)
                                 
-                                print(f"\nTranscript{'(partial)' if is_partial else ''}: {text}")
+                                print(f"\nTranscript: {text}")
                             
                             if text:
                                 try:
