@@ -128,12 +128,17 @@ class Envoicer:
                                         if text != self.last_text and (text.endswith(' ') or text.endswith('.')):
                                             self.partial_stability_counter = 0
                                             # Delete previous text and type new text
-                                            if self.last_text:
-                                                for _ in range(len(self.last_text)):
-                                                    pyautogui.press('backspace')
-                                                logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
-                                            pyautogui.write(text)
-                                            logging.info(f"SEND: {text}")
+                                            active_window = gw.getActiveWindow()
+                                            if active_window:
+                                                window_title = active_window.title
+                                                if self.last_text:
+                                                    for _ in range(len(self.last_text)):
+                                                        pyautogui.press('backspace')
+                                                    logging.info(f"SEND to '{window_title}': [BACKSPACE x{len(self.last_text)}]")
+                                                pyautogui.write(text)
+                                                logging.info(f"SEND to '{window_title}': {text}")
+                                            else:
+                                                logging.warning("No active window found - text not sent")
                                             self.last_text = text
                                         else:
                                             self.partial_stability_counter += 1
@@ -141,13 +146,18 @@ class Envoicer:
                                         # Only send if we haven't sent this sentence before
                                         if text not in self.sent_sentences:
                                             # For final text, add a space after if it doesn't end with punctuation
-                                            if self.last_text:
-                                                for _ in range(len(self.last_text)):
-                                                    pyautogui.press('backspace')
-                                                logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
-                                            ending = ' ' if not text.endswith(('.', '!', '?')) else ''
-                                            pyautogui.write(text + ending)
-                                            logging.info(f"SEND: {text}{ending}")
+                                            active_window = gw.getActiveWindow()
+                                            if active_window:
+                                                window_title = active_window.title
+                                                if self.last_text:
+                                                    for _ in range(len(self.last_text)):
+                                                        pyautogui.press('backspace')
+                                                    logging.info(f"SEND to '{window_title}': [BACKSPACE x{len(self.last_text)}]")
+                                                ending = ' ' if not text.endswith(('.', '!', '?')) else ''
+                                                pyautogui.write(text + ending)
+                                                logging.info(f"SEND to '{window_title}': {text}{ending}")
+                                            else:
+                                                logging.warning("No active window found - text not sent")
                                             self.sent_sentences.add(text)  # Add to sent sentences
                                             self.last_text = ""
                                             self.partial_stability_counter = 0
