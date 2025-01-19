@@ -33,7 +33,7 @@ class Envoicer:
         self.sent_sentences = set()  # Track sent sentences
         self.partial_stability_counter = 0
         self.silence_threshold = 300  # Lower threshold for audio activity
-        self.debug_audio = True  # Enable audio level debugging
+        self.debug_audio = False  # Disable audio level debugging
         
         # AWS Configuration
         self.access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -64,10 +64,6 @@ class Envoicer:
         """Check if there's significant audio activity"""
         audio_level = max(abs(int.from_bytes(audio_data[i:i+2], 'little', signed=True)) 
                          for i in range(0, len(audio_data), 2))
-        
-        if self.debug_audio and audio_level > 100:  # Only log significant levels
-            logging.debug(f"Audio level: {audio_level}")
-        
         return audio_level > self.silence_threshold
 
     async def record_and_stream(self, websocket):
@@ -88,7 +84,6 @@ class Envoicer:
                     data = stream.read(self.CHUNK, exception_on_overflow=False)
                     if len(data) > 0:
                         if self.is_audio_active(data):
-                            logging.debug("Sending audio data to AWS")
                             audio_event = create_audio_event(data)
                             await websocket.send(audio_event)
                             consecutive_errors = 0
@@ -109,8 +104,6 @@ class Envoicer:
                 try:
                     response = await websocket.recv()
                     header, payload = decode_event(response)
-                    logging.debug(f"Received response - header: {header}")
-                    logging.debug(f"Payload: {payload}")
                 
                     if header[':message-type'] == 'event':
                         if 'Transcript' in payload and len(payload['Transcript']['Results']) > 0:
@@ -119,7 +112,7 @@ class Envoicer:
                                 text = transcript['Alternatives'][0]['Transcript'].strip()
                                 is_partial = transcript.get('IsPartial', True)
                                 
-                                logging.info(f"Transcribed{'(partial)' if is_partial else ''}: {text}")
+                                print(f"\nTranscript{'(partial)' if is_partial else ''}: {text}")
                             
                             if text:
                                 try:
