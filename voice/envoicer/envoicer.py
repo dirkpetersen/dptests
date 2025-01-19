@@ -17,12 +17,13 @@ class Envoicer:
         # Configure logging
         logging.basicConfig(stream=sys.stderr, level=logging.INFO)
         
-        # Audio settings for lowest latency
+        # Audio settings optimized for lowest latency
         self.CHANNELS = 1
         self.RATE = 16000  # Higher quality for speech recognition
-        self.CHUNK = 1024  # Smaller chunks for lower latency
+        self.CHUNK = 512   # Smaller chunks for even lower latency
         self.FORMAT = pyaudio.paInt16
         self.running = False
+        self.last_text = ""
         
         # AWS Configuration
         self.access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -51,7 +52,7 @@ class Envoicer:
                 if len(data) > 0:
                     audio_event = create_audio_event(data)
                     await websocket.send(audio_event)
-                await asyncio.sleep(0.001)  # Minimal sleep for responsiveness
+                # No sleep needed - we want to stream as fast as possible
         finally:
             stream.stop_stream()
             stream.close()
@@ -62,15 +63,23 @@ class Envoicer:
                 response = await websocket.recv()
                 header, payload = decode_event(response)
                 
-                if header[':message-type'] == 'event':
-                    if len(payload['Transcript']['Results']) > 0:
-                        transcript = payload['Transcript']['Results'][0]
+                if header[':message-type'] == 'event' and len(payload['Transcript']['Results']) > 0:
+                    transcript = payload['Transcript']['Results'][0]
+                    text = transcript['Alternatives'][0]['Transcript'].strip()
+                    
+                    if text and text != self.last_text:
+                        # For partial results, backspace the previous text
+                        if transcript.get('IsPartial', True) and self.last_text:
+                            self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
+                        
+                        # Send the new text
+                        self.shell.SendKeys(text)
+                        self.last_text = text
+                        
+                        # Add space only for final results
                         if not transcript.get('IsPartial', True):
-                            text = transcript['Alternatives'][0]['Transcript']
-                            if text.strip():
-                                self.shell.SendKeys(text + " ")
-                
-                await asyncio.sleep(0.001)
+                            self.shell.SendKeys(" ")
+                            self.last_text = ""
         except websockets.exceptions.ConnectionClosedError:
             logging.error("WebSocket connection closed")
         except Exception as e:
@@ -97,7 +106,9 @@ class Envoicer:
             language_code="en-US",
             media_encoding="pcm",
             number_of_channels=self.CHANNELS,
-            enable_channel_identification=False
+            enable_channel_identification=False,
+            enable_partial_results_stabilization=True,
+            partial_results_stability="high"
         )
         
         async with websockets.connect(
