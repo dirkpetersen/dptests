@@ -147,17 +147,23 @@ class Envoicer:
                                                 logging.error(f"Error getting window info: {e}")
                                                 
                                                 try:
-                                                    # Ensure window is active
+                                                    # Ensure window is active and focused
                                                     active_window.activate()
-                                                    if self.last_text:
-                                                        pyautogui.hotkey('ctrl', 'backspace')  # Delete last word
-                                                        logging.info(f"SEND to '{active_window.title}': [DELETE WORD]")
-                                                    pyautogui.write(text, interval=0.01)  # Slightly slower typing for reliability
-                                                    logging.info(f"SEND to '{active_window.title}': {text}")
+                                                    active_window.restore()  # Ensure window isn't minimized
+                                                    pyautogui.sleep(0.05)  # Small pause after activation
+                                                    
+                                                    # Verify window is still active after activation
+                                                    current_window = gw.getActiveWindow()
+                                                    if current_window and current_window._hWnd == active_window._hWnd:
+                                                        if self.last_text:
+                                                            pyautogui.hotkey('ctrl', 'backspace')  # Delete last word
+                                                            logging.info(f"SEND to '{active_window.title}' (pid: {active_window._hWnd}): [DELETE WORD]")
+                                                        pyautogui.write(text, interval=0.01)  # Slightly slower typing
+                                                        logging.info(f"SEND to '{active_window.title}' (pid: {active_window._hWnd}): {text}")
+                                                    else:
+                                                        logging.error(f"Failed to activate window: {active_window.title}")
                                                 except Exception as e:
                                                     logging.error(f"Failed to send text: {e}")
-                                            else:
-                                                logging.warning("No active window found - text not sent")
                                             self.last_text = text
                                         else:
                                             self.partial_stability_counter += 1
