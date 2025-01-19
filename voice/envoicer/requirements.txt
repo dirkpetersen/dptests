@@ -1,0 +1,8 @@
+configparser
+websockets
+sounddevice
+pystray
+pillow
+pygetwindow
+pyautogui
+
