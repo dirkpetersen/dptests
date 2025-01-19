@@ -129,13 +129,22 @@ class Envoicer:
                                         if text != self.last_text and (text.endswith(' ') or text.endswith('.')):
                                             self.partial_stability_counter = 0
                                             # Delete previous text and type new text
-                                            active_window = gw.getActiveWindow()
-                                            if active_window:
-                                                # Only proceed if window changed or no previous window
-                                                if active_window != self.last_active_window:
-                                                    logging.info(f"Active window changed to: {active_window.title}")
-                                                    self.last_active_window = active_window
-                                                    pyautogui.sleep(0.1)  # Small pause when switching windows
+                                            try:
+                                                active_window = gw.getActiveWindow()
+                                                if active_window:
+                                                    # Only proceed if window changed or no previous window
+                                                    if active_window != self.last_active_window:
+                                                        logging.info(f"Active window changed to: {active_window.title} (pid: {active_window._hWnd})")
+                                                        self.last_active_window = active_window
+                                                        pyautogui.sleep(0.1)  # Small pause when switching windows
+                                                else:
+                                                    # Log all windows to help debug
+                                                    all_windows = gw.getAllWindows()
+                                                    logging.warning("No active window found. Available windows:")
+                                                    for window in all_windows:
+                                                        logging.warning(f"- {window.title} (pid: {window._hWnd})")
+                                            except Exception as e:
+                                                logging.error(f"Error getting window info: {e}")
                                                 
                                                 try:
                                                     # Ensure window is active
