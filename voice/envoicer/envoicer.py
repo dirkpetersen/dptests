@@ -236,31 +236,37 @@ class Envoicer:
                 async with websockets.connect(
                     request_url,
                     additional_headers=headers,
-                    ping_timeout=20,  # Add ping timeout
-                    ping_interval=15,  # Keep connection alive with pings
+                    ping_timeout=20,
+                    ping_interval=15,
                     close_timeout=5,
-                    max_size=2**24,  # Increase max message size
-                    compression=None  # Disable compression for better performance
+                    max_size=2**24,
+                    compression=None
                 ) as websocket:
                     logging.info("Connected to AWS Transcribe")
-                    await asyncio.gather(
-                        self.record_and_stream(websocket),
-                        self.receive_transcription(websocket)
-                    )
+                    try:
+                        await asyncio.gather(
+                            self.record_and_stream(websocket),
+                            self.receive_transcription(websocket)
+                        )
+                    except websockets.exceptions.ConnectionClosedOK:
+                        logging.info("Connection closed normally, reconnecting...")
+                        await asyncio.sleep(1)  # Brief pause before reconnecting
+                        continue
+                    except websockets.exceptions.ConnectionClosedError as e:
+                        if attempt < max_retries:
+                            logging.warning(f"Connection closed unexpectedly, retrying in {retry_delay} seconds... ({e})")
+                            await asyncio.sleep(retry_delay)
+                            continue
+                        else:
+                            logging.error(f"Failed to maintain connection after {max_retries} attempts")
+                            break
                     
-            except websockets.exceptions.ConnectionClosedError as e:
-                if attempt < max_retries:
-                    logging.warning(f"Connection closed, retrying in {retry_delay} seconds... ({e})")
-                    await asyncio.sleep(retry_delay)
-                else:
-                    logging.error(f"Failed to maintain connection after {max_retries} attempts")
-                    break
             except Exception as e:
                 logging.exception(f"Unexpected error in connection: {e}")
                 if attempt < max_retries:
-                    await asyncio.sleep(retry_delay)
-                else:
-                    break
+                    await asyncio.sleep(retry_delay * attempt)  # Exponential backoff
+                    continue
+                break
 
     def start(self):
         """Start the voice transcription service"""
