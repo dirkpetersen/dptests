@@ -256,71 +256,73 @@ class Envoicer:
                                 new_text = self.extract(text, is_partial)
                                 if new_text:
                                     print(f"\nTranscript: {new_text}")
+                                    self.send_keystrokes_win32(new_text + ' ')
+                                    logging.info(f"Typed: {new_text}")
                             
-                            if new_text:
-                                try:
-                                    if is_partial:
-                                        # Only update text if it ends with a complete word
-                                        if text != self.last_text and (text.endswith(' ') or text.endswith('.')):
-                                            self.partial_stability_counter = 0
-                                            try:
-                                                active_window = gw.getActiveWindow()
-                                                if active_window:
-                                                    # Ensure window is active and ready
-                                                    active_window.activate()
-                                                    active_window.restore() 
-                                                    time.sleep(0.1)
+                            # if new_text:
+                            #     try:
+                            #         if is_partial:
+                            #             # Only update text if it ends with a complete word
+                            #             if text != self.last_text and (text.endswith(' ') or text.endswith('.')):
+                            #                 self.partial_stability_counter = 0
+                            #                 try:
+                            #                     active_window = gw.getActiveWindow()
+                            #                     if active_window:
+                            #                         # Ensure window is active and ready
+                            #                         active_window.activate()
+                            #                         active_window.restore() 
+                            #                         time.sleep(0.1)
                                                     
-                                                    # Verify window activation
-                                                    current_window = gw.getActiveWindow()
-                                                    if current_window and current_window._hWnd == active_window._hWnd:
-                                                        logging.info(f"Successfully activated window: {current_window.title}")
-                                                    else:
-                                                        logging.warning(f"Window activation may have failed - Current: {current_window.title if current_window else 'None'}")
+                            #                         # Verify window activation
+                            #                         current_window = gw.getActiveWindow()
+                            #                         if current_window and current_window._hWnd == active_window._hWnd:
+                            #                             logging.info(f"Successfully activated window: {current_window.title}")
+                            #                         else:
+                            #                             logging.warning(f"Window activation may have failed - Current: {current_window.title if current_window else 'None'}")
                                                     
-                                                    # Send the new text
-                                                    self.send_keystrokes_win32(new_text + ' ')
-                                                    logging.info(f"Typed: {new_text}")
-                                                else:
-                                                    # Log all windows to help debug
-                                                    all_windows = gw.getAllWindows()
-                                                    logging.warning("No active window found. Available windows:")
-                                                    for window in all_windows:
-                                                        logging.warning(f"- {window.title} (pid: {window._hWnd})")
-                                            except Exception as e:
-                                                logging.error(f"Error getting window info: {e}")
-                                                self.last_text = text
-                                        else:
-                                            self.partial_stability_counter += 1
-                                    else:
-                                        # Only send if we haven't sent this sentence before
-                                        if text not in self.sent_sentences:
-                                            # For final text, add a space after if it doesn't end with punctuation
-                                            active_window = gw.getActiveWindow()
-                                            if active_window:
-                                                # Only log if window changed
-                                                if active_window != self.last_active_window:
-                                                    self.last_active_window = active_window
-                                                    time.sleep(0.1)  # Small pause when switching windows
+                            #                         # Send the new text
+                            #                         self.send_keystrokes_win32(new_text + ' ')
+                            #                         logging.info(f"Typed: {new_text}")
+                            #                     else:
+                            #                         # Log all windows to help debug
+                            #                         all_windows = gw.getAllWindows()
+                            #                         logging.warning("No active window found. Available windows:")
+                            #                         for window in all_windows:
+                            #                             logging.warning(f"- {window.title} (pid: {window._hWnd})")
+                            #                 except Exception as e:
+                            #                     logging.error(f"Error getting window info: {e}")
+                            #                     self.last_text = text
+                            #             else:
+                            #                 self.partial_stability_counter += 1
+                            #         else:
+                            #             # Only send if we haven't sent this sentence before
+                            #             if text not in self.sent_sentences:
+                            #                 # For final text, add a space after if it doesn't end with punctuation
+                            #                 active_window = gw.getActiveWindow()
+                            #                 if active_window:
+                            #                     # Only log if window changed
+                            #                     if active_window != self.last_active_window:
+                            #                         self.last_active_window = active_window
+                            #                         time.sleep(0.1)  # Small pause when switching windows
                                                 
-                                                try:
-                                                    # Ensure window is active
-                                                    active_window.activate()
-                                                    if self.last_text:
-                                                        # TODO: Implement backspace using Win32 API if needed
-                                                        pass
-                                                    ending = ' ' if not text.endswith(('.', '!', '?')) else ''
-                                                    self.send_keystrokes_win32(text + ending)
-                                                    logging.info(f"SEND to '{active_window.title}': {text}{ending}")
-                                                except Exception as e:
-                                                    logging.error(f"Failed to send text: {e}")
-                                            else:
-                                                logging.warning("No active window found - text not sent")
-                                            self.sent_sentences.add(text)  # Add to sent sentences
-                                            self.last_text = ""
-                                            self.partial_stability_counter = 0
-                                except Exception as e:
-                                    logging.error(f"Error sending keys: {e}")
+                            #                     try:
+                            #                         # Ensure window is active
+                            #                         active_window.activate()
+                            #                         if self.last_text:
+                            #                             # TODO: Implement backspace using Win32 API if needed
+                            #                             pass
+                            #                         ending = ' ' if not text.endswith(('.', '!', '?')) else ''
+                            #                         self.send_keystrokes_win32(text + ending)
+                            #                         logging.info(f"SEND to '{active_window.title}': {text}{ending}")
+                            #                     except Exception as e:
+                            #                         logging.error(f"Failed to send text: {e}")
+                            #                 else:
+                            #                     logging.warning("No active window found - text not sent")
+                            #                 self.sent_sentences.add(text)  # Add to sent sentences
+                            #                 self.last_text = ""
+                            #                 self.partial_stability_counter = 0
+                            #     except Exception as e:
+                            #         logging.error(f"Error sending keys: {e}")
                 except websockets.exceptions.ConnectionClosedOK:
                     logging.info("Streaming completed successfully - reconnecting...")
                     return  # Allow reconnection in connect_to_websocket
