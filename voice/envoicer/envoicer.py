@@ -109,8 +109,8 @@ class Envoicer:
                     logging.debug(f"Received response - header: {header}")
                     logging.debug(f"Payload: {payload}")
                 
-                if header[':message-type'] == 'event':
-                    if 'Transcript' in payload and len(payload['Transcript']['Results']) > 0:
+                    if header[':message-type'] == 'event':
+                        if 'Transcript' in payload and len(payload['Transcript']['Results']) > 0:
                         transcript = payload['Transcript']['Results'][0]
                         if 'Alternatives' in transcript and len(transcript['Alternatives']) > 0:
                             text = transcript['Alternatives'][0]['Transcript'].strip()
