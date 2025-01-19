@@ -12,24 +12,91 @@ import pygetwindow as gw
 import win32con
 import win32api
 import win32gui
+import ctypes
+from ctypes import wintypes
 import time
+
+user32 = ctypes.WinDLL('user32', use_last_error=True)
+
+INPUT_KEYBOARD = 1
+KEYEVENTF_KEYUP = 0x0002
+
+# C struct definitions
+wintypes.ULONG_PTR = wintypes.WPARAM
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = (("dx",          wintypes.LONG),
+                ("dy",          wintypes.LONG),
+                ("mouseData",    wintypes.DWORD),
+                ("dwFlags",     wintypes.DWORD),
+                ("time",        wintypes.DWORD),
+                ("dwExtraInfo", wintypes.ULONG_PTR))
+
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = (("wVk",         wintypes.WORD),
+                ("wScan",       wintypes.WORD),
+                ("dwFlags",     wintypes.DWORD),
+                ("time",        wintypes.DWORD),
+                ("dwExtraInfo", wintypes.ULONG_PTR))
+
+class HARDWAREINPUT(ctypes.Structure):
+    _fields_ = (("uMsg",    wintypes.DWORD),
+                ("wParamL", wintypes.WORD),
+                ("wParamH", wintypes.WORD))
+
+class INPUT(ctypes.Structure):
+    class _INPUT(ctypes.Union):
+        _fields_ = (("ki", KEYBDINPUT),
+                   ("mi", MOUSEINPUT),
+                   ("hi", HARDWAREINPUT))
+    _anonymous_ = ("_input",)
+    _fields_ = (("type",   wintypes.DWORD),
+                ("_input", _INPUT))
 from presigned_url import AWSTranscribePresignedURL
 from eventstream import create_audio_event, decode_event
 
 class Envoicer:
     def send_keystrokes_win32(self, text):
-        """Send keystrokes using Win32 API"""
-        hwnd = win32gui.GetForegroundWindow()
-        
+        """Send keystrokes using Win32 API SendInput"""
         for char in text:
-            # Get virtual key code
             vk = win32api.VkKeyScan(char)
+            if vk == -1:
+                continue
+                
+            vk_code = vk & 0xFF
+            shift_state = (vk >> 8) & 0xFF
             
-            # Send key down
-            win32api.PostMessage(hwnd, win32con.WM_KEYDOWN, vk, 0)
-            # Send key up
-            win32api.PostMessage(hwnd, win32con.WM_KEYUP, vk, 0)
-            time.sleep(0.01)  # Small delay between keystrokes
+            inputs = []
+            
+            # Add shift key if needed
+            if shift_state & 1:
+                shift_down = INPUT(type=INPUT_KEYBOARD, 
+                                 ki=KEYBDINPUT(wVk=win32con.VK_SHIFT))
+                inputs.append(shift_down)
+                
+            # Key down
+            key_down = INPUT(type=INPUT_KEYBOARD,
+                            ki=KEYBDINPUT(wVk=vk_code))
+            inputs.append(key_down)
+            
+            # Key up
+            key_up = INPUT(type=INPUT_KEYBOARD,
+                          ki=KEYBDINPUT(wVk=vk_code, 
+                                      dwFlags=KEYEVENTF_KEYUP))
+            inputs.append(key_up)
+            
+            # Release shift if needed
+            if shift_state & 1:
+                shift_up = INPUT(type=INPUT_KEYBOARD,
+                               ki=KEYBDINPUT(wVk=win32con.VK_SHIFT,
+                                           dwFlags=KEYEVENTF_KEYUP))
+                inputs.append(shift_up)
+                
+            # Send inputs
+            num_inputs = len(inputs)
+            input_array = (INPUT * num_inputs)(*inputs)
+            user32.SendInput(num_inputs, input_array, ctypes.sizeof(INPUT))
+            time.sleep(0.005)  # Smaller delay since SendInput is more reliable
 
     def __init__(self):
         # Configure logging
