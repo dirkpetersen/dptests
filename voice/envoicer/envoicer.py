@@ -113,10 +113,10 @@ class Envoicer:
                         if 'Transcript' in payload and len(payload['Transcript']['Results']) > 0:
                             transcript = payload['Transcript']['Results'][0]
                             if 'Alternatives' in transcript and len(transcript['Alternatives']) > 0:
-                            text = transcript['Alternatives'][0]['Transcript'].strip()
-                            is_partial = transcript.get('IsPartial', True)
-                            
-                            logging.info(f"Transcribed{'(partial)' if is_partial else ''}: {text}")
+                                text = transcript['Alternatives'][0]['Transcript'].strip()
+                                is_partial = transcript.get('IsPartial', True)
+                                
+                                logging.info(f"Transcribed{'(partial)' if is_partial else ''}: {text}")
                             
                             if text:
                                 try:
