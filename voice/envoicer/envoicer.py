@@ -17,7 +17,7 @@ class Envoicer:
         # Configure logging
         logging.basicConfig(
             stream=sys.stderr,
-            level=logging.INFO,
+            level=logging.DEBUG,  # Changed to DEBUG level
             format='%(asctime)s.%(msecs)03d %(levelname)s: %(message)s',
             datefmt='%H:%M:%S'
         )
@@ -25,12 +25,13 @@ class Envoicer:
         # Audio settings optimized for lowest latency
         self.CHANNELS = 1
         self.RATE = 16000  # Higher quality for speech recognition
-        self.CHUNK = 512   # Smaller chunks for more frequent updates
+        self.CHUNK = 1024  # Increased for better stability
         self.FORMAT = pyaudio.paInt16
         self.running = False
         self.last_text = ""
         self.partial_stability_counter = 0
-        self.silence_threshold = 500  # Threshold for audio activity
+        self.silence_threshold = 300  # Lower threshold for audio activity
+        self.debug_audio = True  # Enable audio level debugging
         
         # AWS Configuration
         self.access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -57,8 +58,13 @@ class Envoicer:
 
     def is_audio_active(self, audio_data):
         """Check if there's significant audio activity"""
-        return max(abs(int.from_bytes(audio_data[i:i+2], 'little', signed=True)) 
-                  for i in range(0, len(audio_data), 2)) > self.silence_threshold
+        audio_level = max(abs(int.from_bytes(audio_data[i:i+2], 'little', signed=True)) 
+                         for i in range(0, len(audio_data), 2))
+        
+        if self.debug_audio and audio_level > 100:  # Only log significant levels
+            logging.debug(f"Audio level: {audio_level}")
+        
+        return audio_level > self.silence_threshold
 
     async def record_and_stream(self, websocket):
         self.get_default_input_device_info()
@@ -78,10 +84,11 @@ class Envoicer:
                     data = stream.read(self.CHUNK, exception_on_overflow=False)
                     if len(data) > 0:
                         if self.is_audio_active(data):
+                            logging.debug("Sending audio data to AWS")
                             audio_event = create_audio_event(data)
                             await websocket.send(audio_event)
                             consecutive_errors = 0
-                    await asyncio.sleep(0.001)  # Small sleep to prevent CPU overload
+                        await asyncio.sleep(0.001)  # Small sleep to prevent CPU overload
                 except websockets.exceptions.ConnectionClosedError:
                     consecutive_errors += 1
                     if consecutive_errors > 5:
