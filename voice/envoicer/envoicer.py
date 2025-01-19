@@ -123,10 +123,21 @@ class Envoicer:
                                             try:
                                                 active_window = gw.getActiveWindow()
                                                 if active_window:
+                                                    # Log window details before activation
+                                                    logging.info(f"Found active window: {active_window.title}")
+                                                    logging.info(f"Window details - PID: {active_window._hWnd}, Size: {active_window.size}, Position: {active_window.topleft}")
+                                                    
                                                     # Ensure window is active and ready
                                                     active_window.activate()
                                                     active_window.restore()
                                                     pyautogui.sleep(0.1)
+                                                    
+                                                    # Verify window activation
+                                                    current_window = gw.getActiveWindow()
+                                                    if current_window and current_window._hWnd == active_window._hWnd:
+                                                        logging.info(f"Successfully activated window: {current_window.title}")
+                                                    else:
+                                                        logging.warning(f"Window activation may have failed - Current: {current_window.title if current_window else 'None'}")
                                                     
                                                     # Type the new text
                                                     new_text = text[len(self.last_text):].strip()
@@ -152,7 +163,8 @@ class Envoicer:
                                             if active_window:
                                                 # Only proceed if window changed or no previous window
                                                 if active_window != self.last_active_window:
-                                                    logging.info(f"Active window changed to: {active_window.title}")
+                                                    logging.info(f"Active window changed to: {active_window.title} (PID: {active_window._hWnd})")
+                                                    logging.info(f"Window properties - Size: {active_window.size}, Position: {active_window.topleft}")
                                                     self.last_active_window = active_window
                                                     pyautogui.sleep(0.1)  # Small pause when switching windows
                                                 
