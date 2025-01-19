@@ -123,16 +123,22 @@ class Envoicer:
                                             self.partial_stability_counter = 0
                                             # Delete previous text and type new text
                                             if self.last_text:
-                                                self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
+                                                backspace_cmd = "{BS " + str(len(self.last_text)) + "}"
+                                                self.shell.SendKeys(backspace_cmd)
+                                                logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
                                             self.shell.SendKeys(text)
+                                            logging.info(f"SEND: {text}")
                                             self.last_text = text
                                         else:
                                             self.partial_stability_counter += 1
                                     else:
                                         # For final text, add a space after
                                         if self.last_text:
-                                            self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
+                                            backspace_cmd = "{BS " + str(len(self.last_text)) + "}"
+                                            self.shell.SendKeys(backspace_cmd)
+                                            logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
                                         self.shell.SendKeys(text + " ")
+                                        logging.info(f"SEND: {text} ")
                                         self.last_text = ""
                                         self.partial_stability_counter = 0
                                 except Exception as e:
