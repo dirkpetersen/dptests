@@ -68,16 +68,10 @@ class Envoicer:
                 self.logger.warning(f"Audio status: {status}")
                 return
 
-            # Convert to mono and normalize
+            # Convert and queue audio data without debug logging
             audio_data = np.mean(indata, axis=1) if len(indata.shape) > 1 else indata.flatten()
-            audio_data = np.clip(audio_data, -1.0, 1.0)
-            
-            # Convert to int16
-            audio_data = (audio_data * 32767).astype(np.int16)
-            
-            # Queue the audio data
-            audio_chunk = audio_data.tobytes()
-            if len(audio_chunk) > 0:
+            audio_chunk = (np.clip(audio_data, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
+            if audio_chunk:
                 asyncio.run_coroutine_threadsafe(
                     self.audio_queue.put(audio_chunk), 
                     self.loop
@@ -107,11 +101,14 @@ class Envoicer:
                         if results and results[0].get('Alternatives'):
                             transcript = results[0]['Alternatives'][0]['Transcript']
                             
-                            # Only type new text
+                            # Print full transcript and handle new text
+                            print(f"\nTranscript: {transcript}")
+                            
                             new_text = transcript[len(self.last_transcript):].strip()
                             if new_text:
                                 active_window = gw.getActiveWindow()
                                 if active_window:
+                                    print(f"Typing new text: {new_text}")
                                     pyautogui.write(new_text + ' ')
                             self.last_transcript = transcript
                             
