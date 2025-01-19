@@ -99,6 +99,10 @@ class Envoicer:
             time.sleep(0.005)  # Smaller delay since SendInput is more reliable
 
     def __init__(self):
+        # Global transcript state
+        self._current_transcript = ""
+        self._last_printed_text = ""
+        
         # Configure logging
         logging.basicConfig(
             stream=sys.stderr,
@@ -131,6 +135,41 @@ class Envoicer:
         # Track last active window
         self.last_active_window = None
         
+    def extract(self, text: str, is_partial: bool) -> str:
+        """
+        Extract new content from transcript and manage transcript state.
+        Returns new text that should be printed/processed.
+        """
+        if not text:
+            return ""
+            
+        text = text.strip()
+        
+        # For partial results, only return text if it's meaningfully different
+        if is_partial:
+            if text == self._current_transcript:
+                return ""
+            
+            # Only update if it ends with a complete word
+            if not (text.endswith(' ') or text.endswith('.')):
+                return ""
+                
+            # Get just the new portion
+            new_text = text[len(self._current_transcript):].strip()
+            if new_text:
+                self._current_transcript = text
+                return new_text
+            return ""
+            
+        # For final results, clear the current transcript
+        else:
+            if text in self.sent_sentences:
+                return ""
+            
+            self._current_transcript = ""
+            self.sent_sentences.add(text)
+            return text
+            
     def get_default_input_device_info(self):
         """Get and log information about the default input device"""
         try:
@@ -213,16 +252,12 @@ class Envoicer:
                                     logging.info("No active window")
                                     self._last_window_info = None
 
-                                # Only print transcript if it's meaningfully different
-                                if not hasattr(self, '_last_printed_text'):
-                                    self._last_printed_text = ""
-                                
-                                # Check if new text is substantially different
-                                if len(text) > len(self._last_printed_text) + 3 or not text.startswith(self._last_printed_text):
-                                    print(f"\nTranscript: {text}")
-                                    self._last_printed_text = text
+                                # Extract new content to process
+                                new_text = self.extract(text, is_partial)
+                                if new_text:
+                                    print(f"\nTranscript: {new_text}")
                             
-                            if text:
+                            if new_text:
                                 try:
                                     if is_partial:
                                         # Only update text if it ends with a complete word
@@ -243,11 +278,9 @@ class Envoicer:
                                                     else:
                                                         logging.warning(f"Window activation may have failed - Current: {current_window.title if current_window else 'None'}")
                                                     
-                                                    # Type the new text
-                                                    new_text = text[len(self.last_text):].strip()
-                                                    if new_text:
-                                                        self.send_keystrokes_win32(new_text + ' ')
-                                                        logging.info(f"Typed: {new_text}")
+                                                    # Send the new text
+                                                    self.send_keystrokes_win32(new_text + ' ')
+                                                    logging.info(f"Typed: {new_text}")
                                                 else:
                                                     # Log all windows to help debug
                                                     all_windows = gw.getAllWindows()
