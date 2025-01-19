@@ -20,10 +20,11 @@ class Envoicer:
         # Audio settings optimized for lowest latency
         self.CHANNELS = 1
         self.RATE = 16000  # Higher quality for speech recognition
-        self.CHUNK = 512   # Smaller chunks for even lower latency
+        self.CHUNK = 1024  # Balanced chunk size for stability
         self.FORMAT = pyaudio.paInt16
         self.running = False
         self.last_text = ""
+        self.partial_stability_counter = 0
         
         # AWS Configuration
         self.access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -66,20 +67,29 @@ class Envoicer:
                 if header[':message-type'] == 'event' and len(payload['Transcript']['Results']) > 0:
                     transcript = payload['Transcript']['Results'][0]
                     text = transcript['Alternatives'][0]['Transcript'].strip()
+                    is_partial = transcript.get('IsPartial', True)
                     
-                    if text and text != self.last_text:
-                        # For partial results, backspace the previous text
-                        if transcript.get('IsPartial', True) and self.last_text:
-                            self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
-                        
-                        # Send the new text
-                        self.shell.SendKeys(text)
-                        self.last_text = text
-                        
-                        # Add space only for final results
-                        if not transcript.get('IsPartial', True):
-                            self.shell.SendKeys(" ")
+                    if text:
+                        if is_partial:
+                            # Only update partial results after some stability
+                            if text != self.last_text:
+                                self.partial_stability_counter = 0
+                            else:
+                                self.partial_stability_counter += 1
+                            
+                            # Update text only if it's stable for a few iterations
+                            if self.partial_stability_counter >= 2 and text != self.last_text:
+                                if self.last_text:  # Only backspace if we have previous text
+                                    self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
+                                self.shell.SendKeys(text)
+                                self.last_text = text
+                        else:
+                            # For final results, always update
+                            if self.last_text:  # Clear any partial text
+                                self.shell.SendKeys("{BS " + str(len(self.last_text)) + "}")
+                            self.shell.SendKeys(text + " ")
                             self.last_text = ""
+                            self.partial_stability_counter = 0
         except websockets.exceptions.ConnectionClosedError:
             logging.error("WebSocket connection closed")
         except Exception as e:
@@ -108,7 +118,7 @@ class Envoicer:
             number_of_channels=self.CHANNELS,
             enable_channel_identification=False,
             enable_partial_results_stabilization=True,
-            partial_results_stability="high"
+            partial_results_stability="medium"
         )
         
         async with websockets.connect(
