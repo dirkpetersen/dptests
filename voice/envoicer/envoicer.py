@@ -103,10 +103,11 @@ class Envoicer:
     async def receive_transcription(self, websocket):
         try:
             while self.running:
-                response = await websocket.recv()
-                header, payload = decode_event(response)
-                logging.debug(f"Received response - header: {header}")
-                logging.debug(f"Payload: {payload}")
+                try:
+                    response = await websocket.recv()
+                    header, payload = decode_event(response)
+                    logging.debug(f"Received response - header: {header}")
+                    logging.debug(f"Payload: {payload}")
                 
                 if header[':message-type'] == 'event':
                     if 'Transcript' in payload and len(payload['Transcript']['Results']) > 0:
@@ -150,10 +151,17 @@ class Envoicer:
                                             self.partial_stability_counter = 0
                                 except Exception as e:
                                     logging.error(f"Error sending keys: {e}")
-        except websockets.exceptions.ConnectionClosedError:
-            logging.error("WebSocket connection closed")
+                except websockets.exceptions.ConnectionClosedOK:
+                    logging.info("Streaming completed successfully - reconnecting...")
+                    return  # Allow reconnection in connect_to_websocket
+                except websockets.exceptions.ConnectionClosedError:
+                    logging.error("WebSocket connection closed unexpectedly")
+                    return  # Allow reconnection in connect_to_websocket
+                except Exception as e:
+                    logging.exception("Error in receive_transcription")
+                    return  # Allow reconnection in connect_to_websocket
         except Exception as e:
-            logging.exception("Error in receive_transcription")
+            logging.exception("Fatal error in receive_transcription")
 
     async def connect_to_websocket(self):
         max_retries = 3
@@ -193,7 +201,8 @@ class Envoicer:
                 async with websockets.connect(
                     request_url,
                     additional_headers=headers,
-                    ping_timeout=None,
+                    ping_timeout=20,  # Add ping timeout
+                    ping_interval=15,  # Keep connection alive with pings
                     close_timeout=5,
                     max_size=2**24,  # Increase max message size
                     compression=None  # Disable compression for better performance
