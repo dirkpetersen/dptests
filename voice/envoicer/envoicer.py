@@ -7,8 +7,9 @@ import string
 import random
 import pyaudio
 import wave
-import win32com.client
 import keyboard
+import pyautogui
+import pygetwindow as gw
 from presigned_url import AWSTranscribePresignedURL
 from eventstream import create_audio_event, decode_event
 
@@ -43,8 +44,9 @@ class Envoicer:
         # Initialize PyAudio
         self.audio = pyaudio.PyAudio()
         
-        # Initialize Windows shell for typing
-        self.shell = win32com.client.Dispatch("WScript.Shell")
+        # Configure pyautogui
+        pyautogui.FAILSAFE = True
+        pyautogui.PAUSE = 0.001  # Minimal delay between actions
         
     def get_default_input_device_info(self):
         """Get and log information about the default input device"""
@@ -127,10 +129,10 @@ class Envoicer:
                                             self.partial_stability_counter = 0
                                             # Delete previous text and type new text
                                             if self.last_text:
-                                                backspace_cmd = "{BS " + str(len(self.last_text)) + "}"
-                                                self.shell.SendKeys(backspace_cmd)
+                                                for _ in range(len(self.last_text)):
+                                                    pyautogui.press('backspace')
                                                 logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
-                                            self.shell.SendKeys(text)
+                                            pyautogui.write(text)
                                             logging.info(f"SEND: {text}")
                                             self.last_text = text
                                         else:
@@ -140,11 +142,11 @@ class Envoicer:
                                         if text not in self.sent_sentences:
                                             # For final text, add a space after if it doesn't end with punctuation
                                             if self.last_text:
-                                                backspace_cmd = "{BS " + str(len(self.last_text)) + "}"
-                                                self.shell.SendKeys(backspace_cmd)
+                                                for _ in range(len(self.last_text)):
+                                                    pyautogui.press('backspace')
                                                 logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
                                             ending = ' ' if not text.endswith(('.', '!', '?')) else ''
-                                            self.shell.SendKeys(text + ending)
+                                            pyautogui.write(text + ending)
                                             logging.info(f"SEND: {text}{ending}")
                                             self.sent_sentences.add(text)  # Add to sent sentences
                                             self.last_text = ""
