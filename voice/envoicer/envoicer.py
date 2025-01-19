@@ -161,10 +161,13 @@ class Envoicer:
                                             # For final text, add a space after if it doesn't end with punctuation
                                             active_window = gw.getActiveWindow()
                                             if active_window:
+                                                # Log window details before proceeding
+                                                logging.info(f"Current active window: {active_window.title}")
+                                                logging.info(f"Window details - Handle: {active_window._hWnd}, Size: {active_window.size}, Position: {active_window.topleft}")
+                                                    
                                                 # Only proceed if window changed or no previous window
                                                 if active_window != self.last_active_window:
-                                                    logging.info(f"Active window changed to: {active_window.title} (PID: {active_window._hWnd})")
-                                                    logging.info(f"Window properties - Size: {active_window.size}, Position: {active_window.topleft}")
+                                                    logging.info(f"Window changed from: {self.last_active_window.title if self.last_active_window else 'None'}")
                                                     self.last_active_window = active_window
                                                     pyautogui.sleep(0.1)  # Small pause when switching windows
                                                 
