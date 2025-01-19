@@ -29,6 +29,7 @@ class Envoicer:
         self.FORMAT = pyaudio.paInt16
         self.running = False
         self.last_text = ""
+        self.sent_sentences = set()  # Track sent sentences
         self.partial_stability_counter = 0
         self.silence_threshold = 300  # Lower threshold for audio activity
         self.debug_audio = True  # Enable audio level debugging
@@ -134,16 +135,19 @@ class Envoicer:
                                         else:
                                             self.partial_stability_counter += 1
                                     else:
-                                        # For final text, add a space after if it doesn't end with punctuation
-                                        if self.last_text:
-                                            backspace_cmd = "{BS " + str(len(self.last_text)) + "}"
-                                            self.shell.SendKeys(backspace_cmd)
-                                            logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
-                                        ending = ' ' if not text.endswith(('.', '!', '?')) else ''
-                                        self.shell.SendKeys(text + ending)
-                                        logging.info(f"SEND: {text}{ending}")
-                                        self.last_text = ""
-                                        self.partial_stability_counter = 0
+                                        # Only send if we haven't sent this sentence before
+                                        if text not in self.sent_sentences:
+                                            # For final text, add a space after if it doesn't end with punctuation
+                                            if self.last_text:
+                                                backspace_cmd = "{BS " + str(len(self.last_text)) + "}"
+                                                self.shell.SendKeys(backspace_cmd)
+                                                logging.info(f"SEND: [BACKSPACE x{len(self.last_text)}]")
+                                            ending = ' ' if not text.endswith(('.', '!', '?')) else ''
+                                            self.shell.SendKeys(text + ending)
+                                            logging.info(f"SEND: {text}{ending}")
+                                            self.sent_sentences.add(text)  # Add to sent sentences
+                                            self.last_text = ""
+                                            self.partial_stability_counter = 0
                                 except Exception as e:
                                     logging.error(f"Error sending keys: {e}")
         except websockets.exceptions.ConnectionClosedError:
