@@ -35,10 +35,11 @@ Submitted Document:
 Respond with exactly one of these words: GREEN, YELLOW, RED followed by explanation if YELLOW."""
     
     response = bedrock.invoke_model(
-        modelId="anthropic.claude-v2",
+        modelId="anthropic.claude-3-sonnet-20240122-v1:0",
         body=json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 500,
+            "temperature": 0,
             "messages": [
                 {
                     "role": "user",
