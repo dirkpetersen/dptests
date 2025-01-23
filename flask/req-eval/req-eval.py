@@ -5,6 +5,9 @@ import io
 import os
 import json
 from werkzeug.utils import secure_filename
+from langchain_community.embeddings import BedrockEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -16,6 +19,17 @@ bedrock = boto3.client(
     region_name='us-east-1'
 )
 
+# Configure embeddings and text splitter
+embeddings = BedrockEmbeddings(
+    client=bedrock,
+    model_id="amazon.titan-embed-text-v1"
+)
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=100
+)
+
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
@@ -24,26 +38,41 @@ def extract_text_from_pdf(pdf_file):
     return text
 
 def evaluate_requirements(policy_text, submission_text):
-    prompt = f"""Human: Compare these two documents and determine if the second document meets the requirements specified in the first document.
-
-Policy Document:
-{policy_text}
-
-Submitted Document:
-{submission_text}
-
-Respond with exactly one of these words: GREEN, YELLOW, RED followed by explanation if YELLOW."""
+    # Split documents into chunks
+    policy_chunks = text_splitter.split_text(policy_text)
+    submission_chunks = text_splitter.split_text(submission_text)
+    
+    # Create vector store from policy document
+    policy_store = FAISS.from_texts(policy_chunks, embeddings)
+    
+    # For each submission chunk, find relevant policy requirements
+    relevant_pairs = []
+    for chunk in submission_chunks:
+        similar_docs = policy_store.similarity_search(chunk, k=2)
+        relevant_pairs.extend([(chunk, doc.page_content) for doc in similar_docs])
+    
+    # Create analysis prompt with relevant chunks
+    analysis_prompt = """Human: I will provide pairs of text chunks from two documents. 
+For each pair, the first is from a submission document and the second is from a policy document. 
+Analyze if the submission meets the requirements in the policy.\n\n"""
+    
+    for sub_chunk, pol_chunk in relevant_pairs:
+        analysis_prompt += f"Submission chunk:\n{sub_chunk}\n\nMatching policy chunk:\n{pol_chunk}\n\n"
+    
+    analysis_prompt += "Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED) "
+    analysis_prompt += "followed by a brief explanation if YELLOW. GREEN means the submission fully meets requirements, "
+    analysis_prompt += "RED means it clearly doesn't, and YELLOW means there are uncertainties that need human review."
     
     response = bedrock.invoke_model(
         modelId="anthropic.claude-v3-sonnet",
         body=json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 500,
+            "max_tokens": 1000,
             "temperature": 0,
             "messages": [
                 {
                     "role": "user",
-                    "content": prompt
+                    "content": analysis_prompt
                 }
             ]
         })
