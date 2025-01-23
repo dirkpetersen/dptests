@@ -24,17 +24,27 @@ def extract_text_from_pdf(pdf_file):
     return text
 
 def evaluate_requirements(policy_text, submission_text):
-    prompt = f"""Compare the following two documents and determine if the second document meets the requirements specified in the first document.
-    Policy Document: {policy_text}
-    Submitted Document: {submission_text}
-    Respond with exactly one of these words: GREEN, YELLOW, RED followed by explanation if YELLOW."""
+    prompt = f"""Human: Compare these two documents and determine if the second document meets the requirements specified in the first document.
+
+Policy Document:
+{policy_text}
+
+Submitted Document:
+{submission_text}
+
+Respond with exactly one of these words: GREEN, YELLOW, RED followed by explanation if YELLOW."""
     
     response = bedrock.invoke_model(
         modelId="anthropic.claude-v2",
         body=json.dumps({
-            "prompt": prompt,
-            "max_tokens_to_sample": 500,
-            "temperature": 0
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 500,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
         })
     )
     
