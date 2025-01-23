@@ -3,6 +3,7 @@ import boto3
 import PyPDF2
 import io
 import os
+import json
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
