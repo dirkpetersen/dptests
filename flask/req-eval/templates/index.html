@@ -38,7 +38,13 @@
                 <input type="file" class="form-control" id="submission" name="submission" accept=".pdf" required>
             </div>
             
-            <button type="submit" class="btn btn-primary">Evaluate</button>
+            <button type="submit" class="btn btn-primary" id="evalButton">Evaluate</button>
+            <div class="d-none text-center mt-4" id="loadingSpinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Evaluating documents...</p>
+            </div>
         </form>
         
         {% if result %}
@@ -58,5 +64,11 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('evalButton').disabled = true;
+            document.getElementById('loadingSpinner').classList.remove('d-none');
+        });
+    </script>
 </body>
 </html>
