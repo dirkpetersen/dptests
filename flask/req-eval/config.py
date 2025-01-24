@@ -22,3 +22,7 @@ SIMILAR_CHUNKS_COUNT = 2
 # Response Configuration
 MAX_TOKENS = 1000
 TEMPERATURE = 0
+
+# Cache Configuration
+CACHE_DIR = "cache"
+CACHE_ENABLED = True

@@ -5,7 +5,9 @@ import io
 import os
 import json
 import logging
-from typing import Tuple, List
+import hashlib
+from typing import Tuple, List, Optional
+from pathlib import Path
 from werkzeug.utils import secure_filename
 from langchain_community.embeddings import BedrockEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -63,6 +65,32 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=CHUNK_OVERLAP
 )
 
+def get_cache_path(file_content: bytes) -> Path:
+    """Generate cache path for file content"""
+    file_hash = hashlib.md5(file_content).hexdigest()
+    return Path(CACHE_DIR) / f"{file_hash}.txt"
+
+def get_cached_text(file_content: bytes) -> Optional[str]:
+    """Get cached text content if available"""
+    if not CACHE_ENABLED:
+        return None
+        
+    cache_path = get_cache_path(file_content)
+    if cache_path.exists():
+        logger.debug(f"Cache hit: {cache_path}")
+        return cache_path.read_text()
+    return None
+
+def save_to_cache(file_content: bytes, text: str):
+    """Save extracted text to cache"""
+    if not CACHE_ENABLED:
+        return
+        
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    cache_path = get_cache_path(file_content)
+    cache_path.write_text(text)
+    logger.debug(f"Saved to cache: {cache_path}")
+
 def extract_text_from_pdf(pdf_file) -> str:
     """
     Extract text content from a PDF file.
@@ -76,10 +104,23 @@ def extract_text_from_pdf(pdf_file) -> str:
     Raises:
         PyPDF2.PdfReadError: If PDF parsing fails
     """
+    # Read file content for caching
+    file_content = pdf_file.read()
+    pdf_file.seek(0)  # Reset file pointer
+    
+    # Check cache
+    cached_text = get_cached_text(file_content)
+    if cached_text is not None:
+        return cached_text
+    
+    # Extract text if not cached
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
     for page in pdf_reader.pages:
         text += page.extract_text()
+    
+    # Save to cache
+    save_to_cache(file_content, text)
     return text
 
 def evaluate_requirements(policy_text: str, submission_text: str) -> Tuple[str, str]:
