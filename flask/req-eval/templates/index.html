@@ -40,7 +40,6 @@
                 <small class="form-text text-muted" id="submissionHelp">Previously uploaded files will use cached analysis</small>
             </div>
             
-            <button type="submit" class="btn btn-primary" id="evalButton">Evaluate</button>
             <div class="d-none text-center mt-4" id="loadingSpinner">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -80,7 +79,6 @@
         const form = document.querySelector('form');
         const policyInput = document.getElementById('policy');
         const submissionInput = document.getElementById('submission');
-        const evalButton = document.getElementById('evalButton');
         const loadingSpinner = document.getElementById('loadingSpinner');
 
         // Store files when selected
@@ -106,17 +104,8 @@
             resultBoxes.forEach(box => box.style.display = 'none');
         }
 
-        // Handle form submission and evaluation
-        evalButton.addEventListener('click', function(e) {
-            if (!submissionInput.files.length) {
-                e.preventDefault();
-                submissionInput.click();
-                return;
-            }
-        });
-
+        // Handle form submission
         form.addEventListener('submit', function(e) {
-            evalButton.disabled = true;
             loadingSpinner.classList.remove('d-none');
         });
 
@@ -124,8 +113,8 @@
         policyInput.addEventListener('change', hideResults);
         submissionInput.addEventListener('change', function() {
             hideResults();
-            // Automatically trigger evaluation when submission file is selected
-            evalButton.click();
+            // Automatically submit form when submission file is selected
+            form.submit();
         });
 
         // Update file input display
