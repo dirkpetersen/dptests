@@ -17,9 +17,11 @@ from botocore.config import Config
 
 from config import *
 
-# Configure logging
-logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
+# Configure logging based on Flask debug mode
 logger = logging.getLogger(__name__)
+def configure_logging():
+    log_level = logging.DEBUG if app.debug else logging.INFO
+    logging.basicConfig(level=log_level, format=LOG_FORMAT)
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
@@ -274,4 +276,5 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
+    configure_logging()
     app.run(host='0.0.0.0', port=5000, debug=True)
