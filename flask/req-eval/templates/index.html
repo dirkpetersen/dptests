@@ -52,7 +52,7 @@
             {{ result }}
         </div>
         
-        {% if explanation %}
+        {% if result == "YELLOW" and explanation %}
         <div class="card mt-3">
             <div class="card-body">
                 <h5 class="card-title">Explanation for Yellow Status:</h5>
