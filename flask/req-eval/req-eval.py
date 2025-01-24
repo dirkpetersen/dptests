@@ -10,6 +10,7 @@ from langchain_community.embeddings import BedrockEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from botocore.exceptions import BotoCoreError, ClientError
+from botocore.config import Config
 
 from config import *
 
