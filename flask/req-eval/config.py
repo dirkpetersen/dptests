@@ -6,8 +6,7 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 # AWS Bedrock Configuration
 BEDROCK_REGION = "us-west-2"  # Default region if not configured
-MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"
-#  anthropic.claude-3-haiku-20240307-v1:0, anthropic.claude-3-5-sonnet-20241022-v2:0
+MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"  # Using Haiku model which accepts shorter input
 ANTHROPIC_VERSION = "bedrock-2023-05-31"
 MAX_RETRIES = 10
 
@@ -17,6 +16,7 @@ MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 # Response Configuration
 MAX_TOKENS = 1000
 TEMPERATURE = 0
+MAX_CHARS_PER_DOC = 6000  # Reduced from 12000 to work with Haiku model
 
 # Cache Configuration
 CACHE_DIR = "policy_cache"  # Directory for policy caches
