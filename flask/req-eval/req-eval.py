@@ -204,15 +204,18 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
             raise ValueError("Response missing text content")
             
         # Process the response text
-        # First word should be the status
-        first_word = text_content.split('.')[0].strip().upper()
-        explanation = text_content.split('.', 1)[1].strip() if '.' in text_content else ""
+        # First line contains the status
+        lines = text_content.strip().split('\n')
+        status = lines[0].strip().upper()
         
-        if first_word in ["GREEN", "YELLOW", "RED"]:
-            return first_word, explanation if first_word == "YELLOW" else ""
+        # Join remaining lines for explanation
+        explanation = '\n'.join(lines[1:]).strip()
+        
+        if status in ["GREEN", "YELLOW", "RED"]:
+            return status, explanation if status == "YELLOW" else ""
         else:
             logger.error(f"Unexpected status in response: {text_content}")
-            raise ValueError(f"Invalid status in response: {first_word}")
+            raise ValueError(f"Invalid status in response: {status}")
             
     except (BotoCoreError, ClientError) as e:
         logger.error(f"Bedrock API error: {str(e)}")
