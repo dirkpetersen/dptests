@@ -6,7 +6,7 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 # AWS Bedrock Configuration
 BEDROCK_REGION = "us-west-2"  # Default region if not configured
-MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"  # Using Haiku model which accepts shorter input
+MODEL_ID = "anthropic.claude-3-5-haiku-20241022-v1:0"  # Using Haiku model which accepts shorter input
 ANTHROPIC_VERSION = "bedrock-2023-05-31"
 MAX_RETRIES = 10
 
