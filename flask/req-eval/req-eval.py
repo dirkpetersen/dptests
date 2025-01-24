@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, make_response
 import uuid
 import boto3
-import PyPDF2
+from markitdown import MarkItDown
 import io
 import os
 import json
@@ -96,22 +96,29 @@ def get_cached_policy(user_id: str) -> Optional[str]:
 
 def extract_text_from_pdf(pdf_file) -> str:
     """
-    Extract text content from a PDF file.
+    Extract text content from a PDF file using MarkItDown.
     
     Args:
         pdf_file: File object containing PDF data
         
     Returns:
-        str: Extracted text from the PDF
+        str: Extracted text from the PDF in markdown format
         
     Raises:
-        PyPDF2.PdfReadError: If PDF parsing fails
+        Exception: If PDF parsing fails
     """
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
+    # Save the uploaded file temporarily
+    temp_path = "temp.pdf"
+    pdf_file.save(temp_path)
+    
+    try:
+        md = MarkItDown()
+        result = md.convert(temp_path)
+        return result.text_content
+    finally:
+        # Clean up temporary file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 def evaluate_requirements(policy_text: str, submission_text: str) -> Tuple[str, str]:
     """
