@@ -224,14 +224,14 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        if 'policy' not in request.files or 'submission' not in request.files:
-            return render_template('index.html', error="Both files are required")
+        if 'submission' not in request.files:
+            return render_template('index.html', error="Submission document is required")
         
-        policy_file = request.files['policy']
         submission_file = request.files['submission']
-        
-        if policy_file.filename == '' or submission_file.filename == '':
-            return render_template('index.html', error="Both files are required")
+        if submission_file.filename == '':
+            return render_template('index.html', error="Submission document is required")
+            
+        policy_file = request.files.get('policy')
         
         try:
             # Handle policy document
