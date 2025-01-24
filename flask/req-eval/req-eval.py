@@ -189,7 +189,7 @@ RED means one or more requirements are clearly not met.
             explanation += "\n" + '\n'.join(remaining_lines)
         
         if status in ["GREEN", "YELLOW", "ORANGE", "RED"]:
-            return status, explanation if status in ["GREEN", "YELLOW", "ORANGE"] else ""
+            return status, explanation
         else:
             logger.error(f"Unexpected status in response: {text_content}")
             raise ValueError(f"Invalid status in response: {status}")
@@ -235,7 +235,7 @@ def index():
             # Create response with cookie
             response = make_response(render_template('index.html', 
                                                    result=result, 
-                                                   explanation=explanation if result in ["GREEN", "YELLOW", "ORANGE"] else None))
+                                                   explanation=explanation))
             response.set_cookie(COOKIE_NAME, user_id, max_age=COOKIE_MAX_AGE)
             return response
             

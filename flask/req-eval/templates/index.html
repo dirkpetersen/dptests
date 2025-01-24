@@ -54,10 +54,10 @@
             {{ result }}
         </div>
         
-        {% if (result == "YELLOW" or result == "ORANGE") and explanation %}
+        {% if explanation %}
         <div class="card mt-3">
             <div class="card-body">
-                <h5 class="card-title">Explanation for Yellow Status:</h5>
+                <h5 class="card-title">Explanation for {{ result }} Status:</h5>
                 <div class="card-text">
                     {% for line in explanation.split('\n') %}
                         {% if line.startswith('1.') or line.startswith('2.') or line.startswith('3.') %}
