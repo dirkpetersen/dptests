@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.config import Config
 from datetime import datetime, timezone, timedelta
+import tempfile
 
 from config import *
 
@@ -94,9 +95,12 @@ def extract_text_from_pdf(pdf_file) -> str:
     Raises:
         Exception: If PDF parsing fails
     """
-    # Save the uploaded file temporarily
-    temp_path = "temp.pdf"
-    pdf_file.save(temp_path)
+    # Create a temporary file with a unique name
+    import tempfile
+    
+    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+        pdf_file.save(temp_file.name)
+        temp_path = temp_file.name
     
     try:
         md = MarkItDown()
