@@ -165,8 +165,12 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
     for sub_chunk, pol_chunk in relevant_pairs:
         analysis_prompt += f"Submission chunk:\n{sub_chunk}\n\nMatching policy chunk:\n{pol_chunk}\n\n"
     
-    analysis_prompt += "Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED) "
-    analysis_prompt += "followed by a brief explanation if YELLOW. GREEN means the submission fully meets requirements, "
+    analysis_prompt += "Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED). "
+    analysis_prompt += "If the response is YELLOW, provide a detailed explanation including: \n"
+    analysis_prompt += "1. Specific requirements that need clarification\n"
+    analysis_prompt += "2. Examples from both documents showing the ambiguity\n"
+    analysis_prompt += "3. Suggested actions to resolve the uncertainties\n\n"
+    analysis_prompt += "GREEN means the submission fully meets requirements, "
     analysis_prompt += "RED means it clearly doesn't, and YELLOW means there are uncertainties that need human review."
     
     try:
