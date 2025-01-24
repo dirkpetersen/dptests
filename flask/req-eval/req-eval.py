@@ -187,10 +187,15 @@ RED means one or more requirements are clearly not met.
             raise ValueError("Response missing text content")
             
         # Process the response text
-        # First word of first line is the status
-        lines = text_content.strip().split('\n')
-        first_line = lines[0].strip()
-        status = first_line.split('.')[0].strip().upper()
+        # Extract status (GREEN, YELLOW, ORANGE, RED) from the response
+        text_upper = text_content.upper()
+        for possible_status in ["GREEN", "YELLOW", "ORANGE", "RED"]:
+            if possible_status in text_upper:
+                status = possible_status
+                break
+        else:
+            logger.error(f"No valid status found in response: {text_content}")
+            raise ValueError("No valid status found in response")
         
         # Combine the rest of first line (after status) with remaining lines for explanation
         remaining_first_line = first_line.split('.', 1)[1].strip() if '.' in first_line else ""
