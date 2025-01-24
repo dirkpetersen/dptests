@@ -31,13 +31,13 @@
             <div class="mb-3">
                 <label for="policy" class="form-label">Policy Document (PDF)</label>
                 <input type="file" class="form-control" id="policy" name="policy" accept=".pdf" required>
-                <small class="form-text text-muted">Previously uploaded files will use cached analysis</small>
+                <small class="form-text text-muted" id="policyHelp">Previously uploaded files will use cached analysis</small>
             </div>
             
             <div class="mb-3">
                 <label for="submission" class="form-label">Submission Document (PDF)</label>
                 <input type="file" class="form-control" id="submission" name="submission" accept=".pdf" required>
-                <small class="form-text text-muted">Previously uploaded files will use cached analysis</small>
+                <small class="form-text text-muted" id="submissionHelp">Previously uploaded files will use cached analysis</small>
             </div>
             
             <button type="submit" class="btn btn-primary" id="evalButton">Evaluate</button>
@@ -67,9 +67,41 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Store file names when files are selected
+        document.getElementById('policy').addEventListener('change', function() {
+            if (this.files.length > 0) {
+                localStorage.setItem('policyFileName', this.files[0].name);
+            }
+        });
+        
+        document.getElementById('submission').addEventListener('change', function() {
+            if (this.files.length > 0) {
+                localStorage.setItem('submissionFileName', this.files[0].name);
+            }
+        });
+
+        // Display stored file names after form submission
         document.querySelector('form').addEventListener('submit', function() {
             document.getElementById('evalButton').disabled = true;
             document.getElementById('loadingSpinner').classList.remove('d-none');
+        });
+
+        // Restore file names on page load
+        window.addEventListener('load', function() {
+            const policyFileName = localStorage.getItem('policyFileName');
+            const submissionFileName = localStorage.getItem('submissionFileName');
+            
+            if (policyFileName) {
+                document.getElementById('policy').setAttribute('data-file', policyFileName);
+                document.getElementById('policy').nextElementSibling.textContent = 
+                    'Previously uploaded: ' + policyFileName;
+            }
+            
+            if (submissionFileName) {
+                document.getElementById('submission').setAttribute('data-file', submissionFileName);
+                document.getElementById('submission').nextElementSibling.textContent = 
+                    'Previously uploaded: ' + submissionFileName;
+            }
         });
     </script>
 </body>
