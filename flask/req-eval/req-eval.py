@@ -166,7 +166,14 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
             # Extract explanation after "YELLOW"
             parts = text_content.split("YELLOW", 1)
             explanation = parts[1].strip() if len(parts) > 1 else text_content
-        return "YELLOW", explanation
+            return "YELLOW", explanation
+            
+    except (BotoCoreError, ClientError) as e:
+        logger.error(f"Bedrock API error: {str(e)}")
+        raise
+    except (KeyError, json.JSONDecodeError, ValueError) as e:
+        logger.error(f"Failed to parse Bedrock response: {str(e)}")
+        raise
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
