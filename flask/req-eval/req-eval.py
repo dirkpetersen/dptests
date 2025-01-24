@@ -132,32 +132,14 @@ Submission Document:
 {submission_text}
 
 Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, ORANGE, or RED).
-If the response is YELLOW or ORANGE, provide a detailed explanation.
+In addition provide an explanation on how specific requirements are met (GREEN) or may not be met.
 
 GREEN means all requirements are fully met.
 YELLOW means all quantifiable/numerical requirements are met but other requirements are ambiguous.
 ORANGE means both numerical and other requirements are ambiguous and need clarification.
 RED means one or more requirements are clearly not met.
 
-Additional overriding Instructions: 
-Please ignore the policy document requiring in the "Description of Operations" section to refer to the "specific duty, service or event." 
-Submitteds docs that do not mee this requirement will still be accepted as GREEN even though you are seeing an ambiguity.
-
-"""
-    
-# Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED).
-# If the response is YELLOW, provide a brief explanation including:
-# 1. Specific requirements that need clarification
-# 2. Examples from both documents showing the ambiguity
-
-# GREEN means the submission meets requirements,
-# RED means it does not meet requirements, and YELLOW means there are uncertainties that need human review.
-
-# Additional overriding Instructions: 
-# Please ignore the policy document requiring in the "Description of Operations" section to refer to the "specific duty, service or event." 
-# Submitteds docs that do not mee this requirement will still be accepted as GREEN even though you are seeing an ambiguity.
-
-    
+""" 
     try:
         request_body = {
             "anthropic_version": ANTHROPIC_VERSION,
@@ -207,7 +189,7 @@ Submitteds docs that do not mee this requirement will still be accepted as GREEN
             explanation += "\n" + '\n'.join(remaining_lines)
         
         if status in ["GREEN", "YELLOW", "ORANGE", "RED"]:
-            return status, explanation if status in ["YELLOW", "ORANGE"] else ""
+            return status, explanation if status in ["GREEN", "YELLOW", "ORANGE"] else ""
         else:
             logger.error(f"Unexpected status in response: {text_content}")
             raise ValueError(f"Invalid status in response: {status}")
@@ -253,7 +235,7 @@ def index():
             # Create response with cookie
             response = make_response(render_template('index.html', 
                                                    result=result, 
-                                                   explanation=explanation if result == "YELLOW" else None))
+                                                   explanation=explanation if result in ["GREEN", "YELLOW", "ORANGE"] else None))
             response.set_cookie(COOKIE_NAME, user_id, max_age=COOKIE_MAX_AGE)
             return response
             
