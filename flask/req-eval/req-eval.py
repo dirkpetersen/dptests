@@ -192,18 +192,14 @@ RED means one or more requirements are clearly not met.
         for possible_status in ["GREEN", "YELLOW", "ORANGE", "RED"]:
             if possible_status in text_upper:
                 status = possible_status
+                # Remove the status word from the explanation
+                explanation = text_content.replace(possible_status, "", 1).strip()
+                # Remove any leading punctuation
+                explanation = explanation.lstrip(".:- \n")
                 break
         else:
             logger.error(f"No valid status found in response: {text_content}")
             raise ValueError("No valid status found in response")
-        
-        # Combine the rest of first line (after status) with remaining lines for explanation
-        remaining_first_line = first_line.split('.', 1)[1].strip() if '.' in first_line else ""
-        remaining_lines = lines[1:] if len(lines) > 1 else []
-        
-        explanation = remaining_first_line
-        if remaining_lines:
-            explanation += "\n" + '\n'.join(remaining_lines)
         
         if status in ["GREEN", "YELLOW", "ORANGE", "RED"]:
             return status, explanation
