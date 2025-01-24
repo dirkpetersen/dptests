@@ -1,10 +1,9 @@
 import os
 
 # AWS Bedrock Configuration
-BEDROCK_REGION = "us-east-1"
-MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0"  # Updated model ID
+BEDROCK_REGION = "us-west-2"  # Default region if not configured
+MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0"
 ANTHROPIC_VERSION = "bedrock-2023-05-31"
-ASSUMED_ROLE = os.getenv('AWS_ROLE_ARN')  # Role ARN for Bedrock access
 MAX_RETRIES = 10
 
 # File Configuration

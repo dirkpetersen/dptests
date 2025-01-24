@@ -18,16 +18,10 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.config['SECRET_KEY'] = os.urandom(24)
 
 def get_bedrock_client():
-    """Initialize Bedrock client with role assumption and retry configuration"""
+    """Initialize Bedrock client with local credentials and retry configuration"""
     try:
         session = boto3.Session()
-        sts = session.client("sts")
-        
-        # Assume role for Bedrock access
-        response = sts.assume_role(
-            RoleArn=ASSUMED_ROLE,
-            RoleSessionName="bedrock-session"
-        )
+        region = session.region_name or BEDROCK_REGION
         
         # Configure retry behavior
         retry_config = Config(
@@ -37,14 +31,11 @@ def get_bedrock_client():
             }
         )
         
-        # Create Bedrock client with temporary credentials
+        # Create Bedrock client using local credentials
         client = session.client(
             service_name='bedrock-runtime',
-            region_name=BEDROCK_REGION,
-            config=retry_config,
-            aws_access_key_id=response["Credentials"]["AccessKeyId"],
-            aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
-            aws_session_token=response["Credentials"]["SessionToken"]
+            region_name=region,
+            config=retry_config
         )
         
         return client
