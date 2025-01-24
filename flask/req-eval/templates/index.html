@@ -67,41 +67,60 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Store file names when files are selected
-        document.getElementById('policy').addEventListener('change', function() {
-            if (this.files.length > 0) {
-                localStorage.setItem('policyFileName', this.files[0].name);
-            }
-        });
-        
-        document.getElementById('submission').addEventListener('change', function() {
-            if (this.files.length > 0) {
-                localStorage.setItem('submissionFileName', this.files[0].name);
-            }
+        const form = document.querySelector('form');
+        const policyInput = document.getElementById('policy');
+        const submissionInput = document.getElementById('submission');
+        const evalButton = document.getElementById('evalButton');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        // Store files when selected
+        function handleFileSelect(input, storageKey) {
+            input.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    const file = this.files[0];
+                    localStorage.setItem(storageKey + '_name', file.name);
+                    // Store file metadata
+                    localStorage.setItem(storageKey + '_lastModified', file.lastModified);
+                    localStorage.setItem(storageKey + '_size', file.size);
+                    localStorage.setItem(storageKey + '_type', file.type);
+                }
+            });
+        }
+
+        handleFileSelect(policyInput, 'policy');
+        handleFileSelect(submissionInput, 'submission');
+
+        // Handle form submission
+        form.addEventListener('submit', function(e) {
+            evalButton.disabled = true;
+            loadingSpinner.classList.remove('d-none');
         });
 
-        // Display stored file names after form submission
-        document.querySelector('form').addEventListener('submit', function() {
-            document.getElementById('evalButton').disabled = true;
-            document.getElementById('loadingSpinner').classList.remove('d-none');
-        });
+        // Update file input display
+        function updateFileDisplay(input, storageKey) {
+            const fileName = localStorage.getItem(storageKey + '_name');
+            if (fileName) {
+                const helpText = input.nextElementSibling;
+                helpText.innerHTML = `Previously uploaded: <strong>${fileName}</strong>`;
+                helpText.classList.add('text-primary');
+            }
+        }
 
-        // Restore file names on page load
+        // Restore file information on page load
         window.addEventListener('load', function() {
-            const policyFileName = localStorage.getItem('policyFileName');
-            const submissionFileName = localStorage.getItem('submissionFileName');
-            
-            if (policyFileName) {
-                document.getElementById('policy').setAttribute('data-file', policyFileName);
-                document.getElementById('policy').nextElementSibling.textContent = 
-                    'Previously uploaded: ' + policyFileName;
-            }
-            
-            if (submissionFileName) {
-                document.getElementById('submission').setAttribute('data-file', submissionFileName);
-                document.getElementById('submission').nextElementSibling.textContent = 
-                    'Previously uploaded: ' + submissionFileName;
-            }
+            updateFileDisplay(policyInput, 'policy');
+            updateFileDisplay(submissionInput, 'submission');
+        });
+
+        // Clear stored files when new ones are selected
+        policyInput.addEventListener('click', function() {
+            ['name', 'lastModified', 'size', 'type'].forEach(key => 
+                localStorage.removeItem('policy_' + key));
+        });
+
+        submissionInput.addEventListener('click', function() {
+            ['name', 'lastModified', 'size', 'type'].forEach(key => 
+                localStorage.removeItem('submission_' + key));
         });
     </script>
 </body>
