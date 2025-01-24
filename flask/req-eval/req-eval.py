@@ -191,14 +191,14 @@ def index():
             policy_text = extract_text_from_pdf(policy_file)
             submission_text = extract_text_from_pdf(submission_file)
             
-            try:
-                result, explanation = evaluate_requirements(policy_text, submission_text)
-                logger.info(f"Evaluation result: {result}, Explanation: {explanation}")
-                return render_template('index.html', 
-                                    result=result, 
-                                    explanation=explanation if result == "YELLOW" else None)
+            result, explanation = evaluate_requirements(policy_text, submission_text)
+            logger.info(f"Evaluation result: {result}, Explanation: {explanation}")
+            return render_template('index.html', 
+                                result=result, 
+                                explanation=explanation if result == "YELLOW" else None)
             
         except Exception as e:
+            logger.error(f"Error processing request: {str(e)}")
             return render_template('index.html', error=str(e))
     
     return render_template('index.html')
