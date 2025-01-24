@@ -30,7 +30,7 @@
         <form method="POST" enctype="multipart/form-data">
             <div class="mb-3">
                 <label for="policy" class="form-label">Policy Document (PDF)</label>
-                <input type="file" class="form-control" id="policy" name="policy" accept=".pdf" required>
+                <input type="file" class="form-control" id="policy" name="policy" accept=".pdf">
                 <small class="form-text text-muted" id="policyHelp">Previously uploaded files will use cached analysis</small>
             </div>
             
@@ -112,8 +112,12 @@
             updateFileDisplay(submissionInput, 'submission');
         });
 
-        // Clear stored files when new ones are selected
+        // Handle policy file selection
         policyInput.addEventListener('click', function() {
+            if (!confirm('Do you want to upload a new policy document? The current one will be replaced.')) {
+                event.preventDefault();
+                return;
+            }
             ['name', 'lastModified', 'size', 'type'].forEach(key => 
                 localStorage.removeItem('policy_' + key));
         });

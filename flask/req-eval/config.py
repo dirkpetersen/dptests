@@ -26,3 +26,4 @@ TEMPERATURE = 0
 # Cache Configuration
 CACHE_DIR = "cache"
 CACHE_ENABLED = True
+POLICY_CACHE_FILE = "latest_policy.txt"  # Store the latest policy document
