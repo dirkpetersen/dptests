@@ -13,10 +13,6 @@ MAX_RETRIES = 10
 # File Configuration
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
-# Text Processing Configuration
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 100
-SIMILAR_CHUNKS_COUNT = 2
 
 # Response Configuration
 MAX_TOKENS = 1000

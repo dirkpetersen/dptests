@@ -10,9 +10,6 @@ import hashlib
 from typing import Tuple, List, Optional
 from pathlib import Path
 from werkzeug.utils import secure_filename
-from langchain_community.embeddings import BedrockEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.config import Config
 
@@ -57,16 +54,6 @@ def get_bedrock_client():
 # Initialize Bedrock client
 bedrock = get_bedrock_client()
 
-# Configure embeddings and text splitter
-embeddings = BedrockEmbeddings(
-    client=bedrock,
-    model_id="amazon.titan-embed-text-v1"
-)
-
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=CHUNK_SIZE,
-    chunk_overlap=CHUNK_OVERLAP
-)
 
 def get_user_id():
     """Get or create user ID from cookie"""
@@ -135,26 +122,14 @@ def evaluate_requirements(policy_text: str, submission_text: str) -> Tuple[str, 
         BotoCoreError: If AWS Bedrock API call fails
         ValueError: If response parsing fails
     """
-    # Split documents into chunks
-    policy_chunks = text_splitter.split_text(policy_text)
-    submission_chunks = text_splitter.split_text(submission_text)
-    
-    # Create vector store from policy document
-    policy_store = FAISS.from_texts(policy_chunks, embeddings)
-    
-    # For each submission chunk, find relevant policy requirements
-    relevant_pairs = []
-    for chunk in submission_chunks:
-        similar_docs = policy_store.similarity_search(chunk, k=2)
-        relevant_pairs.extend([(chunk, doc.page_content) for doc in similar_docs])
-    
-    # Create analysis prompt with relevant chunks
-    analysis_prompt = """Human: I will provide pairs of text chunks from two documents. 
-For each pair, the first is from a submission document and the second is from a policy document. 
-Analyze if the submission meets the requirements in the policy.\n\n"""
-    
-    for sub_chunk, pol_chunk in relevant_pairs:
-        analysis_prompt += f"Submission chunk:\n{sub_chunk}\n\nMatching policy chunk:\n{pol_chunk}\n\n"
+    # Create simple analysis prompt with full documents
+    analysis_prompt = f"""Human: Compare these two documents and determine if the second document meets the requirements specified in the first document.
+
+Policy Document:
+{policy_text}
+
+Submission Document:
+{submission_text}
     
     analysis_prompt += "Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED). "
     analysis_prompt += "If the response is YELLOW, provide a detailed explanation including: \n"
