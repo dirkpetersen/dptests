@@ -249,7 +249,8 @@ def index():
             response = make_response(render_template('index.html', 
                                                    result=result, 
                                                    explanation=explanation))
-            response.set_cookie(COOKIE_NAME, user_id, max_age=COOKIE_MAX_AGE)
+            expires = datetime.now(timezone.UTC) + timedelta(seconds=COOKIE_MAX_AGE)
+            response.set_cookie(COOKIE_NAME, user_id, expires=expires)
             return response
             
         except Exception as e:
