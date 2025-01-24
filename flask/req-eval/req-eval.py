@@ -131,15 +131,27 @@ Policy Document:
 Submission Document:
 {submission_text}
 
-Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, ORANGE, or RED).
+Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, ORANGE or RED).
 In addition provide an explanation on how specific requirements are met (GREEN) or may not be met.
 
-GREEN means all requirements are fully met.
+GREEN means all requirements (quantifiable/numerical and unquantifiable) are fully met 
 YELLOW means all quantifiable/numerical requirements are met but other requirements are ambiguous.
 ORANGE means both numerical and other requirements are ambiguous and need clarification.
 RED means one or more requirements are clearly not met.
 
 """ 
+    
+#GREEN means all requirements (quantifiable/numerical and unquantifiable) are fully met 
+#YELLOW means all quantifiable/numerical requirements are met but other requirements are ambiguous.
+#ORANGE means both numerical and other requirements are ambiguous and need clarification.
+#RED means one or more requirements are clearly not met.
+#
+
+#GREEN means all requirements (quantifiable/numerical and unquantifiable) are fully met 
+#YELLOW means that you are not sure if the requirements are met or not.
+#RED means one or more requirements are clearly not met.
+
+
     try:
         request_body = {
             "anthropic_version": ANTHROPIC_VERSION,
