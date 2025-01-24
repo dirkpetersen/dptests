@@ -90,11 +90,21 @@
         handleFileSelect(policyInput, 'policy');
         handleFileSelect(submissionInput, 'submission');
 
+        // Hide results when new files are selected
+        function hideResults() {
+            const resultBoxes = document.querySelectorAll('.result-box, .card');
+            resultBoxes.forEach(box => box.style.display = 'none');
+        }
+
         // Handle form submission
         form.addEventListener('submit', function(e) {
             evalButton.disabled = true;
             loadingSpinner.classList.remove('d-none');
         });
+
+        // Hide results when new files are selected
+        policyInput.addEventListener('change', hideResults);
+        submissionInput.addEventListener('change', hideResults);
 
         // Update file input display
         function updateFileDisplay(input, storageKey) {
