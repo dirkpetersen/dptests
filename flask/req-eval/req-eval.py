@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, make_response
+import uuid
 import boto3
 import PyPDF2
 import io
@@ -67,37 +68,31 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=CHUNK_OVERLAP
 )
 
-def get_cache_path(file_content: bytes) -> Path:
-    """Generate cache path for file content"""
-    file_hash = hashlib.md5(file_content).hexdigest()
-    return Path(CACHE_DIR) / f"{file_hash}.txt"
+def get_user_id():
+    """Get or create user ID from cookie"""
+    user_id = request.cookies.get(COOKIE_NAME)
+    if not user_id:
+        user_id = str(uuid.uuid4())
+    return user_id
 
-def get_cached_text(file_content: bytes) -> Optional[str]:
-    """Get cached text content if available"""
-    if not CACHE_ENABLED:
-        return None
-        
-    cache_path = get_cache_path(file_content)
+def get_policy_cache_path(user_id: str) -> Path:
+    """Get path to user's cached policy file"""
+    return Path(CACHE_DIR) / f"policy_{user_id}.txt"
+
+def save_policy_to_cache(text: str, user_id: str):
+    """Save policy text to user-specific cache"""
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    cache_path = get_policy_cache_path(user_id)
+    cache_path.write_text(text)
+    logger.debug(f"Saved policy to cache: {cache_path}")
+
+def get_cached_policy(user_id: str) -> Optional[str]:
+    """Get cached policy text for user"""
+    cache_path = get_policy_cache_path(user_id)
     if cache_path.exists():
-        logger.debug(f"Cache hit: {cache_path}")
+        logger.debug(f"Policy cache hit: {cache_path}")
         return cache_path.read_text()
     return None
-
-def save_to_cache(file_content: bytes, text: str, is_policy: bool = False):
-    """Save extracted text to cache"""
-    if not CACHE_ENABLED:
-        return
-        
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    cache_path = get_cache_path(file_content)
-    cache_path.write_text(text)
-    logger.debug(f"Saved to cache: {cache_path}")
-    
-    # If it's a policy document, also save as the latest policy
-    if is_policy:
-        policy_path = Path(CACHE_DIR) / POLICY_CACHE_FILE
-        policy_path.write_text(text)
-        logger.debug(f"Saved latest policy: {policy_path}")
 
 def extract_text_from_pdf(pdf_file) -> str:
     """
@@ -112,23 +107,10 @@ def extract_text_from_pdf(pdf_file) -> str:
     Raises:
         PyPDF2.PdfReadError: If PDF parsing fails
     """
-    # Read file content for caching
-    file_content = pdf_file.read()
-    pdf_file.seek(0)  # Reset file pointer
-    
-    # Check cache
-    cached_text = get_cached_text(file_content)
-    if cached_text is not None:
-        return cached_text
-    
-    # Extract text if not cached
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
     for page in pdf_reader.pages:
         text += page.extract_text()
-    
-    # Save to cache
-    save_to_cache(file_content, text)
     return text
 
 def evaluate_requirements(policy_text: str, submission_text: str) -> Tuple[str, str]:
@@ -249,25 +231,30 @@ def index():
         policy_file = request.files.get('policy')
         
         try:
+            user_id = get_user_id()
+            
             # Handle policy document
-            if policy_file.filename:
+            if policy_file and policy_file.filename:
                 policy_text = extract_text_from_pdf(policy_file)
-                save_to_cache(policy_file.read(), policy_text, is_policy=True)
+                save_policy_to_cache(policy_text, user_id)
             else:
-                # Try to load the latest policy
-                policy_path = Path(CACHE_DIR) / POLICY_CACHE_FILE
-                if not policy_path.exists():
+                # Try to load cached policy
+                policy_text = get_cached_policy(user_id)
+                if not policy_text:
                     return render_template('index.html', error="No policy document available. Please upload one.")
-                policy_text = policy_path.read_text()
                 logger.debug("Using cached policy document")
             
             submission_text = extract_text_from_pdf(submission_file)
             
             result, explanation = evaluate_requirements(policy_text, submission_text)
             logger.info(f"Evaluation result: {result}, Explanation: {explanation}")
-            return render_template('index.html', 
-                                result=result, 
-                                explanation=explanation if result == "YELLOW" else None)
+            
+            # Create response with cookie
+            response = make_response(render_template('index.html', 
+                                                   result=result, 
+                                                   explanation=explanation if result == "YELLOW" else None))
+            response.set_cookie(COOKIE_NAME, user_id, max_age=COOKIE_MAX_AGE)
+            return response
             
         except Exception as e:
             logger.error(f"Error processing request: {str(e)}")

@@ -23,6 +23,6 @@ MAX_TOKENS = 1000
 TEMPERATURE = 0
 
 # Cache Configuration
-CACHE_DIR = "cache"
-CACHE_ENABLED = True
-POLICY_CACHE_FILE = "latest_policy.txt"  # Store the latest policy document
+CACHE_DIR = "policy_cache"  # Directory for policy caches
+COOKIE_NAME = "user_id"  # Cookie name for user identification
+COOKIE_MAX_AGE = 30 * 24 * 60 * 60  # 30 days in seconds
