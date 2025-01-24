@@ -17,15 +17,43 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.config['SECRET_KEY'] = os.urandom(24)
 
-# Configure AWS
-try:
-    bedrock = boto3.client(
-        service_name='bedrock-runtime',
-        region_name=BEDROCK_REGION
-    )
-except (BotoCoreError, ClientError) as e:
-    app.logger.error(f"Failed to initialize Bedrock client: {str(e)}")
-    raise
+def get_bedrock_client():
+    """Initialize Bedrock client with role assumption and retry configuration"""
+    try:
+        session = boto3.Session()
+        sts = session.client("sts")
+        
+        # Assume role for Bedrock access
+        response = sts.assume_role(
+            RoleArn=ASSUMED_ROLE,
+            RoleSessionName="bedrock-session"
+        )
+        
+        # Configure retry behavior
+        retry_config = Config(
+            retries={
+                "max_attempts": MAX_RETRIES,
+                "mode": "standard",
+            }
+        )
+        
+        # Create Bedrock client with temporary credentials
+        client = session.client(
+            service_name='bedrock-runtime',
+            region_name=BEDROCK_REGION,
+            config=retry_config,
+            aws_access_key_id=response["Credentials"]["AccessKeyId"],
+            aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
+            aws_session_token=response["Credentials"]["SessionToken"]
+        )
+        
+        return client
+    except (BotoCoreError, ClientError) as e:
+        app.logger.error(f"Failed to initialize Bedrock client: {str(e)}")
+        raise
+
+# Initialize Bedrock client
+bedrock = get_bedrock_client()
 
 # Configure embeddings and text splitter
 embeddings = BedrockEmbeddings(
