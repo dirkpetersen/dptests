@@ -106,13 +106,16 @@
             resultBoxes.forEach(box => box.style.display = 'none');
         }
 
-        // Handle form submission
-        form.addEventListener('submit', function(e) {
+        // Handle form submission and evaluation
+        evalButton.addEventListener('click', function(e) {
             if (!submissionInput.files.length) {
                 e.preventDefault();
                 submissionInput.click();
                 return;
             }
+        });
+
+        form.addEventListener('submit', function(e) {
             evalButton.disabled = true;
             loadingSpinner.classList.remove('d-none');
         });
