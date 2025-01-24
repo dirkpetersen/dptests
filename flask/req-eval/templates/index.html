@@ -60,7 +60,7 @@
                 <div class="card-text">
                     {% for line in explanation.split('\n') %}
                         {% if line.startswith('1.') or line.startswith('2.') or line.startswith('3.') %}
-                            <h6 class="mt-3">{{ line }}</h6>
+                            <p class="mt-3">{{ line }}</p>
                         {% elif line.startswith('-') %}
                             <div class="ms-4 mb-2">• {{ line[1:] }}</div>
                         {% else %}
