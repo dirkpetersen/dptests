@@ -144,25 +144,28 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
         response_body = json.loads(response['body'].read())
         logger.debug(f"Bedrock response: {json.dumps(response_body, indent=2)}")
         
-        result = response_body.get('content', response_body.get('completion'))
-        if not result:
+        # Extract text content from Claude 3's response structure
+        content = response_body.get('content', [])
+        if not content or not isinstance(content, list):
             logger.error(f"Unexpected response structure: {response_body}")
-            raise ValueError("Response missing content/completion field")
-    except (BotoCoreError, ClientError) as e:
-        app.logger.error(f"Bedrock API error: {str(e)}")
-        raise
-    except (KeyError, json.JSONDecodeError) as e:
-        app.logger.error(f"Failed to parse Bedrock response: {str(e)}")
-        raise ValueError("Invalid response from Bedrock API")
-    
-    if "GREEN" in result.upper():
-        return "GREEN", ""
-    elif "RED" in result.upper():
-        return "RED", ""
-    else:
-        # Extract explanation after "YELLOW"
-        parts = result.split("YELLOW", 1)
-        explanation = parts[1].strip() if len(parts) > 1 else "No specific explanation provided"
+            raise ValueError("Response missing content array")
+            
+        # Get the text from the first content item
+        text_content = next((item['text'] for item in content if item['type'] == 'text'), None)
+        if not text_content:
+            logger.error(f"No text content found in response: {response_body}")
+            raise ValueError("Response missing text content")
+            
+        # Process the response text
+        text_upper = text_content.upper()
+        if "GREEN" in text_upper:
+            return "GREEN", ""
+        elif "RED" in text_upper:
+            return "RED", ""
+        else:
+            # Extract explanation after "YELLOW"
+            parts = text_content.split("YELLOW", 1)
+            explanation = parts[1].strip() if len(parts) > 1 else text_content
         return "YELLOW", explanation
 
 @app.route('/', methods=['GET', 'POST'])
