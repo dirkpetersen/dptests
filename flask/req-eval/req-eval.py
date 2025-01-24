@@ -4,20 +4,28 @@ import PyPDF2
 import io
 import os
 import json
+from typing import Tuple, List
 from werkzeug.utils import secure_filename
 from langchain_community.embeddings import BedrockEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
+from botocore.exceptions import BotoCoreError, ClientError
+
+from config import *
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.config['SECRET_KEY'] = os.urandom(24)
 
 # Configure AWS
-bedrock = boto3.client(
-    service_name='bedrock-runtime',
-    region_name='us-east-1'
-)
+try:
+    bedrock = boto3.client(
+        service_name='bedrock-runtime',
+        region_name=BEDROCK_REGION
+    )
+except (BotoCoreError, ClientError) as e:
+    app.logger.error(f"Failed to initialize Bedrock client: {str(e)}")
+    raise
 
 # Configure embeddings and text splitter
 embeddings = BedrockEmbeddings(
@@ -26,18 +34,44 @@ embeddings = BedrockEmbeddings(
 )
 
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=100
+    chunk_size=CHUNK_SIZE,
+    chunk_overlap=CHUNK_OVERLAP
 )
 
-def extract_text_from_pdf(pdf_file):
+def extract_text_from_pdf(pdf_file) -> str:
+    """
+    Extract text content from a PDF file.
+    
+    Args:
+        pdf_file: File object containing PDF data
+        
+    Returns:
+        str: Extracted text from the PDF
+        
+    Raises:
+        PyPDF2.PdfReadError: If PDF parsing fails
+    """
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
     for page in pdf_reader.pages:
         text += page.extract_text()
     return text
 
-def evaluate_requirements(policy_text, submission_text):
+def evaluate_requirements(policy_text: str, submission_text: str) -> Tuple[str, str]:
+    """
+    Evaluate if a submission document meets the requirements in a policy document.
+    
+    Args:
+        policy_text: Text content of the policy document
+        submission_text: Text content of the submission document
+        
+    Returns:
+        Tuple[str, str]: (result status, explanation if status is YELLOW)
+        
+    Raises:
+        BotoCoreError: If AWS Bedrock API call fails
+        ValueError: If response parsing fails
+    """
     # Split documents into chunks
     policy_chunks = text_splitter.split_text(policy_text)
     submission_chunks = text_splitter.split_text(submission_text)
@@ -63,22 +97,29 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
     analysis_prompt += "followed by a brief explanation if YELLOW. GREEN means the submission fully meets requirements, "
     analysis_prompt += "RED means it clearly doesn't, and YELLOW means there are uncertainties that need human review."
     
-    response = bedrock.invoke_model(
-        modelId="anthropic.claude-v3-sonnet",
-        body=json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1000,
-            "temperature": 0,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": analysis_prompt
-                }
-            ]
-        })
-    )
-    
-    result = json.loads(response['body'].read())['completion']
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            body=json.dumps({
+                "anthropic_version": ANTHROPIC_VERSION,
+                "max_tokens": MAX_TOKENS,
+                "temperature": TEMPERATURE,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": analysis_prompt
+                    }
+                ]
+            })
+        )
+        
+        result = json.loads(response['body'].read())['completion']
+    except (BotoCoreError, ClientError) as e:
+        app.logger.error(f"Bedrock API error: {str(e)}")
+        raise
+    except (KeyError, json.JSONDecodeError) as e:
+        app.logger.error(f"Failed to parse Bedrock response: {str(e)}")
+        raise ValueError("Invalid response from Bedrock API")
     
     if "GREEN" in result.upper():
         return "GREEN", ""
