@@ -113,8 +113,9 @@
         policyInput.addEventListener('change', hideResults);
         submissionInput.addEventListener('change', function() {
             hideResults();
-            // Automatically submit form when submission file is selected
-            form.submit();
+            // Show spinner first, then submit form
+            loadingSpinner.classList.remove('d-none');
+            setTimeout(() => form.submit(), 100);
         });
 
         // Update file input display
