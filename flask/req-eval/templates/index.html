@@ -21,7 +21,7 @@
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Requirements Evaluator</h1>
+        <h1 class="mb-4">Policy / Requirements Evaluator</h1>
         
         {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
@@ -29,7 +29,7 @@
         
         <form method="POST" enctype="multipart/form-data">
             <div class="mb-3">
-                <label for="policy" class="form-label">Policy Document (PDF - use <a href="https://pdfmerge.com" target="_blank">pdfmerge.com</a> for multiple docs)</label>
+                <label for="policy" class="form-label">Policy / Requirements Document (PDF - use <a href="https://pdfmerge.com" target="_blank">pdfmerge.com</a> for multiple docs)</label>
                 <input type="file" class="form-control" id="policy" name="policy" accept=".pdf">
                 <small class="form-text text-muted" id="policyHelp">Previously uploaded files will use cached analysis</small>
             </div>
