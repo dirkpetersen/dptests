@@ -204,12 +204,18 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
             raise ValueError("Response missing text content")
             
         # Process the response text
-        # First line contains the status
+        # First word of first line is the status
         lines = text_content.strip().split('\n')
-        status = lines[0].strip().upper()
+        first_line = lines[0].strip()
+        status = first_line.split('.')[0].strip().upper()
         
-        # Join remaining lines for explanation
-        explanation = '\n'.join(lines[1:]).strip()
+        # Combine the rest of first line (after status) with remaining lines for explanation
+        remaining_first_line = first_line.split('.', 1)[1].strip() if '.' in first_line else ""
+        remaining_lines = lines[1:] if len(lines) > 1 else []
+        
+        explanation = remaining_first_line
+        if remaining_lines:
+            explanation += "\n" + '\n'.join(remaining_lines)
         
         if status in ["GREEN", "YELLOW", "RED"]:
             return status, explanation if status == "YELLOW" else ""
