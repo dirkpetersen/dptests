@@ -4,6 +4,7 @@ import PyPDF2
 import io
 import os
 import json
+import logging
 from typing import Tuple, List
 from werkzeug.utils import secure_filename
 from langchain_community.embeddings import BedrockEmbeddings
@@ -13,6 +14,10 @@ from botocore.exceptions import BotoCoreError, ClientError
 from botocore.config import Config
 
 from config import *
+
+# Configure logging
+logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
@@ -118,22 +123,31 @@ Analyze if the submission meets the requirements in the policy.\n\n"""
     analysis_prompt += "RED means it clearly doesn't, and YELLOW means there are uncertainties that need human review."
     
     try:
+        request_body = {
+            "anthropic_version": ANTHROPIC_VERSION,
+            "max_tokens": MAX_TOKENS,
+            "temperature": TEMPERATURE,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": analysis_prompt
+                }
+            ]
+        }
+        logger.debug(f"Bedrock request body: {json.dumps(request_body, indent=2)}")
+        
         response = bedrock.invoke_model(
             modelId=MODEL_ID,
-            body=json.dumps({
-                "anthropic_version": ANTHROPIC_VERSION,
-                "max_tokens": MAX_TOKENS,
-                "temperature": TEMPERATURE,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": analysis_prompt
-                    }
-                ]
-            })
+            body=json.dumps(request_body)
         )
         
-        result = json.loads(response['body'].read())['completion']
+        response_body = json.loads(response['body'].read())
+        logger.debug(f"Bedrock response: {json.dumps(response_body, indent=2)}")
+        
+        result = response_body.get('content', response_body.get('completion'))
+        if not result:
+            logger.error(f"Unexpected response structure: {response_body}")
+            raise ValueError("Response missing content/completion field")
     except (BotoCoreError, ClientError) as e:
         app.logger.error(f"Bedrock API error: {str(e)}")
         raise
