@@ -130,14 +130,15 @@ Policy Document:
 
 Submission Document:
 {submission_text}
-    
-    analysis_prompt += "Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED). "
-    analysis_prompt += "If the response is YELLOW, provide a detailed explanation including: \n"
-    analysis_prompt += "1. Specific requirements that need clarification\n"
-    analysis_prompt += "2. Examples from both documents showing the ambiguity\n"
-    analysis_prompt += "3. Suggested actions to resolve the uncertainties\n\n"
-    analysis_prompt += "GREEN means the submission fully meets requirements, "
-    analysis_prompt += "RED means it clearly doesn't, and YELLOW means there are uncertainties that need human review."
+
+Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED).
+If the response is YELLOW, provide a detailed explanation including:
+1. Specific requirements that need clarification
+2. Examples from both documents showing the ambiguity
+3. Suggested actions to resolve the uncertainties
+
+GREEN means the submission fully meets requirements,
+RED means it clearly doesn't, and YELLOW means there are uncertainties that need human review."""
     
     try:
         request_body = {
