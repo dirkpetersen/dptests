@@ -16,6 +16,7 @@
         }
         .green { background-color: #d4edda; color: #155724; }
         .yellow { background-color: #fff3cd; color: #856404; }
+        .orange { background-color: #ffe5d0; color: #ad4f09; }
         .red { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
@@ -53,7 +54,7 @@
             {{ result }}
         </div>
         
-        {% if result == "YELLOW" and explanation %}
+        {% if (result == "YELLOW" or result == "ORANGE") and explanation %}
         <div class="card mt-3">
             <div class="card-body">
                 <h5 class="card-title">Explanation for Yellow Status:</h5>
