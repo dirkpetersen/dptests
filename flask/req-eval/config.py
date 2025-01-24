@@ -6,13 +6,13 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 # AWS Bedrock Configuration
 BEDROCK_REGION = "us-west-2"  # Default region if not configured
-MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"
+#  anthropic.claude-3-haiku-20240307-v1:0, anthropic.claude-3-5-sonnet-20241022-v2:0
 ANTHROPIC_VERSION = "bedrock-2023-05-31"
 MAX_RETRIES = 10
 
 # File Configuration
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
-
 
 # Response Configuration
 MAX_TOKENS = 1000

@@ -55,7 +55,6 @@ def get_bedrock_client():
 # Initialize Bedrock client
 bedrock = get_bedrock_client()
 
-
 def get_user_id():
     """Get or create user ID from cookie"""
     user_id = request.cookies.get(COOKIE_NAME)
@@ -133,13 +132,29 @@ Submission Document:
 {submission_text}
 
 Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED).
-If the response is YELLOW, provide a detailed explanation including:
-1. Specific requirements that need clarification
-2. Examples from both documents showing the ambiguity
-3. Suggested actions to resolve the uncertainties
+If the response is YELLOW, provide a brief explanation
 
-GREEN means the submission fully meets requirements,
-RED means it clearly doesn't, and YELLOW means there are uncertainties that need human review."""
+GREEN means the submission meets requirements,
+RED means it does not meet requirements, and YELLOW means there are uncertainties that need human review.
+
+Additional overriding Instructions: 
+Please ignore the policy document requiring in the "Description of Operations" section to refer to the "specific duty, service or event." 
+Submitteds docs that do not mee this requirement will still be accepted as GREEN even though you are seeing an ambiguity.
+
+"""
+    
+# Based on all these comparisons, respond with exactly one word (GREEN, YELLOW, or RED).
+# If the response is YELLOW, provide a brief explanation including:
+# 1. Specific requirements that need clarification
+# 2. Examples from both documents showing the ambiguity
+
+# GREEN means the submission meets requirements,
+# RED means it does not meet requirements, and YELLOW means there are uncertainties that need human review.
+
+# Additional overriding Instructions: 
+# Please ignore the policy document requiring in the "Description of Operations" section to refer to the "specific duty, service or event." 
+# Submitteds docs that do not mee this requirement will still be accepted as GREEN even though you are seeing an ambiguity.
+
     
     try:
         request_body = {
