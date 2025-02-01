@@ -14,9 +14,8 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
         echo -e "\n# Add ~/.local/bin to PATH\nexport PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$RC_FILE"
     fi
     
-    echo "NOTE: ~/.local/bin has been added to your PATH."
     echo "Please either:"
-    echo "  1. Log out and log back in, or"
+    echo "  1. Log out and log back in, or" 
     echo "  2. Run: source $RC_FILE"
     echo "for the PATH changes to take effect."
 fi
@@ -58,4 +57,5 @@ AIDER_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 # AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 EOF
 
+echo "NOTE: ~/.local/bin has been added to your PATH."
 echo "Installation complete!"
