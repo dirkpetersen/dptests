@@ -148,7 +148,7 @@ function set_ec2_user_and_owner() {
 }
 
 function find_instance_type() {
-  if [[ "$INSTTYPE" != "any" ]]; then
+  if [[ "$INSTTYPE" != "any" && "$INSTTYPE" == *"."* ]]; then
     EC2_TYPE="$INSTTYPE"
     echo "Using specified instance type: $EC2_TYPE"
   else
@@ -183,6 +183,12 @@ function find_instance_type() {
     if [[ "${EPHEMERAL_SIZE}" -gt 0 ]]; then    
       query="${query} && (not_null(InstanceStorageInfo) && InstanceStorageInfo.TotalSizeInGB >= \`${EPHEMERAL_SIZE}\`)"
     fi
+
+    # Add instance familty requirement if needed:
+
+    if [[ "$INSTTYPE" != "any" && "$INSTTYPE" != *"."* ]]; then
+      query="${query} && starts_with(InstanceType, \`${INSTTYPE}.\`)"
+    fi 
 
     # Close last bracket
     query="${query}]"
@@ -331,9 +337,9 @@ function launch_instance() {
   # Construct block device mapping JSON
   BLK_DEV_JSON="["
   if [[ $EBS_SIZE -gt 0 ]]; then
-      BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}"
-  fi
-  if [[ $EPHEMERAL_SIZE -gt 0 ]]; then
+      ROOT_DEV=$(aws ec2 describe-images --image-ids ${AMI_IMAGE} --query 'Images[].RootDeviceName' --output text)
+      #BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}"
+      BLK_DEV_JSON+="{\"DeviceName\":\"${ROOT_DEV}\",\"Ebs\":{\"VolumeSize\":${EBS_SIZE}}}"
       [[ $EBS_SIZE -gt 0 ]] && BLK_DEV_JSON+=","
       BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}"
   fi
@@ -537,7 +543,7 @@ elif [[ -f "$1" ]]; then
     ARCH="arm64"
     MEMORY=1
     MEM_MB=$((MEMORY * 1024))
-    EBS_SIZE=0
+    EBS_SIZE=4
     EPHEMERAL_SIZE=0
     GPUS=0
     OS="al202*-ami-*"
@@ -578,10 +584,11 @@ fi
 if [[ "$ACCEPT_DEFAULTS" = false ]]; then
     echo -e "\n* What does your EC2 instance need?\n"
     prompt INSTTYPE "Instance Type (or 'any' to pick CPU, Mem, etc)" "any"
-    if [[ "$INSTTYPE" == "any" ]]; then
-        prompt ARCH "CPU type (arm, x86 or any)" "any"
+    if [[ "$INSTTYPE" == "any" ]]; then        
+        prompt ARCH "CPU type (arm, x86 or any)" "any"        
         prompt VCPUS "Number of VCPUs" "2"
         prompt MEMORY "Memory (GB)" "1"
+	prompt EBS_SIZE "Root Volume Size (GB)" "4"
         prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
         prompt GPUS "Number of NVIDIA GPUs" "0"
         if [[ "$GPUS" -gt 0 ]]; then
@@ -592,10 +599,16 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
                 prompt GPU_VRAM "GPU VRAM (GB)" "8"
             fi
         fi
+    elif [[ "$INSTTYPE" != *"."* ]]; then  # if we selected an instance family
+        prompt VCPUS "Number of VCPUs" "2"
+        prompt MEMORY "Memory (GB)" "1"
+	prompt EBS_SIZE "Root Volume Size (GB)" "4"
+        prompt EPHEMERAL_SIZE "Ephemeral (local) Disk Size (GB)" "0"
+        prompt GPUS "Number of NVIDIA GPUs" "0"
     else
         EC2_TYPE="$INSTTYPE"
+	prompt EBS_SIZE "Root Volume Size (GB)" "4"
     fi
-    prompt EBS_SIZE "EBS Volume Size (GB)" "25"
     echo "  Amazon Linux (default) or enter ubuntu/images/*ubuntu-*-24.04-*-server* or Rocky-9-EC2-Base* :"
     prompt OS "Operating System" "al202*-ami-*"
     prompt AWS_REGION "AWS Region" ${AWS_DEFAULT_REGION}
