@@ -23,7 +23,7 @@ if [ ! -f "$HOME/.aider.conf.yml" ]; then
     # Add custom settings to the top of the file
     TEMP_FILE=$(mktemp)
     cat > "$TEMP_FILE" << 'EOF'
-env-file: ~/.aider.env
+env-file: ${HOME}/.aider.env
 multiline: true
 vim: true
 dark-mode: true
