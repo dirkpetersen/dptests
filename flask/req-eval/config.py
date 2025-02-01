@@ -14,9 +14,9 @@ MAX_RETRIES = 10
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
 # Response Configuration
-MAX_TOKENS = 1000
-TEMPERATURE = 0
-MAX_CHARS_PER_DOC = 6000  # Reduced from 12000 to work with Haiku model
+MAX_TOKENS = 100000  # was 1000
+TEMPERATURE = 0.7 # was 0 
+MAX_CHARS_PER_DOC = 50000  # was 6000
 
 # Cache Configuration
 CACHE_DIR = "policy_cache"  # Directory for policy caches
