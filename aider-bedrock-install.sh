@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script installs aider.chat on Linux or OSX and sets the default LLM to Bedrock 
+# and the editor to VI in multiline mode. Hit ALT+Enter instead of just Enter
+
+
 # Add ~/.local/bin to PATH if not already present
 
 RC_FILE="$HOME/.bashrc"
