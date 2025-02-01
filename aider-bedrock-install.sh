@@ -44,10 +44,10 @@ fi
 # Create .aider.env file
 cat > "$HOME/.aider.env" << 'EOF'
 AIDER_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
+# AWS_PROFILE=bedrock
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=
 # AWS_REGION=us-west-2
-# AWS_PROFILE=bedrock
 # AIDER_ARCHITECT=true
 # AIDER_MODEL=r1
 # AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
