@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Add ~/.local/bin to PATH if not already present
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    # Add to .bashrc if not already there
+    if ! grep -q "export PATH=\"\$HOME/.local/bin:\$PATH\"" "$HOME/.bashrc"; then
+        echo -e "\n# Add ~/.local/bin to PATH\nexport PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$HOME/.bashrc"
+    fi
+fi
+
 # Install aider
 curl -LsSf https://aider.chat/install.sh | sh
 
