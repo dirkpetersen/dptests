@@ -39,7 +39,6 @@ vim: true
 EOF
     cat "$HOME/.aider.conf.yml" >> "$TEMP_FILE"
     mv "$TEMP_FILE" "$HOME/.aider.conf.yml"
-fi
 
 # Create .aider.env file
 cat > "$HOME/.aider.env" << 'EOF'
@@ -52,6 +51,8 @@ AIDER_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 # AIDER_MODEL=r1
 # AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 EOF
+
+fi
 
 if [[ $PATH_ADDED -eq 1 ]]; then
     echo ""	
