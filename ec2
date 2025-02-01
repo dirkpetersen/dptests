@@ -537,7 +537,7 @@ elif [[ -f "$1" ]]; then
     ARCH="arm64"
     MEMORY=1
     MEM_MB=$((MEMORY * 1024))
-    EBS_SIZE=25
+    EBS_SIZE=0
     EPHEMERAL_SIZE=0
     GPUS=0
     OS="al202*-ami-*"
@@ -596,7 +596,7 @@ if [[ "$ACCEPT_DEFAULTS" = false ]]; then
         EC2_TYPE="$INSTTYPE"
     fi
     prompt EBS_SIZE "EBS Volume Size (GB)" "25"
-    echo "  Amazon Linux (default) or enter *ubuntu-*-24.04-*-server* or Rocky-9-EC2-Base* :"
+    echo "  Amazon Linux (default) or enter ubuntu/images/*ubuntu-*-24.04-*-server* or Rocky-9-EC2-Base* :"
     prompt OS "Operating System" "al202*-ami-*"
     prompt AWS_REGION "AWS Region" ${AWS_DEFAULT_REGION}
     rnd=$((RANDOM % 900 + 100))
