@@ -5,9 +5,20 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
     
     # Add to .bashrc if not already there
-    if ! grep -q "export PATH=\"\$HOME/.local/bin:\$PATH\"" "$HOME/.bashrc"; then
-        echo -e "\n# Add ~/.local/bin to PATH\nexport PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$HOME/.bashrc"
+    RC_FILE="$HOME/.bashrc"
+    if [ -n "$ZSH_VERSION" ]; then
+        RC_FILE="$HOME/.zshrc"
     fi
+    
+    if ! grep -q "export PATH=\"\$HOME/.local/bin:\$PATH\"" "$RC_FILE"; then
+        echo -e "\n# Add ~/.local/bin to PATH\nexport PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$RC_FILE"
+    fi
+    
+    echo "NOTE: ~/.local/bin has been added to your PATH."
+    echo "Please either:"
+    echo "  1. Log out and log back in, or"
+    echo "  2. Run: source $RC_FILE"
+    echo "for the PATH changes to take effect."
 fi
 
 # Install aider
