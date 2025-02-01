@@ -23,18 +23,18 @@ curl -LsSf https://aider.chat/install.sh | sh
 uv tool run --from aider-chat pip install boto3
 
 # Download and configure .aider.conf.yml if it doesn't exist
-if [ ! -f "$HOME/.aider.conf.yml" ]; then
+if [[ ! -f "$HOME/.aider.conf.yml" ]]; then
     curl -o "$HOME/.aider.conf.yml" https://raw.githubusercontent.com/Aider-AI/aider/refs/heads/main/aider/website/assets/sample.aider.conf.yml
     
     # Add custom settings to the top of the file
     TEMP_FILE=$(mktemp)
     cat > "$TEMP_FILE" << 'EOF'
-env-file: ${HOME}/.aider.env
+env-file: ~/.aider.env
 multiline: true
-vim: true
 dark-mode: true
 cache-prompts: true
 show-model-warnings: false
+vim: true
 
 EOF
     cat "$HOME/.aider.conf.yml" >> "$TEMP_FILE"
@@ -53,7 +53,8 @@ AIDER_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 # AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 EOF
 
-if [ $PATH_ADDED -eq 1 ]; then
+if [[ $PATH_ADDED -eq 1 ]]; then
+    echo ""	
     echo "NOTE: ~/.local/bin has been added to your PATH."
     echo "Please either:"
     echo "  1. Log out and log back in, or"
