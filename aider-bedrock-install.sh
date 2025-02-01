@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # Add ~/.local/bin to PATH if not already present
+PATH_ADDED=0
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
+    PATH_ADDED=1
     
     # Add to .bashrc if not already there
     RC_FILE="$HOME/.bashrc"
@@ -57,5 +59,7 @@ AIDER_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 # AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-5-sonnet-20241022-v2:0
 EOF
 
-echo "NOTE: ~/.local/bin has been added to your PATH."
+if [ $PATH_ADDED -eq 1 ]; then
+    echo "NOTE: ~/.local/bin has been added to your PATH."
+fi
 echo "Installation complete!"
