@@ -97,8 +97,10 @@ function launch_instance() {
 }
 
 function add_disks() {
-  # add disks to all instances launched 
-  
+  for instance_id in "${instance_ids[@]}"; do
+    echo "Adding ${EBS_QTY} ${EBS_TYPE} volumes (${EBS_SIZE}GB) to ${instance_id}"
+    ./ebs-create-attach.sh "${instance_id}" "${EBS_TYPE}" "${EBS_SIZE}" "${EBS_QTY}"
+  done
 }
 
 function register_dns() {
@@ -231,6 +233,7 @@ EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
 
 launch_instance
 wait_for_instance
+add_disks
 register_dns
 
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
