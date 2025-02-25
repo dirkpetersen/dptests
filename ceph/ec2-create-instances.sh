@@ -1,5 +1,7 @@
 #!/bin/bash
 
+declare -a public_ips  # Makes the array available globally
+
 # AWS EC2 Instance Launch Script
 # This script launches a c7gd.medium EC2 instance with Rocky Linux 9
 
@@ -132,7 +134,7 @@ EOF
 }
 
 function wait_for_instance() {
-  declare -a public_ips
+  public_ips=()  # Reset the global array
   echo "Waiting for instances to be ready..."
   local max_attempts=30
   local attempt=0
@@ -226,7 +228,8 @@ echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 echo "SSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 for i in "${!public_ips[@]}"; do
-    fqdn="${INSTANCE_NAME}-$((i+1)).${DOMAIN}"
+    hostnum=$((i+1))
+    fqdn="${INSTANCE_NAME}-${hostnum}.${DOMAIN}"
     echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn}"
 done
 
