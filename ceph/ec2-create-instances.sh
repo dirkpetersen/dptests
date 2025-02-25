@@ -3,6 +3,13 @@
 # AWS EC2 Instance Launch Script
 # This script launches a c7gd.medium EC2 instance with Rocky Linux 9
 
+# Get number of instances from command line
+NUM_INSTANCES=${1:-1}
+if [[ ! "$NUM_INSTANCES" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: Number of instances must be a positive integer"
+    exit 1
+fi
+
 # Configuration Variables
 AWS_REGION=us-west-2
 EC2_TYPE="c7gd.medium"
@@ -49,36 +56,39 @@ function launch_instance() {
   launch_output=$(
     aws ec2 run-instances --region ${AWS_REGION} \
     --image-id ${AMI_IMAGE} \
-    --count 1 \
+    --count ${NUM_INSTANCES} \
     --instance-type ${EC2_TYPE} \
     --key-name ${EC2_KEY_NAME} \
     --security-group-ids ${sg_id} \
     --block-device-mappings "${BLK_DEV_JSON}" \
     ${userdata} \
     ${az_param} \
-    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${INSTANCE_NAME}}]" \
-    --query 'Instances[0].{InstanceId:InstanceId,AvailabilityZone:Placement.AvailabilityZone}' \
     --output json
   )
 
   if [[ -z "$launch_output" ]]; then
-    echo "Error: Failed to launch instance. Check your AWS credentials and permissions."
+    echo "Error: Failed to launch instances. Check your AWS credentials and permissions."
     exit 1
   fi
 
-  # Extract instance ID and AZ from the JSON response
-  instance_id=$(echo "$launch_output" | jq -r '.InstanceId')
-  az=$(echo "$launch_output" | jq -r '.AvailabilityZone')
+  # Extract all instance IDs and their AZs
+  instance_ids=($(echo "$launch_output" | jq -r '.Instances[].InstanceId'))
+  azs=($(echo "$launch_output" | jq -r '.Instances[].Placement.AvailabilityZone'))
   
-  if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
-    echo "Error: Failed to create instance. $launch_output"
+  if [[ ${#instance_ids[@]} -eq 0 ]]; then
+    echo "Error: Failed to create instances. $launch_output"
     exit 1
   fi
 
-  echo "Instance launched in availability zone: ${az}"
+  # Tag instances with sequential names
+  for i in "${!instance_ids[@]}"; do
+    aws ec2 create-tags --resources ${instance_ids[$i]} \
+        --tags "Key=Name,Value=${INSTANCE_NAME}-$((i+1))"
+    echo "Instance ${instance_ids[$i]} launched in availability zone: ${azs[$i]}"
+  done
   
-  # Set INSTANCE_INFO to just the instance ID for compatibility with the rest of the script
-  INSTANCE_INFO="$instance_id"
+  # Set INSTANCE_INFO to first instance ID for compatibility
+  INSTANCE_INFO="${instance_ids[0]}"
 }
 
 function register_dns() {
@@ -127,52 +137,73 @@ EOF
 }
 
 function wait_for_instance() {
-  echo "Waiting for instance to be ready..."
+  declare -a public_ips
+  echo "Waiting for instances to be ready..."
   local max_attempts=30
   local attempt=0
+  
   while [ $attempt -lt $max_attempts ]; do
-      instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
-          --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
-          --output json 2>/dev/null)
-      
-      if [[ $? -eq 0 ]]; then
-          state=$(echo $instance_info | jq -r '.State')
-          public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
-          instance_type=$(echo $instance_info | jq -r '.InstanceType')
+      all_ready=true
+      for instance_id in "${instance_ids[@]}"; do
+          instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
+              --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
+              --output json 2>/dev/null)
           
-          if [[ "$state" = "running" && "$public_ip" != "null" && -n "$public_ip" ]]; then
-              echo "Instance is ready. Public IP: $public_ip"
-              break
+          if [[ $? -eq 0 ]]; then
+              state=$(echo $instance_info | jq -r '.State')
+              public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
+              instance_type=$(echo $instance_info | jq -r '.InstanceType')
+              
+              if [[ "$state" != "running" || "$public_ip" == "null" || -z "$public_ip" ]]; then
+                  all_ready=false
+                  break
+              fi
           fi
+      done
+      
+      if $all_ready; then
+          echo "All instances are running"
+          break
       fi
       
-      echo "Waiting for instance to be ready... (Attempt $((attempt+1))/$max_attempts)"
+      echo "Waiting for instances to be ready... (Attempt $((attempt+1))/$max_attempts)"
       sleep 10
       attempt=$((attempt+1))
   done
 
   if [[ $attempt -eq $max_attempts ]]; then
-      echo "Error: Instance did not become ready within the expected time."
+      echo "Error: Not all instances became ready within the expected time."
       exit 1
   fi
 
-  echo "Waiting for SSH to become available..."
-  max_ssh_attempts=30
-  ssh_attempt=0
-  sshout=$(mktemp -t ec2-XXX)
-  while [ $ssh_attempt -lt $max_ssh_attempts ]; do
-      if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>${sshout}; then
-          echo "SSH is now available."
-          return 0
-      fi
-      printf "Debug: " && cat $sshout
-      echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
-      sleep 10
-      ssh_attempt=$((ssh_attempt+1))
+  # Collect all public IPs
+  for instance_id in "${instance_ids[@]}"; do
+      instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
+          --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+      public_ips+=("$instance_info")
   done
 
-  echo "Error: SSH did not become available within the expected time."
-  exit 1
+  echo "Waiting for SSH to become available on all instances..."
+  for public_ip in "${public_ips[@]}"; do
+      max_ssh_attempts=30
+      ssh_attempt=0
+      sshout=$(mktemp -t ec2-XXX)
+      while [ $ssh_attempt -lt $max_ssh_attempts ]; do
+          if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>${sshout}; then
+              echo "SSH is available on $public_ip"
+              break
+          fi
+          printf "Debug ($public_ip): " && cat $sshout
+          echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
+          sleep 10
+          ssh_attempt=$((ssh_attempt+1))
+      done
+
+      if [[ $ssh_attempt -eq $max_ssh_attempts ]]; then
+          echo "Error: SSH did not become available for $public_ip within the expected time."
+          exit 1
+      fi
+  done
 }
 
 # Attempt to retrieve AWS identity information
@@ -196,9 +227,11 @@ launch_instance
 wait_for_instance
 register_dns
 
-echo "Starting ${public_dns_name} (${INSTANCE_ID}) on ${INSTANCE_TYPE} with ${AMI_NAME}"
-echo -e "\nRun one of these SSH commands to connect:"
+echo -e "\nInstances created on ${INSTANCE_TYPE} with ${AMI_NAME}"
+echo "SSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
-SSH_COMMAND="ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}"
-echo "$SSH_COMMAND"
+for i in "${!public_ips[@]}"; do
+    echo "Instance ${INSTANCE_NAME}-$((i+1)):"
+    echo "ssh -i ${FILE2} ${EC2_USER}@${public_ips[$i]}"
+done
 
