@@ -18,7 +18,7 @@ EC2_USER="rocky"
 CLOUD_INIT=""
 if [ -f "$CLOUD_INIT_FILE" ]; then
   echo "Using cloud-init script from $CLOUD_INIT_FILE"
-  CLOUD_INIT=$(cat "$CLOUD_INIT_FILE" | base64)
+  CLOUD_INIT=$(cat "$CLOUD_INIT_FILE" | base64 -w 0)
 else
   echo "Cloud-init file not found at $CLOUD_INIT_FILE, continuing without user data"
 fi
@@ -32,7 +32,7 @@ INSTANCE_DATA=$(aws ec2 run-instances \
   --security-group-ids $SECURITY_GROUP_ID \
   --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":$ROOT_VOLUME_SIZE,\"DeleteOnTermination\":true}}]" \
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$INSTANCE_NAME}]" \
-  $([ -n "$CLOUD_INIT" ] && echo "--user-data $CLOUD_INIT") \
+  $([ -n "$CLOUD_INIT" ] && echo "--user-data-base64 $CLOUD_INIT") \
   --output json)
 
 INSTANCE_ID=$(echo $INSTANCE_DATA | jq -r '.Instances[0].InstanceId')
@@ -41,7 +41,6 @@ AZ=$(echo $INSTANCE_DATA | jq -r '.Instances[0].Placement.AvailabilityZone')
 echo "Instance launched in availability zone: $AZ"
 echo "EC2_TYPE: $INSTANCE_TYPE"
 echo "AMI_IMAGE: $AMI_ID"
-echo "AMI_NAME: $AMI_NAME"
 echo "EC2_USER: $EC2_USER"
 
 echo "Instance $INSTANCE_ID is starting. Waiting for public IP..."
