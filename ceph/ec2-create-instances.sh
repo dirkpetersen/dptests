@@ -1,6 +1,16 @@
 #!/bin/bash
 
 declare -a public_ips  # Makes the array available globally
+ROOT_SSH_KEY_FILE="/tmp/shared_root_key"
+
+function prepare_ssh_keys() {
+  # Generate shared root key if needed
+  if [[ ! -f "$ROOT_SSH_KEY_FILE" ]]; then
+    ssh-keygen -t ed25519 -N "" -f "$ROOT_SSH_KEY_FILE"
+  fi
+  # Inject public key into cloud-init
+  sed -i "/ssh_authorized_keys:/c\    - $(cat ${ROOT_SSH_KEY_FILE}.pub)" "$CLOUD_INIT_FILE"
+}
 
 # AWS EC2 Instance Launch Script
 # This script launches a c7gd.medium EC2 instance with Rocky Linux 9
@@ -90,6 +100,14 @@ function launch_instance() {
   
   # Set INSTANCE_INFO to first instance ID for compatibility
   INSTANCE_INFO="${instance_ids[0]}"
+
+  # Setup root SSH access
+  for i in "${!public_ips[@]}"; do
+    ssh -i "$EC2_KEY_FILE" ${EC2_USER}@${public_ips[$i]} \
+      "sudo mkdir -p /root/.ssh && \
+      sudo cp ~${EC2_USER}/.ssh/authorized_keys /root/.ssh/ && \
+      sudo chmod 600 /root/.ssh/authorized_keys"
+  done
 }
 
 function register_dns() {
@@ -181,6 +199,14 @@ function wait_for_instance() {
   done
 
   echo "Waiting for SSH to become available on all instances..."
+  echo "Distributing shared SSH keys..."
+  for public_ip in "${public_ips[@]}"; do
+    scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no \
+      "$ROOT_SSH_KEY_FILE" ${EC2_USER}@${public_ip}:/tmp/shared_root_key
+    ssh -i "${EC2_KEY_FILE}" ${EC2_USER}@${public_ip} \
+      "sudo cp /tmp/shared_root_key /root/.ssh/id_ed25519 && \
+      sudo chmod 600 /root/.ssh/id_ed25519"
+  done
   for public_ip in "${public_ips[@]}"; do
       max_ssh_attempts=30
       ssh_attempt=0
@@ -220,9 +246,15 @@ AWSUSER2="${AWSUSER%@*}"
 : "${EC2_KEY_FILE:="~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem"}"
 EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
 
+prepare_ssh_keys
 launch_instance
 wait_for_instance
 register_dns
+
+function cleanup() {
+  rm -f "$ROOT_SSH_KEY_FILE" "${ROOT_SSH_KEY_FILE}.pub"
+}
+trap cleanup EXIT
 
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 echo "SSH commands to connect:"
