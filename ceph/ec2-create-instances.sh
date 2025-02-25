@@ -15,7 +15,6 @@ AWS_REGION=us-west-2
 EC2_TYPE="c7gd.medium"
 AMI_IMAGE="ami-03be04a3da3a40226"
 ROOT_VOLUME_SIZE=16
-REGION="us-west-2"
 INSTANCE_NAME="ceph-test-1"
 DOMAIN="ai.oregonstate.edu"  # Your domain for DNS record
 CLOUD_INIT_FILE="/home/dp/gh/dptests/ec2-cloud-init.txt"  # Path to your cloud-init file
@@ -92,19 +91,13 @@ function launch_instance() {
 }
 
 function register_dns() {
-  # Check for Route 53 hosted zone and register DNS if available
   hosted_zone_id=$(aws route53 list-hosted-zones --query 'HostedZones[0].Id' --output text)
   if [[ -n "$hosted_zone_id" && "$hosted_zone_id" != "None" ]]; then
-    domain_name=$(aws route53 get-hosted-zone --id $hosted_zone_id --query 'HostedZone.Name' --output text)
-    domain_name=${domain_name%%.} # Remove trailing dot
-    fqdn="${NAME}.${domain_name}"
-    
-    # Store hosted_zone_id and fqdn as global variables
-    export HOSTED_ZONE_ID=$hosted_zone_id
-    export FQDN=$fqdn
-    
-    # Create Route 53 DNS record
-    change_batch=$(cat <<EOF
+    for i in "${!public_ips[@]}"; do
+      hostname="${INSTANCE_NAME}-$((i+1))"
+      fqdn="${hostname}.${DOMAIN}"
+      
+      change_batch=$(cat <<EOF
 {
   "Changes": [
     {
@@ -115,7 +108,7 @@ function register_dns() {
         "TTL": 300,
         "ResourceRecords": [
           {
-            "Value": "${public_ip}"
+            "Value": "${public_ips[$i]}"
           }
         ]
       }
@@ -123,16 +116,18 @@ function register_dns() {
   ]
 }
 EOF
-)
+      )
 
-    if aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch "$change_batch" > /dev/null; then
-      echo "DNS record created: ${fqdn}"
-      public_dns_name=$fqdn
-    else
-      echo "Failed to create DNS record. Using public DNS name."
-    fi
+      if aws route53 change-resource-record-sets \
+        --hosted-zone-id $hosted_zone_id \
+        --change-batch "$change_batch" > /dev/null; then
+        echo "DNS record created: ${fqdn}"
+      else
+        echo "Failed to create DNS record for ${fqdn}"
+      fi
+    done
   else
-    echo "No Route 53 hosted zone found. Using public DNS name."
+    echo "No Route 53 hosted zone found. Using public IP addresses."
   fi
 }
 
@@ -227,11 +222,11 @@ launch_instance
 wait_for_instance
 register_dns
 
-echo -e "\nInstances created on ${INSTANCE_TYPE} with ${AMI_NAME}"
+echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 echo "SSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 for i in "${!public_ips[@]}"; do
-    echo "Instance ${INSTANCE_NAME}-$((i+1)):"
-    echo "ssh -i ${FILE2} ${EC2_USER}@${public_ips[$i]}"
+    fqdn="${INSTANCE_NAME}-$((i+1)).${DOMAIN}"
+    echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn}"
 done
 
