@@ -58,5 +58,5 @@ fi
 if [[ -n ${PKGM} ]]; then 
   ${PKGM} install -y mdadm jq git
 fi
-format_largest_unused_block_devices /opt
-format_largest_unused_block_devices /mnt/scratch
+#format_largest_unused_block_devices /opt
+#format_largest_unused_block_devices /mnt/scratch
