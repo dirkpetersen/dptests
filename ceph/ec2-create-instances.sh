@@ -13,14 +13,14 @@ if [[ ! "$NUM_INSTANCES" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 # Configuration Variables
-AWS_REGION=us-west-2
-EC2_TYPE="c7gd.medium"
-AMI_IMAGE="ami-03be04a3da3a40226"
-ROOT_VOLUME_SIZE=16
-INSTANCE_NAME="ceph-test"
-DOMAIN="ai.oregonstate.edu"  # Your domain for DNS record
-CLOUD_INIT_FILE="ec2-cloud-init.txt"  # Path to your cloud-init file
-EC2_USER="rocky"
+: "${AWS_REGION:="us-west-2"}"
+: "${EC2_TYPE:="c7gd.medium"}"
+: "${AMI_IMAGE:="ami-03be04a3da3a40226"}"
+: "${ROOT_VOLUME_SIZE:="16"}"
+: "${INSTANCE_NAME:="ceph-test"}"
+: "${DOMAIN:="ai.oregonstate.edu"}"
+: "${CLOUD_INIT_FILE:="ec2-cloud-init.txt"}"
+: "${EC2_USER:="rocky"}"
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 
 function launch_instance() {
