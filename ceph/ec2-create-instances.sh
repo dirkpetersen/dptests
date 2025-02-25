@@ -29,7 +29,7 @@ function launch_instance() {
   if [[ $ROOT_VOLUME_SIZE -gt 0 ]]; then
       ROOT_DEV=$(aws ec2 describe-images --image-ids ${AMI_IMAGE} --query 'Images[].RootDeviceName' --output text)
       BLK_DEV_JSON+="{\"DeviceName\":\"${ROOT_DEV}\",\"Ebs\":{\"VolumeSize\":${ROOT_VOLUME_SIZE}}}"
-      [[ $EBS_SIZE -gt 0 ]] && BLK_DEV_JSON+=","
+      [[ $ROOT_VOLUME_SIZE -gt 0 ]] && BLK_DEV_JSON+=","
       BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}"
   fi
   BLK_DEV_JSON+="]"
