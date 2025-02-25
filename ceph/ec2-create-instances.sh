@@ -19,9 +19,12 @@ fi
 : "${ROOT_VOLUME_SIZE:="16"}"
 : "${INSTANCE_NAME:="ceph-test"}"
 : "${DOMAIN:="ai.oregonstate.edu"}"
-: "${CLOUD_INIT_FILE:="ec2-cloud-init.txt"}"
+: "${CLOUD_INIT_FILE:="ec2-cloud-init.txt.1"}"
 : "${EC2_USER:="rocky"}"
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
+: "${EBS_TYPE:="st1"}"
+: "${EBS_SIZE:="125"}"
+: "${EBS_QTY:="6"}"
 
 function launch_instance() {
   # Check for ec2-cloud-init.txt file
@@ -91,6 +94,11 @@ function launch_instance() {
   # Set INSTANCE_INFO to first instance ID for compatibility
   INSTANCE_INFO="${instance_ids[0]}"
 
+}
+
+function add_disks() {
+  # add disks to all instances launched 
+  
 }
 
 function register_dns() {
