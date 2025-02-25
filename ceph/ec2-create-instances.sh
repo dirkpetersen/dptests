@@ -10,11 +10,10 @@ AMI_IMAGE="ami-03be04a3da3a40226"
 ROOT_VOLUME_SIZE=16
 REGION="us-west-2"
 INSTANCE_NAME="ceph-test-1"
-SECURITY_GROUP_ID="sg-021caf5c128f60395"
-EC2_KEY_NAME="auto-ec2-405644541454-dirkcli" # Adjust this to your key name
 DOMAIN="ai.oregonstate.edu"  # Your domain for DNS record
 CLOUD_INIT_FILE="/home/dp/gh/dptests/ec2-cloud-init.txt"  # Path to your cloud-init file
 EC2_USER="rocky"
+: "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 
 function launch_instance() {
   # Check for ec2-cloud-init.txt file
@@ -41,6 +40,12 @@ function launch_instance() {
     echo "Using specified availability zone: ${AWS_AZ}"
   fi
 
+  SECURITY_GROUP_ID=$(aws ec2 describe-security-groups \
+    --region ${AWS_REGION} \
+    --filters "Name=group-name,Values=${EC2_SECURITY_GROUP}" \
+    --query 'SecurityGroups[0].GroupId' \
+    --output text)
+
   launch_output=$(
     aws ec2 run-instances --region ${AWS_REGION} \
     --image-id ${AMI_IMAGE} \
@@ -51,7 +56,7 @@ function launch_instance() {
     --block-device-mappings "${BLK_DEV_JSON}" \
     ${userdata} \
     ${az_param} \
-    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${NAME}}]" \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${INSTANCE_NAME}}]" \
     --query 'Instances[0].{InstanceId:InstanceId,AvailabilityZone:Placement.AvailabilityZone}' \
     --output json
   )
@@ -169,11 +174,31 @@ function wait_for_instance() {
   echo "Error: SSH did not become available within the expected time."
   exit 1
 }
+
+# Attempt to retrieve AWS identity information
+identity_info=$(aws sts get-caller-identity --query '[Account, Arn]' --output text 2>/dev/null)
+# Check if the command succeeded
+if [ $? -ne 0 ]; then
+    echo "Error: AWS CLI is not authenticated. Executing 'aws sso login --no-browser' or set up your credentials."
+    aws sso login --no-browser
+    exit 1
+fi
+# Extract the account ID and the username/role name if the command succeeded
+AWSACCOUNT=$(echo "$identity_info" | awk '{print $1}')
+AWSUSER=$(echo "$identity_info" | awk '{print $2}' | awk -F'/' '{print $NF}')
+AWSUSER2="${AWSUSER%@*}"
+  # Set EC2_KEY_NAME and EC2_KEY_FILE
+: "${EC2_KEY_NAME:="auto-ec2-${AWSUSER}"}"
+: "${EC2_KEY_FILE:="~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem"}"
+EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
+
 launch_instance
 wait_for_instance
 register_dns
 
-echo "Starting $DNS_NAME ($INSTANCE_ID) on $INSTANCE_TYPE with $AMI_NAME"
-echo "Run one of these SSH commands to connect:"
-echo "ssh -i ~/.ssh/${KEY_NAME}.pem ${EC2_USER}@${DNS_NAME}"
-echo "ssh -i ~/.ssh/${KEY_NAME}.pem ${EC2_USER}@${PUBLIC_IP}"
+echo "Starting ${public_dns_name} (${INSTANCE_ID}) on ${INSTANCE_TYPE} with ${AMI_NAME}"
+echo -e "\nRun one of these SSH commands to connect:"
+FILE2=~${EC2_KEY_FILE#"$HOME"}
+SSH_COMMAND="ssh -i ${FILE2} ${EC2_USER}@${public_dns_name}"
+echo "$SSH_COMMAND"
+
