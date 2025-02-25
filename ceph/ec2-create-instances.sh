@@ -221,15 +221,9 @@ AWSUSER2="${AWSUSER%@*}"
 : "${EC2_KEY_FILE:="~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem"}"
 EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
 
-prepare_ssh_keys
 launch_instance
 wait_for_instance
 register_dns
-
-function cleanup() {
-  rm -f "$ROOT_SSH_KEY_FILE" "${ROOT_SSH_KEY_FILE}.pub"
-}
-trap cleanup EXIT
 
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 echo "SSH commands to connect:"
