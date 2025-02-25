@@ -29,7 +29,7 @@ AMI_IMAGE="ami-03be04a3da3a40226"
 ROOT_VOLUME_SIZE=16
 INSTANCE_NAME="ceph-test"
 DOMAIN="ai.oregonstate.edu"  # Your domain for DNS record
-CLOUD_INIT_FILE="/home/dp/gh/dptests/ec2-cloud-init.txt"  # Path to your cloud-init file
+CLOUD_INIT_FILE="ec2-cloud-init.txt"  # Path to your cloud-init file
 EC2_USER="rocky"
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 
