@@ -6,6 +6,9 @@ def main(folder_path):
     db_files = Path(folder_path).glob("*.sqlite")
     conn = duckdb.connect()
     
+    # Load JSON extension
+    conn.execute("INSTALL 'json'; LOAD 'json';")
+    
     # Create empty table with explicit schema
     conn.execute("""
     CREATE TABLE combined_data (
@@ -35,19 +38,9 @@ def main(folder_path):
             p.command
         FROM 
             sqlite_db.gpu_stats AS g,
-            json_transform(g.json_data, '{
-                "gpus": [{
-                    "name": "VARCHAR",
-                    "utilization": {"gpu": "INTEGER"},
-                    "memory": {"used": "INTEGER"},
-                    "processes": [{
-                        "username": "VARCHAR", 
-                        "command": "VARCHAR"
-                    }]
-                }]
-            }') AS j,
-            unnest(j.gpus) AS gpus,
-            unnest(gpus.processes) AS p
+            json(g.json_data) AS j,
+            unnest(j->'gpus') AS gpus,
+            unnest(gpus->'processes') AS p
         """)
         
         conn.execute("DETACH sqlite_db")
