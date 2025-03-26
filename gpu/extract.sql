@@ -1,6 +1,6 @@
 COPY (
     SELECT
-        json_extract(json_data, '$.hostname') AS hostname,
+        json_extract(main.json_data, '$.hostname') AS hostname,
         json_extract(gpu.value, '$.uuid') AS gpuid,
         json_extract(gpu.value, '$.name') AS gputype,
         json_extract(gpu.value, '$.utilization.gpu')::INTEGER AS gpu_util,
@@ -9,7 +9,7 @@ COPY (
         json_extract(process.value, '$.command') AS command,
         json_extract(process.value, '$.pid')::INTEGER AS pid,
         json_extract(process.value, '$.gpu_memory_usage')::INTEGER AS gpu_memory_usage
-    FROM 'gpu_stats_merged.parquet'
-    CROSS JOIN LATERAL unnest(json_transform(json_extract(json_data, '$.gpus'), 'ARRAY(JSON)')) AS gpu
-    LEFT JOIN LATERAL unnest(json_transform(json_extract(gpu.value, '$.processes'), 'ARRAY(JSON)')) AS process
+    FROM 'gpu_stats_merged.parquet' AS main
+    CROSS JOIN LATERAL unnest(json_transform(json_extract(main.json_data, '$.gpus'), 'JSON[]')) AS gpu
+    LEFT JOIN LATERAL unnest(json_transform(json_extract(gpu.value, '$.processes'), 'JSON[]')) AS process
 ) TO 'gpu_process_stats.parquet' (FORMAT PARQUET);
