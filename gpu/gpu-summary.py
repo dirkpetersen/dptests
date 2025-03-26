@@ -31,16 +31,15 @@ def main(folder_path):
         SELECT
             g.timestamp::TIMESTAMP,
             g.hostname,
-            j.gpus.name AS gpu_name,
-            j.gpus.utilization.gpu AS utilization_gpu,
-            j.gpus.memory.used AS memory_used,
-            p.username,
-            p.command
+            json_extract(gpu.value, '$.name')::VARCHAR AS gpu_name,
+            json_extract(gpu.value, '$.utilization.gpu')::INTEGER AS utilization_gpu,
+            json_extract(gpu.value, '$.memory.used')::INTEGER AS memory_used,
+            json_extract(process.value, '$.username')::VARCHAR AS username,
+            json_extract(process.value, '$.command')::VARCHAR AS command
         FROM 
             sqlite_db.gpu_stats AS g,
-            json(g.json_data) AS j,
-            unnest(j->'gpus') AS gpus,
-            unnest(gpus->'processes') AS p
+            unnest(json_extract(g.json_data, '$.gpus')) AS gpu,
+            unnest(json_extract(gpu.value, '$.processes')) AS process
         """)
         
         conn.execute("DETACH sqlite_db")
