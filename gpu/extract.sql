@@ -9,7 +9,7 @@ COPY (
         json_extract(process.value, '$.command') AS command,
         json_extract(process.value, '$.pid') AS pid,
         json_extract(process.value, '$.gpu_memory_usage') AS gpu_memory_usage
-    FROM 'gpu_stats_merged.parquet'
+    FROM gpu_stats_merged.parquet
     CROSS JOIN unnest(json_extract(json_data, '$.gpus')) AS gpu
     LEFT JOIN unnest(json_extract(gpu.value, '$.processes')) AS process ON true
-) TO 'gpu_process_stats.parquet' (FORMAT PARQUET);
+) TO gpu_process_stats.parquet (FORMAT PARQUET);
