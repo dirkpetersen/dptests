@@ -16,5 +16,5 @@ COPY (
         ON g.index < json_array_length(h.gpus)
     JOIN LATERAL json_transform(json(g.value->'processes')) AS p
         ON p.index < json_array_length(g.value->'processes')
-) TO 'gpu_process_stats.parquet' (FORMAT PARQUET);
+) TO 'gpu_process_stats.parquet' WITH (FORMAT 'PARQUET');
 
