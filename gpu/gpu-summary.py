@@ -6,20 +6,27 @@ def main(folder_path):
     db_files = Path(folder_path).glob("*.sqlite")
     conn = duckdb.connect()
     
-    # Create initial empty structure
+    # Create empty table with explicit schema
     conn.execute("""
-    CREATE TABLE combined_data AS
-    SELECT 
-        timestamp::TIMESTAMP AS timestamp,
-        hostname,
-        gpu_name,
-        utilization_gpu,
-        memory_used,
-        username,
-        command
-    FROM (
+    CREATE TABLE combined_data (
+        timestamp TIMESTAMP,
+        hostname VARCHAR,
+        gpu_name VARCHAR,
+        utilization_gpu INTEGER,
+        memory_used INTEGER,
+        username VARCHAR,
+        command VARCHAR
+    )
+    """)
+
+    for db_file in db_files:
+        # Process each database file
+        conn.execute(f"ATTACH '{str(db_file)}' AS sqlite_db (TYPE SQLITE)")
+        
+        conn.execute("""
+        INSERT INTO combined_data
         SELECT
-            g.timestamp,
+            g.timestamp::TIMESTAMP,
             g.hostname,
             j.gpus.name AS gpu_name,
             j.gpus.utilization.gpu AS utilization_gpu,
@@ -41,48 +48,6 @@ def main(folder_path):
             }') AS j,
             unnest(j.gpus) AS gpus,
             unnest(gpus.processes) AS p
-    ) WHERE false
-    """)
-
-    for db_file in db_files:
-        # Process each database file
-        conn.execute(f"ATTACH '{str(db_file)}' AS sqlite_db (TYPE sqlite)")
-        
-        conn.execute("""
-        INSERT INTO combined_data
-        SELECT 
-            timestamp::TIMESTAMP,
-            hostname,
-            gpu_name,
-            utilization_gpu,
-            memory_used,
-            username,
-            command
-        FROM (
-            SELECT
-                g.timestamp,
-                g.hostname,
-                j.gpus.name AS gpu_name,
-                j.gpus.utilization.gpu AS utilization_gpu,
-                j.gpus.memory.used AS memory_used,
-                p.username,
-                p.command
-            FROM 
-                sqlite_db.gpu_stats AS g,
-                json_transform(g.json_data, '{
-                    "gpus": [{
-                        "name": "VARCHAR",
-                        "utilization": {"gpu": "INTEGER"},
-                        "memory": {"used": "INTEGER"},
-                        "processes": [{
-                            "username": "VARCHAR", 
-                            "command": "VARCHAR"
-                        }]
-                    }]
-                }') AS j,
-                unnest(j.gpus) AS gpus,
-                unnest(gpus.processes) AS p
-        )
         """)
         
         conn.execute("DETACH sqlite_db")
