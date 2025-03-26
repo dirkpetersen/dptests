@@ -36,16 +36,7 @@ def summarize_gpu_stats(input_csv, output_csv):
     # Flatten multi-index columns and rename time columns
     grouped.columns = ['_'.join(col).strip('_') for col in grouped.columns.values]
     
-    # Update column_order to match actual aggregated columns
-    column_order = [
-        f'{timestamp_col}_min', f'{timestamp_col}_max', 'duration_min',
-        'gpu_util_mean', 'gpu_mem_used_mean', 'gpu_memory_usage_mean',
-        'hostname_first', 'username_first'
-    ]
-    if 'gputype_first' in grouped.columns:
-        column_order.append('gputype_first')
-
-    # Rename timestamp columns
+    # Rename timestamp columns FIRST
     grouped = grouped.rename(columns={
         f'{timestamp_col}_min': 'start_time',
         f'{timestamp_col}_max': 'end_time',
@@ -53,6 +44,16 @@ def summarize_gpu_stats(input_csv, output_csv):
         'username_first': 'username'
     })
     
+    # NOW define column order with FINAL names
+    column_order = [
+        'start_time', 'end_time',
+        'duration_min',
+        'gpu_util_mean', 'gpu_mem_used_mean', 'gpu_memory_usage_mean',
+        'hostname', 'username'
+    ]
+    if 'gputype_first' in grouped.columns:
+        column_order.append('gputype_first')
+
     # Calculate duration in minutes
     grouped['duration_min'] = (grouped['end_time'] - grouped['start_time']).dt.total_seconds() / 60
     
