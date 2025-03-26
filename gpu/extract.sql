@@ -12,4 +12,4 @@ COPY (
     FROM 'gpu_stats_merged.parquet' AS main
     CROSS JOIN LATERAL unnest(json_transform(json_extract(main.json_data, '$.gpus'), 'JSON[]')) AS gpu
     LEFT JOIN LATERAL unnest(json_transform(json_extract(gpu.value, '$.processes'), 'JSON[]')) AS process
-) TO 'gpu_process_stats.parquet' WITH (FORMAT 'PARQUET');
+) AS processed_data TO 'gpu_process_stats.parquet' WITH (FORMAT 'PARQUET');
