@@ -5,6 +5,14 @@ def summarize_gpu_stats(input_csv, output_csv):
     # Read CSV with proper datetime parsing
     df = pd.read_csv(input_csv, parse_dates=['timestamp'])
     
+    # Add column verification and normalization
+    required_columns = {'timestamp', 'gpu_util', 'gpu_mem_used', 'gpu_memory_usage'}
+    if 'Job' not in df.columns:
+        # Try common alternative casing
+        df.columns = df.columns.str.strip().str.lower()
+        if 'job' not in df.columns:
+            raise ValueError("CSV missing required 'Job' column")
+    
     # Define aggregation functions for columns
     agg_dict = {
         'timestamp': ['min', 'max'],  # Start and end times
