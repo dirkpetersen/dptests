@@ -1,10 +1,11 @@
 SET enable_progress_bar=false;
 SET memory_limit='1GB';
 
--- Create output directory if it doesn't exist
+-- Create output directory
 CREATE TABLE IF NOT EXISTS duckdb_fs_directories(path VARCHAR);
-INSERT INTO duckdb_fs_directories VALUES('./output');
+INSERT OR REPLACE INTO duckdb_fs_directories SELECT './output' WHERE NOT EXISTS (SELECT 1 FROM duckdb_fs_directories WHERE path = './output');
 
+-- Export query results
 COPY (
     SELECT 
         h.hostname || '-' || 
@@ -27,4 +28,4 @@ COPY (
     CROSS JOIN LATERAL json_extract(g.value, '$.processes') procs
     CROSS JOIN LATERAL json_each(procs) p
     WHERE h.json_data IS NOT NULL
-) TO './output/gpu_jobs.parquet' (FORMAT PARQUET);
+) TO './output/gpu_jobs.parquet' (FORMAT PARQUET, COMPRESSION 'ZSTD');
