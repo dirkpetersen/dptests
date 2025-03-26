@@ -25,8 +25,8 @@ def summarize_gpu_stats(input_csv, output_csv):
         'gpu_util': 'mean',
         'gpu_mem_used': 'mean',
         'gpu_memory_usage': 'mean',
-        'machine': 'first',
-        'user': 'first',
+        'hostname': 'first',     # Changed from 'machine'
+        'username': 'first',     # Changed from 'user'
         **({'gputype': 'first'} if 'gputype' in df.columns else {})  # Handle alternative names
     }
 
@@ -40,7 +40,7 @@ def summarize_gpu_stats(input_csv, output_csv):
     column_order = [
         f'{timestamp_col}_min', f'{timestamp_col}_max', 'duration_min',
         'gpu_util_mean', 'gpu_mem_used_mean', 'gpu_memory_usage_mean',
-        'machine_first', 'user_first'
+        'hostname_first', 'username_first'
     ]
     if 'gputype_first' in grouped.columns:
         column_order.append('gputype_first')
@@ -48,7 +48,9 @@ def summarize_gpu_stats(input_csv, output_csv):
     # Rename timestamp columns
     grouped = grouped.rename(columns={
         f'{timestamp_col}_min': 'start_time',
-        f'{timestamp_col}_max': 'end_time'
+        f'{timestamp_col}_max': 'end_time',
+        'hostname_first': 'hostname',    # Clean up column names
+        'username_first': 'username'
     })
     
     # Calculate duration in minutes
