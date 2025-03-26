@@ -4,9 +4,9 @@ SET memory_limit='1GB';
 COPY (
     SELECT 
         h.hostname || '-' || 
-        coalesce(p.data->>'username', '') || '-' || 
-        coalesce(p.data->>'command', '') || '-' || 
-        coalesce(p.data->>'pid', '') AS job,
+        COALESCE(p.data->>'username', '') || '-' || 
+        COALESCE(p.data->>'command', '') || '-' || 
+        COALESCE(p.data->>'pid', '') AS job,
         g.data->>'uuid' AS gpuid,
         h.hostname,
         g.data->>'name' AS gputype,
@@ -18,24 +18,8 @@ COPY (
         (p.data->>'gpu_memory_usage')::BIGINT AS gpu_mem_usage,
         h.timestamp
     FROM read_parquet('gpu_stats_merged.parquet') h
-    CROSS JOIN json_transform(h.json_data, '{
-        "gpus": [{
-            "uuid": "VARCHAR",
-            "name": "VARCHAR",
-            "utilization": {
-                "gpu": "INTEGER"
-            },
-            "memory": {
-                "used": "INTEGER"
-            },
-            "processes": [{
-                "username": "VARCHAR",
-                "command": "VARCHAR",
-                "pid": "BIGINT",
-                "gpu_memory_usage": "BIGINT"
-            }]
-        }]
-    }') gpu_data
-    CROSS JOIN unnest(gpu_data.gpus) g(data)
-    CROSS JOIN unnest(g.data.processes) p(data)
+    CROSS JOIN LATERAL json_array(json_extract(h.json_data, '$.gpus')) AS gu
+    CROSS JOIN LATERAL json_each(gu.value) AS g(data)
+    CROSS JOIN LATERAL json_array(json_extract(g.data->>'processes')) AS pu
+    CROSS JOIN LATERAL json_each(pu.value) AS p(data)
 ) TO 'gpu_jobs.parquet' (FORMAT PARQUET);
