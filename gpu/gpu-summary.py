@@ -6,44 +6,54 @@ def summarize_gpu_stats(input_csv, output_csv):
     df = pd.read_csv(input_csv, parse_dates=['timestamp'])
     
     # Add column verification and normalization
-    required_columns = {'timestamp', 'gpu_util', 'gpu_mem_used', 'gpu_memory_usage'}
-    if 'Job' not in df.columns:
-        # Try common alternative casing
-        df.columns = df.columns.str.strip().str.lower()
-        if 'job' not in df.columns:
-            raise ValueError("CSV missing required 'Job' column")
+    original_columns_set = set(df.columns)
+    column_normalized = False
     
-    # Define aggregation functions for columns
+    if 'Job' not in df.columns:  
+        df.columns = df.columns.str.strip().str.lower()
+        column_normalized = True
+        if 'job' not in df.columns:
+            raise ValueError("CSV missing required 'Job/job column")
+
+    # Determine actual column names being used
+    job_col = 'job'  # After normalization or if original was lowercase
+    timestamp_col = 'timestamp'
+    
+    # Define aggregation functions using verified column names
     agg_dict = {
-        'timestamp': ['min', 'max'],  # Start and end times
+        timestamp_col: ['min', 'max'],
         'gpu_util': 'mean',
         'gpu_mem_used': 'mean',
         'gpu_memory_usage': 'mean',
-        # Preserve other columns (take first occurrence assuming they're consistent)
         'machine': 'first',
         'user': 'first',
-        'gpu_model': 'first'
+        **({'gputype': 'first'} if 'gputype' in df.columns else {})  # Handle alternative names
     }
-    
-    # Group by Job and aggregate
-    grouped = df.groupby('Job').agg(agg_dict)
+
+    # Group by the correct job column name
+    grouped = df.groupby(job_col).agg(agg_dict)
     
     # Flatten multi-index columns and rename time columns
     grouped.columns = ['_'.join(col).strip('_') for col in grouped.columns.values]
+    
+    # Update column_order to match actual aggregated columns
+    column_order = [
+        f'{timestamp_col}_min', f'{timestamp_col}_max', 'duration_min',
+        'gpu_util_mean', 'gpu_mem_used_mean', 'gpu_memory_usage_mean',
+        'machine_first', 'user_first'
+    ]
+    if 'gputype_first' in grouped.columns:
+        column_order.append('gputype_first')
+
+    # Rename timestamp columns
     grouped = grouped.rename(columns={
-        'timestamp_min': 'start_time',
-        'timestamp_max': 'end_time'
+        f'{timestamp_col}_min': 'start_time',
+        f'{timestamp_col}_max': 'end_time'
     })
     
     # Calculate duration in minutes
     grouped['duration_min'] = (grouped['end_time'] - grouped['start_time']).dt.total_seconds() / 60
     
-    # Reorder columns
-    column_order = [
-        'start_time', 'end_time', 'duration_min',
-        'gpu_util_mean', 'gpu_mem_used_mean', 'gpu_memory_usage_mean',
-        'machine_first', 'user_first', 'gpu_model_first'
-    ]
     grouped = grouped[column_order].reset_index()
     
     # Save to CSV
