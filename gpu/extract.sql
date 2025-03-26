@@ -10,8 +10,7 @@ COPY (
         p.command,
         CAST(p.pid AS INTEGER) AS pid,
         CAST(p.memory->>'gpu_memory_usage' AS INTEGER) AS gpu_memory_usage
-    FROM 'gpu_stats_merged.parquet' AS original
-    JOIN LATERAL json_transform(original.json_data) AS h
+    FROM 'gpu_stats_merged.parquet' AS h
     JOIN LATERAL json_transform(json(h.gpus)) AS g
         ON g.index < json_array_length(h.gpus)
     JOIN LATERAL json_transform(json(g.value->'processes')) AS p
