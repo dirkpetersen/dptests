@@ -20,6 +20,8 @@ COPY (
 ) TO 'gpu_process_stats.parquet' (FORMAT PARQUET);
 """
 
-# Execute the query
+# Execute the query with required extensions
 conn = duckdb.connect()
+conn.execute("INSTALL json;")  # Install JSON extension if not present
+conn.execute("LOAD json;")     # Load JSON extension
 conn.execute(sql)
