@@ -28,18 +28,26 @@ def main(folder_path):
         
         conn.execute("""
         INSERT INTO combined_data
+        WITH parsed_json AS (
+            SELECT 
+                timestamp,
+                hostname,
+                json_transform(json_data, 'array') AS parsed_data
+            FROM sqlite_db.gpu_stats
+        )
         SELECT
-            g.timestamp::TIMESTAMP,
-            g.hostname,
-            json_extract(gpu.value, '$.name')::VARCHAR AS gpu_name,
-            json_extract(gpu.value, '$.utilization.gpu')::INTEGER AS utilization_gpu,
-            json_extract(gpu.value, '$.memory.used')::INTEGER AS memory_used,
-            json_extract(process.value, '$.username')::VARCHAR AS username,
-            json_extract(process.value, '$.command')::VARCHAR AS command
+            p.timestamp::TIMESTAMP,
+            p.hostname,
+            gpu->>'name' AS gpu_name,
+            (gpu->>'utilization.gpu')::INTEGER AS utilization_gpu,
+            (gpu->>'memory.used')::INTEGER AS memory_used,
+            process->>'username' AS username,
+            process->>'command' AS command
         FROM 
-            sqlite_db.gpu_stats AS g,
-            unnest(json_extract(g.json_data, '$.gpus')) AS gpu,
-            unnest(json_extract(gpu.value, '$.processes')) AS process
+            parsed_json p,
+            json_transform(p.parsed_data->>'gpus', 'array') AS gpus,
+            unnest(gpus) AS gpu,
+            unnest(json_transform(gpu->>'processes', 'array')) AS process
         """)
         
         conn.execute("DETACH sqlite_db")
