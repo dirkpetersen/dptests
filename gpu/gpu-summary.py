@@ -27,6 +27,7 @@ def summarize_gpu_stats(input_csv, output_csv):
         'gpu_memory_usage': 'mean',
         'hostname': 'first',     # Changed from 'machine'
         'username': 'first',     # Changed from 'user'
+        'command': 'first',      # Add command
         **({'gputype': 'first'} if 'gputype' in df.columns else {})  # Handle alternative names
     }
 
@@ -41,7 +42,8 @@ def summarize_gpu_stats(input_csv, output_csv):
         f'{timestamp_col}_min': 'start_time',
         f'{timestamp_col}_max': 'end_time',
         'hostname_first': 'hostname',    # Clean up column names
-        'username_first': 'username'
+        'username_first': 'username',
+        'command_first': 'command'
     })
     
     # NOW define column order with FINAL names
@@ -49,7 +51,7 @@ def summarize_gpu_stats(input_csv, output_csv):
         'start_time', 'end_time',
         'duration_min',
         'gpu_util_mean', 'gpu_mem_used_mean', 'gpu_memory_usage_mean',
-        'hostname', 'username'
+        'hostname', 'username', 'command'
     ]
     if 'gputype_first' in grouped.columns:
         column_order.append('gputype_first')
