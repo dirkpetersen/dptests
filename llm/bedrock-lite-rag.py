@@ -1163,20 +1163,32 @@ def batch_processing_handler(event, context):
 
 # Example usage script (not part of Lambda)
 if __name__ == "__main__":
-    # Example: Manual local usage
-    
     # Initialize
     rag = EnhancedServerlessRAG()
     
-    # Upload a PDF (if running locally)
-    pdf_key = rag.upload_pdf("sample.pdf")
+    # Get file path from command line
+    import sys
+    if len(sys.argv) > 1:
+        file_path = sys.argv[1]
+    else:
+        print("Usage: python3 bedrock-lite-rag.py <path-to-pdf>")
+        sys.exit(1)
     
-    # Process PDFs and build index
+    # Upload and process
+    pdf_key = rag.upload_pdf(file_path)
     rag.build_index([pdf_key])
     
-    # Query the system
-    answer = rag.query("What is the main topic of this document?")
-    print(json.dumps(answer, indent=2))
+    # Interactive query
+    while True:
+        question = input("\nEnter question (or 'exit' to quit): ")
+        if question.lower() == 'exit':
+            break
+        answer = rag.query(question)
+        print(f"\nAnswer: {answer['answer']}")
+        if answer['sources']:
+            print("\nSources:")
+            for source in list(set(answer['sources'])):  # Deduplicate
+                print(f"- {source}")
     
     # Clean up when done
     rag.clean_up()
