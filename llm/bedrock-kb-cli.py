@@ -322,23 +322,17 @@ def create_knowledge_base(kb_name):
         return response
     except ClientError as e:
         print(f"\nERROR: {e.response['Error']['Message']}")
-        if "Unable to assume role" in str(e):
-            print(f"\nERROR: The role 'AmazonBedrockExecutionRoleForKnowledgeBase' is missing or misconfigured")
-            print("Required configuration:")
-            print(f"1. Must exist in account {config['account_id']}")
-            print("2. Must have bedrock.amazonaws.com as a trusted entity")
-            print("3. Must have these policies attached:")
-            print("   - AWSBedrockAgentServiceRolePolicy")
-            print("   - AmazonS3ReadOnlyAccess")
-            print("   - AWSBedrockFoundationModelPolicy")
-        else:
-            print("\nRequired role configuration:")
-            print(f"1. Create role named 'AmazonBedrockExecutionRoleForKnowledgeBase'")
-            print("2. Set trust relationship to allow bedrock.amazonaws.com")
-            print("3. Attach these policies:")
-            print("   - AWSBedrockAgentServiceRolePolicy")
-            print("   - AmazonS3ReadOnlyAccess")
-            print("   - AWSBedrockFoundationModelPolicy")
+        print('''\nIAM Configuration Required:
+  Your AWS administrator needs to create this role:
+
+  Role Name: AmazonBedrockExecutionRoleForKnowledgeBase
+  Trust Relationship: Allow bedrock.amazonaws.com
+  Required Policies:
+    - AWSBedrockAgentServiceRolePolicy
+    - AmazonS3ReadOnlyAccess
+    - AWSBedrockFoundationModelPolicy
+
+  Once created, the script will work without additional permissions.''')
         sys.exit(1)
 
 def create_data_source(kb_name):
@@ -471,7 +465,27 @@ def ask_question(kb_name='default', query=None):
             sys.exit(0)
 
 def main():
-    parser = argparse.ArgumentParser(description='Bedrock Knowledge Base CLI')
+    parser = argparse.ArgumentParser(
+        description='Bedrock Knowledge Base CLI',
+        epilog='''IAM Requirements:
+  To create knowledge bases, your AWS admin must create this role first:
+  
+  Role Name: AmazonBedrockExecutionRoleForKnowledgeBase
+  Trust Policy:
+  {
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Principal": {"Service": "bedrock.amazonaws.com"},
+        "Action": "sts:AssumeRole"
+    }]
+  }
+  
+  Required Attached Policies:
+  - AWSBedrockAgentServiceRolePolicy
+  - AmazonS3ReadOnlyAccess
+  - AWSBedrockFoundationModelPolicy'''
+    )
     subparsers = parser.add_subparsers(dest='command')
     
     # Upload command
