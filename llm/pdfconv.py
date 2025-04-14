@@ -57,9 +57,13 @@ def convert_folder(input_dir, output_dir):
 def main():
     parser = argparse.ArgumentParser(description='Convert PDF files to Markdown using AWS Textract')
     parser.add_argument('-i', '--input', required=True, help='Input directory containing PDF files')
-    parser.add_argument('-o', '--output', required=True, help='Output directory for Markdown files')
+    parser.add_argument('-o', '--output', required=False, help='Output directory for Markdown files (default: same as input directory)')
     
     args = parser.parse_args()
+    
+    # Set output directory to input directory if not provided
+    if not args.output:
+        args.output = args.input
     
     convert_folder(args.input, args.output)
 
