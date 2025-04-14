@@ -467,37 +467,45 @@ def ask_question(kb_name='default', query=None):
 def main():
     parser = argparse.ArgumentParser(
         description='Bedrock Knowledge Base CLI',
-        epilog='''Required IAM Role Configuration:
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''\
+        
+IAM REQUIREMENTS FOR BEDROCK KNOWLEDGE BASES
+============================================
 
-  Your AWS administrator must create this role first:
+Your AWS administrator MUST create this role BEFORE using this tool:
 
-  Role Name:
-    AmazonBedrockExecutionRoleForKnowledgeBase
+1. Role Name:
+   AmazonBedrockExecutionRoleForKnowledgeBase
 
-  Trust Policy:
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "bedrock.amazonaws.com"
-          },
-          "Action": "sts:AssumeRole"
-        }
-      ]
-    }
+2. Trust Relationship Policy:
+   ----------------------------------
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Principal": {
+           "Service": "bedrock.amazonaws.com"
+         },
+         "Action": "sts:AssumeRole"
+       }
+     ]
+   }
+   ----------------------------------
 
-  Required Attached Policies:
-    • AWSBedrockAgentServiceRolePolicy
-    • AmazonS3ReadOnlyAccess 
-    • AWSBedrockFoundationModelPolicy
+3. Required Attached Policies:
+   - AWSBedrockAgentServiceRolePolicy
+   - AmazonS3ReadOnlyAccess
+   - AWSBedrockFoundationModelPolicy
 
-  Note: This role must be created in:
-        - The same AWS account
-        - The same AWS region
-        Where you're running this script'''
-    )
+4. Role Requirements:
+   - Must exist in the SAME AWS account as your CLI user
+   - Must be created in the SAME REGION you're using
+   - Must be created BEFORE running this tool
+
+For detailed instructions see:
+https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-create.html''')
     subparsers = parser.add_subparsers(dest='command')
     
     # Upload command
