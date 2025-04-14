@@ -221,12 +221,14 @@ def process_image_with_textract(image, region='us-west-2'):
 def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300):
     """Process PDF by converting to images first"""
     try:
+        print('Converting PDF to images...')
         images = convert_pdf_to_images(input_path, dpi)
         full_text = ""
         
         with tempfile.TemporaryDirectory() as temp_dir:
             for i, img in enumerate(images):
                 # Process each page image
+                print(f"Processing page {i+1} with Textract")
                 page_text = process_image_with_textract(img, region=aws_region)
                 full_text += f"--- PAGE {i+1} ---\n\n{page_text}\n\n"
                 
