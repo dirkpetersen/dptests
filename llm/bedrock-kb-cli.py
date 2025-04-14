@@ -10,6 +10,7 @@ import re
 from botocore.exceptions import ClientError
 import sys
 from pathlib import Path
+from datetime import datetime, timedelta
 
 def generate_kb_id(kb_name):
     """Generate AWS-compliant knowledge base ID (exactly 10 alphanumeric characters)"""
@@ -306,7 +307,7 @@ def upload_to_s3(path, kb_name='default'):
                 s3_path = prefix + os.path.relpath(local_path, path)
                 s3.upload_file(local_path, bucket, s3_path)
 
-def create_knowledge_base(kb_name):
+def create_knowledge_base(kb_name, auto_delete_hours=None):
     bedrock = boto3.client('bedrock-agent')
     config = get_config()
     region = config['region']
@@ -343,6 +344,18 @@ def create_knowledge_base(kb_name):
     collection_id = create_opensearch_collection_if_needed()
     collection_arn = f"arn:aws:aoss:{region}:{account_id}:collection/{collection_id}"
     
+    # Prepare tags for the knowledge base
+    tags = {
+        'created-at': datetime.now().isoformat()
+    }
+    
+    # Add auto-delete tag if specified
+    if auto_delete_hours:
+        tags['auto-delete'] = 'true'
+        tags['auto-delete-hours'] = str(auto_delete_hours)
+        tags['last-accessed'] = datetime.now().isoformat()
+        print(f"Setting up auto-deletion after {auto_delete_hours} hours of inactivity")
+    
     print(f"Creating knowledge base: {kb_name} (ID: {kb_id})")
     try:
         response = bedrock.create_knowledge_base(
@@ -366,7 +379,8 @@ def create_knowledge_base(kb_name):
                         "metadataField": "AMAZON_BEDROCK_METADATA"
                     }
                 }
-            }
+            },
+            tags=tags
         )
         
         # Wait for knowledge base to be created
@@ -378,6 +392,11 @@ def create_knowledge_base(kb_name):
         waiter.wait(knowledgeBaseId=kb_id)
         
         print(f"✓ Knowledge base '{kb_name}' is now active")
+        
+        # Set up auto-deletion if specified
+        if auto_delete_hours:
+            setup_auto_deletion(kb_id, kb_name, auto_delete_hours)
+            
         return response
     except ClientError as e:
         print(f"\nERROR: {e.response['Error']['Message']}")
@@ -474,6 +493,71 @@ def create_data_source(kb_name):
         print(f"Error creating data source: {str(e)}")
         sys.exit(1)
 
+def setup_auto_deletion(kb_id, kb_name, hours):
+    """Set up auto-deletion for a knowledge base after specified hours of inactivity"""
+    bedrock = boto3.client('bedrock-agent')
+    
+    # Update the last accessed timestamp
+    bedrock.tag_resource(
+        resourceARN=f"arn:aws:bedrock:{boto3.session.Session().region_name}:{get_config()['account_id']}:knowledge-base/{kb_id}",
+        tags={
+            'last-accessed': datetime.now().isoformat()
+        }
+    )
+    
+    print(f"✓ Auto-deletion set up for '{kb_name}' after {hours} hours of inactivity")
+    print("  The knowledge base will be checked for activity during status checks")
+
+def update_last_accessed(kb_id):
+    """Update the last accessed timestamp for a knowledge base"""
+    try:
+        bedrock = boto3.client('bedrock-agent')
+        bedrock.tag_resource(
+            resourceARN=f"arn:aws:bedrock:{boto3.session.Session().region_name}:{get_config()['account_id']}:knowledge-base/{kb_id}",
+            tags={
+                'last-accessed': datetime.now().isoformat()
+            }
+        )
+    except Exception as e:
+        # Just log the error but don't fail the operation
+        print(f"Warning: Could not update last-accessed timestamp - {e}")
+
+def check_and_delete_inactive_kbs():
+    """Check for inactive knowledge bases and delete them if needed"""
+    bedrock = boto3.client('bedrock-agent')
+    
+    # List all knowledge bases
+    paginator = bedrock.get_paginator('list_knowledge_bases')
+    
+    for page in paginator.paginate():
+        for kb in page.get('knowledgeBaseSummaries', []):
+            kb_id = kb['knowledgeBaseId']
+            
+            try:
+                # Get tags for the knowledge base
+                response = bedrock.list_tags_for_resource(
+                    resourceARN=f"arn:aws:bedrock:{boto3.session.Session().region_name}:{get_config()['account_id']}:knowledge-base/{kb_id}"
+                )
+                
+                tags = response.get('tags', {})
+                
+                # Check if this KB has auto-delete enabled
+                if tags.get('auto-delete') == 'true' and 'last-accessed' in tags and 'auto-delete-hours' in tags:
+                    last_accessed = datetime.fromisoformat(tags['last-accessed'])
+                    auto_delete_hours = int(tags['auto-delete-hours'])
+                    
+                    # Check if the KB has been inactive for longer than the specified hours
+                    if datetime.now() - last_accessed > timedelta(hours=auto_delete_hours):
+                        print(f"Deleting inactive knowledge base: {kb['name']} (ID: {kb_id})")
+                        print(f"  Last accessed: {last_accessed.isoformat()}")
+                        print(f"  Inactive for: {(datetime.now() - last_accessed).total_seconds() / 3600:.1f} hours")
+                        
+                        # Delete the knowledge base
+                        bedrock.delete_knowledge_base(knowledgeBaseId=kb_id)
+                        print(f"✓ Deleted inactive knowledge base: {kb['name']}")
+            except Exception as e:
+                print(f"Error checking knowledge base {kb_id}: {str(e)}")
+
 def ask_question(kb_name='default', query=None):
     bedrock = boto3.client('bedrock-agent-runtime')
     region = boto3.session.Session().region_name
@@ -485,7 +569,15 @@ def ask_question(kb_name='default', query=None):
     # Verify knowledge base exists
     bedrock_agent = boto3.client('bedrock-agent')
     try:
-        bedrock_agent.get_knowledge_base(knowledgeBaseId=kb_id)
+        kb_response = bedrock_agent.get_knowledge_base(knowledgeBaseId=kb_id)
+        
+        # Update last accessed timestamp if this is an auto-delete KB
+        tags = bedrock_agent.list_tags_for_resource(
+            resourceARN=f"arn:aws:bedrock:{region}:{get_config()['account_id']}:knowledge-base/{kb_id}"
+        ).get('tags', {})
+        
+        if tags.get('auto-delete') == 'true':
+            update_last_accessed(kb_id)
     except bedrock_agent.exceptions.ResourceNotFoundException:
         print(f"Error: Knowledge base '{kb_name}' (ID: {kb_id}) not found")
         sys.exit(1)
@@ -505,6 +597,17 @@ def ask_question(kb_name='default', query=None):
                     }
                 }
             )
+            
+            # Update last accessed timestamp for auto-delete KBs
+            try:
+                tags = bedrock_agent.list_tags_for_resource(
+                    resourceARN=f"arn:aws:bedrock:{region}:{get_config()['account_id']}:knowledge-base/{kb_id}"
+                ).get('tags', {})
+                
+                if tags.get('auto-delete') == 'true':
+                    update_last_accessed(kb_id)
+            except Exception:
+                pass  # Ignore errors updating timestamp
             
             # Print retrieved citations
             if 'citations' in response:
@@ -571,6 +674,7 @@ https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-create.html'
     upload_parser = subparsers.add_parser('upload')
     upload_parser.add_argument('path', help='File or directory path to upload')
     upload_parser.add_argument('--kb', default='default', help='Knowledge base name')
+    upload_parser.add_argument('--auto-delete', type=int, help='Auto-delete after specified hours of inactivity')
     
     # Ask command
     ask_parser = subparsers.add_parser('ask')
@@ -580,17 +684,24 @@ https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-create.html'
     # Status command
     status_parser = subparsers.add_parser('status')
     status_parser.add_argument('--kb', default='default', help='Knowledge base name')
+    status_parser.add_argument('--check-inactive', action='store_true', help='Check and delete inactive knowledge bases')
+    
+    # Cleanup command
+    cleanup_parser = subparsers.add_parser('cleanup')
+    cleanup_parser.add_argument('--force', action='store_true', help='Force deletion of all auto-delete knowledge bases')
     
     args = parser.parse_args()
     
     if args.command == 'upload':
         print(f"Setting up knowledge base: {args.kb}")
         upload_to_s3(args.path, args.kb)
-        create_knowledge_base(args.kb)
+        create_knowledge_base(args.kb, args.auto_delete)
         create_data_source(args.kb)
         print(f"\n✓ Knowledge base '{args.kb}' setup complete!")
         print("Note: It may take a few minutes for data ingestion to complete")
         print("      before the knowledge base is ready for queries.")
+        if args.auto_delete:
+            print(f"Auto-deletion is set for {args.auto_delete} hours of inactivity")
     elif args.command == 'ask':
         ask_question(args.kb, args.question)
     elif args.command == 'status':
@@ -600,6 +711,11 @@ https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-create.html'
         print(f"S3 Bucket: {config['bucket_name']}")
         print(f"OpenSearch Collection: {config['collection_name']}")
         print(f"IAM Role: {config['role_name']}")
+        
+        # Check for inactive KBs if requested
+        if args.check_inactive:
+            print("\nChecking for inactive knowledge bases...")
+            check_and_delete_inactive_kbs()
         
         # Generate the same knowledge base ID
         kb_id = generate_kb_id(args.kb)
@@ -611,6 +727,30 @@ https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-create.html'
             print(f"\nKnowledge Base '{args.kb}' (ID: {kb_id}):")
             print(f"  Status: {kb['knowledgeBase']['status']}")
             print(f"  Created: {kb['knowledgeBase']['createdAt']}")
+            
+            # Get tags to check auto-delete status
+            try:
+                tags_response = bedrock.list_tags_for_resource(
+                    resourceARN=f"arn:aws:bedrock:{config['region']}:{config['account_id']}:knowledge-base/{kb_id}"
+                )
+                tags = tags_response.get('tags', {})
+                
+                if tags.get('auto-delete') == 'true':
+                    last_accessed = datetime.fromisoformat(tags.get('last-accessed', datetime.now().isoformat()))
+                    auto_delete_hours = int(tags.get('auto-delete-hours', '0'))
+                    time_remaining = timedelta(hours=auto_delete_hours) - (datetime.now() - last_accessed)
+                    
+                    print(f"  Auto-delete: Enabled ({auto_delete_hours} hours of inactivity)")
+                    print(f"  Last accessed: {last_accessed.isoformat()}")
+                    if time_remaining.total_seconds() > 0:
+                        print(f"  Time remaining: {time_remaining.total_seconds() / 3600:.1f} hours")
+                    else:
+                        print(f"  Time remaining: Scheduled for deletion")
+                        
+                    # Update last accessed time since we're checking status
+                    update_last_accessed(kb_id)
+            except Exception as e:
+                print(f"  Error getting tags: {str(e)}")
             
             # List data sources
             try:
@@ -635,6 +775,13 @@ https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-create.html'
                 
         except bedrock.exceptions.ResourceNotFoundException:
             print(f"\nKnowledge Base '{args.kb}' (ID: {kb_id}) not found")
+    elif args.command == 'cleanup':
+        if args.force:
+            print("Forcing cleanup of all auto-delete knowledge bases...")
+            check_and_delete_inactive_kbs()
+        else:
+            print("Checking for inactive knowledge bases...")
+            check_and_delete_inactive_kbs()
     else:
         parser.print_help()
 
