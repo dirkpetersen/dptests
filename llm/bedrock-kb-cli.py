@@ -38,7 +38,7 @@ def create_role_if_needed():
 
 def upload_to_s3(path, kb_name='default'):
     s3 = boto3.client('s3')
-    bucket = 'my-bedrock-kb'
+    bucket = 'my-bedrock-kb-xxx'
     
     # Add bucket creation check
     try:
