@@ -76,8 +76,8 @@ def create_opensearch_collection_if_needed():
     # Create collection if it doesn't exist
     print(f"Creating OpenSearch collection: {collection_name}")
     
-    # Create encryption policy
-    policy_name = f"bedrock-kb-policy-{uuid.uuid4().hex[:8]}"
+    # Create encryption policy with stable name
+    policy_name = f"bedrock-kb-encryption-{collection_name}"
     policy_document = {
         "Rules": [
             {
@@ -88,19 +88,29 @@ def create_opensearch_collection_if_needed():
         "AWSOwnedKey": True
     }
     
+    # Check if policy exists first
     try:
-        aoss.create_security_policy(
-            name=policy_name,
-            policy=json.dumps(policy_document),
-            type='encryption'
-        )
-        print(f"✓ Created encryption policy: {policy_name}")
+        aoss.get_security_policy(name=policy_name, type='encryption')
+        print(f"✓ Using existing encryption policy: {policy_name}")
     except ClientError as e:
-        if 'already exists' not in str(e):
+        if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            try:
+                aoss.create_security_policy(
+                    name=policy_name,
+                    policy=json.dumps(policy_document),
+                    type='encryption'
+                )
+                print(f"✓ Created encryption policy: {policy_name}")
+            except ClientError as e:
+                if 'ConflictException' in str(e) or 'already exists' in str(e):
+                    print(f"✓ Encryption policy already exists: {policy_name}")
+                else:
+                    raise
+        else:
             raise
     
-    # Create data access policy
-    data_policy_name = f"bedrock-kb-data-{uuid.uuid4().hex[:8]}"
+    # Create data access policy with stable name
+    data_policy_name = f"bedrock-kb-data-{collection_name}"
     data_policy = {
         "Rules": [
             {
@@ -128,19 +138,29 @@ def create_opensearch_collection_if_needed():
         ]
     }
     
+    # Check if data policy exists first
     try:
-        aoss.create_access_policy(
-            name=data_policy_name,
-            policy=json.dumps(data_policy),
-            type='data'
-        )
-        print(f"✓ Created data access policy: {data_policy_name}")
+        aoss.get_access_policy(name=data_policy_name, type='data')
+        print(f"✓ Using existing data access policy: {data_policy_name}")
     except ClientError as e:
-        if 'already exists' not in str(e):
+        if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            try:
+                aoss.create_access_policy(
+                    name=data_policy_name,
+                    policy=json.dumps(data_policy),
+                    type='data'
+                )
+                print(f"✓ Created data access policy: {data_policy_name}")
+            except ClientError as e:
+                if 'ConflictException' in str(e) or 'already exists' in str(e):
+                    print(f"✓ Data access policy already exists: {data_policy_name}")
+                else:
+                    raise
+        else:
             raise
     
-    # Create network policy
-    network_policy_name = f"bedrock-kb-network-{uuid.uuid4().hex[:8]}"
+    # Create network policy with stable name
+    network_policy_name = f"bedrock-kb-network-{collection_name}"
     network_policy = {
         "Rules": [
             {
@@ -151,15 +171,25 @@ def create_opensearch_collection_if_needed():
         ]
     }
     
+    # Check if network policy exists first
     try:
-        aoss.create_security_policy(
-            name=network_policy_name,
-            policy=json.dumps(network_policy),
-            type='network'
-        )
-        print(f"✓ Created network policy: {network_policy_name}")
+        aoss.get_security_policy(name=network_policy_name, type='network')
+        print(f"✓ Using existing network policy: {network_policy_name}")
     except ClientError as e:
-        if 'already exists' not in str(e):
+        if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            try:
+                aoss.create_security_policy(
+                    name=network_policy_name,
+                    policy=json.dumps(network_policy),
+                    type='network'
+                )
+                print(f"✓ Created network policy: {network_policy_name}")
+            except ClientError as e:
+                if 'ConflictException' in str(e) or 'already exists' in str(e):
+                    print(f"✓ Network policy already exists: {network_policy_name}")
+                else:
+                    raise
+        else:
             raise
     
     # Create collection
