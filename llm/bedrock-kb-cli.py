@@ -477,22 +477,26 @@ def main():
   Trust Policy:
     {
       "Version": "2012-10-17",
-      "Statement": [{
-        "Effect": "Allow",
-        "Principal": {
-          "Service": "bedrock.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-      }]
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "bedrock.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
     }
 
   Required Attached Policies:
-    - AWSBedrockAgentServiceRolePolicy
-    - AmazonS3ReadOnlyAccess 
-    - AWSBedrockFoundationModelPolicy
+    • AWSBedrockAgentServiceRolePolicy
+    • AmazonS3ReadOnlyAccess 
+    • AWSBedrockFoundationModelPolicy
 
-  Note: This role must be created in the same AWS account and region
-        where you're running this script.'''
+  Note: This role must be created in:
+        - The same AWS account
+        - The same AWS region
+        Where you're running this script'''
     )
     subparsers = parser.add_subparsers(dest='command')
     
