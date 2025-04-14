@@ -118,34 +118,32 @@ def create_opensearch_collection_if_needed():
             raise
     
     # Create data access policy with shortened name
-    data_policy = {
-        "Rules": [
-            {  # First rule for collection access
-                "Resource": [f"collection/{collection_name}"],
-                "ResourceType": "collection",
-                "Access": [
-                    "aoss:CreateCollectionItems",
-                    "aoss:DeleteCollectionItems",
-                    "aoss:UpdateCollectionItems",
-                    "aoss:DescribeCollectionItems"
-                ],
-                "Principal": [config['role_arn']]
-            },
-            {  # Second rule for index access
-                "Resource": [f"index/{collection_name}/*"],
-                "ResourceType": "index",
-                "Access": [
-                    "aoss:CreateIndex",
-                    "aoss:DeleteIndex",
-                    "aoss:UpdateIndex",
-                    "aoss:DescribeIndex",
-                    "aoss:ReadDocument",
-                    "aoss:WriteDocument"
-                ],
-                "Principal": [config['role_arn']]
-            }
-        ]
-    }
+    data_policy = [
+        {  # First rule for collection access
+            "Resource": [f"collection/{collection_name}"],
+            "ResourceType": "collection",
+            "Access": [
+                "aoss:CreateCollectionItems",
+                "aoss:DeleteCollectionItems",
+                "aoss:UpdateCollectionItems",
+                "aoss:DescribeCollectionItems"
+            ],
+            "Principal": [config['role_arn']]
+        },
+        {  # Second rule for index access
+            "Resource": [f"index/{collection_name}/*"],
+            "ResourceType": "index",
+            "Access": [
+                "aoss:CreateIndex",
+                "aoss:DeleteIndex",
+                "aoss:UpdateIndex",
+                "aoss:DescribeIndex",
+                "aoss:ReadDocument",
+                "aoss:WriteDocument"
+            ],
+            "Principal": [config['role_arn']]
+        }
+    ]
     
     # Check if data policy exists first
     try:
