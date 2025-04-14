@@ -239,12 +239,17 @@ def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=
         full_text = []
         
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Calculate optimal worker count
+            num_pages = len(images)
+            num_workers = min(num_pages, max_workers)
+            num_workers = max(num_workers, 1)  # Ensure at least 1 worker
+            
             # Create list of arguments with indices
             tasks = [(i, img, aws_region) for i, img in enumerate(images)]
             
-            logger.info(f"Processing {len(images)} pages with {max_workers} workers")
+            logger.info(f"Processing {num_pages} pages with {num_workers} workers")
             
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
                 futures = [executor.submit(process_single_image, task) for task in tasks]
                 
                 for future in as_completed(futures):
@@ -252,7 +257,7 @@ def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=
                         page_num, text = future.result()
                         full_text.append((page_num, text))
                         if (page_num + 1) % 5 == 0:
-                            logger.info(f"Completed {page_num + 1}/{len(images)} pages")
+                            logger.info(f"Completed {page_num + 1}/{num_pages} pages")
                     except Exception as e:
                         logger.error(f"Page processing failed: {str(e)}")
 
