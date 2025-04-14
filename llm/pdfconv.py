@@ -11,10 +11,16 @@ from PIL import Image
 import tempfile
 from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from textractor import Textractor
+from textractor.data.constants import TextractFeatures
+from textractor.data.text_linearization_config import TextLinearizationConfig
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Textractor
+textractor = Textractor(region_name="us-west-2")
 
 def upload_to_s3(file_path, bucket_name, object_name=None):
     """Upload a file to an S3 bucket"""
@@ -35,6 +41,14 @@ def delete_from_s3(bucket_name, object_name):
         s3.delete_object(Bucket=bucket_name, Key=object_name)
     except ClientError as e:
         logger.error(f"Failed to delete {object_name} from S3: {e}")
+
+def process_textract_response(document, config=None):
+    """Process Textractor document with optional linearization config"""
+    try:
+        return document.get_text(config=config) if config else document.get_text()
+    except Exception as e:
+        logger.error(f"Text processing failed: {str(e)}")
+        raise
 
 def process_textract_blocks(blocks):
     """Convert Textract blocks to markdown with tables and layout"""
@@ -117,52 +131,28 @@ def format_table(cells):
     return '\n'.join(md_table) + '\n\n'
 
 def textract_async(file_name, bucket_name, region):
-    """Extract text from PDF in S3 using async Textract with layout and tables"""
-    textract_client = boto3.client('textract', region_name=region)
-    
-    response = textract_client.start_document_analysis(
-        DocumentLocation={'S3Object': {'Bucket': bucket_name, 'Name': file_name}},
-        FeatureTypes=['TABLES', 'LAYOUT']
-    )
-    
-    job_id = response['JobId']
-    logger.info(f"Started Textract analysis job {job_id}")
-    
-    while True:
-        response = textract_client.get_document_analysis(JobId=job_id)
-        status = response['JobStatus']
-        if status in ['SUCCEEDED', 'FAILED']:
-            break
-        time.sleep(5)
-    
-    if status != 'SUCCEEDED':
-        raise Exception(f"Textract job failed: {status}")
-    
-    blocks = []
-    next_token = None
-    
-    while True:
-        if next_token:
-            response = textract_client.get_document_analysis(
-                JobId=job_id,
-                NextToken=next_token
-            )
-        else:
-            response = textract_client.get_document_analysis(JobId=job_id)
+    """Extract text from PDF in S3 using async Textract with Textractor"""
+    try:
+        # Update region in case it's different from initialization
+        textractor.region_name = region
         
-        blocks.extend(response['Blocks'])
-        next_token = response.get('NextToken')
-        if not next_token:
-            break
-    
-    return process_textract_blocks(blocks)
+        document = textractor.analyze_document(
+            file_source=f"s3://{bucket_name}/{file_name}",
+            features=[TextractFeatures.LAYOUT, TextractFeatures.TABLES],
+            save_image=False
+        )
+        return process_textract_response(document)
+    except Exception as e:
+        logger.error(f"Async Textract failed: {str(e)}")
+        raise
 
-def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=32, save_images=False):
+def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=32, save_images=False, markdown=False):
     """Process a single PDF file using Textract and save as Markdown"""
+    config = get_linearization_config(markdown)
     try:
         # First try processing via images
         logger.info("Attempting image-based processing")
-        if process_pdf_via_images(input_path, output_path, aws_region=aws_region, max_workers=max_workers, save_images=save_images):
+        if process_pdf_via_images(input_path, output_path, aws_region=aws_region, max_workers=max_workers, save_images=save_images, markdown=markdown):
             return True
         
         # If image processing failed, fall back to previous methods
@@ -273,27 +263,46 @@ def convert_pdf_to_images(pdf_path, dpi=300):
     
     return images
 
-def process_image_with_textract(image, region='us-west-2'):
-    """Process a single image with Textract including layout and tables"""
-    textract = boto3.client('textract', region_name=region)
-    
-    # Convert image to bytes
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='PNG')
-    img_byte_arr = img_byte_arr.getvalue()
-    
-    response = textract.analyze_document(
-        Document={'Bytes': img_byte_arr},
-        FeatureTypes=['TABLES', 'LAYOUT']
-    )
-    
-    return process_textract_blocks(response['Blocks'])
+def process_image_with_textract(image, region='us-west-2', config=None):
+    """Process a single image with Textractor including layout and tables"""
+    try:
+        # Update region in case it's different from initialization
+        textractor.region_name = region
+        
+        # Convert image to bytes
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='PNG')
+        img_byte_arr = img_byte_arr.getvalue()
+        
+        document = textractor.analyze_document(
+            file_source=img_byte_arr,
+            features=[TextractFeatures.LAYOUT, TextractFeatures.TABLES],
+            save_image=False
+        )
+        return process_textract_response(document, config)
+    except Exception as e:
+        logger.error(f"Image processing failed: {str(e)}")
+        raise
+
+def get_linearization_config(markdown=False):
+    """Create TextLinearizationConfig from command-line arguments"""
+    if markdown:
+        return TextLinearizationConfig(
+            hide_header_layout=True,
+            table_prefix="\n\n",
+            table_suffix="\n\n",
+            table_row_prefix="| ",
+            table_row_suffix=" |",
+            table_separator=" | ",
+            table_header_separator="|"
+        )
+    return None
 
 def process_single_image(args):
     """Helper function to process a single image with its index"""
-    i, img, aws_region = args
+    i, img, aws_region, config = args
     try:
-        page_text = process_image_with_textract(img, region=aws_region)
+        page_text = process_image_with_textract(img, region=aws_region, config=config)
         return (i, f"--- PAGE {i+1} ---\n\n{page_text}\n\n")
     except Exception as e:
         logger.error(f"Failed processing page {i+1}: {str(e)}")
@@ -301,8 +310,9 @@ def process_single_image(args):
     finally:
         del img
 
-def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300, max_workers=32, save_images=False):
+def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300, max_workers=32, save_images=False, markdown=False):
     """Process PDF by converting to images first with parallel execution"""
+    config = get_linearization_config(markdown)
     try:
         logger.info('Converting PDF to images...')
         images = convert_pdf_to_images(input_path, dpi)
@@ -324,8 +334,8 @@ def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=
             num_workers = min(num_pages, max_workers)
             num_workers = max(num_workers, 1)  # Ensure at least 1 worker
             
-            # Create list of arguments with indices
-            tasks = [(i, img, aws_region) for i, img in enumerate(images)]
+            # Create list of arguments with indices and config
+            tasks = [(i, img, aws_region, config) for i, img in enumerate(images)]
             
             logger.info(f"Processing {num_pages} pages with {num_workers} workers")
             
@@ -370,7 +380,7 @@ def try_fallback_extraction(input_path, output_path):
         logger.error(f"Fallback extraction failed for {input_path}: {e}")
         return False
 
-def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2', max_workers=5, save_images=False):
+def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2', max_workers=5, save_images=False, markdown=False):
     """Convert all PDFs in a folder to markdown files"""
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -384,7 +394,7 @@ def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2'
             output_path = os.path.join(output_dir, f"{base_name}.md")
             
             logger.info(f"Converting {filename}...")
-            if process_pdf(input_path, output_path, s3_bucket, aws_region, max_workers, save_images):
+            if process_pdf(input_path, output_path, s3_bucket, aws_region, max_workers, save_images, markdown):
                 converted += 1
             else:
                 logger.warning(f"Failed to convert {filename}")
@@ -401,6 +411,8 @@ def main():
                       help='Max parallel workers for image processing (1-32, default: 32)')
     parser.add_argument('--images', action='store_true',
                       help='Save page images to output directory')
+    parser.add_argument('--markdown', action='store_true',
+                      help='Use optimized Markdown formatting')
     
     args = parser.parse_args()
     
@@ -413,7 +425,7 @@ def main():
     if not args.output:
         args.output = args.input
     
-    convert_folder(args.input, args.output, args.s3_bucket, args.aws_region, args.workers, args.images)
+    convert_folder(args.input, args.output, args.s3_bucket, args.aws_region, args.workers, args.images, args.markdown)
 
 if __name__ == "__main__":
     main()
