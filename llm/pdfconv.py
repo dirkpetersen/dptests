@@ -3,6 +3,9 @@ import boto3
 import argparse
 import logging
 import PyPDF2
+import fitz  # PyMuPDF
+import io
+import shutil
 from botocore.exceptions import ClientError
 
 # Set up logging
@@ -20,26 +23,48 @@ def process_pdf(input_path, output_path):
             if pdf_reader.is_encrypted:
                 logger.error(f"Skipping encrypted PDF: {input_path}")
                 return False
+        
+        # Check file size (Textract sync limit is 10MB)
+        file_size = os.path.getsize(input_path)
+        if file_size > 10 * 1024 * 1024:
+            logger.error(f"File too large for sync processing (10MB max): {input_path}")
+            return try_fallback_extraction(input_path, output_path)
+            
+        # Preprocess PDF with PyMuPDF
+        doc = fitz.open(input_path)
+        pdf_bytes = io.BytesIO()
+        doc.save(pdf_bytes, deflate=True, garbage=4)
+        pdf_bytes.seek(0)
+        doc.close()
+
+        # Create temp processed PDF
+        temp_path = os.path.join("/tmp", os.path.basename(input_path))
+        with open(temp_path, "wb") as f:
+            f.write(pdf_bytes.getbuffer())
                 
     except Exception as e:
         logger.error(f"Invalid PDF file {input_path}: {str(e)}")
-        return False
+        return try_fallback_extraction(input_path, output_path)
 
     try:
-        with open(input_path, 'rb') as document:
+        with open(temp_path, 'rb') as document:
             response = textract.detect_document_text(
                 Document={'Bytes': document.read()}
             )
     except ClientError as e:
         error_code = e.response['Error']['Code']
         if error_code == 'UnsupportedDocumentException':
-            logger.error(f"Unsupported PDF format in {input_path} - file may be corrupted or contain non-standard encoding")
+            logger.error(f"Unsupported PDF format in {input_path} - trying fallback extraction")
+            return try_fallback_extraction(input_path, output_path)
         else:
             logger.error(f"AWS Error processing {input_path}: {e}")
-        return False
+            return False
     except Exception as e:
         logger.error(f"Unexpected error processing {input_path}: {e}")
         return False
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
     # Extract text from response
     text = ""
@@ -52,6 +77,21 @@ def process_pdf(input_path, output_path):
         md_file.write(text)
     
     return True
+
+def try_fallback_extraction(input_path, output_path):
+    """Fallback text extraction using PyMuPDF when Textract fails"""
+    try:
+        doc = fitz.open(input_path)
+        text = ""
+        for page in doc:
+            text += page.get_text("text") + "\n\n"
+        
+        with open(output_path, 'w', encoding='utf-8') as md_file:
+            md_file.write(text)
+        return True
+    except Exception as e:
+        logger.error(f"Fallback extraction failed for {input_path}: {e}")
+        return False
 
 def convert_folder(input_dir, output_dir):
     """Convert all PDFs in a folder to markdown files"""
