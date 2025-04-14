@@ -26,6 +26,12 @@ def create_role_if_needed():
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(assume_role_policy)
         )
+        # Add Bedrock Agent permissions
+        iam.attach_role_policy(
+            RoleName=role_name,
+            PolicyArn='arn:aws:iam::aws:policy/AWSBedrockAgentServiceRolePolicy'
+        )
+        # Keep existing policies
         iam.attach_role_policy(
             RoleName=role_name,
             PolicyArn='arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
@@ -90,6 +96,11 @@ def create_knowledge_base(kb_name):
         bedrock.delete_knowledge_base(knowledgeBaseId=kb_name)
     except bedrock.exceptions.ResourceNotFoundException:
         pass
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException':
+            print(f"Warning: Could not delete existing knowledge base - {e}")
+        else:
+            raise
     
     role_arn = create_role_if_needed()
     collection_id = "your-collection-id"
