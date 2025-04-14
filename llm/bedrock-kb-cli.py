@@ -50,6 +50,11 @@ def create_opensearch_collection_if_needed():
     config = get_config()
     collection_name = config['collection_name']
     
+    # Shorten policy names to meet 32-character limit
+    policy_name = f"enc-{collection_name}"[:32]  # Encryption policy
+    network_policy_name = f"net-{collection_name}"[:32]  # Network policy
+    data_policy_name = f"data-{collection_name}"[:32]  # Data policy
+    
     aoss = boto3.client('opensearchserverless')
     
     # Check if collection exists
@@ -76,8 +81,7 @@ def create_opensearch_collection_if_needed():
     # Create collection if it doesn't exist
     print(f"Creating OpenSearch collection: {collection_name}")
     
-    # Create encryption policy with stable name
-    policy_name = f"bedrock-kb-encryption-{collection_name}"
+    # Create encryption policy with shortened name
     policy_document = {
         "Rules": [
             {
@@ -109,8 +113,7 @@ def create_opensearch_collection_if_needed():
         else:
             raise
     
-    # Create data access policy with stable name
-    data_policy_name = f"bedrock-kb-data-{collection_name}"
+    # Create data access policy with shortened name
     data_policy = {
         "Rules": [
             {
@@ -159,8 +162,7 @@ def create_opensearch_collection_if_needed():
         else:
             raise
     
-    # Create network policy with stable name
-    network_policy_name = f"bedrock-kb-network-{collection_name}"
+    # Create network policy with shortened name
     network_policy = {
         "Rules": [
             {
