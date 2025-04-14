@@ -29,12 +29,16 @@ def get_config():
     # Use a consistent collection name
     collection_name = f"bedrock-kb-collection"
     
+    role_name = 'AmazonBedrockExecutionRoleForKnowledgeBase'
+    role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+    
     return {
         'account_id': account_id,
         'region': region,
         'bucket_name': bucket_name,
         'collection_name': collection_name,
-        'role_name': 'AmazonBedrockExecutionRoleForKnowledgeBase'
+        'role_name': role_name,
+        'role_arn': role_arn
     }
 
 def verify_role():
@@ -114,30 +118,34 @@ def create_opensearch_collection_if_needed():
             raise
     
     # Create data access policy with shortened name
-    data_policy = [
-        {  # First rule for collection access
-            "Resource": [f"collection/{collection_name}"],
-            "ResourceType": "collection",
-            "Access": [
-                "aoss:CreateCollectionItems",
-                "aoss:DeleteCollectionItems",
-                "aoss:UpdateCollectionItems",
-                "aoss:DescribeCollectionItems"
-            ]
-        },
-        {  # Second rule for index access
-            "Resource": [f"index/{collection_name}/*"],
-            "ResourceType": "index",
-            "Access": [
-                "aoss:CreateIndex",
-                "aoss:DeleteIndex",
-                "aoss:UpdateIndex",
-                "aoss:DescribeIndex",
-                "aoss:ReadDocument",
-                "aoss:WriteDocument"
-            ]
-        }
-    ]
+    data_policy = {
+        "Rules": [
+            {  # First rule for collection access
+                "Resource": [f"collection/{collection_name}"],
+                "ResourceType": "collection",
+                "Access": [
+                    "aoss:CreateCollectionItems",
+                    "aoss:DeleteCollectionItems",
+                    "aoss:UpdateCollectionItems",
+                    "aoss:DescribeCollectionItems"
+                ],
+                "Principal": [config['role_arn']]
+            },
+            {  # Second rule for index access
+                "Resource": [f"index/{collection_name}/*"],
+                "ResourceType": "index",
+                "Access": [
+                    "aoss:CreateIndex",
+                    "aoss:DeleteIndex",
+                    "aoss:UpdateIndex",
+                    "aoss:DescribeIndex",
+                    "aoss:ReadDocument",
+                    "aoss:WriteDocument"
+                ],
+                "Principal": [config['role_arn']]
+            }
+        ]
+    }
     
     # Check if data policy exists first
     try:
