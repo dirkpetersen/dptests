@@ -11,9 +11,20 @@ from pathlib import Path
 def create_role_if_needed():
     iam = boto3.client('iam')
     role_name = 'AmazonBedrockExecutionRoleForKnowledgeBase'
+    
     try:
+        # Try to get the role first (might fail due to permissions)
         return iam.get_role(RoleName=role_name)['Role']['Arn']
     except iam.exceptions.NoSuchEntityException:
+        # If role doesn't exist, try to create it
+        pass
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDenied':
+            print(f"Warning: Missing iam:GetRole permission - {e}")
+            return f"arn:aws:iam::{boto3.client('sts').get_caller_identity()['Account']}:role/{role_name}"
+    
+    # If we got here, try creating the role
+    try:
         assume_role_policy = {
             "Version": "2012-10-17",
             "Statement": [{
@@ -26,21 +37,28 @@ def create_role_if_needed():
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(assume_role_policy)
         )
-        # Add Bedrock Agent permissions
-        iam.attach_role_policy(
-            RoleName=role_name,
-            PolicyArn='arn:aws:iam::aws:policy/AWSBedrockAgentServiceRolePolicy'
-        )
-        # Keep existing policies
-        iam.attach_role_policy(
-            RoleName=role_name,
-            PolicyArn='arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
-        )
-        iam.attach_role_policy(
-            RoleName=role_name,
-            PolicyArn='arn:aws:iam::aws:policy/AWSBedrockFoundationModelPolicy'
-        )
+        
+        # Add policies with error handling
+        policies = [
+            'arn:aws:iam::aws:policy/AWSBedrockAgentServiceRolePolicy',
+            'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess',
+            'arn:aws:iam::aws:policy/AWSBedrockFoundationModelPolicy'
+        ]
+        
+        for policy in policies:
+            try:
+                iam.attach_role_policy(
+                    RoleName=role_name,
+                    PolicyArn=policy
+                )
+            except ClientError as e:
+                print(f"Warning: Could not attach {policy} - {e}")
+        
         return role['Role']['Arn']
+    except ClientError as e:
+        print(f"Error: Could not create role {role_name} - {e}")
+        print("Please ask your admin to create this role with the required permissions")
+        sys.exit(1)
 
 def upload_to_s3(path, kb_name='default'):
     s3 = boto3.client('s3')
