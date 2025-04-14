@@ -145,6 +145,7 @@ def create_knowledge_base(kb_name):
             "type": "OPENSEARCH_SERVERLESS",
             "opensearchServerlessConfiguration": {
                 "collectionArn": collection_arn,
+                "vectorIndexName": "bedrock-knowledge-base-index",
                 "fieldMapping": {
                     "vectorField": "bedrock-knowledge-base-default-vector",
                     "textField": "AMAZON_BEDROCK_TEXT_CHUNK",
