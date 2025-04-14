@@ -9,75 +9,19 @@ import sys
 from pathlib import Path
 
 def create_role_if_needed():
-    iam = boto3.client('iam')
-    role_name = 'AmazonBedrockExecutionRoleForKnowledgeBase'
-    
-    try:
-        role = iam.get_role(RoleName=role_name)
-        # Verify trust policy is correct
-        trust_policy = {
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Effect": "Allow",
-                "Principal": {"Service": "bedrock.amazonaws.com"},
-                "Action": "sts:AssumeRole"
-            }]
-        }
-        if role['Role']['AssumeRolePolicyDocument'] != trust_policy:
-            iam.update_assume_role_policy(
-                RoleName=role_name,
-                PolicyDocument=json.dumps(trust_policy)
-            )
-        return role['Role']['Arn']
-    except iam.exceptions.NoSuchEntityException:
-        # If role doesn't exist, try to create it
-        pass
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'AccessDenied':
-            print(f"Warning: Missing iam:GetRole permission - {e}")
-            # Continue to ARN fallback
-        else:
-            raise
-    
-    # If we got here, try creating the role
-    try:
-        assume_role_policy = {
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Effect": "Allow",
-                "Principal": {"Service": "bedrock.amazonaws.com"},
-                "Action": "sts:AssumeRole"
-            }]
-        }
-        role = iam.create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(assume_role_policy)
-        )
-        
-        # Add policies with error handling
-        policies = [
-            'arn:aws:iam::aws:policy/AWSBedrockAgentServiceRolePolicy',
-            'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess',
-            'arn:aws:iam::aws:policy/AWSBedrockFoundationModelPolicy'
-        ]
-        
-        for policy in policies:
-            try:
-                iam.attach_role_policy(
-                    RoleName=role_name,
-                    PolicyArn=policy
-                )
-            except ClientError as e:
-                print(f"Warning: Could not attach {policy} - {e}")
-        
-        return role['Role']['Arn']
-    except ClientError as e:
-        print(f"Error: Could not create role {role_name} - {e}")
-        print("Please ask your admin to create this role with the required permissions")
-    
-    # If we can't verify/create the role, use assumed ARN format
     account_id = boto3.client('sts').get_caller_identity()['Account']
-    return f"arn:aws:iam::{account_id}:role/{role_name}"
+    role_name = 'AmazonBedrockExecutionRoleForKnowledgeBase'
+    role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+    
+    print(f"Using role ARN: {role_arn}")
+    print("Please ensure this role exists with:")
+    print("1. Trust relationship for bedrock.amazonaws.com")
+    print("2. These policies attached:")
+    print("   - AWSBedrockAgentServiceRolePolicy")
+    print("   - AmazonS3ReadOnlyAccess")
+    print("   - AWSBedrockFoundationModelPolicy")
+    
+    return role_arn
 
 def upload_to_s3(path, kb_name='default'):
     s3 = boto3.client('s3')
@@ -175,17 +119,15 @@ def create_knowledge_base(kb_name):
             }
         )
     except ClientError as e:
-        if 'Unable to assume role' in str(e):
-            print(f"\nERROR: Role validation failed for {role_arn}")
-            print("Required configuration for the role:")
-            print("1. Trust relationship must include bedrock.amazonaws.com")
-            print("2. Must have these policies attached:")
-            print("   - AWSBedrockAgentServiceRolePolicy")
-            print("   - AmazonS3ReadOnlyAccess")
-            print("   - AWSBedrockFoundationModelPolicy")
-            print("\nPlease have your AWS admin create this role with the above requirements.")
-            sys.exit(1)
-        raise
+        print(f"\nERROR: {e.response['Error']['Message']}")
+        print("\nRequired role configuration:")
+        print(f"1. Create role named 'AmazonBedrockExecutionRoleForKnowledgeBase'")
+        print("2. Set trust relationship to allow bedrock.amazonaws.com")
+        print("3. Attach these policies:")
+        print("   - AWSBedrockAgentServiceRolePolicy")
+        print("   - AmazonS3ReadOnlyAccess")
+        print("   - AWSBedrockFoundationModelPolicy")
+        sys.exit(1)
 
 def ask_question(kb_name='default', query=None):
     bedrock = boto3.client('bedrock-agent-runtime')
