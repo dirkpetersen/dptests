@@ -109,7 +109,7 @@ def create_opensearch_collection_if_needed():
         aoss.create_security_policy(
             name=policy_name,
             policy=json.dumps(policy_document),
-            type='data'
+            type='encryption'
         )
         print(f"✓ Created security policy: {policy_name}")
     except ClientError as e:
