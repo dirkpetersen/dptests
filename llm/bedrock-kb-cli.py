@@ -114,32 +114,30 @@ def create_opensearch_collection_if_needed():
             raise
     
     # Create data access policy with shortened name
-    data_policy = {
-        "Rules": [
-            {
-                "Resource": [f"collection/{collection_name}"],
-                "ResourceType": "collection",
-                "Permission": [
-                    "aoss:CreateCollectionItems",
-                    "aoss:DeleteCollectionItems",
-                    "aoss:UpdateCollectionItems",
-                    "aoss:DescribeCollectionItems"
-                ]
-            },
-            {
-                "Resource": [f"index/{collection_name}/*"],
-                "ResourceType": "index",
-                "Permission": [
-                    "aoss:CreateIndex",
-                    "aoss:DeleteIndex",
-                    "aoss:UpdateIndex",
-                    "aoss:DescribeIndex",
-                    "aoss:ReadDocument",
-                    "aoss:WriteDocument"
-                ]
-            }
-        ]
-    }
+    data_policy = [
+        {
+            "Resource": [f"collection/{collection_name}"],
+            "ResourceType": "collection",
+            "Access": [
+                "aoss:CreateCollectionItems",
+                "aoss:DeleteCollectionItems",
+                "aoss:UpdateCollectionItems",
+                "aoss:DescribeCollectionItems"
+            ]
+        },
+        {
+            "Resource": [f"index/{collection_name}/*"],
+            "ResourceType": "index",
+            "Access": [
+                "aoss:CreateIndex",
+                "aoss:DeleteIndex",
+                "aoss:UpdateIndex",
+                "aoss:DescribeIndex",
+                "aoss:ReadDocument",
+                "aoss:WriteDocument"
+            ]
+        }
+    ]
     
     # Check if data policy exists first
     try:
