@@ -76,13 +76,36 @@ def create_opensearch_collection_if_needed():
     # Create collection if it doesn't exist
     print(f"Creating OpenSearch collection: {collection_name}")
     
-    # Create security policy
+    # Create encryption policy
     policy_name = f"bedrock-kb-policy-{uuid.uuid4().hex[:8]}"
     policy_document = {
         "Rules": [
             {
-                "ResourceType": "collection",
                 "Resource": [f"collection/{collection_name}"],
+                "ResourceType": "collection"
+            }
+        ],
+        "AWSOwnedKey": True
+    }
+    
+    try:
+        aoss.create_security_policy(
+            name=policy_name,
+            policy=json.dumps(policy_document),
+            type='encryption'
+        )
+        print(f"✓ Created encryption policy: {policy_name}")
+    except ClientError as e:
+        if 'already exists' not in str(e):
+            raise
+    
+    # Create data access policy
+    data_policy_name = f"bedrock-kb-data-{uuid.uuid4().hex[:8]}"
+    data_policy = {
+        "Rules": [
+            {
+                "Resource": [f"collection/{collection_name}"],
+                "ResourceType": "collection",
                 "Permission": [
                     "aoss:CreateCollectionItems",
                     "aoss:DeleteCollectionItems",
@@ -91,8 +114,8 @@ def create_opensearch_collection_if_needed():
                 ]
             },
             {
-                "ResourceType": "index",
                 "Resource": [f"index/{collection_name}/*"],
+                "ResourceType": "index",
                 "Permission": [
                     "aoss:CreateIndex",
                     "aoss:DeleteIndex",
@@ -107,11 +130,11 @@ def create_opensearch_collection_if_needed():
     
     try:
         aoss.create_security_policy(
-            name=policy_name,
-            policy=json.dumps(policy_document),
-            type='encryption'
+            name=data_policy_name,
+            policy=json.dumps(data_policy),
+            type='data'
         )
-        print(f"✓ Created security policy: {policy_name}")
+        print(f"✓ Created data access policy: {data_policy_name}")
     except ClientError as e:
         if 'already exists' not in str(e):
             raise
@@ -123,7 +146,7 @@ def create_opensearch_collection_if_needed():
             {
                 "ResourceType": "collection",
                 "Resource": [f"collection/{collection_name}"],
-                "SourceVPCEs": []
+                "SourceVPCEs": ["*"]
             }
         ]
     }
