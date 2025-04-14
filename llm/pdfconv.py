@@ -157,12 +157,12 @@ def textract_async(file_name, bucket_name, region):
     
     return process_textract_blocks(blocks)
 
-def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=32):
+def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=32, save_images=False):
     """Process a single PDF file using Textract and save as Markdown"""
     try:
         # First try processing via images
         logger.info("Attempting image-based processing")
-        if process_pdf_via_images(input_path, output_path, aws_region=aws_region, max_workers=max_workers):
+        if process_pdf_via_images(input_path, output_path, aws_region=aws_region, max_workers=max_workers, save_images=save_images):
             return True
         
         # If image processing failed, fall back to previous methods
@@ -301,14 +301,24 @@ def process_single_image(args):
     finally:
         del img
 
-def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300, max_workers=32):
+def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300, max_workers=32, save_images=False):
     """Process PDF by converting to images first with parallel execution"""
     try:
         logger.info('Converting PDF to images...')
         images = convert_pdf_to_images(input_path, dpi)
         full_text = []
         
+        # Create base filename from input PDF
+        base_name = os.path.splitext(os.path.basename(input_path))[0]
+        output_dir = os.path.dirname(output_path)
+        
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Save images if requested
+            if save_images:
+                for i, img in enumerate(images):
+                    img_path = os.path.join(output_dir, f"{base_name}_page{i+1}.png")
+                    img.save(img_path, "PNG")
+                    logger.info(f"Saved image: {img_path}")
             # Calculate optimal worker count
             num_pages = len(images)
             num_workers = min(num_pages, max_workers)
@@ -360,7 +370,7 @@ def try_fallback_extraction(input_path, output_path):
         logger.error(f"Fallback extraction failed for {input_path}: {e}")
         return False
 
-def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2', max_workers=5):
+def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2', max_workers=5, save_images=False):
     """Convert all PDFs in a folder to markdown files"""
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -374,7 +384,7 @@ def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2'
             output_path = os.path.join(output_dir, f"{base_name}.md")
             
             logger.info(f"Converting {filename}...")
-            if process_pdf(input_path, output_path, s3_bucket, aws_region, max_workers):
+            if process_pdf(input_path, output_path, s3_bucket, aws_region, max_workers, save_images):
                 converted += 1
             else:
                 logger.warning(f"Failed to convert {filename}")
@@ -389,6 +399,8 @@ def main():
     parser.add_argument('--aws-region', default='us-west-2', help='AWS region')
     parser.add_argument('--workers', type=int, default=32, 
                       help='Max parallel workers for image processing (1-32, default: 32)')
+    parser.add_argument('--images', action='store_true',
+                      help='Save page images to output directory')
     
     args = parser.parse_args()
     
@@ -401,7 +413,7 @@ def main():
     if not args.output:
         args.output = args.input
     
-    convert_folder(args.input, args.output, args.s3_bucket, args.aws_region, args.workers)
+    convert_folder(args.input, args.output, args.s3_bucket, args.aws_region, args.workers, args.images)
 
 if __name__ == "__main__":
     main()
