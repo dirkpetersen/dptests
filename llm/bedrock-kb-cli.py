@@ -6,9 +6,17 @@ import boto3
 import json
 import uuid
 import time
+import re
 from botocore.exceptions import ClientError
 import sys
 from pathlib import Path
+
+def generate_kb_id(kb_name):
+    """Generate AWS-compliant knowledge base ID (exactly 10 alphanumeric characters)"""
+    # Remove special characters and truncate
+    clean_name = ''.join([c for c in kb_name.upper() if c.isalnum()])[:8]
+    # Pad with random chars to make exactly 10 characters
+    return clean_name + uuid.uuid4().hex[:10-len(clean_name)]
 
 def get_config():
     """Get or create configuration values"""
@@ -277,17 +285,20 @@ def create_knowledge_base(kb_name):
     region = config['region']
     account_id = config['account_id']
     
+    # Generate a valid knowledge base ID (exactly 10 alphanumeric characters)
+    kb_id = generate_kb_id(kb_name)
+    
     # Check if knowledge base exists
     try:
-        bedrock.get_knowledge_base(knowledgeBaseId=kb_name)
-        print(f"Found existing knowledge base: {kb_name}")
+        bedrock.get_knowledge_base(knowledgeBaseId=kb_id)
+        print(f"Found existing knowledge base: {kb_name} (ID: {kb_id})")
         try:
-            print(f"Deleting existing knowledge base: {kb_name}")
-            bedrock.delete_knowledge_base(knowledgeBaseId=kb_name)
+            print(f"Deleting existing knowledge base: {kb_name} (ID: {kb_id})")
+            bedrock.delete_knowledge_base(knowledgeBaseId=kb_id)
             # Wait for deletion to complete
             print("Waiting for deletion to complete...")
             waiter = bedrock.get_waiter('knowledge_base_deleted')
-            waiter.wait(knowledgeBaseId=kb_name)
+            waiter.wait(knowledgeBaseId=kb_id)
         except bedrock.exceptions.ResourceNotFoundException:
             pass
         except ClientError as e:
@@ -305,10 +316,11 @@ def create_knowledge_base(kb_name):
     collection_id = create_opensearch_collection_if_needed()
     collection_arn = f"arn:aws:aoss:{region}:{account_id}:collection/{collection_id}"
     
-    print(f"Creating knowledge base: {kb_name}")
+    print(f"Creating knowledge base: {kb_name} (ID: {kb_id})")
     try:
         response = bedrock.create_knowledge_base(
             name=kb_name,
+            knowledgeBaseId=kb_id,
             roleArn=role_arn,
             knowledgeBaseConfiguration={
                 "type": "VECTOR",
@@ -357,12 +369,15 @@ def create_data_source(kb_name):
     config = get_config()
     bucket = config['bucket_name']
     
-    # Get knowledge base ID
+    # Generate the same knowledge base ID
+    kb_id = generate_kb_id(kb_name)
+    
+    # Get knowledge base details
     try:
-        kb_response = bedrock.get_knowledge_base(knowledgeBaseId=kb_name)
+        kb_response = bedrock.get_knowledge_base(knowledgeBaseId=kb_id)
         kb_id = kb_response['knowledgeBase']['knowledgeBaseId']
     except bedrock.exceptions.ResourceNotFoundException:
-        print(f"Error: Knowledge base '{kb_name}' not found")
+        print(f"Error: Knowledge base '{kb_name}' (ID: {kb_id}) not found")
         sys.exit(1)
     
     data_source_name = f"{kb_name}-s3-source"
@@ -433,12 +448,15 @@ def ask_question(kb_name='default', query=None):
     region = boto3.session.Session().region_name
     model_arn = f"arn:aws:bedrock:{region}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
     
+    # Generate the same knowledge base ID
+    kb_id = generate_kb_id(kb_name)
+    
     # Verify knowledge base exists
     bedrock_agent = boto3.client('bedrock-agent')
     try:
-        bedrock_agent.get_knowledge_base(knowledgeBaseId=kb_name)
+        bedrock_agent.get_knowledge_base(knowledgeBaseId=kb_id)
     except bedrock_agent.exceptions.ResourceNotFoundException:
-        print(f"Error: Knowledge base '{kb_name}' not found")
+        print(f"Error: Knowledge base '{kb_name}' (ID: {kb_id}) not found")
         sys.exit(1)
     
     while True:
@@ -451,7 +469,7 @@ def ask_question(kb_name='default', query=None):
                 retrieveAndGenerateConfiguration={
                     "type": "KNOWLEDGE_BASE",
                     "knowledgeBaseConfiguration": {
-                        "knowledgeBaseId": kb_name,
+                        "knowledgeBaseId": kb_id,
                         "modelArn": model_arn
                     }
                 }
@@ -512,17 +530,20 @@ def main():
         print(f"OpenSearch Collection: {config['collection_name']}")
         print(f"IAM Role: {config['role_name']}")
         
+        # Generate the same knowledge base ID
+        kb_id = generate_kb_id(args.kb)
+        
         # Check knowledge base status
         bedrock = boto3.client('bedrock-agent')
         try:
-            kb = bedrock.get_knowledge_base(knowledgeBaseId=args.kb)
-            print(f"\nKnowledge Base '{args.kb}':")
+            kb = bedrock.get_knowledge_base(knowledgeBaseId=kb_id)
+            print(f"\nKnowledge Base '{args.kb}' (ID: {kb_id}):")
             print(f"  Status: {kb['knowledgeBase']['status']}")
             print(f"  Created: {kb['knowledgeBase']['createdAt']}")
             
             # List data sources
             try:
-                sources = bedrock.list_data_sources(knowledgeBaseId=args.kb)
+                sources = bedrock.list_data_sources(knowledgeBaseId=kb_id)
                 print("\nData Sources:")
                 for ds in sources['dataSourceSummaries']:
                     print(f"  - {ds['name']} (Status: {ds['status']})")
@@ -530,7 +551,7 @@ def main():
                     # Get latest ingestion job
                     try:
                         jobs = bedrock.list_ingestion_jobs(
-                            knowledgeBaseId=args.kb,
+                            knowledgeBaseId=kb_id,
                             dataSourceId=ds['dataSourceId']
                         )
                         if jobs['ingestionJobSummaries']:
@@ -542,7 +563,7 @@ def main():
                 print(f"  Error listing data sources: {str(e)}")
                 
         except bedrock.exceptions.ResourceNotFoundException:
-            print(f"\nKnowledge Base '{args.kb}' not found")
+            print(f"\nKnowledge Base '{args.kb}' (ID: {kb_id}) not found")
     else:
         parser.print_help()
 
