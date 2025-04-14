@@ -38,43 +38,11 @@ def get_config():
     }
 
 def verify_role():
-    """Verify the required IAM role exists and has proper permissions"""
+    """Get the role ARN without checking permissions"""
     config = get_config()
     role_name = config['role_name']
     role_arn = f"arn:aws:iam::{config['account_id']}:role/{role_name}"
-    
-    iam = boto3.client('iam')
-    try:
-        iam.get_role(RoleName=role_name)
-        print(f"✓ Using existing role: {role_arn}")
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'NoSuchEntity':
-            print(f"✗ Required role does not exist: {role_arn}")
-            print("\nTo create this role:")
-            print(f"1. Create IAM role named '{role_name}'")
-            print("2. Add trust relationship for bedrock.amazonaws.com:")
-            print("""
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "bedrock.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-}
-            """)
-            print("3. Attach these policies:")
-            print("   - AWSBedrockAgentServiceRolePolicy")
-            print("   - AmazonS3ReadOnlyAccess")
-            print("   - AWSBedrockFoundationModelPolicy")
-            sys.exit(1)
-        else:
-            raise
-    
+    print(f"Using role: {role_arn}")
     return role_arn
 
 def create_opensearch_collection_if_needed():
@@ -354,13 +322,23 @@ def create_knowledge_base(kb_name):
         return response
     except ClientError as e:
         print(f"\nERROR: {e.response['Error']['Message']}")
-        print("\nRequired role configuration:")
-        print(f"1. Create role named 'AmazonBedrockExecutionRoleForKnowledgeBase'")
-        print("2. Set trust relationship to allow bedrock.amazonaws.com")
-        print("3. Attach these policies:")
-        print("   - AWSBedrockAgentServiceRolePolicy")
-        print("   - AmazonS3ReadOnlyAccess")
-        print("   - AWSBedrockFoundationModelPolicy")
+        if "Unable to assume role" in str(e):
+            print(f"\nERROR: The role 'AmazonBedrockExecutionRoleForKnowledgeBase' is missing or misconfigured")
+            print("Required configuration:")
+            print(f"1. Must exist in account {config['account_id']}")
+            print("2. Must have bedrock.amazonaws.com as a trusted entity")
+            print("3. Must have these policies attached:")
+            print("   - AWSBedrockAgentServiceRolePolicy")
+            print("   - AmazonS3ReadOnlyAccess")
+            print("   - AWSBedrockFoundationModelPolicy")
+        else:
+            print("\nRequired role configuration:")
+            print(f"1. Create role named 'AmazonBedrockExecutionRoleForKnowledgeBase'")
+            print("2. Set trust relationship to allow bedrock.amazonaws.com")
+            print("3. Attach these policies:")
+            print("   - AWSBedrockAgentServiceRolePolicy")
+            print("   - AmazonS3ReadOnlyAccess")
+            print("   - AWSBedrockFoundationModelPolicy")
         sys.exit(1)
 
 def create_data_source(kb_name):
