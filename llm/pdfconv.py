@@ -7,6 +7,8 @@ import fitz  # PyMuPDF
 import io
 import shutil
 import time
+from PIL import Image
+import tempfile
 from botocore.exceptions import ClientError
 
 # Set up logging
@@ -81,6 +83,14 @@ def textract_async(file_name, bucket_name, region):
 def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2'):
     """Process a single PDF file using Textract and save as Markdown"""
     try:
+        # First try processing via images
+        logger.info("Attempting image-based processing")
+        if process_pdf_via_images(input_path, output_path, aws_region=aws_region):
+            return True
+        
+        # If image processing failed, fall back to previous methods
+        logger.info("Falling back to direct PDF processing")
+        
         # Check for encrypted PDF first
         with open(input_path, 'rb') as f:
             pdf_reader = PyPDF2.PdfReader(f)
@@ -175,6 +185,63 @@ def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2')
     except Exception as e:
         logger.error(f"Invalid PDF file {input_path}: {str(e)}")
         return try_fallback_extraction(input_path, output_path)
+
+def convert_pdf_to_images(pdf_path, dpi=300):
+    """Convert PDF to list of PIL Images"""
+    doc = fitz.open(pdf_path)
+    images = []
+    
+    for page in doc:
+        pix = page.get_pixmap(matrix=fitz.Matrix(dpi/72, dpi/72))
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        images.append(img)
+    
+    return images
+
+def process_image_with_textract(image, region='us-west-2'):
+    """Process a single image with Textract"""
+    textract = boto3.client('textract', region_name=region)
+    
+    # Convert image to bytes
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='PNG')
+    img_byte_arr = img_byte_arr.getvalue()
+    
+    response = textract.detect_document_text(
+        Document={'Bytes': img_byte_arr}
+    )
+    
+    text = ""
+    for item in response.get("Blocks", []):
+        if item["BlockType"] == "LINE":
+            text += item["Text"] + "\n\n"
+    
+    return text
+
+def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300):
+    """Process PDF by converting to images first"""
+    try:
+        images = convert_pdf_to_images(input_path, dpi)
+        full_text = ""
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for i, img in enumerate(images):
+                # Process each page image
+                page_text = process_image_with_textract(img, region=aws_region)
+                full_text += f"--- PAGE {i+1} ---\n\n{page_text}\n\n"
+                
+                # Clean up memory
+                del img
+            
+            # Save final text
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(full_text)
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Image-based processing failed: {str(e)}")
+        return False
 
 def try_fallback_extraction(input_path, output_path):
     """Fallback text extraction using PyMuPDF when Textract fails"""
