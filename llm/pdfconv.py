@@ -10,6 +10,7 @@ import time
 from PIL import Image
 import tempfile
 from botocore.exceptions import ClientError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -80,12 +81,12 @@ def textract_async(file_name, bucket_name, region):
     
     return text
 
-def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2'):
+def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=5):
     """Process a single PDF file using Textract and save as Markdown"""
     try:
         # First try processing via images
         logger.info("Attempting image-based processing")
-        if process_pdf_via_images(input_path, output_path, aws_region=aws_region):
+        if process_pdf_via_images(input_path, output_path, aws_region=aws_region, max_workers=max_workers):
             return True
         
         # If image processing failed, fall back to previous methods
@@ -218,26 +219,50 @@ def process_image_with_textract(image, region='us-west-2'):
     
     return text
 
-def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300):
-    """Process PDF by converting to images first"""
+def process_single_image(args):
+    """Helper function to process a single image with its index"""
+    i, img, aws_region = args
     try:
-        print('Converting PDF to images...')
+        page_text = process_image_with_textract(img, region=aws_region)
+        return (i, f"--- PAGE {i+1} ---\n\n{page_text}\n\n")
+    except Exception as e:
+        logger.error(f"Failed processing page {i+1}: {str(e)}")
+        return (i, f"--- PAGE {i+1} ---\n\n[ERROR PROCESSING PAGE]\n\n")
+    finally:
+        del img
+
+def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300, max_workers=5):
+    """Process PDF by converting to images first with parallel execution"""
+    try:
+        logger.info('Converting PDF to images...')
         images = convert_pdf_to_images(input_path, dpi)
-        full_text = ""
+        full_text = []
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            for i, img in enumerate(images):
-                # Process each page image
-                print(f"Processing page {i+1} with Textract")
-                page_text = process_image_with_textract(img, region=aws_region)
-                full_text += f"--- PAGE {i+1} ---\n\n{page_text}\n\n"
+            # Create list of arguments with indices
+            tasks = [(i, img, aws_region) for i, img in enumerate(images)]
+            
+            logger.info(f"Processing {len(images)} pages with {max_workers} workers")
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(process_single_image, task) for task in tasks]
                 
-                # Clean up memory
-                del img
+                for future in as_completed(futures):
+                    try:
+                        page_num, text = future.result()
+                        full_text.append((page_num, text))
+                        if (page_num + 1) % 5 == 0:
+                            logger.info(f"Completed {page_num + 1}/{len(images)} pages")
+                    except Exception as e:
+                        logger.error(f"Page processing failed: {str(e)}")
+
+            # Sort results by page number and combine
+            full_text.sort(key=lambda x: x[0])
+            combined_text = "".join([t[1] for t in full_text])
             
             # Save final text
             with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(full_text)
+                f.write(combined_text)
         
         return True
         
@@ -260,7 +285,7 @@ def try_fallback_extraction(input_path, output_path):
         logger.error(f"Fallback extraction failed for {input_path}: {e}")
         return False
 
-def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2'):
+def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2', max_workers=5):
     """Convert all PDFs in a folder to markdown files"""
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -274,7 +299,7 @@ def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2'
             output_path = os.path.join(output_dir, f"{base_name}.md")
             
             logger.info(f"Converting {filename}...")
-            if process_pdf(input_path, output_path, s3_bucket, aws_region):
+            if process_pdf(input_path, output_path, s3_bucket, aws_region, max_workers):
                 converted += 1
             else:
                 logger.warning(f"Failed to convert {filename}")
@@ -287,6 +312,8 @@ def main():
     parser.add_argument('-o', '--output', required=False, help='Output directory for Markdown files (default: same as input directory)')
     parser.add_argument('--s3-bucket', help='S3 bucket for large files (>10MB)')
     parser.add_argument('--aws-region', default='us-west-2', help='AWS region')
+    parser.add_argument('--workers', type=int, default=5, 
+                      help='Max parallel workers for image processing (default: 5)')
     
     args = parser.parse_args()
     
@@ -294,7 +321,7 @@ def main():
     if not args.output:
         args.output = args.input
     
-    convert_folder(args.input, args.output, args.s3_bucket, args.aws_region)
+    convert_folder(args.input, args.output, args.s3_bucket, args.aws_region, args.workers)
 
 if __name__ == "__main__":
     main()
