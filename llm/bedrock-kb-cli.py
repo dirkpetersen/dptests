@@ -467,24 +467,32 @@ def ask_question(kb_name='default', query=None):
 def main():
     parser = argparse.ArgumentParser(
         description='Bedrock Knowledge Base CLI',
-        epilog='''IAM Requirements:
-  To create knowledge bases, your AWS admin must create this role first:
-  
-  Role Name: AmazonBedrockExecutionRoleForKnowledgeBase
+        epilog='''Required IAM Role Configuration:
+
+  Your AWS administrator must create this role first:
+
+  Role Name:
+    AmazonBedrockExecutionRoleForKnowledgeBase
+
   Trust Policy:
-  {
-    "Version": "2012-10-17",
-    "Statement": [{
+    {
+      "Version": "2012-10-17",
+      "Statement": [{
         "Effect": "Allow",
-        "Principal": {"Service": "bedrock.amazonaws.com"},
+        "Principal": {
+          "Service": "bedrock.amazonaws.com"
+        },
         "Action": "sts:AssumeRole"
-    }]
-  }
-  
+      }]
+    }
+
   Required Attached Policies:
-  - AWSBedrockAgentServiceRolePolicy
-  - AmazonS3ReadOnlyAccess
-  - AWSBedrockFoundationModelPolicy'''
+    - AWSBedrockAgentServiceRolePolicy
+    - AmazonS3ReadOnlyAccess 
+    - AWSBedrockFoundationModelPolicy
+
+  Note: This role must be created in the same AWS account and region
+        where you're running this script.'''
     )
     subparsers = parser.add_subparsers(dest='command')
     
