@@ -129,7 +129,7 @@ def create_opensearch_collection_if_needed():
     }
     
     try:
-        aoss.create_security_policy(
+        aoss.create_access_policy(
             name=data_policy_name,
             policy=json.dumps(data_policy),
             type='data'
