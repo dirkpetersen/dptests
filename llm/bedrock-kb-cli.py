@@ -40,9 +40,19 @@ def upload_to_s3(path, kb_name='default'):
     prefix = kb_name + '/'
     
     # Clear existing prefix
-    objects = s3.list_objects_v2(Bucket=bucket, Prefix=prefix).get('Contents', [])
-    if objects:
-        s3.delete_objects(Bucket=bucket, Delete={'Objects': [{'Key': obj['Key']} for obj in objects]})
+    delete_keys = []
+    paginator = s3.get_paginator('list_objects_v2')
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        if 'Contents' in page:
+            delete_keys.extend([{'Key': obj['Key']} for obj in page['Contents']])
+    
+    # Delete in batches of 1000 (S3 API limit)
+    if delete_keys:
+        for i in range(0, len(delete_keys), 1000):
+            s3.delete_objects(
+                Bucket=bucket,
+                Delete={'Objects': delete_keys[i:i+1000]}
+            )
     
     # Upload new files
     if os.path.isfile(path):
@@ -65,6 +75,16 @@ def create_knowledge_base(kb_name):
         pass
     
     role_arn = create_role_if_needed()
+    collection_id = "your-collection-id"
+    collection_arn = f"arn:aws:aoss:{region}:{account_id}:collection/{collection_id}"
+    
+    try:
+        # Verify OpenSearch collection exists
+        aoss = boto3.client('opensearchserverless')
+        aoss.batch_get_collection(names=[collection_id])
+    except ClientError as e:
+        print(f"Error: OpenSearch collection does not exist. Create it first: {collection_arn}")
+        sys.exit(1)
     
     return bedrock.create_knowledge_base(
         name=kb_name,
@@ -78,7 +98,7 @@ def create_knowledge_base(kb_name):
         storageConfiguration={
             "type": "OPENSEARCH_SERVERLESS",
             "opensearchServerlessConfiguration": {
-                "collectionArn": f"arn:aws:aoss:{region}:{account_id}:collection/your-collection-id",
+                "collectionArn": collection_arn,
                 "fieldMapping": {
                     "vectorField": "bedrock-knowledge-base-default-vector",
                     "textField": "AMAZON_BEDROCK_TEXT_CHUNK",
@@ -90,6 +110,9 @@ def create_knowledge_base(kb_name):
 
 def ask_question(kb_name='default', query=None):
     bedrock = boto3.client('bedrock-agent-runtime')
+    region = boto3.session.Session().region_name
+    model_arn = f"arn:aws:bedrock:{region}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+    
     while True:
         try:
             response = bedrock.retrieve_and_generate(
@@ -98,7 +121,7 @@ def ask_question(kb_name='default', query=None):
                     "type": "KNOWLEDGE_BASE",
                     "knowledgeBaseConfiguration": {
                         "knowledgeBaseId": kb_name,
-                        "modelArn": "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+                        "modelArn": model_arn
                     }
                 }
             )
