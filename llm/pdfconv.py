@@ -81,7 +81,7 @@ def textract_async(file_name, bucket_name, region):
     
     return text
 
-def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=5):
+def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=32):
     """Process a single PDF file using Textract and save as Markdown"""
     try:
         # First try processing via images
@@ -231,7 +231,7 @@ def process_single_image(args):
     finally:
         del img
 
-def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300, max_workers=5):
+def process_pdf_via_images(input_path, output_path, aws_region='us-west-2', dpi=300, max_workers=32):
     """Process PDF by converting to images first with parallel execution"""
     try:
         logger.info('Converting PDF to images...')
@@ -312,10 +312,15 @@ def main():
     parser.add_argument('-o', '--output', required=False, help='Output directory for Markdown files (default: same as input directory)')
     parser.add_argument('--s3-bucket', help='S3 bucket for large files (>10MB)')
     parser.add_argument('--aws-region', default='us-west-2', help='AWS region')
-    parser.add_argument('--workers', type=int, default=5, 
-                      help='Max parallel workers for image processing (default: 5)')
+    parser.add_argument('--workers', type=int, default=32, 
+                      help='Max parallel workers for image processing (1-32, default: 32)')
     
     args = parser.parse_args()
+    
+    # Validate worker count
+    if args.workers < 1 or args.workers > 32:
+        logger.warning(f"Invalid worker count {args.workers}, using clamped value")
+        args.workers = max(1, min(args.workers, 32))
     
     # Set output directory to input directory if not provided
     if not args.output:
