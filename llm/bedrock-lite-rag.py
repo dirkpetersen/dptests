@@ -1169,26 +1169,28 @@ if __name__ == "__main__":
     # Get file path from command line
     import sys
     if len(sys.argv) > 1:
-        file_path = sys.argv[1]
+        path = sys.argv[1]
     else:
-        print("Usage: python3 bedrock-lite-rag.py <path-to-pdf>")
+        print("Usage: python3 bedrock-lite-rag.py <path-to-file-or-directory>")
         sys.exit(1)
     
     # Upload and process
-    pdf_key = rag.upload_pdf(file_path)
-    rag.build_index([pdf_key])
-    
-    # Interactive query
-    while True:
-        question = input("\nEnter question (or 'exit' to quit): ")
-        if question.lower() == 'exit':
-            break
-        answer = rag.query(question)
-        print(f"\nAnswer: {answer['answer']}")
-        if answer['sources']:
-            print("\nSources:")
-            for source in list(set(answer['sources'])):  # Deduplicate
-                print(f"- {source}")
-    
-    # Clean up when done
-    rag.clean_up()
+    uploaded_keys = rag.upload_pdf(path)
+    if uploaded_keys:
+        rag.build_index(uploaded_keys)
+        
+        # Interactive query
+        while True:
+            question = input("\nEnter question (or 'exit' to quit): ")
+            if question.lower() == 'exit':
+                break
+            answer = rag.query(question)
+            print(f"\nAnswer: {answer['answer']}")
+            if answer['sources']:
+                print("\nSources:")
+                for source in list(set(answer['sources'])):  # Deduplicate
+                    print(f"- {source}")
+        
+        rag.clean_up()
+    else:
+        print("No PDF files found to process")
