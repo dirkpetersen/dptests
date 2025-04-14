@@ -13,15 +13,31 @@ def create_role_if_needed():
     role_name = 'AmazonBedrockExecutionRoleForKnowledgeBase'
     
     try:
-        # Try to get the role first (might fail due to permissions)
-        return iam.get_role(RoleName=role_name)['Role']['Arn']
+        role = iam.get_role(RoleName=role_name)
+        # Verify trust policy is correct
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Service": "bedrock.amazonaws.com"},
+                "Action": "sts:AssumeRole"
+            }]
+        }
+        if role['Role']['AssumeRolePolicyDocument'] != trust_policy:
+            iam.update_assume_role_policy(
+                RoleName=role_name,
+                PolicyDocument=json.dumps(trust_policy)
+            )
+        return role['Role']['Arn']
     except iam.exceptions.NoSuchEntityException:
         # If role doesn't exist, try to create it
         pass
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDenied':
             print(f"Warning: Missing iam:GetRole permission - {e}")
-            return f"arn:aws:iam::{boto3.client('sts').get_caller_identity()['Account']}:role/{role_name}"
+            # Continue to ARN fallback
+        else:
+            raise
     
     # If we got here, try creating the role
     try:
@@ -58,7 +74,10 @@ def create_role_if_needed():
     except ClientError as e:
         print(f"Error: Could not create role {role_name} - {e}")
         print("Please ask your admin to create this role with the required permissions")
-        sys.exit(1)
+    
+    # If we can't verify/create the role, use assumed ARN format
+    account_id = boto3.client('sts').get_caller_identity()['Account']
+    return f"arn:aws:iam::{account_id}:role/{role_name}"
 
 def upload_to_s3(path, kb_name='default'):
     s3 = boto3.client('s3')
@@ -132,28 +151,41 @@ def create_knowledge_base(kb_name):
         print(f"Error: OpenSearch collection does not exist. Create it first: {collection_arn}")
         sys.exit(1)
     
-    return bedrock.create_knowledge_base(
-        name=kb_name,
-        roleArn=role_arn,
-        knowledgeBaseConfiguration={
-            "type": "VECTOR",
-            "vectorKnowledgeBaseConfiguration": {
-                "embeddingModelArn": f"arn:aws:bedrock:{region}::foundation-model/amazon.titan-embed-text-v1"
-            }
-        },
-        storageConfiguration={
-            "type": "OPENSEARCH_SERVERLESS",
-            "opensearchServerlessConfiguration": {
-                "collectionArn": collection_arn,
-                "vectorIndexName": "bedrock-knowledge-base-index",
-                "fieldMapping": {
-                    "vectorField": "bedrock-knowledge-base-default-vector",
-                    "textField": "AMAZON_BEDROCK_TEXT_CHUNK",
-                    "metadataField": "AMAZON_BEDROCK_METADATA"
+    try:
+        return bedrock.create_knowledge_base(
+            name=kb_name,
+            roleArn=role_arn,
+            knowledgeBaseConfiguration={
+                "type": "VECTOR",
+                "vectorKnowledgeBaseConfiguration": {
+                    "embeddingModelArn": f"arn:aws:bedrock:{region}::foundation-model/amazon.titan-embed-text-v1"
+                }
+            },
+            storageConfiguration={
+                "type": "OPENSEARCH_SERVERLESS",
+                "opensearchServerlessConfiguration": {
+                    "collectionArn": collection_arn,
+                    "vectorIndexName": "bedrock-knowledge-base-index",
+                    "fieldMapping": {
+                        "vectorField": "bedrock-knowledge-base-default-vector",
+                        "textField": "AMAZON_BEDROCK_TEXT_CHUNK",
+                        "metadataField": "AMAZON_BEDROCK_METADATA"
+                    }
                 }
             }
-        }
-    )
+        )
+    except ClientError as e:
+        if 'Unable to assume role' in str(e):
+            print(f"\nERROR: Role validation failed for {role_arn}")
+            print("Required configuration for the role:")
+            print("1. Trust relationship must include bedrock.amazonaws.com")
+            print("2. Must have these policies attached:")
+            print("   - AWSBedrockAgentServiceRolePolicy")
+            print("   - AmazonS3ReadOnlyAccess")
+            print("   - AWSBedrockFoundationModelPolicy")
+            print("\nPlease have your AWS admin create this role with the above requirements.")
+            sys.exit(1)
+        raise
 
 def ask_question(kb_name='default', query=None):
     bedrock = boto3.client('bedrock-agent-runtime')
