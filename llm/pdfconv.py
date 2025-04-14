@@ -2,6 +2,7 @@ import os
 import boto3
 import argparse
 import logging
+import PyPDF2
 from botocore.exceptions import ClientError
 
 # Set up logging
@@ -13,12 +14,31 @@ def process_pdf(input_path, output_path):
     textract = boto3.client('textract')
     
     try:
+        # Check for encrypted PDF first
+        with open(input_path, 'rb') as f:
+            pdf_reader = PyPDF2.PdfReader(f)
+            if pdf_reader.is_encrypted:
+                logger.error(f"Skipping encrypted PDF: {input_path}")
+                return False
+                
+    except Exception as e:
+        logger.error(f"Invalid PDF file {input_path}: {str(e)}")
+        return False
+
+    try:
         with open(input_path, 'rb') as document:
             response = textract.detect_document_text(
                 Document={'Bytes': document.read()}
             )
     except ClientError as e:
-        logger.error(f"Error processing {input_path}: {e}")
+        error_code = e.response['Error']['Code']
+        if error_code == 'UnsupportedDocumentException':
+            logger.error(f"Unsupported PDF format in {input_path} - file may be corrupted or contain non-standard encoding")
+        else:
+            logger.error(f"AWS Error processing {input_path}: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error processing {input_path}: {e}")
         return False
 
     # Extract text from response
