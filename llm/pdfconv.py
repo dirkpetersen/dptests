@@ -36,19 +36,100 @@ def delete_from_s3(bucket_name, object_name):
     except ClientError as e:
         logger.error(f"Failed to delete {object_name} from S3: {e}")
 
+def process_textract_blocks(blocks):
+    """Convert Textract blocks to markdown with tables and layout"""
+    output = []
+    current_table = []
+    in_table = False
+
+    for block in blocks:
+        if block['BlockType'] == 'LAYOUT':
+            layout_type = block.get('LayoutType', '')
+            text = block.get('Text', '').strip()
+            
+            if layout_type == 'TITLE':
+                output.append(f"# {text}\n\n")
+            elif layout_type == 'SECTION_HEADER':
+                output.append(f"## {text}\n\n")
+            elif layout_type == 'HEADER':
+                output.append(f"### {text}\n\n")
+            elif layout_type == 'FOOTER':
+                continue  # Skip footers
+            else:
+                output.append(f"{text}\n\n")
+
+        elif block['BlockType'] == 'TABLE':
+            if not in_table:
+                current_table = []
+                in_table = True
+            # Tables are processed after all their cells are collected
+            continue
+
+        elif block['BlockType'] == 'CELL':
+            if in_table:
+                current_table.append({
+                    'text': block.get('Text', '').strip(),
+                    'row': block['RowIndex'],
+                    'col': block['ColumnIndex'],
+                    'header': block.get('Header', False)
+                })
+
+        elif block['BlockType'] == 'LINE':
+            if in_table:
+                # Finish current table
+                if current_table:
+                    output.append(format_table(current_table))
+                current_table = []
+                in_table = False
+            output.append(f"{block['Text']}\n\n")
+
+    # Add any remaining table
+    if current_table:
+        output.append(format_table(current_table))
+
+    return ''.join(output)
+
+def format_table(cells):
+    """Convert table cells to markdown table format"""
+    # Find table dimensions
+    max_row = max(c['row'] for c in cells)
+    max_col = max(c['col'] for c in cells)
+    
+    # Create empty table structure
+    table = [[None for _ in range(max_col)] for _ in range(max_row)]
+    headers = set()
+    
+    # Populate table
+    for cell in cells:
+        row = cell['row'] - 1  # Textract uses 1-based indexing
+        col = cell['col'] - 1
+        table[row][col] = cell['text']
+        if cell['header']:
+            headers.add(row)
+    
+    # Build markdown table
+    md_table = []
+    for i, row in enumerate(table):
+        md_table.append('| ' + ' | '.join(cell if cell else '' for cell in row) + ' |')
+        if i == 0 or i in headers:
+            md_table.append('|' + '|'.join(['---'] * len(row)) + '|')
+    
+    return '\n'.join(md_table) + '\n\n'
+
 def textract_async(file_name, bucket_name, region):
-    """Extract text from PDF in S3 using async Textract"""
+    """Extract text from PDF in S3 using async Textract with layout and tables"""
     textract_client = boto3.client('textract', region_name=region)
     
-    response = textract_client.start_document_text_detection(
-        DocumentLocation={'S3Object': {'Bucket': bucket_name, 'Name': file_name}}
+    response = textract_client.start_document_analysis(
+        DocumentLocation={'S3Object': {'Bucket': bucket_name, 'Name': file_name}},
+        FeatureTypes=['TABLES', 'LAYOUT']
     )
     
     job_id = response['JobId']
-    logger.info(f"Started Textract job {job_id}")
+    logger.info(f"Started Textract analysis job {job_id}")
     
     while True:
-        response = textract_client.get_document_text_detection(JobId=job_id)
+        response = textract_client.get_document_analysis(JobId=job_id)
         status = response['JobStatus']
         if status in ['SUCCEEDED', 'FAILED']:
             break
@@ -57,29 +138,24 @@ def textract_async(file_name, bucket_name, region):
     if status != 'SUCCEEDED':
         raise Exception(f"Textract job failed: {status}")
     
-    pages = []
+    blocks = []
     next_token = None
     
     while True:
         if next_token:
-            response = textract_client.get_document_text_detection(
+            response = textract_client.get_document_analysis(
                 JobId=job_id,
                 NextToken=next_token
             )
         else:
-            response = textract_client.get_document_text_detection(JobId=job_id)
+            response = textract_client.get_document_analysis(JobId=job_id)
         
-        pages.extend(response['Blocks'])
+        blocks.extend(response['Blocks'])
         next_token = response.get('NextToken')
         if not next_token:
             break
     
-    text = ""
-    for item in pages:
-        if item["BlockType"] == "LINE":
-            text += item["Text"] + "\n\n"
-    
-    return text
+    return process_textract_blocks(blocks)
 
 def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2', max_workers=32):
     """Process a single PDF file using Textract and save as Markdown"""
@@ -153,8 +229,9 @@ def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2',
                     
             try:
                 with open(temp_path, 'rb') as document:
-                    response = textract.detect_document_text(
-                        Document={'Bytes': document.read()}
+                    response = textract.analyze_document(
+                        Document={'Bytes': document.read()},
+                        FeatureTypes=['TABLES', 'LAYOUT']
                     )
             except ClientError as e:
                 error_code = e.response['Error']['Code']
@@ -171,11 +248,8 @@ def process_pdf(input_path, output_path, s3_bucket=None, aws_region='us-west-2',
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
 
-            # Extract text from response
-            text = ""
-            for item in response.get("Blocks", []):
-                if item["BlockType"] == "LINE":
-                    text += item["Text"] + "\n\n"
+            # Process blocks into markdown
+            text = process_textract_blocks(response['Blocks'])
 
             # Write to markdown file
             with open(output_path, 'w', encoding='utf-8') as md_file:
@@ -200,7 +274,7 @@ def convert_pdf_to_images(pdf_path, dpi=300):
     return images
 
 def process_image_with_textract(image, region='us-west-2'):
-    """Process a single image with Textract"""
+    """Process a single image with Textract including layout and tables"""
     textract = boto3.client('textract', region_name=region)
     
     # Convert image to bytes
@@ -208,16 +282,12 @@ def process_image_with_textract(image, region='us-west-2'):
     image.save(img_byte_arr, format='PNG')
     img_byte_arr = img_byte_arr.getvalue()
     
-    response = textract.detect_document_text(
-        Document={'Bytes': img_byte_arr}
+    response = textract.analyze_document(
+        Document={'Bytes': img_byte_arr},
+        FeatureTypes=['TABLES', 'LAYOUT']
     )
     
-    text = ""
-    for item in response.get("Blocks", []):
-        if item["BlockType"] == "LINE":
-            text += item["Text"] + "\n\n"
-    
-    return text
+    return process_textract_blocks(response['Blocks'])
 
 def process_single_image(args):
     """Helper function to process a single image with its index"""
