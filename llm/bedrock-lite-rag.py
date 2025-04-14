@@ -109,22 +109,52 @@ class EnhancedServerlessRAG:
             s3_client.put_object(Bucket=self.bucket_name, Key=f"{CHECKPOINT_DIR}/")
             s3_client.put_object(Bucket=self.bucket_name, Key="temp/")
     
-    def upload_pdf(self, file_path: str, key: Optional[str] = None) -> str:
-        """Upload a PDF to S3.
+    def upload_pdf(self, path: str, key_prefix: Optional[str] = None) -> List[str]:
+        """Upload PDFs from a file or directory to S3.
         
         Args:
-            file_path: Local path to the PDF file
-            key: Optional S3 key, if None will use the filename
+            path: Local path to the PDF file or directory
+            key_prefix: Optional S3 key prefix for uploaded files
             
         Returns:
-            S3 key of the uploaded file
+            List of S3 keys for uploaded files
         """
-        if key is None:
-            key = os.path.basename(file_path)
+        uploaded_keys = []
         
-        logger.info(f"Uploading {file_path} to S3 bucket {self.bucket_name} as {key}")
-        s3_client.upload_file(file_path, self.bucket_name, key)
-        return key
+        if os.path.isfile(path):
+            # Handle single file
+            key = os.path.basename(path)
+            if key_prefix:
+                key = f"{key_prefix}/{key}"
+            logger.info(f"Uploading file {path} to S3 as {key}")
+            s3_client.upload_file(path, self.bucket_name, key)
+            uploaded_keys.append(key)
+        elif os.path.isdir(path):
+            # Handle directory
+            logger.info(f"Uploading directory {path} to S3 bucket {self.bucket_name}")
+            for root, _, files in os.walk(path):
+                for file in files:
+                    local_path = os.path.join(root, file)
+                    if not local_path.lower().endswith('.pdf'):
+                        continue
+                    
+                    # Preserve directory structure in S3
+                    relative_path = os.path.relpath(local_path, path)
+                    if key_prefix:
+                        s3_key = f"{key_prefix}/{relative_path}"
+                    else:
+                        s3_key = relative_path
+                    
+                    # Ensure Unix-style paths for S3
+                    s3_key = s3_key.replace("\\", "/")
+                    
+                    logger.info(f"Uploading {local_path} to S3 as {s3_key}")
+                    s3_client.upload_file(local_path, self.bucket_name, s3_key)
+                    uploaded_keys.append(s3_key)
+        else:
+            raise ValueError(f"Path {path} is neither a file nor a directory")
+        
+        return uploaded_keys
     
     def list_pdfs(self) -> List[str]:
         """List all PDFs in the S3 bucket."""
