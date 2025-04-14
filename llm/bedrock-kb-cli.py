@@ -39,6 +39,21 @@ def create_role_if_needed():
 def upload_to_s3(path, kb_name='default'):
     s3 = boto3.client('s3')
     bucket = 'my-bedrock-kb'
+    
+    # Add bucket creation check
+    try:
+        s3.head_bucket(Bucket=bucket)
+    except s3.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            # Create the bucket if it doesn't exist
+            region = boto3.session.Session().region_name
+            s3.create_bucket(
+                Bucket=bucket,
+                CreateBucketConfiguration={'LocationConstraint': region}
+            )
+        else:
+            raise
+    
     prefix = kb_name + '/'
     
     # Clear existing prefix
