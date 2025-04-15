@@ -5,7 +5,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_aws import BedrockEmbeddings
-from langchain_aws import Bedrock
+from langchain_aws import BedrockLLM
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
@@ -58,7 +58,7 @@ def main():
     retriever = vector_store.as_retriever()
     
     # Set up Bedrock LLM
-    llm = Bedrock(
+    llm = BedrockLLM(
         model_id="anthropic.claude-3-sonnet-20240229-v1:0",
         model_kwargs={
             "temperature": 0.5,
