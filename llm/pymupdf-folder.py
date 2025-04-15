@@ -3,13 +3,9 @@ import logging
 import pymupdf4llm
 from pathlib import Path
 
-def convert_pdf_folder(input_folder: str, output_dir: str = "markdown_output"):
-    """Convert all PDFs in a folder to markdown files preserving structure"""
+def convert_pdf_folder(input_folder: str):
+    """Convert all PDFs in a folder to markdown files in the same directory"""
     input_path = Path(input_folder)
-    output_path = Path(output_dir)
-    
-    # Create output directory if needed
-    output_path.mkdir(parents=True, exist_ok=True)
     
     # Find all PDF files recursively
     pdf_files = list(input_path.glob("**/*.pdf"))
@@ -22,12 +18,8 @@ def convert_pdf_folder(input_folder: str, output_dir: str = "markdown_output"):
     
     for pdf_file in pdf_files:
         try:
-            # Generate output path with same relative structure
-            relative_path = pdf_file.relative_to(input_path)
-            md_path = output_path / relative_path.with_suffix(".md")
-            
-            # Create parent directories if needed
-            md_path.parent.mkdir(parents=True, exist_ok=True)
+            # Create markdown path in same directory
+            md_path = pdf_file.with_suffix(".md")
             
             # Convert and save
             logging.info(f"Converting {pdf_file}...")
@@ -42,11 +34,9 @@ def main():
     
     parser = argparse.ArgumentParser(description="Convert PDF files in a folder to markdown")
     parser.add_argument("input_folder", help="Path to folder containing PDF files")
-    parser.add_argument("-o", "--output", default="markdown_output", 
-                      help="Output directory for markdown files")
     args = parser.parse_args()
     
-    convert_pdf_folder(args.input_folder, args.output)
+    convert_pdf_folder(args.input_folder)
     logging.info("Conversion complete")
 
 if __name__ == "__main__":
