@@ -4,7 +4,8 @@ from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_aws import BedrockEmbeddings
+from langchain_aws import Bedrock
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
@@ -23,7 +24,7 @@ def process_pdfs(folder_path):
     # Check for existing index
     if index_path.exists():
         print(f"Loading existing FAISS index: {index_path}")
-        return FAISS.load_local(folder_path, OpenAIEmbeddings(), index_name=folder_name)
+        return FAISS.load_local(folder_path, BedrockEmbeddings(), index_name=folder_name)
     
     print(f"Processing {len(pdf_files)} PDF files...")
     
@@ -41,7 +42,7 @@ def process_pdfs(folder_path):
         all_chunks.extend(chunks)
     
     # Create and save vector store
-    embeddings = OpenAIEmbeddings()
+    embeddings = BedrockEmbeddings()
     vector_store = FAISS.from_documents(all_chunks, embeddings)
     vector_store.save_local(folder_path, index_name=folder_name)
     print(f"Created FAISS index at: {index_path}")
@@ -56,12 +57,25 @@ def main():
     vector_store = process_pdfs(args.folder)
     retriever = vector_store.as_retriever()
     
-    # Set up LLM and QA chain
-    llm = ChatOpenAI(model="gpt-4")
+    # Set up Bedrock LLM
+    llm = Bedrock(
+        model_id="anthropic.claude-3-sonnet-20240229-v1:0",
+        model_kwargs={
+            "temperature": 0.5,
+            "max_tokens": 2048
+        }
+    )
+    
+    # Modified prompt template for Claude
     prompt = ChatPromptTemplate.from_template(
-        """Answer the question based only on the provided context:
+        """\n\nHuman: You are a helpful assistant. Answer the question based only on this context:
+        <context>
         {context}
-        Question: {input}"""
+        </context>
+        
+        Question: {input}
+        
+        Assistant:"""
     )
     question_answer_chain = create_stuff_documents_chain(llm, prompt)
     qa_chain = create_retrieval_chain(retriever, question_answer_chain)
