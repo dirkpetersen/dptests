@@ -294,7 +294,8 @@ def get_linearization_config(markdown=False):
             table_row_prefix="| ",
             table_row_suffix=" |",
             table_column_separator="|",
-            table_format="MARKDOWN"  # New parameter to enable Markdown table formatting
+            table_header_divider="---",
+            table_use_header_divider=True
         )
     return None
 
