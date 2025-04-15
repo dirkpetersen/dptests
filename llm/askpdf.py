@@ -59,7 +59,7 @@ def main():
     
     # Set up Bedrock LLM
     llm = BedrockLLM(
-        model_id="anthropic.claude-3-sonnet-20240229-v1:0",
+        model_id="anthropic.claude-3-7-sonnet-20250219-v1:0",
         model_kwargs={
             "temperature": 0.5,
             "max_tokens": 2048
