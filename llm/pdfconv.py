@@ -294,7 +294,8 @@ def get_linearization_config(markdown=False):
             table_row_prefix="| ",
             table_row_suffix=" |",
             table_column_separator="|",
-            table_headers=True  # Enable automatic header detection
+            table_header_row_separator="---",
+            table_layout="MARKDOWN"
         )
     return None
 
