@@ -290,19 +290,45 @@ def convert_folder(input_dir, output_dir, s3_bucket=None, aws_region='us-west-2'
         logger.info(f"Created output directory: {output_dir}")
 
     converted = 0
-    for filename in os.listdir(input_dir):
+    pdf_files = [f for f in os.listdir(input_dir) if f.lower().endswith('.pdf')]
+    for filename in pdf_files:
         if filename.lower().endswith('.pdf'):
             input_path = os.path.join(input_dir, filename)
             base_name = os.path.splitext(filename)[0]
             output_path = os.path.join(output_dir, f"{base_name}.md")
             
             logger.info(f"Converting {filename}...")
-            if process_pdf(input_path, output_path, s3_bucket, aws_region, max_workers, save_images):
-                converted += 1
-            else:
-                logger.warning(f"Failed to convert {filename}")
+            try:
+                if save_images:
+                    # Use image-based processing path
+                    success = process_pdf_via_images(
+                        input_path, 
+                        output_path,
+                        aws_region=aws_region,
+                        dpi=300,
+                        max_workers=max_workers,
+                        save_images=True
+                    )
+                else:
+                    # Use direct PDF processing
+                    success = process_pdf(
+                        input_path,
+                        output_path,
+                        s3_bucket,
+                        aws_region,
+                        max_workers,
+                        save_images=False
+                    )
+                
+                if success:
+                    converted += 1
+                else:
+                    logger.warning(f"Failed to convert {filename}")
+            except Exception as e:
+                logger.error(f"Error processing {filename}: {str(e)}")
+                continue
 
-    logger.info(f"Conversion complete. {converted} files converted.")
+    logger.info(f"Conversion complete. {converted}/{len(pdf_files)} files converted.")
 
 def main():
     parser = argparse.ArgumentParser(description='Convert PDF files to Markdown using AWS Textract')
