@@ -48,12 +48,14 @@ AIDER_MODEL=bedrock/us.deepseek.r1-v1:0
 AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
 ```
 
-you will end up using multiple .env files with different configurations 
+In the future you will end up using multiple .env files with different configurations.
 
-Now enter a git repository in which you launch aider (e.g. in the VS Code Terminal)
+Now enter a git repository in which you launch aider (e.g. in the VS Code Terminal). If you don't want to 
+enter --env-file on the CLI you can also edit an '.env' file at the root of your git repository to track 
+which LLMs were used for this code. 
 
 ```
-aider --env-file ~/.aider.deep.env
+aider --env-file ~/.aider.aws.env
 
 ───────────────────────────────────────────────────────────────────────────────────────────────
 Aider v0.82.2
