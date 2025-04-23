@@ -29,7 +29,7 @@ fi
 function launch_instance() {
   # Check for ec2-cloud-init.txt file
   userdata=""
-  if [[ -n "$CLOUD_INIT_FILE" ]]; then  
+  if [[ -f "$CLOUD_INIT_FILE" ]]; then  
     userdata="--user-data file://${CLOUD_INIT_FILE}"
     echo "Using cloud-init script from $CLOUD_INIT_FILE"
   fi

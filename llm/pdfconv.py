@@ -2,10 +2,8 @@ import os
 import boto3
 import argparse
 import logging
-import PyPDF2
 import fitz  # PyMuPDF
 import io
-import shutil
 import time
 from PIL import Image
 import tempfile
