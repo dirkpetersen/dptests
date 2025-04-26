@@ -35,7 +35,7 @@ uv tool run --from aider-chat pip install boto3
 
 ## configure Aider 
 
-Create an empty global config file $HOME/.aider.conf.yaml or download the template: 
+Create an empty global config file $HOME/.aider.conf.yml or download the template: 
 
 
 Linux/Mac:
@@ -47,27 +47,30 @@ curl -o $HOME/.aider.conf.yml https://raw.githubusercontent.com/Aider-AI/aider/r
 Windows:
 
 ```
- iwr -Uri "https://raw.githubusercontent.com/Aider-AI/aider/refs/heads/main/aider/website/assets/sample.aider.conf.yml" -OutFile "$HOME/.aider.conf.yml"
+iwr -Uri "https://raw.githubusercontent.com/Aider-AI/aider/refs/heads/main/aider/website/assets/sample.aider.conf.yml" -OutFile "$HOME/.aider.conf.yml"
 ```
 
-Add this to the top of file "$HOME/.aider.conf.yaml":
+Add this to the top of file "$HOME/.aider.conf.yml":
 
 ```
 multiline: true
-dark-mode: true
-cache-prompts: false
-show-model-warnings: false
 vim: true
+dark-mode: true
+show-model-warnings: false
+subtree-only: true
+model: bedrock/us.anthropic.claude-3-5-haiku-20241022-v1:0
+# cache-prompts: true
 ```
 
-create an .env config file "$HOME/.aider.aws-r.env" and add this content: 
+Claude-3.5-Haiku is currently the fastest Anthropic model and is a good default 
+
+create an .env config file "$HOME/.aider.aws-r.env" and add this content for best results in code writing:
 
 ```
 AWS_PROFILE=mybedrock
 AIDER_ARCHITECT=true
 AIDER_MODEL=bedrock/us.deepseek.r1-v1:0
 AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
-AIDER_SUBTREE_ONLY=true
 ```
 
 for complex tasks that require reasoning ..... but for simpler tasks create another .env config file "$HOME/.aider.aws-c.env" and add this content: 
@@ -76,7 +79,6 @@ for complex tasks that require reasoning ..... but for simpler tasks create anot
 AWS_PROFILE=mybedrock
 AIDER_ARCHITECT=false
 AIDER_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
-AIDER_SUBTREE_ONLY=true
 ```
 
 Comment out or remove AWS_PROFILE if you are using AWS-SSO cli with the default AWS profile   
@@ -87,7 +89,7 @@ Now initialize a new git repository called `demo`:
 mkdir demo; cd demo; git init
 ```
 
-in which you launch aider (e.g. in the VS Code Terminal). If you use the `--env-file` on the CLI, you can easily switch between different models, for example by alternating between `"$HOME/.aider.aws-r.env"` (reasoning) and `"$HOME/.aider.aws-c.env"` (claude). If you don't want to use the `--env-file` option can also edit an `.env` file at the root of your git repository, for example to better track which LLMs were used for this code. 
+in which you launch aider (e.g. in the VS Code Terminal). If you use the `--env-file` on the CLI, you can easily switch between different models, for example by alternating between `"$HOME/.aider.aws-r.env"` (reasoning) and `"$HOME/.aider.aws-c.env"` (claude). If you don't want to use the `--env-file` option, you can also edit a file called `.env` file at the root of your git repository, for example to better track which LLMs were used for this code. 
 
 ```
 aider --env-file "$HOME/.aider.aws-r.env"
@@ -121,10 +123,22 @@ Connect your web browser to `http://127.0.0.1:5000` then go back to the Aider te
 
 `Please change the colors of the tiles`
 
-and confirm with ALT+Return
+and confirm with `<ALT+Enter>`
 
-you can also enter the model directly on the cli :
+you can also enter the model directly on the cli, for example if you are using the default AWS profile
 
 ```
 aider --model bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
 ```
+
+For advanced use it is good practice to write the architecture including all requirements in a markdown file called CONVENTIONS.md and then launch that file with aider in read only mode to prevent that aider modifies this file. 
+
+
+```
+aider --env-file "$HOME/.aider.aws-r.env" --read CONVENTIONS.md
+```
+
+In the prompt state something like: `Please design the application as laid out in CONVENTIONS.md`. The benefits of this approach are documenting the architecture as fed into the Bedrock LLM and the ability to always remind the Bedrock LLM of the guidelines it must follow when coding.
+
+IMPORTANT: If you enter anything in aider it will always modify code and add another git commit, however you can also enter `/undo <ALT+Enter>` to revert back to the previous git commit or you can use `/ask something <ALT+Enter>` to ask a question where no code will be changed. 
+
