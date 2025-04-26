@@ -87,7 +87,7 @@ Now initialize a new git repository called `demo`:
 mkdir demo; cd demo; git init
 ```
 
-in which you launch aider (e.g. in the VS Code Terminal). If you use the `--env-file` on the CLI can easily switch between different models, for example by alternating between `"$HOME/.aider.aws-r.env"` (reasoning) and `"$HOME/.aider.aws-c.env"` (claude). If you don't want to use the `--env-file` option can also edit an `.env` file at the root of your git repository, for example to better track which LLMs were used for this code. 
+in which you launch aider (e.g. in the VS Code Terminal). If you use the `--env-file` on the CLI, you can easily switch between different models, for example by alternating between `"$HOME/.aider.aws-r.env"` (reasoning) and `"$HOME/.aider.aws-c.env"` (claude). If you don't want to use the `--env-file` option can also edit an `.env` file at the root of your git repository, for example to better track which LLMs were used for this code. 
 
 ```
 aider --env-file "$HOME/.aider.aws-r.env"
