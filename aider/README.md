@@ -83,6 +83,8 @@ AIDER_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
 
 Comment out or remove AWS_PROFILE if you are using AWS-SSO cli with the default AWS profile   
 
+## use Aider 
+
 Now initialize a new git repository called `demo`:
 
 ```
@@ -125,10 +127,19 @@ Connect your web browser to `http://127.0.0.1:5000` then go back to the Aider te
 
 and confirm with `<ALT+Enter>`
 
+
+## more useful Aider options
+
 you can also enter the model directly on the cli, for example if you are using the default AWS profile
 
 ```
 aider --model bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
+```
+
+or if you prefer to interact with [Aider through a Browser](https://aider.chat/docs/usage/browser.html) instead of a terminal you can use the --browser option:
+
+```
+aider --env-file "$HOME/.aider.aws-r.env" --browser
 ```
 
 For advanced use it is good practice to write the architecture including all requirements in a markdown file called CONVENTIONS.md and then launch that file with aider in read only mode to prevent that aider modifies this file. 
