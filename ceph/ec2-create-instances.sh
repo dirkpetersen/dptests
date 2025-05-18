@@ -55,7 +55,8 @@ fi
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 : "${EBS_TYPE:="st1"}"
 : "${EBS_SIZE:="125"}"
-: "${EBS_QTY:="6"}"
+: "${EBS_QTY:="2"}" #: "normally 6"
+
 
 function launch_instance() {
   # Check for ec2-cloud-init.txt file
