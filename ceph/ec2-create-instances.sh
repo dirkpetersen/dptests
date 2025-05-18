@@ -170,6 +170,88 @@ EOF
   fi
 }
 
+function bootstrap_ceph_cluster() {
+    if [[ ${#instance_ids[@]} -eq 0 ]]; then
+        echo "No instances available to bootstrap Ceph."
+        return
+    fi
+
+    local first_instance_id="${instance_ids[0]}"
+    local first_public_ip="${public_ips[0]}"
+    # Assuming FQDN might be used for logging or if DNS is reliably fast. Using public_ip for actual commands.
+    local first_fqdn_display="${INSTANCE_NAME}-1.${DOMAIN}"
+
+    echo "Bootstrapping Ceph on the first node: $first_fqdn_display ($first_public_ip)"
+
+    # Step 1: Copy and run ceph-bootstrap.sh on the first node
+    echo "Copying ./ceph-bootstrap.sh to ${EC2_USER}@${first_public_ip}:/tmp/ceph-bootstrap.sh..."
+    scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        ./ceph-bootstrap.sh "${EC2_USER}@${first_public_ip}:/tmp/ceph-bootstrap.sh"
+    if [[ $? -ne 0 ]]; then
+        echo "Error: Failed to copy ceph-bootstrap.sh to $first_fqdn_display. Aborting Ceph bootstrap."
+        return 1
+    fi
+
+    echo "Running ceph-bootstrap.sh on $first_fqdn_display..."
+    ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        "${EC2_USER}@${first_public_ip}" \
+        "sudo bash /tmp/ceph-bootstrap.sh"
+    if [[ $? -ne 0 ]]; then
+        echo "Error: Failed to execute ceph-bootstrap.sh on $first_fqdn_display. Aborting Ceph bootstrap."
+        return 1
+    fi
+
+    # Step 2: Distribute Ceph public key to other nodes
+    if [[ ${#instance_ids[@]} -gt 1 ]]; then
+        echo "Distributing Ceph SSH public key from $first_fqdn_display to other nodes..."
+
+        # Command to copy /etc/ceph/ceph.pub to /tmp/ceph.pub and chown to EC2_USER on the first node
+        # This allows EC2_USER to read it for ssh-copy-id without ssh-copy-id needing sudo for file access.
+        local prep_pub_key_cmd="sudo cp /etc/ceph/ceph.pub /tmp/ceph.pub && sudo chown ${EC2_USER}:${EC2_USER} /tmp/ceph.pub && sudo chmod 644 /tmp/ceph.pub"
+        ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${first_public_ip}" "${prep_pub_key_cmd}"
+
+        if [[ $? -ne 0 ]]; then
+            echo "Error: Failed to prepare Ceph public key on $first_fqdn_display (/tmp/ceph.pub). Aborting key distribution."
+            # Clean up /tmp/ceph-bootstrap.sh on the first node
+            ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph-bootstrap.sh"
+            return 1
+        fi
+
+        for i in $(seq 1 $((${#instance_ids[@]} - 1))); do
+            # public_ips is 0-indexed, instance_ids is 0-indexed.
+            # instance_ids[0] is first_node. Others are instance_ids[1], instance_ids[2], ...
+            # public_ips[0] is first_node_ip. Others are public_ips[1], public_ips[2], ...
+            local target_public_ip="${public_ips[$i]}"
+            local target_fqdn_display="${INSTANCE_NAME}-$(($i+1)).${DOMAIN}"
+
+            echo "Distributing Ceph public key to $target_fqdn_display ($target_public_ip)..."
+            
+            # ssh-copy-id will use the forwarded SSH agent for authentication to target_public_ip
+            local ssh_copy_id_cmd="ssh-copy-id -f -i /tmp/ceph.pub -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${EC2_USER}@${target_public_ip}"
+
+            ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${first_public_ip}" \
+                "${ssh_copy_id_cmd}"
+            
+            if [[ $? -eq 0 ]]; then
+                echo "Successfully copied Ceph public key to $target_fqdn_display ($target_public_ip)."
+            else
+                echo "Warning: Failed to copy Ceph public key to $target_fqdn_display ($target_public_ip)."
+            fi
+        done
+        # Clean up temporary files on the first node
+        ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph.pub /tmp/ceph-bootstrap.sh"
+    else
+        # Only one instance, just clean up ceph-bootstrap.sh
+        ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph-bootstrap.sh"
+    fi
+    echo "Ceph bootstrap process initiated on $first_fqdn_display and keys distributed if applicable."
+}
+
 function wait_for_instance() {
   public_ips=()  # Reset the global array
   echo "Waiting for instances to be ready..."
@@ -261,6 +343,7 @@ launch_instance
 wait_for_instance
 add_disks
 register_dns
+bootstrap_ceph_cluster
 
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 echo "SSH commands to connect:"
