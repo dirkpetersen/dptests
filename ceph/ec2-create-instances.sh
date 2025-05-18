@@ -1,5 +1,31 @@
 #!/bin/bash
 
+# AWS EC2 Instance Launch and Configuration Script
+#
+# This script automates the process of launching one or more AWS EC2 instances.
+# Key functionalities include:
+# - Launching a specified number of EC2 instances with configurable parameters
+#   (region, instance type, AMI, root volume size, instance name, domain, etc.).
+# - Utilizing a cloud-init script (if provided) for initial instance setup.
+# - Checking AWS CLI authentication and attempting SSO login if needed.
+# - Managing EC2 key pairs for SSH access.
+# - Configuring storage:
+#   - Setting the root volume size.
+#   - Attaching a specified number of additional EBS volumes to each instance
+#     by calling the 'ebs-create-attach.sh' script.
+# - Waiting for instances to reach a 'running' state and for SSH to become available.
+# - Optionally registering DNS A records for each instance in AWS Route 53
+#   if a hosted zone is found.
+# - Outputting SSH commands to connect to the newly created instances.
+#
+# Usage:
+#   ./ec2-create-instances.sh [number_of_instances]
+#
+# Environment variables can be used to override default configurations, e.g.:
+#   AWS_REGION, EC2_TYPE, AMI_IMAGE, ROOT_VOLUME_SIZE, INSTANCE_NAME,
+#   DOMAIN, CLOUD_INIT_FILE, EC2_USER, EC2_SECURITY_GROUP, EBS_TYPE,
+#   EBS_SIZE, EBS_QTY, EC2_KEY_NAME, EC2_KEY_FILE, AWS_AZ.
+
 declare -a public_ips
 
 # AWS EC2 Instance Launch Script
