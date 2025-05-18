@@ -33,9 +33,14 @@ declare -a public_ips
 
 # Get number of instances from command line
 NUM_INSTANCES=${1:-1}
+EXISTING_CEPH_ADMIN_FQDN=${2:-""} # Second argument for existing Ceph admin node FQDN
+
 if [[ ! "$NUM_INSTANCES" =~ ^[1-9][0-9]*$ ]]; then
     echo "Error: Number of instances must be a positive integer"
     exit 1
+fi
+if [[ -n "$EXISTING_CEPH_ADMIN_FQDN" ]]; then
+    echo "Cluster expansion mode: Will add Ceph public key from $EXISTING_CEPH_ADMIN_FQDN to $NUM_INSTANCES new node(s)."
 fi
 
 # Configuration Variables
@@ -360,7 +365,7 @@ launch_instance
 wait_for_instance
 add_disks
 register_dns
-bootstrap_ceph_cluster
+configure_ceph_nodes
 
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 echo "SSH commands to connect:"
