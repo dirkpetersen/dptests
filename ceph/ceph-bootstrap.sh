@@ -15,4 +15,4 @@ else
     export INTERNAL_IP=$(hostname -I | awk '{print $1}')
 fi
 
-/usr/local/bin/cephadm bootstrap --allow-fqdn-hostname --mon-ip ${INTERNAL_IP}
+/usr/local/bin/cephadm bootstrap --allow-fqdn-hostname --mon-ip ${INTERNAL_IP} --ssh-user rocky
