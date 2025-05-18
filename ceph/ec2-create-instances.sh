@@ -175,84 +175,126 @@ EOF
   fi
 }
 
-function bootstrap_ceph_cluster() {
-    if [[ ${#instance_ids[@]} -eq 0 ]]; then
-        echo "No instances available to bootstrap Ceph."
+function configure_ceph_nodes() {
+    local num_new_instances=${#instance_ids[@]}
+    if [[ $num_new_instances -eq 0 ]]; then
+        echo "No new instances available to configure for Ceph."
         return
     fi
 
-    local first_instance_id="${instance_ids[0]}"
-    local first_public_ip="${public_ips[0]}"
-    # Assuming FQDN might be used for logging or if DNS is reliably fast. Using public_ip for actual commands.
-    local first_fqdn_display="${INSTANCE_NAME}-1.${DOMAIN}"
+    local key_source_node_ip=""
+    local key_source_node_fqdn_display="" # For logging
+    local temp_ceph_pub_key_local="/tmp/ceph_cluster_key_$(date +%s%N).pub" # Unique temp file on control machine
 
-    echo "Bootstrapping Ceph on the first node: $first_fqdn_display ($first_public_ip)"
+    if [[ -z "$EXISTING_CEPH_ADMIN_FQDN" ]]; then
+        # === Initial Cluster Creation Mode ===
+        echo "Mode: Initial Ceph Cluster Creation."
+        local first_new_node_public_ip="${public_ips[0]}"
+        local first_new_node_instance_id="${instance_ids[0]}"
+        key_source_node_ip="$first_new_node_public_ip"
+        key_source_node_fqdn_display="${INSTANCE_NAME}-1.${DOMAIN}" # Assumes DNS is set or for display
 
-    # Step 1: Copy and run ceph-bootstrap.sh on the first node
-    echo "Copying ./ceph-bootstrap.sh to ${EC2_USER}@${first_public_ip}:/tmp/ceph-bootstrap.sh..."
-    scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        ./ceph-bootstrap.sh "${EC2_USER}@${first_public_ip}:/tmp/ceph-bootstrap.sh"
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Failed to copy ceph-bootstrap.sh to $first_fqdn_display. Aborting Ceph bootstrap."
-        return 1
-    fi
+        echo "Bootstrapping Ceph on the first new node: $key_source_node_fqdn_display ($key_source_node_ip)"
 
-    echo "Running ceph-bootstrap.sh on $first_fqdn_display..."
-    # -A (agent forwarding) is kept here in case ceph-bootstrap.sh itself might benefit, though unlikely for initial bootstrap.
-    ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        "${EC2_USER}@${first_public_ip}" \
-        "sudo bash /tmp/ceph-bootstrap.sh"
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Failed to execute ceph-bootstrap.sh on $first_fqdn_display. Aborting Ceph bootstrap."
-        return 1
-    fi
-
-    # Step 2: Distribute Ceph public key to other nodes
-    if [[ ${#instance_ids[@]} -gt 1 ]]; then
-        echo "Distributing Ceph SSH public key from $first_fqdn_display to other nodes..."
-        
-        local temp_ceph_pub_key_local="/tmp/ceph_cluster_key_${first_instance_id}.pub" # Temp file on control machine
-
-        # Prepare Ceph public key on the first node (copy to /tmp and chown)
-        echo "Preparing Ceph public key on $first_fqdn_display..."
-        local prep_key_cmd="sudo cp /etc/ceph/ceph.pub /tmp/ceph.pub && sudo chown ${EC2_USER}:${EC2_USER} /tmp/ceph.pub && sudo chmod 644 /tmp/ceph.pub"
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${first_public_ip}" "${prep_key_cmd}"
-        if [[ $? -ne 0 ]]; then
-            echo "Error: Failed to prepare Ceph public key on $first_fqdn_display (/tmp/ceph.pub). Aborting key distribution."
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph-bootstrap.sh"
-            return 1
-        fi
-
-        # Copy Ceph public key from the first node to the control machine
-        echo "Fetching Ceph public key from $first_fqdn_display to control machine..."
+        echo "Copying ./ceph-bootstrap.sh to ${EC2_USER}@${key_source_node_ip}:/tmp/ceph-bootstrap.sh..."
         scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${first_public_ip}:/tmp/ceph.pub" "${temp_ceph_pub_key_local}"
+            ./ceph-bootstrap.sh "${EC2_USER}@${key_source_node_ip}:/tmp/ceph-bootstrap.sh"
         if [[ $? -ne 0 ]]; then
-            echo "Error: Failed to copy Ceph public key from $first_fqdn_display to control machine. Aborting key distribution."
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph.pub /tmp/ceph-bootstrap.sh"
+            echo "Error: Failed to copy ceph-bootstrap.sh to $key_source_node_fqdn_display. Aborting Ceph configuration."
             return 1
         fi
 
-        # Clean up /tmp/ceph.pub on the first node as it's now on the control machine
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph.pub"
+        echo "Running ceph-bootstrap.sh on $key_source_node_fqdn_display..."
+        ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${key_source_node_ip}" \
+            "sudo bash /tmp/ceph-bootstrap.sh"
+        if [[ $? -ne 0 ]]; then
+            echo "Error: Failed to execute ceph-bootstrap.sh on $key_source_node_fqdn_display. Aborting Ceph configuration."
+            # Attempt to clean up bootstrap script on failure
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${key_source_node_ip}" "rm -f /tmp/ceph-bootstrap.sh"
+            return 1
+        fi
+    else
+        # === Cluster Expansion Mode ===
+        echo "Mode: Expanding existing Ceph Cluster. Admin node for key source: $EXISTING_CEPH_ADMIN_FQDN"
+        key_source_node_ip=$(dig +short A "$EXISTING_CEPH_ADMIN_FQDN" | head -n1)
+        if [[ -z "$key_source_node_ip" ]]; then
+            echo "Error: Could not resolve IP for existing Ceph admin node $EXISTING_CEPH_ADMIN_FQDN. Aborting."
+            return 1
+        fi
+        key_source_node_fqdn_display="$EXISTING_CEPH_ADMIN_FQDN"
+        echo "Using existing Ceph admin node $key_source_node_fqdn_display ($key_source_node_ip) as source for Ceph public key."
+    fi
 
-        for i in $(seq 1 $((${#instance_ids[@]} - 1))); do
+    # === Common Steps for Both Modes: Fetch Ceph Public Key ===
+    echo "Fetching Ceph public key from $key_source_node_fqdn_display ($key_source_node_ip)..."
+
+    # Prepare Ceph public key on the key_source_node (copy to /tmp, chown, chmod)
+    # This requires SSH access to key_source_node_ip using EC2_KEY_FILE (or appropriate auth for existing admin)
+    echo "Preparing Ceph public key on $key_source_node_fqdn_display..."
+    local prep_key_cmd="sudo cp /etc/ceph/ceph.pub /tmp/ceph.pub && sudo chown ${EC2_USER}:${EC2_USER} /tmp/ceph.pub && sudo chmod 644 /tmp/ceph.pub"
+    ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        "${EC2_USER}@${key_source_node_ip}" "${prep_key_cmd}"
+    if [[ $? -ne 0 ]]; then
+        echo "Error: Failed to prepare Ceph public key on $key_source_node_fqdn_display (/tmp/ceph.pub). Aborting key distribution."
+        if [[ -z "$EXISTING_CEPH_ADMIN_FQDN" ]]; then # If initial mode, cleanup bootstrap script
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${public_ips[0]}" "rm -f /tmp/ceph-bootstrap.sh"
+        fi
+        return 1
+    fi
+
+    # Copy Ceph public key from the key_source_node to the control machine
+    echo "Fetching Ceph public key from $key_source_node_fqdn_display to control machine..."
+    scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        "${EC2_USER}@${key_source_node_ip}:/tmp/ceph.pub" "${temp_ceph_pub_key_local}"
+    if [[ $? -ne 0 ]]; then
+        echo "Error: Failed to copy Ceph public key from $key_source_node_fqdn_display to control machine. Aborting key distribution."
+        # Cleanup on key_source_node and potentially bootstrap script
+        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${key_source_node_ip}" "rm -f /tmp/ceph.pub"
+        if [[ -z "$EXISTING_CEPH_ADMIN_FQDN" ]]; then
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${public_ips[0]}" "rm -f /tmp/ceph-bootstrap.sh"
+        fi
+        return 1
+    fi
+
+    # Clean up /tmp/ceph.pub on the key_source_node as it's now on the control machine
+    ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        "${EC2_USER}@${key_source_node_ip}" "rm -f /tmp/ceph.pub"
+
+    # Determine target nodes for key distribution
+    local target_node_indices=()
+    if [[ -z "$EXISTING_CEPH_ADMIN_FQDN" ]]; then
+        # Initial mode: distribute to new nodes 1 to N-1 (0-indexed: public_ips[1] to public_ips[num_new_instances-1])
+        # If only 1 new instance, this loop won't run.
+        for i in $(seq 1 $((num_new_instances - 1))); do
+            target_node_indices+=($i)
+        done
+    else
+        # Expansion mode: distribute to all new nodes (0 to N-1)
+        for i in $(seq 0 $((num_new_instances - 1))); do
+            target_node_indices+=($i)
+        done
+    fi
+
+    if [[ ${#target_node_indices[@]} -gt 0 ]]; then
+        echo "Distributing Ceph public key to designated newly created nodes..."
+        for i in "${target_node_indices[@]}"; do
             local target_public_ip="${public_ips[$i]}"
+            # Instance names are 1-based, array indices are 0-based
             local target_fqdn_display="${INSTANCE_NAME}-$(($i+1)).${DOMAIN}"
 
-            echo "Distributing Ceph public key to $target_fqdn_display ($target_public_ip) using $first_fqdn_display as jump host..."
+            echo "Distributing Ceph public key to $target_fqdn_display ($target_public_ip)..."
             
-            # Use ssh-copy-id from the control machine with ProxyJump through the first node.
-            # EC2_KEY_FILE is used for authentication to both the jump host and the target host.
+            # ssh-copy-id from control machine directly to target_public_ip
+            # EC2_KEY_FILE is used for authentication.
             local ssh_options_for_copy_id=(
-                "-o" "ProxyJump=${EC2_USER}@${first_public_ip}"
                 "-o" "StrictHostKeyChecking=no"
                 "-o" "UserKnownHostsFile=/dev/null"
-                "-o" "IdentityFile=${EC2_KEY_FILE}" # Key for auth to jump and target
+                "-o" "IdentityFile=${EC2_KEY_FILE}"
                 "-o" "ConnectTimeout=10"
             )
 
@@ -262,16 +304,25 @@ function bootstrap_ceph_cluster() {
                 echo "Warning: Failed to copy Ceph public key to $target_fqdn_display ($target_public_ip). Exit status: $?"
             fi
         done
-        # Clean up temporary public key file on control machine and bootstrap script on first node
-        rm -f "${temp_ceph_pub_key_local}"
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph-bootstrap.sh"
     else
-        # Only one instance, just clean up ceph-bootstrap.sh
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${first_public_ip}" "rm -f /tmp/ceph-bootstrap.sh"
+        if [[ -z "$EXISTING_CEPH_ADMIN_FQDN" && $num_new_instances -eq 1 ]]; then
+            echo "Only one new instance created in initial mode. Ceph bootstrap done. No further key distribution needed for other *new* nodes."
+        elif [[ -n "$EXISTING_CEPH_ADMIN_FQDN" && $num_new_instances -gt 0 ]]; then
+             # This case should have been caught by target_node_indices having elements.
+             # However, if somehow it's reached and target_node_indices is empty but we are in expansion mode with new instances, it's an anomaly.
+             echo "Warning: In expansion mode but no target nodes identified for key distribution. This should not happen if new instances were created."
+        else
+            echo "No other new nodes to distribute Ceph public key to."
+        fi
     fi
-    echo "Ceph bootstrap process initiated on $first_fqdn_display and keys distributed if applicable."
+    
+    # Final Cleanup
+    rm -f "${temp_ceph_pub_key_local}" # Remove temp key from control machine
+    if [[ -z "$EXISTING_CEPH_ADMIN_FQDN" ]]; then # Initial mode: cleanup bootstrap script from first new node
+        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${public_ips[0]}" "rm -f /tmp/ceph-bootstrap.sh"
+    fi
+    echo "Ceph node configuration process complete."
 }
 
 function wait_for_instance() {
