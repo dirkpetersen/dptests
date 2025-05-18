@@ -176,6 +176,38 @@ EOF
   fi
 }
 
+function prepare_new_nodes() {
+    echo "Preparing all new instances (setting hostname, installing packages)..."
+    for i in "${!public_ips[@]}"; do
+        local instance_public_ip="${public_ips[$i]}"
+        # Instance names are 1-based, array indices are 0-based
+        local fqdn="${INSTANCE_NAME}-$(($i+1)).${DOMAIN}"
+        
+        echo "Preparing node ${fqdn} (${instance_public_ip})..."
+
+        # Set hostname
+        echo "Setting hostname to ${fqdn}..."
+        if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${instance_public_ip}" \
+            "sudo hostnamectl set-hostname ${fqdn}"; then
+            echo "Error: Failed to set hostname for ${fqdn} (${instance_public_ip}). Aborting."
+            exit 1 # Exit script if hostname setting fails
+        fi
+        echo "Successfully set hostname for ${fqdn}."
+
+        # Install podman and lvm2
+        echo "Installing podman and lvm2 on ${fqdn}..."
+        if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${instance_public_ip}" \
+            "sudo dnf install -y podman lvm2"; then
+            echo "Error: Failed to install podman/lvm2 on ${fqdn} (${instance_public_ip}). Aborting."
+            exit 1 # Exit script if package installation fails
+        fi
+        echo "Successfully installed podman and lvm2 on ${fqdn}."
+    done
+    echo "All new nodes prepared successfully."
+}
+
 function configure_ceph_nodes() {
     local num_new_instances=${#instance_ids[@]}
     if [[ $num_new_instances -eq 0 ]]; then
@@ -415,6 +447,7 @@ EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
 
 launch_instance
 wait_for_instance
+prepare_new_nodes
 add_disks
 register_dns
 configure_ceph_nodes
