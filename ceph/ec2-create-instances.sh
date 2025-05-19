@@ -300,8 +300,8 @@ function prepare_new_nodes() {
             echo "Setting hostname to ${fqdn}..."
             if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                 "${EC2_USER}@${instance_public_ip}" \
-                "sudo hostnamectl set-hostname ${fqdn}"; then
-                echo "Error: Failed to set hostname for ${fqdn} (${instance_public_ip}). Aborting."
+                "sudo hostnamectl set-hostname ${short_hostname}"; then
+                echo "Error: Failed to set hostname for ${short_hostname} (${instance_public_ip}). Aborting."
                 exit 1 # Exit script if hostname setting fails
             fi
             echo "Successfully set hostname for ${fqdn}."
