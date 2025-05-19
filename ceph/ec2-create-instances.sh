@@ -26,22 +26,21 @@
 #   DOMAIN, CLOUD_INIT_FILE, EC2_USER, EC2_SECURITY_GROUP, EBS_TYPE,
 #   EBS_SIZE, EBS_QTY, EC2_KEY_NAME, EC2_KEY_FILE, AWS_AZ.
 
-declare -a public_ips
-declare -a internal_ips
+declare -a TARGET_INSTANCE_IDS # Array to store instance IDs for all target slots
+declare -a TARGET_PUBLIC_IPS   # Array to store public IPs for all target slots
+declare -a TARGET_FQDNS        # Array to store FQDNs for all target slots
+declare -a IS_INSTANCE_NEW     # Boolean array: true if instance at index was created in this run
+declare -a TARGET_INTERNAL_IPS # Array to store internal IPs for all target slots
 
 # AWS EC2 Instance Launch Script
 # This script launches a c7gd.medium EC2 instance with Rocky Linux 9
 
 # Get number of instances from command line
 NUM_INSTANCES=${1:-1}
-EXISTING_CEPH_ADMIN_FQDN=${2:-""} # Second argument for existing Ceph admin node FQDN
 
 if [[ ! "$NUM_INSTANCES" =~ ^[1-9][0-9]*$ ]]; then
     echo "Error: Number of instances must be a positive integer"
     exit 1
-fi
-if [[ -n "$EXISTING_CEPH_ADMIN_FQDN" ]]; then
-    echo "Cluster expansion mode: Will add Ceph public key from $EXISTING_CEPH_ADMIN_FQDN to $NUM_INSTANCES new node(s)."
 fi
 
 # Configuration Variables
@@ -59,89 +58,130 @@ fi
 : "${EBS_QTY:="2"}" #: "normally 6"
 
 
-function launch_instance() {
-  # Check for ec2-cloud-init.txt file
-  userdata=""
-  if [[ -f "$CLOUD_INIT_FILE" ]]; then  
-    userdata="--user-data file://${CLOUD_INIT_FILE}"
-    echo "Using cloud-init script from $CLOUD_INIT_FILE"
-  fi
+function discover_or_launch_instances() {
+    echo "Discovering existing instances and launching missing ones up to target count: $NUM_INSTANCES..."
+    local indices_to_create=() # 0-based indices of instances to create
 
-  # Construct block device mapping JSON
-  BLK_DEV_JSON="["
-  if [[ $ROOT_VOLUME_SIZE -gt 0 ]]; then
-      ROOT_DEV=$(aws ec2 describe-images --image-ids ${AMI_IMAGE} --query 'Images[].RootDeviceName' --output text)
-      BLK_DEV_JSON+="{\"DeviceName\":\"${ROOT_DEV}\",\"Ebs\":{\"VolumeSize\":${ROOT_VOLUME_SIZE}}}"
-      [[ $ROOT_VOLUME_SIZE -gt 0 ]] && BLK_DEV_JSON+=","
-      BLK_DEV_JSON+="{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}"
-  fi
-  BLK_DEV_JSON+="]"
+    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+        local host_num=$((i + 1))
+        local fqdn="${INSTANCE_NAME}-${host_num}.${DOMAIN}"
+        local tag_name="${INSTANCE_NAME}-${host_num}"
+        TARGET_FQDNS[$i]="$fqdn"
 
-  # Add availability zone parameter if specified
-  az_param=""
-  if [[ -n "${AWS_AZ}" ]]; then
-    az_param="--placement AvailabilityZone=${AWS_AZ}"
-    echo "Using specified availability zone: ${AWS_AZ}"
-  fi
+        echo "Checking for existing instance: $tag_name ($fqdn)..."
+        local existing_instance_info
+        existing_instance_info=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${tag_name}" "Name=instance-state-name,Values=pending,running" \
+            --query "Reservations[].Instances[?InstanceLifecycle!='spot'].{InstanceId:InstanceId,PublicIpAddress:PublicIpAddress,PrivateIpAddress:PrivateIpAddress,LaunchTime:LaunchTime}" \
+            --output json | jq -c 'sort_by(.LaunchTime) | .[0] // null') # Get the oldest if multiple, or null
 
-  SECURITY_GROUP_ID=$(aws ec2 describe-security-groups \
-    --region ${AWS_REGION} \
-    --filters "Name=group-name,Values=${EC2_SECURITY_GROUP}" \
-    --query 'SecurityGroups[0].GroupId' \
-    --output text)
+        if [[ "$existing_instance_info" != "null" && -n "$existing_instance_info" ]]; then
+            TARGET_INSTANCE_IDS[$i]=$(echo "$existing_instance_info" | jq -r '.InstanceId')
+            TARGET_PUBLIC_IPS[$i]=$(echo "$existing_instance_info" | jq -r '.PublicIpAddress // ""')
+            TARGET_INTERNAL_IPS[$i]=$(echo "$existing_instance_info" | jq -r '.PrivateIpAddress // ""')
+            IS_INSTANCE_NEW[$i]=false
+            echo "Found existing instance ${tag_name} (ID: ${TARGET_INSTANCE_IDS[$i]})."
+        else
+            echo "Instance ${tag_name} not found or not in a usable state. Will be created."
+            indices_to_create+=($i)
+            IS_INSTANCE_NEW[$i]=true
+            TARGET_INSTANCE_IDS[$i]="" # Placeholder
+            TARGET_PUBLIC_IPS[$i]="" # Placeholder
+            TARGET_INTERNAL_IPS[$i]="" # Placeholder
+        fi
+    done
 
-  launch_output=$(
-    aws ec2 run-instances --region ${AWS_REGION} \
-    --image-id ${AMI_IMAGE} \
-    --count ${NUM_INSTANCES} \
-    --instance-type ${EC2_TYPE} \
-    --key-name ${EC2_KEY_NAME} \
-    --security-group-ids ${sg_id} \
-    --block-device-mappings "${BLK_DEV_JSON}" \
-    ${userdata} \
-    ${az_param} \
-    --output json
-  )
+    local num_to_launch=${#indices_to_create[@]}
+    if [[ $num_to_launch -gt 0 ]]; then
+        echo "Need to launch $num_to_launch new instance(s)."
 
-  if [[ -z "$launch_output" ]]; then
-    echo "Error: Failed to launch instances. Check your AWS credentials and permissions."
-    exit 1
-  fi
+        local userdata_param=""
+        if [[ -f "$CLOUD_INIT_FILE" ]]; then
+            userdata_param="--user-data file://${CLOUD_INIT_FILE}"
+            echo "Using cloud-init script from $CLOUD_INIT_FILE for new instances."
+        fi
 
-  # Extract all instance IDs and their AZs
-  instance_ids=($(echo "$launch_output" | jq -r '.Instances[].InstanceId'))
-  azs=($(echo "$launch_output" | jq -r '.Instances[].Placement.AvailabilityZone'))
-  
-  if [[ ${#instance_ids[@]} -eq 0 ]]; then
-    echo "Error: Failed to create instances. $launch_output"
-    exit 1
-  fi
+        local blk_dev_json="["
+        if [[ $ROOT_VOLUME_SIZE -gt 0 ]]; then
+            local root_dev_name=$(aws ec2 describe-images --image-ids ${AMI_IMAGE} --query 'Images[].RootDeviceName' --output text)
+            blk_dev_json+="{\"DeviceName\":\"${root_dev_name}\",\"Ebs\":{\"VolumeSize\":${ROOT_VOLUME_SIZE}}}"
+            # Assuming ephemeral0 is desired if root volume is customized. Adjust if not.
+            blk_dev_json+=",{\"DeviceName\":\"/dev/sdb\",\"VirtualName\":\"ephemeral0\"}"
+        fi
+        blk_dev_json+="]"
 
-  # Tag instances with sequential names
-  for i in "${!instance_ids[@]}"; do
-    aws ec2 create-tags --resources ${instance_ids[$i]} \
-        --tags "Key=Name,Value=${INSTANCE_NAME}-$((i+1))"
-    echo "Instance ${instance_ids[$i]} launched in availability zone: ${azs[$i]}"
-  done
-  
-  # Set INSTANCE_INFO to first instance ID for compatibility
-  INSTANCE_INFO="${instance_ids[0]}"
+        local az_param=""
+        if [[ -n "${AWS_AZ}" ]]; then
+            az_param="--placement AvailabilityZone=${AWS_AZ}"
+            echo "Using specified availability zone for new instances: ${AWS_AZ}"
+        fi
 
+        local security_group_id=$(aws ec2 describe-security-groups \
+            --region ${AWS_REGION} \
+            --filters "Name=group-name,Values=${EC2_SECURITY_GROUP}" \
+            --query 'SecurityGroups[0].GroupId' \
+            --output text)
+
+        echo "Launching $num_to_launch instances..."
+        local launch_output
+        launch_output=$(aws ec2 run-instances --region ${AWS_REGION} \
+            --image-id ${AMI_IMAGE} \
+            --count ${num_to_launch} \
+            --instance-type ${EC2_TYPE} \
+            --key-name ${EC2_KEY_NAME} \
+            --security-group-ids "${security_group_id}" \
+            --block-device-mappings "${blk_dev_json}" \
+            ${userdata_param} \
+            ${az_param} \
+            --output json)
+
+        if [[ -z "$launch_output" ]]; then
+            echo "Error: Failed to launch new instances. Check AWS credentials and permissions."
+            exit 1
+        fi
+
+        local launched_instance_ids_from_aws=($(echo "$launch_output" | jq -r '.Instances[].InstanceId'))
+        if [[ ${#launched_instance_ids_from_aws[@]} -ne $num_to_launch ]]; then
+            echo "Error: Expected $num_to_launch new instance IDs, but got ${#launched_instance_ids_from_aws[@]}."
+            exit 1
+        fi
+
+        for j in $(seq 0 $((num_to_launch - 1))); do
+            local target_array_index=${indices_to_create[$j]}
+            local new_instance_id=${launched_instance_ids_from_aws[$j]}
+            TARGET_INSTANCE_IDS[$target_array_index]=$new_instance_id
+            local tag_name="${INSTANCE_NAME}-$((target_array_index + 1))"
+            aws ec2 create-tags --resources ${new_instance_id} --tags "Key=Name,Value=${tag_name}"
+            echo "Launched new instance ${tag_name} (ID: ${new_instance_id}). It will be fully configured."
+        done
+    else
+        echo "All $NUM_INSTANCES target instances already exist."
+    fi
+    echo "Instance discovery and launch phase complete."
 }
 
 function add_disks() {
-  for instance_id in "${instance_ids[@]}"; do
-    echo "Adding ${EBS_QTY} ${EBS_TYPE} volumes (${EBS_SIZE}GB) to ${instance_id}"
-    ./ebs-create-attach.sh "${instance_id}" "${EBS_TYPE}" "${EBS_SIZE}" "${EBS_QTY}"
-  done
+    echo "Adding disks to newly created instances..."
+    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+        if [[ "${IS_INSTANCE_NEW[$i]}" == true ]]; then
+            local instance_id=${TARGET_INSTANCE_IDS[$i]}
+            echo "Adding ${EBS_QTY} ${EBS_TYPE} volumes (${EBS_SIZE}GB) to new instance ${TARGET_FQDNS[$i]} (ID: ${instance_id})"
+            ./ebs-create-attach.sh "${instance_id}" "${EBS_TYPE}" "${EBS_SIZE}" "${EBS_QTY}"
+        fi
+    done
 }
 
 function register_dns() {
   hosted_zone_id=$(aws route53 list-hosted-zones --query 'HostedZones[0].Id' --output text)
   if [[ -n "$hosted_zone_id" && "$hosted_zone_id" != "None" ]]; then
-    for i in "${!public_ips[@]}"; do
-      hostname="${INSTANCE_NAME}-$((i+1))"
-      fqdn="${hostname}.${DOMAIN}"
+    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+      local fqdn="${TARGET_FQDNS[$i]}"
+      local public_ip="${TARGET_PUBLIC_IPS[$i]}"
+
+      if [[ -z "$public_ip" || "$public_ip" == "null" ]]; then
+          echo "Skipping DNS registration for ${fqdn} as public IP is not available."
+          continue
+      fi
       
       change_batch=$(cat <<EOF
 {
@@ -154,7 +194,7 @@ function register_dns() {
         "TTL": 300,
         "ResourceRecords": [
           {
-            "Value": "${public_ips[$i]}"
+            "Value": "${public_ip}"
           }
         ]
       }
@@ -167,9 +207,9 @@ EOF
       if aws route53 change-resource-record-sets \
         --hosted-zone-id $hosted_zone_id \
         --change-batch "$change_batch" > /dev/null; then
-        echo "DNS record created: ${fqdn}"
+        echo "DNS record UPSERTED for ${fqdn} -> ${public_ip}"
       else
-        echo "Failed to create DNS record for ${fqdn}"
+        echo "Failed to UPSERT DNS record for ${fqdn} -> ${public_ip}"
       fi
     done
   else
@@ -179,32 +219,35 @@ EOF
 
 function prepare_new_nodes() {
     echo "Preparing all new instances (setting hostname, installing packages)..."
-    for i in "${!public_ips[@]}"; do
-        local instance_public_ip="${public_ips[$i]}"
-        # Instance names are 1-based, array indices are 0-based
-        local fqdn="${INSTANCE_NAME}-$(($i+1)).${DOMAIN}"
-        
-        echo "Preparing node ${fqdn} (${instance_public_ip})..."
+    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+        if [[ "${IS_INSTANCE_NEW[$i]}" == true ]]; then
+            local instance_public_ip="${TARGET_PUBLIC_IPS[$i]}"
+            local fqdn="${TARGET_FQDNS[$i]}"
+            
+            echo "Preparing new node ${fqdn} (${instance_public_ip})..."
 
-        # Set hostname
-        echo "Setting hostname to ${fqdn}..."
-        if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${instance_public_ip}" \
-            "sudo hostnamectl set-hostname ${fqdn}"; then
-            echo "Error: Failed to set hostname for ${fqdn} (${instance_public_ip}). Aborting."
-            exit 1 # Exit script if hostname setting fails
-        fi
-        echo "Successfully set hostname for ${fqdn}."
+            # Set hostname
+            echo "Setting hostname to ${fqdn}..."
+            if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${instance_public_ip}" \
+                "sudo hostnamectl set-hostname ${fqdn}"; then
+                echo "Error: Failed to set hostname for ${fqdn} (${instance_public_ip}). Aborting."
+                exit 1 # Exit script if hostname setting fails
+            fi
+            echo "Successfully set hostname for ${fqdn}."
 
-        # Install podman and lvm2
-        echo "Installing podman and lvm2 on ${fqdn}..."
-        if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${instance_public_ip}" \
-            "sudo dnf install -y podman lvm2"; then
-            echo "Error: Failed to install podman/lvm2 on ${fqdn} (${instance_public_ip}). Aborting."
-            exit 1 # Exit script if package installation fails
+            # Install podman and lvm2
+            echo "Installing podman and lvm2 on ${fqdn}..."
+            if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${instance_public_ip}" \
+                "sudo dnf install -y podman lvm2"; then
+                echo "Error: Failed to install podman/lvm2 on ${fqdn} (${instance_public_ip}). Aborting."
+                exit 1 # Exit script if package installation fails
+            fi
+            echo "Successfully installed podman and lvm2 on ${fqdn}."
+        else
+            echo "Skipping preparation for existing node ${TARGET_FQDNS[$i]}."
         fi
-        echo "Successfully installed podman and lvm2 on ${fqdn}."
     done
     echo "All new nodes prepared successfully."
 }
@@ -360,22 +403,30 @@ function configure_ceph_nodes() {
 }
 
 function wait_for_instance() {
-  public_ips=()  # Reset the global array
+  # This function now populates TARGET_PUBLIC_IPS and TARGET_INTERNAL_IPS for all instances in TARGET_INSTANCE_IDS
   echo "Waiting for instances to be ready..."
   local max_attempts=30
   local attempt=0
   
   while [ $attempt -lt $max_attempts ]; do
       all_ready=true
-      for instance_id in "${instance_ids[@]}"; do
-          instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
-              --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,InstanceType:InstanceType}' \
+      for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+          local instance_id=${TARGET_INSTANCE_IDS[$i]}
+          if [[ -z "$instance_id" ]]; then # Should not happen if discover_or_launch_instances worked
+              all_ready=false; break
+          fi
+          
+          local instance_info
+          instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids "$instance_id" \
+              --query 'Reservations[0].Instances[0].{State:State.Name,PublicIpAddress:PublicIpAddress,PrivateIpAddress:PrivateIpAddress,InstanceType:InstanceType}' \
               --output json 2>/dev/null)
           
           if [[ $? -eq 0 ]]; then
-              state=$(echo $instance_info | jq -r '.State')
-              public_ip=$(echo $instance_info | jq -r '.PublicIpAddress')
-              instance_type=$(echo $instance_info | jq -r '.InstanceType')
+              local state=$(echo "$instance_info" | jq -r '.State')
+              local public_ip=$(echo "$instance_info" | jq -r '.PublicIpAddress // ""')
+              local private_ip=$(echo "$instance_info" | jq -r '.PrivateIpAddress // ""')
+              TARGET_PUBLIC_IPS[$i]="$public_ip" # Update public IP
+              TARGET_INTERNAL_IPS[$i]="$private_ip" # Update private IP
               
               if [[ "$state" != "running" || "$public_ip" == "null" || -z "$public_ip" ]]; then
                   all_ready=false
@@ -399,18 +450,23 @@ function wait_for_instance() {
       exit 1
   fi
 
-  # Collect all public IPs
-  for instance_id in "${instance_ids[@]}"; do
-      ip_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
-          --query 'Reservations[0].Instances[0].{PublicIp:PublicIpAddress,PrivateIp:PrivateIpAddress}' --output json)
-      public_ip=$(echo "$ip_info" | jq -r '.PublicIp')
-      private_ip=$(echo "$ip_info" | jq -r '.PrivateIp')
-      public_ips+=("$public_ip")
-      internal_ips+=("$private_ip")
-  done
-
   echo "Waiting for SSH to become available on all instances..."
-  for public_ip in "${public_ips[@]}"; do
+  for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+      local public_ip=${TARGET_PUBLIC_IPS[$i]}
+      local fqdn=${TARGET_FQDNS[$i]}
+      local instance_id=${TARGET_INSTANCE_IDS[$i]}
+
+      if [[ -z "$public_ip" || "$public_ip" == "null" ]]; then
+          # If an existing instance lost its public IP or a new one failed to get one.
+          echo "Warning: Public IP for ${fqdn} (ID: ${instance_id}) is not available. SSH check might fail or be skipped."
+          # If it's a new instance, this is a critical failure.
+          if [[ "${IS_INSTANCE_NEW[$i]}" == true ]]; then
+              echo "Error: Newly created instance ${fqdn} (ID: ${instance_id}) has no public IP. Aborting."
+              exit 1
+          fi
+          continue # Skip SSH check for existing instances without public IP if that's acceptable.
+      fi
+
       max_ssh_attempts=30
       ssh_attempt=0
       sshout=$(mktemp -t ec2-XXX)
@@ -419,14 +475,14 @@ function wait_for_instance() {
               echo "SSH is available on $public_ip"
               break
           fi
-          printf "Debug ($public_ip): " && cat $sshout
-          echo "Waiting for SSH... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
+          printf "Debug SSH to ${fqdn} ($public_ip): " && cat $sshout
+          echo "Waiting for SSH on ${fqdn}... (Attempt $((ssh_attempt+1))/$max_ssh_attempts)"
           sleep 10
           ssh_attempt=$((ssh_attempt+1))
       done
 
       if [[ $ssh_attempt -eq $max_ssh_attempts ]]; then
-          echo "Error: SSH did not become available for $public_ip within the expected time."
+          echo "Error: SSH did not become available for ${fqdn} ($public_ip) within the expected time."
           exit 1
       fi
   done
@@ -449,7 +505,7 @@ AWSUSER2="${AWSUSER%@*}"
 : "${EC2_KEY_FILE:="~/.ssh/auto-ec2-${AWSACCOUNT}-${AWSUSER2}.pem"}"
 EC2_KEY_FILE=$(eval echo "${EC2_KEY_FILE}")
 
-launch_instance
+discover_or_launch_instances
 wait_for_instance
 prepare_new_nodes
 add_disks
@@ -459,17 +515,15 @@ configure_ceph_nodes
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 
 echo -e "\nInstance Information:"
-for i in "${!public_ips[@]}"; do
-    hostnum=$((i+1))
-    fqdn="${INSTANCE_NAME}-${hostnum}.${DOMAIN}"
-    echo "${fqdn}, external IP: ${public_ips[$i]}, internal IP: ${internal_ips[$i]}"
+for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+    local fqdn="${TARGET_FQDNS[$i]}"
+    echo "${fqdn}, external IP: ${TARGET_PUBLIC_IPS[$i]:-N/A}, internal IP: ${TARGET_INTERNAL_IPS[$i]:-N/A}"
 done
 
 echo -e "\nSSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
-for i in "${!public_ips[@]}"; do
-    hostnum=$((i+1))
-    fqdn="${INSTANCE_NAME}-${hostnum}.${DOMAIN}"
-    echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn} # External IP: ${public_ips[$i]}"
+for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+    local fqdn="${TARGET_FQDNS[$i]}"
+    echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn} # External IP: ${TARGET_PUBLIC_IPS[$i]:-N/A}"
 done
 
