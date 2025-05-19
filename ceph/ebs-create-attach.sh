@@ -43,23 +43,31 @@ for i in $(seq 1 $QUANTITY); do
 done
 
 # Attach volumes to the instance
-DEVICE_LETTERS=(b c d e f g h i j k l m n o p q r s t u v w x y z)
-COUNTER=2
+# For Nitro-based instances, EBS volumes are exposed to the OS as NVMe devices (e.g., /dev/nvme0n1, /dev/nvme1n1).
+# The --device parameter for the 'aws ec2 attach-volume' command acts as a hint.
+# AWS recommends using hints like /dev/sd[f-p] for Nitro instances and /dev/xvd[f-p] for Xen instances.
+# This script uses these recommended hints. The OS on a Nitro instance will still see the devices as /dev/nvmeXnY.
+DEVICE_LETTERS=(f g h i j k l m n o p q r s t u v w x y z) # Start from 'f' to avoid common root/ephemeral device letters
+COUNTER=0 # Initialize counter for the DEVICE_LETTERS array
 
-# Detect whether the instance uses NVMe or Xen
+# Detect whether the instance uses NVMe (Nitro) based on EnaSupport, a reliable indicator.
 IS_NITRO=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[0].Instances[0].EnaSupport" --output text 2>/dev/null)
 
 for VOLUME_ID in "${VOLUME_IDS[@]}"; do
-    DEVICE_NAME="/dev/xvd${DEVICE_LETTERS[$COUNTER]}"
-    if [[ "$IS_NITRO" != "True" ]]; then
-        # Xen instances use xvdX naming
-         echo "Attaching volume $VOLUME_ID to instance $INSTANCE_ID as $DEVICE_NAME"
+    device_hint_prefix=""
+    if [[ "$IS_NITRO" == "True" ]]; then
+        device_hint_prefix="/dev/sd"
+    else
+        device_hint_prefix="/dev/xvd"
     fi
+    actual_device_hint="${device_hint_prefix}${DEVICE_LETTERS[$COUNTER]}"
+    
+    echo "Attaching volume $VOLUME_ID to instance $INSTANCE_ID with device hint $actual_device_hint"
     
     aws ec2 attach-volume \
         --instance-id "$INSTANCE_ID" \
         --volume-id "$VOLUME_ID" \
-        --device "$DEVICE_NAME"
+        --device "$actual_device_hint"
 
     ((COUNTER++))
 done
