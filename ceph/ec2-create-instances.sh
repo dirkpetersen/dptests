@@ -109,6 +109,54 @@ function discover_or_launch_instances() {
         fi
     done
 
+    # Determine and configure the security group REGARDLESS of whether new instances are launched.
+    # This security group will be used by all instances, new or existing.
+    echo "Fetching security group ID for: ${EC2_SECURITY_GROUP}"
+    local security_group_id # Declare here so it's available for launch if needed
+    security_group_id=$(aws ec2 describe-security-groups \
+        --region "${AWS_REGION}" \
+        --filters "Name=group-name,Values=${EC2_SECURITY_GROUP}" \
+        --query 'SecurityGroups[0].GroupId' \
+        --output text)
+
+    if [[ -z "$security_group_id" ]]; then
+        echo "Error: Security group '${EC2_SECURITY_GROUP}' not found in region '${AWS_REGION}'."
+        exit 1
+    fi
+    echo "Using security group ID: ${security_group_id} (Name: ${EC2_SECURITY_GROUP})"
+
+    # Ensure the security group allows SSH from itself for intra-cluster communication (e.g., Ceph orchestration)
+    # Check if the rule already exists: TCP, port 22, source is the security group itself.
+    local rule_exists
+    rule_exists=$(aws ec2 describe-security-groups \
+        --region "${AWS_REGION}" \
+        --group-ids "${security_group_id}" \
+        --filters "Name=ip-permission.protocol,Values=tcp" \
+                  "Name=ip-permission.from-port,Values=22" \
+                  "Name=ip-permission.to-port,Values=22" \
+                  "Name=ip-permission.user-id-group-pairs.group-id,Values=${security_group_id}" \
+        --query "SecurityGroups[0].IpPermissions[?FromPort==\`22\` && ToPort==\`22\` && IpProtocol=='tcp' && UserIdGroupPairs[?GroupId=='${security_group_id}']].UserIdGroupPairs" \
+        --output text 2>/dev/null)
+
+    if [[ -z "$rule_exists" ]]; then
+        echo "Adding ingress rule to security group ${security_group_id} to allow SSH (port 22) from itself..."
+        if aws ec2 authorize-security-group-ingress \
+            --region "${AWS_REGION}" \
+            --group-id "${security_group_id}" \
+            --protocol tcp \
+            --port 22 \
+            --source-group "${security_group_id}"; then
+            echo "Successfully added SSH ingress rule (port 22, source: self) to security group ${security_group_id}."
+        else
+            echo "Error: Failed to add SSH ingress rule to security group ${security_group_id}. Ceph internode SSH might fail."
+            echo "Please manually add an Inbound rule: TCP, Port 22, Source: ${security_group_id}"
+            # Consider exiting here if this rule is critical and automation fails:
+            # exit 1 
+        fi
+    else
+        echo "SSH ingress rule (port 22, source: self) already exists in security group ${security_group_id}."
+    fi
+
     local num_to_launch=${#indices_to_create[@]}
     if [[ $num_to_launch -gt 0 ]]; then
         echo "Need to launch $num_to_launch new instance(s)."
@@ -133,12 +181,6 @@ function discover_or_launch_instances() {
             az_param="--placement AvailabilityZone=${AWS_AZ}"
             echo "Using specified availability zone for new instances: ${AWS_AZ}"
         fi
-
-        local security_group_id=$(aws ec2 describe-security-groups \
-            --region ${AWS_REGION} \
-            --filters "Name=group-name,Values=${EC2_SECURITY_GROUP}" \
-            --query 'SecurityGroups[0].GroupId' \
-            --output text)
 
         echo "Launching $num_to_launch instances..."
         local launch_output
