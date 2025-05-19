@@ -544,6 +544,6 @@ echo -e "\nSSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 for i in $(seq 0 $((NUM_INSTANCES - 1))); do
     fqdn="${TARGET_FQDNS[$i]}"
-    echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn} # External IP: ${TARGET_PUBLIC_IPS[$i]:-N/A}"
+    echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn}"
 done
 
