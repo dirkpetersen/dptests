@@ -1,3 +1,5 @@
+#! /bin/bash
+
 CEPH_RELEASE=19.2.2  # replace this with the active release
 
 curl -o /usr/local/bin/cephadm https://download.ceph.com/rpm-${CEPH_RELEASE}/el9/noarch/cephadm
@@ -14,5 +16,4 @@ else
     echo "EC2 metadata service not available, using hostname command..."
     export INTERNAL_IP=$(hostname -I | awk '{print $1}')
 fi
-
 /usr/local/bin/cephadm bootstrap --allow-fqdn-hostname --mon-ip ${INTERNAL_IP} --ssh-user rocky
