@@ -251,15 +251,7 @@ function prepare_new_nodes() {
                 echo "Successfully updated /etc/hosts for ${fqdn}."
             fi
 
-            # Install podman and lvm2
-            echo "Installing podman and lvm2 on ${fqdn}..."
-            if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${instance_public_ip}" \
-                "sudo dnf install -y podman lvm2"; then
-                echo "Error: Failed to install podman/lvm2 on ${fqdn} (${instance_public_ip}). Aborting."
-                exit 1 # Exit script if package installation fails
-            fi
-            echo "Successfully installed podman and lvm2 on ${fqdn}."
+            echo "Package installation (podman, lvm2) for ${fqdn} is handled by cloud-init."
         else
             echo "Skipping preparation for existing node ${TARGET_FQDNS[$i]}."
         fi
@@ -297,6 +289,22 @@ function configure_ceph_nodes() {
             echo "Error: Failed to copy ceph-bootstrap.sh to $key_source_node_fqdn_display. Aborting Ceph configuration."
             return 1
         fi
+
+        # Wait for podman to be installed by cloud-init
+        echo "Waiting for podman to be available on ${key_source_node_fqdn_display} (installed by cloud-init)..."
+        local podman_check_attempts=30 # Approx 5 minutes (30 * 10s)
+        local podman_check_count=0
+        while ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${key_source_node_ip}" "command -v podman" >/dev/null 2>&1; do
+            podman_check_count=$((podman_check_count + 1))
+            if [[ $podman_check_count -ge $podman_check_attempts ]]; then
+                echo "Error: podman did not become available on ${key_source_node_fqdn_display} after ${podman_check_attempts} attempts."
+                return 1
+            fi
+            echo "podman not yet available, waiting 10s... (Attempt ${podman_check_count}/${podman_check_attempts})"
+            sleep 10
+        done
+        echo "podman is available on ${key_source_node_fqdn_display}."
 
         echo "Running ceph-bootstrap.sh on $key_source_node_fqdn_display..."
         ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
