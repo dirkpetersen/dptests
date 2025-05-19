@@ -140,19 +140,29 @@ function discover_or_launch_instances() {
 
     if [[ -z "$rule_exists" ]]; then
         echo "Adding ingress rule to security group ${security_group_id} to allow SSH (port 22) from itself..."
+        local auth_stderr_file
+        auth_stderr_file=$(mktemp)
         if aws ec2 authorize-security-group-ingress \
             --region "${AWS_REGION}" \
             --group-id "${security_group_id}" \
             --protocol tcp \
             --port 22 \
-            --source-group "${security_group_id}"; then
+            --source-group "${security_group_id}" 2> "${auth_stderr_file}"; then
             echo "Successfully added SSH ingress rule (port 22, source: self) to security group ${security_group_id}."
         else
-            echo "Error: Failed to add SSH ingress rule to security group ${security_group_id}. Ceph internode SSH might fail."
-            echo "Please manually add an Inbound rule: TCP, Port 22, Source: ${security_group_id}"
-            # Consider exiting here if this rule is critical and automation fails:
-            # exit 1 
+            # Check if the error was because the rule already exists
+            if grep -q "InvalidPermission.Duplicate" "${auth_stderr_file}"; then
+                echo "SSH ingress rule (port 22, source: self) already exists in security group ${security_group_id} (confirmed by authorize attempt; this is not an error)."
+            else
+                # A real error occurred
+                echo "Error: Failed to add SSH ingress rule to security group ${security_group_id}. Ceph internode SSH might fail."
+                echo "AWS CLI Error: $(cat "${auth_stderr_file}")"
+                echo "Please manually add an Inbound rule: TCP, Port 22, Source: ${security_group_id}"
+                # Consider exiting here if this rule is critical and automation fails:
+                # exit 1
+            fi
         fi
+        rm -f "${auth_stderr_file}"
     else
         echo "SSH ingress rule (port 22, source: self) already exists in security group ${security_group_id}."
     fi
