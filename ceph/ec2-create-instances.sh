@@ -76,7 +76,7 @@ function discover_or_launch_instances() {
 
         if ! aws_cli_output=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=${tag_name}" "Name=instance-state-name,Values=pending,running" \
-            --query "Reservations[].Instances[].[?InstanceLifecycle!='spot'].{InstanceId:InstanceId,PublicIpAddress:PublicIpAddress,PrivateIpAddress:PrivateIpAddress,LaunchTime:LaunchTime}" \
+            --query "Reservations[].Instances[] | [?InstanceLifecycle!='spot'].{InstanceId:InstanceId,PublicIpAddress:PublicIpAddress,PrivateIpAddress:PrivateIpAddress,LaunchTime:LaunchTime}" \
             --output json 2> "${aws_cli_stderr_file}"); then
             echo "Warning: AWS CLI command failed for tag ${tag_name}. Error: $(cat "${aws_cli_stderr_file}")"
             existing_instance_info="null" # Treat as not found
