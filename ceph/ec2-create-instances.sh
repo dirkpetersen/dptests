@@ -313,10 +313,10 @@ function prepare_new_nodes() {
             local internal_ip_for_host="${TARGET_INTERNAL_IPS[$i]}"
             if [[ -n "$internal_ip_for_host" && "$internal_ip_for_host" != "null" ]]; then
                 echo "Updating /etc/hosts for ${fqdn} and ${short_hostname}..."
-                # Remove old entries for this FQDN or short hostname, then add the new ones
-                local update_hosts_cmd="sudo sed -i -e '/\\s${fqdn}\$/d' -e '/\\s${short_hostname}\$/d' /etc/hosts; \
-                echo '${instance_public_ip} ${fqdn}' | sudo tee -a /etc/hosts; \
-                echo '${internal_ip_for_host} ${short_hostname}' | sudo tee -a /etc/hosts"
+                # do not use: echo '${instance_public_ip} ${fqdn}' | sudo tee -a /etc/hosts; \
+                # Remove old entries for this FQDN or short hostname, then add the new ones                
+                local update_hosts_cmd="sudo sed -i -e '/\\s${fqdn}\$/d' -e '/\\s${short_hostname}\$/d' /etc/hosts; \                
+                echo '${internal_ip_for_host} ${fqdn} ${short_hostname}' | sudo tee -a /etc/hosts"
                 if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                     "${EC2_USER}@${instance_public_ip}" "${update_hosts_cmd}"; then
                     echo "Error: Failed to update /etc/hosts for ${fqdn} (${instance_public_ip}). Aborting."

@@ -16,4 +16,5 @@ else
     echo "EC2 metadata service not available, using hostname command..."
     export INTERNAL_IP=$(hostname -I | awk '{print $1}')
 fi
-/usr/local/bin/cephadm bootstrap --allow-fqdn-hostname --mon-ip ${INTERNAL_IP} --ssh-user rocky
+#/usr/local/bin/cephadm bootstrap --allow-fqdn-hostname --mon-ip ${INTERNAL_IP} --ssh-user rocky
+/usr/local/bin/cephadm bootstrap --mon-ip ${INTERNAL_IP} --ssh-user rocky
