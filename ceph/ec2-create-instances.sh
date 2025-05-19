@@ -50,7 +50,7 @@ fi
 : "${ROOT_VOLUME_SIZE:="16"}"
 : "${INSTANCE_NAME:="ceph-test"}"
 : "${DOMAIN:="ai.oregonstate.edu"}"
-: "${CLOUD_INIT_FILE:="ec2-cloud-init.txt.1"}"
+: "${CLOUD_INIT_FILE:="ec2-cloud-init.txt"}"
 : "${EC2_USER:="rocky"}"
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 : "${EBS_TYPE:="st1"}"
