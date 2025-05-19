@@ -27,6 +27,7 @@
 #   EBS_SIZE, EBS_QTY, EC2_KEY_NAME, EC2_KEY_FILE, AWS_AZ.
 
 declare -a public_ips
+declare -a internal_ips
 
 # AWS EC2 Instance Launch Script
 # This script launches a c7gd.medium EC2 instance with Rocky Linux 9
@@ -400,9 +401,12 @@ function wait_for_instance() {
 
   # Collect all public IPs
   for instance_id in "${instance_ids[@]}"; do
-      instance_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
-          --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-      public_ips+=("$instance_info")
+      ip_info=$(aws ec2 describe-instances --region ${AWS_REGION} --instance-ids $instance_id \
+          --query 'Reservations[0].Instances[0].{PublicIp:PublicIpAddress,PrivateIp:PrivateIpAddress}' --output json)
+      public_ip=$(echo "$ip_info" | jq -r '.PublicIp')
+      private_ip=$(echo "$ip_info" | jq -r '.PrivateIp')
+      public_ips+=("$public_ip")
+      internal_ips+=("$private_ip")
   done
 
   echo "Waiting for SSH to become available on all instances..."
@@ -453,11 +457,19 @@ register_dns
 configure_ceph_nodes
 
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
-echo "SSH commands to connect:"
+
+echo -e "\nInstance Information:"
+for i in "${!public_ips[@]}"; do
+    hostnum=$((i+1))
+    fqdn="${INSTANCE_NAME}-${hostnum}.${DOMAIN}"
+    echo "${fqdn}, external IP: ${public_ips[$i]}, internal IP: ${internal_ips[$i]}"
+done
+
+echo -e "\nSSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 for i in "${!public_ips[@]}"; do
     hostnum=$((i+1))
     fqdn="${INSTANCE_NAME}-${hostnum}.${DOMAIN}"
-    echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn}"
+    echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn} # External IP: ${public_ips[$i]}"
 done
 
