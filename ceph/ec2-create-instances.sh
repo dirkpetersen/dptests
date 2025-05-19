@@ -236,6 +236,21 @@ function prepare_new_nodes() {
             fi
             echo "Successfully set hostname for ${fqdn}."
 
+            # Update /etc/hosts to ensure FQDN resolves locally to the private IP
+            local internal_ip_for_host="${TARGET_INTERNAL_IPS[$i]}"
+            if [[ -n "$internal_ip_for_host" && "$internal_ip_for_host" != "null" ]]; then
+                echo "Updating /etc/hosts for ${fqdn} -> ${internal_ip_for_host}..."
+                # Remove old entries for this FQDN or short hostname, then add the new one
+                local short_hostname="${INSTANCE_NAME}-$(($i+1))"
+                local update_hosts_cmd="sudo sed -i -e '/\\s${fqdn}\$/d' -e '/\\s${short_hostname}\$/d' /etc/hosts; echo '${internal_ip_for_host} ${fqdn} ${short_hostname}' | sudo tee -a /etc/hosts"
+                if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                    "${EC2_USER}@${instance_public_ip}" "${update_hosts_cmd}"; then
+                    echo "Error: Failed to update /etc/hosts for ${fqdn} (${instance_public_ip}). Aborting."
+                    exit 1
+                fi
+                echo "Successfully updated /etc/hosts for ${fqdn}."
+            fi
+
             # Install podman and lvm2
             echo "Installing podman and lvm2 on ${fqdn}..."
             if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
