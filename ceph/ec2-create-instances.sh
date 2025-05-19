@@ -70,10 +70,28 @@ function discover_or_launch_instances() {
 
         echo "Checking for existing instance: $tag_name ($fqdn)..."
         local existing_instance_info
-        existing_instance_info=$(aws ec2 describe-instances \
+        local aws_cli_output
+        local aws_cli_stderr_file
+        aws_cli_stderr_file=$(mktemp)
+
+        if ! aws_cli_output=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=${tag_name}" "Name=instance-state-name,Values=pending,running" \
             --query "Reservations[].Instances[?InstanceLifecycle!='spot'].{InstanceId:InstanceId,PublicIpAddress:PublicIpAddress,PrivateIpAddress:PrivateIpAddress,LaunchTime:LaunchTime}" \
-            --output json | jq -c 'sort_by(.LaunchTime) | .[0] // null') # Get the oldest if multiple, or null
+            --output json 2> "${aws_cli_stderr_file}"); then
+            echo "Warning: AWS CLI command failed for tag ${tag_name}. Error: $(cat "${aws_cli_stderr_file}")"
+            existing_instance_info="null" # Treat as not found
+        else
+            # If AWS CLI succeeded, aws_cli_output contains the JSON
+            local jq_stderr_file
+            jq_stderr_file=$(mktemp)
+            if ! existing_instance_info=$(echo "${aws_cli_output}" | jq -c 'sort_by(.LaunchTime) | .[0] // null' 2> "${jq_stderr_file}"); then
+                echo "Warning: jq command failed for tag ${tag_name}. Error: $(cat "${jq_stderr_file}")"
+                echo "DEBUG: Input to jq for tag ${tag_name} was: ${aws_cli_output}" # Print the input that made jq fail
+                existing_instance_info="null" # Treat as not found
+            fi
+            rm -f "${jq_stderr_file}"
+        fi
+        rm -f "${aws_cli_stderr_file}"
 
         if [[ "$existing_instance_info" != "null" && -n "$existing_instance_info" ]]; then
             TARGET_INSTANCE_IDS[$i]=$(echo "$existing_instance_info" | jq -r '.InstanceId')
