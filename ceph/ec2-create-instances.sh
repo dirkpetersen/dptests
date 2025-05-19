@@ -300,11 +300,11 @@ function prepare_new_nodes() {
             local short_hostname="${fqdn%%.*}"
             
             # Set hostname
-            echo "Setting hostname to ${fqdn}..."
+            echo "Setting hostname to ${short_hostname} (${fqdn} )..."
             if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                 "${EC2_USER}@${instance_public_ip}" \
-                "sudo hostnamectl set-hostname ${fqdn}"; then
-                echo "Error: Failed to set hostname for ${fqdn} (${instance_public_ip}). Aborting."
+                "sudo hostnamectl set-hostname ${short_hostname}"; then
+                echo "Error: Failed to set hostname for ${short_hostname} (${instance_public_ip}). Aborting."
                 exit 1 # Exit script if hostname setting fails
             fi
             echo "Successfully set hostname for ${fqdn} (short name: ${short_hostname})."
@@ -319,10 +319,10 @@ function prepare_new_nodes() {
                 echo '${internal_ip_for_host} ${fqdn} ${short_hostname}' | sudo tee -a /etc/hosts"
                 if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                     "${EC2_USER}@${instance_public_ip}" "${update_hosts_cmd}"; then
-                    echo "Error: Failed to update /etc/hosts for ${fqdn} (${instance_public_ip}). Aborting."
+                    echo "Error: Failed to update /etc/hosts for ${internal_ip_for_host} ${fqdn} ${short_hostname} (${instance_public_ip}). Aborting."
                     exit 1
                 fi
-                echo "Successfully updated /etc/hosts: ${fqdn} -> ${instance_public_ip}, ${short_hostname} -> ${internal_ip_for_host}"
+                echo "Successfully updated /etc/hosts:  ${internal_ip_for_host} ${fqdn} ${short_hostname}  -> ${internal_ip_for_host}"
             fi
 
             echo "Package installation (podman, lvm2) for ${fqdn} is handled by cloud-init."
