@@ -296,15 +296,18 @@ function prepare_new_nodes() {
             
             echo "Preparing new node ${fqdn} (${instance_public_ip})..."
 
+            # Extract short hostname from FQDN
+            local short_hostname="${fqdn%%.*}"
+            
             # Set hostname
             echo "Setting hostname to ${fqdn}..."
             if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                 "${EC2_USER}@${instance_public_ip}" \
-                "sudo hostnamectl set-hostname ${short_hostname}"; then
-                echo "Error: Failed to set hostname for ${short_hostname} (${instance_public_ip}). Aborting."
+                "sudo hostnamectl set-hostname ${fqdn}"; then
+                echo "Error: Failed to set hostname for ${fqdn} (${instance_public_ip}). Aborting."
                 exit 1 # Exit script if hostname setting fails
             fi
-            echo "Successfully set hostname for ${fqdn}."
+            echo "Successfully set hostname for ${fqdn} (short name: ${short_hostname})."
 
             # Update /etc/hosts to ensure FQDN resolves to external IP and short hostname to internal IP
             local internal_ip_for_host="${TARGET_INTERNAL_IPS[$i]}"
