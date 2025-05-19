@@ -518,14 +518,14 @@ echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 
 echo -e "\nInstance Information:"
 for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-    local fqdn="${TARGET_FQDNS[$i]}"
+    fqdn="${TARGET_FQDNS[$i]}"
     echo "${fqdn}, external IP: ${TARGET_PUBLIC_IPS[$i]:-N/A}, internal IP: ${TARGET_INTERNAL_IPS[$i]:-N/A}"
 done
 
 echo -e "\nSSH commands to connect:"
 FILE2=~${EC2_KEY_FILE#"$HOME"}
 for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-    local fqdn="${TARGET_FQDNS[$i]}"
+    fqdn="${TARGET_FQDNS[$i]}"
     echo "ssh -i '${FILE2}' ${EC2_USER}@${fqdn} # External IP: ${TARGET_PUBLIC_IPS[$i]:-N/A}"
 done
 
