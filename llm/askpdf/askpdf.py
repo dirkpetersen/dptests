@@ -10,7 +10,7 @@ import sys
 
 # --- Configuration Constants ---
 # Model ID for Amazon Nova Pro
-NOVA_PRO_MODEL_ID = "amazon.nova-pro-v1:0"
+NOVA_PRO_MODEL_ID = "us.amazon.nova-pro-v1:0"
 # AWS Region for Bedrock and S3 services
 AWS_REGION = "us-east-1" # You can change this if needed
 
