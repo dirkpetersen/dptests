@@ -60,6 +60,7 @@ def highlight_paragraph(paragraph, compiled_patterns):
             # re.split with a capturing group will include the matched delimiters in the result
             # e.g., pattern=(r'(\bterm\b)'), text='before term after' -> ['before ', 'term', ' after']
             try:
+                # pattern already has re.IGNORECASE flag from compilation
                 text_parts = pattern.split(run.text)
             except re.error: # Should not happen if patterns are pre-compiled correctly
                 run_idx +=1
@@ -176,6 +177,7 @@ def get_compiled_search_patterns(raw_terms):
         # For "term name", \bterm name\b works.
         pattern_str = r'(\b' + re.escape(var_text) + r'\b)'
         try:
+            # Ensure case insensitive search is applied
             compiled_patterns.append((re.compile(pattern_str, re.IGNORECASE), var_text))
         except re.error as e:
             print(f"Warning: Could not compile regex for term '{var_text}': {e}")
@@ -237,6 +239,7 @@ def main():
         return
 
     print(f"Looking for .docx files in: {folder.resolve()}")
+    print(f"Loaded {len(raw_terms)} terms for case-insensitive highlighting")
     docx_files_found = False
     for doc_path in folder.glob("*.docx"):
         if doc_path.name.startswith("~"): # Skip temporary Word files
