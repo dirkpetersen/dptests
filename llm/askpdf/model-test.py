@@ -16,11 +16,12 @@ DEFAULT_MAX_TOKENS = 1024
 DEFAULT_TOP_P = 0.9
 DEFAULT_TEMPERATURE = 0.2
 
-def list_bedrock_models(region):
+def list_bedrock_models(region, profile=None):
     """List all Bedrock models available to the user."""
     try:
         # Use the bedrock client (not bedrock-runtime) to list models
-        bedrock_client = boto3.client("bedrock", region_name=region)
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
+        bedrock_client = session.client("bedrock", region_name=region)
         response = bedrock_client.list_foundation_models()
         
         print("\nAvailable Bedrock Models:")
@@ -67,6 +68,11 @@ def main():
         help=f"AWS region for Bedrock. Default: {AWS_REGION}"
     )
     parser.add_argument(
+        "--profile",
+        type=str,
+        help="AWS profile name to use for credentials"
+    )
+    parser.add_argument(
         "--max-tokens",
         type=int,
         default=DEFAULT_MAX_TOKENS,
@@ -94,12 +100,13 @@ def main():
 
     # If --list is specified, list models and exit
     if args.list:
-        list_bedrock_models(args.region)
+        list_bedrock_models(args.region, args.profile)
         return
 
     try:
-        # Initialize Bedrock client
-        bedrock_client = boto3.client("bedrock-runtime", region_name=args.region)
+        # Initialize Bedrock client with optional profile
+        session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
+        bedrock_client = session.client("bedrock-runtime", region_name=args.region)
         
         # Prepare the message payload
         messages = [

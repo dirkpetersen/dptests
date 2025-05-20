@@ -119,6 +119,11 @@ def main():
         help=f"AWS region for Bedrock and S3. Default: {AWS_REGION}"
     )
     parser.add_argument(
+        "--profile",
+        type=str,
+        help="AWS profile name to use for credentials"
+    )
+    parser.add_argument(
         "--max-tokens",
         type=int,
         default=DEFAULT_MAX_TOKENS,
@@ -152,7 +157,9 @@ def main():
     s3_bucket_name = args.bucket
     s3_keys_uploaded = []
 
-    bedrock_client = boto3.client("bedrock-runtime", region_name=args.region)
+    # Initialize AWS session with optional profile
+    session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
+    bedrock_client = session.client("bedrock-runtime", region_name=args.region)
     s3_client = None
     aws_account_id = None
 
@@ -165,9 +172,9 @@ def main():
             print(f"Error: Number of documents ({num_documents}) exceeds the S3 limit of {MAX_DOCS_FOR_S3_PAYLOAD}.", file=sys.stderr)
             sys.exit(1)
         
-        s3_client = boto3.client("s3", region_name=args.region)
+        s3_client = session.client("s3", region_name=args.region)
         try:
-            sts_client = boto3.client("sts", region_name=args.region)
+            sts_client = session.client("sts", region_name=args.region)
             aws_account_id = sts_client.get_caller_identity()["Account"]
         except Exception as e:
             print(f"Error: Could not retrieve AWS Account ID for S3 bucket owner: {e}", file=sys.stderr)
