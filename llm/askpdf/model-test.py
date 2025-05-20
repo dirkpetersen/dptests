@@ -16,9 +16,37 @@ DEFAULT_MAX_TOKENS = 1024
 DEFAULT_TOP_P = 0.9
 DEFAULT_TEMPERATURE = 0.2
 
+def list_bedrock_models(region):
+    """List all Bedrock models available to the user."""
+    try:
+        # Use the bedrock client (not bedrock-runtime) to list models
+        bedrock_client = boto3.client("bedrock", region_name=region)
+        response = bedrock_client.list_foundation_models()
+        
+        print("\nAvailable Bedrock Models:")
+        print("-" * 80)
+        print(f"{'Model ID':<50} {'Provider':<15} {'Status'}")
+        print("-" * 80)
+        
+        for model in response.get('modelSummaries', []):
+            model_id = model.get('modelId', 'N/A')
+            provider = model.get('providerName', 'N/A')
+            status = model.get('modelLifecycle', {}).get('status', 'N/A')
+            print(f"{model_id:<50} {provider:<15} {status}")
+            
+        return True
+    except Exception as e:
+        print(f"\nError listing Bedrock models: {e}", file=sys.stderr)
+        return False
+
 def main():
     parser = argparse.ArgumentParser(
         description="Test an Amazon Bedrock model with a simple prompt."
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List all available Bedrock models and exit."
     )
     parser.add_argument(
         "--model-id",
@@ -63,6 +91,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # If --list is specified, list models and exit
+    if args.list:
+        list_bedrock_models(args.region)
+        return
 
     try:
         # Initialize Bedrock client
