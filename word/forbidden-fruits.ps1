@@ -21,7 +21,12 @@ function Load-TermsFromFile {
     )
     try {
         if (Test-Path -Path $FilePath -PathType Leaf) {
-            return Get-Content -Path $FilePath | Where-Object { $_.Trim() -ne "" }
+            # Read all lines and filter out empty ones
+            $terms = Get-Content -Path $FilePath -Raw | 
+                     ForEach-Object { $_ -split "`r`n|\r|\n" } | 
+                     Where-Object { $_.Trim() -ne "" }
+            Write-Host "Loaded $(($terms | Measure-Object).Count) terms from file."
+            return $terms
         } else {
             Write-Error "Terms file not found: $FilePath"
             return $null
@@ -165,6 +170,7 @@ if (-not $rawTerms) {
 # 2. Generate all term variations and de-duplicate
 $allTermsToHighlight = [System.Collections.ArrayList]::new()
 foreach ($term in $rawTerms) {
+    Write-Host "Processing term: $term"
     $variations = Generate-TermVariations -Term $term
     foreach ($variation in $variations) {
         [void]$allTermsToHighlight.Add($variation)
@@ -176,7 +182,8 @@ if ($uniqueTermsToHighlight.Count -eq 0) {
     Write-Warning "No valid terms to highlight after processing variations. Exiting."
     exit 0
 }
-Write-Host "Terms and variations to search for: $($uniqueTermsToHighlight -join ', ')"
+Write-Host "Generated $(($uniqueTermsToHighlight | Measure-Object).Count) unique terms and variations to search for."
+Write-Host "First 10 terms: $($uniqueTermsToHighlight | Select-Object -First 10 | ForEach-Object { "'$_'" } | Join-String -Separator ', ')"
 
 # 3. Initialize Word Application
 $wordApp = $null
