@@ -120,7 +120,8 @@ function Process-WordDocument {
             }
             
             # Update the term counts in the reference hashtable
-            if ($termCount -gt 0 -and $TermCountsRef -ne $null) {
+            if ($TermCountsRef -ne $null) {
+                # Always update the hashtable, even if count is 0
                 if ($TermCountsRef.ContainsKey($term)) {
                     $TermCountsRef[$term] += $termCount
                 } else {
@@ -209,8 +210,15 @@ if ($wordFiles.Count -eq 0) {
     # 6. Display term counts in a table, sorted by frequency
     if ($termCounts.Count -gt 0) {
         Write-Host "`n--- Highlighted Terms Summary ---"
+        
+        # Make sure all terms from uniqueTermsToHighlight are in the counts hashtable
+        foreach ($term in $uniqueTermsToHighlight) {
+            if (-not $termCounts.ContainsKey($term)) {
+                $termCounts[$term] = 0
+            }
+        }
+        
         $termCounts.GetEnumerator() | 
-            Where-Object { $_.Value -gt 0 } | 
             Sort-Object -Property Value -Descending | 
             Select-Object @{Name="Term"; Expression={$_.Key}}, @{Name="Count"; Expression={$_.Value}} | 
             Format-Table -AutoSize
