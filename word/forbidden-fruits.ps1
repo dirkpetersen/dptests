@@ -9,6 +9,9 @@ param (
     [string]$TermsFilePath
 )
 
+# Load the Word interop assembly
+Add-Type -AssemblyName Microsoft.Office.Interop.Word
+
 # Function to load terms from a file
 function Load-TermsFromFile {
     [CmdletBinding()]
@@ -43,8 +46,11 @@ function Generate-TermVariations {
     if ($trimmedTerm.Length -gt 0) {
         [void]$variations.Add($trimmedTerm)
         if ($trimmedTerm.Contains(" ")) {
-            [void]$variations.Add($trimmedTerm -replace " ", "-")
-            [void]$variations.Add($trimmedTerm -replace " ", "")
+            # Create variations and add them separately
+            $hyphenated = $trimmedTerm -replace " ", "-"
+            $noSpaces = $trimmedTerm -replace " ", ""
+            [void]$variations.Add($hyphenated)
+            [void]$variations.Add($noSpaces)
         }
     }
     return $variations | Select-Object -Unique
@@ -64,7 +70,7 @@ function Process-WordDocument {
         [System.Object]$WordApplication, # Word.Application COM object
 
         [Parameter(Mandatory=$true)]
-        [Microsoft.Office.Interop.Word.WdColorIndex]$HighlightColor
+        [int]$HighlightColor
     )
 
     $doc = $null
@@ -84,7 +90,7 @@ function Process-WordDocument {
 
             $find.Text = $term
             $find.Forward = $true
-            $find.Wrap = [Microsoft.Office.Interop.Word.WdFindWrap]::wdFindStop # 0 = wdFindStop
+            $find.Wrap = $wdFindStop # 0 = wdFindStop
             $find.Format = $false
             $find.MatchCase = $false
             $find.MatchWholeWord = $true
@@ -127,8 +133,9 @@ function Process-WordDocument {
 
 # --- Main Script Execution ---
 
-# Define Word constants
-$wdYellow = [Microsoft.Office.Interop.Word.WdColorIndex]::wdYellow # Enum value is 7
+# Define Word constants - using integer values directly
+$wdYellow = 7 # wdYellow constant value
+$wdFindStop = 0 # wdFindStop constant value
 
 # 1. Load terms from the file
 Write-Host "Loading terms from: $TermsFilePath"
