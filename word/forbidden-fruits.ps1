@@ -70,7 +70,10 @@ function Process-WordDocument {
         [System.Object]$WordApplication, # Word.Application COM object
 
         [Parameter(Mandatory=$true)]
-        [int]$HighlightColor
+        [int]$HighlightColor,
+        
+        [Parameter(Mandatory=$false)]
+        [hashtable]$TermCountsRef
     )
 
     $doc = $null
@@ -98,6 +101,9 @@ function Process-WordDocument {
             $find.MatchSoundsLike = $false
             $find.MatchAllWordForms = $false
 
+            # Count occurrences for this term in this document
+            $termCount = 0
+            
             # Execute Find in a loop for all occurrences
             # The $contentRange is updated by $find.Execute() to the found range.
             # The next Execute() call continues from the end of the previously found range.
@@ -105,11 +111,21 @@ function Process-WordDocument {
                 # Check if the found range ($contentRange) needs highlighting
                 if ($contentRange.HighlightColorIndex -ne $HighlightColor) {
                     $contentRange.HighlightColorIndex = $HighlightColor
+                    $termCount++
                 }
                 # $contentRange is now the found instance.
                 # To prevent re-finding the same instance in some edge cases or if search doesn't advance,
                 # one might collapse the range to its end: $contentRange.Collapse([Microsoft.Office.Interop.Word.WdCollapseDirection]::wdCollapseEnd)
                 # However, standard Find.Execute() loop handles advancing correctly.
+            }
+            
+            # Update the term counts in the reference hashtable
+            if ($termCount -gt 0 -and $TermCountsRef -ne $null) {
+                if ($TermCountsRef.ContainsKey($term)) {
+                    $TermCountsRef[$term] += $termCount
+                } else {
+                    $TermCountsRef[$term] = $termCount
+                }
             }
         }
 
@@ -181,13 +197,29 @@ if ($wordFiles.Count -eq 0) {
     Write-Warning "No Word documents found in '$FolderPath' or its subfolders."
 } else {
     Write-Host "Found $($wordFiles.Count) Word document(s) to process."
+    
+    # Create a hashtable to track term counts across all documents
+    $termCounts = @{}
+    
     # 5. Process each document
     foreach ($fileInfo in $wordFiles) {
-        Process-WordDocument -DocumentPath $fileInfo.FullName -TermsToHighlight $uniqueTermsToHighlight -WordApplication $wordApp -HighlightColor $wdYellow
+        Process-WordDocument -DocumentPath $fileInfo.FullName -TermsToHighlight $uniqueTermsToHighlight -WordApplication $wordApp -HighlightColor $wdYellow -TermCountsRef $termCounts
+    }
+    
+    # 6. Display term counts in a table, sorted by frequency
+    if ($termCounts.Count -gt 0) {
+        Write-Host "`n--- Highlighted Terms Summary ---"
+        $termCounts.GetEnumerator() | 
+            Where-Object { $_.Value -gt 0 } | 
+            Sort-Object -Property Value -Descending | 
+            Select-Object @{Name="Term"; Expression={$_.Key}}, @{Name="Count"; Expression={$_.Value}} | 
+            Format-Table -AutoSize
+    } else {
+        Write-Host "No terms were highlighted in any documents."
     }
 }
 
-# 6. Clean up: Close Word application and release COM object
+# 7. Clean up: Close Word application and release COM object
 if ($wordApp -ne $null) {
     Write-Host "Closing Microsoft Word application."
     $wordApp.Quit()
