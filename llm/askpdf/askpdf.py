@@ -194,7 +194,7 @@ def main():
                 upload_to_s3(s3_client, s3_bucket_name, file_path, s3_key)
                 s3_keys_uploaded.append(s3_key)
                 document_source = {
-                    "s3Location": {
+                    "s3": {
                         "uri": f"s3://{s3_bucket_name}/{s3_key}",
                         "bucketOwner": aws_account_id
                     }
