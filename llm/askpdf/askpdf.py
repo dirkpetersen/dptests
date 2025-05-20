@@ -193,13 +193,11 @@ def main():
                 s3_key = f"{S3_UPLOAD_PREFIX}{uuid.uuid4()}-{os.path.basename(file_path)}"
                 upload_to_s3(s3_client, s3_bucket_name, file_path, s3_key)
                 s3_keys_uploaded.append(s3_key)
-                document_source = {
-                    "bytes": None,
-                    "s3Location": {
-                        "uri": f"s3://{s3_bucket_name}/{s3_key}",
-                        "bucketOwner": aws_account_id
-                    }
-                }
+                # For S3 documents, we need to download them first and then send as bytes
+                # since the API doesn't directly support s3Location parameter
+                s3_obj = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
+                doc_bytes = s3_obj['Body'].read()
+                document_source = {"bytes": doc_bytes}
             else: # Use bytes
                 with open(file_path, "rb") as f:
                     doc_bytes = f.read()
