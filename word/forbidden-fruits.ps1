@@ -86,11 +86,12 @@ function Process-WordDocument {
         Write-Host "Opening document: $DocumentPath"
         $doc = $WordApplication.Documents.Open($DocumentPath)
 
-        $contentRange = $doc.Content
-        $find = $contentRange.Find
-
         foreach ($term in $TermsToHighlight) {
             if (-not ($term -and $term.Trim())) { continue } # Skip empty terms
+
+            # For each term, get a fresh range representing the entire document content
+            $currentSearchDocRange = $doc.Content
+            $find = $currentSearchDocRange.Find
 
             # Reset find parameters for each term
             $find.ClearFormatting()
@@ -110,17 +111,17 @@ function Process-WordDocument {
             $termCount = 0
             
             # Execute Find in a loop for all occurrences
-            # The $contentRange is updated by $find.Execute() to the found range.
+            # The $currentSearchDocRange is updated by $find.Execute() to the found range.
             # The next Execute() call continues from the end of the previously found range.
             while ($find.Execute()) {
-                # Check if the found range ($contentRange) needs highlighting
-                if ($contentRange.HighlightColorIndex -ne $HighlightColor) {
-                    $contentRange.HighlightColorIndex = $HighlightColor
+                # Check if the found range ($currentSearchDocRange) needs highlighting
+                if ($currentSearchDocRange.HighlightColorIndex -ne $HighlightColor) {
+                    $currentSearchDocRange.HighlightColorIndex = $HighlightColor
                     $termCount++
                 }
-                # $contentRange is now the found instance.
+                # $currentSearchDocRange is now the found instance.
                 # To prevent re-finding the same instance in some edge cases or if search doesn't advance,
-                # one might collapse the range to its end: $contentRange.Collapse([Microsoft.Office.Interop.Word.WdCollapseDirection]::wdCollapseEnd)
+                # one might collapse the range to its end: $currentSearchDocRange.Collapse([Microsoft.Office.Interop.Word.WdCollapseDirection]::wdCollapseEnd)
                 # However, standard Find.Execute() loop handles advancing correctly.
             }
             
