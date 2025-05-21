@@ -183,7 +183,7 @@ if ($uniqueTermsToHighlight.Count -eq 0) {
     exit 0
 }
 Write-Host "Generated $(($uniqueTermsToHighlight | Measure-Object).Count) unique terms and variations to search for."
-Write-Host "First 10 terms: $($uniqueTermsToHighlight | Select-Object -First 10 | ForEach-Object { "'$_'" } | Join-String -Separator ', ')"
+Write-Host "First 10 terms: $($uniqueTermsToHighlight | Select-Object -First 10 | ForEach-Object { "'$_'" } -join ', ')"
 
 # 3. Initialize Word Application
 $wordApp = $null
