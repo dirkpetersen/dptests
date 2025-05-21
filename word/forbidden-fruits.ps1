@@ -168,10 +168,11 @@ if (-not $rawTerms) {
     exit 1
 }
 
+Write-Host "Processing raw terms: $($rawTerms -join ', ')"
+
 # 2. Generate all term variations and de-duplicate
 $allTermsToHighlight = [System.Collections.ArrayList]::new()
 foreach ($term in $rawTerms) {
-    Write-Host "Processing term: $term"
     $variations = Generate-TermVariations -Term $term
     foreach ($variation in $variations) {
         [void]$allTermsToHighlight.Add($variation)
