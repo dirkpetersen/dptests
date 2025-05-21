@@ -226,10 +226,17 @@ if ($wordFiles.Count -eq 0) {
             }
         }
         
-        $termCounts.GetEnumerator() | 
+        # Only show terms with at least one occurrence
+        $termsWithOccurrences = $termCounts.GetEnumerator() | 
+            Where-Object { $_.Value -gt 0 } |
             Sort-Object -Property Value -Descending | 
-            Select-Object @{Name="Term"; Expression={$_.Key}}, @{Name="Count"; Expression={$_.Value}} | 
-            Format-Table -AutoSize
+            Select-Object @{Name="Term"; Expression={$_.Key}}, @{Name="Count"; Expression={$_.Value}}
+            
+        if ($termsWithOccurrences.Count -gt 0) {
+            $termsWithOccurrences | Format-Table -AutoSize
+        } else {
+            Write-Host "No terms were found in any documents."
+        }
     } else {
         Write-Host "No terms were highlighted in any documents."
     }
