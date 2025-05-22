@@ -7,10 +7,11 @@ import json
 import uuid
 import re
 import sys
+from botocore.exceptions import ClientError
 
 # --- Configuration Constants ---
-# Model ID for Amazon Nova Pro
-NOVA_PRO_MODEL_ID = "us.amazon.nova-pro-v1:0"
+# Default Model ID for Amazon Nova Pro
+DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-pro-v1:0"
 # AWS Region for Bedrock and S3 services
 AWS_REGION = "us-east-1" # You can change this if needed
 
@@ -141,8 +142,15 @@ def main():
         default=DEFAULT_TOP_P,
         help=f"Top P for model's response generation. Default: {DEFAULT_TOP_P}"
     )
+    parser.add_argument(
+        "--model-id",
+        type=str,
+        default=DEFAULT_BEDROCK_MODEL_ID,
+        help=f"The Bedrock model ID to use. Default: {DEFAULT_BEDROCK_MODEL_ID}"
+    )
 
     args = parser.parse_args()
+    current_model_id = args.model_id
 
     try:
         pdf_file_paths, total_size_bytes = get_pdf_files_details(args.path)
@@ -229,9 +237,9 @@ def main():
             "topP": args.top_p
         }
 
-        print("\nSending request to Amazon Bedrock (Nova Pro)...")
+        print(f"\nSending request to Amazon Bedrock ({current_model_id})...")
         response = bedrock_client.converse(
-            modelId=NOVA_PRO_MODEL_ID,
+            modelId=current_model_id,
             messages=messages,
             inferenceConfig=inference_config
             # system_prompt could be added here if needed
@@ -245,11 +253,32 @@ def main():
         # print("\n[Full API Response]")
         # print(json.dumps(response, indent=2))
 
-    except Exception as e:
-        print(f"\nAn error occurred: {e}", file=sys.stderr)
-        # Potentially print more details from Bedrock error if available
-        if hasattr(e, 'response') and 'Error' in e.response:
-            print(f"Bedrock Error: {e.response['Error']}", file=sys.stderr)
+    except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code")
+        error_message = e.response.get("Error", {}).get("Message", str(e))
+        
+        base_error_text = f"A Bedrock API error occurred with model {current_model_id}"
+        specific_error_info = f"Bedrock Error Code: {error_code}, Message: {error_message}"
+
+        full_message = f"\n{base_error_text}.\n{specific_error_info}"
+
+        if error_code == "ValidationException" and "Input is too long" in error_message:
+            full_message += (
+                "\n\n[Additional Diagnostics]:"
+                "\nThis error usually means the document content, after being processed, "
+                "exceeds the model's token limit or processing capacity."
+                f"\nModel used: {current_model_id}."
+                "\nConsider the following:"
+                "\n1. Use a smaller document or one with less textual content."
+                "\n2. If you have access, try a model with a larger context window. You can specify one using the --model-id option."
+                "\n   (e.g., some Claude models support up to 200K tokens)."
+                "\n3. The S3 upload was likely successful, but the model couldn't handle the content size."
+            )
+        
+        print(full_message, file=sys.stderr)
+        sys.exit(1)
+    except Exception as e: # General fallback for non-ClientError exceptions
+        print(f"\nAn unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
         if use_s3 and s3_keys_uploaded:
