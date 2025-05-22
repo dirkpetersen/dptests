@@ -76,7 +76,7 @@ def main():
         "--max-tokens",
         type=int,
         default=DEFAULT_MAX_TOKENS,
-        help=f"Maximum tokens for the model's response. Default: {DEFAULT_MAX_TOKENS}"
+        help=f"Maximum tokens for the model's output response. Default: {DEFAULT_MAX_TOKENS}"
     )
     parser.add_argument(
         "--temperature",
