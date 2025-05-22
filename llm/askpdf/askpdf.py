@@ -24,7 +24,8 @@ MAX_DOCS_FOR_S3_PAYLOAD = 1000
 S3_UPLOAD_PREFIX = "askpdf_temp_uploads/"
 
 # Bedrock inference parameters
-DEFAULT_MAX_TOKENS = 2048
+DEFAULT_INPUT_TOKENS = 30000  # Placeholder for typical model context window
+DEFAULT_OUTPUT_TOKENS = 2048
 DEFAULT_TOP_P = 0.9
 DEFAULT_TEMPERATURE = 0.2
 
@@ -125,10 +126,16 @@ def main():
         help="AWS profile name to use for credentials"
     )
     parser.add_argument(
-        "--max-tokens",
+        "--output-tokens",
         type=int,
-        default=DEFAULT_MAX_TOKENS,
-        help=f"Maximum tokens for the model's output response. Default: {DEFAULT_MAX_TOKENS}"
+        default=DEFAULT_OUTPUT_TOKENS,
+        help=f"Maximum tokens for the model's output response. Default: {DEFAULT_OUTPUT_TOKENS}"
+    )
+    parser.add_argument(
+        "--input-tokens",
+        type=int,
+        default=DEFAULT_INPUT_TOKENS,
+        help=f"Informational: Target/assumed input token capacity. Not directly enforced by the API for document inputs. Default: {DEFAULT_INPUT_TOKENS}"
     )
     parser.add_argument(
         "--temperature",
@@ -232,7 +239,7 @@ def main():
         messages = [{"role": "user", "content": content_payload}]
 
         inference_config = {
-            "maxTokens": args.max_tokens,
+            "maxTokens": args.output_tokens,
             "temperature": args.temperature,
             "topP": args.top_p
         }

@@ -12,7 +12,8 @@ AWS_REGION = "us-east-1"
 DEFAULT_MODEL_ID = "us.amazon.nova-pro-v1:0"
 
 # Default inference parameters
-DEFAULT_MAX_TOKENS = 1024
+DEFAULT_INPUT_TOKENS = 8000  # Placeholder, e.g. for text models
+DEFAULT_OUTPUT_TOKENS = 1024
 DEFAULT_TOP_P = 0.9
 DEFAULT_TEMPERATURE = 0.2
 
@@ -73,10 +74,16 @@ def main():
         help="AWS profile name to use for credentials"
     )
     parser.add_argument(
-        "--max-tokens",
+        "--output-tokens",
         type=int,
-        default=DEFAULT_MAX_TOKENS,
-        help=f"Maximum tokens for the model's output response. Default: {DEFAULT_MAX_TOKENS}"
+        default=DEFAULT_OUTPUT_TOKENS,
+        help=f"Maximum tokens for the model's output response. Default: {DEFAULT_OUTPUT_TOKENS}"
+    )
+    parser.add_argument(
+        "--input-tokens",
+        type=int,
+        default=DEFAULT_INPUT_TOKENS,
+        help=f"Informational: Target/assumed input token capacity for the prompt. Not directly enforced by the API. Default: {DEFAULT_INPUT_TOKENS}"
     )
     parser.add_argument(
         "--temperature",
@@ -121,7 +128,7 @@ def main():
         ]
 
         inference_config = {
-            "maxTokens": args.max_tokens,
+            "maxTokens": args.output_tokens,
             "temperature": args.temperature,
             "topP": args.top_p
         }
