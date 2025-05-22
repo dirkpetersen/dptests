@@ -68,7 +68,8 @@ input_document = 'ChrisM.pdf'
 
 try:
 
-    bedrock_client = boto3.client(service_name="bedrock-runtime")
+    bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=region)
+    print(f"Bedrock client configured for region: {bedrock_client.meta.region_name}")
 
     response = document_conversation(
         bedrock_client, model_id, input_text, input_document)
