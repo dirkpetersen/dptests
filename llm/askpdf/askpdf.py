@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 
 # --- Configuration Constants ---
 # Default Model ID for Amazon Nova Pro
-DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-pro-v1:0"
+DEFAULT_BEDROCK_MODEL_ID = "amazon.titan-text-express-v1"
 # AWS Region for Bedrock and S3 services
 AWS_REGION = "us-east-1" # You can change this if needed
 
