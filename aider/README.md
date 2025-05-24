@@ -140,7 +140,7 @@ When you refresh your browser you will see that the color has changed.
 
 ## more useful Aider options
 
-you can also enter the model directly on the cli, for example if you are using the default AWS profile
+you can also enter the model directly on the cli, for example if you are using the default AWS profile or you want to override your settings 
 
 ```
 aider --model bedrock/us.anthropic.claude-opus-4-20250514-v1:0
@@ -149,14 +149,14 @@ aider --model bedrock/us.anthropic.claude-opus-4-20250514-v1:0
 or if you prefer to interact with [Aider through a Browser](https://aider.chat/docs/usage/browser.html) instead of a terminal you can use the --browser option:
 
 ```
-aider --env-file "$HOME/.aider.aws-r.env" --browser
+aider --env-file "$HOME/.aider.aws.env" --browser
 ```
 
 For advanced use it is good practice to write the architecture including all requirements in a markdown file called CONVENTIONS.md and then launch that file with aider in read only mode to prevent that aider modifies this file. 
 
 
 ```
-aider --env-file "$HOME/.aider.aws-r.env" --read CONVENTIONS.md
+aider --env-file "$HOME/.aider.aws.env" --read CONVENTIONS.md
 ```
 
 In the prompt state something like: `Please design the application as laid out in CONVENTIONS.md`. The benefits of this approach are documenting the architecture as fed into the Bedrock LLM and the ability to always remind the Bedrock LLM of the guidelines it must follow when coding.
