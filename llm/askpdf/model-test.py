@@ -27,14 +27,17 @@ def list_bedrock_models(region, profile=None):
         
         print("\nAvailable Bedrock Models:")
         print("-" * 80)
-        print(f"{'Model ID':<50} {'Provider':<15} {'Status'}")
+        #print(f"{'Model ID':<50} {'Provider':<15} {'Status'}")
+        print(f"{'Model ID':<50}")
         print("-" * 80)
         
         for model in response.get('modelSummaries', []):
             model_id = model.get('modelId', 'N/A')
             provider = model.get('providerName', 'N/A')
             status = model.get('modelLifecycle', {}).get('status', 'N/A')
-            print(f"{model_id:<50} {provider:<15} {status}")
+            #print(f"{model_id:<50} {provider:<15} {status}")
+            print(f"bedrock/us.{model_id}")
+
             
         return True
     except Exception as e:

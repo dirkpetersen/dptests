@@ -1,10 +1,10 @@
 # Use Aider.chat with AWS Bedrock 
 
-[Aider.chat](https://aider.chat/) is an AI based pair programmer that codes for you. It works very well with [AWS Bedrock](https://aws.amazon.com/bedrock) and can run in the terminal Window of VS Code 
+[Aider.chat](https://aider.chat/) is an AI based pair programmer that can write (almost) all your code for you. It works very well with [AWS Bedrock](https://aws.amazon.com/bedrock) and can run in the terminal Window of VS Code 
 
 ## Prepare AWS profile for Bedrock 
 
-If you don't have setup AWS yet, you need to get AWS credentials from your AWS Admin, ideally for a dedicated IAM user that only has AWSBedrockFullAccess permissions. Then create a new AWS profile just for Bedrock. 
+If you have not setup AWS yet, you need to get AWS credentials from your AWS Admin, ideally ask for a dedicated IAM user that only has AWSBedrockFullAccess permissions. Once you get your `access key` and `secret key` credentials for your IAM user create a new AWS profile just for Bedrock. 
 
 Run the `aws` command in your Terminal on Linux/Mac or Powershell in Windows. If the `aws` command is not there, install it as [documented here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) 
 
@@ -66,26 +66,26 @@ dark-mode: true
 show-model-warnings: false
 subtree-only: true
 model: bedrock/us.anthropic.claude-3-5-haiku-20241022-v1:0
+# model: bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
 # cache-prompts: true
 ```
 
-Claude-3.5-Haiku is currently the fastest Anthropic model and is a good default 
+Claude-3.5-Haiku is currently one of the fastest Anthropic models and is a good default, if you are an enterprise user with AWS SSO CLI and use your default profile, you can also put one of the most capable models (currently claude-sonnet-4) in the YML file and skip the next step
 
-create an .env config file "$HOME/.aider.aws-r.env" and add this content for best results in code writing and complex tasks that require reasoning:
+Now create a new custom .env config file "$HOME/.aider.aws.env" and add this content for best results in code writing:
 
 ```
 AWS_PROFILE=mybedrock
-AIDER_ARCHITECT=true
+AIDER_MODEL=bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
+```
+
+You can also replace the string `claude-sonnet-4` with `claude-opus-4` in the model name above to use an even more accurate model. However, Opus is more expensive and slower than Sonnet. In some other cases, you can achieve better results by splitting tasks between two different large language models: a reasoning model, such as Deepseek, responsible for the overall architecture, and a coding model that ensures correct code is written. In this case, we chose the previous Claude Sonnet 3.7 model because it is faster and slightly cheaper. Create a new custom .env config file "$HOME/.aider.aws-arch.env" and add this content 
+
+```
+AWS_PROFILE=mybedrock
 AIDER_MODEL=bedrock/us.deepseek.r1-v1:0
+AIDER_ARCHITECT=true
 AIDER_EDITOR_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
-```
-
-..... but for simpler tasks that you'd like to execute faster create another .env config file "$HOME/.aider.aws-c.env" and add this content: 
-
-```
-AWS_PROFILE=mybedrock
-AIDER_ARCHITECT=false
-AIDER_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
 ```
 
 Comment out or remove AWS_PROFILE if you are using AWS-SSO cli with the default AWS profile instead of a dedicated IAM user with an AWS profile mybedrock.  
@@ -98,33 +98,34 @@ Now initialize a new git repository called `demo`:
 mkdir demo; cd demo; git init
 ```
 
-in which you launch aider (e.g. in the VS Code Terminal). If you use the `--env-file` on the CLI, you can easily switch between different models, for example by alternating between `"$HOME/.aider.aws-r.env"` (reasoning for complex tasks) and `"$HOME/.aider.aws-c.env"` (claude only and much faster). If you don't want to use the `--env-file` option, you can also edit a file called `.env` file at the root of your git repository, for example to better track which LLMs were used for this code. 
+in which you launch aider (e.g. in the VS Code Terminal). If you use the `--env-file` on the CLI, you can easily switch between different models, for example by alternating between `"$HOME/.aider.aws-arch.env"` (reasoning for complex or custom architecture tasks) and `"$HOME/.aider.aws.env"` (claude only and faster). If you don't want to use the `--env-file` option, you can also edit a file called `.env` file at the root of your git repository, for example to better track which LLMs were used for this code. 
 
 ```
-aider --env-file "$HOME/.aider.aws-r.env"
-
-───────────────────────────────────────────────────────────────────────────────────────────────
-Aider v0.82.2
-Model: bedrock/us.deepseek.r1-v1:0 with architect edit format
-Editor model: bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0 with editor-diff edit format
-Git repo: .git with 1,748 files
-Repo-map: using 4096 tokens, files refresh
+$ aider --env-file ~/.aider.aws.env
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+You can skip this check with --no-gitignore
+Add .aider* to .gitignore (recommended)? (Y)es/(N)o [Yes]: y
+Added .aider* to .gitignore
+Aider v0.83.2
+Main model: bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0 with diff edit format, infinite output
+Weak model: bedrock/us.anthropic.claude-3-5-haiku-20241022-v1:0
+Git repo: .git with 0 files
+Repo-map: using 4096 tokens, auto refresh
 Multiline mode: Enabled. Enter inserts newline, Alt-Enter submits text
-Cost estimates may be inaccurate when using streaming and caching.
-───────────────────────────────────────────────────────────────────────────────────────────────
-architect multi>
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+multi>
 
 ```
 
 Now enter your prompt and send it to AWS Bedrock with ALT+Enter, for example :
 
-`Make a simple memory match game using python flask and modern web 2.0 tech`
+`Make a very simple memory match game using python flask > v3 and modern web 2.0 tech`
 
 Now open a new terminal, install Flask and run the Flask app
 
 ```
 cd demo
-python3 -m pip install flask
+python3 -m pip install -r requirements.txt
 python3 app.py
 ```
 
@@ -142,7 +143,7 @@ When you refresh your browser you will see that the color has changed.
 you can also enter the model directly on the cli, for example if you are using the default AWS profile
 
 ```
-aider --model bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
+aider --model bedrock/us.anthropic.claude-opus-4-20250514-v1:0
 ```
 
 or if you prefer to interact with [Aider through a Browser](https://aider.chat/docs/usage/browser.html) instead of a terminal you can use the --browser option:
