@@ -172,11 +172,46 @@ class PDFVectorStore:
         clean_chunks = []
         for chunk in all_chunks:
             if isinstance(chunk, str):
-                clean_chunks.append(chunk)
+                # Remove any problematic characters and ensure it's clean text
+                clean_chunk = chunk.strip().replace('\x00', '').replace('\ufffd', '')
+                if clean_chunk:  # Only add non-empty chunks
+                    clean_chunks.append(clean_chunk)
             else:
-                clean_chunks.append(str(chunk))
+                clean_chunk = str(chunk).strip().replace('\x00', '').replace('\ufffd', '')
+                if clean_chunk:
+                    clean_chunks.append(clean_chunk)
         
-        embeddings = self.embedder.encode(clean_chunks, show_progress_bar=True, convert_to_tensor=False)
+        if not clean_chunks:
+            raise ValueError("No valid text chunks found after cleaning")
+        
+        try:
+            # Try with batch processing to handle large datasets better
+            embeddings = self.embedder.encode(
+                clean_chunks, 
+                show_progress_bar=True, 
+                convert_to_tensor=False,
+                batch_size=32,
+                normalize_embeddings=True
+            )
+        except Exception as e:
+            print(f"Error during embedding generation: {e}")
+            print("Trying alternative encoding method...")
+            # Fallback: encode one by one to identify problematic chunks
+            embeddings_list = []
+            for i, chunk in enumerate(clean_chunks):
+                try:
+                    emb = self.embedder.encode([chunk], convert_to_tensor=False, normalize_embeddings=True)
+                    embeddings_list.append(emb[0])
+                except Exception as chunk_error:
+                    print(f"Skipping problematic chunk {i}: {chunk_error}")
+                    # Use a zero vector as placeholder
+                    zero_emb = np.zeros(self.embedder.get_sentence_embedding_dimension())
+                    embeddings_list.append(zero_emb)
+            
+            if not embeddings_list:
+                raise ValueError("Could not generate any embeddings")
+            
+            embeddings = np.array(embeddings_list)
         
         # Create FAISS index
         dimension = embeddings.shape[1]
@@ -205,7 +240,11 @@ class PDFVectorStore:
         if self.index is None:
             raise ValueError("No documents have been added to the vector store")
         
-        query_embedding = self.embedder.encode([str(query)], convert_to_tensor=False)
+        clean_query = str(query).strip().replace('\x00', '').replace('\ufffd', '')
+        if not clean_query:
+            raise ValueError("Query is empty after cleaning")
+        
+        query_embedding = self.embedder.encode([clean_query], convert_to_tensor=False, normalize_embeddings=True)
         query_embedding = query_embedding.astype('float32')
         faiss.normalize_L2(query_embedding)
         
