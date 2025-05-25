@@ -631,9 +631,15 @@ def submit_pdfs_directly_to_nova(bedrock_client, model_id, pdf_paths, question, 
             }
         })
     
-    # Add the question as text
+    # Add the question with comprehensive instruction as text
+    comprehensive_prompt = f"""Based on the document(s) provided above, please answer the following question.
+
+Question: {question}
+
+Please provide a comprehensive and detailed answer based on all the information available in the document(s). Include relevant details, context, and explanations to give a thorough response."""
+    
     content.append({
-        "text": question
+        "text": comprehensive_prompt
     })
     
     messages = [{"role": "user", "content": content}]
