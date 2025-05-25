@@ -1237,6 +1237,12 @@ def main():
             background: #f8f9fa;
             cursor: pointer;
             transition: all 0.3s;
+            position: relative;
+            user-select: none;
+        }
+        
+        .file-upload-area * {
+            pointer-events: none;
         }
         
         .file-upload-area:hover {
@@ -1247,10 +1253,22 @@ def main():
         .file-upload-area.drag-over {
             background: #d4e6f1;
             border-color: #2980b9;
+            transform: scale(1.02);
         }
         
-        #file-input {
-            display: none;
+        .file-upload-area:active {
+            transform: scale(0.98);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
         
         .file-list {
@@ -1469,20 +1487,20 @@ def main():
                 
                 <div class="form-group">
                     <label>Upload Documents (PDF or Markdown)</label>
-                    <div class="file-upload-area" id="file-upload-area">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" style="pointer-events: none;">
+                    <div class="file-upload-area" id="file-upload-area" role="button" tabindex="0">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
-                        <p style="margin-top: 1rem; color: #666; pointer-events: none;">
+                        <p style="margin-top: 1rem; color: #666;">
                             Drag and drop files here or click to browse
                         </p>
-                        <p style="font-size: 0.875rem; color: #999; margin-top: 0.5rem; pointer-events: none;">
+                        <p style="font-size: 0.875rem; color: #999; margin-top: 0.5rem;">
                             Supports PDF and Markdown files (max 500MB total)
                         </p>
+                        <input type="file" id="file-input" multiple accept=".pdf,.md" style="position: absolute; left: -9999px;" />
                     </div>
-                    <input type="file" id="file-input" multiple accept=".pdf,.md" style="display: none;" />
                     <div class="file-list" id="file-list"></div>
                 </div>
                 
@@ -1541,44 +1559,88 @@ def main():
         
         let uploadedFiles = [];
         
-        // File upload handling
-        fileUploadArea.addEventListener('click', (e) => {
+        // Debug info
+        console.log('AskPDF UI initialized');
+        console.log('File input element:', fileInput);
+        console.log('File upload area:', fileUploadArea);
+        
+        // File upload handling - complete rewrite for better compatibility
+        
+        // Prevent default drag behaviors on the entire document
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.addEventListener(eventName, preventDefaults, false);
+            fileUploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
+        }
+        
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            fileUploadArea.classList.add('drag-over');
+        }
+        
+        function unhighlight(e) {
+            fileUploadArea.classList.remove('drag-over');
+        }
+        
+        // Handle dropped files
+        fileUploadArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+        
+        // Handle click to browse
+        fileUploadArea.addEventListener('click', function(e) {
             fileInput.click();
         });
         
-        fileUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileUploadArea.classList.add('drag-over');
-        });
-        
-        fileUploadArea.addEventListener('dragleave', () => {
-            fileUploadArea.classList.remove('drag-over');
-        });
-        
-        fileUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileUploadArea.classList.remove('drag-over');
-            handleFiles(e.dataTransfer.files);
-        });
-        
-        fileInput.addEventListener('change', (e) => {
+        // Handle file input change
+        fileInput.addEventListener('change', function(e) {
             handleFiles(e.target.files);
         });
         
         function handleFiles(files) {
-            for (let file of files) {
+            if (!files || files.length === 0) return;
+            
+            let addedCount = 0;
+            const fileArray = Array.from(files);
+            
+            for (let file of fileArray) {
                 if (file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.md')) {
                     // Check if file is already uploaded
                     const exists = uploadedFiles.some(f => f.name === file.name && f.size === file.size);
                     if (!exists) {
                         uploadedFiles.push(file);
+                        addedCount++;
                     }
                 }
             }
-            updateFileList();
-            // Reset the file input to allow re-selecting the same file
+            
+            if (addedCount > 0) {
+                updateFileList();
+                // Show a brief success message
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 1rem 1.5rem; border-radius: 4px; z-index: 1000; animation: slideIn 0.3s ease-out;';
+                successMsg.textContent = `Added ${addedCount} file(s)`;
+                document.body.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 3000);
+            }
+            
+            // Reset the file input
             fileInput.value = '';
         }
         
@@ -1731,6 +1793,24 @@ def main():
         
         // Make removeFile function global
         window.removeFile = removeFile;
+        
+        // Add keyboard support for file upload area
+        fileUploadArea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+        
+        // Add visual feedback for file input clicks
+        fileInput.addEventListener('click', function(e) {
+            console.log('File input clicked');
+        });
+        
+        // Debug file selection
+        fileInput.addEventListener('change', function(e) {
+            console.log('Files selected:', e.target.files.length);
+        });
     </script>
 </body>
 </html>'''
