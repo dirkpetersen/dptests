@@ -10,27 +10,39 @@ import sys
 import tempfile
 import shutil
 from botocore.exceptions import ClientError
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 # FAISS and embedding imports
 try:
     import faiss
 except ImportError:
-    print(f"Error: FAISS not installed. Run: pip install faiss-gpu sentence-transformers PyPDF2", file=sys.stderr)
-    print(f"For CPU-only FAISS: pip install faiss-cpu sentence-transformers PyPDF2", file=sys.stderr)
+    print(f"Error: FAISS not installed. Run: pip install faiss-gpu sentence-transformers pymupdf", file=sys.stderr)
+    print(f"For CPU-only FAISS: pip install faiss-cpu sentence-transformers pymupdf", file=sys.stderr)
     sys.exit(1)
 except Exception as e:
     print(f"Error: FAISS installation appears corrupted. Try reinstalling:", file=sys.stderr)
     print(f"  pip uninstall faiss-gpu faiss-cpu", file=sys.stderr)
-    print(f"  pip install faiss-cpu sentence-transformers PyPDF2", file=sys.stderr)
+    print(f"  pip install faiss-cpu sentence-transformers pymupdf", file=sys.stderr)
     print(f"Original error: {e}", file=sys.stderr)
     sys.exit(1)
 
 try:
     import numpy as np
     from sentence_transformers import SentenceTransformer
-    from PyPDF2 import PdfReader
+    try:
+        import fitz  # PyMuPDF
+        USE_PYMUPDF = True
+    except ImportError:
+        try:
+            from PyPDF2 import PdfReader
+            USE_PYMUPDF = False
+            print("Warning: PyMuPDF not installed, falling back to slower PyPDF2. For better performance, run: pip install pymupdf")
+        except ImportError:
+            print(f"Error: No PDF library installed. Run: pip install pymupdf sentence-transformers", file=sys.stderr)
+            sys.exit(1)
 except ImportError as e:
-    print(f"Error: Required packages not installed. Run: pip install sentence-transformers PyPDF2", file=sys.stderr)
+    print(f"Error: Required packages not installed. Run: pip install pymupdf sentence-transformers", file=sys.stderr)
     sys.exit(1)
 
 # --- Configuration Constants ---
@@ -80,25 +92,49 @@ def detect_gpu():
 
 def extract_text_from_pdf(pdf_path):
     """Extract text content from a PDF file"""
-    try:
-        reader = PdfReader(pdf_path)
-        text = ""
-        for page_num, page in enumerate(reader.pages):
-            try:
-                page_text = page.extract_text()
-                if page_text:
-                    # Clean the text to remove problematic characters
-                    page_text = page_text.replace('\x00', '')
-                    page_text = page_text.replace('\ufffd', '')
-                    # Remove other non-printable characters except newlines and tabs
-                    page_text = ''.join(char for char in page_text if char.isprintable() or char in '\n\t')
-                    text += page_text + "\n"
-            except Exception as e:
-                print(f"Warning: Could not extract text from page {page_num + 1}: {e}")
-                continue
-        return text
-    except Exception as e:
-        raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
+    if USE_PYMUPDF:
+        # Use PyMuPDF (much faster)
+        try:
+            doc = fitz.open(pdf_path)
+            text = ""
+            for page_num, page in enumerate(doc):
+                try:
+                    page_text = page.get_text()
+                    if page_text:
+                        # Clean the text to remove problematic characters
+                        page_text = page_text.replace('\x00', '')
+                        page_text = page_text.replace('\ufffd', '')
+                        # Remove other non-printable characters except newlines and tabs
+                        page_text = ''.join(char for char in page_text if char.isprintable() or char in '\n\t')
+                        text += page_text + "\n"
+                except Exception as e:
+                    print(f"Warning: Could not extract text from page {page_num + 1}: {e}")
+                    continue
+            doc.close()
+            return text
+        except Exception as e:
+            raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
+    else:
+        # Fallback to PyPDF2
+        try:
+            reader = PdfReader(pdf_path)
+            text = ""
+            for page_num, page in enumerate(reader.pages):
+                try:
+                    page_text = page.extract_text()
+                    if page_text:
+                        # Clean the text to remove problematic characters
+                        page_text = page_text.replace('\x00', '')
+                        page_text = page_text.replace('\ufffd', '')
+                        # Remove other non-printable characters except newlines and tabs
+                        page_text = ''.join(char for char in page_text if char.isprintable() or char in '\n\t')
+                        text += page_text + "\n"
+                except Exception as e:
+                    print(f"Warning: Could not extract text from page {page_num + 1}: {e}")
+                    continue
+            return text
+        except Exception as e:
+            raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
 
 
 def chunk_text(text, chunk_size=MAX_CHUNK_SIZE, overlap=CHUNK_OVERLAP):
@@ -162,25 +198,39 @@ class PDFVectorStore:
         all_metadata = []
         
         print("Processing PDFs and extracting text...")
-        for pdf_path in pdf_files:
+        
+        # Process PDFs in parallel for better performance
+        def process_single_pdf(pdf_path):
             try:
                 text = extract_text_from_pdf(pdf_path)
                 chunks = chunk_text(text)
-                
                 filename = os.path.basename(pdf_path)
-                print(f"  {filename}: {len(chunks)} chunks from {len(text)} characters")
                 
+                metadata_list = []
                 for i, chunk in enumerate(chunks):
-                    all_chunks.append(chunk)
-                    all_metadata.append({
+                    metadata_list.append({
                         'filename': filename,
                         'chunk_id': i,
                         'total_chunks': len(chunks)
                     })
-                    
+                
+                return filename, chunks, metadata_list, len(text)
             except Exception as e:
                 print(f"Warning: Could not process {pdf_path}: {e}")
-                continue
+                return None, None, None, None
+        
+        # Use ThreadPoolExecutor for parallel processing
+        max_workers = min(len(pdf_files), 4)  # Limit concurrent threads
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_pdf = {executor.submit(process_single_pdf, pdf_path): pdf_path 
+                           for pdf_path in pdf_files}
+            
+            for future in as_completed(future_to_pdf):
+                filename, chunks, metadata_list, text_len = future.result()
+                if chunks:
+                    print(f"  {filename}: {len(chunks)} chunks from {text_len} characters")
+                    all_chunks.extend(chunks)
+                    all_metadata.extend(metadata_list)
         
         if not all_chunks:
             raise ValueError("No text content could be extracted from any PDF files")
