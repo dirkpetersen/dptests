@@ -769,7 +769,10 @@ class AskPDFWebApp:
     def __init__(self, region=None, profile=None):
         self.app = Flask(__name__)
         self.app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max upload
-        self.app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
+        # Create a dedicated temporary directory for uploads
+        self.temp_upload_dir = tempfile.mkdtemp(prefix='askpdf_uploads_')
+        self.app.config['UPLOAD_FOLDER'] = self.temp_upload_dir
+        print(f"Created temporary upload directory: {self.temp_upload_dir}")
         self.profile = profile
         
         # Initialize AWS session
@@ -843,17 +846,26 @@ class AskPDFWebApp:
                 if not uploaded_files or not any(f.filename for f in uploaded_files):
                     return jsonify({'error': 'No files uploaded'}), 400
                 
-                # Save uploaded files
+                # Save uploaded files to temporary directory
                 temp_paths = []
                 total_size = 0
+                print(f"Saving {len(uploaded_files)} uploaded files to temporary directory...")
+                
                 for file in uploaded_files:
                     if file and file.filename:
                         filename = secure_filename(file.filename)
                         if filename.lower().endswith(('.pdf', '.md')):
-                            filepath = os.path.join(self.app.config['UPLOAD_FOLDER'], filename)
+                            # Create unique filename to avoid conflicts
+                            timestamp = str(int(time.time() * 1000))
+                            unique_filename = f"{timestamp}_{filename}"
+                            filepath = os.path.join(self.temp_upload_dir, unique_filename)
+                            
+                            print(f"  Saving {filename} as {unique_filename}")
                             file.save(filepath)
                             temp_paths.append(filepath)
                             total_size += os.path.getsize(filepath)
+                
+                print(f"Saved {len(temp_paths)} files, total size: {total_size / (1024*1024):.2f} MB")
                 
                 if not temp_paths:
                     return jsonify({'error': 'No valid PDF or Markdown files uploaded'}), 400
@@ -862,11 +874,13 @@ class AskPDFWebApp:
                 result = self._process_with_progress(temp_paths, question, model_id, use_faiss)
                 
                 # Clean up temp files
+                print("Cleaning up temporary files...")
                 for path in temp_paths:
                     try:
                         os.remove(path)
-                    except:
-                        pass
+                        print(f"  Removed: {os.path.basename(path)}")
+                    except Exception as e:
+                        print(f"  Warning: Could not remove {os.path.basename(path)}: {e}")
                 
                 return jsonify(result)
                 
@@ -1732,8 +1746,18 @@ def main():
             print("\nShutting down web server...")
         finally:
             # Clean up
-            shutil.rmtree(app.app.config['UPLOAD_FOLDER'], ignore_errors=True)
-            shutil.rmtree(templates_dir, ignore_errors=True)
+            print("Cleaning up temporary directories...")
+            try:
+                shutil.rmtree(app.temp_upload_dir, ignore_errors=True)
+                print(f"Removed upload directory: {app.temp_upload_dir}")
+            except Exception as e:
+                print(f"Warning: Could not remove upload directory: {e}")
+            
+            try:
+                shutil.rmtree(templates_dir, ignore_errors=True)
+                print(f"Removed templates directory: {templates_dir}")
+            except Exception as e:
+                print(f"Warning: Could not remove templates directory: {e}")
         
         sys.exit(0)
     
