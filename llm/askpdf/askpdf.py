@@ -857,9 +857,9 @@ def main():
         help="Search subdirectories recursively for PDF and Markdown files"
     )
     parser.add_argument(
-        "--use-faiss",
+        "--no-faiss",
         action="store_true",
-        help="Force use of FAISS vector store even if direct PDF submission criteria are met"
+        help="Disable FAISS vector store and use direct PDF submission when possible"
     )
 
     args = parser.parse_args()
@@ -897,13 +897,19 @@ def main():
         global ENABLE_EMBEDDING_CACHE
         ENABLE_EMBEDDING_CACHE = False
     
-    # Check if we can use direct PDF submission instead of FAISS
-    use_direct_pdf = can_use_direct_pdf_submission(document_file_paths, current_model_id, args.question)
+    # By default use FAISS, only use direct PDF submission if --no-faiss is specified and criteria are met
+    use_direct_pdf = False
     
-    # Override if user explicitly wants to use FAISS
-    if args.use_faiss:
-        use_direct_pdf = False
-        print("Forcing FAISS vector store usage (--use-faiss specified)")
+    if args.no_faiss:
+        # User wants to disable FAISS, check if direct PDF submission is possible
+        use_direct_pdf = can_use_direct_pdf_submission(document_file_paths, current_model_id, args.question)
+        if use_direct_pdf:
+            print("FAISS disabled (--no-faiss specified), using direct PDF submission")
+        else:
+            print("FAISS disabled (--no-faiss specified) but direct PDF submission not possible, falling back to FAISS")
+            use_direct_pdf = False
+    else:
+        print("Using FAISS vector store (default behavior)")
     
     # Initialize FAISS vector store only if needed
     vector_store = None
