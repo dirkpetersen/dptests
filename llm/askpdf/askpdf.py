@@ -7,7 +7,20 @@ import json
 import uuid
 import re
 import sys
+import tempfile
+import shutil
 from botocore.exceptions import ClientError
+
+# FAISS and embedding imports
+try:
+    import faiss
+    import numpy as np
+    from sentence_transformers import SentenceTransformer
+    from PyPDF2 import PdfReader
+except ImportError as e:
+    print(f"Error: Required packages not installed. Run: pip install faiss-gpu sentence-transformers PyPDF2", file=sys.stderr)
+    print(f"For CPU-only FAISS: pip install faiss-cpu sentence-transformers PyPDF2", file=sys.stderr)
+    sys.exit(1)
 
 # --- Configuration Constants ---
 # Default Model ID for Amazon Titan
@@ -15,19 +28,180 @@ DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-pro-v1:0"
 # AWS Region for Bedrock and S3 services
 AWS_REGION = "us-east-1" # You can change this if needed
 
-# Document processing limits
-MAX_BYTES_PAYLOAD_SIZE = 25 * 1024 * 1024  # 25MB in bytes
-MAX_DOCS_FOR_BYTES_PAYLOAD = 5
-MAX_DOCS_FOR_S3_PAYLOAD = 1000
-
-# S3 configuration (if used)
-S3_UPLOAD_PREFIX = "askpdf_temp_uploads/"
+# Document processing limits - now used for chunking strategy
+MAX_CHUNK_SIZE = 1000  # Characters per chunk for vector search
+CHUNK_OVERLAP = 200    # Overlap between chunks
+TOP_K_CHUNKS = 5       # Number of most relevant chunks to send to LLM
 
 # Bedrock inference parameters
 DEFAULT_INPUT_TOKENS = 30000  # Placeholder for typical model context window
 DEFAULT_OUTPUT_TOKENS = 2048
 DEFAULT_TOP_P = 0.9
 DEFAULT_TEMPERATURE = 0.2
+
+
+def detect_gpu():
+    """Detect if NVIDIA GPU is available for FAISS"""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            gpu_count = torch.cuda.device_count()
+            gpu_name = torch.cuda.get_device_name(0)
+            print(f"GPU detected: {gpu_name} (using GPU-accelerated FAISS)")
+            return True
+    except ImportError:
+        pass
+    
+    # Alternative check using nvidia-ml-py
+    try:
+        import pynvml
+        pynvml.nvmlInit()
+        gpu_count = pynvml.nvmlDeviceGetCount()
+        if gpu_count > 0:
+            print(f"GPU detected: {gpu_count} NVIDIA GPU(s) (using GPU-accelerated FAISS)")
+            return True
+    except ImportError:
+        pass
+    
+    print("No GPU detected, using CPU FAISS")
+    return False
+
+
+def extract_text_from_pdf(pdf_path):
+    """Extract text content from a PDF file"""
+    try:
+        reader = PdfReader(pdf_path)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() + "\n"
+        return text
+    except Exception as e:
+        raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
+
+
+def chunk_text(text, chunk_size=MAX_CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+    """Split text into overlapping chunks for vector search"""
+    if len(text) <= chunk_size:
+        return [text]
+    
+    chunks = []
+    start = 0
+    
+    while start < len(text):
+        end = start + chunk_size
+        
+        # Try to break at sentence boundary
+        if end < len(text):
+            # Look for sentence endings near the chunk boundary
+            for i in range(min(100, chunk_size // 4)):  # Look back up to 100 chars
+                if end - i > start and text[end - i] in '.!?':
+                    end = end - i + 1
+                    break
+        
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+        
+        start = end - overlap
+        if start >= len(text):
+            break
+    
+    return chunks
+
+
+class PDFVectorStore:
+    """FAISS-based vector store for PDF content"""
+    
+    def __init__(self, use_gpu=False):
+        self.index = None
+        self.chunks = []
+        self.chunk_metadata = []  # Store filename and chunk info
+        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        self.use_gpu = use_gpu
+        
+        # Move embedder to GPU if available
+        if use_gpu:
+            try:
+                self.embedder = self.embedder.cuda()
+            except Exception as e:
+                print(f"Warning: Could not move embedder to GPU: {e}")
+                self.use_gpu = False
+    
+    def add_documents(self, pdf_files):
+        """Process PDF files and add to vector store"""
+        all_chunks = []
+        all_metadata = []
+        
+        print("Processing PDFs and extracting text...")
+        for pdf_path in pdf_files:
+            try:
+                text = extract_text_from_pdf(pdf_path)
+                chunks = chunk_text(text)
+                
+                filename = os.path.basename(pdf_path)
+                print(f"  {filename}: {len(chunks)} chunks from {len(text)} characters")
+                
+                for i, chunk in enumerate(chunks):
+                    all_chunks.append(chunk)
+                    all_metadata.append({
+                        'filename': filename,
+                        'chunk_id': i,
+                        'total_chunks': len(chunks)
+                    })
+                    
+            except Exception as e:
+                print(f"Warning: Could not process {pdf_path}: {e}")
+                continue
+        
+        if not all_chunks:
+            raise ValueError("No text content could be extracted from any PDF files")
+        
+        print(f"Generating embeddings for {len(all_chunks)} chunks...")
+        embeddings = self.embedder.encode(all_chunks, show_progress_bar=True)
+        
+        # Create FAISS index
+        dimension = embeddings.shape[1]
+        
+        if self.use_gpu:
+            # GPU index
+            res = faiss.StandardGpuResources()
+            index_cpu = faiss.IndexFlatIP(dimension)
+            self.index = faiss.index_cpu_to_gpu(res, 0, index_cpu)
+        else:
+            # CPU index
+            self.index = faiss.IndexFlatIP(dimension)
+        
+        # Add embeddings to index
+        embeddings_np = embeddings.astype('float32')
+        faiss.normalize_L2(embeddings_np)  # Normalize for cosine similarity
+        self.index.add(embeddings_np)
+        
+        self.chunks = all_chunks
+        self.chunk_metadata = all_metadata
+        
+        print(f"Vector store ready with {len(all_chunks)} chunks")
+    
+    def search(self, query, k=TOP_K_CHUNKS):
+        """Find most relevant chunks for a query"""
+        if self.index is None:
+            raise ValueError("No documents have been added to the vector store")
+        
+        query_embedding = self.embedder.encode([query])
+        query_embedding = query_embedding.astype('float32')
+        faiss.normalize_L2(query_embedding)
+        
+        scores, indices = self.index.search(query_embedding, k)
+        
+        results = []
+        for idx, i in enumerate(indices[0]):
+            if i >= 0:  # Valid index
+                results.append({
+                    'chunk': self.chunks[i],
+                    'score': float(scores[0][idx]),
+                    'metadata': self.chunk_metadata[i]
+                })
+        
+        return results
 
 
 def sanitize_document_name(filename):
@@ -43,7 +217,7 @@ def sanitize_document_name(filename):
 
 def get_pdf_files_details(input_path):
     """
-    Collects PDF file paths and their total size from a given file or directory.
+    Collects PDF file paths from a given file or directory.
     Returns a list of full file paths and the total size in bytes.
     """
     pdf_file_paths = []
@@ -74,25 +248,6 @@ def get_pdf_files_details(input_path):
     return pdf_file_paths, total_size_bytes
 
 
-def upload_to_s3(s3_client, bucket_name, file_path, s3_key):
-    """Uploads a single file to S3."""
-    try:
-        s3_client.upload_file(file_path, bucket_name, s3_key)
-        print(f"Successfully uploaded {os.path.basename(file_path)} to s3://{bucket_name}/{s3_key}")
-    except Exception as e:
-        raise RuntimeError(f"Error uploading {file_path} to S3 bucket {bucket_name}: {e}")
-
-
-def delete_s3_objects(s3_client, bucket_name, s3_keys):
-    """Deletes multiple objects from S3."""
-    if not s3_keys:
-        return
-    objects_to_delete = {'Objects': [{'Key': key} for key in s3_keys]}
-    try:
-        s3_client.delete_objects(Bucket=bucket_name, Delete=objects_to_delete)
-        print(f"Successfully deleted {len(s3_keys)} temporary objects from S3 bucket '{bucket_name}'.")
-    except Exception as e:
-        print(f"Warning: Failed to delete objects from S3 bucket '{bucket_name}': {e}. Manual cleanup may be required for keys: {s3_keys}")
 
 
 def main():
@@ -110,9 +265,10 @@ def main():
         help="The question to ask about the PDF(s)."
     )
     parser.add_argument(
-        "--bucket",
-        type=str,
-        help="S3 bucket name for temporary storage if total PDF size > 25MB. Required in that case."
+        "--top-k",
+        type=int,
+        default=TOP_K_CHUNKS,
+        help=f"Number of most relevant chunks to retrieve for answering. Default: {TOP_K_CHUNKS}"
     )
     parser.add_argument(
         "--region",
@@ -168,75 +324,52 @@ def main():
     num_documents = len(pdf_file_paths)
     print(f"Found {num_documents} PDF document(s), total size: {total_size_bytes / (1024*1024):.2f} MB.")
 
-    use_s3 = total_size_bytes > MAX_BYTES_PAYLOAD_SIZE
-    s3_bucket_name = args.bucket
-    s3_keys_uploaded = []
-
     # Initialize AWS session with optional profile
     session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
     bedrock_client = session.client("bedrock-runtime", region_name=args.region)
-    s3_client = None
-    aws_account_id = None
 
-    if use_s3:
-        if not s3_bucket_name:
-            print(f"Error: Total PDF size ({total_size_bytes / (1024*1024):.2f} MB) exceeds {MAX_BYTES_PAYLOAD_SIZE / (1024*1024)} MB. "
-                  f"Please provide an S3 bucket name using --bucket for temporary storage.", file=sys.stderr)
-            sys.exit(1)
-        if num_documents > MAX_DOCS_FOR_S3_PAYLOAD:
-            print(f"Error: Number of documents ({num_documents}) exceeds the S3 limit of {MAX_DOCS_FOR_S3_PAYLOAD}.", file=sys.stderr)
-            sys.exit(1)
-        
-        s3_client = session.client("s3", region_name=args.region)
-        try:
-            sts_client = session.client("sts", region_name=args.region)
-            aws_account_id = sts_client.get_caller_identity()["Account"]
-        except Exception as e:
-            print(f"Error: Could not retrieve AWS Account ID for S3 bucket owner: {e}", file=sys.stderr)
-            sys.exit(1)
-        print(f"Using S3 bucket '{s3_bucket_name}' for document transfer.")
-    else:
-        if num_documents > MAX_DOCS_FOR_BYTES_PAYLOAD:
-            print(f"Error: Number of documents ({num_documents}) exceeds the limit of {MAX_DOCS_FOR_BYTES_PAYLOAD} for direct upload. "
-                  f"Total size is {total_size_bytes / (1024*1024):.2f} MB. "
-                  f"If total size were > {MAX_BYTES_PAYLOAD_SIZE / (1024*1024)} MB, S3 would be used (up to {MAX_DOCS_FOR_S3_PAYLOAD} docs).", file=sys.stderr)
-            sys.exit(1)
-        print("Using direct byte transfer for documents.")
-
-
-    document_content_list = []
+    # Initialize FAISS vector store
+    use_gpu = detect_gpu()
+    vector_store = PDFVectorStore(use_gpu=use_gpu)
 
     try:
-        for idx, file_path in enumerate(pdf_file_paths):
-            doc_name = sanitize_document_name(os.path.basename(file_path))
-            unique_doc_name = f"doc_{idx}_{doc_name}" # Ensure unique and neutral
-
-            if use_s3:
-                s3_key = f"{S3_UPLOAD_PREFIX}{uuid.uuid4()}-{os.path.basename(file_path)}"
-                upload_to_s3(s3_client, s3_bucket_name, file_path, s3_key)
-                s3_keys_uploaded.append(s3_key)
-                # For S3 documents, we need to download them first and then send as bytes
-                # since the API doesn't directly support s3Location parameter
-                s3_obj = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
-                doc_bytes = s3_obj['Body'].read()
-                document_source = {"bytes": doc_bytes}
-            else: # Use bytes
-                with open(file_path, "rb") as f:
-                    doc_bytes = f.read()
-                document_source = {"bytes": doc_bytes}
-
-            document_content_list.append({
-                "document": {
-                    "format": "pdf",
-                    "name": unique_doc_name,
-                    "source": document_source
-                }
-            })
-
-        # Add the question as the last part of the content
-        content_payload = document_content_list + [{"text": args.question}]
+        # Build vector store from PDFs
+        vector_store.add_documents(pdf_file_paths)
         
-        messages = [{"role": "user", "content": content_payload}]
+        # Search for relevant chunks
+        print(f"\nSearching for relevant content for: '{args.question}'")
+        relevant_chunks = vector_store.search(args.question, k=args.top_k)
+        
+        if not relevant_chunks:
+            print("No relevant content found in the documents.", file=sys.stderr)
+            sys.exit(1)
+        
+        # Display found chunks
+        print(f"\nFound {len(relevant_chunks)} relevant chunks:")
+        for i, result in enumerate(relevant_chunks):
+            metadata = result['metadata']
+            print(f"  {i+1}. {metadata['filename']} (chunk {metadata['chunk_id']+1}/{metadata['total_chunks']}) - Score: {result['score']:.3f}")
+        
+        # Combine relevant chunks into context
+        context_parts = []
+        for result in relevant_chunks:
+            metadata = result['metadata']
+            chunk_header = f"[From {metadata['filename']}, section {metadata['chunk_id']+1}]"
+            context_parts.append(f"{chunk_header}\n{result['chunk']}")
+        
+        combined_context = "\n\n---\n\n".join(context_parts)
+        
+        # Create prompt with context and question
+        prompt = f"""Based on the following document excerpts, please answer the question.
+
+Document excerpts:
+{combined_context}
+
+Question: {args.question}
+
+Please provide a comprehensive answer based on the information in the document excerpts above."""
+
+        messages = [{"role": "user", "content": [{"text": prompt}]}]
 
         inference_config = {
             "maxTokens": args.output_tokens,
@@ -245,20 +378,17 @@ def main():
         }
 
         print(f"\nSending request to Amazon Bedrock ({current_model_id})...")
+        print(f"Context size: {len(combined_context)} characters")
+        
         response = bedrock_client.converse(
             modelId=current_model_id,
             messages=messages,
             inferenceConfig=inference_config
-            # system_prompt could be added here if needed
         )
 
         response_text = response['output']['message']['content'][0]['text']
         print("\n[Model Response]")
         print(response_text)
-
-        # Optional: Print full response for debugging
-        # print("\n[Full API Response]")
-        # print(json.dumps(response, indent=2))
 
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code")
@@ -272,18 +402,14 @@ def main():
         if error_code == "ValidationException" and "Input is too long" in error_message:
             full_message += (
                 "\n\n[Additional Diagnostics]:"
-                f"\nYour PDF file ({total_size_bytes / (1024*1024):.2f} MB) was uploaded successfully, "
-                "but when Amazon Nova processed the document content (text, images, charts, etc.), "
-                "it exceeded the model's token processing limit."
+                f"\nThe context sent to the model exceeded the token processing limit."
                 f"\nModel used: {current_model_id}"
                 "\n\nPossible solutions:"
-                "\n1. Try a smaller document or split this PDF into smaller sections"
+                "\n1. Reduce --top-k to retrieve fewer chunks (currently using top-{args.top_k})"
                 "\n2. Try a different Nova model with a larger context window:"
                 "\n   --model-id us.amazon.nova-premier-v1:0  (largest context window)"
                 "\n   --model-id us.amazon.nova-lite-v1:0     (smaller but more efficient)"
-                "\n3. The document may have many images/charts that consume significant tokens"
-                "\n\nNote: File size (MB) ≠ token count. A PDF with lots of text/images can have "
-                "high token usage even if the file size seems reasonable."
+                "\n3. The retrieved chunks may contain dense information"
             )
         
         print(full_message, file=sys.stderr)
@@ -292,9 +418,8 @@ def main():
         print(f"\nAn unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
-        if use_s3 and s3_keys_uploaded:
-            print(f"\nCleaning up {len(s3_keys_uploaded)} S3 objects...")
-            delete_s3_objects(s3_client, s3_bucket_name, s3_keys_uploaded)
+        # No cleanup needed for FAISS - everything is in memory
+        pass
 
 if __name__ == "__main__":
     main()
