@@ -848,37 +848,72 @@ def main():
         chunk_overlap=chunk_overlap
     )
 
-    try:
-        # Build vector store from documents
-        vector_store.add_documents(document_file_paths)
+    # Check if we can use direct PDF submission instead of FAISS
+    use_direct_pdf = (args.model_id == DEFAULT_BEDROCK_MODEL_ID and 
+                      can_use_direct_pdf_submission(document_file_paths, current_model_id, args.question))
+    
+    if use_direct_pdf:
+        # Use direct PDF submission to Nova
+        inference_config = {
+            "maxTokens": args.output_tokens,
+            "temperature": args.temperature,
+            "topP": args.top_p
+        }
         
-        # Search for relevant chunks
-        print(f"\nSearching for relevant content for: '{args.question}'")
-        # Use all chunks if top_k is None, otherwise use specified number
-        search_k = args.top_k if args.top_k is not None else len(vector_store.chunks)
-        relevant_chunks = vector_store.search(args.question, k=search_k)
+        pdf_files = [path for path in document_file_paths if path.lower().endswith('.pdf')]
+        can_fit, total_size_mb, estimated_tokens = estimate_pdf_size_for_nova(pdf_files)
         
-        if not relevant_chunks:
-            print("No relevant content found in the documents.", file=sys.stderr)
-            sys.exit(1)
+        print(f"Direct PDF submission: {len(pdf_files)} PDF(s), {total_size_mb:.2f} MB, ~{estimated_tokens} tokens")
         
-        # Display found chunks
-        print(f"\nFound {len(relevant_chunks)} relevant chunks:")
-        for i, result in enumerate(relevant_chunks):
-            metadata = result['metadata']
-            print(f"  {i+1}. {metadata['filename']} (chunk {metadata['chunk_id']+1}/{metadata['total_chunks']}) - Score: {result['score']:.3f}")
-        
-        # Combine relevant chunks into context
-        context_parts = []
-        for result in relevant_chunks:
-            metadata = result['metadata']
-            chunk_header = f"[From {metadata['filename']}, section {metadata['chunk_id']+1}]"
-            context_parts.append(f"{chunk_header}\n{result['chunk']}")
-        
-        combined_context = "\n\n---\n\n".join(context_parts)
-        
-        # Create prompt with context and question
-        prompt = f"""Based on the following document excerpts, please answer the question.
+        try:
+            response = submit_pdfs_directly_to_nova(
+                bedrock_client, current_model_id, pdf_files, args.question, inference_config
+            )
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            error_message = e.response.get("Error", {}).get("Message", str(e))
+            
+            # If direct submission fails due to size, fall back to FAISS
+            if (error_code == "ValidationException" and 
+                ("Input is too long" in error_message or "too long for requested model" in error_message)):
+                print("Direct PDF submission failed due to size, falling back to FAISS approach...")
+                use_direct_pdf = False
+            else:
+                raise e
+    
+    if not use_direct_pdf:
+        # Use FAISS-based approach
+        try:
+            # Build vector store from documents
+            vector_store.add_documents(document_file_paths)
+            
+            # Search for relevant chunks
+            print(f"\nSearching for relevant content for: '{args.question}'")
+            # Use all chunks if top_k is None, otherwise use specified number
+            search_k = args.top_k if args.top_k is not None else len(vector_store.chunks)
+            relevant_chunks = vector_store.search(args.question, k=search_k)
+            
+            if not relevant_chunks:
+                print("No relevant content found in the documents.", file=sys.stderr)
+                sys.exit(1)
+            
+            # Display found chunks
+            print(f"\nFound {len(relevant_chunks)} relevant chunks:")
+            for i, result in enumerate(relevant_chunks):
+                metadata = result['metadata']
+                print(f"  {i+1}. {metadata['filename']} (chunk {metadata['chunk_id']+1}/{metadata['total_chunks']}) - Score: {result['score']:.3f}")
+            
+            # Combine relevant chunks into context
+            context_parts = []
+            for result in relevant_chunks:
+                metadata = result['metadata']
+                chunk_header = f"[From {metadata['filename']}, section {metadata['chunk_id']+1}]"
+                context_parts.append(f"{chunk_header}\n{result['chunk']}")
+            
+            combined_context = "\n\n---\n\n".join(context_parts)
+            
+            # Create prompt with context and question
+            prompt = f"""Based on the following document excerpts, please answer the question.
 
 Document excerpts:
 {combined_context}
@@ -887,45 +922,35 @@ Question: {args.question}
 
 Please provide a comprehensive answer based on the information in the document excerpts above."""
 
-        # Determine the model to use (auto-select if using default)
-        if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
-            # For auto-selection, first check if we can use direct PDF submission
-            if can_use_direct_pdf_submission(document_file_paths, DEFAULT_BEDROCK_MODEL_ID, args.question):
-                # Try models in order of preference for direct PDF submission
-                for test_model in ["us.amazon.nova-micro-v1:0", "us.amazon.nova-lite-v1:0", "us.amazon.nova-premier-v1:0"]:
-                    if can_use_direct_pdf_submission(document_file_paths, test_model, args.question):
-                        current_model_id = test_model
-                        print(f"\nAuto-selecting {current_model_id} for direct PDF submission")
-                        break
-            else:
-                # Fall back to FAISS-based approach with model selection
+            # Auto-select model based on context size only if using default model
+            if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
                 selected_model = select_model_for_context(prompt, current_model_id)
                 if selected_model != current_model_id:
                     print(f"\nAuto-selecting model {selected_model} based on context size ({len(prompt)} characters)")
                     current_model_id = selected_model
-        else:
-            print(f"\nUsing user-specified model: {current_model_id}")
+            else:
+                print(f"\nUsing user-specified model: {current_model_id}")
 
-        messages = [{"role": "user", "content": [{"text": prompt}]}]
+            messages = [{"role": "user", "content": [{"text": prompt}]}]
 
-        inference_config = {
-            "maxTokens": args.output_tokens,
-            "temperature": args.temperature,
-            "topP": args.top_p
-        }
+            inference_config = {
+                "maxTokens": args.output_tokens,
+                "temperature": args.temperature,
+                "topP": args.top_p
+            }
 
-        print(f"\nSending request to Amazon Bedrock ({current_model_id})...")
-        print(f"Context size: {len(combined_context)} characters")
-        print(f"Total prompt size: {len(prompt)} characters (~{estimate_token_count(prompt)} tokens)")
-        
-        response = None
-        
-        try:
-            response = bedrock_client.converse(
-                modelId=current_model_id,
-                messages=messages,
-                inferenceConfig=inference_config
-            )
+            print(f"\nSending request to Amazon Bedrock ({current_model_id})...")
+            print(f"Context size: {len(combined_context)} characters")
+            print(f"Total prompt size: {len(prompt)} characters (~{estimate_token_count(prompt)} tokens)")
+            
+            response = None
+            
+            try:
+                response = bedrock_client.converse(
+                    modelId=current_model_id,
+                    messages=messages,
+                    inferenceConfig=inference_config
+                )
             
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
