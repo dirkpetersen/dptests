@@ -143,8 +143,13 @@ def extract_text_from_pdf(pdf_path):
             raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
 
 
-def chunk_text(text, chunk_size=MAX_CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+def chunk_text(text, chunk_size=None, overlap=None):
     """Split text into overlapping chunks for vector search"""
+    if chunk_size is None:
+        chunk_size = MAX_CHUNK_SIZE
+    if overlap is None:
+        overlap = CHUNK_OVERLAP
+        
     if len(text) <= chunk_size:
         return [text]
     
@@ -192,7 +197,7 @@ def get_file_hash(file_path):
 class PDFVectorStore:
     """FAISS-based vector store for PDF content"""
     
-    def __init__(self, use_gpu=False, model_name='all-MiniLM-L6-v2'):
+    def __init__(self, use_gpu=False, model_name='all-MiniLM-L6-v2', chunk_size=None, chunk_overlap=None):
         self.index = None
         self.chunks = []
         self.chunk_metadata = []  # Store filename and chunk info
@@ -200,6 +205,8 @@ class PDFVectorStore:
         self.embedder = SentenceTransformer(model_name)
         self.use_gpu = use_gpu
         self.embedding_dim = self.embedder.get_sentence_embedding_dimension()
+        self.chunk_size = chunk_size if chunk_size is not None else MAX_CHUNK_SIZE
+        self.chunk_overlap = chunk_overlap if chunk_overlap is not None else CHUNK_OVERLAP
         
         # Move embedder to GPU if available
         if use_gpu:
@@ -228,7 +235,7 @@ class PDFVectorStore:
                 # Check cache first
                 if ENABLE_EMBEDDING_CACHE:
                     file_hash = get_file_hash(pdf_path)
-                    cache_key = f"{filename}_{file_hash}_{MAX_CHUNK_SIZE}_{CHUNK_OVERLAP}.pkl"
+                    cache_key = f"{filename}_{file_hash}_{self.chunk_size}_{self.chunk_overlap}.pkl"
                     cache_path = os.path.join(CACHE_DIR, cache_key)
                     
                     if os.path.exists(cache_path):
@@ -241,7 +248,7 @@ class PDFVectorStore:
                             print(f"  Warning: Cache read failed for {filename}, regenerating: {e}")
                 
                 text = extract_text_from_pdf(pdf_path)
-                chunks = chunk_text(text)
+                chunks = chunk_text(text, self.chunk_size, self.chunk_overlap)
                 
                 metadata_list = []
                 for i, chunk in enumerate(chunks):
@@ -343,7 +350,7 @@ class PDFVectorStore:
                         
                         if original_path:
                             file_hash = get_file_hash(original_path)
-                            cache_key = f"{filename}_{file_hash}_{MAX_CHUNK_SIZE}_{CHUNK_OVERLAP}.pkl"
+                            cache_key = f"{filename}_{file_hash}_{self.chunk_size}_{self.chunk_overlap}.pkl"
                             cache_path = os.path.join(CACHE_DIR, cache_key)
                             
                             cache_data = {
@@ -618,11 +625,9 @@ def main():
     session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
     bedrock_client = session.client("bedrock-runtime", region_name=args.region)
 
-    # Override chunk size if specified
-    if args.chunk_size:
-        global MAX_CHUNK_SIZE, CHUNK_OVERLAP
-        MAX_CHUNK_SIZE = args.chunk_size
-        CHUNK_OVERLAP = max(200, args.chunk_size // 6)  # Keep proportional
+    # Calculate chunk size and overlap
+    chunk_size = args.chunk_size if args.chunk_size else MAX_CHUNK_SIZE
+    chunk_overlap = max(200, chunk_size // 6)  # Keep proportional
     
     # Disable cache if requested
     if args.no_cache:
@@ -635,7 +640,12 @@ def main():
     if args.fast_embeddings:
         print(f"Using fast embedding model: {embedding_model}")
     
-    vector_store = PDFVectorStore(use_gpu=use_gpu, model_name=embedding_model)
+    vector_store = PDFVectorStore(
+        use_gpu=use_gpu, 
+        model_name=embedding_model,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap
+    )
 
     try:
         # Build vector store from PDFs
