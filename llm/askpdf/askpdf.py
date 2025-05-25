@@ -272,14 +272,18 @@ def main():
         if error_code == "ValidationException" and "Input is too long" in error_message:
             full_message += (
                 "\n\n[Additional Diagnostics]:"
-                "\nThis error usually means the document content, after being processed, "
-                "exceeds the model's token limit or processing capacity."
-                f"\nModel used: {current_model_id}."
-                "\nConsider the following:"
-                "\n1. Use a smaller document or one with less textual content."
-                "\n2. If you have access, try a model with a larger context window. You can specify one using the --model-id option."
-                "\n   (e.g., some Claude models support up to 200K tokens)."
-                "\n3. The S3 upload was likely successful, but the model couldn't handle the content size."
+                f"\nYour PDF file ({total_size_bytes / (1024*1024):.2f} MB) was uploaded successfully, "
+                "but when Amazon Nova processed the document content (text, images, charts, etc.), "
+                "it exceeded the model's token processing limit."
+                f"\nModel used: {current_model_id}"
+                "\n\nPossible solutions:"
+                "\n1. Try a smaller document or split this PDF into smaller sections"
+                "\n2. Try a different Nova model with a larger context window:"
+                "\n   --model-id us.amazon.nova-premier-v1:0  (largest context window)"
+                "\n   --model-id us.amazon.nova-lite-v1:0     (smaller but more efficient)"
+                "\n3. The document may have many images/charts that consume significant tokens"
+                "\n\nNote: File size (MB) ≠ token count. A PDF with lots of text/images can have "
+                "high token usage even if the file size seems reasonable."
             )
         
         print(full_message, file=sys.stderr)
