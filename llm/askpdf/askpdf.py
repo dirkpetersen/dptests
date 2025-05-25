@@ -99,7 +99,7 @@ def detect_gpu():
         
     except (AttributeError, ImportError):
         # FAISS doesn't have GPU support (faiss-cpu installed)
-        print("FAISS CPU version detected, using CPU-only processing")
+        # Don't print here - will print only if FAISS is actually used
         return False
 
 
@@ -545,6 +545,13 @@ def can_use_direct_pdf_submission(document_file_paths, model_id, question):
     
     # Only works with Nova models
     if not is_nova_model(model_id):
+        # If using default model, check if we would auto-select a Nova model
+        if model_id == DEFAULT_BEDROCK_MODEL_ID:
+            # Estimate if we would select a Nova model based on PDF size
+            can_fit, total_size_mb, estimated_tokens = estimate_pdf_size_for_nova(pdf_files)
+            if can_fit:
+                # Would likely auto-select a Nova model
+                return True
         return False
     
     # Check if PDFs fit Nova size limits
@@ -836,22 +843,27 @@ def main():
         global ENABLE_EMBEDDING_CACHE
         ENABLE_EMBEDDING_CACHE = False
     
-    # Initialize FAISS vector store
-    use_gpu = detect_gpu()
-    embedding_model = 'paraphrase-MiniLM-L3-v2' if args.fast_embeddings else 'all-MiniLM-L6-v2'
-    if args.fast_embeddings:
-        print(f"Using fast embedding model: {embedding_model}")
-    
-    vector_store = PDFVectorStore(
-        use_gpu=use_gpu, 
-        model_name=embedding_model,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap
-    )
-
     # Check if we can use direct PDF submission instead of FAISS
-    use_direct_pdf = (args.model_id == DEFAULT_BEDROCK_MODEL_ID and 
-                      can_use_direct_pdf_submission(document_file_paths, current_model_id, args.question))
+    use_direct_pdf = can_use_direct_pdf_submission(document_file_paths, current_model_id, args.question)
+    
+    # Initialize FAISS vector store only if needed
+    vector_store = None
+    if not use_direct_pdf:
+        use_gpu = detect_gpu()
+        embedding_model = 'paraphrase-MiniLM-L3-v2' if args.fast_embeddings else 'all-MiniLM-L6-v2'
+        if args.fast_embeddings:
+            print(f"Using fast embedding model: {embedding_model}")
+        
+        # Print FAISS detection message only when actually using FAISS
+        if not use_gpu:
+            print("FAISS CPU version detected, using CPU-only processing")
+        
+        vector_store = PDFVectorStore(
+            use_gpu=use_gpu, 
+            model_name=embedding_model,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap
+        )
     
     if use_direct_pdf:
         # Use direct PDF submission to Nova
@@ -863,6 +875,22 @@ def main():
         
         pdf_files = [path for path in document_file_paths if path.lower().endswith('.pdf')]
         can_fit, total_size_mb, estimated_tokens = estimate_pdf_size_for_nova(pdf_files)
+        
+        # Auto-select appropriate Nova model if using default
+        if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
+            # Select model based on estimated tokens
+            question_tokens = estimate_token_count(args.question)
+            overhead_tokens = 1000
+            total_estimated_tokens = estimated_tokens + question_tokens + overhead_tokens
+            
+            if total_estimated_tokens <= MODEL_LIMITS["us.amazon.nova-micro-v1:0"] * 0.8:
+                current_model_id = "us.amazon.nova-micro-v1:0"
+            elif total_estimated_tokens <= MODEL_LIMITS["us.amazon.nova-lite-v1:0"] * 0.8:
+                current_model_id = "us.amazon.nova-lite-v1:0"
+            else:
+                current_model_id = "us.amazon.nova-premier-v1:0"
+            
+            print(f"Auto-selected {current_model_id} for direct PDF submission")
         
         print(f"Direct PDF submission: {len(pdf_files)} PDF(s), {total_size_mb:.2f} MB, ~{estimated_tokens} tokens")
         
