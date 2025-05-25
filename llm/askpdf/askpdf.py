@@ -770,14 +770,13 @@ class AskPDFWebApp:
         self.app = Flask(__name__)
         self.app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max upload
         self.app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
-        self.region = region or DEFAULT_AWS_REGION
         self.profile = profile
         
         # Initialize AWS session
         session = boto3.Session(profile_name=self.profile) if self.profile else boto3.Session()
         
         # Determine region: command line arg > profile region > default
-        if not self.region:
+        if not region:
             try:
                 # Try to get region from session/profile
                 profile_region = session.region_name
@@ -792,16 +791,18 @@ class AskPDFWebApp:
                             self.region = config_region
                             print(f"Using region from AWS config: {self.region}")
                         else:
-                            self.region = DEFAULT_AWS_REGION
-                            print(f"No region found in profile/config, using default: {self.region}")
+                            region = DEFAULT_AWS_REGION
+                            print(f"No region found in profile/config, using default: {region}")
                     except Exception:
-                        self.region = DEFAULT_AWS_REGION
-                        print(f"No region found in profile/config, using default: {self.region}")
+                        region = DEFAULT_AWS_REGION
+                        print(f"No region found in profile/config, using default: {region}")
             except Exception as e:
-                self.region = DEFAULT_AWS_REGION
-                print(f"Could not determine region from profile, using default: {self.region} (error: {e})")
+                region = DEFAULT_AWS_REGION
+                print(f"Could not determine region from profile, using default: {region} (error: {e})")
         else:
-            print(f"Using region from command line: {self.region}")
+            print(f"Using region from command line: {region}")
+        
+        self.region = region
         
         self.bedrock_client = session.client("bedrock-runtime", region_name=self.region)
         
