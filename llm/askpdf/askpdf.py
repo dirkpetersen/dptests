@@ -5,6 +5,8 @@ import boto3
 import os
 import re
 import sys
+import threading
+import time
 from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pickle
@@ -59,6 +61,38 @@ DEFAULT_INPUT_TOKENS = 30000  # Placeholder for typical model context window
 DEFAULT_OUTPUT_TOKENS = 10000  # Default output token limit for model responses
 DEFAULT_TOP_P = 0.9
 DEFAULT_TEMPERATURE = 0.2
+
+
+class Spinner:
+    """Simple spinner for showing progress during long operations"""
+    def __init__(self, message="Processing"):
+        self.message = message
+        self.spinning = False
+        self.spinner_thread = None
+        
+    def start(self):
+        """Start the spinner"""
+        self.spinning = True
+        self.spinner_thread = threading.Thread(target=self._spin)
+        self.spinner_thread.daemon = True
+        self.spinner_thread.start()
+        
+    def stop(self):
+        """Stop the spinner"""
+        self.spinning = False
+        if self.spinner_thread:
+            self.spinner_thread.join()
+        # Clear the spinner line
+        print("\r" + " " * (len(self.message) + 10) + "\r", end="", flush=True)
+        
+    def _spin(self):
+        """Internal method to handle the spinning animation"""
+        chars = "|/-\\"
+        idx = 0
+        while self.spinning:
+            print(f"\r{self.message} {chars[idx % len(chars)]}", end="", flush=True)
+            idx += 1
+            time.sleep(0.1)
 
 
 def detect_gpu():
@@ -225,7 +259,8 @@ class PDFVectorStore:
         all_chunks = []
         all_metadata = []
         
-        print("Processing documents and extracting text...")
+        # Don't print this message here since spinner will show progress
+        # print("Processing documents and extracting text...")
         
         # Process documents in parallel for better performance
         def process_single_document(doc_path):
@@ -825,6 +860,11 @@ def main():
         action="store_true",
         help="Search subdirectories recursively for PDF and Markdown files"
     )
+    parser.add_argument(
+        "--use-faiss",
+        action="store_true",
+        help="Force use of FAISS vector store even if direct PDF submission criteria are met"
+    )
 
     args = parser.parse_args()
     current_model_id = args.model_id
@@ -857,6 +897,11 @@ def main():
     
     # Check if we can use direct PDF submission instead of FAISS
     use_direct_pdf = can_use_direct_pdf_submission(document_file_paths, current_model_id, args.question)
+    
+    # Override if user explicitly wants to use FAISS
+    if args.use_faiss:
+        use_direct_pdf = False
+        print("Forcing FAISS vector store usage (--use-faiss specified)")
     
     # Initialize FAISS vector store only if needed
     vector_store = None
@@ -908,12 +953,22 @@ def main():
         print(f"Direct PDF submission: {len(pdf_files)} PDF(s), {total_size_mb:.2f} MB, ~{estimated_tokens} tokens")
         
         try:
+            # Start spinner for PDF submission
+            spinner = Spinner(f"Submitting {len(pdf_files)} PDF(s) directly to {current_model_id}")
+            spinner.start()
+            
             response = submit_pdfs_directly_to_nova(
                 bedrock_client, current_model_id, pdf_files, args.question, inference_config
             )
+            
+            spinner.stop()
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
             error_message = e.response.get("Error", {}).get("Message", str(e))
+            
+            # Stop spinner on error
+            if 'spinner' in locals():
+                spinner.stop()
             
             # If direct submission fails, fall back to FAISS
             if (error_code == "ValidationException" and 
@@ -928,8 +983,13 @@ def main():
     if not use_direct_pdf:
         # Use FAISS-based approach
         try:
-            # Build vector store from documents
+            # Build vector store from documents with spinner
+            spinner = Spinner("Processing documents and building vector store")
+            spinner.start()
+            
             vector_store.add_documents(document_file_paths)
+            
+            spinner.stop()
             
             # Search for relevant chunks
             print(f"\nSearching for relevant content for: '{args.question}'")
