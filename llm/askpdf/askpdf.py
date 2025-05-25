@@ -3,15 +3,10 @@
 import argparse
 import boto3
 import os
-import json
-import uuid
 import re
 import sys
-import tempfile
-import shutil
 from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import Lock
 import pickle
 import hashlib
 
@@ -71,7 +66,7 @@ MODEL_LIMITS = {
 }
 
 DEFAULT_INPUT_TOKENS = 30000  # Placeholder for typical model context window
-DEFAULT_OUTPUT_TOKENS = 2048
+DEFAULT_OUTPUT_TOKENS = 10000  # Default output token limit for model responses
 DEFAULT_TOP_P = 0.9
 DEFAULT_TEMPERATURE = 0.2
 
