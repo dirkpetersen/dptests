@@ -535,10 +535,10 @@ def sanitize_document_name(filename):
     return sanitized[:60]
 
 
-def get_document_files_details(input_path):
+def get_document_files_details(input_path, recursive=False):
     """
     Collects PDF and Markdown file paths from a given file or directory.
-    For directories, only searches the top level (no subdirectories).
+    For directories, searches recursively if recursive=True, otherwise only top level.
     Returns a list of full file paths and the total size in bytes.
     """
     document_file_paths = []
@@ -554,17 +554,27 @@ def get_document_files_details(input_path):
         else:
             raise ValueError(f"Error: Specified file '{input_path}' is not a PDF or Markdown file.")
     elif os.path.isdir(input_path):
-        # Only look at files in the directory itself, not subdirectories
-        for file in os.listdir(input_path):
-            file_path = os.path.join(input_path, file)
-            if os.path.isfile(file_path) and file.lower().endswith((".pdf", ".md")):
-                document_file_paths.append(file_path)
-                total_size_bytes += os.path.getsize(file_path)
+        if recursive:
+            # Search recursively through all subdirectories
+            for root, dirs, files in os.walk(input_path):
+                for file in files:
+                    if file.lower().endswith((".pdf", ".md")):
+                        file_path = os.path.join(root, file)
+                        document_file_paths.append(file_path)
+                        total_size_bytes += os.path.getsize(file_path)
+        else:
+            # Only look at files in the directory itself, not subdirectories
+            for file in os.listdir(input_path):
+                file_path = os.path.join(input_path, file)
+                if os.path.isfile(file_path) and file.lower().endswith((".pdf", ".md")):
+                    document_file_paths.append(file_path)
+                    total_size_bytes += os.path.getsize(file_path)
     else:
         raise ValueError(f"Error: Input path '{input_path}' is not a valid file or directory.")
 
     if not document_file_paths:
-        raise FileNotFoundError(f"Error: No PDF or Markdown files found at '{input_path}'.")
+        search_type = "recursively" if recursive else "in top-level directory"
+        raise FileNotFoundError(f"Error: No PDF or Markdown files found {search_type} at '{input_path}'.")
 
     return document_file_paths, total_size_bytes
 
@@ -648,12 +658,17 @@ def main():
         action="store_true",
         help="Disable embedding cache"
     )
+    parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Search subdirectories recursively for PDF and Markdown files"
+    )
 
     args = parser.parse_args()
     current_model_id = args.model_id
 
     try:
-        document_file_paths, total_size_bytes = get_document_files_details(args.path)
+        document_file_paths, total_size_bytes = get_document_files_details(args.path, recursive=args.recursive)
     except (FileNotFoundError, ValueError) as e:
         print(e, file=sys.stderr)
         sys.exit(1)
@@ -661,7 +676,8 @@ def main():
     num_documents = len(document_file_paths)
     pdf_count = sum(1 for path in document_file_paths if path.lower().endswith('.pdf'))
     md_count = sum(1 for path in document_file_paths if path.lower().endswith('.md'))
-    print(f"Found {num_documents} document(s) ({pdf_count} PDF, {md_count} Markdown), total size: {total_size_bytes / (1024*1024):.2f} MB.")
+    search_mode = "recursively" if args.recursive else "in top-level directory"
+    print(f"Found {num_documents} document(s) ({pdf_count} PDF, {md_count} Markdown) {search_mode}, total size: {total_size_bytes / (1024*1024):.2f} MB.")
 
     # Initialize AWS session with optional profile
     session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
