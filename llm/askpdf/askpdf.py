@@ -12,6 +12,8 @@ import shutil
 from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
+import pickle
+import hashlib
 
 # FAISS and embedding imports
 try:
@@ -52,9 +54,13 @@ DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-pro-v1:0"
 AWS_REGION = "us-east-1" # You can change this if needed
 
 # Document processing limits - now used for chunking strategy
-MAX_CHUNK_SIZE = 1000  # Characters per chunk for vector search
-CHUNK_OVERLAP = 200    # Overlap between chunks
+MAX_CHUNK_SIZE = 3000  # Characters per chunk for vector search (increased for fewer chunks)
+CHUNK_OVERLAP = 500    # Overlap between chunks (proportionally increased)
 TOP_K_CHUNKS = 5       # Number of most relevant chunks to send to LLM
+
+# Embedding cache settings
+ENABLE_EMBEDDING_CACHE = True
+CACHE_DIR = ".embedding_cache"
 
 # Bedrock inference parameters
 DEFAULT_INPUT_TOKENS = 30000  # Placeholder for typical model context window
@@ -174,15 +180,26 @@ def chunk_text(text, chunk_size=MAX_CHUNK_SIZE, overlap=CHUNK_OVERLAP):
     return chunks
 
 
+def get_file_hash(file_path):
+    """Generate hash of file content for cache key"""
+    hash_md5 = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
 class PDFVectorStore:
     """FAISS-based vector store for PDF content"""
     
-    def __init__(self, use_gpu=False):
+    def __init__(self, use_gpu=False, model_name='all-MiniLM-L6-v2'):
         self.index = None
         self.chunks = []
         self.chunk_metadata = []  # Store filename and chunk info
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        # Option to use faster model: 'paraphrase-MiniLM-L3-v2' (3x faster)
+        self.embedder = SentenceTransformer(model_name)
         self.use_gpu = use_gpu
+        self.embedding_dim = self.embedder.get_sentence_embedding_dimension()
         
         # Move embedder to GPU if available
         if use_gpu:
@@ -191,6 +208,10 @@ class PDFVectorStore:
             except Exception as e:
                 print(f"Warning: Could not move embedder to GPU: {e}")
                 self.use_gpu = False
+        
+        # Initialize cache directory
+        if ENABLE_EMBEDDING_CACHE:
+            os.makedirs(CACHE_DIR, exist_ok=True)
     
     def add_documents(self, pdf_files):
         """Process PDF files and add to vector store"""
@@ -202,9 +223,25 @@ class PDFVectorStore:
         # Process PDFs in parallel for better performance
         def process_single_pdf(pdf_path):
             try:
+                filename = os.path.basename(pdf_path)
+                
+                # Check cache first
+                if ENABLE_EMBEDDING_CACHE:
+                    file_hash = get_file_hash(pdf_path)
+                    cache_key = f"{filename}_{file_hash}_{MAX_CHUNK_SIZE}_{CHUNK_OVERLAP}.pkl"
+                    cache_path = os.path.join(CACHE_DIR, cache_key)
+                    
+                    if os.path.exists(cache_path):
+                        try:
+                            with open(cache_path, 'rb') as f:
+                                cached_data = pickle.load(f)
+                            print(f"  {filename}: Using cached embeddings ({cached_data['num_chunks']} chunks)")
+                            return cached_data['filename'], cached_data['chunks'], cached_data['metadata'], cached_data['text_len'], cached_data['embeddings']
+                        except Exception as e:
+                            print(f"  Warning: Cache read failed for {filename}, regenerating: {e}")
+                
                 text = extract_text_from_pdf(pdf_path)
                 chunks = chunk_text(text)
-                filename = os.path.basename(pdf_path)
                 
                 metadata_list = []
                 for i, chunk in enumerate(chunks):
@@ -214,101 +251,189 @@ class PDFVectorStore:
                         'total_chunks': len(chunks)
                     })
                 
-                return filename, chunks, metadata_list, len(text)
+                return filename, chunks, metadata_list, len(text), None
             except Exception as e:
                 print(f"Warning: Could not process {pdf_path}: {e}")
-                return None, None, None, None
+                return None, None, None, None, None
         
         # Use ThreadPoolExecutor for parallel processing
         max_workers = min(len(pdf_files), 4)  # Limit concurrent threads
+        cached_embeddings = []
+        files_to_embed = []
+        
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_pdf = {executor.submit(process_single_pdf, pdf_path): pdf_path 
                            for pdf_path in pdf_files}
             
             for future in as_completed(future_to_pdf):
-                filename, chunks, metadata_list, text_len = future.result()
+                filename, chunks, metadata_list, text_len, embeddings = future.result()
                 if chunks:
-                    print(f"  {filename}: {len(chunks)} chunks from {text_len} characters")
+                    if embeddings is not None:
+                        # Use cached embeddings
+                        cached_embeddings.extend(embeddings)
+                    else:
+                        # Need to generate embeddings
+                        print(f"  {filename}: {len(chunks)} chunks from {text_len} characters")
+                        files_to_embed.append((filename, chunks, metadata_list, text_len))
+                    
                     all_chunks.extend(chunks)
                     all_metadata.extend(metadata_list)
         
         if not all_chunks:
             raise ValueError("No text content could be extracted from any PDF files")
         
-        print(f"Generating embeddings for {len(all_chunks)} chunks...")
-        # Ensure all chunks are strings and handle any encoding issues
-        clean_chunks = []
-        for chunk in all_chunks:
-            if isinstance(chunk, str):
-                # Remove any problematic characters and ensure it's clean text
-                clean_chunk = chunk.strip().replace('\x00', '').replace('\ufffd', '')
-                if clean_chunk:  # Only add non-empty chunks
-                    clean_chunks.append(clean_chunk)
-            else:
-                clean_chunk = str(chunk).strip().replace('\x00', '').replace('\ufffd', '')
-                if clean_chunk:
-                    clean_chunks.append(clean_chunk)
+        # Prepare embeddings
+        all_embeddings = []
         
-        if not clean_chunks:
-            raise ValueError("No valid text chunks found after cleaning")
+        # Add cached embeddings first
+        if cached_embeddings:
+            all_embeddings = cached_embeddings
+            print(f"Loaded {len(cached_embeddings)} cached embeddings")
         
-        try:
-            # Try with batch processing to handle large datasets better
-            embeddings = self.embedder.encode(
-                clean_chunks, 
-                show_progress_bar=True, 
-                convert_to_tensor=False,
-                batch_size=32,
-                normalize_embeddings=True
-            )
-        except Exception as e:
-            print(f"Error during embedding generation: {e}")
-            print("Trying alternative encoding method...")
-            # Fallback: encode one by one to identify problematic chunks
-            embeddings_list = []
-            valid_chunks = []
-            valid_metadata = []
+        # Generate embeddings for new files
+        if files_to_embed:
+            chunks_to_embed = []
+            embed_metadata = []
             
-            for i, chunk in enumerate(clean_chunks):
-                try:
-                    # Ensure chunk is a proper string
-                    if not isinstance(chunk, str) or not chunk.strip():
-                        print(f"Skipping empty or invalid chunk {i}")
-                        continue
-                    
-                    emb = self.embedder.encode([chunk], convert_to_tensor=False, normalize_embeddings=True)
-                    embeddings_list.append(emb[0])
-                    valid_chunks.append(chunk)
-                    valid_metadata.append(all_metadata[i])
-                except Exception as chunk_error:
-                    print(f"Skipping problematic chunk {i}: {chunk_error}")
-                    if i < len(clean_chunks):
-                        print(f"  Chunk preview: {clean_chunks[i][:50]}...")
+            for filename, chunks, metadata_list, text_len in files_to_embed:
+                chunks_to_embed.extend(chunks)
+                embed_metadata.extend([(filename, i) for i in range(len(chunks))])
             
-            if not embeddings_list:
-                raise ValueError("Could not generate any embeddings")
+            print(f"Generating embeddings for {len(chunks_to_embed)} new chunks...")
             
-            embeddings = np.array(embeddings_list)
-            # Update chunks and metadata to only include valid ones
-            all_chunks = valid_chunks
-            all_metadata = valid_metadata
+            # Ensure all chunks are strings and handle any encoding issues
+            clean_chunks = []
+            for chunk in chunks_to_embed:
+                if isinstance(chunk, str):
+                    # Remove any problematic characters and ensure it's clean text
+                    clean_chunk = chunk.strip().replace('\x00', '').replace('\ufffd', '')
+                    if clean_chunk:  # Only add non-empty chunks
+                        clean_chunks.append(clean_chunk)
+                else:
+                    clean_chunk = str(chunk).strip().replace('\x00', '').replace('\ufffd', '')
+                    if clean_chunk:
+                        clean_chunks.append(clean_chunk)
+            
+            if not clean_chunks:
+                raise ValueError("No valid text chunks found after cleaning")
+        
+            try:
+                # Try with batch processing to handle large datasets better
+                embeddings = self.embedder.encode(
+                    clean_chunks, 
+                    show_progress_bar=True, 
+                    convert_to_tensor=False,
+                    batch_size=64,  # Increased batch size for faster processing
+                    normalize_embeddings=True
+                )
+                
+                # Cache the new embeddings
+                if ENABLE_EMBEDDING_CACHE:
+                    embed_idx = 0
+                    for filename, chunks, metadata_list, text_len in files_to_embed:
+                        file_embeddings = embeddings[embed_idx:embed_idx + len(chunks)]
+                        embed_idx += len(chunks)
+                        
+                        # Find original file path
+                        original_path = None
+                        for pdf_path in pdf_files:
+                            if os.path.basename(pdf_path) == filename:
+                                original_path = pdf_path
+                                break
+                        
+                        if original_path:
+                            file_hash = get_file_hash(original_path)
+                            cache_key = f"{filename}_{file_hash}_{MAX_CHUNK_SIZE}_{CHUNK_OVERLAP}.pkl"
+                            cache_path = os.path.join(CACHE_DIR, cache_key)
+                            
+                            cache_data = {
+                                'filename': filename,
+                                'chunks': chunks,
+                                'metadata': metadata_list,
+                                'text_len': text_len,
+                                'embeddings': file_embeddings.tolist(),
+                                'num_chunks': len(chunks)
+                            }
+                            
+                            try:
+                                with open(cache_path, 'wb') as f:
+                                    pickle.dump(cache_data, f)
+                            except Exception as e:
+                                print(f"Warning: Could not cache embeddings for {filename}: {e}")
+                
+                all_embeddings.extend(embeddings.tolist())
+                
+            except Exception as e:
+                print(f"Error during embedding generation: {e}")
+                print("Trying alternative encoding method...")
+                # Fallback: encode one by one to identify problematic chunks
+                embeddings_list = []
+                
+                for i, chunk in enumerate(clean_chunks):
+                    try:
+                        # Ensure chunk is a proper string
+                        if not isinstance(chunk, str) or not chunk.strip():
+                            print(f"Skipping empty or invalid chunk {i}")
+                            continue
+                        
+                        emb = self.embedder.encode([chunk], convert_to_tensor=False, normalize_embeddings=True)
+                        embeddings_list.append(emb[0])
+                    except Exception as chunk_error:
+                        print(f"Skipping problematic chunk {i}: {chunk_error}")
+                        if i < len(clean_chunks):
+                            print(f"  Chunk preview: {clean_chunks[i][:50]}...")
+                
+                if not embeddings_list:
+                    raise ValueError("Could not generate any embeddings")
+                
+                all_embeddings.extend(embeddings_list)
+        
+        # Convert all embeddings to numpy array
+        embeddings = np.array(all_embeddings)
         
         # Create FAISS index
         dimension = embeddings.shape[1]
+        num_vectors = embeddings.shape[0]
         
-        if self.use_gpu:
-            # GPU index
-            res = faiss.StandardGpuResources()
-            index_cpu = faiss.IndexFlatIP(dimension)
-            self.index = faiss.index_cpu_to_gpu(res, 0, index_cpu)
+        # Use approximate search for large datasets
+        if num_vectors > 1000:
+            # Use IVF index for faster search on large datasets
+            nlist = min(int(np.sqrt(num_vectors)), 100)  # number of clusters
+            
+            if self.use_gpu:
+                # GPU index with IVF
+                res = faiss.StandardGpuResources()
+                quantizer = faiss.IndexFlatIP(dimension)
+                index_cpu = faiss.IndexIVFFlat(quantizer, dimension, nlist, faiss.METRIC_INNER_PRODUCT)
+                self.index = faiss.index_cpu_to_gpu(res, 0, index_cpu)
+            else:
+                # CPU index with IVF
+                quantizer = faiss.IndexFlatIP(dimension)
+                self.index = faiss.IndexIVFFlat(quantizer, dimension, nlist, faiss.METRIC_INNER_PRODUCT)
+            
+            # Train the index
+            embeddings_np = embeddings.astype('float32')
+            faiss.normalize_L2(embeddings_np)
+            self.index.train(embeddings_np)
+            self.index.add(embeddings_np)
+            
+            # Set search parameters for speed/accuracy tradeoff
+            self.index.nprobe = min(10, nlist // 2)  # search this many clusters
         else:
-            # CPU index
-            self.index = faiss.IndexFlatIP(dimension)
-        
-        # Add embeddings to index
-        embeddings_np = embeddings.astype('float32')
-        faiss.normalize_L2(embeddings_np)  # Normalize for cosine similarity
-        self.index.add(embeddings_np)
+            # Use exact search for small datasets
+            if self.use_gpu:
+                # GPU index
+                res = faiss.StandardGpuResources()
+                index_cpu = faiss.IndexFlatIP(dimension)
+                self.index = faiss.index_cpu_to_gpu(res, 0, index_cpu)
+            else:
+                # CPU index
+                self.index = faiss.IndexFlatIP(dimension)
+            
+            # Add embeddings to index
+            embeddings_np = embeddings.astype('float32')
+            faiss.normalize_L2(embeddings_np)  # Normalize for cosine similarity
+            self.index.add(embeddings_np)
         
         self.chunks = all_chunks
         self.chunk_metadata = all_metadata
@@ -460,6 +585,22 @@ def main():
         default=DEFAULT_BEDROCK_MODEL_ID,
         help=f"The Bedrock model ID to use. Default: {DEFAULT_BEDROCK_MODEL_ID}"
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=MAX_CHUNK_SIZE,
+        help=f"Size of text chunks for vector search. Larger = fewer chunks but less granular. Default: {MAX_CHUNK_SIZE}"
+    )
+    parser.add_argument(
+        "--fast-embeddings",
+        action="store_true",
+        help="Use faster but potentially less accurate embedding model (3x speedup)"
+    )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Disable embedding cache"
+    )
 
     args = parser.parse_args()
     current_model_id = args.model_id
@@ -477,9 +618,24 @@ def main():
     session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
     bedrock_client = session.client("bedrock-runtime", region_name=args.region)
 
+    # Override chunk size if specified
+    if args.chunk_size:
+        global MAX_CHUNK_SIZE, CHUNK_OVERLAP
+        MAX_CHUNK_SIZE = args.chunk_size
+        CHUNK_OVERLAP = max(200, args.chunk_size // 6)  # Keep proportional
+    
+    # Disable cache if requested
+    if args.no_cache:
+        global ENABLE_EMBEDDING_CACHE
+        ENABLE_EMBEDDING_CACHE = False
+    
     # Initialize FAISS vector store
     use_gpu = detect_gpu()
-    vector_store = PDFVectorStore(use_gpu=use_gpu)
+    embedding_model = 'paraphrase-MiniLM-L3-v2' if args.fast_embeddings else 'all-MiniLM-L6-v2'
+    if args.fast_embeddings:
+        print(f"Using fast embedding model: {embedding_model}")
+    
+    vector_store = PDFVectorStore(use_gpu=use_gpu, model_name=embedding_model)
 
     try:
         # Build vector store from PDFs
