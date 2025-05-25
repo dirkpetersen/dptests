@@ -1642,12 +1642,12 @@ def main():
             html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
             
             // Bold
-            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\\*\\*\\*(.+?)\\*\\*\\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');
             html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
             
             // Italic
-            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');
             html = html.replace(/_(.+?)_/g, '<em>$1</em>');
             
             // Links
@@ -1660,10 +1660,10 @@ def main():
             html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
             
             // Lists
-            html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/^\\* (.+)$/gim, '<li>$1</li>');
             html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
             
-            html = html.replace(/^\d+\. (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/^\\d+\\. (.+)$/gim, '<li>$1</li>');
             
             // Paragraphs
             html = html.split('\n\n').map(para => {
