@@ -791,18 +791,17 @@ class AskPDFWebApp:
                             self.region = config_region
                             print(f"Using region from AWS config: {self.region}")
                         else:
-                            region = DEFAULT_AWS_REGION
-                            print(f"No region found in profile/config, using default: {region}")
+                            self.region = DEFAULT_AWS_REGION
+                            print(f"No region found in profile/config, using default: {self.region}")
                     except Exception:
-                        region = DEFAULT_AWS_REGION
-                        print(f"No region found in profile/config, using default: {region}")
+                        self.region = DEFAULT_AWS_REGION
+                        print(f"No region found in profile/config, using default: {self.region}")
             except Exception as e:
-                region = DEFAULT_AWS_REGION
-                print(f"Could not determine region from profile, using default: {region} (error: {e})")
+                self.region = DEFAULT_AWS_REGION
+                print(f"Could not determine region from profile, using default: {self.region} (error: {e})")
         else:
-            print(f"Using region from command line: {region}")
-        
-        self.region = region
+            self.region = region
+            print(f"Using region from command line: {self.region}")
         
         self.bedrock_client = session.client("bedrock-runtime", region_name=self.region)
         
