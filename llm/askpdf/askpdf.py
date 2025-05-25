@@ -610,8 +610,6 @@ def submit_pdfs_directly_to_nova(bedrock_client, model_id, pdf_paths, question, 
     Submit PDFs directly to Nova model using document support.
     Returns the response from the model.
     """
-    print(f"Using direct PDF submission to Nova model (bypassing FAISS)")
-    
     # Prepare messages with PDF documents
     content = []
     
@@ -639,8 +637,6 @@ def submit_pdfs_directly_to_nova(bedrock_client, model_id, pdf_paths, question, 
     })
     
     messages = [{"role": "user", "content": content}]
-    
-    print(f"Submitting {len(pdf_paths)} PDF(s) directly to {model_id}")
     
     response = bedrock_client.converse(
         modelId=model_id,
@@ -951,6 +947,7 @@ def main():
             print(f"Auto-selected {current_model_id} for direct PDF submission")
         
         print(f"Direct PDF submission: {len(pdf_files)} PDF(s), {total_size_mb:.2f} MB, ~{estimated_tokens} tokens")
+        print(f"Using direct PDF submission to Nova model (bypassing FAISS)")
         
         try:
             # Start spinner for PDF submission
@@ -962,6 +959,7 @@ def main():
             )
             
             spinner.stop()
+            print()  # Add a blank line after spinner stops
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
             error_message = e.response.get("Error", {}).get("Message", str(e))
