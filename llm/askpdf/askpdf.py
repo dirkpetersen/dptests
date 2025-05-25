@@ -631,12 +631,8 @@ def submit_pdfs_directly_to_nova(bedrock_client, model_id, pdf_paths, question, 
             }
         })
     
-    # Add the question with comprehensive instruction as text
-    comprehensive_prompt = f"""Based on the document(s) provided above, please answer the following question.
-
-Question: {question}
-
-Please provide a comprehensive and detailed answer based on all the information available in the document(s). Include relevant details, context, and explanations to give a thorough response."""
+    # Add the question using the same comprehensive prompt template as FAISS
+    comprehensive_prompt = create_comprehensive_prompt(question, "the document(s) provided above")
     
     content.append({
         "text": comprehensive_prompt
@@ -721,6 +717,17 @@ def estimate_max_chunks_for_model(model_id, base_prompt_size, avg_chunk_size):
     # Calculate how many chunks can fit
     max_chunks = max(1, remaining_chars // avg_chunk_size)
     return max_chunks
+
+
+def create_comprehensive_prompt(question, context_or_instruction="the following document excerpts"):
+    """
+    Create a standardized comprehensive prompt template used by both FAISS and direct PDF approaches.
+    """
+    return f"""Based on {context_or_instruction}, please answer the question.
+
+Question: {question}
+
+Please provide a comprehensive answer based on the information in the document excerpts above."""
 
 
 def sanitize_document_name(filename):
@@ -1061,15 +1068,14 @@ def main():
             
             combined_context = "\n\n---\n\n".join(context_parts)
             
-            # Create prompt with context and question
+            # Create prompt with context and question using standardized template
+            prompt_question_part = create_comprehensive_prompt(args.question)
             prompt = f"""Based on the following document excerpts, please answer the question.
 
 Document excerpts:
 {combined_context}
 
-Question: {args.question}
-
-Please provide a comprehensive answer based on the information in the document excerpts above."""
+{prompt_question_part}"""
 
             # Auto-select model based on context size only if using default model
             if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
@@ -1195,15 +1201,14 @@ Please provide a comprehensive answer based on the information in the document e
                                 
                                 reduced_context = "\n\n---\n\n".join(context_parts)
                                 
-                                # Create new prompt with reduced context
+                                # Create new prompt with reduced context using standardized template
+                                reduced_prompt_question_part = create_comprehensive_prompt(args.question)
                                 reduced_prompt = f"""Based on the following document excerpts, please answer the question.
 
 Document excerpts:
 {reduced_context}
 
-Question: {args.question}
-
-Please provide a comprehensive answer based on the information in the document excerpts above."""
+{reduced_prompt_question_part}"""
 
                                 reduced_messages = [{"role": "user", "content": [{"text": reduced_prompt}]}]
                                 
