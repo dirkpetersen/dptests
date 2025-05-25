@@ -787,8 +787,7 @@ class AskPDFWebApp:
                 else:
                     # Try to get region from AWS config
                     try:
-                        import boto3.session
-                        config_region = boto3.session.Session(profile_name=self.profile).get_config_variable('region')
+                        config_region = session.get_config_variable('region')
                         if config_region:
                             self.region = config_region
                             print(f"Using region from AWS config: {self.region}")
@@ -1778,8 +1777,7 @@ def main():
             else:
                 # Try to get region from AWS config
                 try:
-                    import boto3.session
-                    config_region = boto3.session.Session(profile_name=args.profile).get_config_variable('region')
+                    config_region = session.get_config_variable('region')
                     if config_region:
                         region = config_region
                         print(f"Using region from AWS config: {region}")
