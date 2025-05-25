@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 
 import argparse
-import boto3
 import os
 import re
 import sys
 import threading
 import time
-from botocore.exceptions import ClientError, ReadTimeoutError
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import pickle
 import hashlib
 import json
 import tempfile
 import shutil
 from pathlib import Path
+
+# AWS imports
+try:
+    import boto3
+    from botocore.exceptions import ClientError, ReadTimeoutError
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+except ImportError as e:
+    print(f"Error: AWS SDK not installed. Run: pip install boto3", file=sys.stderr)
+    sys.exit(1)
 
 # Flask imports (only loaded when --ui is used)
 flask_available = False
