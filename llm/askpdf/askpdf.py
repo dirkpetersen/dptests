@@ -632,7 +632,12 @@ def submit_pdfs_directly_to_nova(bedrock_client, model_id, pdf_paths, question, 
         })
     
     # Add the question using the same comprehensive prompt template as FAISS
-    comprehensive_prompt = create_comprehensive_prompt(question, "the document(s) provided")
+    # Match the exact prompt structure used in FAISS mode
+    comprehensive_prompt = f"""Based on the document(s) provided, please answer the question.
+
+Question: {question}
+
+Please provide a comprehensive answer based on the information in the document(s) provided."""
     
     content.append({
         "text": comprehensive_prompt
