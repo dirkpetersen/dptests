@@ -524,6 +524,39 @@ def select_model_for_context(context_text, preferred_model="us.amazon.nova-micro
     return "us.amazon.nova-premier-v1:0"
 
 
+def is_nova_model(model_id):
+    """Check if the model is a Nova model"""
+    return "nova" in model_id.lower()
+
+
+def estimate_max_chunks_for_model(model_id, base_prompt_size, avg_chunk_size):
+    """
+    Estimate maximum number of chunks that can fit in a model's context window.
+    Returns the maximum number of chunks, or None if model limit is unknown.
+    """
+    if model_id in MODEL_LIMITS:
+        max_tokens = MODEL_LIMITS[model_id]
+    else:
+        # For non-Nova models, assume a conservative limit
+        max_tokens = 100000  # Conservative estimate for most models
+    
+    # Reserve tokens for response and overhead
+    available_tokens = max_tokens - 3000
+    
+    # Convert to characters (rough estimate: 4 chars per token)
+    available_chars = available_tokens * 4
+    
+    # Account for base prompt size
+    remaining_chars = available_chars - base_prompt_size
+    
+    if remaining_chars <= 0:
+        return 0
+    
+    # Calculate how many chunks can fit
+    max_chunks = max(1, remaining_chars // avg_chunk_size)
+    return max_chunks
+
+
 def sanitize_document_name(filename):
     """
     Sanitizes a filename to be a valid document name for Bedrock.
@@ -765,54 +798,126 @@ Please provide a comprehensive answer based on the information in the document e
         print(f"Context size: {len(combined_context)} characters")
         print(f"Total prompt size: {len(prompt)} characters (~{estimate_token_count(prompt)} tokens)")
         
-        # Try the request with automatic fallback to larger models if input is too long
-        fallback_models = [
-            current_model_id,
-            "us.amazon.nova-lite-v1:0",
-            "us.amazon.nova-premier-v1:0"
-        ]
-        
-        # Remove duplicates while preserving order
-        unique_fallback_models = []
-        for model in fallback_models:
-            if model not in unique_fallback_models:
-                unique_fallback_models.append(model)
-        
         response = None
-        last_error = None
         
-        for attempt_model in unique_fallback_models:
-            try:
-                if attempt_model != current_model_id:
-                    print(f"\nFalling back to larger model: {attempt_model}")
+        try:
+            response = bedrock_client.converse(
+                modelId=current_model_id,
+                messages=messages,
+                inferenceConfig=inference_config
+            )
+            
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            error_message = e.response.get("Error", {}).get("Message", str(e))
+            
+            # Check if it's an "input too long" error
+            if (error_code == "ValidationException" and 
+                ("Input is too long" in error_message or "too long for requested model" in error_message)):
                 
-                response = bedrock_client.converse(
-                    modelId=attempt_model,
-                    messages=messages,
-                    inferenceConfig=inference_config
-                )
-                
-                # If we get here, the request succeeded
-                current_model_id = attempt_model
-                break
-                
-            except ClientError as e:
-                error_code = e.response.get("Error", {}).get("Code")
-                error_message = e.response.get("Error", {}).get("Message", str(e))
-                last_error = e
-                
-                # Check if it's an "input too long" error
-                if (error_code == "ValidationException" and 
-                    ("Input is too long" in error_message or "too long for requested model" in error_message)):
-                    print(f"Model {attempt_model} cannot handle input size, trying next larger model...")
-                    continue
+                if is_nova_model(current_model_id):
+                    # For Nova models, try fallback to larger Nova models
+                    print(f"Model {current_model_id} cannot handle input size, trying larger Nova models...")
+                    
+                    fallback_models = [
+                        "us.amazon.nova-lite-v1:0",
+                        "us.amazon.nova-premier-v1:0"
+                    ]
+                    
+                    # Remove current model if it's already in the list
+                    fallback_models = [m for m in fallback_models if m != current_model_id]
+                    
+                    for attempt_model in fallback_models:
+                        try:
+                            print(f"\nFalling back to larger Nova model: {attempt_model}")
+                            
+                            response = bedrock_client.converse(
+                                modelId=attempt_model,
+                                messages=messages,
+                                inferenceConfig=inference_config
+                            )
+                            
+                            current_model_id = attempt_model
+                            break
+                            
+                        except ClientError as fallback_e:
+                            fallback_error_code = fallback_e.response.get("Error", {}).get("Code")
+                            fallback_error_message = fallback_e.response.get("Error", {}).get("Message", str(fallback_e))
+                            
+                            if (fallback_error_code == "ValidationException" and 
+                                ("Input is too long" in fallback_error_message or "too long for requested model" in fallback_error_message)):
+                                continue
+                            else:
+                                raise fallback_e
+                    
+                    if response is None:
+                        raise e  # All Nova models failed
+                        
                 else:
-                    # For other errors, don't retry with different models
-                    raise e
-        
-        if response is None:
-            # All models failed with input too long
-            raise last_error
+                    # For non-Nova models, reduce top-k and retry
+                    print(f"Non-Nova model {current_model_id} cannot handle input size, reducing chunks...")
+                    
+                    # Calculate average chunk size
+                    if relevant_chunks:
+                        avg_chunk_size = sum(len(chunk['chunk']) for chunk in relevant_chunks) // len(relevant_chunks)
+                        base_prompt_template = f"""Based on the following document excerpts, please answer the question.
+
+Document excerpts:
+{{CONTEXT}}
+
+Question: {args.question}
+
+Please provide a comprehensive answer based on the information in the document excerpts above."""
+                        base_prompt_size = len(base_prompt_template) - len("{CONTEXT}")
+                        
+                        # Estimate maximum chunks that can fit
+                        max_chunks = estimate_max_chunks_for_model(current_model_id, base_prompt_size, avg_chunk_size)
+                        
+                        if max_chunks > 0 and max_chunks < len(relevant_chunks):
+                            print(f"Reducing from {len(relevant_chunks)} to {max_chunks} chunks to fit context window")
+                            
+                            # Use only the top-scoring chunks
+                            reduced_chunks = relevant_chunks[:max_chunks]
+                            
+                            # Rebuild context with reduced chunks
+                            context_parts = []
+                            for result in reduced_chunks:
+                                metadata = result['metadata']
+                                chunk_header = f"[From {metadata['filename']}, section {metadata['chunk_id']+1}]"
+                                context_parts.append(f"{chunk_header}\n{result['chunk']}")
+                            
+                            reduced_context = "\n\n---\n\n".join(context_parts)
+                            
+                            # Create new prompt with reduced context
+                            reduced_prompt = f"""Based on the following document excerpts, please answer the question.
+
+Document excerpts:
+{reduced_context}
+
+Question: {args.question}
+
+Please provide a comprehensive answer based on the information in the document excerpts above."""
+
+                            reduced_messages = [{"role": "user", "content": [{"text": reduced_prompt}]}]
+                            
+                            print(f"Retrying with reduced context: {len(reduced_context)} characters (~{estimate_token_count(reduced_prompt)} tokens)")
+                            
+                            try:
+                                response = bedrock_client.converse(
+                                    modelId=current_model_id,
+                                    messages=reduced_messages,
+                                    inferenceConfig=inference_config
+                                )
+                            except ClientError as retry_e:
+                                # If it still fails, raise the original error
+                                raise e
+                        else:
+                            raise e  # Can't reduce further
+                    else:
+                        raise e  # No chunks to work with
+            else:
+                # For other errors, don't retry
+                raise e
 
         response_text = response['output']['message']['content'][0]['text']
         print("\n[Model Response]")
@@ -834,10 +939,11 @@ Please provide a comprehensive answer based on the information in the document e
                 f"\nModel used: {current_model_id}"
                 "\n\nPossible solutions:"
                 f"\n1. Reduce --top-k to retrieve fewer chunks (currently using {search_k} chunks)"
-                "\n2. The system should have auto-selected the largest model, but you can force a specific model:"
+                "\n2. Use a larger Nova model:"
                 "\n   --model-id us.amazon.nova-premier-v1:0  (1M tokens)"
                 "\n   --model-id us.amazon.nova-lite-v1:0     (300k tokens)"
                 "\n3. The retrieved chunks may contain very dense information"
+                "\n4. For non-Nova models, the system attempted to automatically reduce chunks but failed"
             )
         
         print(full_message, file=sys.stderr)
