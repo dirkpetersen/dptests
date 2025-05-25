@@ -1470,19 +1470,19 @@ def main():
                 <div class="form-group">
                     <label>Upload Documents (PDF or Markdown)</label>
                     <div class="file-upload-area" id="file-upload-area">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" style="pointer-events: none;">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
-                        <p style="margin-top: 1rem; color: #666;">
+                        <p style="margin-top: 1rem; color: #666; pointer-events: none;">
                             Drag and drop files here or click to browse
                         </p>
-                        <p style="font-size: 0.875rem; color: #999; margin-top: 0.5rem;">
+                        <p style="font-size: 0.875rem; color: #999; margin-top: 0.5rem; pointer-events: none;">
                             Supports PDF and Markdown files (max 500MB total)
                         </p>
                     </div>
-                    <input type="file" id="file-input" multiple accept=".pdf,.md" />
+                    <input type="file" id="file-input" multiple accept=".pdf,.md" style="display: none;" />
                     <div class="file-list" id="file-list"></div>
                 </div>
                 
@@ -1542,7 +1542,11 @@ def main():
         let uploadedFiles = [];
         
         // File upload handling
-        fileUploadArea.addEventListener('click', () => fileInput.click());
+        fileUploadArea.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.click();
+        });
         
         fileUploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -1561,17 +1565,21 @@ def main():
         
         fileInput.addEventListener('change', (e) => {
             handleFiles(e.target.files);
-            // Reset the input so the same file can be selected again if needed
-            e.target.value = '';
         });
         
         function handleFiles(files) {
             for (let file of files) {
                 if (file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.md')) {
-                    uploadedFiles.push(file);
+                    // Check if file is already uploaded
+                    const exists = uploadedFiles.some(f => f.name === file.name && f.size === file.size);
+                    if (!exists) {
+                        uploadedFiles.push(file);
+                    }
                 }
             }
             updateFileList();
+            // Reset the file input to allow re-selecting the same file
+            fileInput.value = '';
         }
         
         function updateFileList() {
