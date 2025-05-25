@@ -54,7 +54,7 @@ curl -o $HOME/.aider.conf.yml https://raw.githubusercontent.com/Aider-AI/aider/r
 Windows:
 
 ```
-iwr -Uri "https://raw.githubusercontent.com/Aider-AI/aider/refs/heads/main/aider/website/assets/sample.aider.conf.yml" -OutFile "$HOME/.aider.conf.yml"
+powershell iwr -Uri "https://raw.githubusercontent.com/Aider-AI/aider/refs/heads/main/aider/website/assets/sample.aider.conf.yml" -OutFile "$HOME/.aider.conf.yml"
 ```
 
 Add this to the top of file "$HOME/.aider.conf.yml":
