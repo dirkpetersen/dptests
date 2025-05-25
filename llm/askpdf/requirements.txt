@@ -6,7 +6,6 @@ sentence-transformers>=2.2.0
 numpy>=1.21.0
 flask>=3.1.0
 markdown2>=2.4.0
-werkzeug>=3.0.0
 # Optional GPU acceleration (uncomment if you have CUDA GPU)
 # faiss-gpu-cu12>=1.11.0  # or faiss-gpu-cu11>=1.11.0
 # torch>=2.0.0
