@@ -765,11 +765,54 @@ Please provide a comprehensive answer based on the information in the document e
         print(f"Context size: {len(combined_context)} characters")
         print(f"Total prompt size: {len(prompt)} characters (~{estimate_token_count(prompt)} tokens)")
         
-        response = bedrock_client.converse(
-            modelId=current_model_id,
-            messages=messages,
-            inferenceConfig=inference_config
-        )
+        # Try the request with automatic fallback to larger models if input is too long
+        fallback_models = [
+            current_model_id,
+            "us.amazon.nova-lite-v1:0",
+            "us.amazon.nova-premier-v1:0"
+        ]
+        
+        # Remove duplicates while preserving order
+        unique_fallback_models = []
+        for model in fallback_models:
+            if model not in unique_fallback_models:
+                unique_fallback_models.append(model)
+        
+        response = None
+        last_error = None
+        
+        for attempt_model in unique_fallback_models:
+            try:
+                if attempt_model != current_model_id:
+                    print(f"\nFalling back to larger model: {attempt_model}")
+                
+                response = bedrock_client.converse(
+                    modelId=attempt_model,
+                    messages=messages,
+                    inferenceConfig=inference_config
+                )
+                
+                # If we get here, the request succeeded
+                current_model_id = attempt_model
+                break
+                
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code")
+                error_message = e.response.get("Error", {}).get("Message", str(e))
+                last_error = e
+                
+                # Check if it's an "input too long" error
+                if (error_code == "ValidationException" and 
+                    ("Input is too long" in error_message or "too long for requested model" in error_message)):
+                    print(f"Model {attempt_model} cannot handle input size, trying next larger model...")
+                    continue
+                else:
+                    # For other errors, don't retry with different models
+                    raise e
+        
+        if response is None:
+            # All models failed with input too long
+            raise last_error
 
         response_text = response['output']['message']['content'][0]['text']
         print("\n[Model Response]")
