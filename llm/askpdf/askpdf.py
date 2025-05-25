@@ -1487,7 +1487,7 @@ def main():
                 
                 <div class="form-group">
                     <label>Upload Documents (PDF or Markdown)</label>
-                    <div class="file-upload-area" id="file-upload-area" role="button" tabindex="0">
+                    <label for="file-input" class="file-upload-area" id="file-upload-area" role="button" tabindex="0">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
@@ -1499,8 +1499,8 @@ def main():
                         <p style="font-size: 0.875rem; color: #999; margin-top: 0.5rem;">
                             Supports PDF and Markdown files (max 500MB total)
                         </p>
-                        <input type="file" id="file-input" multiple accept=".pdf,.md" style="position: absolute; left: -9999px;" />
-                    </div>
+                        <input type="file" id="file-input" multiple accept=".pdf,.md" style="display: none;" />
+                    </label>
                     <div class="file-list" id="file-list"></div>
                 </div>
                 
@@ -1605,7 +1605,12 @@ def main():
         
         // Handle click to browse
         fileUploadArea.addEventListener('click', function(e) {
-            fileInput.click();
+            e.preventDefault();
+            console.log('Upload area clicked');
+            // Use a timeout to ensure the click event completes before triggering file input
+            setTimeout(() => {
+                fileInput.click();
+            }, 0);
         });
         
         // Handle file input change
@@ -1811,6 +1816,32 @@ def main():
         fileInput.addEventListener('change', function(e) {
             console.log('Files selected:', e.target.files.length);
         });
+        
+        // Additional fallback: create a button that directly triggers file input
+        const createFileInputTrigger = () => {
+            const hiddenButton = document.createElement('button');
+            hiddenButton.style.position = 'absolute';
+            hiddenButton.style.opacity = '0';
+            hiddenButton.style.pointerEvents = 'none';
+            hiddenButton.id = 'hidden-file-trigger';
+            hiddenButton.type = 'button';
+            hiddenButton.onclick = (e) => {
+                e.preventDefault();
+                fileInput.click();
+            };
+            document.body.appendChild(hiddenButton);
+            
+            // Alternative click handler for upload area
+            fileUploadArea.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Alternative click handler triggered');
+                hiddenButton.click();
+            };
+        };
+        
+        // Initialize the fallback trigger
+        createFileInputTrigger();
     </script>
 </body>
 </html>'''
