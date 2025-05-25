@@ -246,11 +246,11 @@ class PDFVectorStore:
         # Process documents in parallel for better performance
         def process_single_document(doc_path):
             try:
-                filename = os.path.basename(pdf_path)
+                filename = os.path.basename(doc_path)
                 
                 # Check cache first
                 if ENABLE_EMBEDDING_CACHE:
-                    file_hash = get_file_hash(pdf_path)
+                    file_hash = get_file_hash(doc_path)
                     cache_key = f"{filename}_{file_hash}_{self.chunk_size}_{self.chunk_overlap}.pkl"
                     cache_path = os.path.join(CACHE_DIR, cache_key)
                     
@@ -263,7 +263,14 @@ class PDFVectorStore:
                         except Exception as e:
                             print(f"  Warning: Cache read failed for {filename}, regenerating: {e}")
                 
-                text = extract_text_from_pdf(pdf_path)
+                # Extract text based on file type
+                if doc_path.lower().endswith('.pdf'):
+                    text = extract_text_from_pdf(doc_path)
+                elif doc_path.lower().endswith('.md'):
+                    text = extract_text_from_markdown(doc_path)
+                else:
+                    raise ValueError(f"Unsupported file type: {doc_path}")
+                
                 chunks = chunk_text(text, self.chunk_size, self.chunk_overlap)
                 
                 metadata_list = []
@@ -285,10 +292,10 @@ class PDFVectorStore:
         files_to_embed = []
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_pdf = {executor.submit(process_single_pdf, pdf_path): pdf_path 
-                           for pdf_path in pdf_files}
+            future_to_doc = {executor.submit(process_single_document, doc_path): doc_path 
+                           for doc_path in document_files}
             
-            for future in as_completed(future_to_pdf):
+            for future in as_completed(future_to_doc):
                 filename, chunks, metadata_list, text_len, embeddings = future.result()
                 if chunks:
                     if embeddings is not None:
