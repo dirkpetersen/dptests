@@ -774,15 +774,27 @@ class AskPDFWebApp:
         if not self.region:
             try:
                 # Try to get region from session/profile
-                self.region = session.region_name
-                if self.region:
+                profile_region = session.region_name
+                if profile_region:
+                    self.region = profile_region
                     print(f"Using region from AWS profile: {self.region}")
                 else:
-                    self.region = DEFAULT_AWS_REGION
-                    print(f"No region found in profile, using default: {self.region}")
-            except Exception:
+                    # Try to get region from AWS config
+                    try:
+                        import boto3.session
+                        config_region = boto3.session.Session(profile_name=self.profile).get_config_variable('region')
+                        if config_region:
+                            self.region = config_region
+                            print(f"Using region from AWS config: {self.region}")
+                        else:
+                            self.region = DEFAULT_AWS_REGION
+                            print(f"No region found in profile/config, using default: {self.region}")
+                    except Exception:
+                        self.region = DEFAULT_AWS_REGION
+                        print(f"No region found in profile/config, using default: {self.region}")
+            except Exception as e:
                 self.region = DEFAULT_AWS_REGION
-                print(f"Could not determine region from profile, using default: {self.region}")
+                print(f"Could not determine region from profile, using default: {self.region} (error: {e})")
         else:
             print(f"Using region from command line: {self.region}")
         
@@ -1753,15 +1765,27 @@ def main():
     if not region:
         try:
             # Try to get region from session/profile
-            region = session.region_name
-            if region:
+            profile_region = session.region_name
+            if profile_region:
+                region = profile_region
                 print(f"Using region from AWS profile: {region}")
             else:
-                region = DEFAULT_AWS_REGION
-                print(f"No region found in profile, using default: {region}")
-        except Exception:
+                # Try to get region from AWS config
+                try:
+                    import boto3.session
+                    config_region = boto3.session.Session(profile_name=args.profile).get_config_variable('region')
+                    if config_region:
+                        region = config_region
+                        print(f"Using region from AWS config: {region}")
+                    else:
+                        region = DEFAULT_AWS_REGION
+                        print(f"No region found in profile/config, using default: {region}")
+                except Exception:
+                    region = DEFAULT_AWS_REGION
+                    print(f"No region found in profile/config, using default: {region}")
+        except Exception as e:
             region = DEFAULT_AWS_REGION
-            print(f"Could not determine region from profile, using default: {region}")
+            print(f"Could not determine region from profile, using default: {region} (error: {e})")
     else:
         print(f"Using region from command line: {region}")
     
