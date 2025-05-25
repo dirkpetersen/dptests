@@ -1561,6 +1561,8 @@ def main():
         
         fileInput.addEventListener('change', (e) => {
             handleFiles(e.target.files);
+            // Reset the input so the same file can be selected again if needed
+            e.target.value = '';
         });
         
         function handleFiles(files) {
