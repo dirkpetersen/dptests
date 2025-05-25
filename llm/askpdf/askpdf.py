@@ -809,6 +809,7 @@ def main():
 
     args = parser.parse_args()
     current_model_id = args.model_id
+    response = None  # Initialize response variable
 
     try:
         document_file_paths, total_size_bytes = get_document_files_details(args.path, recursive=args.recursive)
@@ -1076,38 +1077,6 @@ Please provide a comprehensive answer based on the information in the document e
     else:
         print("No response received from the model.", file=sys.stderr)
         sys.exit(1)
-
-    except ClientError as e:
-        error_code = e.response.get("Error", {}).get("Code")
-        error_message = e.response.get("Error", {}).get("Message", str(e))
-        
-        base_error_text = f"A Bedrock API error occurred with model {current_model_id}"
-        specific_error_info = f"Bedrock Error Code: {error_code}, Message: {error_message}"
-
-        full_message = f"\n{base_error_text}.\n{specific_error_info}"
-
-        if error_code == "ValidationException" and "Input is too long" in error_message:
-            full_message += (
-                "\n\n[Additional Diagnostics]:"
-                f"\nThe context sent to the model exceeded the token processing limit."
-                f"\nModel used: {current_model_id}"
-                "\n\nPossible solutions:"
-                f"\n1. Reduce --top-k to retrieve fewer chunks (currently using all chunks)"
-                "\n2. Use a larger Nova model:"
-                "\n   --model-id us.amazon.nova-premier-v1:0  (1M tokens)"
-                "\n   --model-id us.amazon.nova-lite-v1:0     (300k tokens)"
-                "\n3. The retrieved chunks may contain very dense information"
-                "\n4. For non-Nova models, the system attempted to automatically reduce chunks but failed"
-            )
-        
-        print(full_message, file=sys.stderr)
-        sys.exit(1)
-    except Exception as e: # General fallback for non-ClientError exceptions
-        print(f"\nAn unexpected error occurred: {e}", file=sys.stderr)
-        sys.exit(1)
-    finally:
-        # No cleanup needed for FAISS - everything is in memory
-        pass
 
 if __name__ == "__main__":
     main()
