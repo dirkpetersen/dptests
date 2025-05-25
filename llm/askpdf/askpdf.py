@@ -36,7 +36,7 @@ except ImportError as e:
 
 # --- Configuration Constants ---
 # Default Model ID - will be auto-selected based on context size
-DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-micro-v1:0"
+DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-lite-v1:0"
 # Default AWS Region for Bedrock and S3 services (will be overridden by profile region if available)
 DEFAULT_AWS_REGION = "us-east-1"
 
