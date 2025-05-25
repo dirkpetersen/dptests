@@ -7,7 +7,7 @@ import re
 import sys
 import threading
 import time
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ReadTimeoutError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pickle
 import hashlib
@@ -37,8 +37,8 @@ except ImportError as e:
 # --- Configuration Constants ---
 # Default Model ID - will be auto-selected based on context size
 DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-micro-v1:0"
-# AWS Region for Bedrock and S3 services
-AWS_REGION = "us-east-1" # You can change this if needed
+# Default AWS Region for Bedrock and S3 services (will be overridden by profile region if available)
+DEFAULT_AWS_REGION = "us-east-1"
 
 # Document processing limits - now used for chunking strategy
 MAX_CHUNK_SIZE = 3000  # Characters per chunk for vector search (increased for fewer chunks)
@@ -797,8 +797,8 @@ def main():
     parser.add_argument(
         "--region",
         type=str,
-        default=AWS_REGION,
-        help=f"AWS region for Bedrock and S3. Default: {AWS_REGION}"
+        default=None,
+        help=f"AWS region for Bedrock and S3. Default: region from AWS profile or {DEFAULT_AWS_REGION}"
     )
     parser.add_argument(
         "--profile",
@@ -886,7 +886,25 @@ def main():
 
     # Initialize AWS session with optional profile
     session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
-    bedrock_client = session.client("bedrock-runtime", region_name=args.region)
+    
+    # Determine region: command line arg > profile region > default
+    region = args.region
+    if not region:
+        try:
+            # Try to get region from session/profile
+            region = session.region_name
+            if region:
+                print(f"Using region from AWS profile: {region}")
+            else:
+                region = DEFAULT_AWS_REGION
+                print(f"No region found in profile, using default: {region}")
+        except Exception:
+            region = DEFAULT_AWS_REGION
+            print(f"Could not determine region from profile, using default: {region}")
+    else:
+        print(f"Using region from command line: {region}")
+    
+    bedrock_client = session.client("bedrock-runtime", region_name=region)
 
     # Calculate chunk size and overlap
     chunk_size = args.chunk_size if args.chunk_size else MAX_CHUNK_SIZE
@@ -972,7 +990,7 @@ def main():
             
             spinner.stop()
             print()  # Add a blank line after spinner stops
-        except ClientError as e:
+        except (ClientError, ReadTimeoutError) as e:
             error_code = e.response.get("Error", {}).get("Code")
             error_message = e.response.get("Error", {}).get("Message", str(e))
             
@@ -980,13 +998,23 @@ def main():
             if 'spinner' in locals():
                 spinner.stop()
             
-            # If direct submission fails, fall back to FAISS
-            if (error_code == "ValidationException" and 
-                ("Input is too long" in error_message or 
-                 "too long for requested model" in error_message or
-                 "doesn't support documents" in error_message)):
-                print(f"Direct PDF submission failed ({error_message}), falling back to FAISS approach...")
+            # Handle different types of errors
+            if isinstance(e, ReadTimeoutError):
+                print(f"Direct PDF submission timed out, falling back to FAISS approach...")
                 use_direct_pdf = False
+            elif isinstance(e, ClientError):
+                error_code = e.response.get("Error", {}).get("Code")
+                error_message = e.response.get("Error", {}).get("Message", str(e))
+                
+                # If direct submission fails, fall back to FAISS
+                if (error_code == "ValidationException" and 
+                    ("Input is too long" in error_message or 
+                     "too long for requested model" in error_message or
+                     "doesn't support documents" in error_message)):
+                    print(f"Direct PDF submission failed ({error_message}), falling back to FAISS approach...")
+                    use_direct_pdf = False
+                else:
+                    raise e
             else:
                 raise e
     
@@ -1066,13 +1094,20 @@ Please provide a comprehensive answer based on the information in the document e
                     inferenceConfig=inference_config
                 )
                 
-            except ClientError as e:
+            except (ClientError, ReadTimeoutError) as e:
                 error_code = e.response.get("Error", {}).get("Code")
                 error_message = e.response.get("Error", {}).get("Message", str(e))
                 
+                # Handle timeout errors
+                if isinstance(e, ReadTimeoutError):
+                    print(f"Request timed out with model {current_model_id}. This may indicate the document is too large or complex.")
+                    print("Consider using --no-faiss with smaller documents or breaking large documents into smaller chunks.")
+                    raise e
+                
                 # Check if it's an "input too long" error
-                if (error_code == "ValidationException" and 
-                    ("Input is too long" in error_message or "too long for requested model" in error_message)):
+                elif (isinstance(e, ClientError) and 
+                      error_code == "ValidationException" and 
+                      ("Input is too long" in error_message or "too long for requested model" in error_message)):
                 
                     if is_nova_model(current_model_id):
                         # For Nova models, try fallback to larger Nova models
@@ -1099,13 +1134,19 @@ Please provide a comprehensive answer based on the information in the document e
                                 current_model_id = attempt_model
                                 break
                                 
-                            except ClientError as fallback_e:
-                                fallback_error_code = fallback_e.response.get("Error", {}).get("Code")
-                                fallback_error_message = fallback_e.response.get("Error", {}).get("Message", str(fallback_e))
-                                
-                                if (fallback_error_code == "ValidationException" and 
-                                    ("Input is too long" in fallback_error_message or "too long for requested model" in fallback_error_message)):
+                            except (ClientError, ReadTimeoutError) as fallback_e:
+                                if isinstance(fallback_e, ReadTimeoutError):
+                                    print(f"Timeout with {attempt_model}, trying next model...")
                                     continue
+                                elif isinstance(fallback_e, ClientError):
+                                    fallback_error_code = fallback_e.response.get("Error", {}).get("Code")
+                                    fallback_error_message = fallback_e.response.get("Error", {}).get("Message", str(fallback_e))
+                                    
+                                    if (fallback_error_code == "ValidationException" and 
+                                        ("Input is too long" in fallback_error_message or "too long for requested model" in fallback_error_message)):
+                                        continue
+                                    else:
+                                        raise fallback_e
                                 else:
                                     raise fallback_e
                         
@@ -1167,8 +1208,10 @@ Please provide a comprehensive answer based on the information in the document e
                                         messages=reduced_messages,
                                         inferenceConfig=inference_config
                                     )
-                                except ClientError as retry_e:
+                                except (ClientError, ReadTimeoutError) as retry_e:
                                     # If it still fails, raise the original error
+                                    if isinstance(retry_e, ReadTimeoutError):
+                                        print(f"Request still timed out after reducing context size.")
                                     raise e
                             else:
                                 raise e  # Can't reduce further
