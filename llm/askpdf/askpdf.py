@@ -499,6 +499,116 @@ def estimate_token_count(text):
     return len(text) // 4
 
 
+def estimate_pdf_size_for_nova(pdf_paths):
+    """
+    Estimate if PDF files can fit in Nova model context window.
+    Returns (can_fit, total_size_mb, estimated_tokens)
+    """
+    total_size_bytes = sum(os.path.getsize(path) for path in pdf_paths)
+    total_size_mb = total_size_bytes / (1024 * 1024)
+    
+    # Nova models have document size limits:
+    # - Individual documents: max 25MB
+    # - Total documents: max 25MB when uploaded directly
+    max_individual_size_mb = 25
+    max_total_size_mb = 25
+    
+    # Check individual file sizes
+    for pdf_path in pdf_paths:
+        file_size_mb = os.path.getsize(pdf_path) / (1024 * 1024)
+        if file_size_mb > max_individual_size_mb:
+            return False, total_size_mb, 0
+    
+    # Check total size
+    if total_size_mb > max_total_size_mb:
+        return False, total_size_mb, 0
+    
+    # Rough estimate: 1MB ≈ 250,000 characters ≈ 62,500 tokens
+    estimated_tokens = int(total_size_mb * 62500)
+    
+    return True, total_size_mb, estimated_tokens
+
+
+def can_use_direct_pdf_submission(document_file_paths, model_id, question):
+    """
+    Determine if we should use direct PDF submission to Nova instead of FAISS.
+    Returns True if:
+    1. All files are PDFs (no markdown)
+    2. Model is Nova (or auto-selected Nova)
+    3. Total size fits Nova limits
+    4. Estimated tokens fit in model context window
+    """
+    # Only works with PDF files
+    pdf_files = [path for path in document_file_paths if path.lower().endswith('.pdf')]
+    if len(pdf_files) != len(document_file_paths):
+        return False  # Has non-PDF files
+    
+    # Only works with Nova models
+    if not is_nova_model(model_id):
+        return False
+    
+    # Check if PDFs fit Nova size limits
+    can_fit, total_size_mb, estimated_tokens = estimate_pdf_size_for_nova(pdf_files)
+    if not can_fit:
+        return False
+    
+    # Estimate total prompt tokens (PDFs + question + overhead)
+    question_tokens = estimate_token_count(question)
+    overhead_tokens = 1000  # System prompt, formatting, etc.
+    total_estimated_tokens = estimated_tokens + question_tokens + overhead_tokens
+    
+    # Check if it fits in the model's context window
+    model_limit = MODEL_LIMITS.get(model_id, 128000)  # Default to micro if unknown
+    
+    return total_estimated_tokens <= (model_limit * 0.8)  # Use 80% of limit for safety
+
+
+def submit_pdfs_directly_to_nova(bedrock_client, model_id, pdf_paths, question, inference_config):
+    """
+    Submit PDFs directly to Nova model using document support.
+    Returns the response from the model.
+    """
+    print(f"Using direct PDF submission to Nova model (bypassing FAISS)")
+    
+    # Prepare messages with PDF documents
+    content = []
+    
+    # Add each PDF as a document
+    for pdf_path in pdf_paths:
+        filename = os.path.basename(pdf_path)
+        sanitized_name = sanitize_document_name(filename)
+        
+        with open(pdf_path, 'rb') as f:
+            pdf_bytes = f.read()
+        
+        content.append({
+            "document": {
+                "format": "pdf",
+                "name": sanitized_name,
+                "source": {
+                    "bytes": pdf_bytes
+                }
+            }
+        })
+    
+    # Add the question as text
+    content.append({
+        "text": question
+    })
+    
+    messages = [{"role": "user", "content": content}]
+    
+    print(f"Submitting {len(pdf_paths)} PDF(s) directly to {model_id}")
+    
+    response = bedrock_client.converse(
+        modelId=model_id,
+        messages=messages,
+        inferenceConfig=inference_config
+    )
+    
+    return response
+
+
 def select_model_for_context(context_text, preferred_model="us.amazon.nova-micro-v1:0"):
     """
     Select the appropriate Nova model based on context size.
@@ -777,12 +887,22 @@ Question: {args.question}
 
 Please provide a comprehensive answer based on the information in the document excerpts above."""
 
-        # Auto-select model based on context size only if using default model
+        # Determine the model to use (auto-select if using default)
         if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
-            selected_model = select_model_for_context(prompt, current_model_id)
-            if selected_model != current_model_id:
-                print(f"\nAuto-selecting model {selected_model} based on context size ({len(prompt)} characters)")
-                current_model_id = selected_model
+            # For auto-selection, first check if we can use direct PDF submission
+            if can_use_direct_pdf_submission(document_file_paths, DEFAULT_BEDROCK_MODEL_ID, args.question):
+                # Try models in order of preference for direct PDF submission
+                for test_model in ["us.amazon.nova-micro-v1:0", "us.amazon.nova-lite-v1:0", "us.amazon.nova-premier-v1:0"]:
+                    if can_use_direct_pdf_submission(document_file_paths, test_model, args.question):
+                        current_model_id = test_model
+                        print(f"\nAuto-selecting {current_model_id} for direct PDF submission")
+                        break
+            else:
+                # Fall back to FAISS-based approach with model selection
+                selected_model = select_model_for_context(prompt, current_model_id)
+                if selected_model != current_model_id:
+                    print(f"\nAuto-selecting model {selected_model} based on context size ({len(prompt)} characters)")
+                    current_model_id = selected_model
         else:
             print(f"\nUsing user-specified model: {current_model_id}")
 
@@ -919,9 +1039,14 @@ Please provide a comprehensive answer based on the information in the document e
                 # For other errors, don't retry
                 raise e
 
+    # Extract and display response (works for both direct PDF and FAISS approaches)
+    if response:
         response_text = response['output']['message']['content'][0]['text']
         print("\n[Model Response]")
         print(response_text)
+    else:
+        print("No response received from the model.", file=sys.stderr)
+        sys.exit(1)
 
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code")
