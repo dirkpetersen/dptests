@@ -16,12 +16,12 @@ import hashlib
 try:
     import faiss
 except ImportError:
-    print(f"Error: FAISS not installed. Run: pip install faiss-gpu sentence-transformers pymupdf", file=sys.stderr)
+    print(f"Error: FAISS not installed. Run: pip install faiss-gpu-cu12 sentence-transformers pymupdf", file=sys.stderr)
     print(f"For CPU-only FAISS: pip install faiss-cpu sentence-transformers pymupdf", file=sys.stderr)
     sys.exit(1)
 except Exception as e:
     print(f"Error: FAISS installation appears corrupted. Try reinstalling:", file=sys.stderr)
-    print(f"  pip uninstall faiss-gpu faiss-cpu", file=sys.stderr)
+    print(f"  pip uninstall faiss-gpu-cu12 faiss-cpu", file=sys.stderr)
     print(f"  pip install faiss-cpu sentence-transformers pymupdf", file=sys.stderr)
     print(f"Original error: {e}", file=sys.stderr)
     sys.exit(1)
