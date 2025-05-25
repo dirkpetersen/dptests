@@ -777,6 +777,14 @@ class AskPDFWebApp:
         
         self.bedrock_client = session.client("bedrock-runtime", region_name=self.region)
         
+        # Detect GPU/CPU capabilities at startup for UI mode
+        print("Initializing FAISS capabilities...")
+        self.use_gpu = detect_gpu()
+        if self.use_gpu:
+            print("GPU-accelerated FAISS ready")
+        else:
+            print("CPU-only FAISS ready")
+        
         # Available models
         self.available_models = {
             "us.amazon.nova-micro-v1:0": "Amazon Nova Micro",
@@ -879,8 +887,7 @@ class AskPDFWebApp:
                 progress['status'] = 'processing'
                 progress['message'] = 'Building vector store...'
                 
-                use_gpu = detect_gpu()
-                vector_store = PDFVectorStore(use_gpu=use_gpu)
+                vector_store = PDFVectorStore(use_gpu=self.use_gpu)
                 vector_store.add_documents(document_paths)
                 
                 progress['message'] = 'Searching for relevant content...'
