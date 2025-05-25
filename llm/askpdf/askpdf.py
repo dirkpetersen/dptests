@@ -769,11 +769,22 @@ class AskPDFWebApp:
         
         # Initialize AWS session
         session = boto3.Session(profile_name=self.profile) if self.profile else boto3.Session()
+        
+        # Determine region: command line arg > profile region > default
         if not self.region:
             try:
-                self.region = session.region_name or DEFAULT_AWS_REGION
-            except:
+                # Try to get region from session/profile
+                self.region = session.region_name
+                if self.region:
+                    print(f"Using region from AWS profile: {self.region}")
+                else:
+                    self.region = DEFAULT_AWS_REGION
+                    print(f"No region found in profile, using default: {self.region}")
+            except Exception:
                 self.region = DEFAULT_AWS_REGION
+                print(f"Could not determine region from profile, using default: {self.region}")
+        else:
+            print(f"Using region from command line: {self.region}")
         
         self.bedrock_client = session.client("bedrock-runtime", region_name=self.region)
         
