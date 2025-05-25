@@ -77,30 +77,45 @@ DEFAULT_TEMPERATURE = 0.2
 
 
 def detect_gpu():
-    """Detect if NVIDIA GPU is available for FAISS"""
+    """Detect if NVIDIA GPU is available for FAISS and if FAISS has GPU support"""
+    # First check if FAISS has GPU support
     try:
-        import torch
-        if torch.cuda.is_available():
-            gpu_count = torch.cuda.device_count()
-            gpu_name = torch.cuda.get_device_name(0)
-            print(f"GPU detected: {gpu_name} (using GPU-accelerated FAISS)")
-            return True
-    except ImportError:
-        pass
-    
-    # Alternative check using nvidia-ml-py
-    try:
-        import pynvml
-        pynvml.nvmlInit()
-        gpu_count = pynvml.nvmlDeviceGetCount()
-        if gpu_count > 0:
-            print(f"GPU detected: {gpu_count} NVIDIA GPU(s) (using GPU-accelerated FAISS)")
-            return True
-    except ImportError:
-        pass
-    
-    print("No GPU detected, using CPU FAISS")
-    return False
+        faiss.StandardGpuResources()
+        # If we get here, FAISS has GPU support
+        gpu_available = False
+        
+        # Check if GPU hardware is available
+        try:
+            import torch
+            if torch.cuda.is_available():
+                gpu_count = torch.cuda.device_count()
+                gpu_name = torch.cuda.get_device_name(0)
+                print(f"GPU detected: {gpu_name} (using GPU-accelerated FAISS)")
+                gpu_available = True
+        except ImportError:
+            pass
+        
+        # Alternative check using nvidia-ml-py
+        if not gpu_available:
+            try:
+                import pynvml
+                pynvml.nvmlInit()
+                gpu_count = pynvml.nvmlDeviceGetCount()
+                if gpu_count > 0:
+                    print(f"GPU detected: {gpu_count} NVIDIA GPU(s) (using GPU-accelerated FAISS)")
+                    gpu_available = True
+            except ImportError:
+                pass
+        
+        if not gpu_available:
+            print("GPU hardware not available, using CPU FAISS")
+        
+        return gpu_available
+        
+    except (AttributeError, ImportError):
+        # FAISS doesn't have GPU support (faiss-cpu installed)
+        print("FAISS CPU version detected, using CPU-only processing")
+        return False
 
 
 def extract_text_from_markdown(md_path):
