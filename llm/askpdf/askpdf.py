@@ -751,11 +751,14 @@ Question: {args.question}
 
 Please provide a comprehensive answer based on the information in the document excerpts above."""
 
-        # Auto-select model based on context size
-        selected_model = select_model_for_context(prompt, current_model_id)
-        if selected_model != current_model_id:
-            print(f"\nAuto-selecting model {selected_model} based on context size ({len(prompt)} characters)")
-            current_model_id = selected_model
+        # Auto-select model based on context size only if using default model
+        if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
+            selected_model = select_model_for_context(prompt, current_model_id)
+            if selected_model != current_model_id:
+                print(f"\nAuto-selecting model {selected_model} based on context size ({len(prompt)} characters)")
+                current_model_id = selected_model
+        else:
+            print(f"\nUsing user-specified model: {current_model_id}")
 
         messages = [{"role": "user", "content": [{"text": prompt}]}]
 
