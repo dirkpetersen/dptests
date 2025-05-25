@@ -27,17 +27,7 @@ except Exception as e:
 try:
     import numpy as np
     from sentence_transformers import SentenceTransformer
-    try:
-        import fitz  # PyMuPDF
-        USE_PYMUPDF = True
-    except ImportError:
-        try:
-            from PyPDF2 import PdfReader
-            USE_PYMUPDF = False
-            print("Warning: PyMuPDF not installed, falling back to slower PyPDF2. For better performance, run: pip install pymupdf")
-        except ImportError:
-            print(f"Error: No PDF library installed. Run: pip install pymupdf sentence-transformers", file=sys.stderr)
-            sys.exit(1)
+    import fitz  # PyMuPDF
 except ImportError as e:
     print(f"Error: Required packages not installed. Run: pip install pymupdf sentence-transformers", file=sys.stderr)
     sys.exit(1)
@@ -130,50 +120,27 @@ def extract_text_from_markdown(md_path):
 
 
 def extract_text_from_pdf(pdf_path):
-    """Extract text content from a PDF file"""
-    if USE_PYMUPDF:
-        # Use PyMuPDF (much faster)
-        try:
-            doc = fitz.open(pdf_path)
-            text = ""
-            for page_num, page in enumerate(doc):
-                try:
-                    page_text = page.get_text()
-                    if page_text:
-                        # Clean the text to remove problematic characters
-                        page_text = page_text.replace('\x00', '')
-                        page_text = page_text.replace('\ufffd', '')
-                        # Remove other non-printable characters except newlines and tabs
-                        page_text = ''.join(char for char in page_text if char.isprintable() or char in '\n\t')
-                        text += page_text + "\n"
-                except Exception as e:
-                    print(f"Warning: Could not extract text from page {page_num + 1}: {e}")
-                    continue
-            doc.close()
-            return text
-        except Exception as e:
-            raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
-    else:
-        # Fallback to PyPDF2
-        try:
-            reader = PdfReader(pdf_path)
-            text = ""
-            for page_num, page in enumerate(reader.pages):
-                try:
-                    page_text = page.extract_text()
-                    if page_text:
-                        # Clean the text to remove problematic characters
-                        page_text = page_text.replace('\x00', '')
-                        page_text = page_text.replace('\ufffd', '')
-                        # Remove other non-printable characters except newlines and tabs
-                        page_text = ''.join(char for char in page_text if char.isprintable() or char in '\n\t')
-                        text += page_text + "\n"
-                except Exception as e:
-                    print(f"Warning: Could not extract text from page {page_num + 1}: {e}")
-                    continue
-            return text
-        except Exception as e:
-            raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
+    """Extract text content from a PDF file using PyMuPDF"""
+    try:
+        doc = fitz.open(pdf_path)
+        text = ""
+        for page_num, page in enumerate(doc):
+            try:
+                page_text = page.get_text()
+                if page_text:
+                    # Clean the text to remove problematic characters
+                    page_text = page_text.replace('\x00', '')
+                    page_text = page_text.replace('\ufffd', '')
+                    # Remove other non-printable characters except newlines and tabs
+                    page_text = ''.join(char for char in page_text if char.isprintable() or char in '\n\t')
+                    text += page_text + "\n"
+            except Exception as e:
+                print(f"Warning: Could not extract text from page {page_num + 1}: {e}")
+                continue
+        doc.close()
+        return text
+    except Exception as e:
+        raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
 
 
 def chunk_text(text, chunk_size=None, overlap=None):
