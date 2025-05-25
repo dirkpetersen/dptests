@@ -866,16 +866,22 @@ def main():
     current_model_id = args.model_id
     response = None  # Initialize response variable
 
+    # Start spinner for document discovery
+    search_mode = "recursively" if args.recursive else "in top-level directory"
+    spinner = Spinner(f"Scanning for documents {search_mode}")
+    spinner.start()
+
     try:
         document_file_paths, total_size_bytes = get_document_files_details(args.path, recursive=args.recursive)
+        spinner.stop()
     except (FileNotFoundError, ValueError) as e:
+        spinner.stop()
         print(e, file=sys.stderr)
         sys.exit(1)
 
     num_documents = len(document_file_paths)
     pdf_count = sum(1 for path in document_file_paths if path.lower().endswith('.pdf'))
     md_count = sum(1 for path in document_file_paths if path.lower().endswith('.md'))
-    search_mode = "recursively" if args.recursive else "in top-level directory"
     print(f"Found {num_documents} document(s) ({pdf_count} PDF, {md_count} Markdown) {search_mode}, total size: {total_size_bytes / (1024*1024):.2f} MB.")
 
     # Initialize AWS session with optional profile
