@@ -48,21 +48,28 @@ except ImportError as e:
     sys.exit(1)
 
 # --- Configuration Constants ---
-# Default Model ID for Amazon Titan
-DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-pro-v1:0"
+# Default Model ID - will be auto-selected based on context size
+DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-micro-v1:0"
 # AWS Region for Bedrock and S3 services
 AWS_REGION = "us-east-1" # You can change this if needed
 
 # Document processing limits - now used for chunking strategy
 MAX_CHUNK_SIZE = 3000  # Characters per chunk for vector search (increased for fewer chunks)
 CHUNK_OVERLAP = 500    # Overlap between chunks (proportionally increased)
-TOP_K_CHUNKS = 5       # Number of most relevant chunks to send to LLM
+TOP_K_CHUNKS = None    # Number of most relevant chunks to send to LLM (None = all chunks)
 
 # Embedding cache settings
 ENABLE_EMBEDDING_CACHE = True
 CACHE_DIR = ".embedding_cache"
 
-# Bedrock inference parameters
+# Bedrock inference parameters and model limits
+MODEL_LIMITS = {
+    "us.amazon.nova-micro-v1:0": 128000,    # 128k tokens
+    "us.amazon.nova-lite-v1:0": 300000,     # 300k tokens  
+    "us.amazon.nova-premier-v1:0": 1000000, # 1M tokens
+    "us.amazon.nova-pro-v1:0": 300000       # 300k tokens (fallback)
+}
+
 DEFAULT_INPUT_TOKENS = 30000  # Placeholder for typical model context window
 DEFAULT_OUTPUT_TOKENS = 2048
 DEFAULT_TOP_P = 0.9
@@ -508,6 +515,38 @@ class PDFVectorStore:
             raise
 
 
+def estimate_token_count(text):
+    """
+    Rough estimation of token count (approximately 4 characters per token for English text)
+    """
+    return len(text) // 4
+
+
+def select_model_for_context(context_size, preferred_model="us.amazon.nova-micro-v1:0"):
+    """
+    Select the appropriate Nova model based on context size.
+    Returns the model ID that can handle the context size.
+    """
+    estimated_tokens = estimate_token_count(context_size)
+    
+    # Add some buffer for the response and system overhead
+    required_tokens = estimated_tokens + 3000
+    
+    # Try models in order of preference (smallest to largest)
+    model_order = [
+        "us.amazon.nova-micro-v1:0",
+        "us.amazon.nova-lite-v1:0", 
+        "us.amazon.nova-premier-v1:0"
+    ]
+    
+    for model_id in model_order:
+        if required_tokens <= MODEL_LIMITS[model_id]:
+            return model_id
+    
+    # If even the largest model can't handle it, return the largest and let it fail gracefully
+    return "us.amazon.nova-premier-v1:0"
+
+
 def sanitize_document_name(filename):
     """
     Sanitizes a filename to be a valid document name for Bedrock.
@@ -572,8 +611,8 @@ def main():
     parser.add_argument(
         "--top-k",
         type=int,
-        default=TOP_K_CHUNKS,
-        help=f"Number of most relevant chunks to retrieve for answering. Default: {TOP_K_CHUNKS}"
+        default=None,
+        help="Number of most relevant chunks to retrieve for answering. Default: all chunks"
     )
     parser.add_argument(
         "--region",
@@ -679,7 +718,9 @@ def main():
         
         # Search for relevant chunks
         print(f"\nSearching for relevant content for: '{args.question}'")
-        relevant_chunks = vector_store.search(args.question, k=args.top_k)
+        # Use all chunks if top_k is None, otherwise use specified number
+        search_k = args.top_k if args.top_k is not None else len(vector_store.chunks)
+        relevant_chunks = vector_store.search(args.question, k=search_k)
         
         if not relevant_chunks:
             print("No relevant content found in the documents.", file=sys.stderr)
@@ -710,6 +751,12 @@ Question: {args.question}
 
 Please provide a comprehensive answer based on the information in the document excerpts above."""
 
+        # Auto-select model based on context size
+        selected_model = select_model_for_context(len(prompt), current_model_id)
+        if selected_model != current_model_id:
+            print(f"\nAuto-selecting model {selected_model} based on context size ({len(prompt)} characters)")
+            current_model_id = selected_model
+
         messages = [{"role": "user", "content": [{"text": prompt}]}]
 
         inference_config = {
@@ -720,6 +767,7 @@ Please provide a comprehensive answer based on the information in the document e
 
         print(f"\nSending request to Amazon Bedrock ({current_model_id})...")
         print(f"Context size: {len(combined_context)} characters")
+        print(f"Total prompt size: {len(prompt)} characters (~{estimate_token_count(prompt)} tokens)")
         
         response = bedrock_client.converse(
             modelId=current_model_id,
@@ -746,11 +794,11 @@ Please provide a comprehensive answer based on the information in the document e
                 f"\nThe context sent to the model exceeded the token processing limit."
                 f"\nModel used: {current_model_id}"
                 "\n\nPossible solutions:"
-                "\n1. Reduce --top-k to retrieve fewer chunks (currently using top-{args.top_k})"
-                "\n2. Try a different Nova model with a larger context window:"
-                "\n   --model-id us.amazon.nova-premier-v1:0  (largest context window)"
-                "\n   --model-id us.amazon.nova-lite-v1:0     (smaller but more efficient)"
-                "\n3. The retrieved chunks may contain dense information"
+                f"\n1. Reduce --top-k to retrieve fewer chunks (currently using {search_k} chunks)"
+                "\n2. The system should have auto-selected the largest model, but you can force a specific model:"
+                "\n   --model-id us.amazon.nova-premier-v1:0  (1M tokens)"
+                "\n   --model-id us.amazon.nova-lite-v1:0     (300k tokens)"
+                "\n3. The retrieved chunks may contain very dense information"
             )
         
         print(full_message, file=sys.stderr)
