@@ -522,12 +522,12 @@ def estimate_token_count(text):
     return len(text) // 4
 
 
-def select_model_for_context(context_size, preferred_model="us.amazon.nova-micro-v1:0"):
+def select_model_for_context(context_text, preferred_model="us.amazon.nova-micro-v1:0"):
     """
     Select the appropriate Nova model based on context size.
     Returns the model ID that can handle the context size.
     """
-    estimated_tokens = estimate_token_count(context_size)
+    estimated_tokens = estimate_token_count(context_text)
     
     # Add some buffer for the response and system overhead
     required_tokens = estimated_tokens + 3000
@@ -752,7 +752,7 @@ Question: {args.question}
 Please provide a comprehensive answer based on the information in the document excerpts above."""
 
         # Auto-select model based on context size
-        selected_model = select_model_for_context(len(prompt), current_model_id)
+        selected_model = select_model_for_context(prompt, current_model_id)
         if selected_model != current_model_id:
             print(f"\nAuto-selecting model {selected_model} based on context size ({len(prompt)} characters)")
             current_model_id = selected_model
