@@ -632,7 +632,7 @@ def submit_pdfs_directly_to_nova(bedrock_client, model_id, pdf_paths, question, 
         })
     
     # Add the question using the same comprehensive prompt template as FAISS
-    comprehensive_prompt = create_comprehensive_prompt(question, "the document(s) provided above")
+    comprehensive_prompt = create_comprehensive_prompt(question, "the document(s) provided")
     
     content.append({
         "text": comprehensive_prompt
@@ -723,11 +723,9 @@ def create_comprehensive_prompt(question, context_or_instruction="the following 
     """
     Create a standardized comprehensive prompt template used by both FAISS and direct PDF approaches.
     """
-    return f"""Based on {context_or_instruction}, please answer the question.
+    return f"""Question: {question}
 
-Question: {question}
-
-Please provide a comprehensive answer based on the information in the document excerpts above."""
+Please provide a comprehensive answer based on the information in {context_or_instruction}."""
 
 
 def sanitize_document_name(filename):
@@ -1069,13 +1067,14 @@ def main():
             combined_context = "\n\n---\n\n".join(context_parts)
             
             # Create prompt with context and question using standardized template
-            prompt_question_part = create_comprehensive_prompt(args.question)
             prompt = f"""Based on the following document excerpts, please answer the question.
 
 Document excerpts:
 {combined_context}
 
-{prompt_question_part}"""
+Question: {args.question}
+
+Please provide a comprehensive answer based on the information in the document excerpts above."""
 
             # Auto-select model based on context size only if using default model
             if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
