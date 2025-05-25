@@ -11,6 +11,20 @@ from botocore.exceptions import ClientError, ReadTimeoutError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pickle
 import hashlib
+import json
+import tempfile
+import shutil
+from pathlib import Path
+
+# Flask imports (only loaded when --ui is used)
+flask_available = False
+try:
+    from flask import Flask, render_template, request, jsonify, send_from_directory
+    from werkzeug.utils import secure_filename
+    import markdown2
+    flask_available = True
+except ImportError:
+    pass
 
 # FAISS and embedding imports
 try:
@@ -744,6 +758,200 @@ def sanitize_document_name(filename):
     return sanitized[:60]
 
 
+# Flask Web UI Application
+class AskPDFWebApp:
+    def __init__(self, region=None, profile=None):
+        self.app = Flask(__name__)
+        self.app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max upload
+        self.app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
+        self.region = region or DEFAULT_AWS_REGION
+        self.profile = profile
+        
+        # Initialize AWS session
+        session = boto3.Session(profile_name=self.profile) if self.profile else boto3.Session()
+        if not self.region:
+            try:
+                self.region = session.region_name or DEFAULT_AWS_REGION
+            except:
+                self.region = DEFAULT_AWS_REGION
+        
+        self.bedrock_client = session.client("bedrock-runtime", region_name=self.region)
+        
+        # Available models
+        self.available_models = {
+            "us.amazon.nova-micro-v1:0": "Amazon Nova Micro",
+            "us.amazon.nova-lite-v1:0": "Amazon Nova Lite",
+            "us.amazon.nova-pro-v1:0": "Amazon Nova Pro",
+            "us.amazon.nova-premier-v1:0": "Amazon Nova Premier",
+            "us.anthropic.claude-sonnet-4-20250514-v1:0": "Claude 3.5 Sonnet",
+            "us.anthropic.claude-opus-4-20250514-v1:0": "Claude 3 Opus"
+        }
+        
+        self._setup_routes()
+    
+    def _setup_routes(self):
+        @self.app.route('/')
+        def index():
+            return render_template('index.html', models=self.available_models)
+        
+        @self.app.route('/api/process', methods=['POST'])
+        def process_documents():
+            try:
+                # Get form data
+                question = request.form.get('question', '')
+                model_id = request.form.get('model', DEFAULT_BEDROCK_MODEL_ID)
+                use_faiss = request.form.get('use_faiss', 'true').lower() == 'true'
+                
+                # Handle file uploads
+                uploaded_files = request.files.getlist('files')
+                if not uploaded_files or not any(f.filename for f in uploaded_files):
+                    return jsonify({'error': 'No files uploaded'}), 400
+                
+                # Save uploaded files
+                temp_paths = []
+                total_size = 0
+                for file in uploaded_files:
+                    if file and file.filename:
+                        filename = secure_filename(file.filename)
+                        if filename.lower().endswith(('.pdf', '.md')):
+                            filepath = os.path.join(self.app.config['UPLOAD_FOLDER'], filename)
+                            file.save(filepath)
+                            temp_paths.append(filepath)
+                            total_size += os.path.getsize(filepath)
+                
+                if not temp_paths:
+                    return jsonify({'error': 'No valid PDF or Markdown files uploaded'}), 400
+                
+                # Process documents
+                result = self._process_with_progress(temp_paths, question, model_id, use_faiss)
+                
+                # Clean up temp files
+                for path in temp_paths:
+                    try:
+                        os.remove(path)
+                    except:
+                        pass
+                
+                return jsonify(result)
+                
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/models', methods=['GET'])
+        def get_models():
+            return jsonify(self.available_models)
+    
+    def _process_with_progress(self, document_paths, question, model_id, use_faiss=True):
+        """Process documents and return results with progress updates"""
+        try:
+            progress = {'status': 'starting', 'message': 'Initializing...'}
+            
+            # Check if we can use direct PDF submission
+            can_use_direct = can_use_direct_pdf_submission(document_paths, model_id, question) and not use_faiss
+            
+            if can_use_direct:
+                progress['status'] = 'processing'
+                progress['message'] = 'Submitting PDFs directly to model...'
+                
+                # Direct PDF submission
+                inference_config = {
+                    "maxTokens": DEFAULT_OUTPUT_TOKENS,
+                    "temperature": DEFAULT_TEMPERATURE,
+                    "topP": DEFAULT_TOP_P
+                }
+                
+                pdf_files = [path for path in document_paths if path.lower().endswith('.pdf')]
+                response = submit_pdfs_directly_to_nova(
+                    self.bedrock_client, model_id, pdf_files, question, inference_config
+                )
+                
+                response_text = response['output']['message']['content'][0]['text']
+                
+                return {
+                    'success': True,
+                    'response': response_text,
+                    'method': 'direct_pdf',
+                    'model': model_id
+                }
+            
+            else:
+                # Use FAISS approach
+                progress['status'] = 'processing'
+                progress['message'] = 'Building vector store...'
+                
+                use_gpu = detect_gpu()
+                vector_store = PDFVectorStore(use_gpu=use_gpu)
+                vector_store.add_documents(document_paths)
+                
+                progress['message'] = 'Searching for relevant content...'
+                relevant_chunks = vector_store.search(question, k=None)
+                
+                if not relevant_chunks:
+                    return {
+                        'success': False,
+                        'error': 'No relevant content found in the documents.'
+                    }
+                
+                # Build context
+                context_parts = []
+                for result in relevant_chunks:
+                    metadata = result['metadata']
+                    chunk_header = f"[From {metadata['filename']}, section {metadata['chunk_id']+1}]"
+                    context_parts.append(f"{chunk_header}\n{result['chunk']}")
+                
+                combined_context = "\n\n---\n\n".join(context_parts)
+                
+                # Create prompt
+                prompt = f"""Based on the following document excerpts, please answer the question.
+
+Document excerpts:
+{combined_context}
+
+Question: {question}
+
+Please provide a comprehensive answer based on the information in the document excerpts above."""
+                
+                # Auto-select model if needed
+                if model_id == DEFAULT_BEDROCK_MODEL_ID:
+                    model_id = select_model_for_context(prompt, model_id)
+                
+                messages = [{"role": "user", "content": [{"text": prompt}]}]
+                inference_config = {
+                    "maxTokens": DEFAULT_OUTPUT_TOKENS,
+                    "temperature": DEFAULT_TEMPERATURE,
+                    "topP": DEFAULT_TOP_P
+                }
+                
+                progress['message'] = f'Sending request to {model_id}...'
+                response = self.bedrock_client.converse(
+                    modelId=model_id,
+                    messages=messages,
+                    inferenceConfig=inference_config
+                )
+                
+                response_text = response['output']['message']['content'][0]['text']
+                
+                return {
+                    'success': True,
+                    'response': response_text,
+                    'method': 'faiss',
+                    'model': model_id,
+                    'chunks_used': len(relevant_chunks)
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def run(self, host='0.0.0.0', port=5000, debug=False):
+        """Run the Flask web server"""
+        print(f"Starting AskPDF Web UI on http://{host}:{port}")
+        print(f"Using AWS region: {self.region}")
+        self.app.run(host=host, port=port, debug=debug)
+
+
 def get_document_files_details(input_path, recursive=False):
     """
     Collects PDF and Markdown file paths from a given file or directory.
@@ -794,14 +1002,25 @@ def main():
     parser = argparse.ArgumentParser(
         description="Ask questions about PDF documents using Amazon Bedrock (Nova Pro model)."
     )
+    
+    # Add --ui flag first
+    parser.add_argument(
+        "--ui",
+        action="store_true",
+        help="Launch web UI instead of command-line interface"
+    )
+    
+    # Make positional arguments optional when using --ui
     parser.add_argument(
         "path",
         type=str,
+        nargs='?',
         help="Path to a PDF/Markdown file or a folder containing PDF and Markdown files."
     )
     parser.add_argument(
         "question",
         type=str,
+        nargs='?',
         help="The question to ask about the document(s)."
     )
     parser.add_argument(
@@ -879,6 +1098,614 @@ def main():
     )
 
     args = parser.parse_args()
+    
+    # Handle --ui mode
+    if args.ui:
+        if not flask_available:
+            print("Error: Flask is not installed. Run: pip install flask>=3.1 markdown2", file=sys.stderr)
+            sys.exit(1)
+        
+        # Create templates directory
+        templates_dir = Path(__file__).parent / 'templates'
+        templates_dir.mkdir(exist_ok=True)
+        
+        # Create the HTML template
+        html_template = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AskPDF - Document Q&A with Amazon Bedrock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            text-align: center;
+            font-size: 2.5rem;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            background: #e9ecef;
+            border-color: #2980b9;
+        }
+        
+        .file-upload-area.drag-over {
+            background: #d4e6f1;
+            border-color: #2980b9;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .file-list {
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-item button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .file-item button:hover {
+            background: #c0392b;
+        }
+        
+        .advanced-options {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .submit-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #2980b9;
+        }
+        
+        .submit-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .progress-container {
+            display: none;
+            margin-top: 2rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            width: 0%;
+            transition: width 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.2) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0.2) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 50px 50px;
+            animation: move 1s linear infinite;
+        }
+        
+        @keyframes move {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 50px 50px;
+            }
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            color: #7f8c8d;
+        }
+        
+        .result-container {
+            display: none;
+            margin-top: 2rem;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .result-content {
+            font-size: 1rem;
+            line-height: 1.8;
+        }
+        
+        .result-content h1, .result-content h2, .result-content h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .result-content p {
+            margin-bottom: 1rem;
+        }
+        
+        .result-content ul, .result-content ol {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+        }
+        
+        .result-content code {
+            background: #e9ecef;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .result-content pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #fcc;
+            margin-top: 1rem;
+        }
+        
+        .metadata {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>AskPDF</h1>
+            <p style="text-align: center; margin-top: 0.5rem; opacity: 0.9;">
+                Document Q&A powered by Amazon Bedrock
+            </p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="main-content">
+            <form id="askpdf-form">
+                <div class="form-group">
+                    <label for="model-select">Select Model</label>
+                    <select id="model-select" name="model">
+                        {% for model_id, model_name in models.items() %}
+                        <option value="{{ model_id }}" {% if model_id == "us.amazon.nova-micro-v1:0" %}selected{% endif %}>
+                            {{ model_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Upload Documents (PDF or Markdown)</label>
+                    <div class="file-upload-area" id="file-upload-area">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <p style="margin-top: 1rem; color: #666;">
+                            Drag and drop files here or click to browse
+                        </p>
+                        <p style="font-size: 0.875rem; color: #999; margin-top: 0.5rem;">
+                            Supports PDF and Markdown files (max 500MB total)
+                        </p>
+                    </div>
+                    <input type="file" id="file-input" multiple accept=".pdf,.md" />
+                    <div class="file-list" id="file-list"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="question">Your Question</label>
+                    <textarea id="question" name="question" placeholder="What would you like to know about these documents?" required></textarea>
+                </div>
+                
+                <div class="advanced-options">
+                    <h3 style="margin-bottom: 1rem;">Advanced Options</h3>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="use-faiss" name="use_faiss" checked>
+                        <label for="use-faiss" style="margin-bottom: 0; font-weight: normal;">
+                            Use FAISS vector search (recommended for large documents)
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    Ask Question
+                </button>
+            </form>
+            
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Processing...</div>
+            </div>
+            
+            <div class="result-container" id="result-container">
+                <div class="result-header">
+                    <h2>Answer</h2>
+                    <div class="metadata" id="result-metadata"></div>
+                </div>
+                <div class="result-content" id="result-content"></div>
+            </div>
+            
+            <div class="error-message" id="error-message" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const fileUploadArea = document.getElementById('file-upload-area');
+        const fileList = document.getElementById('file-list');
+        const form = document.getElementById('askpdf-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const resultContainer = document.getElementById('result-container');
+        const resultContent = document.getElementById('result-content');
+        const resultMetadata = document.getElementById('result-metadata');
+        const errorMessage = document.getElementById('error-message');
+        
+        let uploadedFiles = [];
+        
+        // File upload handling
+        fileUploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('drag-over');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('drag-over');
+        });
+        
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            for (let file of files) {
+                if (file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.md')) {
+                    uploadedFiles.push(file);
+                }
+            }
+            updateFileList();
+        }
+        
+        function updateFileList() {
+            fileList.innerHTML = '';
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    <button type="button" onclick="removeFile(${index})">Remove</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+        
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+        }
+        
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (uploadedFiles.length === 0) {
+                showError('Please upload at least one document.');
+                return;
+            }
+            
+            const question = document.getElementById('question').value.trim();
+            if (!question) {
+                showError('Please enter a question.');
+                return;
+            }
+            
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('question', question);
+            formData.append('model', document.getElementById('model-select').value);
+            formData.append('use_faiss', document.getElementById('use-faiss').checked);
+            
+            uploadedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+            
+            // Show progress
+            submitBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            resultContainer.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 500);
+            
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                
+                if (data.success) {
+                    // Show result
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        resultContainer.style.display = 'block';
+                        
+                        // Convert markdown to HTML
+                        resultContent.innerHTML = markdownToHtml(data.response);
+                        
+                        // Show metadata
+                        let metadata = `Model: ${data.model}`;
+                        if (data.method === 'faiss' && data.chunks_used) {
+                            metadata += ` | Chunks: ${data.chunks_used}`;
+                        }
+                        metadata += ` | Method: ${data.method === 'direct_pdf' ? 'Direct PDF' : 'FAISS'}`;
+                        resultMetadata.textContent = metadata;
+                    }, 500);
+                } else {
+                    showError(data.error || 'An error occurred processing your request.');
+                }
+            } catch (error) {
+                clearInterval(progressInterval);
+                showError('Network error: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                progressFill.style.width = '0%';
+            }
+        });
+        
+        function showError(message) {
+            progressContainer.style.display = 'none';
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = message;
+        }
+        
+        function markdownToHtml(markdown) {
+            // Basic markdown to HTML conversion
+            let html = markdown;
+            
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+            
+            // Bold
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+            
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            
+            // Code blocks
+            html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+            
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Lists
+            html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            
+            html = html.replace(/^\d+\. (.+)$/gim, '<li>$1</li>');
+            
+            // Paragraphs
+            html = html.split('\n\n').map(para => {
+                if (!para.match(/^<[^>]+>/)) {
+                    return '<p>' + para + '</p>';
+                }
+                return para;
+            }).join('\n\n');
+            
+            return html;
+        }
+        
+        // Make removeFile function global
+        window.removeFile = removeFile;
+    </script>
+</body>
+</html>'''
+        
+        # Write the template
+        template_path = templates_dir / 'index.html'
+        with open(template_path, 'w', encoding='utf-8') as f:
+            f.write(html_template)
+        
+        # Create and run the web app
+        app = AskPDFWebApp(region=args.region, profile=args.profile)
+        app.app.template_folder = str(templates_dir)
+        
+        try:
+            app.run(host='0.0.0.0', port=5000, debug=False)
+        except KeyboardInterrupt:
+            print("\nShutting down web server...")
+        finally:
+            # Clean up
+            shutil.rmtree(app.app.config['UPLOAD_FOLDER'], ignore_errors=True)
+            shutil.rmtree(templates_dir, ignore_errors=True)
+        
+        sys.exit(0)
+    
+    # Regular CLI mode - validate required arguments
+    if not args.path or not args.question:
+        parser.error("path and question arguments are required when not using --ui mode")
+    
     current_model_id = args.model_id
     response = None  # Initialize response variable
 
