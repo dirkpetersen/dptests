@@ -168,7 +168,15 @@ class PDFVectorStore:
             raise ValueError("No text content could be extracted from any PDF files")
         
         print(f"Generating embeddings for {len(all_chunks)} chunks...")
-        embeddings = self.embedder.encode(all_chunks, show_progress_bar=True)
+        # Ensure all chunks are strings and handle any encoding issues
+        clean_chunks = []
+        for chunk in all_chunks:
+            if isinstance(chunk, str):
+                clean_chunks.append(chunk)
+            else:
+                clean_chunks.append(str(chunk))
+        
+        embeddings = self.embedder.encode(clean_chunks, show_progress_bar=True, convert_to_tensor=False)
         
         # Create FAISS index
         dimension = embeddings.shape[1]
@@ -197,7 +205,7 @@ class PDFVectorStore:
         if self.index is None:
             raise ValueError("No documents have been added to the vector store")
         
-        query_embedding = self.embedder.encode([query])
+        query_embedding = self.embedder.encode([str(query)], convert_to_tensor=False)
         query_embedding = query_embedding.astype('float32')
         faiss.normalize_L2(query_embedding)
         
