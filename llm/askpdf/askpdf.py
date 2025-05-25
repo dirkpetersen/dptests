@@ -14,12 +14,23 @@ from botocore.exceptions import ClientError
 # FAISS and embedding imports
 try:
     import faiss
+except ImportError:
+    print(f"Error: FAISS not installed. Run: pip install faiss-gpu sentence-transformers PyPDF2", file=sys.stderr)
+    print(f"For CPU-only FAISS: pip install faiss-cpu sentence-transformers PyPDF2", file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f"Error: FAISS installation appears corrupted. Try reinstalling:", file=sys.stderr)
+    print(f"  pip uninstall faiss-gpu faiss-cpu", file=sys.stderr)
+    print(f"  pip install faiss-cpu sentence-transformers PyPDF2", file=sys.stderr)
+    print(f"Original error: {e}", file=sys.stderr)
+    sys.exit(1)
+
+try:
     import numpy as np
     from sentence_transformers import SentenceTransformer
     from PyPDF2 import PdfReader
 except ImportError as e:
-    print(f"Error: Required packages not installed. Run: pip install faiss-gpu sentence-transformers PyPDF2", file=sys.stderr)
-    print(f"For CPU-only FAISS: pip install faiss-cpu sentence-transformers PyPDF2", file=sys.stderr)
+    print(f"Error: Required packages not installed. Run: pip install sentence-transformers PyPDF2", file=sys.stderr)
     sys.exit(1)
 
 # --- Configuration Constants ---
