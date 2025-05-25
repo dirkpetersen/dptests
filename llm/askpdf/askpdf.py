@@ -951,8 +951,8 @@ Please provide a comprehensive answer based on the information in the document e
                     messages=messages,
                     inferenceConfig=inference_config
                 )
-            
-        except ClientError as e:
+                
+            except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
             error_message = e.response.get("Error", {}).get("Message", str(e))
             
@@ -1060,9 +1060,13 @@ Please provide a comprehensive answer based on the information in the document e
                             raise e  # Can't reduce further
                     else:
                         raise e  # No chunks to work with
-            else:
-                # For other errors, don't retry
-                raise e
+                else:
+                    # For other errors, don't retry
+                    raise e
+
+        except Exception as e:
+            print(f"\nAn unexpected error occurred during FAISS processing: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # Extract and display response (works for both direct PDF and FAISS approaches)
     if response:
@@ -1088,7 +1092,7 @@ Please provide a comprehensive answer based on the information in the document e
                 f"\nThe context sent to the model exceeded the token processing limit."
                 f"\nModel used: {current_model_id}"
                 "\n\nPossible solutions:"
-                f"\n1. Reduce --top-k to retrieve fewer chunks (currently using {search_k} chunks)"
+                f"\n1. Reduce --top-k to retrieve fewer chunks (currently using all chunks)"
                 "\n2. Use a larger Nova model:"
                 "\n   --model-id us.amazon.nova-premier-v1:0  (1M tokens)"
                 "\n   --model-id us.amazon.nova-lite-v1:0     (300k tokens)"
