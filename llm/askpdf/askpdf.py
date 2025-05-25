@@ -96,6 +96,22 @@ def detect_gpu():
     return False
 
 
+def extract_text_from_markdown(md_path):
+    """Extract text content from a Markdown file"""
+    try:
+        with open(md_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        
+        # Clean the text to remove problematic characters
+        text = text.replace('\x00', '')
+        text = text.replace('\ufffd', '')
+        # Remove other non-printable characters except newlines and tabs
+        text = ''.join(char for char in text if char.isprintable() or char in '\n\t')
+        return text
+    except Exception as e:
+        raise RuntimeError(f"Error extracting text from {md_path}: {e}")
+
+
 def extract_text_from_pdf(pdf_path):
     """Extract text content from a PDF file"""
     if USE_PYMUPDF:
@@ -220,15 +236,15 @@ class PDFVectorStore:
         if ENABLE_EMBEDDING_CACHE:
             os.makedirs(CACHE_DIR, exist_ok=True)
     
-    def add_documents(self, pdf_files):
-        """Process PDF files and add to vector store"""
+    def add_documents(self, document_files):
+        """Process PDF and Markdown files and add to vector store"""
         all_chunks = []
         all_metadata = []
         
-        print("Processing PDFs and extracting text...")
+        print("Processing documents and extracting text...")
         
-        # Process PDFs in parallel for better performance
-        def process_single_pdf(pdf_path):
+        # Process documents in parallel for better performance
+        def process_single_document(doc_path):
             try:
                 filename = os.path.basename(pdf_path)
                 
@@ -260,11 +276,11 @@ class PDFVectorStore:
                 
                 return filename, chunks, metadata_list, len(text), None
             except Exception as e:
-                print(f"Warning: Could not process {pdf_path}: {e}")
+                print(f"Warning: Could not process {doc_path}: {e}")
                 return None, None, None, None, None
         
         # Use ThreadPoolExecutor for parallel processing
-        max_workers = min(len(pdf_files), 4)  # Limit concurrent threads
+        max_workers = min(len(document_files), 4)  # Limit concurrent threads
         cached_embeddings = []
         files_to_embed = []
         
@@ -343,9 +359,9 @@ class PDFVectorStore:
                         
                         # Find original file path
                         original_path = None
-                        for pdf_path in pdf_files:
-                            if os.path.basename(pdf_path) == filename:
-                                original_path = pdf_path
+                        for doc_path in document_files:
+                            if os.path.basename(doc_path) == filename:
+                                original_path = doc_path
                                 break
                         
                         if original_path:
@@ -496,37 +512,38 @@ def sanitize_document_name(filename):
     return sanitized[:60]
 
 
-def get_pdf_files_details(input_path):
+def get_document_files_details(input_path):
     """
-    Collects PDF file paths from a given file or directory.
+    Collects PDF and Markdown file paths from a given file or directory.
+    For directories, only searches the top level (no subdirectories).
     Returns a list of full file paths and the total size in bytes.
     """
-    pdf_file_paths = []
+    document_file_paths = []
     total_size_bytes = 0
 
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"Error: Input path '{input_path}' not found.")
 
     if os.path.isfile(input_path):
-        if input_path.lower().endswith(".pdf"):
-            pdf_file_paths.append(input_path)
+        if input_path.lower().endswith((".pdf", ".md")):
+            document_file_paths.append(input_path)
             total_size_bytes = os.path.getsize(input_path)
         else:
-            raise ValueError(f"Error: Specified file '{input_path}' is not a PDF.")
+            raise ValueError(f"Error: Specified file '{input_path}' is not a PDF or Markdown file.")
     elif os.path.isdir(input_path):
-        for root, _, files in os.walk(input_path):
-            for file in files:
-                if file.lower().endswith(".pdf"):
-                    full_path = os.path.join(root, file)
-                    pdf_file_paths.append(full_path)
-                    total_size_bytes += os.path.getsize(full_path)
+        # Only look at files in the directory itself, not subdirectories
+        for file in os.listdir(input_path):
+            file_path = os.path.join(input_path, file)
+            if os.path.isfile(file_path) and file.lower().endswith((".pdf", ".md")):
+                document_file_paths.append(file_path)
+                total_size_bytes += os.path.getsize(file_path)
     else:
         raise ValueError(f"Error: Input path '{input_path}' is not a valid file or directory.")
 
-    if not pdf_file_paths:
-        raise FileNotFoundError(f"Error: No PDF files found at '{input_path}'.")
+    if not document_file_paths:
+        raise FileNotFoundError(f"Error: No PDF or Markdown files found at '{input_path}'.")
 
-    return pdf_file_paths, total_size_bytes
+    return document_file_paths, total_size_bytes
 
 
 
@@ -538,12 +555,12 @@ def main():
     parser.add_argument(
         "path",
         type=str,
-        help="Path to a PDF file or a folder containing PDF files."
+        help="Path to a PDF/Markdown file or a folder containing PDF and Markdown files."
     )
     parser.add_argument(
         "question",
         type=str,
-        help="The question to ask about the PDF(s)."
+        help="The question to ask about the document(s)."
     )
     parser.add_argument(
         "--top-k",
@@ -613,13 +630,15 @@ def main():
     current_model_id = args.model_id
 
     try:
-        pdf_file_paths, total_size_bytes = get_pdf_files_details(args.path)
+        document_file_paths, total_size_bytes = get_document_files_details(args.path)
     except (FileNotFoundError, ValueError) as e:
         print(e, file=sys.stderr)
         sys.exit(1)
 
-    num_documents = len(pdf_file_paths)
-    print(f"Found {num_documents} PDF document(s), total size: {total_size_bytes / (1024*1024):.2f} MB.")
+    num_documents = len(document_file_paths)
+    pdf_count = sum(1 for path in document_file_paths if path.lower().endswith('.pdf'))
+    md_count = sum(1 for path in document_file_paths if path.lower().endswith('.md'))
+    print(f"Found {num_documents} document(s) ({pdf_count} PDF, {md_count} Markdown), total size: {total_size_bytes / (1024*1024):.2f} MB.")
 
     # Initialize AWS session with optional profile
     session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
@@ -648,8 +667,8 @@ def main():
     )
 
     try:
-        # Build vector store from PDFs
-        vector_store.add_documents(pdf_file_paths)
+        # Build vector store from documents
+        vector_store.add_documents(document_file_paths)
         
         # Search for relevant chunks
         print(f"\nSearching for relevant content for: '{args.question}'")
