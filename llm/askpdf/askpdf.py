@@ -534,7 +534,7 @@ def can_use_direct_pdf_submission(document_file_paths, model_id, question):
     Determine if we should use direct PDF submission to Nova instead of FAISS.
     Returns True if:
     1. All files are PDFs (no markdown)
-    2. Model is Nova (or auto-selected Nova)
+    2. Model supports document inputs
     3. Total size fits Nova limits
     4. Estimated tokens fit in model context window
     """
@@ -543,14 +543,14 @@ def can_use_direct_pdf_submission(document_file_paths, model_id, question):
     if len(pdf_files) != len(document_file_paths):
         return False  # Has non-PDF files
     
-    # Only works with Nova models
-    if not is_nova_model(model_id):
-        # If using default model, check if we would auto-select a Nova model
+    # Only works with models that support document inputs
+    if not supports_document_input(model_id):
+        # If using default model, check if we would auto-select a document-capable model
         if model_id == DEFAULT_BEDROCK_MODEL_ID:
-            # Estimate if we would select a Nova model based on PDF size
+            # Estimate if we would select a document-capable Nova model based on PDF size
             can_fit, total_size_mb, estimated_tokens = estimate_pdf_size_for_nova(pdf_files)
             if can_fit:
-                # Would likely auto-select a Nova model
+                # Would likely auto-select a document-capable Nova model
                 return True
         return False
     
@@ -644,6 +644,18 @@ def select_model_for_context(context_text, preferred_model="us.amazon.nova-micro
 def is_nova_model(model_id):
     """Check if the model is a Nova model"""
     return "nova" in model_id.lower()
+
+
+def supports_document_input(model_id):
+    """Check if the model supports document inputs"""
+    # Based on AWS documentation, only certain Nova models support document understanding
+    # Nova Micro does not support document inputs
+    document_supported_models = [
+        "us.amazon.nova-lite-v1:0",
+        "us.amazon.nova-pro-v1:0", 
+        "us.amazon.nova-premier-v1:0"
+    ]
+    return model_id in document_supported_models
 
 
 def estimate_max_chunks_for_model(model_id, base_prompt_size, avg_chunk_size):
@@ -878,15 +890,16 @@ def main():
         
         # Auto-select appropriate Nova model if using default
         if args.model_id == DEFAULT_BEDROCK_MODEL_ID:
-            # Select model based on estimated tokens
+            # Select model based on estimated tokens, but only document-capable models
             question_tokens = estimate_token_count(args.question)
             overhead_tokens = 1000
             total_estimated_tokens = estimated_tokens + question_tokens + overhead_tokens
             
-            if total_estimated_tokens <= MODEL_LIMITS["us.amazon.nova-micro-v1:0"] * 0.8:
-                current_model_id = "us.amazon.nova-micro-v1:0"
-            elif total_estimated_tokens <= MODEL_LIMITS["us.amazon.nova-lite-v1:0"] * 0.8:
+            # Skip Nova Micro since it doesn't support documents
+            if total_estimated_tokens <= MODEL_LIMITS["us.amazon.nova-lite-v1:0"] * 0.8:
                 current_model_id = "us.amazon.nova-lite-v1:0"
+            elif total_estimated_tokens <= MODEL_LIMITS["us.amazon.nova-pro-v1:0"] * 0.8:
+                current_model_id = "us.amazon.nova-pro-v1:0"
             else:
                 current_model_id = "us.amazon.nova-premier-v1:0"
             
@@ -902,10 +915,12 @@ def main():
             error_code = e.response.get("Error", {}).get("Code")
             error_message = e.response.get("Error", {}).get("Message", str(e))
             
-            # If direct submission fails due to size, fall back to FAISS
+            # If direct submission fails, fall back to FAISS
             if (error_code == "ValidationException" and 
-                ("Input is too long" in error_message or "too long for requested model" in error_message)):
-                print("Direct PDF submission failed due to size, falling back to FAISS approach...")
+                ("Input is too long" in error_message or 
+                 "too long for requested model" in error_message or
+                 "doesn't support documents" in error_message)):
+                print(f"Direct PDF submission failed ({error_message}), falling back to FAISS approach...")
                 use_direct_pdf = False
             else:
                 raise e
