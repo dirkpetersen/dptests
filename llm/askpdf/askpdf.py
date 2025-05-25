@@ -937,10 +937,6 @@ def main():
         if args.fast_embeddings:
             print(f"Using fast embedding model: {embedding_model}")
         
-        # Print FAISS detection message only when actually using FAISS
-        if not use_gpu:
-            print("FAISS CPU version detected, using CPU-only processing")
-        
         vector_store = PDFVectorStore(
             use_gpu=use_gpu, 
             model_name=embedding_model,
@@ -1021,6 +1017,11 @@ def main():
     if not use_direct_pdf:
         # Use FAISS-based approach
         try:
+            # Print FAISS detection message only when actually using FAISS
+            use_gpu = vector_store.use_gpu
+            if not use_gpu:
+                print("FAISS CPU version detected, using CPU-only processing")
+            
             # Build vector store from documents with spinner
             spinner = Spinner("Processing documents and building vector store")
             spinner.start()
