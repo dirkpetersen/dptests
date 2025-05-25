@@ -83,8 +83,19 @@ def extract_text_from_pdf(pdf_path):
     try:
         reader = PdfReader(pdf_path)
         text = ""
-        for page in reader.pages:
-            text += page.extract_text() + "\n"
+        for page_num, page in enumerate(reader.pages):
+            try:
+                page_text = page.extract_text()
+                if page_text:
+                    # Clean the text to remove problematic characters
+                    page_text = page_text.replace('\x00', '')
+                    page_text = page_text.replace('\ufffd', '')
+                    # Remove other non-printable characters except newlines and tabs
+                    page_text = ''.join(char for char in page_text if char.isprintable() or char in '\n\t')
+                    text += page_text + "\n"
+            except Exception as e:
+                print(f"Warning: Could not extract text from page {page_num + 1}: {e}")
+                continue
         return text
     except Exception as e:
         raise RuntimeError(f"Error extracting text from {pdf_path}: {e}")
@@ -111,7 +122,14 @@ def chunk_text(text, chunk_size=MAX_CHUNK_SIZE, overlap=CHUNK_OVERLAP):
         
         chunk = text[start:end].strip()
         if chunk:
-            chunks.append(chunk)
+            # Additional cleaning for each chunk
+            chunk = chunk.replace('\x00', '').replace('\ufffd', '')
+            # Ensure chunk only contains valid text
+            chunk = ''.join(char for char in chunk if char.isprintable() or char in '\n\t ')
+            # Replace multiple whitespaces with single space
+            chunk = ' '.join(chunk.split())
+            if chunk:  # Check again after cleaning
+                chunks.append(chunk)
         
         start = end - overlap
         if start >= len(text):
@@ -198,20 +216,32 @@ class PDFVectorStore:
             print("Trying alternative encoding method...")
             # Fallback: encode one by one to identify problematic chunks
             embeddings_list = []
+            valid_chunks = []
+            valid_metadata = []
+            
             for i, chunk in enumerate(clean_chunks):
                 try:
+                    # Ensure chunk is a proper string
+                    if not isinstance(chunk, str) or not chunk.strip():
+                        print(f"Skipping empty or invalid chunk {i}")
+                        continue
+                    
                     emb = self.embedder.encode([chunk], convert_to_tensor=False, normalize_embeddings=True)
                     embeddings_list.append(emb[0])
+                    valid_chunks.append(chunk)
+                    valid_metadata.append(all_metadata[i])
                 except Exception as chunk_error:
                     print(f"Skipping problematic chunk {i}: {chunk_error}")
-                    # Use a zero vector as placeholder
-                    zero_emb = np.zeros(self.embedder.get_sentence_embedding_dimension())
-                    embeddings_list.append(zero_emb)
+                    if i < len(clean_chunks):
+                        print(f"  Chunk preview: {clean_chunks[i][:50]}...")
             
             if not embeddings_list:
                 raise ValueError("Could not generate any embeddings")
             
             embeddings = np.array(embeddings_list)
+            # Update chunks and metadata to only include valid ones
+            all_chunks = valid_chunks
+            all_metadata = valid_metadata
         
         # Create FAISS index
         dimension = embeddings.shape[1]
@@ -241,25 +271,36 @@ class PDFVectorStore:
             raise ValueError("No documents have been added to the vector store")
         
         clean_query = str(query).strip().replace('\x00', '').replace('\ufffd', '')
+        # Additional cleaning for query
+        clean_query = ''.join(char for char in clean_query if char.isprintable() or char in '\n\t ')
+        clean_query = ' '.join(clean_query.split())
+        
         if not clean_query:
             raise ValueError("Query is empty after cleaning")
         
-        query_embedding = self.embedder.encode([clean_query], convert_to_tensor=False, normalize_embeddings=True)
-        query_embedding = query_embedding.astype('float32')
-        faiss.normalize_L2(query_embedding)
-        
-        scores, indices = self.index.search(query_embedding, k)
-        
-        results = []
-        for idx, i in enumerate(indices[0]):
-            if i >= 0:  # Valid index
-                results.append({
-                    'chunk': self.chunks[i],
-                    'score': float(scores[0][idx]),
-                    'metadata': self.chunk_metadata[i]
-                })
-        
-        return results
+        try:
+            query_embedding = self.embedder.encode([clean_query], convert_to_tensor=False, normalize_embeddings=True)
+            query_embedding = query_embedding.astype('float32')
+            faiss.normalize_L2(query_embedding)
+            
+            # Ensure k doesn't exceed the number of chunks
+            k = min(k, len(self.chunks))
+            
+            scores, indices = self.index.search(query_embedding, k)
+            
+            results = []
+            for idx, i in enumerate(indices[0]):
+                if i >= 0 and i < len(self.chunks):  # Valid index
+                    results.append({
+                        'chunk': self.chunks[i],
+                        'score': float(scores[0][idx]),
+                        'metadata': self.chunk_metadata[i]
+                    })
+            
+            return results
+        except Exception as e:
+            print(f"Error during search: {e}")
+            raise
 
 
 def sanitize_document_name(filename):
