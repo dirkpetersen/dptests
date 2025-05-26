@@ -139,9 +139,23 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
         if context and not pdf_files:
             prompt = f"{context}\n\n{prompt}"
         
-        # Add the user's question
+        # Add the user's question with better context for document analysis
+        if pdf_files and len(pdf_files) > 1:
+            # When multiple PDFs are provided, give clear instructions for comparison
+            enhanced_prompt = f"""I have provided multiple documents for analysis. Please analyze all the documents and answer the following question:
+
+{prompt}
+
+Instructions:
+- Compare and analyze the content across all provided documents
+- If one document contains requirements or criteria, evaluate the other documents against those criteria
+- Provide specific examples and evidence from the documents to support your analysis
+- Be thorough and analytical in your comparison"""
+        else:
+            enhanced_prompt = prompt
+            
         content.append({
-            "text": prompt
+            "text": enhanced_prompt
         })
         
         messages = [
