@@ -836,7 +836,8 @@
                 
                 if (response.ok) {
                     uploadStatus.className = 'upload-status success';
-                    uploadStatus.textContent = `✓ ${data.message}. Context length: ${data.context_length} characters.`;
+                    const contextInfo = data.context_display || `${data.context_length} characters`;
+                    uploadStatus.textContent = `✓ ${data.message}. Context: ${contextInfo}.`;
                     
                     // Update uploaded files display immediately
                     console.log('Upload response data:', data); // Debug log

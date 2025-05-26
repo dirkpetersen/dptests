@@ -393,10 +393,25 @@ def upload_files():
         
         logger.info(f"Session now has {len(session['uploaded_files'])} total files ({len(session['pdf_files'])} PDFs)")
         
+        # Calculate total context length including PDFs
+        total_context_length = len(total_content)
+        pdf_context_note = ""
+        if session.get('pdf_files'):
+            pdf_count = len(session['pdf_files'])
+            pdf_context_note = f" + {pdf_count} PDF file(s) processed by Nova"
+            # Estimate PDF content size for display (rough estimate)
+            for pdf_info in session['pdf_files']:
+                if os.path.exists(pdf_info['path']):
+                    pdf_size = os.path.getsize(pdf_info['path'])
+                    total_context_length += pdf_size // 4  # Rough estimate: 4 bytes per character
+        
+        context_display = f"{len(total_content)} text chars{pdf_context_note}" if pdf_context_note else f"{total_context_length} chars"
+        
         return jsonify({
             'message': f'Successfully processed {len(uploaded_files)} files',
             'files': uploaded_files,
-            'context_length': len(total_content),
+            'context_length': total_context_length,
+            'context_display': context_display,
             'uploaded_files': session.get('uploaded_files', []),
             'pdf_count': len(session.get('pdf_files', []))
         })
