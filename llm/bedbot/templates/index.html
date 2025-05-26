@@ -597,7 +597,6 @@
 
             let finalTranscript = '';
             let interimTranscript = '';
-            let lastResultIndex = 0;
 
             recognition.onstart = function() {
                 isRecording = true;
@@ -606,32 +605,38 @@
                 micBtn.title = 'Stop recording';
                 finalTranscript = '';
                 interimTranscript = '';
-                lastResultIndex = 0;
             };
 
             recognition.onresult = function(event) {
-                interimTranscript = '';
+                let newFinalTranscript = '';
+                let newInterimTranscript = '';
                 
-                // Process all results from the last processed index
-                for (let i = lastResultIndex; i < event.results.length; i++) {
+                // Process all results
+                for (let i = 0; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
                     
                     if (event.results[i].isFinal) {
-                        finalTranscript += transcript;
-                        lastResultIndex = i + 1;
+                        newFinalTranscript += transcript + ' ';
                     } else {
-                        interimTranscript += transcript;
+                        newInterimTranscript += transcript;
                     }
                 }
                 
-                // Update the input field with final + interim results
-                const currentValue = messageInput.value;
-                const baseText = currentValue.replace(interimTranscript, ''); // Remove any previous interim text
-                messageInput.value = baseText + finalTranscript + interimTranscript;
+                // Only add new final results to the input field
+                if (newFinalTranscript && newFinalTranscript !== finalTranscript) {
+                    const currentValue = messageInput.value;
+                    // Add space before new text if input is not empty
+                    const separator = currentValue.trim() ? ' ' : '';
+                    messageInput.value = currentValue + separator + newFinalTranscript.trim();
+                    finalTranscript = newFinalTranscript;
+                    
+                    messageInput.style.height = 'auto';
+                    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+                    messageInput.focus();
+                }
                 
-                messageInput.style.height = 'auto';
-                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-                messageInput.focus();
+                // Store interim for display purposes but don't add to input
+                interimTranscript = newInterimTranscript;
             };
 
             recognition.onend = function() {
@@ -690,14 +695,16 @@
                 micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
                 micBtn.title = 'Voice input';
                 
-                // Finalize any remaining text
-                if (finalTranscript || interimTranscript) {
-                    const currentValue = messageInput.value;
-                    const cleanedValue = currentValue.replace(/\s+/g, ' ').trim();
-                    messageInput.value = cleanedValue;
-                    messageInput.style.height = 'auto';
-                    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-                }
+                // Clean up any extra spaces in the input
+                const currentValue = messageInput.value;
+                const cleanedValue = currentValue.replace(/\s+/g, ' ').trim();
+                messageInput.value = cleanedValue;
+                messageInput.style.height = 'auto';
+                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+                
+                // Reset transcripts
+                finalTranscript = '';
+                interimTranscript = '';
                 
                 try {
                     recognition.stop();
