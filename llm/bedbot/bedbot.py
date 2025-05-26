@@ -1,3 +1,189 @@
 #! /usr/bin/env python3
 
+import os
+import json
+import uuid
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from werkzeug.utils import secure_filename
+import boto3
+from botocore.exceptions import ClientError
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024  # 1GB max file size
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# AWS Bedrock client
+try:
+    bedrock_client = boto3.client('bedrock-runtime', region_name='us-east-1')
+except Exception as e:
+    logger.error(f"Failed to initialize Bedrock client: {e}")
+    bedrock_client = None
+
+# Allowed file extensions
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def read_file_content(filepath):
+    """Read content from uploaded file"""
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"Error reading file {filepath}: {e}")
+        return None
+
+def call_bedrock_nova(prompt, context=""):
+    """Call AWS Bedrock Nova Lite model"""
+    if not bedrock_client:
+        return "Error: Bedrock client not initialized. Please check your AWS credentials."
+    
+    try:
+        # Combine context and prompt
+        full_prompt = f"{context}\n\nUser: {prompt}\n\nAssistant:" if context else f"User: {prompt}\n\nAssistant:"
+        
+        body = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": full_prompt
+                }
+            ],
+            "max_tokens": 2000,
+            "temperature": 0.7,
+            "top_p": 0.9
+        }
+        
+        response = bedrock_client.invoke_model(
+            modelId='us.amazon.nova-lite-v1:0',
+            body=json.dumps(body),
+            contentType='application/json'
+        )
+        
+        response_body = json.loads(response['body'].read())
+        return response_body['content'][0]['text']
+        
+    except ClientError as e:
+        logger.error(f"Bedrock API error: {e}")
+        return f"Error calling Bedrock: {str(e)}"
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return f"Unexpected error: {str(e)}"
+
+@app.route('/')
+def index():
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+        session['chat_history'] = []
+        session['document_context'] = ""
+    return render_template('index.html')
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '').strip()
+        
+        if not user_message:
+            return jsonify({'error': 'Empty message'}), 400
+        
+        # Get document context if available
+        context = session.get('document_context', '')
+        
+        # Call Bedrock Nova
+        bot_response = call_bedrock_nova(user_message, context)
+        
+        # Store in chat history
+        if 'chat_history' not in session:
+            session['chat_history'] = []
+        
+        session['chat_history'].append({
+            'user': user_message,
+            'bot': bot_response,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        session.modified = True
+        
+        return jsonify({
+            'response': bot_response,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Chat error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/upload', methods=['POST'])
+def upload_files():
+    try:
+        if 'files' not in request.files:
+            return jsonify({'error': 'No files provided'}), 400
+        
+        files = request.files.getlist('files')
+        uploaded_files = []
+        total_content = ""
+        
+        for file in files:
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                # Add timestamp to avoid conflicts
+                filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                file.save(filepath)
+                
+                # Read file content
+                content = read_file_content(filepath)
+                if content:
+                    total_content += f"\n\n--- Content from {file.filename} ---\n{content}"
+                    uploaded_files.append({
+                        'filename': file.filename,
+                        'size': os.path.getsize(filepath),
+                        'status': 'success'
+                    })
+                else:
+                    uploaded_files.append({
+                        'filename': file.filename,
+                        'status': 'error',
+                        'message': 'Could not read file content'
+                    })
+        
+        # Store document context in session
+        if total_content:
+            session['document_context'] = f"Context from uploaded documents:{total_content}"
+            session.modified = True
+        
+        return jsonify({
+            'message': f'Successfully processed {len(uploaded_files)} files',
+            'files': uploaded_files,
+            'context_length': len(total_content)
+        })
+        
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        return jsonify({'error': 'Upload failed'}), 500
+
+@app.route('/clear')
+def clear_session():
+    session.clear()
+    return redirect(url_for('index'))
+
+@app.route('/history')
+def get_history():
+    return jsonify(session.get('chat_history', []))
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
 
