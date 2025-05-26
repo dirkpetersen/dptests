@@ -106,6 +106,17 @@ def delete_s3_bucket():
         return
     
     try:
+        # Check if bucket exists first
+        try:
+            s3_client.head_bucket(Bucket=s3_bucket_name)
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            if error_code == '404':
+                logger.info(f"S3 bucket {s3_bucket_name} already deleted or doesn't exist")
+                return
+            else:
+                raise e
+        
         # Delete all objects in bucket
         paginator = s3_client.get_paginator('list_objects_v2')
         for page in paginator.paginate(Bucket=s3_bucket_name):
