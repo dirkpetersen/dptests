@@ -79,31 +79,68 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def read_file_content(filepath):
-    """Read content from uploaded file"""
+    """Read content from uploaded file or return file info for PDF processing"""
     try:
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            return f.read()
+        filename = os.path.basename(filepath).lower()
+        
+        if filename.endswith('.pdf'):
+            # For PDFs, return file info for Nova document processing
+            return {
+                'type': 'pdf',
+                'path': filepath,
+                'filename': os.path.basename(filepath)
+            }
+        else:
+            # For text files, read content normally
+            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                return f.read()
     except Exception as e:
         logger.error(f"Error reading file {filepath}: {e}")
         return None
 
-def call_bedrock_nova(prompt, context=""):
-    """Call AWS Bedrock Nova Lite model using Converse API"""
+def call_bedrock_nova(prompt, context="", pdf_files=None):
+    """Call AWS Bedrock Nova Lite model using Converse API with document support"""
     if not bedrock_client:
         return "Error: Bedrock client not initialized. Please check your AWS credentials."
     
     try:
-        # Combine context and prompt
-        full_prompt = f"{context}\n\n{prompt}" if context else prompt
+        content = []
+        
+        # Add PDF documents if provided
+        if pdf_files:
+            for pdf_info in pdf_files:
+                try:
+                    with open(pdf_info['path'], 'rb') as f:
+                        pdf_bytes = f.read()
+                    
+                    # Sanitize document name for Nova
+                    doc_name = pdf_info['filename'].replace('.pdf', '').replace(' ', '_')[:50]
+                    
+                    content.append({
+                        "document": {
+                            "format": "pdf",
+                            "name": doc_name,
+                            "source": {
+                                "bytes": pdf_bytes
+                            }
+                        }
+                    })
+                except Exception as e:
+                    logger.error(f"Error reading PDF {pdf_info['path']}: {e}")
+        
+        # Add text context if available
+        if context and not pdf_files:
+            prompt = f"{context}\n\n{prompt}"
+        
+        # Add the user's question
+        content.append({
+            "text": prompt
+        })
         
         messages = [
             {
                 "role": "user",
-                "content": [
-                    {
-                        "text": full_prompt
-                    }
-                ]
+                "content": content
             }
         ]
         
@@ -159,11 +196,15 @@ def chat():
         if not user_message:
             return jsonify({'error': 'Empty message'}), 400
         
-        # Get document context if available
+        # Get document context and PDF files
         context = session.get('document_context', '')
+        pdf_files = session.get('pdf_files', [])
         
-        # Call Bedrock Nova
-        bot_response = call_bedrock_nova(user_message, context)
+        # Call Bedrock Nova with PDFs if available
+        if pdf_files:
+            bot_response = call_bedrock_nova(user_message, context, pdf_files)
+        else:
+            bot_response = call_bedrock_nova(user_message, context)
         
         # Convert markdown to HTML
         bot_response_html = convert_markdown_to_html(bot_response)
@@ -199,25 +240,42 @@ def upload_files():
         files = request.files.getlist('files')
         uploaded_files = []
         total_content = ""
+        pdf_files = []
         
         for file in files:
             if file and file.filename and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 # Add timestamp to avoid conflicts
-                filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                timestamped_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], timestamped_filename)
                 
                 file.save(filepath)
                 
-                # Read file content
+                # Handle file content based on type
                 content = read_file_content(filepath)
                 if content:
-                    total_content += f"\n\n--- Content from {file.filename} ---\n{content}"
-                    uploaded_files.append({
-                        'filename': file.filename,
-                        'size': os.path.getsize(filepath),
-                        'status': 'success'
-                    })
+                    if isinstance(content, dict) and content.get('type') == 'pdf':
+                        # Store PDF file info for Nova processing
+                        pdf_files.append({
+                            'path': filepath,
+                            'filename': file.filename,
+                            'timestamped_filename': timestamped_filename
+                        })
+                        uploaded_files.append({
+                            'filename': file.filename,
+                            'size': os.path.getsize(filepath),
+                            'status': 'success',
+                            'type': 'pdf'
+                        })
+                    else:
+                        # Regular text content
+                        total_content += f"\n\n--- Content from {file.filename} ---\n{content}"
+                        uploaded_files.append({
+                            'filename': file.filename,
+                            'size': os.path.getsize(filepath),
+                            'status': 'success',
+                            'type': 'text'
+                        })
                 else:
                     uploaded_files.append({
                         'filename': file.filename,
@@ -226,31 +284,33 @@ def upload_files():
                     })
         
         # Store document context and file list in session
-        if total_content:
-            session['document_context'] = f"Context from uploaded documents:{total_content}"
-            
-            # Add to uploaded files list (avoid duplicates)
-            if 'uploaded_files' not in session:
-                session['uploaded_files'] = []
-            
-            for file_info in uploaded_files:
-                if file_info['status'] == 'success':
-                    # Check if file already exists
-                    existing = next((f for f in session['uploaded_files'] if f['filename'] == file_info['filename']), None)
-                    if not existing:
-                        session['uploaded_files'].append({
-                            'filename': file_info['filename'],
-                            'size': file_info['size'],
-                            'upload_time': datetime.now().isoformat()
-                        })
-            
-            session.modified = True
+        session['document_context'] = f"Context from uploaded documents:{total_content}" if total_content else ""
+        session['pdf_files'] = pdf_files
+        
+        # Add to uploaded files list (avoid duplicates)
+        if 'uploaded_files' not in session:
+            session['uploaded_files'] = []
+        
+        for file_info in uploaded_files:
+            if file_info['status'] == 'success':
+                # Check if file already exists
+                existing = next((f for f in session['uploaded_files'] if f['filename'] == file_info['filename']), None)
+                if not existing:
+                    session['uploaded_files'].append({
+                        'filename': file_info['filename'],
+                        'size': file_info['size'],
+                        'upload_time': datetime.now().isoformat(),
+                        'type': file_info.get('type', 'text')
+                    })
+        
+        session.modified = True
         
         return jsonify({
             'message': f'Successfully processed {len(uploaded_files)} files',
             'files': uploaded_files,
             'context_length': len(total_content),
-            'uploaded_files': session.get('uploaded_files', [])
+            'uploaded_files': session.get('uploaded_files', []),
+            'pdf_count': len(pdf_files)
         })
         
     except Exception as e:
@@ -283,20 +343,25 @@ def remove_file():
         if 'uploaded_files' in session:
             session['uploaded_files'] = [f for f in session['uploaded_files'] if f['filename'] != filename]
         
+        # Remove from PDF files list if it's a PDF
+        if 'pdf_files' in session:
+            session['pdf_files'] = [f for f in session['pdf_files'] if f['filename'] != filename]
+        
         # Rebuild document context without the removed file
         remaining_files = session.get('uploaded_files', [])
         if remaining_files:
-            # Re-read remaining files to rebuild context
+            # Re-read remaining text files to rebuild context
             total_content = ""
             for file_info in remaining_files:
-                # Find the actual file on disk (with timestamp prefix)
-                for uploaded_file in os.listdir(app.config['UPLOAD_FOLDER']):
-                    if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
-                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file)
-                        content = read_file_content(filepath)
-                        if content:
-                            total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
-                        break
+                if file_info.get('type') != 'pdf':  # Only process text files
+                    # Find the actual file on disk (with timestamp prefix)
+                    for uploaded_file in os.listdir(app.config['UPLOAD_FOLDER']):
+                        if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
+                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file)
+                            content = read_file_content(filepath)
+                            if content and not isinstance(content, dict):
+                                total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
+                            break
             
             session['document_context'] = f"Context from uploaded documents:{total_content}" if total_content else ""
         else:
