@@ -6,6 +6,9 @@ import uuid
 import tempfile
 import shutil
 import atexit
+import argparse
+import random
+import string
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_session import Session
@@ -18,6 +21,16 @@ import markdown
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='BedBot - AI Chat Assistant')
+parser.add_argument('--no-bucket', action='store_true', help='Use local filesystem instead of S3 bucket')
+args = parser.parse_args()
+
+# Configuration
+USE_S3_BUCKET = not args.no_bucket
+MAX_FILE_SIZE = 4.5 * 1024 * 1024  # 4.5 MB per file
+MAX_FILES_PER_SESSION = 1000
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
@@ -33,17 +46,92 @@ app.config['SESSION_FILE_THRESHOLD'] = 100  # Max number of sessions before clea
 # Flask session directory will be created on demand
 temp_session_dir = None
 
-# Track all session upload folders for cleanup
+# Track all session upload folders for cleanup (local mode only)
 session_upload_folders = set()
+
+# S3 bucket for file storage (S3 mode only)
+s3_bucket_name = None
 
 # Initialize Flask-Session (will create session dir when first needed)
 Session(app)
 
-# Register cleanup function to remove temp directories on shutdown
-def cleanup_temp_dirs():
+def generate_bucket_name():
+    """Generate a unique bucket name with random suffix"""
+    random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+    return f"bedbot-{random_suffix}"
+
+def create_s3_bucket():
+    """Create S3 bucket for file storage"""
+    global s3_bucket_name
+    if not USE_S3_BUCKET or not s3_client:
+        return
+    
+    try:
+        s3_bucket_name = generate_bucket_name()
+        
+        # Create bucket
+        if profile_region == 'us-east-1':
+            s3_client.create_bucket(Bucket=s3_bucket_name)
+        else:
+            s3_client.create_bucket(
+                Bucket=s3_bucket_name,
+                CreateBucketConfiguration={'LocationConstraint': profile_region}
+            )
+        
+        # Set bucket policy to private
+        s3_client.put_public_access_block(
+            Bucket=s3_bucket_name,
+            PublicAccessBlockConfiguration={
+                'BlockPublicAcls': True,
+                'IgnorePublicAcls': True,
+                'BlockPublicPolicy': True,
+                'RestrictPublicBuckets': True
+            }
+        )
+        
+        logger.info(f"Created S3 bucket: {s3_bucket_name}")
+        
+    except Exception as e:
+        logger.error(f"Failed to create S3 bucket: {e}")
+        s3_bucket_name = None
+
+def delete_s3_bucket():
+    """Delete S3 bucket and all its contents"""
+    global s3_bucket_name
+    if not USE_S3_BUCKET or not s3_client or not s3_bucket_name:
+        return
+    
+    try:
+        # Delete all objects in bucket
+        paginator = s3_client.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=s3_bucket_name):
+            if 'Contents' in page:
+                objects = [{'Key': obj['Key']} for obj in page['Contents']]
+                s3_client.delete_objects(
+                    Bucket=s3_bucket_name,
+                    Delete={'Objects': objects}
+                )
+        
+        # Delete bucket
+        s3_client.delete_bucket(Bucket=s3_bucket_name)
+        logger.info(f"Deleted S3 bucket: {s3_bucket_name}")
+        
+    except Exception as e:
+        logger.error(f"Failed to delete S3 bucket: {e}")
+
+# Create S3 bucket at startup if using S3 mode
+if USE_S3_BUCKET:
+    create_s3_bucket()
+
+# Register cleanup function to remove temp directories and S3 bucket on shutdown
+def cleanup_resources():
     global temp_session_dir, session_upload_folders
     
-    # Clean up all session upload folders
+    # Clean up S3 bucket if using S3 mode
+    if USE_S3_BUCKET:
+        delete_s3_bucket()
+    
+    # Clean up all session upload folders (local mode only)
     for folder in list(session_upload_folders):
         if os.path.exists(folder):
             shutil.rmtree(folder)
@@ -54,9 +142,9 @@ def cleanup_temp_dirs():
         shutil.rmtree(temp_session_dir)
         logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
 
-atexit.register(cleanup_temp_dirs)
+atexit.register(cleanup_resources)
 
-# AWS Bedrock client - uses current AWS profile
+# AWS clients - uses current AWS profile
 try:
     # Create a session that uses the current AWS profile
     session_aws = boto3.Session()
@@ -69,11 +157,19 @@ try:
         logger.warning("No region found in AWS profile, defaulting to us-east-1")
     
     bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region)
+    s3_client = session_aws.client('s3', region_name=profile_region) if USE_S3_BUCKET else None
+    
     logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
     logger.info(f"Using region: {profile_region}")
+    if USE_S3_BUCKET:
+        logger.info("S3 bucket mode enabled")
+    else:
+        logger.info("Local filesystem mode enabled (--no-bucket)")
+        
 except Exception as e:
-    logger.error(f"Failed to initialize Bedrock client: {e}")
+    logger.error(f"Failed to initialize AWS clients: {e}")
     bedrock_client = None
+    s3_client = None
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
@@ -81,24 +177,41 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def read_file_content(filepath):
+def read_file_content(filepath_or_s3key, is_s3=False):
     """Read content from uploaded file or return file info for PDF processing"""
     try:
-        filename = os.path.basename(filepath).lower()
-        
-        if filename.endswith('.pdf'):
-            # For PDFs, return file info for Nova document processing
-            return {
-                'type': 'pdf',
-                'path': filepath,
-                'filename': os.path.basename(filepath)
-            }
+        if is_s3:
+            # S3 mode - filepath_or_s3key is the S3 key
+            filename = os.path.basename(filepath_or_s3key).lower()
+            
+            if filename.endswith('.pdf'):
+                # For PDFs, return file info for Nova document processing
+                return {
+                    'type': 'pdf',
+                    's3_key': filepath_or_s3key,
+                    'filename': os.path.basename(filepath_or_s3key)
+                }
+            else:
+                # For text files, read content from S3
+                response = s3_client.get_object(Bucket=s3_bucket_name, Key=filepath_or_s3key)
+                return response['Body'].read().decode('utf-8', errors='ignore')
         else:
-            # For text files, read content normally
-            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                return f.read()
+            # Local mode - filepath_or_s3key is the local file path
+            filename = os.path.basename(filepath_or_s3key).lower()
+            
+            if filename.endswith('.pdf'):
+                # For PDFs, return file info for Nova document processing
+                return {
+                    'type': 'pdf',
+                    'path': filepath_or_s3key,
+                    'filename': os.path.basename(filepath_or_s3key)
+                }
+            else:
+                # For text files, read content normally
+                with open(filepath_or_s3key, 'r', encoding='utf-8', errors='ignore') as f:
+                    return f.read()
     except Exception as e:
-        logger.error(f"Error reading file {filepath}: {e}")
+        logger.error(f"Error reading file {filepath_or_s3key}: {e}")
         return None
 
 def call_bedrock_nova(prompt, context="", pdf_files=None):
@@ -113,43 +226,70 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
         logger.info(f"PDF files provided: {len(pdf_files) if pdf_files else 0}")
         if pdf_files:
             for i, pdf_info in enumerate(pdf_files):
-                logger.info(f"PDF {i+1}: {pdf_info.get('filename', 'unknown')} at {pdf_info.get('path', 'unknown')}")
+                if USE_S3_BUCKET:
+                    logger.info(f"PDF {i+1}: {pdf_info.get('filename', 'unknown')} at s3://{s3_bucket_name}/{pdf_info.get('s3_key', 'unknown')}")
+                else:
+                    logger.info(f"PDF {i+1}: {pdf_info.get('filename', 'unknown')} at {pdf_info.get('path', 'unknown')}")
         
         # Add PDF documents if provided
         if pdf_files:
             for pdf_info in pdf_files:
                 try:
-                    pdf_path = pdf_info['path']
-                    if not os.path.exists(pdf_path):
-                        logger.error(f"PDF file not found: {pdf_path}")
-                        continue
+                    if USE_S3_BUCKET and 's3_key' in pdf_info:
+                        # S3 mode - use S3 location for Nova
+                        s3_key = pdf_info['s3_key']
                         
-                    with open(pdf_path, 'rb') as f:
-                        pdf_bytes = f.read()
-                    
-                    # Sanitize document name for Nova - only alphanumeric, whitespace, hyphens, parentheses, square brackets
-                    doc_name = pdf_info['filename'].replace('.pdf', '')
-                    # Replace periods and other invalid characters with underscores
-                    import re
-                    doc_name = re.sub(r'[^a-zA-Z0-9\s\-\(\)\[\]]', '_', doc_name)
-                    # Replace multiple consecutive whitespace with single space
-                    doc_name = re.sub(r'\s+', ' ', doc_name).strip()
-                    # Limit length
-                    doc_name = doc_name[:50]
-                    
-                    logger.info(f"Adding PDF document: {doc_name} ({len(pdf_bytes)} bytes)")
-                    
-                    content.append({
-                        "document": {
-                            "format": "pdf",
-                            "name": doc_name,
-                            "source": {
-                                "bytes": pdf_bytes
+                        # Sanitize document name for Nova
+                        doc_name = pdf_info['filename'].replace('.pdf', '')
+                        import re
+                        doc_name = re.sub(r'[^a-zA-Z0-9\s\-\(\)\[\]]', '_', doc_name)
+                        doc_name = re.sub(r'\s+', ' ', doc_name).strip()
+                        doc_name = doc_name[:50]
+                        
+                        logger.info(f"Adding PDF document from S3: {doc_name} (s3://{s3_bucket_name}/{s3_key})")
+                        
+                        content.append({
+                            "document": {
+                                "format": "pdf",
+                                "name": doc_name,
+                                "source": {
+                                    "s3Location": {
+                                        "uri": f"s3://{s3_bucket_name}/{s3_key}",
+                                        "bucketOwner": session_aws.client('sts').get_caller_identity()['Account']
+                                    }
+                                }
                             }
-                        }
-                    })
+                        })
+                    else:
+                        # Local mode - read file bytes
+                        pdf_path = pdf_info['path']
+                        if not os.path.exists(pdf_path):
+                            logger.error(f"PDF file not found: {pdf_path}")
+                            continue
+                            
+                        with open(pdf_path, 'rb') as f:
+                            pdf_bytes = f.read()
+                        
+                        # Sanitize document name for Nova
+                        doc_name = pdf_info['filename'].replace('.pdf', '')
+                        import re
+                        doc_name = re.sub(r'[^a-zA-Z0-9\s\-\(\)\[\]]', '_', doc_name)
+                        doc_name = re.sub(r'\s+', ' ', doc_name).strip()
+                        doc_name = doc_name[:50]
+                        
+                        logger.info(f"Adding PDF document: {doc_name} ({len(pdf_bytes)} bytes)")
+                        
+                        content.append({
+                            "document": {
+                                "format": "pdf",
+                                "name": doc_name,
+                                "source": {
+                                    "bytes": pdf_bytes
+                                }
+                            }
+                        })
                 except Exception as e:
-                    logger.error(f"Error reading PDF {pdf_info['path']}: {e}")
+                    logger.error(f"Error processing PDF {pdf_info}: {e}")
         
         # Add text context if available and no PDFs
         if context and not pdf_files:
@@ -228,8 +368,8 @@ def convert_markdown_to_html(text):
     
     return md.convert(text)
 
-def get_session_upload_folder():
-    """Get or create session-specific upload folder"""
+def get_session_upload_location():
+    """Get or create session-specific upload location (S3 prefix or local folder)"""
     global temp_session_dir, session_upload_folders
     
     if 'session_id' not in session:
@@ -242,19 +382,27 @@ def get_session_upload_folder():
         app.config['SESSION_FILE_DIR'] = temp_session_dir
         logger.info(f"Created temporary session directory: {temp_session_dir}")
     
-    # Create a unique temporary directory for this session with restricted permissions
-    session_folder = tempfile.mkdtemp(prefix=f'bedbot_session_{session["session_id"]}_')
-    os.chmod(session_folder, 0o700)  # Only owner can read/write/execute
-    
-    # Track this folder for cleanup on shutdown
-    session_upload_folders.add(session_folder)
-    
-    # Store the session folder path in the session for cleanup
-    session['session_folder'] = session_folder
-    session.modified = True
-    
-    logger.info(f"Created session upload folder: {session_folder}")
-    return session_folder
+    if USE_S3_BUCKET:
+        # S3 mode - return S3 prefix for this session
+        s3_prefix = f"session_{session['session_id']}/"
+        session['s3_prefix'] = s3_prefix
+        session.modified = True
+        logger.info(f"Using S3 session prefix: {s3_prefix}")
+        return s3_prefix
+    else:
+        # Local mode - create temporary directory
+        session_folder = tempfile.mkdtemp(prefix=f'bedbot_session_{session["session_id"]}_')
+        os.chmod(session_folder, 0o700)  # Only owner can read/write/execute
+        
+        # Track this folder for cleanup on shutdown
+        session_upload_folders.add(session_folder)
+        
+        # Store the session folder path in the session for cleanup
+        session['session_folder'] = session_folder
+        session.modified = True
+        
+        logger.info(f"Created session upload folder: {session_folder}")
+        return session_folder
 
 @app.route('/')
 def index():
@@ -264,8 +412,8 @@ def index():
         session['document_context'] = ""
         session['uploaded_files'] = []
         session['pdf_files'] = []
-        # Create session folder
-        get_session_upload_folder()
+        # Create session upload location
+        get_session_upload_location()
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
@@ -320,56 +468,124 @@ def upload_files():
             return jsonify({'error': 'No files provided'}), 400
         
         files = request.files.getlist('files')
+        
+        # Check file count limit
+        current_file_count = len(session.get('uploaded_files', []))
+        if current_file_count + len(files) > MAX_FILES_PER_SESSION:
+            return jsonify({'error': f'Maximum {MAX_FILES_PER_SESSION} files allowed per session'}), 400
+        
         uploaded_files = []
         new_text_content = ""
         new_pdf_files = []
         
-        # Get or create session-specific upload folder
-        if 'session_folder' in session and os.path.exists(session['session_folder']):
-            session_folder = session['session_folder']
+        # Get or create session-specific upload location
+        if USE_S3_BUCKET:
+            if 's3_prefix' in session:
+                session_location = session['s3_prefix']
+            else:
+                session_location = get_session_upload_location()
         else:
-            session_folder = get_session_upload_folder()
+            if 'session_folder' in session and os.path.exists(session['session_folder']):
+                session_location = session['session_folder']
+            else:
+                session_location = get_session_upload_location()
         
         for file in files:
             if file and file.filename and allowed_file(file.filename):
+                # Check file size
+                file.seek(0, 2)  # Seek to end
+                file_size = file.tell()
+                file.seek(0)  # Reset to beginning
+                
+                if file_size > MAX_FILE_SIZE:
+                    return jsonify({'error': f'File "{file.filename}" is too large. Maximum size is {MAX_FILE_SIZE / (1024*1024):.1f} MB. Please remove this file and try again.'}), 400
+                
                 filename = secure_filename(file.filename)
                 # Add timestamp to avoid conflicts
                 timestamped_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
-                filepath = os.path.join(session_folder, timestamped_filename)
                 
-                file.save(filepath)
-                
-                # Handle file content based on type
-                content = read_file_content(filepath)
-                if content:
-                    if isinstance(content, dict) and content.get('type') == 'pdf':
-                        # Store PDF file info for Nova processing
-                        new_pdf_files.append({
-                            'path': filepath,
-                            'filename': file.filename,
-                            'timestamped_filename': timestamped_filename
-                        })
+                if USE_S3_BUCKET:
+                    # S3 mode - upload to S3
+                    s3_key = f"{session_location}{timestamped_filename}"
+                    
+                    try:
+                        s3_client.upload_fileobj(file, s3_bucket_name, s3_key)
+                        logger.info(f"Uploaded file to S3: s3://{s3_bucket_name}/{s3_key}")
+                        
+                        # Handle file content based on type
+                        content = read_file_content(s3_key, is_s3=True)
+                        if content:
+                            if isinstance(content, dict) and content.get('type') == 'pdf':
+                                # Store PDF file info for Nova processing
+                                new_pdf_files.append({
+                                    's3_key': s3_key,
+                                    'filename': file.filename,
+                                    'timestamped_filename': timestamped_filename
+                                })
+                                uploaded_files.append({
+                                    'filename': file.filename,
+                                    'size': file_size,
+                                    'status': 'success',
+                                    'type': 'pdf'
+                                })
+                            else:
+                                # Regular text content
+                                new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
+                                uploaded_files.append({
+                                    'filename': file.filename,
+                                    'size': file_size,
+                                    'status': 'success',
+                                    'type': 'text'
+                                })
+                        else:
+                            uploaded_files.append({
+                                'filename': file.filename,
+                                'status': 'error',
+                                'message': 'Could not read file content'
+                            })
+                    except Exception as e:
+                        logger.error(f"Error uploading to S3: {e}")
                         uploaded_files.append({
                             'filename': file.filename,
-                            'size': os.path.getsize(filepath),
-                            'status': 'success',
-                            'type': 'pdf'
-                        })
-                    else:
-                        # Regular text content
-                        new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
-                        uploaded_files.append({
-                            'filename': file.filename,
-                            'size': os.path.getsize(filepath),
-                            'status': 'success',
-                            'type': 'text'
+                            'status': 'error',
+                            'message': 'Failed to upload to S3'
                         })
                 else:
-                    uploaded_files.append({
-                        'filename': file.filename,
-                        'status': 'error',
-                        'message': 'Could not read file content'
-                    })
+                    # Local mode - save to local filesystem
+                    filepath = os.path.join(session_location, timestamped_filename)
+                    file.save(filepath)
+                    
+                    # Handle file content based on type
+                    content = read_file_content(filepath, is_s3=False)
+                    if content:
+                        if isinstance(content, dict) and content.get('type') == 'pdf':
+                            # Store PDF file info for Nova processing
+                            new_pdf_files.append({
+                                'path': filepath,
+                                'filename': file.filename,
+                                'timestamped_filename': timestamped_filename
+                            })
+                            uploaded_files.append({
+                                'filename': file.filename,
+                                'size': os.path.getsize(filepath),
+                                'status': 'success',
+                                'type': 'pdf'
+                            })
+                        else:
+                            # Regular text content
+                            new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
+                            uploaded_files.append({
+                                'filename': file.filename,
+                                'size': os.path.getsize(filepath),
+                                'status': 'success',
+                                'type': 'text'
+                            })
+                    else:
+                        uploaded_files.append({
+                            'filename': file.filename,
+                            'status': 'error',
+                            'message': 'Could not read file content'
+                        })
         
         # Initialize session lists if they don't exist
         if 'uploaded_files' not in session:
@@ -399,14 +615,31 @@ def upload_files():
         total_content = ""
         for file_info in session['uploaded_files']:
             if file_info.get('type') != 'pdf':
-                # Find the actual file on disk
-                for uploaded_file in os.listdir(session_folder):
-                    if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
-                        filepath = os.path.join(session_folder, uploaded_file)
-                        content = read_file_content(filepath)
-                        if content and not isinstance(content, dict):
-                            total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
-                        break
+                if USE_S3_BUCKET:
+                    # S3 mode - find file by S3 key pattern
+                    try:
+                        paginator = s3_client.get_paginator('list_objects_v2')
+                        for page in paginator.paginate(Bucket=s3_bucket_name, Prefix=session.get('s3_prefix', '')):
+                            if 'Contents' in page:
+                                for obj in page['Contents']:
+                                    if obj['Key'].endswith(f"_{secure_filename(file_info['filename'])}"):
+                                        content = read_file_content(obj['Key'], is_s3=True)
+                                        if content and not isinstance(content, dict):
+                                            total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
+                                        break
+                    except Exception as e:
+                        logger.error(f"Error reading S3 file for context rebuild: {e}")
+                else:
+                    # Local mode - find file on disk
+                    session_folder = session.get('session_folder', '')
+                    if os.path.exists(session_folder):
+                        for uploaded_file in os.listdir(session_folder):
+                            if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
+                                filepath = os.path.join(session_folder, uploaded_file)
+                                content = read_file_content(filepath, is_s3=False)
+                                if content and not isinstance(content, dict):
+                                    total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
+                                break
         
         session['document_context'] = f"Context from uploaded documents:{total_content}" if total_content else ""
         session.modified = True
@@ -444,14 +677,30 @@ def upload_files():
 def clear_session():
     global session_upload_folders
     
-    # Clean up session-specific upload folder
-    if 'session_folder' in session:
-        session_folder = session['session_folder']
-        if os.path.exists(session_folder):
-            shutil.rmtree(session_folder)
-            logger.info(f"Cleaned up session folder: {session_folder}")
-        # Remove from tracking set
-        session_upload_folders.discard(session_folder)
+    if USE_S3_BUCKET:
+        # S3 mode - delete all objects with session prefix
+        if 's3_prefix' in session:
+            try:
+                paginator = s3_client.get_paginator('list_objects_v2')
+                for page in paginator.paginate(Bucket=s3_bucket_name, Prefix=session['s3_prefix']):
+                    if 'Contents' in page:
+                        objects = [{'Key': obj['Key']} for obj in page['Contents']]
+                        s3_client.delete_objects(
+                            Bucket=s3_bucket_name,
+                            Delete={'Objects': objects}
+                        )
+                logger.info(f"Cleaned up S3 session files with prefix: {session['s3_prefix']}")
+            except Exception as e:
+                logger.error(f"Error cleaning up S3 session files: {e}")
+    else:
+        # Local mode - clean up session-specific upload folder
+        if 'session_folder' in session:
+            session_folder = session['session_folder']
+            if os.path.exists(session_folder):
+                shutil.rmtree(session_folder)
+                logger.info(f"Cleaned up session folder: {session_folder}")
+            # Remove from tracking set
+            session_upload_folders.discard(session_folder)
     
     session.clear()
     return redirect(url_for('index'))
@@ -481,11 +730,39 @@ def remove_file():
         if 'pdf_files' in session:
             session['pdf_files'] = [f for f in session['pdf_files'] if f['filename'] != filename]
         
-        # Get session folder
-        if 'session_folder' not in session or not os.path.exists(session['session_folder']):
-            return jsonify({'error': 'Session folder not found'}), 400
-        
-        session_folder = session['session_folder']
+        # Remove the actual file from storage
+        if USE_S3_BUCKET:
+            # S3 mode - find and delete file from S3
+            if 's3_prefix' not in session:
+                return jsonify({'error': 'Session S3 prefix not found'}), 400
+            
+            try:
+                # Find the file in S3
+                paginator = s3_client.get_paginator('list_objects_v2')
+                for page in paginator.paginate(Bucket=s3_bucket_name, Prefix=session['s3_prefix']):
+                    if 'Contents' in page:
+                        for obj in page['Contents']:
+                            if obj['Key'].endswith(f"_{secure_filename(filename)}"):
+                                s3_client.delete_object(Bucket=s3_bucket_name, Key=obj['Key'])
+                                logger.info(f"Removed file from S3: s3://{s3_bucket_name}/{obj['Key']}")
+                                break
+            except Exception as e:
+                logger.error(f"Error removing file from S3: {e}")
+        else:
+            # Local mode - remove file from disk
+            if 'session_folder' not in session or not os.path.exists(session['session_folder']):
+                return jsonify({'error': 'Session folder not found'}), 400
+            
+            session_folder = session['session_folder']
+            for uploaded_file in os.listdir(session_folder):
+                if uploaded_file.endswith(f"_{secure_filename(filename)}"):
+                    file_path = os.path.join(session_folder, uploaded_file)
+                    try:
+                        os.remove(file_path)
+                        logger.info(f"Removed file from disk: {file_path}")
+                    except Exception as e:
+                        logger.error(f"Error removing file {file_path}: {e}")
+                    break
         
         # Rebuild document context without the removed file
         remaining_files = session.get('uploaded_files', [])
@@ -495,29 +772,35 @@ def remove_file():
             total_content = ""
             for file_info in remaining_files:
                 if file_info.get('type') != 'pdf':  # Only process text files
-                    # Find the actual file on disk (with timestamp prefix)
-                    for uploaded_file in os.listdir(session_folder):
-                        if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
-                            filepath = os.path.join(session_folder, uploaded_file)
-                            content = read_file_content(filepath)
-                            if content and not isinstance(content, dict):
-                                total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
-                            break
+                    if USE_S3_BUCKET:
+                        # S3 mode - find file by S3 key pattern
+                        try:
+                            paginator = s3_client.get_paginator('list_objects_v2')
+                            for page in paginator.paginate(Bucket=s3_bucket_name, Prefix=session.get('s3_prefix', '')):
+                                if 'Contents' in page:
+                                    for obj in page['Contents']:
+                                        if obj['Key'].endswith(f"_{secure_filename(file_info['filename'])}"):
+                                            content = read_file_content(obj['Key'], is_s3=True)
+                                            if content and not isinstance(content, dict):
+                                                total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
+                                            break
+                        except Exception as e:
+                            logger.error(f"Error reading S3 file for context rebuild: {e}")
+                    else:
+                        # Local mode - find file on disk
+                        session_folder = session.get('session_folder', '')
+                        if os.path.exists(session_folder):
+                            for uploaded_file in os.listdir(session_folder):
+                                if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
+                                    filepath = os.path.join(session_folder, uploaded_file)
+                                    content = read_file_content(filepath, is_s3=False)
+                                    if content and not isinstance(content, dict):
+                                        total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
+                                    break
             
             session['document_context'] = f"Context from uploaded documents:{total_content}" if total_content else ""
         else:
             session['document_context'] = ""
-        
-        # Also remove the actual file from disk
-        for uploaded_file in os.listdir(session_folder):
-            if uploaded_file.endswith(f"_{secure_filename(filename)}"):
-                file_path = os.path.join(session_folder, uploaded_file)
-                try:
-                    os.remove(file_path)
-                    logger.info(f"Removed file from disk: {file_path}")
-                except Exception as e:
-                    logger.error(f"Error removing file {file_path}: {e}")
-                break
         
         session.modified = True
         
@@ -531,5 +814,10 @@ def remove_file():
         return jsonify({'error': 'Failed to remove file'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    try:
+        app.run(debug=True, host='0.0.0.0', port=5000)
+    except KeyboardInterrupt:
+        logger.info("Application interrupted by user")
+    finally:
+        cleanup_resources()
 
