@@ -30,23 +30,17 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'bedbot:'
 app.config['SESSION_FILE_THRESHOLD'] = 100  # Max number of sessions before cleanup
 
-# Create temporary directories
-temp_base_dir = tempfile.mkdtemp(prefix='bedbot_base_')
+# Create temporary directory for Flask sessions only
 temp_session_dir = tempfile.mkdtemp(prefix='bedbot_sessions_')
-app.config['UPLOAD_BASE_FOLDER'] = temp_base_dir
 app.config['SESSION_FILE_DIR'] = temp_session_dir
 
 # Initialize Flask-Session
 Session(app)
 
-logger.info(f"Created temporary base directory: {temp_base_dir}")
 logger.info(f"Created temporary session directory: {temp_session_dir}")
 
 # Register cleanup function to remove temp directories on shutdown
 def cleanup_temp_dirs():
-    if os.path.exists(temp_base_dir):
-        shutil.rmtree(temp_base_dir)
-        logger.info(f"Cleaned up temporary base directory: {temp_base_dir}")
     if os.path.exists(temp_session_dir):
         shutil.rmtree(temp_session_dir)
         logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
@@ -230,11 +224,14 @@ def get_session_upload_folder():
     if 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
     
-    session_folder = os.path.join(app.config['UPLOAD_BASE_FOLDER'], session['session_id'])
-    if not os.path.exists(session_folder):
-        os.makedirs(session_folder)
-        logger.info(f"Created session upload folder: {session_folder}")
+    # Create a unique temporary directory for this session
+    session_folder = tempfile.mkdtemp(prefix=f'bedbot_session_{session["session_id"]}_')
     
+    # Store the session folder path in the session for cleanup
+    session['session_folder'] = session_folder
+    session.modified = True
+    
+    logger.info(f"Created session upload folder: {session_folder}")
     return session_folder
 
 @app.route('/')
@@ -305,8 +302,11 @@ def upload_files():
         new_text_content = ""
         new_pdf_files = []
         
-        # Get session-specific upload folder
-        session_folder = get_session_upload_folder()
+        # Get or create session-specific upload folder
+        if 'session_folder' in session and os.path.exists(session['session_folder']):
+            session_folder = session['session_folder']
+        else:
+            session_folder = get_session_upload_folder()
         
         for file in files:
             if file and file.filename and allowed_file(file.filename):
@@ -406,8 +406,8 @@ def upload_files():
 @app.route('/clear')
 def clear_session():
     # Clean up session-specific upload folder
-    if 'session_id' in session:
-        session_folder = os.path.join(app.config['UPLOAD_BASE_FOLDER'], session['session_id'])
+    if 'session_folder' in session:
+        session_folder = session['session_folder']
         if os.path.exists(session_folder):
             shutil.rmtree(session_folder)
             logger.info(f"Cleaned up session folder: {session_folder}")
@@ -440,9 +440,14 @@ def remove_file():
         if 'pdf_files' in session:
             session['pdf_files'] = [f for f in session['pdf_files'] if f['filename'] != filename]
         
+        # Get session folder
+        if 'session_folder' not in session or not os.path.exists(session['session_folder']):
+            return jsonify({'error': 'Session folder not found'}), 400
+        
+        session_folder = session['session_folder']
+        
         # Rebuild document context without the removed file
         remaining_files = session.get('uploaded_files', [])
-        session_folder = get_session_upload_folder()
         
         if remaining_files:
             # Re-read remaining text files to rebuild context
