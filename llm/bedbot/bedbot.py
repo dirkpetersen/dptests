@@ -17,6 +17,7 @@ import boto3
 from botocore.exceptions import ClientError
 import logging
 import markdown
+import fitz  # PyMuPDF
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -240,6 +241,54 @@ def truncate_pdf_with_head_and_tail(input_path, output_path, total_mb_size):
         return False
     
     return True
+
+def merge_pdfs(pdf_paths, output_path, source_directory_name=None):
+    """Merge multiple PDF files into a single PDF"""
+    try:
+        merged_doc = fitz.open()
+        
+        for pdf_path in pdf_paths:
+            try:
+                doc = fitz.open(pdf_path)
+                merged_doc.insert_pdf(doc)
+                doc.close()
+                logger.info(f"Added {pdf_path} to merged PDF")
+            except Exception as e:
+                logger.error(f"Error adding {pdf_path} to merged PDF: {e}")
+                continue
+        
+        merged_doc.save(output_path)
+        merged_doc.close()
+        
+        merged_size = os.path.getsize(output_path) / (1024 * 1024)
+        logger.info(f"Successfully merged {len(pdf_paths)} PDFs into {output_path} ({merged_size:.2f} MB)")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error merging PDFs: {e}")
+        return False
+
+def get_common_directory_name(file_paths):
+    """Extract common directory name from file paths, or return 'merged' as fallback"""
+    if not file_paths:
+        return "merged"
+    
+    try:
+        # Get the directory of the first file
+        first_dir = os.path.dirname(file_paths[0]) if hasattr(file_paths[0], 'filename') else ""
+        
+        # If we can get a meaningful directory name, use it
+        if first_dir:
+            dir_name = os.path.basename(first_dir)
+            if dir_name and dir_name != "":
+                return dir_name
+        
+        # Fallback to "merged"
+        return "merged"
+        
+    except Exception:
+        return "merged"
 
 def read_file_content(filepath_or_s3key, is_s3=False):
     """Read content from uploaded file or return file info for PDF processing"""
@@ -557,7 +606,100 @@ def upload_files():
             else:
                 session_location = get_session_upload_location()
         
+        # Check if we should merge PDFs (S3 mode, multiple files, multiple PDFs)
+        pdf_files_to_merge = []
+        non_pdf_files = []
+        
         for file in files:
+            if file and file.filename and allowed_file(file.filename):
+                if file.filename.lower().endswith('.pdf'):
+                    pdf_files_to_merge.append(file)
+                else:
+                    non_pdf_files.append(file)
+        
+        should_merge_pdfs = (USE_S3_BUCKET and 
+                           len(pdf_files_to_merge) > 1 and 
+                           len(files) > 1)
+        
+        if should_merge_pdfs:
+            logger.info(f"Merging {len(pdf_files_to_merge)} PDF files for S3 upload")
+            
+            # Save PDFs temporarily for merging
+            temp_pdf_paths = []
+            for pdf_file in pdf_files_to_merge:
+                temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+                pdf_file.save(temp_pdf.name)
+                temp_pdf.close()
+                temp_pdf_paths.append(temp_pdf.name)
+            
+            # Generate merged filename
+            dir_name = get_common_directory_name([f.filename for f in pdf_files_to_merge])
+            random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+            merged_filename = f"{dir_name}_{random_suffix}.pdf"
+            timestamped_merged_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{merged_filename}"
+            
+            # Create merged PDF
+            temp_merged = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+            temp_merged.close()
+            
+            if merge_pdfs(temp_pdf_paths, temp_merged.name, dir_name):
+                # Check if merged file needs truncation
+                merged_size = os.path.getsize(temp_merged.name)
+                needs_truncation = merged_size > MAX_FILE_SIZE
+                
+                if needs_truncation:
+                    logger.info(f'Merged PDF is {merged_size / (1024*1024):.1f} MB, truncating to {MAX_FILE_SIZE / (1024*1024):.1f} MB')
+                    temp_truncated = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+                    temp_truncated.close()
+                    
+                    if truncate_pdf_with_head_and_tail(temp_merged.name, temp_truncated.name, MAX_FILE_SIZE / (1024*1024)):
+                        os.unlink(temp_merged.name)
+                        temp_merged.name = temp_truncated.name
+                        merged_size = os.path.getsize(temp_merged.name)
+                    else:
+                        os.unlink(temp_truncated.name)
+                
+                # Upload merged PDF to S3
+                s3_key = f"{session_location}{timestamped_merged_filename}"
+                
+                try:
+                    with open(temp_merged.name, 'rb') as merged_file:
+                        s3_client.upload_fileobj(merged_file, s3_bucket_name, s3_key)
+                    logger.info(f"Uploaded merged PDF to S3: s3://{s3_bucket_name}/{s3_key}")
+                    
+                    # Add merged PDF to results
+                    new_pdf_files.append({
+                        's3_key': s3_key,
+                        'filename': merged_filename,
+                        'timestamped_filename': timestamped_merged_filename
+                    })
+                    uploaded_files.append({
+                        'filename': merged_filename,
+                        'size': merged_size,
+                        'status': 'success',
+                        'type': 'pdf'
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"Error uploading merged PDF to S3: {e}")
+                    uploaded_files.append({
+                        'filename': merged_filename,
+                        'status': 'error',
+                        'message': 'Failed to upload merged PDF to S3'
+                    })
+            
+            # Clean up temporary files
+            for temp_path in temp_pdf_paths:
+                os.unlink(temp_path)
+            os.unlink(temp_merged.name)
+            
+            # Process non-PDF files normally
+            files_to_process = non_pdf_files
+        else:
+            # Process all files normally
+            files_to_process = files
+        
+        for file in files_to_process:
             if file and file.filename and allowed_file(file.filename):
                 # Check file size
                 file.seek(0, 2)  # Seek to end
