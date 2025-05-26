@@ -1622,10 +1622,10 @@ def main():
             html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
             
             // Lists
-            html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/^\\* (.+)$/gim, '<li>$1</li>');
             html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
             
-            html = html.replace(/^\d+\. (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/^\\d+\\. (.+)$/gim, '<li>$1</li>');
             
             // Paragraphs
             html = html.split('\n\n').map(para => {
