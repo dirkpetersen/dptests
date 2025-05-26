@@ -33,12 +33,23 @@ app.config['SESSION_FILE_THRESHOLD'] = 100  # Max number of sessions before clea
 # Flask session directory will be created on demand
 temp_session_dir = None
 
+# Track all session upload folders for cleanup
+session_upload_folders = set()
+
 # Initialize Flask-Session (will create session dir when first needed)
 Session(app)
 
 # Register cleanup function to remove temp directories on shutdown
 def cleanup_temp_dirs():
-    global temp_session_dir
+    global temp_session_dir, session_upload_folders
+    
+    # Clean up all session upload folders
+    for folder in list(session_upload_folders):
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
+            logger.info(f"Cleaned up session upload folder: {folder}")
+    
+    # Clean up Flask session directory
     if temp_session_dir and os.path.exists(temp_session_dir):
         shutil.rmtree(temp_session_dir)
         logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
@@ -219,7 +230,7 @@ def convert_markdown_to_html(text):
 
 def get_session_upload_folder():
     """Get or create session-specific upload folder"""
-    global temp_session_dir
+    global temp_session_dir, session_upload_folders
     
     if 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
@@ -234,6 +245,9 @@ def get_session_upload_folder():
     # Create a unique temporary directory for this session with restricted permissions
     session_folder = tempfile.mkdtemp(prefix=f'bedbot_session_{session["session_id"]}_')
     os.chmod(session_folder, 0o700)  # Only owner can read/write/execute
+    
+    # Track this folder for cleanup on shutdown
+    session_upload_folders.add(session_folder)
     
     # Store the session folder path in the session for cleanup
     session['session_folder'] = session_folder
@@ -428,12 +442,16 @@ def upload_files():
 
 @app.route('/clear')
 def clear_session():
+    global session_upload_folders
+    
     # Clean up session-specific upload folder
     if 'session_folder' in session:
         session_folder = session['session_folder']
         if os.path.exists(session_folder):
             shutil.rmtree(session_folder)
             logger.info(f"Cleaned up session folder: {session_folder}")
+        # Remove from tracking set
+        session_upload_folders.discard(session_folder)
     
     session.clear()
     return redirect(url_for('index'))
