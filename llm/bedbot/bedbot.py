@@ -30,8 +30,9 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'bedbot:'
 app.config['SESSION_FILE_THRESHOLD'] = 100  # Max number of sessions before cleanup
 
-# Create temporary directory for Flask sessions only
+# Create temporary directory for Flask sessions only with restricted permissions
 temp_session_dir = tempfile.mkdtemp(prefix='bedbot_sessions_')
+os.chmod(temp_session_dir, 0o700)  # Only owner can read/write/execute
 app.config['SESSION_FILE_DIR'] = temp_session_dir
 
 # Initialize Flask-Session
@@ -224,8 +225,9 @@ def get_session_upload_folder():
     if 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
     
-    # Create a unique temporary directory for this session
+    # Create a unique temporary directory for this session with restricted permissions
     session_folder = tempfile.mkdtemp(prefix=f'bedbot_session_{session["session_id"]}_')
+    os.chmod(session_folder, 0o700)  # Only owner can read/write/execute
     
     # Store the session folder path in the session for cleanup
     session['session_folder'] = session_folder
