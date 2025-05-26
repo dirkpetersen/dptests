@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 import boto3
 from botocore.exceptions import ClientError
 import logging
+import markdown
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -127,6 +128,19 @@ def call_bedrock_nova(prompt, context=""):
         logger.error(f"Unexpected error: {e}")
         return f"Unexpected error: {str(e)}"
 
+def convert_markdown_to_html(text):
+    """Convert markdown text to HTML with enhanced formatting"""
+    # Configure markdown with useful extensions
+    md = markdown.Markdown(extensions=[
+        'extra',          # Includes tables, fenced code blocks, etc.
+        'codehilite',     # Syntax highlighting for code blocks
+        'toc',            # Table of contents
+        'nl2br',          # Convert newlines to <br> tags
+        'sane_lists'      # Better list handling
+    ])
+    
+    return md.convert(text)
+
 @app.route('/')
 def index():
     if 'session_id' not in session:
@@ -151,20 +165,24 @@ def chat():
         # Call Bedrock Nova
         bot_response = call_bedrock_nova(user_message, context)
         
-        # Store in chat history
+        # Convert markdown to HTML
+        bot_response_html = convert_markdown_to_html(bot_response)
+        
+        # Store in chat history (store both markdown and HTML)
         if 'chat_history' not in session:
             session['chat_history'] = []
         
         session['chat_history'].append({
             'user': user_message,
-            'bot': bot_response,
+            'bot': bot_response,  # Store original markdown
+            'bot_html': bot_response_html,  # Store HTML version
             'timestamp': datetime.now().isoformat()
         })
         
         session.modified = True
         
         return jsonify({
-            'response': bot_response,
+            'response': bot_response_html,  # Send HTML to frontend
             'timestamp': datetime.now().isoformat()
         })
         
