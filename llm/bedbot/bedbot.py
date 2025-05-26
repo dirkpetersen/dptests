@@ -157,10 +157,10 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
 IMPORTANT INSTRUCTIONS:
 - You have access to {len(pdf_files)} PDF documents - please read and analyze ALL of them
 - Compare and analyze the content across all provided documents
-- If one document contains job requirements or criteria, evaluate the other documents (CVs/resumes) against those criteria
+- If one document contains requirements or criteria, evaluate the other documents (CVs/resumes) against those criteria
 - Provide specific names, examples, and evidence from the documents to support your analysis
 - Be thorough and analytical in your comparison
-- When asked for the "best candidate" or to compare candidates, provide specific names and detailed comparisons"""
+- When asked for the option or to compare options presented in different documents, provide specific and detailed comparisons"""
             elif pdf_files and len(pdf_files) == 1:
                 enhanced_prompt = f"""I have provided 1 document for analysis. Please carefully analyze the provided document and answer the following question:
 
