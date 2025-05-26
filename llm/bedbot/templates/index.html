@@ -266,6 +266,71 @@
             border: 1px solid #f5c6cb;
         }
 
+        .uploaded-files {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .uploaded-files.show {
+            display: block;
+        }
+
+        .uploaded-files h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .file-icon {
+            color: #4facfe;
+            width: 16px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .file-size {
+            color: #6c757d;
+            font-size: 11px;
+        }
+
+        .remove-file-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .remove-file-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -313,6 +378,7 @@
                 <input type="file" id="fileInput" class="file-input" multiple accept=".txt,.pdf,.doc,.docx,.md,.json,.csv">
             </div>
             <div class="upload-status" id="uploadStatus"></div>
+            <div class="uploaded-files" id="uploadedFiles"></div>
         </div>
 
         <div class="chat-messages" id="chatMessages">
@@ -360,6 +426,7 @@
         const uploadArea = document.querySelector('.upload-area');
         const fileInput = document.getElementById('fileInput');
         const uploadStatus = document.getElementById('uploadStatus');
+        const uploadedFiles = document.getElementById('uploadedFiles');
 
         // Auto-resize textarea
         messageInput.addEventListener('input', function() {
@@ -487,6 +554,9 @@
                     uploadStatus.className = 'upload-status success';
                     uploadStatus.textContent = `✓ ${data.message}. Context length: ${data.context_length} characters.`;
                     
+                    // Update uploaded files display
+                    updateUploadedFilesDisplay(data.uploaded_files);
+                    
                     // Add system message about uploaded files
                     addMessage(`📁 Uploaded ${files.length} file(s). I now have access to their content for our conversation.`, 'bot');
                 } else {
@@ -502,13 +572,72 @@
             fileInput.value = '';
         }
 
+        function updateUploadedFilesDisplay(files) {
+            if (!files || files.length === 0) {
+                uploadedFiles.style.display = 'none';
+                return;
+            }
+
+            uploadedFiles.innerHTML = `
+                <h4><i class="fas fa-paperclip"></i> Uploaded Files (${files.length})</h4>
+                ${files.map(file => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <i class="fas fa-file-alt file-icon"></i>
+                            <span class="file-name">${file.filename}</span>
+                            <span class="file-size">(${formatFileSize(file.size)})</span>
+                        </div>
+                        <button class="remove-file-btn" onclick="removeFile('${file.filename}')" title="Remove file">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `).join('')}
+            `;
+            uploadedFiles.className = 'uploaded-files show';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function removeFile(filename) {
+            if (!confirm(`Remove "${filename}" from the conversation?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/remove_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ filename: filename })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateUploadedFilesDisplay(data.uploaded_files);
+                    addMessage(`🗑️ Removed "${filename}" from the conversation context.`, 'bot');
+                } else {
+                    alert(`Failed to remove file: ${data.error}`);
+                }
+            } catch (error) {
+                alert('Failed to remove file: Network error');
+            }
+        }
+
         function clearChat() {
             if (confirm('Are you sure you want to clear the chat and uploaded documents?')) {
                 window.location.href = '/clear';
             }
         }
 
-        // Load chat history on page load
+        // Load chat history and files on page load
         window.addEventListener('load', async function() {
             try {
                 const response = await fetch('/history');
@@ -525,6 +654,15 @@
                 });
             } catch (error) {
                 console.log('No chat history available');
+            }
+
+            // Load uploaded files
+            try {
+                const filesResponse = await fetch('/files');
+                const files = await filesResponse.json();
+                updateUploadedFilesDisplay(files);
+            } catch (error) {
+                console.log('No uploaded files available');
             }
         });
     </script>

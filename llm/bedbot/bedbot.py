@@ -133,6 +133,7 @@ def index():
         session['session_id'] = str(uuid.uuid4())
         session['chat_history'] = []
         session['document_context'] = ""
+        session['uploaded_files'] = []
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
@@ -206,15 +207,32 @@ def upload_files():
                         'message': 'Could not read file content'
                     })
         
-        # Store document context in session
+        # Store document context and file list in session
         if total_content:
             session['document_context'] = f"Context from uploaded documents:{total_content}"
+            
+            # Add to uploaded files list (avoid duplicates)
+            if 'uploaded_files' not in session:
+                session['uploaded_files'] = []
+            
+            for file_info in uploaded_files:
+                if file_info['status'] == 'success':
+                    # Check if file already exists
+                    existing = next((f for f in session['uploaded_files'] if f['filename'] == file_info['filename']), None)
+                    if not existing:
+                        session['uploaded_files'].append({
+                            'filename': file_info['filename'],
+                            'size': file_info['size'],
+                            'upload_time': datetime.now().isoformat()
+                        })
+            
             session.modified = True
         
         return jsonify({
             'message': f'Successfully processed {len(uploaded_files)} files',
             'files': uploaded_files,
-            'context_length': len(total_content)
+            'context_length': len(total_content),
+            'uploaded_files': session.get('uploaded_files', [])
         })
         
     except Exception as e:
@@ -229,6 +247,53 @@ def clear_session():
 @app.route('/history')
 def get_history():
     return jsonify(session.get('chat_history', []))
+
+@app.route('/files')
+def get_files():
+    return jsonify(session.get('uploaded_files', []))
+
+@app.route('/remove_file', methods=['POST'])
+def remove_file():
+    try:
+        data = request.get_json()
+        filename = data.get('filename')
+        
+        if not filename:
+            return jsonify({'error': 'No filename provided'}), 400
+        
+        # Remove from uploaded files list
+        if 'uploaded_files' in session:
+            session['uploaded_files'] = [f for f in session['uploaded_files'] if f['filename'] != filename]
+        
+        # Rebuild document context without the removed file
+        remaining_files = session.get('uploaded_files', [])
+        if remaining_files:
+            # Re-read remaining files to rebuild context
+            total_content = ""
+            for file_info in remaining_files:
+                # Find the actual file on disk (with timestamp prefix)
+                for uploaded_file in os.listdir(app.config['UPLOAD_FOLDER']):
+                    if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
+                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file)
+                        content = read_file_content(filepath)
+                        if content:
+                            total_content += f"\n\n--- Content from {file_info['filename']} ---\n{content}"
+                        break
+            
+            session['document_context'] = f"Context from uploaded documents:{total_content}" if total_content else ""
+        else:
+            session['document_context'] = ""
+        
+        session.modified = True
+        
+        return jsonify({
+            'message': f'File {filename} removed successfully',
+            'uploaded_files': session.get('uploaded_files', [])
+        })
+        
+    except Exception as e:
+        logger.error(f"Remove file error: {e}")
+        return jsonify({'error': 'Failed to remove file'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
