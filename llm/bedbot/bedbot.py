@@ -300,12 +300,11 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
             for pdf_info in pdf_files:
                 try:
                     if USE_S3_BUCKET and 's3_key' in pdf_info:
-                        # S3 mode - read file from S3 and pass as bytes
+                        # S3 mode - use S3 location for Nova
                         s3_key = pdf_info['s3_key']
                         
-                        # Read PDF bytes from S3
-                        response = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
-                        pdf_bytes = response['Body'].read()
+                        # Get AWS account ID for bucket owner
+                        account_id = session_aws.client('sts').get_caller_identity()['Account']
                         
                         # Sanitize document name for Nova
                         doc_name = pdf_info['filename'].replace('.pdf', '')
@@ -314,14 +313,17 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
                         doc_name = re.sub(r'\s+', ' ', doc_name).strip()
                         doc_name = doc_name[:50]
                         
-                        logger.info(f"Adding PDF document from S3: {doc_name} ({len(pdf_bytes)} bytes)")
+                        logger.info(f"Adding PDF document from S3: {doc_name} (s3://{s3_bucket_name}/{s3_key})")
                         
                         content.append({
                             "document": {
                                 "format": "pdf",
                                 "name": doc_name,
                                 "source": {
-                                    "bytes": pdf_bytes
+                                    "s3Location": {
+                                        "uri": f"s3://{s3_bucket_name}/{s3_key}",
+                                        "bucketOwner": account_id
+                                    }
                                 }
                             }
                         })
