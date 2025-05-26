@@ -15,6 +15,7 @@ from flask_session import Session
 from werkzeug.utils import secure_filename
 import boto3
 from botocore.exceptions import ClientError
+from botocore.config import Config
 import logging
 import markdown
 import fitz  # PyMuPDF
@@ -178,11 +179,19 @@ try:
         profile_region = 'us-east-1'
         logger.warning("No region found in AWS profile, defaulting to us-east-1")
     
-    bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region)
-    s3_client = session_aws.client('s3', region_name=profile_region) if USE_S3_BUCKET else None
+    # Configure clients with increased timeout for large document processing
+    config = Config(
+        read_timeout=300,  # 5 minutes read timeout
+        connect_timeout=60,  # 1 minute connect timeout
+        retries={'max_attempts': 3}  # Retry up to 3 times
+    )
+    
+    bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region, config=config)
+    s3_client = session_aws.client('s3', region_name=profile_region, config=config) if USE_S3_BUCKET else None
     
     logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
     logger.info(f"Using region: {profile_region}")
+    logger.info("Configured clients with 5-minute read timeout for large document processing")
     if USE_S3_BUCKET:
         logger.info("S3 bucket mode enabled")
     else:
