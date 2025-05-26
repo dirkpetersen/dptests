@@ -62,9 +62,9 @@ def generate_bucket_name():
 
 def create_s3_bucket():
     """Create S3 bucket for file storage"""
-    global s3_bucket_name
+    global s3_bucket_name, USE_S3_BUCKET
     if not USE_S3_BUCKET or not s3_client:
-        return
+        return True
     
     try:
         s3_bucket_name = generate_bucket_name()
@@ -90,10 +90,14 @@ def create_s3_bucket():
         )
         
         logger.info(f"Created S3 bucket: {s3_bucket_name}")
+        return True
         
     except Exception as e:
         logger.error(f"Failed to create S3 bucket: {e}")
+        logger.warning("Falling back to local filesystem mode due to S3 bucket creation failure")
         s3_bucket_name = None
+        USE_S3_BUCKET = False
+        return False
 
 def delete_s3_bucket():
     """Delete S3 bucket and all its contents"""
@@ -169,7 +173,9 @@ except Exception as e:
 
 # Create S3 bucket at startup if using S3 mode (after AWS clients are initialized)
 if USE_S3_BUCKET:
-    create_s3_bucket()
+    bucket_created = create_s3_bucket()
+    if not bucket_created:
+        logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
@@ -654,9 +660,12 @@ def upload_files():
             pdf_context_note = f" + {pdf_count} PDF file(s) processed by Nova"
             # Estimate PDF content size for display (rough estimate)
             for pdf_info in session['pdf_files']:
-                if os.path.exists(pdf_info['path']):
+                if not USE_S3_BUCKET and 'path' in pdf_info and os.path.exists(pdf_info['path']):
                     pdf_size = os.path.getsize(pdf_info['path'])
                     total_context_length += pdf_size // 4  # Rough estimate: 4 bytes per character
+                elif USE_S3_BUCKET and 's3_key' in pdf_info:
+                    # For S3, we could get object size but it's optional for display
+                    total_context_length += 50000  # Rough estimate for display
         
         context_display = f"{len(total_content)} text chars{pdf_context_note}" if pdf_context_note else f"{total_context_length} chars"
         
