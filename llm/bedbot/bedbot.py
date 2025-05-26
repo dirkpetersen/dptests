@@ -26,10 +26,12 @@ logger = logging.getLogger(__name__)
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='BedBot - AI Chat Assistant')
 parser.add_argument('--no-bucket', action='store_true', help='Use local filesystem instead of S3 bucket')
+parser.add_argument('--debug', action='store_true', help='Enable debug mode to print API messages')
 args = parser.parse_args()
 
 # Configuration
 USE_S3_BUCKET = not args.no_bucket
+DEBUG_MODE = args.debug
 MAX_FILE_SIZE = 4.5 * 1024 * 1024  # 4.5 MB per file
 MAX_FILES_PER_SESSION = 1000
 
@@ -484,6 +486,12 @@ Please provide specific information and examples from the document to support yo
         }
         
         logger.info(f"Sending request to Nova with {len(content)} content items")
+        
+        # Debug: Print messages JSON structure if debug mode is enabled
+        if DEBUG_MODE:
+            logger.info("=== DEBUG: Converse API Messages Structure ===")
+            logger.info(json.dumps(messages, indent=2, default=str))
+            logger.info("=== END DEBUG ===")
         
         response = bedrock_client.converse(
             modelId='us.amazon.nova-premier-v1:0',
