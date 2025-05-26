@@ -22,9 +22,13 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# AWS Bedrock client
+# AWS Bedrock client - uses current AWS profile
 try:
-    bedrock_client = boto3.client('bedrock-runtime', region_name='us-east-1')
+    # Create a session that uses the current AWS profile
+    session_aws = boto3.Session()
+    bedrock_client = session_aws.client('bedrock-runtime')
+    logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
+    logger.info(f"Using region: {bedrock_client.meta.region_name}")
 except Exception as e:
     logger.error(f"Failed to initialize Bedrock client: {e}")
     bedrock_client = None
