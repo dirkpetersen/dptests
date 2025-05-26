@@ -84,8 +84,9 @@ def call_bedrock_nova(prompt, context=""):
                     "content": full_prompt
                 }
             ],
-            "max_tokens": 2000,
-            "temperature": 0.7
+            "inferenceConfig": {
+                "temperature": 0.7
+            }
         }
         
         response = bedrock_client.invoke_model(
