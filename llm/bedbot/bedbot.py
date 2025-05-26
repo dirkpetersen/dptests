@@ -279,16 +279,12 @@ def merge_pdfs(pdf_paths, output_path, source_directory_name=None):
         logger.error(f"Error merging PDFs: {e}")
         return False
 
-def get_common_directory_name(file_paths):
-    """Extract common directory name from file paths, or return 'other' as fallback"""
+def get_merged_filename_from_files(file_paths):
+    """Generate merged filename from first 5 characters of each file, separated by hyphens"""
     if not file_paths:
         return "other"
     
     try:
-        # For uploaded files, we need to look at the original filename paths
-        # Since these are werkzeug FileStorage objects, we can't get the original directory
-        # But we can try to extract meaningful names from the filenames themselves
-        
         # Get all the filenames
         filenames = []
         for file_path in file_paths:
@@ -297,23 +293,22 @@ def get_common_directory_name(file_paths):
             else:
                 filenames.append(str(file_path))
         
-        # Try to find common prefixes or patterns in filenames
-        if filenames:
-            # Look for common prefixes (before first underscore or dash)
-            common_parts = []
-            for filename in filenames:
-                # Remove extension and split by common separators
-                base_name = os.path.splitext(filename)[0]
-                parts = base_name.replace('_', '-').split('-')
-                if parts:
-                    common_parts.append(parts[0].lower())
-            
-            # If we have common parts, use the most frequent one
-            if common_parts:
-                from collections import Counter
-                most_common = Counter(common_parts).most_common(1)
-                if most_common and len(most_common[0][0]) > 2:  # At least 3 characters
-                    return most_common[0][0]
+        # Extract first 5 characters from each filename (without extension)
+        name_parts = []
+        for filename in filenames:
+            # Remove extension and get base name
+            base_name = os.path.splitext(filename)[0]
+            # Replace spaces with hyphens and take first 5 characters
+            clean_name = base_name.replace(' ', '-')[:5]
+            if clean_name:
+                name_parts.append(clean_name)
+        
+        # Join with hyphens
+        if name_parts:
+            merged_name = '-'.join(name_parts)
+            # Ensure no double hyphens and clean up
+            merged_name = '-'.join(part for part in merged_name.split('-') if part)
+            return merged_name if merged_name else "other"
         
         # Fallback to "other"
         return "other"
@@ -443,25 +438,28 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
             enhanced_prompt = f"{context}\n\n{prompt}"
         else:
             # Create enhanced prompt for document analysis
+            # Count total original documents uploaded by user
+            total_uploaded_docs = len(session.get('uploaded_files', []))
+            
             if pdf_files and len(pdf_files) > 1:
                 # When multiple PDFs are provided, give clear instructions for comparison
-                enhanced_prompt = f"""I have provided {len(pdf_files)} documents for analysis. Please carefully analyze ALL the provided documents and answer the following question:
+                enhanced_prompt = f"""I have provided {total_uploaded_docs} documents for analysis. Please carefully analyze ALL the provided documents and answer the following question:
 
 {prompt}
 
 IMPORTANT INSTRUCTIONS:
-- You have access to {len(pdf_files)} PDF documents - please read and analyze ALL of them
+- You have access to {total_uploaded_docs} documents - please read and analyze ALL of them
 - Compare and analyze the content across all provided documents
 - If one document contains requirements or criteria, evaluate the other documents against those criteria
 - Provide specific names, examples, and evidence from the documents to support your analysis
 - Be thorough and analytical in your comparison
 - When asked for the option or to compare options presented in different documents, provide specific and detailed comparisons"""
             elif pdf_files and len(pdf_files) == 1:
-                enhanced_prompt = f"""I have provided 1 document for analysis. Please carefully analyze the provided document and answer the following question:
+                enhanced_prompt = f"""I have provided {total_uploaded_docs} document(s) for analysis. Please carefully analyze the provided document(s) and answer the following question:
 
 {prompt}
 
-Please provide specific information and examples from the document to support your response."""
+Please provide specific information and examples from the document(s) to support your response."""
             else:
                 enhanced_prompt = prompt
             
@@ -670,31 +668,19 @@ def upload_files():
                 temp_pdf_paths.append(temp_pdf.name)
             
             # Generate merged filename
-            dir_name = get_common_directory_name([f.filename for f in pdf_files_to_merge])
+            merged_name = get_merged_filename_from_files(pdf_files_to_merge)
             random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-            merged_filename = f"{dir_name}_{random_suffix}.pdf"
+            merged_filename = f"{merged_name}-{random_suffix}.pdf"
             timestamped_merged_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{merged_filename}"
             
             # Create merged PDF
             temp_merged = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
             temp_merged.close()
             
-            if merge_pdfs(temp_pdf_paths, temp_merged.name, dir_name):
-                # Check if merged file needs truncation
+            if merge_pdfs(temp_pdf_paths, temp_merged.name, merged_name):
+                # In S3 mode, don't truncate - allow larger files
                 merged_size = os.path.getsize(temp_merged.name)
-                needs_truncation = merged_size > MAX_FILE_SIZE
-                
-                if needs_truncation:
-                    logger.info(f'Merged PDF is {merged_size / (1024*1024):.1f} MB, truncating to {MAX_FILE_SIZE / (1024*1024):.1f} MB')
-                    temp_truncated = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-                    temp_truncated.close()
-                    
-                    if truncate_pdf_with_head_and_tail(temp_merged.name, temp_truncated.name, MAX_FILE_SIZE / (1024*1024)):
-                        os.unlink(temp_merged.name)
-                        temp_merged.name = temp_truncated.name
-                        merged_size = os.path.getsize(temp_merged.name)
-                    else:
-                        os.unlink(temp_truncated.name)
+                logger.info(f'Merged PDF is {merged_size / (1024*1024):.1f} MB (no truncation in S3 mode)')
                 
                 # Upload merged PDF to S3
                 s3_key = f"{session_location}{timestamped_merged_filename}"
@@ -743,9 +729,11 @@ def upload_files():
                 file_size = file.tell()
                 file.seek(0)  # Reset to beginning
                 
-                needs_truncation = file_size > MAX_FILE_SIZE
+                needs_truncation = file_size > MAX_FILE_SIZE and not USE_S3_BUCKET
                 if needs_truncation:
                     logger.info(f'File "{file.filename}" is {file_size / (1024*1024):.1f} MB, truncating to {MAX_FILE_SIZE / (1024*1024):.1f} MB')
+                elif USE_S3_BUCKET and file_size > MAX_FILE_SIZE:
+                    logger.info(f'File "{file.filename}" is {file_size / (1024*1024):.1f} MB (no truncation in S3 mode)')
                 
                 filename = secure_filename(file.filename)
                 # Add timestamp to avoid conflicts
