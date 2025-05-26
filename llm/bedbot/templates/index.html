@@ -839,6 +839,7 @@
                     uploadStatus.textContent = `✓ ${data.message}. Context length: ${data.context_length} characters.`;
                     
                     // Update uploaded files display immediately
+                    console.log('Upload response data:', data); // Debug log
                     updateUploadedFilesDisplay(data.uploaded_files);
                     
                     // Add system message about uploaded files
@@ -857,8 +858,11 @@
         }
 
         function updateUploadedFilesDisplay(files) {
+            console.log('Updating files display with:', files); // Debug log
+            
             if (!files || files.length === 0) {
                 uploadedFiles.style.display = 'none';
+                uploadedFiles.className = 'uploaded-files';
                 return;
             }
 
@@ -876,6 +880,7 @@
                 </div>
             `;
             uploadedFiles.className = 'uploaded-files show';
+            uploadedFiles.style.display = 'block'; // Explicitly show the element
         }
 
         function formatFileSize(bytes) {
