@@ -165,7 +165,7 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
 IMPORTANT INSTRUCTIONS:
 - You have access to {len(pdf_files)} PDF documents - please read and analyze ALL of them
 - Compare and analyze the content across all provided documents
-- If one document contains requirements or criteria, evaluate the other documents (CVs/resumes) against those criteria
+- If one document contains requirements or criteria, evaluate the other documents against those criteria
 - Provide specific names, examples, and evidence from the documents to support your analysis
 - Be thorough and analytical in your comparison
 - When asked for the option or to compare options presented in different documents, provide specific and detailed comparisons"""
@@ -201,7 +201,7 @@ Please provide specific information and examples from the document to support yo
         logger.info(f"Sending request to Nova with {len(content)} content items")
         
         response = bedrock_client.converse(
-            modelId='us.amazon.nova-lite-v1:0',
+            modelId='us.amazon.nova-premier-v1:0',
             messages=messages,
             inferenceConfig=inference_config
         )
