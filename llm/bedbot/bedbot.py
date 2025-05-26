@@ -26,9 +26,17 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 try:
     # Create a session that uses the current AWS profile
     session_aws = boto3.Session()
-    bedrock_client = session_aws.client('bedrock-runtime')
+    
+    # Get the region from the profile configuration
+    profile_region = session_aws.region_name
+    if not profile_region:
+        # Fallback to default region if not set in profile
+        profile_region = 'us-east-1'
+        logger.warning("No region found in AWS profile, defaulting to us-east-1")
+    
+    bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region)
     logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
-    logger.info(f"Using region: {bedrock_client.meta.region_name}")
+    logger.info(f"Using region: {profile_region}")
 except Exception as e:
     logger.error(f"Failed to initialize Bedrock client: {e}")
     bedrock_client = None
