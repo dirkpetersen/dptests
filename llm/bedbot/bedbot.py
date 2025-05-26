@@ -181,7 +181,7 @@ try:
     
     # Configure clients with increased timeout for large document processing
     config = Config(
-        read_timeout=300,  # 5 minutes read timeout
+        read_timeout=900,  # 15 minutes read timeout
         connect_timeout=60,  # 1 minute connect timeout
         retries={'max_attempts': 3}  # Retry up to 3 times
     )
@@ -307,8 +307,8 @@ def get_merged_filename_from_files(file_paths):
         for filename in filenames:
             # Remove extension and get base name
             base_name = os.path.splitext(filename)[0]
-            # Replace spaces with hyphens and take first 5 characters
-            clean_name = base_name.replace(' ', '-')[:5]
+            # Replace spaces with hyphens and take first 10 characters
+            clean_name = base_name.replace(' ', '-')[:10]
             if clean_name:
                 name_parts.append(clean_name)
         
