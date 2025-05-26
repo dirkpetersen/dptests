@@ -194,6 +194,53 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def truncate_pdf_with_head_and_tail(input_path, output_path, total_mb_size):
+    """Truncate a file by taking first 4MB and last 0.5MB"""
+    # Constants
+    TAIL_SIZE_MB = 0.5
+    HEAD_SIZE_MB = total_mb_size - TAIL_SIZE_MB
+    
+    bytes_head = int(HEAD_SIZE_MB * 1024 * 1024)
+    bytes_tail = int(TAIL_SIZE_MB * 1024 * 1024)
+    
+    try:
+        # Get file size
+        file_size = os.path.getsize(input_path)
+        
+        # Handle case where file is smaller than requested size
+        if file_size <= (bytes_head + bytes_tail):
+            with open(input_path, 'rb') as input_file:
+                content = input_file.read()
+            
+            with open(output_path, 'wb') as output_file:
+                output_file.write(content)
+            
+            logger.info(f"File is smaller than {total_mb_size} MB. Copied entire file.")
+            return True
+        
+        with open(input_path, 'rb') as input_file:
+            # Get content from beginning
+            head_content = input_file.read(bytes_head)
+            
+            # Move to position to read tail
+            input_file.seek(-bytes_tail, os.SEEK_END)
+            tail_content = input_file.read()
+        
+        # Write combined content
+        with open(output_path, 'wb') as output_file:
+            output_file.write(head_content)
+            output_file.write(tail_content)
+        
+        actual_size = (len(head_content) + len(tail_content)) / (1024 * 1024)
+        logger.info(f"Successfully extracted {HEAD_SIZE_MB:.2f} MB from beginning and {TAIL_SIZE_MB:.2f} MB from end")
+        logger.info(f"Output file: {output_path} ({actual_size:.2f} MB)")
+        
+    except Exception as e:
+        logger.error(f"Error truncating file: {e}")
+        return False
+    
+    return True
+
 def read_file_content(filepath_or_s3key, is_s3=False):
     """Read content from uploaded file or return file info for PDF processing"""
     try:
@@ -515,8 +562,9 @@ def upload_files():
                 file_size = file.tell()
                 file.seek(0)  # Reset to beginning
                 
-                if file_size > MAX_FILE_SIZE:
-                    return jsonify({'error': f'File "{file.filename}" is too large. Maximum size is {MAX_FILE_SIZE / (1024*1024):.1f} MB. Please remove this file and try again.'}), 400
+                needs_truncation = file_size > MAX_FILE_SIZE
+                if needs_truncation:
+                    logger.info(f'File "{file.filename}" is {file_size / (1024*1024):.1f} MB, truncating to {MAX_FILE_SIZE / (1024*1024):.1f} MB')
                 
                 filename = secure_filename(file.filename)
                 # Add timestamp to avoid conflicts
@@ -527,8 +575,32 @@ def upload_files():
                     s3_key = f"{session_location}{timestamped_filename}"
                     
                     try:
-                        s3_client.upload_fileobj(file, s3_bucket_name, s3_key)
-                        logger.info(f"Uploaded file to S3: s3://{s3_bucket_name}/{s3_key}")
+                        if needs_truncation:
+                            # Save file temporarily for truncation
+                            temp_input = tempfile.NamedTemporaryFile(delete=False)
+                            file.save(temp_input.name)
+                            temp_input.close()
+                            
+                            # Create truncated version
+                            temp_output = tempfile.NamedTemporaryFile(delete=False)
+                            temp_output.close()
+                            
+                            if truncate_pdf_with_head_and_tail(temp_input.name, temp_output.name, MAX_FILE_SIZE / (1024*1024)):
+                                # Upload truncated file
+                                with open(temp_output.name, 'rb') as truncated_file:
+                                    s3_client.upload_fileobj(truncated_file, s3_bucket_name, s3_key)
+                                logger.info(f"Uploaded truncated file to S3: s3://{s3_bucket_name}/{s3_key}")
+                                file_size = os.path.getsize(temp_output.name)  # Update file size
+                            else:
+                                raise Exception("File truncation failed")
+                            
+                            # Clean up temp files
+                            os.unlink(temp_input.name)
+                            os.unlink(temp_output.name)
+                        else:
+                            # Upload original file
+                            s3_client.upload_fileobj(file, s3_bucket_name, s3_key)
+                            logger.info(f"Uploaded file to S3: s3://{s3_bucket_name}/{s3_key}")
                         
                         # Handle file content based on type
                         content = read_file_content(s3_key, is_s3=True)
@@ -571,7 +643,25 @@ def upload_files():
                 else:
                     # Local mode - save to local filesystem
                     filepath = os.path.join(session_location, timestamped_filename)
-                    file.save(filepath)
+                    
+                    if needs_truncation:
+                        # Save file temporarily for truncation
+                        temp_input = tempfile.NamedTemporaryFile(delete=False)
+                        file.save(temp_input.name)
+                        temp_input.close()
+                        
+                        # Create truncated version directly to final path
+                        if truncate_pdf_with_head_and_tail(temp_input.name, filepath, MAX_FILE_SIZE / (1024*1024)):
+                            logger.info(f"Saved truncated file to: {filepath}")
+                            file_size = os.path.getsize(filepath)  # Update file size
+                        else:
+                            raise Exception("File truncation failed")
+                        
+                        # Clean up temp file
+                        os.unlink(temp_input.name)
+                    else:
+                        # Save original file
+                        file.save(filepath)
                     
                     # Handle file content based on type
                     content = read_file_content(filepath, is_s3=False)
