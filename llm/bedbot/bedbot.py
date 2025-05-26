@@ -106,11 +106,22 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
     try:
         content = []
         
+        # Debug logging
+        logger.info(f"PDF files provided: {len(pdf_files) if pdf_files else 0}")
+        if pdf_files:
+            for i, pdf_info in enumerate(pdf_files):
+                logger.info(f"PDF {i+1}: {pdf_info.get('filename', 'unknown')} at {pdf_info.get('path', 'unknown')}")
+        
         # Add PDF documents if provided
         if pdf_files:
             for pdf_info in pdf_files:
                 try:
-                    with open(pdf_info['path'], 'rb') as f:
+                    pdf_path = pdf_info['path']
+                    if not os.path.exists(pdf_path):
+                        logger.error(f"PDF file not found: {pdf_path}")
+                        continue
+                        
+                    with open(pdf_path, 'rb') as f:
                         pdf_bytes = f.read()
                     
                     # Sanitize document name for Nova - only alphanumeric, whitespace, hyphens, parentheses, square brackets
@@ -122,6 +133,8 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
                     doc_name = re.sub(r'\s+', ' ', doc_name).strip()
                     # Limit length
                     doc_name = doc_name[:50]
+                    
+                    logger.info(f"Adding PDF document: {doc_name} ({len(pdf_bytes)} bytes)")
                     
                     content.append({
                         "document": {
@@ -135,24 +148,35 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
                 except Exception as e:
                     logger.error(f"Error reading PDF {pdf_info['path']}: {e}")
         
-        # Add text context if available
+        # Add text context if available and no PDFs
         if context and not pdf_files:
-            prompt = f"{context}\n\n{prompt}"
-        
-        # Add the user's question with better context for document analysis
-        if pdf_files and len(pdf_files) > 1:
-            # When multiple PDFs are provided, give clear instructions for comparison
-            enhanced_prompt = f"""I have provided multiple documents for analysis. Please analyze all the documents and answer the following question:
+            enhanced_prompt = f"{context}\n\n{prompt}"
+        else:
+            # Create enhanced prompt for document analysis
+            if pdf_files and len(pdf_files) > 1:
+                # When multiple PDFs are provided, give clear instructions for comparison
+                enhanced_prompt = f"""I have provided {len(pdf_files)} documents for analysis. Please carefully analyze ALL the provided documents and answer the following question:
 
 {prompt}
 
-Instructions:
+IMPORTANT INSTRUCTIONS:
+- You have access to {len(pdf_files)} PDF documents - please read and analyze ALL of them
 - Compare and analyze the content across all provided documents
-- If one document contains requirements or criteria, evaluate the other documents against those criteria
-- Provide specific examples and evidence from the documents to support your analysis
-- Be thorough and analytical in your comparison"""
-        else:
-            enhanced_prompt = prompt
+- If one document contains job requirements or criteria, evaluate the other documents (CVs/resumes) against those criteria
+- Provide specific names, examples, and evidence from the documents to support your analysis
+- Be thorough and analytical in your comparison
+- When asked for the "best candidate" or to compare candidates, provide specific names and detailed comparisons"""
+            elif pdf_files and len(pdf_files) == 1:
+                enhanced_prompt = f"""I have provided 1 document for analysis. Please carefully analyze the provided document and answer the following question:
+
+{prompt}
+
+Please provide specific information and examples from the document to support your response."""
+            else:
+                enhanced_prompt = prompt
+            
+        logger.info(f"Enhanced prompt length: {len(enhanced_prompt)} characters")
+        logger.info(f"Total content items: {len(content) + 1} (PDFs: {len(content)}, text: 1)")
             
         content.append({
             "text": enhanced_prompt
@@ -170,6 +194,8 @@ Instructions:
             "temperature": 0.7,
             "topP": 0.9
         }
+        
+        logger.info(f"Sending request to Nova with {len(content)} content items")
         
         response = bedrock_client.converse(
             modelId='us.amazon.nova-lite-v1:0',
@@ -221,11 +247,12 @@ def chat():
         context = session.get('document_context', '')
         pdf_files = session.get('pdf_files', [])
         
-        # Call Bedrock Nova with PDFs if available
-        if pdf_files:
-            bot_response = call_bedrock_nova(user_message, context, pdf_files)
-        else:
-            bot_response = call_bedrock_nova(user_message, context)
+        # Debug logging
+        logger.info(f"Chat request - PDF files in session: {len(pdf_files)}")
+        logger.info(f"Chat request - Context length: {len(context)}")
+        
+        # Always call with PDF files (empty list if none)
+        bot_response = call_bedrock_nova(user_message, context, pdf_files)
         
         # Convert markdown to HTML
         bot_response_html = convert_markdown_to_html(bot_response)
