@@ -69,34 +69,38 @@ def read_file_content(filepath):
         return None
 
 def call_bedrock_nova(prompt, context=""):
-    """Call AWS Bedrock Nova Lite model"""
+    """Call AWS Bedrock Nova Lite model using Converse API"""
     if not bedrock_client:
         return "Error: Bedrock client not initialized. Please check your AWS credentials."
     
     try:
         # Combine context and prompt
-        full_prompt = f"{context}\n\nUser: {prompt}\n\nAssistant:" if context else f"User: {prompt}\n\nAssistant:"
+        full_prompt = f"{context}\n\n{prompt}" if context else prompt
         
-        body = {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": full_prompt
-                }
-            ],
-            "inferenceConfig": {
-                "temperature": 0.7
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "text": full_prompt
+                    }
+                ]
             }
+        ]
+        
+        inference_config = {
+            "maxTokens": 4000,
+            "temperature": 0.7,
+            "topP": 0.9
         }
         
-        response = bedrock_client.invoke_model(
+        response = bedrock_client.converse(
             modelId='us.amazon.nova-lite-v1:0',
-            body=json.dumps(body),
-            contentType='application/json'
+            messages=messages,
+            inferenceConfig=inference_config
         )
         
-        response_body = json.loads(response['body'].read())
-        return response_body['content'][0]['text']
+        return response['output']['message']['content'][0]['text']
         
     except ClientError as e:
         logger.error(f"Bedrock API error: {e}")
