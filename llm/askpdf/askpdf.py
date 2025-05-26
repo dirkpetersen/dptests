@@ -1152,186 +1152,52 @@ def main():
         templates_dir = Path(__file__).parent / 'templates'
         templates_dir.mkdir(exist_ok=True)
         
-        # Create the HTML template
+        # Create the HTML template with Bootstrap and improved file handling
         html_template = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AskPDF - Document Q&A with Amazon Bedrock</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            background: #2c3e50;
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        header h1 {
-            text-align: center;
-            font-size: 2.5rem;
-        }
-        
-        .main-content {
-            background: white;
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        select, textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        
-        select:focus, textarea:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-        
-        textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        
         .file-upload-area {
-            border: 2px dashed #3498db;
+            border: 2px dashed #0d6efd;
             border-radius: 8px;
-            padding: 2rem;
+            padding: 3rem 2rem;
             text-align: center;
             background: #f8f9fa;
             cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            user-select: none;
-        }
-        
-        .file-upload-area * {
-            pointer-events: none;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
         }
         
         .file-upload-area:hover {
             background: #e9ecef;
-            border-color: #2980b9;
+            border-color: #0b5ed7;
+            transform: translateY(-2px);
         }
         
         .file-upload-area.drag-over {
-            background: #d4e6f1;
-            border-color: #2980b9;
+            background: #cfe2ff;
+            border-color: #0b5ed7;
             transform: scale(1.02);
         }
         
-        .file-upload-area:active {
-            transform: scale(0.98);
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
         .file-list {
-            margin-top: 1rem;
             max-height: 200px;
             overflow-y: auto;
         }
         
         .file-item {
             background: #f8f9fa;
-            padding: 0.5rem 1rem;
-            margin: 0.25rem 0;
-            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        
-        .file-item button {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 0.25rem 0.5rem;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        
-        .file-item button:hover {
-            background: #c0392b;
-        }
-        
-        .advanced-options {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .submit-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            font-size: 1.1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.3s;
-        }
-        
-        .submit-btn:hover {
-            background: #2980b9;
-        }
-        
-        .submit-btn:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
         }
         
         .progress-container {
@@ -1339,76 +1205,9 @@ def main():
             margin-top: 2rem;
         }
         
-        .progress-bar {
-            width: 100%;
-            height: 30px;
-            background: #ecf0f1;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3498db, #2980b9);
-            width: 0%;
-            transition: width 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(
-                45deg,
-                rgba(255, 255, 255, 0.2) 25%,
-                transparent 25%,
-                transparent 50%,
-                rgba(255, 255, 255, 0.2) 50%,
-                rgba(255, 255, 255, 0.2) 75%,
-                transparent 75%,
-                transparent
-            );
-            background-size: 50px 50px;
-            animation: move 1s linear infinite;
-        }
-        
-        @keyframes move {
-            0% {
-                background-position: 0 0;
-            }
-            100% {
-                background-position: 50px 50px;
-            }
-        }
-        
-        .progress-text {
-            text-align: center;
-            margin-top: 0.5rem;
-            color: #7f8c8d;
-        }
-        
         .result-container {
             display: none;
             margin-top: 2rem;
-            padding: 2rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-        
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #dee2e6;
         }
         
         .result-content {
@@ -1431,124 +1230,148 @@ def main():
         }
         
         .result-content code {
-            background: #e9ecef;
+            background: #f8f9fa;
             padding: 0.2rem 0.4rem;
             border-radius: 3px;
             font-family: 'Courier New', monospace;
         }
         
         .result-content pre {
-            background: #2c3e50;
-            color: #ecf0f1;
+            background: #212529;
+            color: #f8f9fa;
             padding: 1rem;
-            border-radius: 4px;
+            border-radius: 6px;
             overflow-x: auto;
             margin-bottom: 1rem;
         }
         
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 1rem;
-            border-radius: 4px;
-            border: 1px solid #fcc;
-            margin-top: 1rem;
+        .upload-icon {
+            color: #0d6efd;
+            margin-bottom: 1rem;
         }
         
-        .metadata {
-            font-size: 0.875rem;
-            color: #6c757d;
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .success-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            animation: slideIn 0.3s ease-out;
         }
     </style>
 </head>
 <body>
-    <header>
+    <div class="container-fluid bg-primary text-white py-4 mb-4">
         <div class="container">
-            <h1>AskPDF</h1>
-            <p style="text-align: center; margin-top: 0.5rem; opacity: 0.9;">
-                Document Q&A powered by Amazon Bedrock
-            </p>
-        </div>
-    </header>
-    
-    <div class="container">
-        <div class="main-content">
-            <form id="askpdf-form">
-                <div class="form-group">
-                    <label for="model-select">Select Model</label>
-                    <select id="model-select" name="model">
-                        {% for model_id, model_name in models.items() %}
-                        <option value="{{ model_id }}" {% if model_id == "us.amazon.nova-micro-v1:0" %}selected{% endif %}>
-                            {{ model_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Upload Documents (PDF or Markdown)</label>
-                    <label for="file-input" class="file-upload-area" id="file-upload-area" role="button" tabindex="0">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        <p style="margin-top: 1rem; color: #666;">
-                            Drag and drop files here or click to browse
-                        </p>
-                        <p style="font-size: 0.875rem; color: #999; margin-top: 0.5rem;">
-                            Supports PDF and Markdown files (max 500MB total)
-                        </p>
-                        <input type="file" id="file-input" multiple accept=".pdf,.md" style="display: none;" />
-                    </label>
-                    <div class="file-list" id="file-list"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="question">Your Question</label>
-                    <textarea id="question" name="question" placeholder="What would you like to know about these documents?" required></textarea>
-                </div>
-                
-                <div class="advanced-options">
-                    <h3 style="margin-bottom: 1rem;">Advanced Options</h3>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="use-faiss" name="use_faiss" checked>
-                        <label for="use-faiss" style="margin-bottom: 0; font-weight: normal;">
-                            Use FAISS vector search (recommended for large documents)
-                        </label>
-                    </div>
-                </div>
-                
-                <button type="submit" class="submit-btn" id="submit-btn">
-                    Ask Question
-                </button>
-            </form>
-            
-            <div class="progress-container" id="progress-container">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-                <div class="progress-text" id="progress-text">Processing...</div>
-            </div>
-            
-            <div class="result-container" id="result-container">
-                <div class="result-header">
-                    <h2>Answer</h2>
-                    <div class="metadata" id="result-metadata"></div>
-                </div>
-                <div class="result-content" id="result-content"></div>
-            </div>
-            
-            <div class="error-message" id="error-message" style="display: none;"></div>
+            <h1 class="display-4 text-center mb-2">AskPDF</h1>
+            <p class="text-center lead opacity-75">Document Q&A powered by Amazon Bedrock</p>
         </div>
     </div>
     
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <form id="askpdf-form">
+                            <div class="mb-4">
+                                <label for="model-select" class="form-label fw-semibold">Select Model</label>
+                                <select class="form-select" id="model-select" name="model">
+                                    {% for model_id, model_name in models.items() %}
+                                    <option value="{{ model_id }}" {% if model_id == "us.amazon.nova-micro-v1:0" %}selected{% endif %}>
+                                        {{ model_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Upload Documents</label>
+                                <div class="file-upload-area" id="file-upload-area">
+                                    <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    <h5 class="mb-2">Drag and drop files here or click to browse</h5>
+                                    <p class="text-muted mb-0">Supports PDF and Markdown files (max 500MB total)</p>
+                                    <input type="file" id="file-input" multiple accept=".pdf,.md" style="display: none;" />
+                                </div>
+                                <div class="file-list" id="file-list"></div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="question" class="form-label fw-semibold">Your Question</label>
+                                <textarea class="form-control" id="question" name="question" rows="4" 
+                                         placeholder="What would you like to know about these documents?" required></textarea>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-semibold mb-3">Advanced Options</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="use-faiss" name="use_faiss" checked>
+                                    <label class="form-check-label" for="use-faiss">
+                                        Use FAISS vector search (recommended for large documents)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-btn">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" id="submit-spinner"></span>
+                                Ask Question
+                            </button>
+                        </form>
+                        
+                        <div class="progress-container" id="progress-container">
+                            <div class="d-flex justify-content-center mb-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                            <div class="progress mb-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     id="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center text-muted" id="progress-text">Processing documents...</p>
+                        </div>
+                        
+                        <div class="result-container" id="result-container">
+                            <div class="card mt-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Answer</h5>
+                                    <small class="text-muted" id="result-metadata"></small>
+                                </div>
+                                <div class="card-body">
+                                    <div class="result-content" id="result-content"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-danger mt-3" id="error-message" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const fileInput = document.getElementById('file-input');
         const fileUploadArea = document.getElementById('file-upload-area');
         const fileList = document.getElementById('file-list');
         const form = document.getElementById('askpdf-form');
         const submitBtn = document.getElementById('submit-btn');
+        const submitSpinner = document.getElementById('submit-spinner');
         const progressContainer = document.getElementById('progress-container');
         const progressFill = document.getElementById('progress-fill');
         const progressText = document.getElementById('progress-text');
@@ -1559,14 +1382,14 @@ def main():
         
         let uploadedFiles = [];
         
-        // Debug info
-        console.log('AskPDF UI initialized');
-        console.log('File input element:', fileInput);
-        console.log('File upload area:', fileUploadArea);
+        // File validation
+        function validateFile(file) {
+            const validTypes = ['.pdf', '.md'];
+            const fileName = file.name.toLowerCase();
+            return validTypes.some(type => fileName.endsWith(type));
+        }
         
-        // File upload handling - complete rewrite for better compatibility
-        
-        // Prevent default drag behaviors on the entire document
+        // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             document.addEventListener(eventName, preventDefaults, false);
             fileUploadArea.addEventListener(eventName, preventDefaults, false);
@@ -1579,42 +1402,31 @@ def main():
         
         // Highlight drop area when item is dragged over it
         ['dragenter', 'dragover'].forEach(eventName => {
-            fileUploadArea.addEventListener(eventName, highlight, false);
+            fileUploadArea.addEventListener(eventName, () => {
+                fileUploadArea.classList.add('drag-over');
+            }, false);
         });
         
         ['dragleave', 'drop'].forEach(eventName => {
-            fileUploadArea.addEventListener(eventName, unhighlight, false);
+            fileUploadArea.addEventListener(eventName, () => {
+                fileUploadArea.classList.remove('drag-over');
+            }, false);
         });
         
-        function highlight(e) {
-            fileUploadArea.classList.add('drag-over');
-        }
-        
-        function unhighlight(e) {
-            fileUploadArea.classList.remove('drag-over');
-        }
-        
         // Handle dropped files
-        fileUploadArea.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
+        fileUploadArea.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
             handleFiles(files);
-        }
+        }, false);
         
         // Handle click to browse
-        fileUploadArea.addEventListener('click', function(e) {
+        fileUploadArea.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Upload area clicked');
-            // Use a timeout to ensure the click event completes before triggering file input
-            setTimeout(() => {
-                fileInput.click();
-            }, 0);
+            fileInput.click();
         });
         
         // Handle file input change
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', (e) => {
             handleFiles(e.target.files);
         });
         
@@ -1622,27 +1434,28 @@ def main():
             if (!files || files.length === 0) return;
             
             let addedCount = 0;
-            const fileArray = Array.from(files);
+            let invalidCount = 0;
             
-            for (let file of fileArray) {
-                if (file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.md')) {
+            Array.from(files).forEach(file => {
+                if (validateFile(file)) {
                     // Check if file is already uploaded
                     const exists = uploadedFiles.some(f => f.name === file.name && f.size === file.size);
                     if (!exists) {
                         uploadedFiles.push(file);
                         addedCount++;
                     }
+                } else {
+                    invalidCount++;
                 }
-            }
+            });
             
             if (addedCount > 0) {
                 updateFileList();
-                // Show a brief success message
-                const successMsg = document.createElement('div');
-                successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 1rem 1.5rem; border-radius: 4px; z-index: 1000; animation: slideIn 0.3s ease-out;';
-                successMsg.textContent = `Added ${addedCount} file(s)`;
-                document.body.appendChild(successMsg);
-                setTimeout(() => successMsg.remove(), 3000);
+                showToast(`Added ${addedCount} file(s)`, 'success');
+            }
+            
+            if (invalidCount > 0) {
+                showToast(`${invalidCount} invalid file(s) skipped. Only PDF and Markdown files are allowed.`, 'warning');
             }
             
             // Reset the file input
@@ -1650,21 +1463,44 @@ def main():
         }
         
         function updateFileList() {
-            fileList.innerHTML = '';
-            uploadedFiles.forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.innerHTML = `
-                    <span>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                    <button type="button" onclick="removeFile(${index})">Remove</button>
-                `;
-                fileList.appendChild(fileItem);
-            });
+            if (uploadedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+            
+            fileList.innerHTML = uploadedFiles.map((file, index) => `
+                <div class="file-item">
+                    <div>
+                        <strong>${file.name}</strong>
+                        <small class="text-muted d-block">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                        Remove
+                    </button>
+                </div>
+            `).join('');
         }
         
         function removeFile(index) {
             uploadedFiles.splice(index, 1);
             updateFileList();
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show success-toast`;
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 5000);
         }
         
         // Form submission
@@ -1694,6 +1530,7 @@ def main():
             
             // Show progress
             submitBtn.disabled = true;
+            submitSpinner.classList.remove('d-none');
             progressContainer.style.display = 'block';
             resultContainer.style.display = 'none';
             errorMessage.style.display = 'none';
@@ -1733,6 +1570,9 @@ def main():
                         }
                         metadata += ` | Method: ${data.method === 'direct_pdf' ? 'Direct PDF' : 'FAISS'}`;
                         resultMetadata.textContent = metadata;
+                        
+                        // Scroll to result
+                        resultContainer.scrollIntoView({ behavior: 'smooth' });
                     }, 500);
                 } else {
                     showError(data.error || 'An error occurred processing your request.');
@@ -1742,6 +1582,7 @@ def main():
                 showError('Network error: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
+                submitSpinner.classList.add('d-none');
                 progressFill.style.width = '0%';
             }
         });
@@ -1750,6 +1591,7 @@ def main():
             progressContainer.style.display = 'none';
             errorMessage.style.display = 'block';
             errorMessage.textContent = message;
+            errorMessage.scrollIntoView({ behavior: 'smooth' });
         }
         
         function markdownToHtml(markdown) {
@@ -1762,16 +1604,16 @@ def main():
             html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
             
             // Bold
-            html = html.replace(/\\*\\*\\*(.+?)\\*\\*\\*/g, '<strong><em>$1</em></strong>');
-            html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
             
             // Italic
-            html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
             html = html.replace(/_(.+?)_/g, '<em>$1</em>');
             
             // Links
-            html = html.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '<a href="$2" target="_blank">$1</a>');
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
             
             // Code blocks
             html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
@@ -1780,10 +1622,10 @@ def main():
             html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
             
             // Lists
-            html = html.replace(/^\\* (.+)$/gim, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\\/li>)/s, '<ul>$1</ul>');
+            html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
             
-            html = html.replace(/^\\d+\\. (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/^\d+\. (.+)$/gim, '<li>$1</li>');
             
             // Paragraphs
             html = html.split('\n\n').map(para => {
@@ -1799,49 +1641,13 @@ def main():
         // Make removeFile function global
         window.removeFile = removeFile;
         
-        // Add keyboard support for file upload area
-        fileUploadArea.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                fileInput.click();
-            }
-        });
+        // Hide results when new files are selected
+        function hideResults() {
+            resultContainer.style.display = 'none';
+            errorMessage.style.display = 'none';
+        }
         
-        // Add visual feedback for file input clicks
-        fileInput.addEventListener('click', function(e) {
-            console.log('File input clicked');
-        });
-        
-        // Debug file selection
-        fileInput.addEventListener('change', function(e) {
-            console.log('Files selected:', e.target.files.length);
-        });
-        
-        // Additional fallback: create a button that directly triggers file input
-        const createFileInputTrigger = () => {
-            const hiddenButton = document.createElement('button');
-            hiddenButton.style.position = 'absolute';
-            hiddenButton.style.opacity = '0';
-            hiddenButton.style.pointerEvents = 'none';
-            hiddenButton.id = 'hidden-file-trigger';
-            hiddenButton.type = 'button';
-            hiddenButton.onclick = (e) => {
-                e.preventDefault();
-                fileInput.click();
-            };
-            document.body.appendChild(hiddenButton);
-            
-            // Alternative click handler for upload area
-            fileUploadArea.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Alternative click handler triggered');
-                hiddenButton.click();
-            };
-        };
-        
-        // Initialize the fallback trigger
-        createFileInputTrigger();
+        fileInput.addEventListener('change', hideResults);
     </script>
 </body>
 </html>'''
