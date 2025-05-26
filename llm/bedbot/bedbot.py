@@ -8,6 +8,7 @@ import shutil
 import atexit
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask_session import Session
 from werkzeug.utils import secure_filename
 import boto3
 from botocore.exceptions import ClientError
@@ -21,18 +22,35 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024  # 1GB max file size
 
-# Create temporary upload directory
-temp_upload_dir = tempfile.mkdtemp(prefix='bedbot_uploads_')
-app.config['UPLOAD_FOLDER'] = temp_upload_dir
-logger.info(f"Created temporary upload directory: {temp_upload_dir}")
+# Configure Flask-Session for server-side sessions
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'bedbot:'
+app.config['SESSION_FILE_THRESHOLD'] = 100  # Max number of sessions before cleanup
 
-# Register cleanup function to remove temp directory on shutdown
-def cleanup_temp_dir():
+# Create temporary directories
+temp_upload_dir = tempfile.mkdtemp(prefix='bedbot_uploads_')
+temp_session_dir = tempfile.mkdtemp(prefix='bedbot_sessions_')
+app.config['UPLOAD_FOLDER'] = temp_upload_dir
+app.config['SESSION_FILE_DIR'] = temp_session_dir
+
+# Initialize Flask-Session
+Session(app)
+
+logger.info(f"Created temporary upload directory: {temp_upload_dir}")
+logger.info(f"Created temporary session directory: {temp_session_dir}")
+
+# Register cleanup function to remove temp directories on shutdown
+def cleanup_temp_dirs():
     if os.path.exists(temp_upload_dir):
         shutil.rmtree(temp_upload_dir)
         logger.info(f"Cleaned up temporary upload directory: {temp_upload_dir}")
+    if os.path.exists(temp_session_dir):
+        shutil.rmtree(temp_session_dir)
+        logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
 
-atexit.register(cleanup_temp_dir)
+atexit.register(cleanup_temp_dirs)
 
 # AWS Bedrock client - uses current AWS profile
 try:
