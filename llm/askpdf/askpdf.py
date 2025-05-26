@@ -1422,7 +1422,13 @@ def main():
         // Handle click to browse
         fileUploadArea.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             fileInput.click();
+        });
+        
+        // Additional click handler for better compatibility
+        fileUploadArea.addEventListener('mousedown', (e) => {
+            e.preventDefault();
         });
         
         // Handle file input change
@@ -1648,6 +1654,35 @@ def main():
         }
         
         fileInput.addEventListener('change', hideResults);
+        
+        // Additional fallback for file input trigger
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure file input is properly connected
+            const testClick = () => {
+                console.log('File input click test');
+                fileInput.click();
+            };
+            
+            // Add keyboard support
+            fileUploadArea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    testClick();
+                }
+            });
+            
+            // Make sure the upload area is focusable
+            fileUploadArea.setAttribute('tabindex', '0');
+            
+            // Alternative click method using setTimeout
+            fileUploadArea.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                setTimeout(() => {
+                    fileInput.click();
+                }, 10);
+            };
+        });
     </script>
 </body>
 </html>'''
