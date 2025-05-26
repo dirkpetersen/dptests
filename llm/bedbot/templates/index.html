@@ -608,35 +608,41 @@
             };
 
             recognition.onresult = function(event) {
-                let newFinalTranscript = '';
-                let newInterimTranscript = '';
+                let currentFinalTranscript = '';
+                let currentInterimTranscript = '';
                 
-                // Process all results
+                // Process all results to get current state
                 for (let i = 0; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
                     
                     if (event.results[i].isFinal) {
-                        newFinalTranscript += transcript + ' ';
+                        currentFinalTranscript += transcript + ' ';
                     } else {
-                        newInterimTranscript += transcript;
+                        currentInterimTranscript += transcript;
                     }
                 }
                 
-                // Only add new final results to the input field
-                if (newFinalTranscript && newFinalTranscript !== finalTranscript) {
-                    const currentValue = messageInput.value;
-                    // Add space before new text if input is not empty
-                    const separator = currentValue.trim() ? ' ' : '';
-                    messageInput.value = currentValue + separator + newFinalTranscript.trim();
-                    finalTranscript = newFinalTranscript;
+                // Only add text when we have NEW final results
+                if (currentFinalTranscript && currentFinalTranscript.length > finalTranscript.length) {
+                    // Extract only the new part
+                    const newText = currentFinalTranscript.substring(finalTranscript.length).trim();
                     
-                    messageInput.style.height = 'auto';
-                    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-                    messageInput.focus();
+                    if (newText) {
+                        const currentValue = messageInput.value;
+                        // Add space before new text if input is not empty
+                        const separator = currentValue.trim() ? ' ' : '';
+                        messageInput.value = currentValue + separator + newText;
+                        
+                        messageInput.style.height = 'auto';
+                        messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+                        messageInput.focus();
+                    }
+                    
+                    finalTranscript = currentFinalTranscript;
                 }
                 
                 // Store interim for display purposes but don't add to input
-                interimTranscript = newInterimTranscript;
+                interimTranscript = currentInterimTranscript;
             };
 
             recognition.onend = function() {
