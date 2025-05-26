@@ -270,25 +270,46 @@ def merge_pdfs(pdf_paths, output_path, source_directory_name=None):
         return False
 
 def get_common_directory_name(file_paths):
-    """Extract common directory name from file paths, or return 'merged' as fallback"""
+    """Extract common directory name from file paths, or return 'other' as fallback"""
     if not file_paths:
-        return "merged"
+        return "other"
     
     try:
-        # Get the directory of the first file
-        first_dir = os.path.dirname(file_paths[0]) if hasattr(file_paths[0], 'filename') else ""
+        # For uploaded files, we need to look at the original filename paths
+        # Since these are werkzeug FileStorage objects, we can't get the original directory
+        # But we can try to extract meaningful names from the filenames themselves
         
-        # If we can get a meaningful directory name, use it
-        if first_dir:
-            dir_name = os.path.basename(first_dir)
-            if dir_name and dir_name != "":
-                return dir_name
+        # Get all the filenames
+        filenames = []
+        for file_path in file_paths:
+            if hasattr(file_path, 'filename'):
+                filenames.append(file_path.filename)
+            else:
+                filenames.append(str(file_path))
         
-        # Fallback to "merged"
-        return "merged"
+        # Try to find common prefixes or patterns in filenames
+        if filenames:
+            # Look for common prefixes (before first underscore or dash)
+            common_parts = []
+            for filename in filenames:
+                # Remove extension and split by common separators
+                base_name = os.path.splitext(filename)[0]
+                parts = base_name.replace('_', '-').split('-')
+                if parts:
+                    common_parts.append(parts[0].lower())
+            
+            # If we have common parts, use the most frequent one
+            if common_parts:
+                from collections import Counter
+                most_common = Counter(common_parts).most_common(1)
+                if most_common and len(most_common[0][0]) > 2:  # At least 3 characters
+                    return most_common[0][0]
+        
+        # Fallback to "other"
+        return "other"
         
     except Exception:
-        return "merged"
+        return "other"
 
 def read_file_content(filepath_or_s3key, is_s3=False):
     """Read content from uploaded file or return file info for PDF processing"""
