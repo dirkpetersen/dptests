@@ -357,59 +357,67 @@
         }
 
         .uploaded-files h4 {
-            margin: 0 0 10px 0;
-            font-size: 14px;
+            margin: 0 0 8px 0;
+            font-size: 13px;
             color: #495057;
             font-weight: 600;
         }
 
-        .file-item {
+        .files-container {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            margin-bottom: 5px;
-            font-size: 13px;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 2px;
         }
 
-        .file-info {
-            display: flex;
+        .file-tag {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            flex: 1;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            color: #1976d2;
+            gap: 4px;
+            transition: all 0.2s ease;
         }
 
-        .file-icon {
-            color: #4facfe;
-            width: 16px;
+        .file-tag:hover {
+            background: #bbdefb;
         }
 
         .file-name {
             font-weight: 500;
-            color: #495057;
-        }
-
-        .file-size {
-            color: #6c757d;
-            font-size: 11px;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .remove-file-btn {
             background: none;
             border: none;
-            color: #dc3545;
+            color: #f44336;
             cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
+            padding: 0;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
             transition: all 0.2s ease;
+            margin-left: 2px;
         }
 
         .remove-file-btn:hover {
-            background: #dc3545;
+            background: #f44336;
             color: white;
+            transform: scale(1.1);
         }
 
         @keyframes fadeIn {
@@ -666,19 +674,17 @@
             }
 
             uploadedFiles.innerHTML = `
-                <h4><i class="fas fa-paperclip"></i> Uploaded Files (${files.length})</h4>
-                ${files.map(file => `
-                    <div class="file-item">
-                        <div class="file-info">
-                            <i class="fas fa-file-alt file-icon"></i>
-                            <span class="file-name">${file.filename}</span>
-                            <span class="file-size">(${formatFileSize(file.size)})</span>
+                <h4><i class="fas fa-paperclip"></i> Files (${files.length})</h4>
+                <div class="files-container">
+                    ${files.map(file => `
+                        <div class="file-tag">
+                            <span class="file-name" title="${file.filename}">${file.filename}</span>
+                            <button class="remove-file-btn" onclick="removeFile('${file.filename}')" title="Remove ${file.filename}">
+                                ×
+                            </button>
                         </div>
-                        <button class="remove-file-btn" onclick="removeFile('${file.filename}')" title="Remove file">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                </div>
             `;
             uploadedFiles.className = 'uploaded-files show';
         }
