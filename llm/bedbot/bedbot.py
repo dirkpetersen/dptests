@@ -3,6 +3,9 @@
 import os
 import json
 import uuid
+import tempfile
+import shutil
+import atexit
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.utils import secure_filename
@@ -17,10 +20,19 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024  # 1GB max file size
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
-# Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Create temporary upload directory
+temp_upload_dir = tempfile.mkdtemp(prefix='bedbot_uploads_')
+app.config['UPLOAD_FOLDER'] = temp_upload_dir
+logger.info(f"Created temporary upload directory: {temp_upload_dir}")
+
+# Register cleanup function to remove temp directory on shutdown
+def cleanup_temp_dir():
+    if os.path.exists(temp_upload_dir):
+        shutil.rmtree(temp_upload_dir)
+        logger.info(f"Cleaned up temporary upload directory: {temp_upload_dir}")
+
+atexit.register(cleanup_temp_dir)
 
 # AWS Bedrock client - uses current AWS profile
 try:
@@ -73,8 +85,7 @@ def call_bedrock_nova(prompt, context=""):
                 }
             ],
             "max_tokens": 2000,
-            "temperature": 0.7,
-            "top_p": 0.9
+            "temperature": 0.7
         }
         
         response = bedrock_client.invoke_model(
