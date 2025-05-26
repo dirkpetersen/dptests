@@ -892,10 +892,6 @@
         }
 
         async function removeFile(filename) {
-            if (!confirm(`Remove "${filename}" from the conversation?`)) {
-                return;
-            }
-
             try {
                 const response = await fetch('/remove_file', {
                     method: 'POST',
@@ -937,9 +933,7 @@
         }
 
         function clearChat() {
-            if (confirm('Are you sure you want to clear the chat and uploaded documents?')) {
-                window.location.href = '/clear';
-            }
+            window.location.href = '/clear';
         }
 
         // Load chat history and files on page load
