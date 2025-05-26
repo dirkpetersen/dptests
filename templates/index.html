@@ -3,56 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Match Game</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Memory Match</h1>
-            <div class="game-info">
-                <div class="info-item">
-                    <span class="label">Moves:</span>
-                    <span id="moves">0</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Time:</span>
-                    <span id="timer">00:00</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Matches:</span>
-                    <span id="matches">0/16</span>
-                </div>
-            </div>
-        </header>
-
-        <div id="game-board" class="game-board">
-            <!-- Cards will be dynamically generated here -->
-        </div>
-
-        <div class="controls">
-            <button id="new-game-btn" class="btn btn-primary">New Game</button>
-        </div>
-
-        <div id="win-modal" class="modal">
-            <div class="modal-content">
-                <h2>🎉 Congratulations! 🎉</h2>
-                <p>You won in <span id="final-moves">0</span> moves!</p>
-                <p>Time: <span id="final-time">00:00</span></p>
-                <button id="play-again-btn" class="btn btn-primary">Play Again</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chatbot with Document Upload</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
