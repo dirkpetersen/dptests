@@ -1604,12 +1604,12 @@ def main():
             html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
             
             // Bold
-            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\\*\\*\\*(.+?)\\*\\*\\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');
             html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
             
             // Italic
-            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');
             html = html.replace(/_(.+?)_/g, '<em>$1</em>');
             
             // Links
