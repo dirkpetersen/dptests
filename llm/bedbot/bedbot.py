@@ -119,10 +119,6 @@ def delete_s3_bucket():
     except Exception as e:
         logger.error(f"Failed to delete S3 bucket: {e}")
 
-# Create S3 bucket at startup if using S3 mode
-if USE_S3_BUCKET:
-    create_s3_bucket()
-
 # Register cleanup function to remove temp directories and S3 bucket on shutdown
 def cleanup_resources():
     global temp_session_dir, session_upload_folders
@@ -170,6 +166,10 @@ except Exception as e:
     logger.error(f"Failed to initialize AWS clients: {e}")
     bedrock_client = None
     s3_client = None
+
+# Create S3 bucket at startup if using S3 mode (after AWS clients are initialized)
+if USE_S3_BUCKET:
+    create_s3_bucket()
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
