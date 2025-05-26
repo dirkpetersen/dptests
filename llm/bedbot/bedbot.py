@@ -53,6 +53,9 @@ session_upload_folders = set()
 # S3 bucket for file storage (S3 mode only)
 s3_bucket_name = None
 
+# Cleanup flag to prevent duplicate cleanup
+cleanup_performed = False
+
 # Initialize Flask-Session (will create session dir when first needed)
 Session(app)
 
@@ -137,7 +140,12 @@ def delete_s3_bucket():
 
 # Register cleanup function to remove temp directories and S3 bucket on shutdown
 def cleanup_resources():
-    global temp_session_dir, session_upload_folders
+    global temp_session_dir, session_upload_folders, cleanup_performed
+    
+    # Prevent duplicate cleanup
+    if cleanup_performed:
+        return
+    cleanup_performed = True
     
     # Clean up S3 bucket if using S3 mode
     if USE_S3_BUCKET:
