@@ -591,43 +591,120 @@
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
+            recognition.continuous = true;  // Keep listening continuously
+            recognition.interimResults = true;  // Show interim results
             recognition.lang = 'en-US';
+
+            let finalTranscript = '';
+            let interimTranscript = '';
+            let lastResultIndex = 0;
 
             recognition.onstart = function() {
                 isRecording = true;
                 micBtn.classList.add('recording');
                 micBtn.innerHTML = '<i class="fas fa-stop"></i>';
                 micBtn.title = 'Stop recording';
+                finalTranscript = '';
+                interimTranscript = '';
+                lastResultIndex = 0;
             };
 
             recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                messageInput.value += (messageInput.value ? ' ' : '') + transcript;
+                interimTranscript = '';
+                
+                // Process all results from the last processed index
+                for (let i = lastResultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                        lastResultIndex = i + 1;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                // Update the input field with final + interim results
+                const currentValue = messageInput.value;
+                const baseText = currentValue.replace(interimTranscript, ''); // Remove any previous interim text
+                messageInput.value = baseText + finalTranscript + interimTranscript;
+                
                 messageInput.style.height = 'auto';
                 messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
                 messageInput.focus();
             };
 
             recognition.onend = function() {
-                isRecording = false;
-                micBtn.classList.remove('recording');
-                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-                micBtn.title = 'Voice input';
+                if (isRecording) {
+                    // If we're still supposed to be recording, restart (handles pauses)
+                    try {
+                        recognition.start();
+                    } catch (error) {
+                        // If restart fails, stop recording
+                        stopRecording();
+                    }
+                }
             };
 
             recognition.onerror = function(event) {
                 console.error('Speech recognition error:', event.error);
+                
+                if (event.error === 'not-allowed') {
+                    alert('Microphone access denied. Please allow microphone access and try again.');
+                    stopRecording();
+                } else if (event.error === 'no-speech') {
+                    // Don't stop on no-speech, just continue
+                    console.log('No speech detected, continuing...');
+                } else if (event.error === 'aborted') {
+                    // Don't restart if aborted intentionally
+                    if (isRecording) {
+                        stopRecording();
+                    }
+                } else {
+                    // For other errors, try to restart if still recording
+                    if (isRecording) {
+                        setTimeout(() => {
+                            if (isRecording) {
+                                try {
+                                    recognition.start();
+                                } catch (e) {
+                                    stopRecording();
+                                }
+                            }
+                        }, 1000);
+                    }
+                }
+            };
+
+            // Stop recording when window loses focus
+            window.addEventListener('blur', function() {
+                if (isRecording) {
+                    stopRecording();
+                }
+            });
+
+            // Helper function to stop recording
+            function stopRecording() {
                 isRecording = false;
                 micBtn.classList.remove('recording');
                 micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
                 micBtn.title = 'Voice input';
                 
-                if (event.error === 'not-allowed') {
-                    alert('Microphone access denied. Please allow microphone access and try again.');
+                // Finalize any remaining text
+                if (finalTranscript || interimTranscript) {
+                    const currentValue = messageInput.value;
+                    const cleanedValue = currentValue.replace(/\s+/g, ' ').trim();
+                    messageInput.value = cleanedValue;
+                    messageInput.style.height = 'auto';
+                    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
                 }
-            };
+                
+                try {
+                    recognition.stop();
+                } catch (error) {
+                    // Ignore errors when stopping
+                }
+            }
         } else {
             // Hide microphone button if speech recognition is not supported
             micBtn.style.display = 'none';
@@ -830,7 +907,7 @@
             }
 
             if (isRecording) {
-                recognition.stop();
+                stopRecording();
             } else {
                 try {
                     recognition.start();
