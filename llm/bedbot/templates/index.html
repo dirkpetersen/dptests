@@ -278,6 +278,43 @@
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
 
+        .input-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .mic-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .mic-btn.recording {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            animation: pulse 1.5s infinite;
+        }
+
+        .mic-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .send-btn {
             width: 44px;
             height: 44px;
@@ -302,6 +339,12 @@
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
 
         .typing-indicator {
@@ -500,9 +543,14 @@
                     placeholder="Type your message here..."
                     rows="1"
                 ></textarea>
-                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+                <div class="input-buttons">
+                    <button class="mic-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice input">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -516,6 +564,11 @@
         const fileInput = document.getElementById('fileInput');
         const uploadStatus = document.getElementById('uploadStatus');
         const uploadedFiles = document.getElementById('uploadedFiles');
+        const micBtn = document.getElementById('micBtn');
+
+        // Speech recognition variables
+        let recognition = null;
+        let isRecording = false;
 
         // Auto-resize textarea
         messageInput.addEventListener('input', function() {
@@ -533,6 +586,52 @@
 
         // File upload handling
         fileInput.addEventListener('change', handleFileUpload);
+
+        // Initialize speech recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                micBtn.title = 'Stop recording';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                messageInput.value += (messageInput.value ? ' ' : '') + transcript;
+                messageInput.style.height = 'auto';
+                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+                messageInput.focus();
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                micBtn.classList.remove('recording');
+                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                micBtn.title = 'Voice input';
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                isRecording = false;
+                micBtn.classList.remove('recording');
+                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                micBtn.title = 'Voice input';
+                
+                if (event.error === 'not-allowed') {
+                    alert('Microphone access denied. Please allow microphone access and try again.');
+                }
+            };
+        } else {
+            // Hide microphone button if speech recognition is not supported
+            micBtn.style.display = 'none';
+        }
 
         // Drag and drop
         uploadArea.addEventListener('dragover', function(e) {
@@ -649,7 +748,7 @@
                     uploadStatus.className = 'upload-status success';
                     uploadStatus.textContent = `✓ ${data.message}. Context length: ${data.context_length} characters.`;
                     
-                    // Update uploaded files display
+                    // Update uploaded files display immediately
                     updateUploadedFilesDisplay(data.uploaded_files);
                     
                     // Add system message about uploaded files
@@ -721,6 +820,24 @@
                 }
             } catch (error) {
                 alert('Failed to remove file: Network error');
+            }
+        }
+
+        function toggleVoiceRecording() {
+            if (!recognition) {
+                alert('Speech recognition is not supported in this browser.');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Error starting speech recognition:', error);
+                    alert('Could not start voice recording. Please try again.');
+                }
             }
         }
 
