@@ -1426,11 +1426,6 @@ def main():
             fileInput.click();
         });
         
-        // Additional click handler for better compatibility
-        fileUploadArea.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-        });
-        
         // Handle file input change
         fileInput.addEventListener('change', (e) => {
             handleFiles(e.target.files);
@@ -1667,21 +1662,13 @@ def main():
             fileUploadArea.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    testClick();
+                    fileInput.click(); // Directly call fileInput.click()
                 }
             });
             
             // Make sure the upload area is focusable
             fileUploadArea.setAttribute('tabindex', '0');
             
-            // Alternative click method using setTimeout
-            fileUploadArea.onclick = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                setTimeout(() => {
-                    fileInput.click();
-                }, 10);
-            };
         });
     </script>
 </body>
