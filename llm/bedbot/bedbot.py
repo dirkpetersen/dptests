@@ -113,8 +113,15 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
                     with open(pdf_info['path'], 'rb') as f:
                         pdf_bytes = f.read()
                     
-                    # Sanitize document name for Nova
-                    doc_name = pdf_info['filename'].replace('.pdf', '').replace(' ', '_')[:50]
+                    # Sanitize document name for Nova - only alphanumeric, whitespace, hyphens, parentheses, square brackets
+                    doc_name = pdf_info['filename'].replace('.pdf', '')
+                    # Replace periods and other invalid characters with underscores
+                    import re
+                    doc_name = re.sub(r'[^a-zA-Z0-9\s\-\(\)\[\]]', '_', doc_name)
+                    # Replace multiple consecutive whitespace with single space
+                    doc_name = re.sub(r'\s+', ' ', doc_name).strip()
+                    # Limit length
+                    doc_name = doc_name[:50]
                     
                     content.append({
                         "document": {
