@@ -30,19 +30,16 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'bedbot:'
 app.config['SESSION_FILE_THRESHOLD'] = 100  # Max number of sessions before cleanup
 
-# Create temporary directory for Flask sessions only with restricted permissions
-temp_session_dir = tempfile.mkdtemp(prefix='bedbot_sessions_')
-os.chmod(temp_session_dir, 0o700)  # Only owner can read/write/execute
-app.config['SESSION_FILE_DIR'] = temp_session_dir
+# Flask session directory will be created on demand
+temp_session_dir = None
 
-# Initialize Flask-Session
+# Initialize Flask-Session (will create session dir when first needed)
 Session(app)
-
-logger.info(f"Created temporary session directory: {temp_session_dir}")
 
 # Register cleanup function to remove temp directories on shutdown
 def cleanup_temp_dirs():
-    if os.path.exists(temp_session_dir):
+    global temp_session_dir
+    if temp_session_dir and os.path.exists(temp_session_dir):
         shutil.rmtree(temp_session_dir)
         logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
 
@@ -222,8 +219,17 @@ def convert_markdown_to_html(text):
 
 def get_session_upload_folder():
     """Get or create session-specific upload folder"""
+    global temp_session_dir
+    
     if 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
+    
+    # Create Flask session directory if it doesn't exist
+    if not temp_session_dir:
+        temp_session_dir = tempfile.mkdtemp(prefix='bedbot_sessions_')
+        os.chmod(temp_session_dir, 0o700)  # Only owner can read/write/execute
+        app.config['SESSION_FILE_DIR'] = temp_session_dir
+        logger.info(f"Created temporary session directory: {temp_session_dir}")
     
     # Create a unique temporary directory for this session with restricted permissions
     session_folder = tempfile.mkdtemp(prefix=f'bedbot_session_{session["session_id"]}_')
