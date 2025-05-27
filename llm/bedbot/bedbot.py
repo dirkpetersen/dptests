@@ -1199,7 +1199,6 @@ if __name__ == '__main__':
         app.run(debug=True, host='0.0.0.0', port=5000)
     except KeyboardInterrupt:
         logger.info("Application interrupted by user (Ctrl+C)")
-        cleanup_resources()
     finally:
         logger.info("Application shutting down, ensuring cleanup...")
         cleanup_resources()
