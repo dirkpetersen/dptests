@@ -135,6 +135,21 @@ def create_s3_bucket():
             }
         )
         
+        # Enable server-side encryption with AWS managed keys (AES256)
+        s3_client.put_bucket_encryption(
+            Bucket=s3_bucket_name,
+            ServerSideEncryptionConfiguration={
+                'Rules': [
+                    {
+                        'ApplyServerSideEncryptionByDefault': {
+                            'SSEAlgorithm': 'AES256'
+                        },
+                        'BucketKeyEnabled': True
+                    }
+                ]
+            }
+        )
+        
         # Save bucket name for Flask restart
         save_bucket_name(s3_bucket_name)
         
