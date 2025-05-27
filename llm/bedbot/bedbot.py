@@ -314,11 +314,38 @@ if USE_S3_BUCKET and not os.environ.get('WERKZEUG_RUN_MAIN'):
     if not bucket_created:
         logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
 elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
-    # During Flask debug restart, load the existing bucket name
-    s3_bucket_name = load_bucket_name()
-    if s3_bucket_name:
-        if DEBUG_MODE:
-            logger.info(f"Flask debug restart detected - reusing existing S3 bucket: {s3_bucket_name}")
+    # During Flask debug restart, find and load the existing bucket name
+    temp_dir = tempfile.gettempdir()
+    bucket_files = []
+    
+    for filename in os.listdir(temp_dir):
+        if filename.startswith('bedbot_bucket_') and filename.endswith('.txt'):
+            filepath = os.path.join(temp_dir, filename)
+            try:
+                mtime = os.path.getmtime(filepath)
+                bucket_files.append((mtime, filepath))
+            except Exception as e:
+                logger.error(f"Error checking bucket name file {filepath}: {e}")
+    
+    if bucket_files:
+        # Sort by modification time (newest first) and use the most recent
+        bucket_files.sort(reverse=True)
+        most_recent_file = bucket_files[0][1]
+        
+        try:
+            with open(most_recent_file, 'r') as f:
+                s3_bucket_name = f.read().strip()
+                if s3_bucket_name:
+                    # Set the bucket_name_file reference for cleanup
+                    bucket_name_file = type('obj', (object,), {'name': most_recent_file})()
+                    if DEBUG_MODE:
+                        logger.info(f"Flask debug restart detected - reusing existing S3 bucket: {s3_bucket_name}")
+                else:
+                    logger.warning("Flask debug restart detected but bucket name file is empty")
+                    USE_S3_BUCKET = False
+        except Exception as e:
+            logger.error(f"Error reading bucket name file {most_recent_file}: {e}")
+            USE_S3_BUCKET = False
     else:
         logger.warning("Flask debug restart detected but no existing bucket name found")
         USE_S3_BUCKET = False
