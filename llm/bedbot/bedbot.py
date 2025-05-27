@@ -215,6 +215,11 @@ def delete_s3_bucket():
 def cleanup_resources():
     global temp_session_dir, session_upload_folders, cleanup_performed
     
+    # Only run cleanup in the main process, not in Flask's debug reloader
+    if os.environ.get('WERKZEUG_RUN_MAIN'):
+        logger.info("Skipping cleanup in Flask debug reloader process")
+        return
+    
     # Prevent duplicate cleanup
     if cleanup_performed:
         logger.info("Cleanup already performed, skipping")
