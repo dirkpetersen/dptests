@@ -81,21 +81,17 @@ def save_bucket_name(bucket_name):
 def load_bucket_name():
     """Load bucket name from temporary file if it exists"""
     global bucket_name_file
-    # Look for existing bucket name files
-    temp_dir = tempfile.gettempdir()
-    for filename in os.listdir(temp_dir):
-        if filename.startswith('bedbot_bucket_') and filename.endswith('.txt'):
-            filepath = os.path.join(temp_dir, filename)
-            try:
-                with open(filepath, 'r') as f:
-                    bucket_name = f.read().strip()
-                    if bucket_name:
-                        bucket_name_file = type('obj', (object,), {'name': filepath})()
-                        if DEBUG_MODE:
-                            logger.info(f"Loaded existing bucket name: {bucket_name}")
-                        return bucket_name
-            except Exception as e:
-                logger.error(f"Error reading bucket name file {filepath}: {e}")
+    # Only load if we have a reference to the current session's bucket file
+    if bucket_name_file and hasattr(bucket_name_file, 'name') and os.path.exists(bucket_name_file.name):
+        try:
+            with open(bucket_name_file.name, 'r') as f:
+                bucket_name = f.read().strip()
+                if bucket_name:
+                    if DEBUG_MODE:
+                        logger.info(f"Loaded existing bucket name: {bucket_name}")
+                    return bucket_name
+        except Exception as e:
+            logger.error(f"Error reading bucket name file {bucket_name_file.name}: {e}")
     return None
 
 def cleanup_bucket_name_file():
