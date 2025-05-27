@@ -271,49 +271,52 @@ def cleanup_resources():
 
 atexit.register(cleanup_resources)
 
-# AWS clients - uses current AWS profile
-try:
-    # Create a session that uses the current AWS profile
-    session_aws = boto3.Session()
+def initialize_aws_clients():
+    """Initialize AWS clients with proper configuration"""
+    global bedrock_client, s3_client, session_aws, profile_region
     
-    # Get the region from the profile configuration
-    profile_region = session_aws.region_name
-    if not profile_region:
-        # Fallback to default region if not set in profile
-        profile_region = 'us-east-1'
-        logger.warning("No region found in AWS profile, defaulting to us-east-1")
-    
-    # Configure clients with increased timeout for large document processing
-    config = Config(
-        read_timeout=900,  # 15 minutes read timeout
-        connect_timeout=60,  # 1 minute connect timeout
-        retries={'max_attempts': 3}  # Retry up to 3 times
-    )
-    
-    bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region, config=config)
-    s3_client = session_aws.client('s3', region_name=profile_region, config=config) if USE_S3_BUCKET else None
-    
-    if DEBUG_MODE:
-        logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
-        logger.info(f"Using region: {profile_region}")
-        logger.info("Configured clients with 15-minute read timeout for large document processing")
-        if USE_S3_BUCKET:
-            logger.info("S3 bucket mode enabled")
-        else:
-            logger.info("Local filesystem mode enabled (--no-bucket)")
+    try:
+        # Create a session that uses the current AWS profile
+        session_aws = boto3.Session()
         
-except Exception as e:
-    logger.error(f"Failed to initialize AWS clients: {e}")
-    bedrock_client = None
-    s3_client = None
+        # Get the region from the profile configuration
+        profile_region = session_aws.region_name
+        if not profile_region:
+            # Fallback to default region if not set in profile
+            profile_region = 'us-east-1'
+            logger.warning("No region found in AWS profile, defaulting to us-east-1")
+        
+        # Configure clients with increased timeout for large document processing
+        config = Config(
+            read_timeout=900,  # 15 minutes read timeout
+            connect_timeout=60,  # 1 minute connect timeout
+            retries={'max_attempts': 3}  # Retry up to 3 times
+        )
+        
+        bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region, config=config)
+        s3_client = session_aws.client('s3', region_name=profile_region, config=config) if USE_S3_BUCKET else None
+        
+        if DEBUG_MODE:
+            logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
+            logger.info(f"Using region: {profile_region}")
+            logger.info("Configured clients with 15-minute read timeout for large document processing")
+            if USE_S3_BUCKET:
+                logger.info("S3 bucket mode enabled")
+            else:
+                logger.info("Local filesystem mode enabled (--no-bucket)")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize AWS clients: {e}")
+        bedrock_client = None
+        s3_client = None
+        return False
 
-# Create S3 bucket at startup if using S3 mode (after AWS clients are initialized)
-# Skip bucket creation during Flask debug reloader restart
-if USE_S3_BUCKET and not os.environ.get('WERKZEUG_RUN_MAIN'):
-    bucket_created = create_s3_bucket()
-    if not bucket_created:
-        logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
-elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
+def handle_flask_restart_bucket():
+    """Handle S3 bucket name loading during Flask debug restart"""
+    global s3_bucket_name, bucket_name_file, USE_S3_BUCKET
+    
     # During Flask debug restart, find and load the existing bucket name
     temp_dir = tempfile.gettempdir()
     bucket_files = []
@@ -349,6 +352,19 @@ elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
     else:
         logger.warning("Flask debug restart detected but no existing bucket name found")
         USE_S3_BUCKET = False
+
+# Initialize AWS clients
+initialize_aws_clients()
+
+# Handle S3 bucket creation/loading based on Flask startup mode
+if USE_S3_BUCKET and not os.environ.get('WERKZEUG_RUN_MAIN'):
+    # Initial startup - create new bucket
+    bucket_created = create_s3_bucket()
+    if not bucket_created:
+        logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
+elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
+    # Flask debug restart - load existing bucket
+    handle_flask_restart_bucket()
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
