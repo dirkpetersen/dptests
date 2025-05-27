@@ -451,7 +451,7 @@ def get_merged_filename_from_files(file_paths):
             base_name = os.path.splitext(filename)[0]
             # Replace spaces with hyphens and take first 10 characters
             clean_name = base_name.replace(' ', '-')[:10]
-            if clean_name:
+            if clean_name and clean_name not in name_parts:
                 name_parts.append(clean_name)
         
         # Join with hyphens
