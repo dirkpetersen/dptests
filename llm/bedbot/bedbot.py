@@ -55,6 +55,7 @@ session_upload_folders = set()
 
 # S3 bucket for file storage (S3 mode only)
 s3_bucket_name = None
+bucket_name_file = None
 
 # Cleanup flag to prevent duplicate cleanup
 cleanup_performed = False
@@ -66,6 +67,44 @@ def generate_bucket_name():
     """Generate a unique bucket name with random suffix"""
     random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
     return f"bedbot-{random_suffix}"
+
+def save_bucket_name(bucket_name):
+    """Save bucket name to a temporary file"""
+    global bucket_name_file
+    if not bucket_name_file:
+        bucket_name_file = tempfile.NamedTemporaryFile(mode='w', delete=False, prefix='bedbot_bucket_', suffix='.txt')
+        bucket_name_file.write(bucket_name)
+        bucket_name_file.close()
+        logger.info(f"Saved bucket name to: {bucket_name_file.name}")
+
+def load_bucket_name():
+    """Load bucket name from temporary file if it exists"""
+    global bucket_name_file
+    # Look for existing bucket name files
+    temp_dir = tempfile.gettempdir()
+    for filename in os.listdir(temp_dir):
+        if filename.startswith('bedbot_bucket_') and filename.endswith('.txt'):
+            filepath = os.path.join(temp_dir, filename)
+            try:
+                with open(filepath, 'r') as f:
+                    bucket_name = f.read().strip()
+                    if bucket_name:
+                        bucket_name_file = type('obj', (object,), {'name': filepath})()
+                        logger.info(f"Loaded existing bucket name: {bucket_name}")
+                        return bucket_name
+            except Exception as e:
+                logger.error(f"Error reading bucket name file {filepath}: {e}")
+    return None
+
+def cleanup_bucket_name_file():
+    """Clean up the bucket name file"""
+    global bucket_name_file
+    if bucket_name_file and hasattr(bucket_name_file, 'name') and os.path.exists(bucket_name_file.name):
+        try:
+            os.unlink(bucket_name_file.name)
+            logger.info(f"Cleaned up bucket name file: {bucket_name_file.name}")
+        except Exception as e:
+            logger.error(f"Error cleaning up bucket name file: {e}")
 
 def create_s3_bucket():
     """Create S3 bucket for file storage"""
@@ -95,6 +134,9 @@ def create_s3_bucket():
                 'RestrictPublicBuckets': True
             }
         )
+        
+        # Save bucket name for Flask restart
+        save_bucket_name(s3_bucket_name)
         
         logger.info(f"Created S3 bucket: {s3_bucket_name}")
         return True
@@ -154,6 +196,9 @@ def cleanup_resources():
     if USE_S3_BUCKET:
         delete_s3_bucket()
     
+    # Clean up bucket name file
+    cleanup_bucket_name_file()
+    
     # Clean up all session upload folders (local mode only)
     for folder in list(session_upload_folders):
         if os.path.exists(folder):
@@ -209,10 +254,13 @@ if USE_S3_BUCKET and not os.environ.get('WERKZEUG_RUN_MAIN'):
     if not bucket_created:
         logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
 elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
-    # During Flask debug restart, we need to regenerate the bucket name
-    # since the global variable gets reset
-    s3_bucket_name = generate_bucket_name()
-    logger.info(f"Flask debug restart detected - reusing S3 bucket pattern: {s3_bucket_name}")
+    # During Flask debug restart, load the existing bucket name
+    s3_bucket_name = load_bucket_name()
+    if s3_bucket_name:
+        logger.info(f"Flask debug restart detected - reusing existing S3 bucket: {s3_bucket_name}")
+    else:
+        logger.warning("Flask debug restart detected but no existing bucket name found")
+        USE_S3_BUCKET = False
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
