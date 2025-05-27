@@ -176,7 +176,7 @@ def delete_s3_bucket():
         except ClientError as e:
             error_code = e.response['Error']['Code']
             if error_code == '404':
-                logger.info(f"S3 bucket {s3_bucket_name} already deleted or doesn't exist")
+                # Bucket doesn't exist - this is normal, no need to log
                 return
             else:
                 raise e
