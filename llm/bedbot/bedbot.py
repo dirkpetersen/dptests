@@ -167,39 +167,49 @@ def delete_s3_bucket():
     """Delete S3 bucket and all its contents"""
     global s3_bucket_name
     if not USE_S3_BUCKET or not s3_client or not s3_bucket_name:
+        logger.info("Skipping S3 bucket deletion - not using S3 or no bucket name")
         return
     
     try:
+        logger.info(f"Attempting to delete S3 bucket: {s3_bucket_name}")
+        
         # Check if bucket exists first
         try:
             s3_client.head_bucket(Bucket=s3_bucket_name)
+            logger.info(f"S3 bucket {s3_bucket_name} exists, proceeding with deletion")
         except ClientError as e:
             error_code = e.response['Error']['Code']
             if error_code == '404':
-                # Bucket doesn't exist - this is normal, no need to log
+                logger.info(f"S3 bucket {s3_bucket_name} doesn't exist - already deleted")
                 return
             else:
                 raise e
         
         # Delete all objects in bucket
+        logger.info(f"Deleting all objects in bucket {s3_bucket_name}")
         paginator = s3_client.get_paginator('list_objects_v2')
+        object_count = 0
         for page in paginator.paginate(Bucket=s3_bucket_name):
             if 'Contents' in page:
                 objects = [{'Key': obj['Key']} for obj in page['Contents']]
+                object_count += len(objects)
                 s3_client.delete_objects(
                     Bucket=s3_bucket_name,
                     Delete={'Objects': objects}
                 )
         
-        # Delete bucket
-        s3_client.delete_bucket(Bucket=s3_bucket_name)
-        if DEBUG_MODE:
-            logger.info(f"DEBUG: Successfully deleted S3 bucket: {s3_bucket_name}")
+        if object_count > 0:
+            logger.info(f"Deleted {object_count} objects from bucket {s3_bucket_name}")
         else:
-            logger.info(f"Deleted S3 bucket: {s3_bucket_name}")
+            logger.info(f"No objects found in bucket {s3_bucket_name}")
+        
+        # Delete bucket
+        logger.info(f"Deleting empty bucket {s3_bucket_name}")
+        s3_client.delete_bucket(Bucket=s3_bucket_name)
+        logger.info(f"Successfully deleted S3 bucket: {s3_bucket_name}")
         
     except Exception as e:
-        logger.error(f"Failed to delete S3 bucket: {e}")
+        logger.error(f"Failed to delete S3 bucket {s3_bucket_name}: {e}")
 
 # Register cleanup function to remove temp directories and S3 bucket on shutdown
 def cleanup_resources():
@@ -207,17 +217,25 @@ def cleanup_resources():
     
     # Prevent duplicate cleanup
     if cleanup_performed:
+        logger.info("Cleanup already performed, skipping")
         return
     cleanup_performed = True
     
+    logger.info("Starting cleanup process...")
+    
     # Clean up S3 bucket if using S3 mode
     if USE_S3_BUCKET:
+        logger.info("Cleaning up S3 bucket...")
         delete_s3_bucket()
+    else:
+        logger.info("Not using S3 bucket, skipping S3 cleanup")
     
     # Clean up bucket name file
+    logger.info("Cleaning up bucket name file...")
     cleanup_bucket_name_file()
     
     # Clean up all session upload folders (local mode only)
+    logger.info(f"Cleaning up {len(session_upload_folders)} session upload folders...")
     for folder in list(session_upload_folders):
         if os.path.exists(folder):
             shutil.rmtree(folder)
@@ -227,6 +245,8 @@ def cleanup_resources():
     if temp_session_dir and os.path.exists(temp_session_dir):
         shutil.rmtree(temp_session_dir)
         logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
+    
+    logger.info("Cleanup process completed")
 
 atexit.register(cleanup_resources)
 
@@ -1178,7 +1198,9 @@ if __name__ == '__main__':
     try:
         app.run(debug=True, host='0.0.0.0', port=5000)
     except KeyboardInterrupt:
-        logger.info("Application interrupted by user")
+        logger.info("Application interrupted by user (Ctrl+C)")
+        cleanup_resources()
     finally:
+        logger.info("Application shutting down, ensuring cleanup...")
         cleanup_resources()
 
