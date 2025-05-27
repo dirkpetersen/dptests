@@ -203,10 +203,16 @@ except Exception as e:
     s3_client = None
 
 # Create S3 bucket at startup if using S3 mode (after AWS clients are initialized)
-if USE_S3_BUCKET:
+# Skip bucket creation during Flask debug reloader restart
+if USE_S3_BUCKET and not os.environ.get('WERKZEUG_RUN_MAIN'):
     bucket_created = create_s3_bucket()
     if not bucket_created:
         logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
+elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
+    # During Flask debug restart, we need to regenerate the bucket name
+    # since the global variable gets reset
+    s3_bucket_name = generate_bucket_name()
+    logger.info(f"Flask debug restart detected - reusing S3 bucket pattern: {s3_bucket_name}")
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
