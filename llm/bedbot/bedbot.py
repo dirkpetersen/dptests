@@ -191,7 +191,7 @@ try:
     
     logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
     logger.info(f"Using region: {profile_region}")
-    logger.info("Configured clients with 5-minute read timeout for large document processing")
+    logger.info("Configured clients with 15-minute read timeout for large document processing")
     if USE_S3_BUCKET:
         logger.info("S3 bucket mode enabled")
     else:
