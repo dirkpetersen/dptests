@@ -193,7 +193,10 @@ def delete_s3_bucket():
         
         # Delete bucket
         s3_client.delete_bucket(Bucket=s3_bucket_name)
-        logger.info(f"Deleted S3 bucket: {s3_bucket_name}")
+        if DEBUG_MODE:
+            logger.info(f"DEBUG: Successfully deleted S3 bucket: {s3_bucket_name}")
+        else:
+            logger.info(f"Deleted S3 bucket: {s3_bucket_name}")
         
     except Exception as e:
         logger.error(f"Failed to delete S3 bucket: {e}")
