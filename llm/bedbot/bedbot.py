@@ -1,14 +1,6 @@
 #! /usr/bin/env python3
 
-import os
-import json
-import uuid
-import tempfile
-import shutil
-import atexit
-import argparse
-import random
-import string
+import os, json, uuid, tempfile, shutil, atexit, argparse, random, string,  logging, textwrap
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_session import Session
@@ -16,7 +8,6 @@ from werkzeug.utils import secure_filename
 import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
-import logging
 import markdown
 import fitz  # PyMuPDF
 
@@ -28,6 +19,7 @@ logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(description='BedBot - AI Chat Assistant')
 parser.add_argument('--no-bucket', action='store_true', help='Use local filesystem instead of S3 bucket')
 parser.add_argument('--debug', action='store_true', help='Enable debug mode to print API messages')
+parser.add_argument('--model', action='store', help='Bedrock model to use', default='us.amazon.nova-premier-v1:0')
 args = parser.parse_args()
 
 # Configuration
@@ -35,6 +27,7 @@ USE_S3_BUCKET = not args.no_bucket
 DEBUG_MODE = args.debug
 MAX_FILE_SIZE = 4.5 * 1024 * 1024  # 4.5 MB per file
 MAX_FILES_PER_SESSION = 1000
+BEDROCK_MODEL = args.model
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
@@ -269,8 +262,6 @@ def cleanup_resources():
     if DEBUG_MODE:
         logger.info("Cleanup process completed")
 
-atexit.register(cleanup_resources)
-
 def initialize_aws_clients():
     """Initialize AWS clients with proper configuration"""
     global bedrock_client, s3_client, session_aws, profile_region
@@ -352,19 +343,6 @@ def handle_flask_restart_bucket():
     else:
         logger.warning("Flask debug restart detected but no existing bucket name found")
         USE_S3_BUCKET = False
-
-# Initialize AWS clients
-initialize_aws_clients()
-
-# Handle S3 bucket creation/loading based on Flask startup mode
-if USE_S3_BUCKET and not os.environ.get('WERKZEUG_RUN_MAIN'):
-    # Initial startup - create new bucket
-    bucket_created = create_s3_bucket()
-    if not bucket_created:
-        logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
-elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
-    # Flask debug restart - load existing bucket
-    handle_flask_restart_bucket()
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx', 'md', 'json', 'csv'}
@@ -610,23 +588,23 @@ def call_bedrock_nova(prompt, context="", pdf_files=None):
             
             if pdf_files and len(pdf_files) > 1:
                 # When multiple PDFs are provided, give clear instructions for comparison
-                enhanced_prompt = f"""I have provided {total_uploaded_docs} documents for analysis. Please carefully analyze ALL the provided documents and answer the following question:
+                enhanced_prompt = textwrap.dedent(f"""I have provided {total_uploaded_docs} documents for analysis. Please carefully analyze ALL the provided documents and answer the following question:
 
-{prompt}
+                {prompt}
 
-IMPORTANT INSTRUCTIONS:
-- You have access to {total_uploaded_docs} documents - please read and analyze ALL of them
-- Compare and analyze the content across all provided documents
-- If one document contains requirements or criteria, evaluate the other documents against those criteria
-- Provide specific names, examples, and evidence from the documents to support your analysis
-- Be thorough and analytical in your comparison
-- When asked for the option or to compare options presented in different documents, provide specific and detailed comparisons"""
+                IMPORTANT INSTRUCTIONS:
+                - You have access to {total_uploaded_docs} documents - please read and analyze ALL of them
+                - Compare and analyze the content across all provided documents
+                - If one document contains requirements or criteria, evaluate the other documents against those criteria
+                - Provide specific names, examples, and evidence from the documents to support your analysis
+                - Be thorough and analytical in your comparison
+                - When asked for the option or to compare options presented in different documents, provide specific and detailed comparisons""")
             elif pdf_files and len(pdf_files) == 1:
-                enhanced_prompt = f"""I have provided {total_uploaded_docs} document(s) for analysis. Please carefully analyze the provided document(s) and answer the following question:
+                enhanced_prompt = textwrap.dedent(f"""I have provided {total_uploaded_docs} document(s) for analysis. Please carefully analyze the provided document(s) and answer the following question:
 
-{prompt}
+                {prompt}
 
-Please provide specific information and examples from the document(s) to support your response."""
+                Please provide specific information and examples from the document(s) to support your response.""")
             else:
                 enhanced_prompt = prompt
             
@@ -659,7 +637,7 @@ Please provide specific information and examples from the document(s) to support
             logger.info("=== END DEBUG ===")
         
         response = bedrock_client.converse(
-            modelId='us.amazon.nova-premier-v1:0',
+            modelId=BEDROCK_MODEL,
             messages=messages,
             inferenceConfig=inference_config
         )
@@ -1264,6 +1242,22 @@ def remove_file():
         return jsonify({'error': 'Failed to remove file'}), 500
 
 if __name__ == '__main__':
+
+    atexit.register(cleanup_resources)
+
+    # Initialize AWS clients
+    initialize_aws_clients()
+
+    # Handle S3 bucket creation/loading based on Flask startup mode
+    if USE_S3_BUCKET and not os.environ.get('WERKZEUG_RUN_MAIN'):
+        # Initial startup - create new bucket
+        bucket_created = create_s3_bucket()
+        if not bucket_created:
+            logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
+    elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
+        # Flask debug restart - load existing bucket
+        handle_flask_restart_bucket()    
+
     try:
         app.run(debug=True, host='0.0.0.0', port=5000)
     except KeyboardInterrupt:
