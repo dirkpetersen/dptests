@@ -75,7 +75,8 @@ def save_bucket_name(bucket_name):
         bucket_name_file = tempfile.NamedTemporaryFile(mode='w', delete=False, prefix='bedbot_bucket_', suffix='.txt')
         bucket_name_file.write(bucket_name)
         bucket_name_file.close()
-        logger.info(f"Saved bucket name to: {bucket_name_file.name}")
+        if DEBUG_MODE:
+            logger.info(f"Saved bucket name to: {bucket_name_file.name}")
 
 def load_bucket_name():
     """Load bucket name from temporary file if it exists"""
@@ -90,7 +91,8 @@ def load_bucket_name():
                     bucket_name = f.read().strip()
                     if bucket_name:
                         bucket_name_file = type('obj', (object,), {'name': filepath})()
-                        logger.info(f"Loaded existing bucket name: {bucket_name}")
+                        if DEBUG_MODE:
+                            logger.info(f"Loaded existing bucket name: {bucket_name}")
                         return bucket_name
             except Exception as e:
                 logger.error(f"Error reading bucket name file {filepath}: {e}")
@@ -102,7 +104,8 @@ def cleanup_bucket_name_file():
     if bucket_name_file and hasattr(bucket_name_file, 'name') and os.path.exists(bucket_name_file.name):
         try:
             os.unlink(bucket_name_file.name)
-            logger.info(f"Cleaned up bucket name file: {bucket_name_file.name}")
+            if DEBUG_MODE:
+                logger.info(f"Cleaned up bucket name file: {bucket_name_file.name}")
         except Exception as e:
             logger.error(f"Error cleaning up bucket name file: {e}")
 
@@ -153,7 +156,8 @@ def create_s3_bucket():
         # Save bucket name for Flask restart
         save_bucket_name(s3_bucket_name)
         
-        logger.info(f"Created S3 bucket: {s3_bucket_name}")
+        if DEBUG_MODE:
+            logger.info(f"Created S3 bucket: {s3_bucket_name}")
         return True
         
     except Exception as e:
@@ -176,17 +180,20 @@ def delete_s3_bucket():
         # Check if bucket exists first
         try:
             s3_client.head_bucket(Bucket=s3_bucket_name)
-            logger.info(f"S3 bucket {s3_bucket_name} exists, proceeding with deletion")
+            if DEBUG_MODE:
+                logger.info(f"S3 bucket {s3_bucket_name} exists, proceeding with deletion")
         except ClientError as e:
             error_code = e.response['Error']['Code']
             if error_code == '404':
-                logger.info(f"S3 bucket {s3_bucket_name} doesn't exist - already deleted")
+                if DEBUG_MODE:
+                    logger.info(f"S3 bucket {s3_bucket_name} doesn't exist - already deleted")
                 return
             else:
                 raise e
         
         # Delete all objects in bucket
-        logger.info(f"Deleting all objects in bucket {s3_bucket_name}")
+        if DEBUG_MODE:
+            logger.info(f"Deleting all objects in bucket {s3_bucket_name}")
         paginator = s3_client.get_paginator('list_objects_v2')
         object_count = 0
         for page in paginator.paginate(Bucket=s3_bucket_name):
@@ -198,15 +205,18 @@ def delete_s3_bucket():
                     Delete={'Objects': objects}
                 )
         
-        if object_count > 0:
-            logger.info(f"Deleted {object_count} objects from bucket {s3_bucket_name}")
-        else:
-            logger.info(f"No objects found in bucket {s3_bucket_name}")
+        if DEBUG_MODE:
+            if object_count > 0:
+                logger.info(f"Deleted {object_count} objects from bucket {s3_bucket_name}")
+            else:
+                logger.info(f"No objects found in bucket {s3_bucket_name}")
         
         # Delete bucket
-        logger.info(f"Deleting empty bucket {s3_bucket_name}")
+        if DEBUG_MODE:
+            logger.info(f"Deleting empty bucket {s3_bucket_name}")
         s3_client.delete_bucket(Bucket=s3_bucket_name)
-        logger.info(f"Successfully deleted S3 bucket: {s3_bucket_name}")
+        if DEBUG_MODE:
+            logger.info(f"Successfully deleted S3 bucket: {s3_bucket_name}")
         
     except Exception as e:
         logger.error(f"Failed to delete S3 bucket {s3_bucket_name}: {e}")
@@ -217,41 +227,51 @@ def cleanup_resources():
     
     # Only run cleanup in the main process, not in Flask's debug reloader
     if os.environ.get('WERKZEUG_RUN_MAIN'):
-        logger.info("Skipping cleanup in Flask debug reloader process")
+        if DEBUG_MODE:
+            logger.info("Skipping cleanup in Flask debug reloader process")
         return
     
     # Prevent duplicate cleanup
     if cleanup_performed:
-        logger.info("Cleanup already performed, skipping")
+        if DEBUG_MODE:
+            logger.info("Cleanup already performed, skipping")
         return
     cleanup_performed = True
     
-    logger.info("Starting cleanup process...")
+    if DEBUG_MODE:
+        logger.info("Starting cleanup process...")
     
     # Clean up S3 bucket if using S3 mode
     if USE_S3_BUCKET:
-        logger.info("Cleaning up S3 bucket...")
+        if DEBUG_MODE:
+            logger.info("Cleaning up S3 bucket...")
         delete_s3_bucket()
     else:
-        logger.info("Not using S3 bucket, skipping S3 cleanup")
+        if DEBUG_MODE:
+            logger.info("Not using S3 bucket, skipping S3 cleanup")
     
     # Clean up bucket name file
-    logger.info("Cleaning up bucket name file...")
+    if DEBUG_MODE:
+        logger.info("Cleaning up bucket name file...")
     cleanup_bucket_name_file()
     
     # Clean up all session upload folders (local mode only)
-    logger.info(f"Cleaning up {len(session_upload_folders)} session upload folders...")
+    if DEBUG_MODE:
+        logger.info(f"Cleaning up {len(session_upload_folders)} session upload folders...")
     for folder in list(session_upload_folders):
         if os.path.exists(folder):
             shutil.rmtree(folder)
-            logger.info(f"Cleaned up session upload folder: {folder}")
+            if DEBUG_MODE:
+                logger.info(f"Cleaned up session upload folder: {folder}")
     
     # Clean up Flask session directory
     if temp_session_dir and os.path.exists(temp_session_dir):
         shutil.rmtree(temp_session_dir)
-        logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
+        if DEBUG_MODE:
+            logger.info(f"Cleaned up temporary session directory: {temp_session_dir}")
     
-    logger.info("Cleanup process completed")
+    if DEBUG_MODE:
+        logger.info("Cleanup process completed")
 
 atexit.register(cleanup_resources)
 
@@ -277,13 +297,14 @@ try:
     bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region, config=config)
     s3_client = session_aws.client('s3', region_name=profile_region, config=config) if USE_S3_BUCKET else None
     
-    logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
-    logger.info(f"Using region: {profile_region}")
-    logger.info("Configured clients with 15-minute read timeout for large document processing")
-    if USE_S3_BUCKET:
-        logger.info("S3 bucket mode enabled")
-    else:
-        logger.info("Local filesystem mode enabled (--no-bucket)")
+    if DEBUG_MODE:
+        logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
+        logger.info(f"Using region: {profile_region}")
+        logger.info("Configured clients with 15-minute read timeout for large document processing")
+        if USE_S3_BUCKET:
+            logger.info("S3 bucket mode enabled")
+        else:
+            logger.info("Local filesystem mode enabled (--no-bucket)")
         
 except Exception as e:
     logger.error(f"Failed to initialize AWS clients: {e}")
@@ -300,7 +321,8 @@ elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
     # During Flask debug restart, load the existing bucket name
     s3_bucket_name = load_bucket_name()
     if s3_bucket_name:
-        logger.info(f"Flask debug restart detected - reusing existing S3 bucket: {s3_bucket_name}")
+        if DEBUG_MODE:
+            logger.info(f"Flask debug restart detected - reusing existing S3 bucket: {s3_bucket_name}")
     else:
         logger.warning("Flask debug restart detected but no existing bucket name found")
         USE_S3_BUCKET = False
@@ -637,14 +659,16 @@ def get_session_upload_location():
         temp_session_dir = tempfile.mkdtemp(prefix='bedbot_sessions_')
         os.chmod(temp_session_dir, 0o700)  # Only owner can read/write/execute
         app.config['SESSION_FILE_DIR'] = temp_session_dir
-        logger.info(f"Created temporary session directory: {temp_session_dir}")
+        if DEBUG_MODE:
+            logger.info(f"Created temporary session directory: {temp_session_dir}")
     
     if USE_S3_BUCKET:
         # S3 mode - return S3 prefix for this session
         s3_prefix = f"session_{session['session_id']}/"
         session['s3_prefix'] = s3_prefix
         session.modified = True
-        logger.info(f"Using S3 session prefix: {s3_prefix}")
+        if DEBUG_MODE:
+            logger.info(f"Using S3 session prefix: {s3_prefix}")
         return s3_prefix
     else:
         # Local mode - create temporary directory
@@ -658,7 +682,8 @@ def get_session_upload_location():
         session['session_folder'] = session_folder
         session.modified = True
         
-        logger.info(f"Created session upload folder: {session_folder}")
+        if DEBUG_MODE:
+            logger.info(f"Created session upload folder: {session_folder}")
         return session_folder
 
 @app.route('/')
