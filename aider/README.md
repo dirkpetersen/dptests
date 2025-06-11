@@ -170,3 +170,21 @@ If you start your Aider terminal entry with a command such as /ask /undo /or run
 - `/ask`: No code will be changed, Aider will just annwer your questions and give recommendations  
 - `/undo`: Aider will undo the last git commmit (every single Aider code change will result in a git commit using a resonable git commit message)
 - `/run`: will execute a command and parse the output into the Aider terminal  
+
+## Beyond Aider --- Claude Code 
+
+If you will only ever use Claude models you can also use Claude Code as an alternative. Claude Code is a little more automated than Aider and does a great job at scanning and refactoring existing code bases. It seems it uses more tokens than Aider for a similar job. You can use it with AWS Bedrock by providing a `claude` wrapper
+
+```bash
+echo '#! /bin/bash
+
+export CLAUDE_CODE_USE_BEDROCK=1
+export AWS_REGION=us-west-2
+export AWS_PROFILE=mybedrock
+# export DISABLE_PROMPT_CACHING=1
+export ANTHROPIC_MODEL="us.anthropic.claude-sonnet-4-20250514-v1:0"
+export ANTHROPIC_SMALL_FAST_MODEL="us.anthropic.claude-3-5-haiku-20241022-v1:0"
+
+/usr/local/bin/claude --model ${ANTHROPIC_MODEL} $@' > ~/bin/claude
+chmod +x ~/bin/claude
+```
