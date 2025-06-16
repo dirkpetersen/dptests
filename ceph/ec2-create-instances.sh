@@ -59,16 +59,16 @@ fi
 
 
 function discover_or_launch_instances() {
-    echo "Discovering existing instances and launching missing ones up to target count: $NUM_INSTANCES..."
+    echo "Discovering existing instances and launching missing ones up to target count: ${NUM_INSTANCES}..."
     local indices_to_create=() # 0-based indices of instances to create
 
     for i in $(seq 0 $((NUM_INSTANCES - 1))); do
         local host_num=$((i + 1))
         local fqdn="${INSTANCE_NAME}-${host_num}.${DOMAIN}"
         local tag_name="${INSTANCE_NAME}-${host_num}"
-        TARGET_FQDNS[$i]="$fqdn"
+        TARGET_FQDNS[$i]="${fqdn}"
 
-        echo "Checking for existing instance: $tag_name ($fqdn)..."
+        echo "Checking for existing instance: ${tag_name} (${fqdn})..."
         local existing_instance_info
         local aws_cli_output
         local aws_cli_stderr_file
@@ -93,10 +93,10 @@ function discover_or_launch_instances() {
         fi
         rm -f "${aws_cli_stderr_file}"
 
-        if [[ "$existing_instance_info" != "null" && -n "$existing_instance_info" ]]; then
-            TARGET_INSTANCE_IDS[$i]=$(echo "$existing_instance_info" | jq -r '.InstanceId')
-            TARGET_PUBLIC_IPS[$i]=$(echo "$existing_instance_info" | jq -r '.PublicIpAddress // ""')
-            TARGET_INTERNAL_IPS[$i]=$(echo "$existing_instance_info" | jq -r '.PrivateIpAddress // ""')
+        if [[ "${existing_instance_info}" != "null" && -n "${existing_instance_info}" ]]; then
+            TARGET_INSTANCE_IDS[$i]=$(echo "${existing_instance_info}" | jq -r '.InstanceId')
+            TARGET_PUBLIC_IPS[$i]=$(echo "${existing_instance_info}" | jq -r '.PublicIpAddress // ""')
+            TARGET_INTERNAL_IPS[$i]=$(echo "${existing_instance_info}" | jq -r '.PrivateIpAddress // ""')
             IS_INSTANCE_NEW[$i]=false
             echo "Found existing instance ${tag_name} (ID: ${TARGET_INSTANCE_IDS[$i]})."
         else
@@ -169,12 +169,12 @@ function discover_or_launch_instances() {
 
     local num_to_launch=${#indices_to_create[@]}
     if [[ $num_to_launch -gt 0 ]]; then
-        echo "Need to launch $num_to_launch new instance(s)."
+        echo "Need to launch ${num_to_launch} new instance(s)."
 
         local userdata_param=""
-        if [[ -f "$CLOUD_INIT_FILE" ]]; then
+        if [[ -f "${CLOUD_INIT_FILE}" ]]; then
             userdata_param="--user-data file://${CLOUD_INIT_FILE}"
-            echo "Using cloud-init script from $CLOUD_INIT_FILE for new instances."
+            echo "Using cloud-init script from ${CLOUD_INIT_FILE} for new instances."
         fi
 
         local blk_dev_json="["
@@ -333,251 +333,13 @@ function prepare_new_nodes() {
     echo "All new nodes prepared successfully."
 }
 
-function configure_ceph_nodes() {
-    if [[ $NUM_INSTANCES -eq 0 ]]; then
-        echo "No target instances to configure for Ceph."
-        return
-    fi
-
-    local key_source_node_ip=""
-    local key_source_node_fqdn_display="" # For logging
-    local temp_ceph_pub_key_local="/tmp/ceph_cluster_key_$(date +%s%N).pub" # Unique temp file on control machine
-    
-    # The first instance (index 0) is always the MON/bootstrap/key source node.
-    local mon_node_index=0
-    key_source_node_ip="${TARGET_PUBLIC_IPS[$mon_node_index]}"
-    key_source_node_fqdn_display="${TARGET_FQDNS[$mon_node_index]}"
-
-    if [[ -z "$key_source_node_ip" || "$key_source_node_ip" == "null" ]]; then
-        echo "Error: MON node ${key_source_node_fqdn_display} does not have a public IP. Cannot proceed with Ceph configuration."
-        return 1
-    fi
-
-    if [[ "${IS_INSTANCE_NEW[$mon_node_index]}" == true ]]; then
-        echo "MON node ${key_source_node_fqdn_display} is newly created. Bootstrapping Ceph..."
-
-        echo "Copying ./ceph-bootstrap.sh to ${EC2_USER}@${key_source_node_ip}:/tmp/ceph-bootstrap.sh..."
-        scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            ./ceph-bootstrap.sh "${EC2_USER}@${key_source_node_ip}:/tmp/ceph-bootstrap.sh"
-        if [[ $? -ne 0 ]]; then
-            echo "Error: Failed to copy ceph-bootstrap.sh to $key_source_node_fqdn_display. Aborting Ceph configuration."
-            return 1
-        fi
-
-        # Wait for podman to be installed by cloud-init
-        echo "Waiting for podman to be available on ${key_source_node_fqdn_display} (installed by cloud-init)..."
-        local podman_check_attempts=30 # Approx 5 minutes (30 * 10s)
-        local podman_check_count=0
-        while ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${key_source_node_ip}" "command -v podman" >/dev/null 2>&1; do
-            podman_check_count=$((podman_check_count + 1))
-            if [[ $podman_check_count -ge $podman_check_attempts ]]; then
-                echo "Error: podman did not become available on ${key_source_node_fqdn_display} after ${podman_check_attempts} attempts."
-                return 1
-            fi
-            echo "podman not yet available, waiting 10s... (Attempt ${podman_check_count}/${podman_check_attempts})"
-            sleep 10
-        done
-        echo "podman is available on ${key_source_node_fqdn_display}."
-
-        echo "Running ceph-bootstrap.sh on $key_source_node_fqdn_display..."
-        ssh -A -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${key_source_node_ip}" \
-            "sudo bash /tmp/ceph-bootstrap.sh"
-        if [[ $? -ne 0 ]]; then
-            echo "Error: Failed to execute ceph-bootstrap.sh on $key_source_node_fqdn_display. Aborting Ceph configuration."
-            # Attempt to clean up bootstrap script on failure
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${key_source_node_ip}" "rm -f /tmp/ceph-bootstrap.sh"
-            return 1
-        fi
-    else
-        echo "MON node ${key_source_node_fqdn_display} already exists. Using it as key source for Ceph public key."
-    fi
-
-    # === Fetch Ceph Public Key from MON node ===
-    echo "Fetching Ceph public key from $key_source_node_fqdn_display ($key_source_node_ip)..."
-
-    # Prepare Ceph public key on the key_source_node (copy to /tmp, chown, chmod)
-    # This requires SSH access to key_source_node_ip using EC2_KEY_FILE (or appropriate auth for existing admin)
-    echo "Preparing Ceph public key on $key_source_node_fqdn_display..."
-    local prep_key_cmd="sudo cp /etc/ceph/ceph.pub /tmp/ceph.pub && sudo chown ${EC2_USER}:${EC2_USER} /tmp/ceph.pub && sudo chmod 644 /tmp/ceph.pub"
-    ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        "${EC2_USER}@${key_source_node_ip}" "${prep_key_cmd}"
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Failed to prepare Ceph public key on $key_source_node_fqdn_display (/tmp/ceph.pub). Aborting key distribution."
-        if [[ "${IS_INSTANCE_NEW[$mon_node_index]}" == true ]]; then # If MON was new, cleanup bootstrap script
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${TARGET_PUBLIC_IPS[$mon_node_index]}" "rm -f /tmp/ceph-bootstrap.sh"
-        fi
-        return 1
-    fi
-
-    # Copy Ceph public key from the key_source_node to the control machine
-    echo "Fetching Ceph public key from $key_source_node_fqdn_display to control machine..."
-    scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        "${EC2_USER}@${key_source_node_ip}:/tmp/ceph.pub" "${temp_ceph_pub_key_local}"
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Failed to copy Ceph public key from $key_source_node_fqdn_display to control machine. Aborting key distribution."
-        # Cleanup on key_source_node and potentially bootstrap script
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${key_source_node_ip}" "rm -f /tmp/ceph.pub"
-        if [[ "${IS_INSTANCE_NEW[$mon_node_index]}" == true ]]; then
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${TARGET_PUBLIC_IPS[$mon_node_index]}" "rm -f /tmp/ceph-bootstrap.sh"
-        fi
-        return 1
-    fi
-
-    # Clean up /tmp/ceph.pub on the key_source_node as it's now on the control machine
-    ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        "${EC2_USER}@${key_source_node_ip}" "rm -f /tmp/ceph.pub"
-
-    # Distribute Ceph public key to ALL target nodes (including MON itself, ssh-copy-id is idempotent)
-    # This ensures all nodes (new or existing that are part of the target count) have the MON's Ceph key.
-    if [[ $NUM_INSTANCES -gt 0 ]]; then
-        echo "Distributing Ceph public key from ${key_source_node_fqdn_display} to all ${NUM_INSTANCES} target nodes..."
-        for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-            local target_public_ip="${TARGET_PUBLIC_IPS[$i]}"
-            local target_fqdn_display="${TARGET_FQDNS[$i]}"
-
-            if [[ -z "$target_public_ip" || "$target_public_ip" == "null" ]]; then
-                echo "Warning: Skipping key distribution to ${target_fqdn_display} as its public IP is not available."
-                continue
-            fi
-            # Skip distributing key to the MON node itself if it was the source and already exists (no need to ssh-copy-id to self)
-            # However, ssh-copy-id to self is harmless and ensures the key is there if somehow removed.
-            # For simplicity and robustness, we'll attempt to copy to all, including the MON.
-            echo "Distributing Ceph public key to ${target_fqdn_display} (${target_public_ip})..."
-            
-            # First copy the key to the rocky user, then move it to root's authorized_keys
-            # This is needed because we can't SSH directly as root, but Ceph needs root access
-            local temp_key_name="ceph_cluster_key_$(date +%s%N).pub"
-            
-            # Copy key to rocky user's home directory
-            if scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${temp_ceph_pub_key_local}" "${EC2_USER}@${target_public_ip}:/tmp/${temp_key_name}"; then
-                
-                # Install the key for root user via sudo
-                if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                    "${EC2_USER}@${target_public_ip}" \
-                    "sudo mkdir -p /root/.ssh && sudo chmod 700 /root/.ssh && sudo cat /tmp/${temp_key_name} | sudo tee -a /root/.ssh/authorized_keys >/dev/null && sudo chmod 600 /root/.ssh/authorized_keys && sudo rm -f /tmp/${temp_key_name}"; then
-                    echo "Successfully copied Ceph public key to root@${target_fqdn_display} (${target_public_ip})."
-                else
-                    echo "Warning: Failed to install Ceph public key for root user on ${target_fqdn_display} (${target_public_ip})."
-                fi
-            else
-                echo "Warning: Failed to copy Ceph public key to ${target_fqdn_display} (${target_public_ip})."
-            fi
-        done
-    else
-        echo "No nodes to distribute Ceph public key to."
-    fi
-    
-    # Add additional new nodes to the Ceph cluster via orchestrator
-    if [[ $NUM_INSTANCES -gt 1 ]]; then
-        echo "Adding additional nodes to Ceph cluster via orchestrator..."
-        
-        for i in $(seq 1 $((NUM_INSTANCES - 1))); do  # Start from 1, skip MON node at index 0
-            if [[ "${IS_INSTANCE_NEW[$i]}" == true ]]; then  # Only add new nodes
-                local target_internal_ip="${TARGET_INTERNAL_IPS[$i]}"
-                local target_fqdn="${TARGET_FQDNS[$i]}"
-                local target_short_hostname="${target_fqdn%%.*}"
-                
-                if [[ -z "$target_internal_ip" || "$target_internal_ip" == "null" ]]; then
-                    echo "Warning: Skipping ${target_fqdn} as its internal IP is not available."
-                    continue
-                fi
-                
-                echo "Adding node ${target_fqdn} (${target_internal_ip}) to Ceph cluster..."
-                
-                # Wait for podman to be installed by cloud-init
-                echo "Waiting for podman installation on ${target_fqdn}..."
-                local podman_attempts=30  # Up to 5 minutes (30 * 10s)
-                local podman_count=0
-                while ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                        "${EC2_USER}@${TARGET_PUBLIC_IPS[$i]}" \
-                        "test -f /usr/bin/podman" 2>/dev/null; do
-                    podman_count=$((podman_count + 1))
-                    if [[ $podman_count -ge $podman_attempts ]]; then
-                        echo "Warning: podman not installed on ${target_fqdn} after ${podman_attempts} attempts. Skipping this node."
-                        continue 2  # Continue to next iteration of outer loop
-                    fi
-                    echo "podman not yet installed on ${target_fqdn}, waiting 10s... (${podman_count}/${podman_attempts})"
-                    sleep 10
-                done
-                
-                echo "podman found on ${target_fqdn}, waiting additional 10 seconds for setup completion..."
-                sleep 10
-                
-                # Verify required packages are installed
-                echo "Verifying required packages (podman, lvm2) are installed on ${target_fqdn}..."
-                if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                    "${EC2_USER}@${TARGET_PUBLIC_IPS[$i]}" \
-                    "command -v podman >/dev/null && command -v lvcreate >/dev/null"; then
-                    echo "Required packages verified on ${target_fqdn}."
-                else
-                    echo "Warning: Required packages not yet available on ${target_fqdn}. Skipping this node."
-                    continue
-                fi
-                
-                # Note: SSH key has been installed for root@target_fqdn
-                # The cephadm orchestrator will verify SSH connectivity during host addition
-                echo "Ceph public key has been installed for root@${target_fqdn}"
-                
-                # First, check and configure the SSH user for orchestrator if needed
-                echo "Ensuring orchestrator is configured to use root for SSH..."
-                ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                    "${EC2_USER}@${key_source_node_ip}" \
-                    "sudo /usr/local/bin/cephadm shell -- ceph cephadm set-user root" || echo "SSH user config may already be set"
-                
-                # Add host to Ceph cluster via orchestrator on MON node (must run as root)
-                ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                    "${EC2_USER}@${key_source_node_ip}" \
-                    "sudo /usr/local/bin/cephadm shell -- ceph orch host add '${target_short_hostname}' '${target_internal_ip}'"
-                
-                if [[ $? -eq 0 ]]; then
-                    echo "Successfully added ${target_fqdn} to Ceph cluster."
-                    
-                    # Wait a moment for the host to be recognized
-                    sleep 10
-                    
-                    # Create OSDs on the new host via orchestrator
-                    echo "Creating OSDs on ${target_fqdn} via orchestrator..."
-                    ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                        "${EC2_USER}@${key_source_node_ip}" \
-                        "sudo /usr/local/bin/cephadm shell -- ceph orch apply osd --all-available-devices"
-                    
-                    if [[ $? -eq 0 ]]; then
-                        echo "Successfully triggered OSD creation on ${target_fqdn}."
-                    else
-                        echo "Warning: Failed to create OSDs on ${target_fqdn} via orchestrator."
-                    fi
-                else
-                    echo "Warning: Failed to add ${target_fqdn} to Ceph cluster."
-                fi
-            else
-                echo "Node ${TARGET_FQDNS[$i]} already exists, skipping addition to cluster."
-            fi
-        done
-    fi
-
-    # Final Cleanup
-    rm -f "${temp_ceph_pub_key_local}" # Remove temp key from control machine
-    if [[ "${IS_INSTANCE_NEW[$mon_node_index]}" == true ]]; then # If MON was new, cleanup bootstrap script
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${TARGET_PUBLIC_IPS[$mon_node_index]}" "rm -f /tmp/ceph-bootstrap.sh"
-    fi
-    echo "Ceph node configuration process complete."
-}
-
 function wait_for_instance() {
   # This function now populates TARGET_PUBLIC_IPS and TARGET_INTERNAL_IPS for all instances in TARGET_INSTANCE_IDS
   echo "Waiting for instances to be ready..."
   local max_attempts=30
   local attempt=0
   
-  while [ $attempt -lt $max_attempts ]; do
+  while [[ ${attempt} -lt ${max_attempts} ]]; do
       all_ready=true
       for i in $(seq 0 $((NUM_INSTANCES - 1))); do
           local instance_id=${TARGET_INSTANCE_IDS[$i]}
@@ -639,7 +401,7 @@ function wait_for_instance() {
       max_ssh_attempts=30
       ssh_attempt=0
       sshout=$(mktemp -t ec2-XXX)
-      while [ $ssh_attempt -lt $max_ssh_attempts ]; do
+      while [[ ${ssh_attempt} -lt ${max_ssh_attempts} ]]; do
           if ssh -i "${EC2_KEY_FILE}" -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${EC2_USER}@${public_ip} exit 2>${sshout}; then
               echo "SSH is available on $public_ip"
               break
@@ -657,10 +419,54 @@ function wait_for_instance() {
   done
 }
 
+function bootstrap_nodes() {
+    if [[ $NUM_INSTANCES -eq 0 ]]; then
+        echo "No instances to bootstrap."
+        return
+    fi
+    
+    echo "Bootstrapping all ${NUM_INSTANCES} nodes with bootstrap-node.sh..."
+    
+    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+        local target_public_ip="${TARGET_PUBLIC_IPS[$i]}"
+        local target_fqdn="${TARGET_FQDNS[$i]}"
+        
+        if [[ -z "${target_public_ip}" || "${target_public_ip}" == "null" ]]; then
+            echo "Warning: Skipping ${target_fqdn} as its public IP is not available."
+            continue
+        fi
+        
+        echo "Uploading and executing bootstrap-node.sh on ${target_fqdn}..."
+        
+        # Copy bootstrap script to the node
+        if ! scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            ./bootstrap-node.sh "${EC2_USER}@${target_public_ip}:/tmp/bootstrap-node.sh"; then
+            echo "Error: Failed to copy bootstrap-node.sh to ${target_fqdn}. Skipping this node."
+            continue
+        fi
+        
+        # Execute bootstrap script on the node
+        echo "Executing bootstrap-node.sh on ${target_fqdn}..."
+        if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${target_public_ip}" "sudo HDDS_PER_SSD=${HDDS_PER_SSD:-6} bash /tmp/bootstrap-node.sh"; then
+            echo "Error: Failed to execute bootstrap-node.sh on ${target_fqdn}."
+            continue
+        fi
+        
+        # Clean up bootstrap script
+        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${target_public_ip}" "rm -f /tmp/bootstrap-node.sh"
+        
+        echo "Successfully bootstrapped ${target_fqdn}."
+    done
+    
+    echo "Node bootstrapping complete."
+}
+
 # Attempt to retrieve AWS identity information
 identity_info=$(aws sts get-caller-identity --query '[Account, Arn]' --output text 2>/dev/null)
 # Check if the command succeeded
-if [ $? -ne 0 ]; then
+if [[ $? -ne 0 ]]; then
     echo "Error: AWS CLI is not authenticated. Executing 'aws sso login --no-browser' or set up your credentials."
     aws sso login --no-browser
     exit 1
@@ -679,7 +485,7 @@ wait_for_instance
 prepare_new_nodes
 add_disks
 register_dns
-configure_ceph_nodes
+bootstrap_nodes
 
 echo -e "\nInstances created on ${EC2_TYPE} with AMI ${AMI_IMAGE}"
 
