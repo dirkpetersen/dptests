@@ -1,6 +1,6 @@
 #cloud-config
 packages:
-  - podman
   - lvm2
+  - podman
 package_update: true
 package_upgrade: false

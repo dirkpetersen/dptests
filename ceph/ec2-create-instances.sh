@@ -55,7 +55,7 @@ fi
 : "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
 : "${EBS_TYPE:="st1"}"
 : "${EBS_SIZE:="125"}"
-: "${EBS_QTY:="2"}" #: "normally 6"
+: "${EBS_QTY:="7"}" #: "normally 6"
 
 
 function discover_or_launch_instances() {
@@ -450,25 +450,118 @@ function configure_ceph_nodes() {
             # For simplicity and robustness, we'll attempt to copy to all, including the MON.
             echo "Distributing Ceph public key to ${target_fqdn_display} (${target_public_ip})..."
             
-            # ssh-copy-id from control machine directly to target_public_ip
-            # EC2_KEY_FILE is used for authentication.
-            local ssh_options_for_copy_id=(
-                "-o" "StrictHostKeyChecking=no"
-                "-o" "UserKnownHostsFile=/dev/null"
-                "-o" "IdentityFile=${EC2_KEY_FILE}"
-                "-o" "ConnectTimeout=10"
-            )
-
-            if ssh-copy-id -f -i "${temp_ceph_pub_key_local}" "${ssh_options_for_copy_id[@]}" "${EC2_USER}@${target_public_ip}"; then
-                echo "Successfully copied Ceph public key to ${target_fqdn_display} (${target_public_ip})."
+            # First copy the key to the rocky user, then move it to root's authorized_keys
+            # This is needed because we can't SSH directly as root, but Ceph needs root access
+            local temp_key_name="ceph_cluster_key_$(date +%s%N).pub"
+            
+            # Copy key to rocky user's home directory
+            if scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${temp_ceph_pub_key_local}" "${EC2_USER}@${target_public_ip}:/tmp/${temp_key_name}"; then
+                
+                # Install the key for root user via sudo
+                if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                    "${EC2_USER}@${target_public_ip}" \
+                    "sudo mkdir -p /root/.ssh && sudo chmod 700 /root/.ssh && sudo cat /tmp/${temp_key_name} | sudo tee -a /root/.ssh/authorized_keys >/dev/null && sudo chmod 600 /root/.ssh/authorized_keys && sudo rm -f /tmp/${temp_key_name}"; then
+                    echo "Successfully copied Ceph public key to root@${target_fqdn_display} (${target_public_ip})."
+                else
+                    echo "Warning: Failed to install Ceph public key for root user on ${target_fqdn_display} (${target_public_ip})."
+                fi
             else
-                echo "Warning: Failed to copy Ceph public key to ${target_fqdn_display} (${target_public_ip}). Exit status: $?"
+                echo "Warning: Failed to copy Ceph public key to ${target_fqdn_display} (${target_public_ip})."
             fi
         done
     else
         echo "No nodes to distribute Ceph public key to."
     fi
     
+    # Add additional new nodes to the Ceph cluster via orchestrator
+    if [[ $NUM_INSTANCES -gt 1 ]]; then
+        echo "Adding additional nodes to Ceph cluster via orchestrator..."
+        
+        for i in $(seq 1 $((NUM_INSTANCES - 1))); do  # Start from 1, skip MON node at index 0
+            if [[ "${IS_INSTANCE_NEW[$i]}" == true ]]; then  # Only add new nodes
+                local target_internal_ip="${TARGET_INTERNAL_IPS[$i]}"
+                local target_fqdn="${TARGET_FQDNS[$i]}"
+                local target_short_hostname="${target_fqdn%%.*}"
+                
+                if [[ -z "$target_internal_ip" || "$target_internal_ip" == "null" ]]; then
+                    echo "Warning: Skipping ${target_fqdn} as its internal IP is not available."
+                    continue
+                fi
+                
+                echo "Adding node ${target_fqdn} (${target_internal_ip}) to Ceph cluster..."
+                
+                # Wait for podman to be installed by cloud-init
+                echo "Waiting for podman installation on ${target_fqdn}..."
+                local podman_attempts=30  # Up to 5 minutes (30 * 10s)
+                local podman_count=0
+                while ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                        "${EC2_USER}@${TARGET_PUBLIC_IPS[$i]}" \
+                        "test -f /usr/bin/podman" 2>/dev/null; do
+                    podman_count=$((podman_count + 1))
+                    if [[ $podman_count -ge $podman_attempts ]]; then
+                        echo "Warning: podman not installed on ${target_fqdn} after ${podman_attempts} attempts. Skipping this node."
+                        continue 2  # Continue to next iteration of outer loop
+                    fi
+                    echo "podman not yet installed on ${target_fqdn}, waiting 10s... (${podman_count}/${podman_attempts})"
+                    sleep 10
+                done
+                
+                echo "podman found on ${target_fqdn}, waiting additional 10 seconds for setup completion..."
+                sleep 10
+                
+                # Verify required packages are installed
+                echo "Verifying required packages (podman, lvm2) are installed on ${target_fqdn}..."
+                if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                    "${EC2_USER}@${TARGET_PUBLIC_IPS[$i]}" \
+                    "command -v podman >/dev/null && command -v lvcreate >/dev/null"; then
+                    echo "Required packages verified on ${target_fqdn}."
+                else
+                    echo "Warning: Required packages not yet available on ${target_fqdn}. Skipping this node."
+                    continue
+                fi
+                
+                # Note: SSH key has been installed for root@target_fqdn
+                # The cephadm orchestrator will verify SSH connectivity during host addition
+                echo "Ceph public key has been installed for root@${target_fqdn}"
+                
+                # First, check and configure the SSH user for orchestrator if needed
+                echo "Ensuring orchestrator is configured to use root for SSH..."
+                ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                    "${EC2_USER}@${key_source_node_ip}" \
+                    "sudo /usr/local/bin/cephadm shell -- ceph cephadm set-user root" || echo "SSH user config may already be set"
+                
+                # Add host to Ceph cluster via orchestrator on MON node (must run as root)
+                ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                    "${EC2_USER}@${key_source_node_ip}" \
+                    "sudo /usr/local/bin/cephadm shell -- ceph orch host add '${target_short_hostname}' '${target_internal_ip}'"
+                
+                if [[ $? -eq 0 ]]; then
+                    echo "Successfully added ${target_fqdn} to Ceph cluster."
+                    
+                    # Wait a moment for the host to be recognized
+                    sleep 10
+                    
+                    # Create OSDs on the new host via orchestrator
+                    echo "Creating OSDs on ${target_fqdn} via orchestrator..."
+                    ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                        "${EC2_USER}@${key_source_node_ip}" \
+                        "sudo /usr/local/bin/cephadm shell -- ceph orch apply osd --all-available-devices"
+                    
+                    if [[ $? -eq 0 ]]; then
+                        echo "Successfully triggered OSD creation on ${target_fqdn}."
+                    else
+                        echo "Warning: Failed to create OSDs on ${target_fqdn} via orchestrator."
+                    fi
+                else
+                    echo "Warning: Failed to add ${target_fqdn} to Ceph cluster."
+                fi
+            else
+                echo "Node ${TARGET_FQDNS[$i]} already exists, skipping addition to cluster."
+            fi
+        done
+    fi
+
     # Final Cleanup
     rm -f "${temp_ceph_pub_key_local}" # Remove temp key from control machine
     if [[ "${IS_INSTANCE_NEW[$mon_node_index]}" == true ]]; then # If MON was new, cleanup bootstrap script
