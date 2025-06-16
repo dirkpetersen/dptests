@@ -425,18 +425,77 @@ function bootstrap_nodes() {
         return
     fi
     
-    echo "Bootstrapping all ${NUM_INSTANCES} nodes with bootstrap-node.sh..."
+    echo "Bootstrapping ${NUM_INSTANCES} nodes with bootstrap-node.sh..."
     
-    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+    # Bootstrap the first node (index 0) as the MON node
+    local first_node_index=0
+    local first_node_public_ip="${TARGET_PUBLIC_IPS[$first_node_index]}"
+    local first_node_fqdn="${TARGET_FQDNS[$first_node_index]}"
+    local first_node_internal_ip="${TARGET_INTERNAL_IPS[$first_node_index]}"
+    
+    if [[ -z "${first_node_public_ip}" || "${first_node_public_ip}" == "null" ]]; then
+        echo "Error: First node ${first_node_fqdn} has no public IP. Cannot proceed."
+        return 1
+    fi
+    
+    echo "=== Bootstrapping first node: ${first_node_fqdn} ==="
+    
+    # Copy bootstrap script to the first node
+    if ! scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        ./bootstrap-node.sh "${EC2_USER}@${first_node_public_ip}:/tmp/bootstrap-node.sh"; then
+        echo "Error: Failed to copy bootstrap-node.sh to ${first_node_fqdn}."
+        return 1
+    fi
+    
+    # Execute bootstrap script on the first node with 'first' argument
+    echo "Executing bootstrap-node.sh first on ${first_node_fqdn}..."
+    if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        "${EC2_USER}@${first_node_public_ip}" "sudo HDDS_PER_SSD=${HDDS_PER_SSD:-6} bash /tmp/bootstrap-node.sh first"; then
+        echo "Error: Failed to bootstrap first node ${first_node_fqdn}."
+        return 1
+    fi
+    
+    echo "First node ${first_node_fqdn} bootstrapped successfully."
+    
+    # Wait for Ceph SSH key to be generated
+    echo "Waiting for Ceph SSH key to be available on ${first_node_fqdn}..."
+    local ssh_key_attempts=30
+    local ssh_key_count=0
+    while ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        "${EC2_USER}@${first_node_public_ip}" "sudo test -f /etc/ceph/ceph.pub" 2>/dev/null; do
+        ssh_key_count=$((ssh_key_count + 1))
+        if [[ ${ssh_key_count} -ge ${ssh_key_attempts} ]]; then
+            echo "Error: Ceph SSH key did not become available after ${ssh_key_attempts} attempts."
+            return 1
+        fi
+        echo "Ceph SSH key not yet available, waiting 10s... (Attempt ${ssh_key_count}/${ssh_key_attempts})"
+        sleep 10
+    done
+    echo "Ceph SSH key is available on ${first_node_fqdn}."
+    
+    # If there's only one node, we're done
+    if [[ $NUM_INSTANCES -eq 1 ]]; then
+        # Clean up bootstrap script
+        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${first_node_public_ip}" "rm -f /tmp/bootstrap-node.sh"
+        echo "Single node cluster bootstrap complete."
+        return 0
+    fi
+    
+    echo "=== Preparing additional nodes for cluster joining ==="
+    
+    # Prepare other nodes (they will be added to cluster via orchestrator)
+    for i in $(seq 1 $((NUM_INSTANCES - 1))); do
         local target_public_ip="${TARGET_PUBLIC_IPS[$i]}"
         local target_fqdn="${TARGET_FQDNS[$i]}"
+        local target_internal_ip="${TARGET_INTERNAL_IPS[$i]}"
         
         if [[ -z "${target_public_ip}" || "${target_public_ip}" == "null" ]]; then
             echo "Warning: Skipping ${target_fqdn} as its public IP is not available."
             continue
         fi
         
-        echo "Uploading and executing bootstrap-node.sh on ${target_fqdn}..."
+        echo "Running bootstrap-node.sh on ${target_fqdn} (existing or new instance)..."
         
         # Copy bootstrap script to the node
         if ! scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
@@ -445,22 +504,72 @@ function bootstrap_nodes() {
             continue
         fi
         
-        # Execute bootstrap script on the node
-        echo "Executing bootstrap-node.sh on ${target_fqdn}..."
+        # Execute bootstrap script with 'others' argument (always run, even for existing instances)
+        echo "Executing bootstrap-node.sh others on ${target_fqdn}..."
         if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${target_public_ip}" "sudo HDDS_PER_SSD=${HDDS_PER_SSD:-6} bash /tmp/bootstrap-node.sh"; then
+            "${EC2_USER}@${target_public_ip}" "sudo HDDS_PER_SSD=${HDDS_PER_SSD:-6} bash /tmp/bootstrap-node.sh others"; then
             echo "Error: Failed to execute bootstrap-node.sh on ${target_fqdn}."
             continue
         fi
         
-        # Clean up bootstrap script
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${target_public_ip}" "rm -f /tmp/bootstrap-node.sh"
-        
-        echo "Successfully bootstrapped ${target_fqdn}."
+        echo "Bootstrap-node.sh completed on ${target_fqdn}."
     done
     
-    echo "Node bootstrapping complete."
+    echo "=== Adding nodes to Ceph cluster via orchestrator ==="
+    
+    # Copy Ceph public key to all additional nodes and add them to cluster
+    for i in $(seq 1 $((NUM_INSTANCES - 1))); do
+        local target_public_ip="${TARGET_PUBLIC_IPS[$i]}"
+        local target_fqdn="${TARGET_FQDNS[$i]}"
+        local target_internal_ip="${TARGET_INTERNAL_IPS[$i]}"
+        local target_hostname="${target_fqdn%%.*}"  # Extract short hostname
+        
+        if [[ -z "${target_public_ip}" || "${target_public_ip}" == "null" ]]; then
+            echo "Warning: Skipping ${target_fqdn} as its public IP is not available."
+            continue
+        fi
+        
+        echo "Adding ${target_fqdn} to Ceph cluster..."
+        
+        # Copy Ceph public key from first node to this node
+        echo "Copying Ceph SSH public key to ${target_fqdn}..."
+        if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${first_node_public_ip}" \
+            "sudo /usr/local/bin/cephadm shell -- ssh-copy-id -f -i /etc/ceph/ceph.pub root@${target_internal_ip}"; then
+            echo "Warning: Failed to copy SSH key to ${target_fqdn}. Trying manual approach..."
+            
+            # Manual SSH key distribution as fallback
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${first_node_public_ip}" "sudo cat /etc/ceph/ceph.pub" | \
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${target_public_ip}" \
+                "sudo mkdir -p /root/.ssh && sudo chmod 700 /root/.ssh && sudo tee -a /root/.ssh/authorized_keys >/dev/null && sudo chmod 600 /root/.ssh/authorized_keys"
+        fi
+        
+        # Add the host to the Ceph cluster
+        echo "Adding host ${target_hostname} (${target_internal_ip}) to Ceph cluster..."
+        if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${EC2_USER}@${first_node_public_ip}" \
+            "sudo /usr/local/bin/cephadm shell -- ceph orch host add ${target_hostname} ${target_internal_ip}"; then
+            echo "Successfully added ${target_fqdn} to Ceph cluster."
+        else
+            echo "Warning: Failed to add ${target_fqdn} to cluster. Manual addition may be required."
+            echo "Run on first node: ceph orch host add ${target_hostname} ${target_internal_ip}"
+        fi
+    done
+    
+    # Clean up bootstrap scripts on all nodes
+    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+        local target_public_ip="${TARGET_PUBLIC_IPS[$i]}"
+        if [[ -n "${target_public_ip}" && "${target_public_ip}" != "null" ]]; then
+            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "${EC2_USER}@${target_public_ip}" "rm -f /tmp/bootstrap-node.sh" 2>/dev/null || true
+        fi
+    done
+    
+    echo "=== OSD creation handled by bootstrap-node.sh on each node ==="
+    
+    echo "Multi-node Ceph cluster deployment complete."
 }
 
 # Attempt to retrieve AWS identity information

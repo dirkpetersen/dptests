@@ -6,7 +6,17 @@ CEPH_RELEASE=19.2.2  # replace this with the active release
 # Configuration: Number of HDDs that should share one SSD for DB
 : "${HDDS_PER_SSD:=6}"
 
-# No arguments needed - script auto-detects what to do
+# Accept mode as first argument: 'first' or 'others'
+MODE="$1"
+
+if [[ "$MODE" != "first" && "$MODE" != "others" ]]; then
+    echo "Usage: $0 {first|others}"
+    echo "  first  - Bootstrap the first node (MON node) of a new Ceph cluster"
+    echo "  others - Join an existing Ceph cluster as an additional node"
+    exit 1
+fi
+
+echo "Running in '$MODE' mode..."
 
 curl -o /usr/local/bin/cephadm https://download.ceph.com/rpm-${CEPH_RELEASE}/el9/noarch/cephadm
 chmod +x /usr/local/bin/cephadm
@@ -50,65 +60,85 @@ echo "Reloading udev rules..."
 udevadm control --reload-rules
 udevadm trigger
 
-# Auto-detect what to do based on cluster state
-echo "Auto-detecting cluster state..."
-
-# Check if this node already has Ceph installed
-if [[ -f /etc/ceph/ceph.conf ]]; then
-    echo "Ceph already configured on this node"
+# Handle different modes
+if [[ "$MODE" == "first" ]]; then
+    echo "First node mode: Bootstrapping new Ceph cluster..."
     
-    # Check if OSDs already exist on this node
-    existing_osds=$(ls /var/lib/ceph/osd/ 2>/dev/null | wc -l)
-    if [[ ${existing_osds} -gt 0 ]]; then
-        echo "Found ${existing_osds} existing OSDs on this node. Nothing to do."
-        echo "Ceph cluster status:"
-        /usr/local/bin/cephadm shell -- ceph -s 2>/dev/null || echo "Could not get cluster status"
-        exit 0
-    else
-        echo "No OSDs found - will create OSDs only"
-        SKIP_BOOTSTRAP=true
-        SKIP_OSD_CREATION=false
-    fi
-else 
-    # Check if we can find an existing cluster in our subnet
-    echo "Scanning subnet for existing Ceph cluster..."
-    
-    # Get our subnet (first 3 octets of internal IP)
-    SUBNET_PREFIX=$(echo "${INTERNAL_IP}" | cut -d. -f1-3)
-    EXISTING_MON_IP=""
-    
-    # Scan common IP ranges in our subnet for existing Ceph MON
-    for last_octet in $(seq 1 254); do
-        candidate_ip="${SUBNET_PREFIX}.${last_octet}"
+    # Check if this node already has Ceph installed
+    if [[ -f /etc/ceph/ceph.conf ]]; then
+        echo "Ceph already configured on this node"
         
-        # Skip our own IP
-        if [[ "${candidate_ip}" == "${INTERNAL_IP}" ]]; then
-            continue
+        # Check if OSDs already exist on this node using Ceph commands
+        HOSTNAME="$(hostname)"
+        existing_osds_count=0
+        
+        # Try to get OSD count for this host from Ceph
+        if existing_osds_output=$(/usr/local/bin/cephadm shell -- ceph orch ps --daemon_type osd --hostname "${HOSTNAME}" --format json 2>/dev/null); then
+            existing_osds_count=$(echo "${existing_osds_output}" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(len(data) if isinstance(data, list) else 0)
+except:
+    print(0)
+" 2>/dev/null || echo "0")
         fi
         
-        # Try to connect to Ceph MON port (quick check)
-        if timeout 2 nc -z "${candidate_ip}" 6789 2>/dev/null; then
-            echo "Found potential Ceph cluster at ${candidate_ip}"
-            EXISTING_MON_IP="${candidate_ip}"
-            break
+        if [[ ${existing_osds_count} -gt 0 ]]; then
+            echo "Found ${existing_osds_count} existing OSDs on this node. Nothing to do."
+            echo "Ceph cluster status:"
+            /usr/local/bin/cephadm shell -- ceph -s 2>/dev/null || echo "Could not get cluster status"
+            exit 0
+        else
+            echo "No OSDs found on this node (checked via ceph orch ps) - will create OSDs only"
+            SKIP_BOOTSTRAP=true
+            SKIP_OSD_CREATION=false
         fi
-    done
-    
-    if [[ -n "${EXISTING_MON_IP}" ]]; then
-        echo "Joining existing Ceph cluster at ${EXISTING_MON_IP}"
-        MON_IP="${EXISTING_MON_IP}"
-        SKIP_BOOTSTRAP=true
-        SKIP_OSD_CREATION=false
-        
-        # Try to get cluster config from existing MON
-        echo "Attempting to get cluster configuration from ${EXISTING_MON_IP}..."
-        # We'll let the orchestrator handle adding this node
     else
-        echo "No existing cluster found - bootstrapping new cluster with IP: ${INTERNAL_IP}"
+        echo "Bootstrapping new cluster with IP: ${INTERNAL_IP}"
         MON_IP="${INTERNAL_IP}"
         SKIP_BOOTSTRAP=false
         SKIP_OSD_CREATION=false
     fi
+    
+elif [[ "$MODE" == "others" ]]; then
+    echo "Others mode: Joining existing Ceph cluster..."
+    
+    # Check if this node already has Ceph installed
+    if [[ -f /etc/ceph/ceph.conf ]]; then
+        echo "Ceph already configured on this node"
+        
+        # Check if OSDs already exist on this node using Ceph commands
+        HOSTNAME="$(hostname)"
+        existing_osds_count=0
+        
+        # Try to get OSD count for this host from Ceph
+        if existing_osds_output=$(/usr/local/bin/cephadm shell -- ceph orch ps --daemon_type osd --hostname "${HOSTNAME}" --format json 2>/dev/null); then
+            existing_osds_count=$(echo "${existing_osds_output}" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(len(data) if isinstance(data, list) else 0)
+except:
+    print(0)
+" 2>/dev/null || echo "0")
+        fi
+        
+        if [[ ${existing_osds_count} -gt 0 ]]; then
+            echo "Found ${existing_osds_count} existing OSDs on this node. Nothing to do."
+            exit 0
+        else
+            echo "No OSDs found on this node (checked via ceph orch ps) - will create OSDs only"
+            SKIP_BOOTSTRAP=true
+            SKIP_OSD_CREATION=false
+        fi
+    else
+        echo "This node will be added to the cluster by the first node via orchestrator."
+        echo "Preparing node for cluster joining..."
+        SKIP_BOOTSTRAP=true
+        SKIP_OSD_CREATION=true  # OSDs will be created after node is added to cluster
+    fi
+fi
 
 if [[ "${SKIP_BOOTSTRAP}" == "false" ]]; then
     #/usr/local/bin/cephadm bootstrap --allow-fqdn-hostname --mon-ip ${MON_IP} --ssh-user root
@@ -122,41 +152,7 @@ if [[ "${SKIP_BOOTSTRAP}" == "false" ]]; then
     echo "Waiting for Ceph cluster to be ready..."
     sleep 30
 else
-    echo "Skipping bootstrap - this node will join the existing cluster"
-    
-    if [[ -n "${EXISTING_MON_IP}" ]]; then
-        # Try to get cluster config and join
-        echo "Attempting to join cluster at ${EXISTING_MON_IP}..."
-        echo "Adding this node to the existing cluster via orchestrator..."
-        
-        # The first node in the cluster should add this node
-        # We'll use SSH to execute the orchestrator command on the MON node
-        # This requires the Ceph SSH key to be already distributed
-        
-        HOSTNAME="$(hostname)"
-        
-        # Check if we can SSH to the MON node to add ourselves
-        if [[ -x "$(command -v ssh)" ]]; then
-            echo "Attempting to add this node to cluster via SSH to MON node..."
-            
-            # Try to add this host to the cluster from the MON node
-            # This assumes SSH keys are set up (which ec2-create-instances.sh should handle)
-            if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no "root@${EXISTING_MON_IP}" \
-                "/usr/local/bin/cephadm shell -- ceph orch host add ${HOSTNAME} ${INTERNAL_IP}" 2>/dev/null; then
-                echo "Successfully added ${HOSTNAME} to cluster."
-                # Now we can create OSDs
-                SKIP_OSD_CREATION=false
-            else
-                echo "Could not automatically add to cluster. Manual addition required:"
-                echo "Run on MON node: ceph orch host add ${HOSTNAME} ${INTERNAL_IP}"
-                SKIP_OSD_CREATION=true
-            fi
-        else
-            echo "SSH not available. Manual cluster joining required:"
-            echo "Run on MON node: ceph orch host add ${HOSTNAME} ${INTERNAL_IP}"
-            SKIP_OSD_CREATION=true
-        fi
-    fi
+    echo "Skipping bootstrap - node prepared for cluster joining"
 fi
 
 # # Wait for bootstrap keyring to be available
@@ -234,8 +230,10 @@ except Exception as e:
 ")
     
     # Process the available devices
+    echo "DEBUG: Processing device detection results:"
     while IFS=':' read -r device rotational; do
         if [[ -n "${device}" ]]; then
+            echo "DEBUG: Device ${device} -> rotational=${rotational}"
             if [[ "${rotational}" == "False" ]]; then
                 SSD_DEVICES+=("${device}")
                 echo "Found available SSD: ${device}"
@@ -259,15 +257,11 @@ fi
 
 # Check if we have at least one SSD for WAL/DB
 if [[ ${#SSD_DEVICES[@]} -eq 0 ]]; then
-    echo "No SSD devices found. Creating OSDs with data-only configuration..."
-    for hdd in "${HDD_DEVICES[@]}"; do
-        echo "Creating OSD on ${hdd} (data only)..."
-        /usr/local/bin/cephadm shell --fsid "${FSID}" -c /etc/ceph/ceph.conf -k /etc/ceph/ceph.client.admin.keyring -- \
-          ceph orch daemon add osd "${HOSTNAME}:data_devices=${hdd}"
-        if [[ $? -ne 0 ]]; then
-            echo "Warning: Failed to create OSD on ${hdd}"
-        fi
-    done
+    echo "No SSD devices found. Cannot create OSDs without SSDs for WAL/DB."
+    echo "Available HDDs: ${#HDD_DEVICES[@]}"
+    echo "Required: At least 1 SSD for every ${HDDS_PER_SSD} HDDs"
+    echo "Skipping OSD creation to respect HDD per SSD ratio requirements."
+    exit 0
 else
     echo "Creating OSDs with shared DB configuration (up to ${HDDS_PER_SSD} HDDs per SSD)..."
     
@@ -324,4 +318,3 @@ fi
 
 echo "OSD creation complete on ${HOSTNAME}. Cluster status:"
 /usr/local/bin/cephadm shell -- ceph -s
-fi
