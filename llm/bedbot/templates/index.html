@@ -494,7 +494,7 @@
     <div class="chat-container">
         <div class="chat-header">
             <h1><i class="fas fa-robot"></i> BedBot</h1>
-            <div class="subtitle">Powered by AWS Bedrock Nova</div>
+            <div class="subtitle">Powered by AWS Bedrock</div>
             <button class="clear-btn" onclick="clearChat()">
                 <i class="fas fa-trash"></i> Clear
             </button>
@@ -813,9 +813,21 @@
             sendBtn.disabled = false;
         }
 
+        let isUploading = false;
+        
         async function handleFileUpload() {
             const files = fileInput.files;
             if (files.length === 0) return;
+            
+            // Prevent concurrent uploads
+            if (isUploading) {
+                uploadStatus.style.display = 'block';
+                uploadStatus.className = 'upload-status error';
+                uploadStatus.textContent = 'Please wait for the current upload to complete before uploading more files.';
+                return;
+            }
+            
+            isUploading = true;
 
             const formData = new FormData();
             for (let file of files) {
@@ -839,9 +851,9 @@
                     const contextInfo = data.context_display || `${data.context_length} characters`;
                     uploadStatus.textContent = `✓ ${data.message}. Context: ${contextInfo}.`;
                     
-                    // Update uploaded files display immediately
+                    // Fetch complete file list from server instead of using upload response
                     console.log('Upload response data:', data); // Debug log
-                    updateUploadedFilesDisplay(data.uploaded_files);
+                    await refreshFilesList();
                     
                     // Add system message about uploaded files
                     addMessage(`📁 Uploaded ${files.length} file(s). I now have access to their content for our conversation.`, 'bot');
@@ -852,6 +864,8 @@
             } catch (error) {
                 uploadStatus.className = 'upload-status error';
                 uploadStatus.textContent = '✗ Upload failed: Network error';
+            } finally {
+                isUploading = false;
             }
 
             // Clear file input
@@ -930,6 +944,17 @@
                     console.error('Error starting speech recognition:', error);
                     alert('Could not start voice recording. Please try again.');
                 }
+            }
+        }
+
+        async function refreshFilesList() {
+            try {
+                const filesResponse = await fetch('/files');
+                const files = await filesResponse.json();
+                console.log('Refreshed files list:', files); // Debug log
+                updateUploadedFilesDisplay(files);
+            } catch (error) {
+                console.log('Error refreshing files list:', error);
             }
         }
 
