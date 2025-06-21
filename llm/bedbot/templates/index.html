@@ -77,10 +77,15 @@
             border-bottom: 1px solid #e9ecef;
         }
 
+        .upload-controls {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
         .upload-area {
             border: 2px dashed #dee2e6;
             border-radius: 10px;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -463,6 +468,40 @@
             transform: scale(1.1);
         }
 
+        .model-selector {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .model-selector.show {
+            display: block;
+        }
+
+        .model-selector label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .model-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .model-select:focus {
+            border-color: #4facfe;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -501,16 +540,28 @@
         </div>
 
         <div class="upload-section">
-            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #4facfe; margin-bottom: 10px;"></i>
-                <div class="upload-text">
-                    <strong>Click to upload documents</strong> or drag and drop<br>
-                    <small>Supports: TXT, PDF, DOC, DOCX, MD, JSON, CSV (Max: 2GB total)</small>
+            <div class="upload-controls">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #4facfe; margin-bottom: 10px;"></i>
+                    <div class="upload-text">
+                        <strong>Click to upload documents</strong> or drag and drop<br>
+                        <small>Supports: TXT, PDF, DOC, DOCX, MD, JSON, CSV (Max: 2GB total)</small>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" multiple accept=".txt,.pdf,.doc,.docx,.md,.json,.csv">
                 </div>
-                <input type="file" id="fileInput" class="file-input" multiple accept=".txt,.pdf,.doc,.docx,.md,.json,.csv">
+                
+                <div class="model-selector" id="modelSelector">
+                    <label for="modelSelect">
+                        <i class="fas fa-brain"></i> Select AI Model
+                    </label>
+                    <select class="model-select" id="modelSelect">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+                
+                <div class="upload-status" id="uploadStatus"></div>
+                <div class="uploaded-files" id="uploadedFiles"></div>
             </div>
-            <div class="upload-status" id="uploadStatus"></div>
-            <div class="uploaded-files" id="uploadedFiles"></div>
         </div>
 
         <div class="chat-messages" id="chatMessages">
@@ -856,7 +907,14 @@
                     await refreshFilesList();
                     
                     // Add system message about uploaded files
-                    addMessage(`📁 Uploaded ${files.length} file(s). I now have access to their content for our conversation.`, 'bot');
+                    let uploadMessage = `📁 Uploaded ${files.length} file(s). I now have access to their content for our conversation.`;
+                    
+                    // Add content size information if available
+                    if (data.markdown_size_display && data.markdown_size_display !== '0.000 MiB') {
+                        uploadMessage += ` Total content size for LLM: ${data.markdown_size_display}.`;
+                    }
+                    
+                    addMessage(uploadMessage, 'bot');
                 } else {
                     uploadStatus.className = 'upload-status error';
                     uploadStatus.textContent = `✗ Upload failed: ${data.error}`;
@@ -962,6 +1020,78 @@
             window.location.href = '/clear';
         }
 
+        // Model selector functionality
+        async function loadModels() {
+            try {
+                const response = await fetch('/models');
+                const data = await response.json();
+                console.log('Available models:', data);
+                
+                if (data.models && data.models.length > 1) {
+                    // Show model selector if multiple models available
+                    const modelSelector = document.getElementById('modelSelector');
+                    const modelSelect = document.getElementById('modelSelect');
+                    
+                    // Clear loading option
+                    modelSelect.innerHTML = '';
+                    
+                    // Add models to dropdown
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = model.name;
+                        if (model.id === data.current) {
+                            option.selected = true;
+                        }
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    // Show the selector
+                    modelSelector.classList.add('show');
+                    
+                    // Add change handler
+                    modelSelect.addEventListener('change', async function() {
+                        const selectedModel = this.value;
+                        console.log('Selected model:', selectedModel);
+                        if (selectedModel) {
+                            try {
+                                const response = await fetch('/change_model', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ model: selectedModel })
+                                });
+                                
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    console.log('Model changed to:', data.model);
+                                    
+                                    // Add system message about model change - keep existing chat history
+                                    if (data.model_changed) {
+                                        const selectedOption = this.options[this.selectedIndex];
+                                        const uploadedFiles = document.getElementById('uploadedFiles');
+                                        const hasFiles = uploadedFiles && uploadedFiles.classList.contains('show');
+                                        
+                                        const changeMessage = `🧠 Switched to ${selectedOption.textContent} model.${hasFiles ? ' Your uploaded documents will be re-processed with the new model.' : ''}`;
+                                        addMessage(changeMessage, 'bot');
+                                    }
+                                } else {
+                                    console.error('Failed to change model');
+                                    alert('Failed to change model. Please try again.');
+                                }
+                            } catch (error) {
+                                console.error('Error changing model:', error);
+                                alert('Error changing model. Please try again.');
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.log('Error loading models:', error);
+            }
+        }
+
         // Load chat history and files on page load
         window.addEventListener('load', async function() {
             try {
@@ -990,6 +1120,9 @@
             } catch (error) {
                 console.log('No uploaded files available');
             }
+            
+            // Load available models
+            loadModels();
         });
     </script>
 </body>
