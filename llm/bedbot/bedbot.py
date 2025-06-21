@@ -42,17 +42,26 @@ BEDROCK_MODEL = os.getenv('BEDROCK_MODEL', args.model)
 PDF_MERGE_ENABLED = os.getenv('PDF_MERGE', '0').strip().lower() in ('1', 'true', 'yes', 'on')
 # PDF conversion configuration - temporarily disable to test
 PDF_CONVERSION_ENABLED = os.getenv('PDF_CONVERSION', '1').strip().lower() in ('1', 'true', 'yes', 'on')
+# Local PDF conversion using fitz instead of Bedrock
+PDF_LOCAL_CONVERT = os.getenv('PDF_LOCAL_CONVERT', '0').strip().lower() in ('1', 'true', 'yes', 'on')
 # Maximum concurrent Bedrock connections for parallel PDF conversion
 BEDROCK_MAX_CONCURRENT = int(os.getenv('BEDROCK_MAXCON', '3'))
 # PDF conversion model - use different model for PDF conversion if specified
 PDF_CONVERT_MODEL = os.getenv('PDF_CONVERT_MODEL', BEDROCK_MODEL)
+# Bedrock timeout configuration
+BEDROCK_TIMEOUT = int(os.getenv('BEDROCK_TIMEOUT', '900'))
+# PDF chunking configuration for large PDFs
+PDF_MAX_PAGES = int(os.getenv('PDF_MAX_PAGES', '50'))
 
 if DEBUG_MODE:
     logger.info(f"PDF merging enabled: {PDF_MERGE_ENABLED} (PDF_MERGE={os.getenv('PDF_MERGE', '0')})")
     logger.info(f"PDF conversion enabled: {PDF_CONVERSION_ENABLED} (PDF_CONVERSION={os.getenv('PDF_CONVERSION', '1')})")
+    logger.info(f"PDF local convert enabled: {PDF_LOCAL_CONVERT} (PDF_LOCAL_CONVERT={os.getenv('PDF_LOCAL_CONVERT', '0')})")
     logger.info(f"Max concurrent Bedrock connections: {BEDROCK_MAX_CONCURRENT} (BEDROCK_MAXCON={os.getenv('BEDROCK_MAXCON', '3')})")
     logger.info(f"PDF conversion model: {PDF_CONVERT_MODEL} (PDF_CONVERT_MODEL={os.getenv('PDF_CONVERT_MODEL', 'default')})")
     logger.info(f"Chat model: {BEDROCK_MODEL} (BEDROCK_MODEL={os.getenv('BEDROCK_MODEL', 'default')}, --model={args.model})")
+    logger.info(f"Bedrock timeout: {BEDROCK_TIMEOUT}s (BEDROCK_TIMEOUT={os.getenv('BEDROCK_TIMEOUT', '900')})")
+    logger.info(f"PDF max pages per chunk: {PDF_MAX_PAGES} (PDF_MAX_PAGES={os.getenv('PDF_MAX_PAGES', '50')})")
 log_args_info = f"Using command line args: --no-bucket={args.no_bucket}, --debug={args.debug}, --model={args.model}"
 
 app = Flask(__name__)
@@ -265,12 +274,22 @@ def signal_handler(signum, frame):
 def cleanup_resources():
     global temp_session_dir, session_upload_folders, cleanup_performed
     
-    # Only run cleanup in the main process, not in Flask's debug reloader
-    if os.environ.get('WERKZEUG_RUN_MAIN'):
+    # Debug logging to understand the environment
+    werkzeug_run_main = os.environ.get('WERKZEUG_RUN_MAIN')
+    logger.info(f"cleanup_resources called: WERKZEUG_RUN_MAIN={werkzeug_run_main}, PID={os.getpid()}")
+    
+    # In debug mode with reloader:
+    # - Parent process (reloader): WERKZEUG_RUN_MAIN is not set
+    # - Child process (actual app): WERKZEUG_RUN_MAIN is set to 'true'
+    # We want cleanup to happen in the child process only
+    if werkzeug_run_main is None:
+        # This is the reloader process in debug mode - don't cleanup
+        logger.info("Skipping cleanup - this is the Flask reloader process (parent)")
         return
     
     # Prevent duplicate cleanup
     if cleanup_performed:
+        logger.info("Skipping cleanup - already performed")
         return
     cleanup_performed = True
     
@@ -321,9 +340,12 @@ def initialize_aws_clients():
         
         # Configure clients with increased timeout for large document processing
         config = Config(
-            read_timeout=60,  # 1 minute read timeout (further reduced)
-            connect_timeout=30,  # 30 seconds connect timeout
-            retries={'max_attempts': 2}  # Reduce retries to 2
+            read_timeout=BEDROCK_TIMEOUT,  # Configurable timeout via BEDROCK_TIMEOUT env var
+            connect_timeout=60,  # 1 minute for connection
+            retries={
+                'max_attempts': 3,
+                'mode': 'adaptive'
+            }
         )
         
         bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region, config=config)
@@ -332,7 +354,7 @@ def initialize_aws_clients():
         if DEBUG_MODE:
             logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
             logger.info(f"Using region: {profile_region}")
-            logger.info("Configured clients with 15-minute read timeout for large document processing")
+            logger.info(f"Configured clients with {BEDROCK_TIMEOUT}s read timeout for large document processing")
             if USE_S3_BUCKET:
                 logger.info("S3 bucket mode enabled")
             else:
@@ -503,8 +525,279 @@ def get_merged_filename_from_files(file_paths):
     except Exception:
         return "other"
 
+def split_pdf_into_chunks(pdf_bytes, max_pages=PDF_MAX_PAGES):
+    """Split PDF bytes into chunks of specified page count"""
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = len(doc)
+        chunks = []
+        
+        logger.info(f"Splitting PDF into chunks: {total_pages} pages, {max_pages} pages per chunk")
+        
+        for start_page in range(0, total_pages, max_pages):
+            end_page = min(start_page + max_pages, total_pages)
+            
+            # Create new document for this chunk
+            chunk_doc = fitz.open()
+            chunk_doc.insert_pdf(doc, from_page=start_page, to_page=end_page-1)
+            
+            # Convert chunk to bytes
+            chunk_bytes = chunk_doc.tobytes()
+            chunk_doc.close()
+            
+            chunks.append({
+                'bytes': chunk_bytes,
+                'start_page': start_page + 1,  # 1-based page numbering
+                'end_page': end_page,
+                'page_count': end_page - start_page
+            })
+            
+            logger.info(f"Created chunk: pages {start_page + 1}-{end_page} ({end_page - start_page} pages, {len(chunk_bytes)} bytes)")
+        
+        doc.close()
+        logger.info(f"Split PDF into {len(chunks)} chunks")
+        return chunks
+        
+    except Exception as e:
+        logger.error(f"Error splitting PDF into chunks: {e}")
+        return None
+
+def convert_pdf_chunk_to_markdown(chunk_data, model_id, chunk_index, doc_name):
+    """Convert a single PDF chunk to markdown"""
+    try:
+        logger.info(f"Converting chunk {chunk_index + 1}: pages {chunk_data['start_page']}-{chunk_data['end_page']}")
+        
+        conversion_prompt = f"""Please convert this PDF document chunk to markdown format.
+
+IMPORTANT INSTRUCTIONS:
+- Extract all text content from pages {chunk_data['start_page']}-{chunk_data['end_page']} of the document
+- Preserve the document structure using appropriate markdown headers (# ## ###)
+- Convert tables to markdown table format if present
+- Include all relevant text content
+- Format lists using markdown list syntax
+- Preserve paragraph breaks and spacing
+- If there are multiple sections, use appropriate header levels
+- Do not add any commentary or explanation - just provide the markdown conversion
+- This is part {chunk_index + 1} of a larger document
+
+VERY IMPORTANT:
+- Convert the entire chunk in full, do not truncate or skip any sections
+- If the chunk is empty or contains no text, return "<!-- Empty chunk -->"
+- If the chunk is not a valid format, return "<!-- Invalid chunk -->"
+"""
+        
+        content = [{
+            "document": {
+                "format": "pdf",
+                "name": f"{doc_name}_chunk_{chunk_index + 1}",
+                "source": {
+                    "bytes": chunk_data['bytes']
+                }
+            }
+        }, {
+            "text": conversion_prompt
+        }]
+        
+        messages = [{
+            "role": "user",
+            "content": content
+        }]
+        
+        inference_config = {
+            "maxTokens": 4000,
+            "temperature": 0.3,
+            "topP": 0.9
+        }
+        
+        response = bedrock_client.converse(
+            modelId=model_id,
+            messages=messages,
+            inferenceConfig=inference_config
+        )
+        
+        markdown_content = response['output']['message']['content'][0]['text']
+        logger.info(f"Successfully converted chunk {chunk_index + 1} ({len(markdown_content)} characters)")
+        
+        return {
+            'chunk_index': chunk_index,
+            'start_page': chunk_data['start_page'],
+            'end_page': chunk_data['end_page'],
+            'markdown_content': markdown_content,
+            'success': True
+        }
+        
+    except Exception as e:
+        logger.error(f"Error converting chunk {chunk_index + 1}: {e}")
+        return {
+            'chunk_index': chunk_index,
+            'start_page': chunk_data['start_page'],
+            'end_page': chunk_data['end_page'],
+            'error': str(e),
+            'success': False
+        }
+
+def convert_pdf_chunks_parallel(chunks, model_id, doc_name):
+    """Convert PDF chunks to markdown in parallel"""
+    if not chunks:
+        return None
+    
+    logger.info(f"Starting parallel conversion of {len(chunks)} PDF chunks (max concurrent: {BEDROCK_MAX_CONCURRENT})")
+    
+    def convert_single_chunk(chunk_data_with_index):
+        chunk_data, chunk_index = chunk_data_with_index
+        return convert_pdf_chunk_to_markdown(chunk_data, model_id, chunk_index, doc_name)
+    
+    # Use ThreadPoolExecutor for parallel processing
+    with ThreadPoolExecutor(max_workers=BEDROCK_MAX_CONCURRENT) as executor:
+        # Submit all chunk conversion tasks
+        chunk_tasks = [(chunk, i) for i, chunk in enumerate(chunks)]
+        future_to_chunk = {
+            executor.submit(convert_single_chunk, task): task[1] 
+            for task in chunk_tasks
+        }
+        
+        # Collect results
+        results = {}
+        for future in as_completed(future_to_chunk):
+            chunk_index = future_to_chunk[future]
+            result = future.result()
+            results[chunk_index] = result
+    
+    # Sort results by chunk index and assemble final content
+    successful_chunks = []
+    failed_chunks = []
+    
+    for i in range(len(chunks)):
+        if i in results and results[i]['success']:
+            successful_chunks.append(results[i])
+        else:
+            failed_chunks.append(i)
+    
+    if failed_chunks:
+        logger.warning(f"Failed to convert {len(failed_chunks)} chunks: {failed_chunks}")
+    
+    if not successful_chunks:
+        logger.error("All chunks failed to convert")
+        return None
+    
+    # Assemble final markdown content
+    final_markdown_parts = []
+    
+    # Add document header
+    final_markdown_parts.append(f"# {doc_name}\n\n")
+    final_markdown_parts.append("*This document was converted from PDF in multiple chunks*\n\n")
+    
+    # Add each chunk's content
+    for chunk_result in sorted(successful_chunks, key=lambda x: x['chunk_index']):
+        final_markdown_parts.append(f"<!-- Pages {chunk_result['start_page']}-{chunk_result['end_page']} -->\n")
+        final_markdown_parts.append(chunk_result['markdown_content'])
+        final_markdown_parts.append("\n\n")
+    
+    # Add footer with conversion info
+    final_markdown_parts.append(f"\n\n---\n*Converted from PDF: {len(successful_chunks)}/{len(chunks)} chunks processed successfully*")
+    
+    final_markdown = "".join(final_markdown_parts)
+    logger.info(f"Assembled final markdown: {len(final_markdown)} characters from {len(successful_chunks)} chunks")
+    
+    return final_markdown
+
+def convert_pdf_to_markdown_local(pdf_path_or_s3key, is_s3=False, s3_bucket=None):
+    """Convert a PDF file to markdown using local fitz extraction"""
+    try:
+        if is_s3:
+            # S3 mode - download PDF first
+            if not s3_bucket:
+                logger.error("S3 bucket name required for S3 mode")
+                return None
+            
+            try:
+                response = s3_client.get_object(Bucket=s3_bucket, Key=pdf_path_or_s3key)
+                pdf_bytes = response['Body'].read()
+                logger.info(f"Downloaded PDF from S3 for local conversion: {os.path.basename(pdf_path_or_s3key)} ({len(pdf_bytes)} bytes)")
+            except Exception as e:
+                logger.error(f"Failed to download PDF from S3: {e}")
+                return None
+                
+            # Open PDF from bytes
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        else:
+            # Local mode - open PDF directly
+            if not os.path.exists(pdf_path_or_s3key):
+                logger.error(f"PDF file not found: {pdf_path_or_s3key}")
+                return None
+            
+            doc = fitz.open(pdf_path_or_s3key)
+            logger.info(f"Opened PDF for local conversion: {os.path.basename(pdf_path_or_s3key)} ({len(doc)} pages)")
+        
+        # Extract text from all pages
+        markdown_parts = []
+        doc_name = os.path.basename(pdf_path_or_s3key).replace('.pdf', '')
+        total_pages = len(doc)
+        pages_with_content = 0
+        
+        # Add document header
+        markdown_parts.append(f"# {doc_name}\n\n")
+        markdown_parts.append("*This document was converted from PDF using local extraction*\n\n")
+        
+        for page_num in range(total_pages):
+            page = doc[page_num]
+            
+            # Extract text from page
+            text = page.get_text()
+            
+            if text.strip():
+                pages_with_content += 1
+                # Add page header
+                markdown_parts.append(f"## Page {page_num + 1}\n\n")
+                
+                # Process text - basic markdown formatting
+                lines = text.split('\n')
+                processed_lines = []
+                
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        processed_lines.append('')
+                        continue
+                    
+                    # Basic heuristics for headers (lines that are short and likely titles)
+                    if len(line) < 80 and line.isupper() and len(line.split()) <= 10:
+                        processed_lines.append(f"### {line}")
+                    elif len(line) < 60 and not line.endswith('.') and len(line.split()) <= 8:
+                        # Potential section header
+                        processed_lines.append(f"#### {line}")
+                    else:
+                        processed_lines.append(line)
+                
+                markdown_parts.append('\n'.join(processed_lines))
+                markdown_parts.append('\n\n')
+        
+        doc.close()
+        
+        # Check if we extracted any meaningful content
+        if pages_with_content == 0:
+            logger.warning(f"No text content found in PDF: {doc_name}")
+            return f"# {doc_name}\n\n*This PDF appears to contain no extractable text content (may be image-based or encrypted)*\n\n---\n*Processed {total_pages} pages using local extraction*"
+        
+        # Combine all parts
+        final_markdown = ''.join(markdown_parts)
+        
+        # Add footer
+        final_markdown += f"\n\n---\n*Converted from PDF using local extraction: {pages_with_content}/{total_pages} pages with content*"
+        
+        logger.info(f"Successfully converted PDF to markdown using local extraction ({len(final_markdown)} characters)")
+        return final_markdown
+        
+    except Exception as e:
+        logger.error(f"Error during local PDF conversion: {e}")
+        return None
+
 def convert_pdf_to_markdown_bedrock(pdf_path_or_s3key, is_s3=False, s3_bucket=None, model_id=None):
     """Convert a PDF file to markdown using Bedrock model"""
+    if PDF_LOCAL_CONVERT:
+        # If local conversion is enabled, use fitz instead
+        return convert_pdf_to_markdown_local(pdf_path_or_s3key, is_s3=is_s3, s3_bucket=s3_bucket)
+    
     if not bedrock_client:
         logger.error("Bedrock client not initialized")
         return None
@@ -519,7 +812,7 @@ def convert_pdf_to_markdown_bedrock(pdf_path_or_s3key, is_s3=False, s3_bucket=No
     for attempt in range(max_retries):
         try:
             # Prepare the prompt for markdown conversion
-            conversion_prompt = """Please convert this PDF document to markdown format. 
+            conversion_prompt = """Please convert this PDF document to markdown format in full. 
 
 IMPORTANT INSTRUCTIONS:
 - Extract all text content from the document
@@ -531,7 +824,12 @@ IMPORTANT INSTRUCTIONS:
 - If there are multiple sections, use appropriate header levels
 - Do not add any commentary or explanation - just provide the markdown conversion
 
-Return only the markdown content without any additional text."""
+VERY IMPORTANT:
+- Convert the entire document in full even if it is large, do not truncate or skip any sections
+- If the document is too large to convert, return a single error message "document too large"
+- If the document is empty or contains no text, return a single error message "empty document"
+- If the document is not a valid format, return a single error message "invalid format"
+"""
             
             content = []
             
@@ -596,14 +894,41 @@ Return only the markdown content without any additional text."""
                 except ClientError as e:
                     error_code = e.response.get('Error', {}).get('Code', 'Unknown')
                     if 'ValidationException' in str(e) and 'S3Location' in str(e):
-                        logger.info(f"Model {model_id} doesn't support S3Location, falling back to bytes method")
-                        # Fall back to downloading and sending as bytes
+                        logger.info(f"Model {model_id} doesn't support S3Location, falling back to chunked bytes method")
+                        # Fall back to downloading and chunking for large PDFs
                         try:
                             response = s3_client.get_object(Bucket=s3_bucket, Key=pdf_path_or_s3key)
                             pdf_bytes = response['Body'].read()
                             
-                            logger.info(f"Converting PDF to markdown (downloaded from S3): {doc_name} ({len(pdf_bytes)} bytes)")
+                            logger.info(f"Downloaded PDF from S3: {doc_name} ({len(pdf_bytes)} bytes)")
                             
+                            # Check PDF page count to determine if chunking is needed
+                            try:
+                                temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                                page_count = len(temp_doc)
+                                temp_doc.close()
+                                
+                                if page_count > PDF_MAX_PAGES:
+                                    logger.info(f"PDF has {page_count} pages, splitting into chunks of {PDF_MAX_PAGES} pages")
+                                    
+                                    # Split PDF into chunks
+                                    chunks = split_pdf_into_chunks(pdf_bytes, PDF_MAX_PAGES)
+                                    if chunks:
+                                        # Process chunks in parallel
+                                        chunked_markdown = convert_pdf_chunks_parallel(chunks, model_id, doc_name)
+                                        if chunked_markdown:
+                                            logger.info(f"Successfully converted chunked PDF to markdown ({len(chunked_markdown)} characters)")
+                                            return chunked_markdown
+                                        else:
+                                            logger.error("Chunked conversion failed, falling back to single document attempt")
+                                    else:
+                                        logger.error("PDF chunking failed, falling back to single document attempt")
+                                else:
+                                    logger.info(f"PDF has {page_count} pages, processing as single document")
+                            except Exception as page_check_error:
+                                logger.warning(f"Could not check PDF page count: {page_check_error}, processing as single document")
+                            
+                            # Fall back to single document processing
                             content = [{
                                 "document": {
                                     "format": "pdf",
@@ -636,6 +961,33 @@ Return only the markdown content without any additional text."""
                 
                 logger.info(f"Converting PDF to markdown: {doc_name} ({len(pdf_bytes)} bytes)")
                 
+                # Check PDF page count to determine if chunking is needed
+                try:
+                    temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    page_count = len(temp_doc)
+                    temp_doc.close()
+                    
+                    if page_count > PDF_MAX_PAGES:
+                        logger.info(f"PDF has {page_count} pages, splitting into chunks of {PDF_MAX_PAGES} pages")
+                        
+                        # Split PDF into chunks
+                        chunks = split_pdf_into_chunks(pdf_bytes, PDF_MAX_PAGES)
+                        if chunks:
+                            # Process chunks in parallel
+                            chunked_markdown = convert_pdf_chunks_parallel(chunks, model_id, doc_name)
+                            if chunked_markdown:
+                                logger.info(f"Successfully converted chunked PDF to markdown ({len(chunked_markdown)} characters)")
+                                return chunked_markdown
+                            else:
+                                logger.error("Chunked conversion failed, falling back to single document attempt")
+                        else:
+                            logger.error("PDF chunking failed, falling back to single document attempt")
+                    else:
+                        logger.info(f"PDF has {page_count} pages, processing as single document")
+                except Exception as page_check_error:
+                    logger.warning(f"Could not check PDF page count: {page_check_error}, processing as single document")
+                
+                # Fall back to single document processing
                 content.append({
                     "document": {
                         "format": "pdf",
@@ -698,7 +1050,9 @@ def convert_pdfs_parallel(pdf_conversion_tasks):
     if not pdf_conversion_tasks:
         return {}
     
-    logger.info(f"Starting parallel PDF conversion for {len(pdf_conversion_tasks)} files (max concurrent: {BEDROCK_MAX_CONCURRENT})")
+    # Determine max workers based on conversion method
+    max_workers = BEDROCK_MAX_CONCURRENT if not PDF_LOCAL_CONVERT else min(len(pdf_conversion_tasks), 8)
+    logger.info(f"Starting parallel PDF conversion for {len(pdf_conversion_tasks)} files (max concurrent: {max_workers}, method: {'local' if PDF_LOCAL_CONVERT else 'bedrock'})")
     
     results = {}
     
@@ -707,7 +1061,10 @@ def convert_pdfs_parallel(pdf_conversion_tasks):
         file_key, s3_key, s3_bucket, filename = task
         try:
             logger.info(f"[Parallel] Starting conversion: {filename}")
-            markdown_content = convert_pdf_to_markdown_bedrock(s3_key, is_s3=True, s3_bucket=s3_bucket, model_id=PDF_CONVERT_MODEL)
+            if PDF_LOCAL_CONVERT:
+                markdown_content = convert_pdf_to_markdown_local(s3_key, is_s3=True, s3_bucket=s3_bucket)
+            else:
+                markdown_content = convert_pdf_to_markdown_bedrock(s3_key, is_s3=True, s3_bucket=s3_bucket, model_id=PDF_CONVERT_MODEL)
             logger.info(f"[Parallel] Completed conversion: {filename} ({len(markdown_content) if markdown_content else 0} chars)")
             return file_key, markdown_content, None
         except Exception as e:
@@ -715,23 +1072,45 @@ def convert_pdfs_parallel(pdf_conversion_tasks):
             return file_key, None, str(e)
     
     # Use ThreadPoolExecutor for parallel processing
-    with ThreadPoolExecutor(max_workers=BEDROCK_MAX_CONCURRENT) as executor:
-        # Submit all tasks
-        future_to_task = {
-            executor.submit(convert_single_pdf, task): task 
-            for task in pdf_conversion_tasks
-        }
-        
-        # Collect results as they complete
-        for future in as_completed(future_to_task):
-            task = future_to_task[future]
-            file_key, markdown_content, error = future.result()
+    try:
+        # In debug mode, reduce max_workers to prevent reloader conflicts
+        if DEBUG_MODE and max_workers > 2:
+            max_workers = 2
+            logger.info(f"Reduced max_workers to {max_workers} for debug mode")
             
-            results[file_key] = {
-                'markdown_content': markdown_content,
-                'error': error,
-                'filename': task[3]  # filename is the 4th element
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all tasks
+            future_to_task = {
+                executor.submit(convert_single_pdf, task): task 
+                for task in pdf_conversion_tasks
             }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_task):
+                task = future_to_task[future]
+                try:
+                    file_key, markdown_content, error = future.result()
+                    
+                    results[file_key] = {
+                        'markdown_content': markdown_content,
+                        'error': error,
+                        'filename': task[3]  # filename is the 4th element
+                    }
+                except Exception as e:
+                    logger.error(f"Error getting result for task {task}: {e}")
+                    # Add error result for failed task
+                    file_key = f"{task[3]}_{len(results)}"  # Generate unique key
+                    results[file_key] = {
+                        'markdown_content': None,
+                        'error': str(e),
+                        'filename': task[3]
+                    }
+    except Exception as e:
+        logger.error(f"Critical error in parallel PDF processing: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        # Return empty results to prevent app crash
+        return {}
     
     logger.info(f"Completed parallel PDF conversion. Successful: {sum(1 for r in results.values() if r['markdown_content'])}, Failed: {sum(1 for r in results.values() if r['error'])}")
     return results
@@ -773,16 +1152,165 @@ def read_file_content(filepath_or_s3key, is_s3=False):
         logger.error(f"Error reading file {filepath_or_s3key}: {e}")
         return None
 
-def call_bedrock(prompt, context="", pdf_files=None):
-    """Call AWS Bedrock model using Converse API with document support"""
+def build_pdf_content(pdf_files):
+    """Build PDF content for Bedrock messages, preferring markdown when available"""
+    content = []
+    
+    for pdf_info in pdf_files:
+        try:
+            # Check if we have markdown version available
+            has_markdown = pdf_info.get('has_markdown', False)
+            doc_name = pdf_info['filename'].replace('.pdf', '')
+            doc_name = re.sub(r'[^a-zA-Z0-9\s\-\(\)\[\]]', '_', doc_name)
+            doc_name = re.sub(r'\s+', ' ', doc_name).strip()
+            doc_name = doc_name[:50]
+            
+            if DEBUG_MODE:
+                logger.info(f"build_pdf_content: Processing {pdf_info['filename']}, has_markdown={has_markdown}")
+                if has_markdown:
+                    logger.info(f"build_pdf_content: Markdown keys in pdf_info: {[k for k in pdf_info.keys() if 'md' in k.lower()]}")
+            
+            if has_markdown:
+                # Use markdown content instead of PDF for faster processing
+                if USE_S3_BUCKET and 'md_s3_key' in pdf_info:
+                    # S3 mode - read markdown from S3
+                    try:
+                        response = s3_client.get_object(Bucket=s3_bucket_name, Key=pdf_info['md_s3_key'])
+                        markdown_content = response['Body'].read().decode('utf-8', errors='ignore')
+                        logger.info(f"Using markdown content from S3: {doc_name} ({len(markdown_content)} chars)")
+                        
+                        content.append({
+                            "text": f"\n\n--- Content from {pdf_info['filename']} (PDF converted to markdown) ---\n{markdown_content}"
+                        })
+                        continue
+                    except Exception as e:
+                        logger.warning(f"Failed to read markdown from S3, falling back to PDF: {e}")
+                        has_markdown = False
+                elif 'md_path' in pdf_info and os.path.exists(pdf_info['md_path']):
+                    # Local mode - read markdown from file
+                    try:
+                        with open(pdf_info['md_path'], 'r', encoding='utf-8', errors='ignore') as md_file:
+                            markdown_content = md_file.read()
+                        logger.info(f"Using markdown content from file: {doc_name} ({len(markdown_content)} chars)")
+                        
+                        content.append({
+                            "text": f"\n\n--- Content from {pdf_info['filename']} (PDF converted to markdown) ---\n{markdown_content}"
+                        })
+                        continue
+                    except Exception as e:
+                        logger.warning(f"Failed to read markdown from file, falling back to PDF: {e}")
+                        has_markdown = False
+                else:
+                    logger.warning(f"has_markdown=True but no markdown source found for {pdf_info['filename']}")
+                    has_markdown = False
+            
+            # Fall back to PDF processing if no markdown or markdown read failed
+            if USE_S3_BUCKET and 's3_key' in pdf_info:
+                # S3 mode - try S3 location first, fall back to bytes if model doesn't support it
+                s3_key = pdf_info['s3_key']
+                
+                if 'nooooooooova' in BEDROCK_MODEL.lower():
+                    # Nova models support S3Location
+                    try:
+                        account_id = session_aws.client('sts').get_caller_identity()['Account']
+                        logger.info(f"Adding PDF document from S3 location: {doc_name}")
+                        
+                        content.append({
+                            "document": {
+                                "format": "pdf",
+                                "name": doc_name,
+                                "source": {
+                                    "s3Location": {
+                                        "uri": f"s3://{s3_bucket_name}/{s3_key}",
+                                        "bucketOwner": account_id
+                                    }
+                                }
+                            }
+                        })
+                    except Exception as e:
+                        logger.warning(f"Failed to get account ID, falling back to bytes method: {e}")
+                        # Fall back to bytes method
+                        response = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
+                        pdf_bytes = response['Body'].read()
+                        logger.info(f"Adding PDF document (downloaded from S3): {doc_name}")
+                        
+                        content.append({
+                            "document": {
+                                "format": "pdf",
+                                "name": doc_name,
+                                "source": {"bytes": pdf_bytes}
+                            }
+                        })
+                else:
+                    # Non-Nova models - use bytes method directly
+                    response = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
+                    pdf_bytes = response['Body'].read()
+                    logger.info(f"Adding PDF document (downloaded from S3): {doc_name}")
+                    
+                    content.append({
+                        "document": {
+                            "format": "pdf",
+                            "name": doc_name,
+                            "source": {"bytes": pdf_bytes}
+                        }
+                    })
+            else:
+                # Local mode - read file bytes
+                pdf_path = pdf_info['path']
+                if not os.path.exists(pdf_path):
+                    logger.error(f"PDF file not found: {pdf_path}")
+                    continue
+                    
+                with open(pdf_path, 'rb') as f:
+                    pdf_bytes = f.read()
+                
+                logger.info(f"Adding PDF document: {doc_name}")
+                
+                content.append({
+                    "document": {
+                        "format": "pdf",
+                        "name": doc_name,
+                        "source": {"bytes": pdf_bytes}
+                    }
+                })
+        except Exception as e:
+            logger.error(f"Error processing PDF {pdf_info}: {e}")
+    
+    return content
+
+def send_bedrock_message(messages):
+    """Send a single message to Bedrock and return the response"""
+    inference_config = {"maxTokens": 1000, "temperature": 0.3, "topP": 0.9}
+    
+    try:
+        response = bedrock_client.converse(
+            modelId=BEDROCK_MODEL,
+            messages=messages,
+            inferenceConfig=inference_config
+        )
+        return response['output']['message']['content'][0]['text']
+    except ClientError as api_error:
+        # Handle S3Location fallback
+        if 'ValidationException' in str(api_error) and 'S3Location' in str(api_error):
+            logger.warning("Model doesn't support S3Location, retrying with bytes method")
+            # This would need bytes fallback logic but for now just re-raise
+            raise api_error
+        else:
+            raise api_error
+
+def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, send_pdfs=False):
+    """Call AWS Bedrock model using Converse API with document support and conversation history"""
     if not bedrock_client:
         return "Error: Bedrock client not initialized. Please check your AWS credentials."
     
     try:
-        content = []
+        messages = []
         
         # Debug logging
         logger.info(f"PDF files provided: {len(pdf_files) if pdf_files else 0}")
+        logger.info(f"Send PDFs this call: {send_pdfs}")
+        logger.info(f"Conversation history entries: {len(conversation_history) if conversation_history else 0}")
+        
         if pdf_files:
             for i, pdf_info in enumerate(pdf_files):
                 if USE_S3_BUCKET:
@@ -790,185 +1318,68 @@ def call_bedrock(prompt, context="", pdf_files=None):
                 else:
                     logger.info(f"PDF {i+1}: {pdf_info.get('filename', 'unknown')} at {pdf_info.get('path', 'unknown')}")
         
-        # Add PDF documents if provided (prefer markdown when available)
-        if pdf_files:
-            for pdf_info in pdf_files:
-                try:
-                    # Check if we have markdown version available
-                    has_markdown = pdf_info.get('has_markdown', False)
-                    doc_name = pdf_info['filename'].replace('.pdf', '')
-                    doc_name = re.sub(r'[^a-zA-Z0-9\s\-\(\)\[\]]', '_', doc_name)
-                    doc_name = re.sub(r'\s+', ' ', doc_name).strip()
-                    doc_name = doc_name[:50]
-                    
-                    if has_markdown:
-                        # Use markdown content instead of PDF for faster processing
-                        if USE_S3_BUCKET and 'md_s3_key' in pdf_info:
-                            # S3 mode - read markdown from S3
-                            try:
-                                response = s3_client.get_object(Bucket=s3_bucket_name, Key=pdf_info['md_s3_key'])
-                                markdown_content = response['Body'].read().decode('utf-8', errors='ignore')
-                                logger.info(f"Using markdown content from S3 for faster processing: {doc_name} (s3://{s3_bucket_name}/{pdf_info['md_s3_key']})")
-                                
-                                # Add markdown content as text instead of document
-                                content.append({
-                                    "text": f"\n\n--- Content from {pdf_info['filename']} (PDF converted to markdown) ---\n{markdown_content}"
-                                })
-                                continue
-                            except Exception as e:
-                                logger.warning(f"Failed to read markdown from S3, falling back to PDF: {e}")
-                                has_markdown = False
-                        elif 'md_path' in pdf_info and os.path.exists(pdf_info['md_path']):
-                            # Local mode - read markdown from file
-                            try:
-                                with open(pdf_info['md_path'], 'r', encoding='utf-8', errors='ignore') as md_file:
-                                    markdown_content = md_file.read()
-                                logger.info(f"Using markdown content from file for faster processing: {doc_name} ({pdf_info['md_path']})")
-                                
-                                # Add markdown content as text instead of document
-                                content.append({
-                                    "text": f"\n\n--- Content from {pdf_info['filename']} (PDF converted to markdown) ---\n{markdown_content}"
-                                })
-                                continue
-                            except Exception as e:
-                                logger.warning(f"Failed to read markdown from file, falling back to PDF: {e}")
-                                has_markdown = False
-                    
-                    # Fall back to PDF processing if no markdown or markdown read failed
-                    if USE_S3_BUCKET and 's3_key' in pdf_info:
-                        # S3 mode - try S3 location first, fall back to bytes if model doesn't support it
-                        s3_key = pdf_info['s3_key']
-                        
-                        # Check if this model supports S3Location by trying a simple test
-                        # For efficiency, we'll just try to download and use bytes for non-Nova models
-                        if 'nova' in BEDROCK_MODEL.lower():
-                            # Nova models support S3Location
-                            try:
-                                # Get AWS account ID for bucket owner
-                                account_id = session_aws.client('sts').get_caller_identity()['Account']
-                                
-                                logger.info(f"Adding PDF document from S3 location: {doc_name} (s3://{s3_bucket_name}/{s3_key})")
-                                
-                                content.append({
-                                    "document": {
-                                        "format": "pdf",
-                                        "name": doc_name,
-                                        "source": {
-                                            "s3Location": {
-                                                "uri": f"s3://{s3_bucket_name}/{s3_key}",
-                                                "bucketOwner": account_id
-                                            }
-                                        }
-                                    }
-                                })
-                            except Exception as e:
-                                logger.warning(f"Failed to get account ID, falling back to bytes method: {e}")
-                                # Fall back to bytes method
-                                try:
-                                    response = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
-                                    pdf_bytes = response['Body'].read()
-                                    
-                                    logger.info(f"Adding PDF document (downloaded from S3): {doc_name} ({len(pdf_bytes)} bytes)")
-                                    
-                                    content.append({
-                                        "document": {
-                                            "format": "pdf",
-                                            "name": doc_name,
-                                            "source": {
-                                                "bytes": pdf_bytes
-                                            }
-                                        }
-                                    })
-                                except Exception as download_error:
-                                    logger.error(f"Failed to download PDF from S3: {download_error}")
-                                    continue
-                        else:
-                            # Non-Nova models - use bytes method directly
-                            try:
-                                response = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
-                                pdf_bytes = response['Body'].read()
-                                
-                                logger.info(f"Adding PDF document (downloaded from S3): {doc_name} ({len(pdf_bytes)} bytes)")
-                                
-                                content.append({
-                                    "document": {
-                                        "format": "pdf",
-                                        "name": doc_name,
-                                        "source": {
-                                            "bytes": pdf_bytes
-                                        }
-                                    }
-                                })
-                            except Exception as download_error:
-                                logger.error(f"Failed to download PDF from S3: {download_error}")
-                                continue
-                    else:
-                        # Local mode - read file bytes
-                        pdf_path = pdf_info['path']
-                        if not os.path.exists(pdf_path):
-                            logger.error(f"PDF file not found: {pdf_path}")
-                            continue
-                            
-                        with open(pdf_path, 'rb') as f:
-                            pdf_bytes = f.read()
-                        
-                        logger.info(f"Adding PDF document: {doc_name} ({len(pdf_bytes)} bytes)")
-                        
-                        content.append({
-                            "document": {
-                                "format": "pdf",
-                                "name": doc_name,
-                                "source": {
-                                    "bytes": pdf_bytes
-                                }
-                            }
-                        })
-                except Exception as e:
-                    logger.error(f"Error processing PDF {pdf_info}: {e}")
+        # Handle PDF initialization - only send PDFs on first message or when explicitly requested
+        if send_pdfs and pdf_files:
+            logger.info("Initializing PDFs in conversation (first time)")
+            
+            # Build PDF content using existing logic
+            pdf_content = build_pdf_content(pdf_files)
+            
+            # Create initial PDF introduction message
+            total_uploaded_docs = len(pdf_files)
+            if len(pdf_files) > 1:
+                pdf_intro_prompt = f"I have uploaded {total_uploaded_docs} documents for analysis. Please confirm you can access all the documents."
+            else:
+                pdf_intro_prompt = f"I have uploaded {total_uploaded_docs} document for analysis. Please confirm you can access the document."
+            
+            pdf_content.append({"text": pdf_intro_prompt})
+            
+            # Send PDF initialization message and get response
+            try:
+                init_response = send_bedrock_message([{"role": "user", "content": pdf_content}])
+                logger.info("PDF initialization successful")
+                
+                # Add PDF initialization to messages history - but store as text-only after initialization
+                messages.append({"role": "user", "content": [{"text": pdf_intro_prompt}]})
+                messages.append({"role": "assistant", "content": [{"text": init_response}]})
+                
+            except ClientError as e:
+                error_message = str(e)
+                logger.error(f"PDF initialization failed: {e}")
+                
+                # Check for specific error types that should be shown to the user
+                if 'ValidationException' in error_message and 'Input is too long' in error_message:
+                    return "❌ **Error: Documents are too large for the selected model.**\n\nThe uploaded PDF documents exceed the model's context limit. Please try:\n\n• Removing some uploaded files\n• Using a model with a larger context window\n• Splitting your documents into smaller parts"
+                elif 'ValidationException' in error_message:
+                    return f"❌ **PDF Processing Error:** {error_message}"
+                elif 'ThrottlingException' in error_message:
+                    return "❌ **Rate Limit Exceeded:** Too many requests. Please wait a moment and try again."
+                elif 'ServiceUnavailableException' in error_message:
+                    return "❌ **Service Unavailable:** The Bedrock service is temporarily unavailable. Please try again in a few moments."
+                else:
+                    return f"❌ **PDF Processing Error:** {error_message}"
+            except Exception as e:
+                logger.error(f"PDF initialization failed: {e}")
+                return f"❌ **PDF Processing Error:** {str(e)}"
+                
+        # Add conversation history if provided (text-only, no document re-uploads)
+        if conversation_history:
+            logger.info(f"Adding {len(conversation_history)} conversation history entries as text-only")
+            for entry in conversation_history:
+                messages.append({"role": "user", "content": [{"text": entry['user']}]})
+                messages.append({"role": "assistant", "content": [{"text": entry['bot']}]})
         
-        # Add text context if available and no PDFs
-        if context and not pdf_files:
+        # Create current message prompt  
+        if context and not send_pdfs:
             enhanced_prompt = f"{context}\n\n{prompt}"
         else:
-            # Create enhanced prompt for document analysis
-            # Count total original documents uploaded by user
-            total_uploaded_docs = len(session.get('uploaded_files', []))
-            
-            if pdf_files and len(pdf_files) > 1:
-                # When multiple PDFs are provided, give clear instructions for comparison
-                enhanced_prompt = textwrap.dedent(f"""I have provided {total_uploaded_docs} documents for analysis. Please carefully analyze ALL the provided documents and answer the following question:
-
-                {prompt}
-
-                IMPORTANT INSTRUCTIONS:
-                - You have access to {total_uploaded_docs} documents - please read and analyze ALL of them
-                - Compare and analyze the content across all provided documents
-                - If one document contains requirements or criteria, evaluate the other documents against those criteria
-                - Provide specific names, examples, and evidence from the documents to support your analysis
-                - Be thorough and analytical in your comparison
-                - When asked for the option or to compare options presented in different documents, provide specific and detailed comparisons""")
-            elif pdf_files and len(pdf_files) == 1:
-                enhanced_prompt = textwrap.dedent(f"""I have provided {total_uploaded_docs} document(s) for analysis. Please carefully analyze the provided document(s) and answer the following question:
-
-                {prompt}
-
-                Please provide specific information and examples from the document(s) to support your response.""")
-            else:
-                enhanced_prompt = prompt
-            
-        logger.info(f"Enhanced prompt length: {len(enhanced_prompt)} characters")
-        logger.info(f"Total content items: {len(content) + 1} (PDFs: {len(content)}, text: 1)")
-            
-        content.append({
-            "text": enhanced_prompt
-        })
+            enhanced_prompt = prompt
         
-        messages = [
-            {
-                "role": "user",
-                "content": content
-            }
-        ]
+        # Add current user message
+        messages.append({
+            "role": "user", 
+            "content": [{"text": enhanced_prompt}]
+        })
         
         inference_config = {
             "maxTokens": 4000,
@@ -976,10 +1387,10 @@ def call_bedrock(prompt, context="", pdf_files=None):
             "topP": 0.9
         }
         
-        logger.info(f"Sending request to Bedrock with {len(content)} content items")
+        logger.info(f"Sending request to Bedrock with {len(messages)} message entries")
         
         # Debug: Print messages JSON structure if debug mode is enabled
-        if DEBUG_MODE:
+        if DEBUG_MODE and messages:  # Only log if we have messages
             logger.info("=== DEBUG: Converse API Messages Structure ===")
             logger.info(json.dumps(messages, indent=2, default=str))
             logger.info("=== END DEBUG ===")
@@ -994,12 +1405,12 @@ def call_bedrock(prompt, context="", pdf_files=None):
             return response['output']['message']['content'][0]['text']
             
         except ClientError as api_error:
-            # Check if this is an S3Location validation error
+            # Check if this is an S3Location validation error (only for initial PDF upload)
             if ('ValidationException' in str(api_error) and 'S3Location' in str(api_error) and 
-                USE_S3_BUCKET and pdf_files):
+                USE_S3_BUCKET and pdf_files and send_pdfs):
                 logger.warning(f"Model {BEDROCK_MODEL} doesn't support S3Location, retrying with bytes method")
                 
-                # Rebuild content with bytes method for PDFs
+                # Rebuild content with bytes method for PDFs (only for initial upload)
                 retry_content = []
                 
                 # Re-add PDF documents using bytes method
@@ -1099,11 +1510,23 @@ def call_bedrock(prompt, context="", pdf_files=None):
                 raise api_error
         
     except ClientError as e:
+        error_message = str(e)
         logger.error(f"Bedrock API error: {e}")
-        return f"Error calling Bedrock: {str(e)}"
+        
+        # Check for specific error types that should be shown to the user
+        if 'ValidationException' in error_message and 'Input is too long' in error_message:
+            return "❌ **Error: Input is too long for the selected model.**\n\nThe uploaded documents and conversation history exceed the model's context limit. Please try:\n\n• Removing some uploaded files\n• Using a model with a larger context window\n• Splitting your request into smaller parts"
+        elif 'ValidationException' in error_message:
+            return f"❌ **Validation Error:** {error_message}"
+        elif 'ThrottlingException' in error_message:
+            return "❌ **Rate Limit Exceeded:** Too many requests. Please wait a moment and try again."
+        elif 'ServiceUnavailableException' in error_message:
+            return "❌ **Service Unavailable:** The Bedrock service is temporarily unavailable. Please try again in a few moments."
+        else:
+            return f"❌ **Bedrock API Error:** {error_message}"
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        return f"Unexpected error: {str(e)}"
+        return f"❌ **Unexpected Error:** {str(e)}"
 
 def convert_markdown_to_html(text):
     """Convert markdown text to HTML with enhanced formatting"""
@@ -1165,6 +1588,7 @@ def index():
         session['document_context'] = ""
         session['uploaded_files'] = []
         session['pdf_files'] = []
+        session['pdfs_initialized'] = False  # Track if PDFs have been sent to Bedrock
         # Create session upload location
         get_session_upload_location()
     return render_template('index.html')
@@ -1181,13 +1605,61 @@ def chat():
         # Get document context and PDF files
         context = session.get('document_context', '')
         pdf_files = session.get('pdf_files', [])
+        chat_history = session.get('chat_history', [])
+        pdfs_initialized = session.get('pdfs_initialized', False)
         
         # Debug logging
         logger.info(f"Chat request - PDF files in session: {len(pdf_files)}")
-        logger.info(f"Chat request - Context length: {len(context)}")
+        logger.info(f"Chat request - Chat history length: {len(chat_history)}")
+        logger.info(f"Chat request - PDFs initialized: {pdfs_initialized}")
         
-        # Always call with PDF files (empty list if none)
-        bot_response = call_bedrock(user_message, context, pdf_files)
+        # Determine if we need to send PDFs (first time with PDFs or PDFs not yet initialized)
+        send_pdfs = pdf_files and not pdfs_initialized
+        
+        # Build conversation history for Bedrock (exclude current session initialization if it exists)
+        conversation_history = []
+        if chat_history:
+            # Filter out any PDF initialization messages (they contain "confirm" language)
+            # but only skip the very first message if it's a PDF initialization
+            for i, entry in enumerate(chat_history):
+                user_msg = entry.get('user', '').lower()
+                # Skip only the first message if it's clearly a PDF initialization
+                if i == 0 and ('confirm' in user_msg and 'access' in user_msg and ('document' in user_msg or 'uploaded' in user_msg)):
+                    logger.info("Skipping PDF initialization message from conversation history")
+                    continue
+                
+                conversation_history.append({
+                    'user': entry['user'],
+                    'bot': entry['bot']  # Use original markdown, not HTML
+                })
+        
+        logger.info(f"Conversation history entries to send: {len(conversation_history)}")
+        logger.info(f"Will send PDFs this request: {send_pdfs}")
+        
+        # Call Bedrock with conversation history
+        bot_response = call_bedrock(
+            prompt=user_message,
+            context=context,
+            pdf_files=pdf_files,
+            conversation_history=conversation_history,
+            send_pdfs=send_pdfs
+        )
+        
+        # Check if bot_response contains an error (starts with ❌)
+        if bot_response.startswith('❌'):
+            # Don't mark PDFs as initialized if there was an error
+            # Don't store error messages in chat history
+            bot_response_html = convert_markdown_to_html(bot_response)
+            return jsonify({
+                'response': bot_response_html,
+                'timestamp': datetime.now().isoformat(),
+                'error': True  # Flag to help frontend handle errors differently
+            })
+        
+        # Mark PDFs as initialized if they were sent
+        if send_pdfs:
+            session['pdfs_initialized'] = True
+            logger.info("Marked PDFs as initialized in session")
         
         # Convert markdown to HTML
         bot_response_html = convert_markdown_to_html(bot_response)
@@ -1305,8 +1777,13 @@ def upload_files():
                     logger.info(f"Uploaded merged PDF to S3: s3://{s3_bucket_name}/{s3_key}")
                     
                     # Convert merged PDF to markdown
-                    logger.info(f"Converting merged PDF to markdown: {merged_filename}")
-                    markdown_content = convert_pdf_to_markdown_bedrock(s3_key, is_s3=True, s3_bucket=s3_bucket_name, model_id=PDF_CONVERT_MODEL)
+                    conversion_method = "local" if PDF_LOCAL_CONVERT else "Bedrock"
+                    logger.info(f"Converting merged PDF to markdown ({conversion_method}): {merged_filename}")
+                    markdown_content = None
+                    if PDF_LOCAL_CONVERT:
+                        markdown_content = convert_pdf_to_markdown_local(s3_key, is_s3=True, s3_bucket=s3_bucket_name)
+                    else:
+                        markdown_content = convert_pdf_to_markdown_bedrock(s3_key, is_s3=True, s3_bucket=s3_bucket_name, model_id=PDF_CONVERT_MODEL)
                     
                     if markdown_content:
                         # Create markdown filename
@@ -1459,7 +1936,8 @@ def upload_files():
                                             'session_location': session_location,
                                             'timestamped_filename': timestamped_filename
                                         }
-                                        logger.info(f"Added PDF to parallel conversion queue: {file.filename}")
+                                        conversion_method = "local" if PDF_LOCAL_CONVERT else "Bedrock"
+                                        logger.info(f"Added PDF to parallel conversion queue ({conversion_method}): {file.filename}")
                                     else:
                                         logger.info(f"PDF conversion disabled - PDF will be processed directly by Bedrock: {file.filename}")
                                     
@@ -1535,9 +2013,13 @@ def upload_files():
                     content = read_file_content(filepath, is_s3=False)
                     if content:
                         if isinstance(content, dict) and content.get('type') == 'pdf':
-                            # Convert PDF to markdown using Bedrock
-                            logger.info(f"Converting PDF to markdown: {file.filename}")
-                            markdown_content = convert_pdf_to_markdown_bedrock(filepath, is_s3=False, model_id=PDF_CONVERT_MODEL)
+                            # Convert PDF to markdown
+                            conversion_method = "local" if PDF_LOCAL_CONVERT else "Bedrock"
+                            logger.info(f"Converting PDF to markdown ({conversion_method}): {file.filename}")
+                            if PDF_LOCAL_CONVERT:
+                                markdown_content = convert_pdf_to_markdown_local(filepath, is_s3=False)
+                            else:
+                                markdown_content = convert_pdf_to_markdown_bedrock(filepath, is_s3=False, model_id=PDF_CONVERT_MODEL)
                             
                             if markdown_content:
                                 # Create markdown filename and save locally
@@ -1662,11 +2144,18 @@ def upload_files():
         current_pdf_files = list(session['pdf_files'])
         
         # Add new PDF files to existing list (avoid duplicates)
+        pdf_added = False
         for new_pdf in new_pdf_files:
             existing = next((f for f in current_pdf_files if f['filename'] == new_pdf['filename']), None)
             if not existing:
                 current_pdf_files.append(new_pdf)
                 logger.info(f"Added new PDF to session: {new_pdf['filename']}")
+                pdf_added = True
+        
+        # If new PDFs were added, reset the initialization state so they get sent to Bedrock
+        if pdf_added:
+            session['pdfs_initialized'] = False
+            logger.info("Reset PDF initialization state due to new PDF uploads")
         
         # Add new files to uploaded files list (avoid duplicates)
         logger.info(f"Before adding new files - session has {len(current_uploaded_files)} files")
@@ -1748,13 +2237,66 @@ def upload_files():
         logger.info(f"Returning to frontend - uploaded_files count: {len(current_uploaded_files)}")
         logger.info(f"Files being returned: {[f['filename'] for f in current_uploaded_files]}")
         
+        # Calculate total content size sent to LLM (markdown from PDFs + text files)
+        total_llm_content_bytes = 0
+        
+        # Add markdown content from PDFs
+        for pdf_info in current_pdf_files:
+            if pdf_info.get('has_markdown', False):
+                if USE_S3_BUCKET and 'md_s3_key' in pdf_info:
+                    # S3 mode - get markdown size from S3
+                    try:
+                        response = s3_client.head_object(Bucket=s3_bucket_name, Key=pdf_info['md_s3_key'])
+                        total_llm_content_bytes += response['ContentLength']
+                    except Exception as e:
+                        logger.warning(f"Could not get size of markdown file from S3: {e}")
+                elif 'md_path' in pdf_info and os.path.exists(pdf_info['md_path']):
+                    # Local mode - get markdown size from file
+                    try:
+                        total_llm_content_bytes += os.path.getsize(pdf_info['md_path'])
+                    except Exception as e:
+                        logger.warning(f"Could not get size of markdown file: {e}")
+        
+        # Add text content from regular text files
+        for file_info in current_uploaded_files:
+            if file_info.get('type') != 'pdf':  # Text files
+                if USE_S3_BUCKET:
+                    # S3 mode - find file by S3 key pattern and get its size
+                    try:
+                        paginator = s3_client.get_paginator('list_objects_v2')
+                        for page in paginator.paginate(Bucket=s3_bucket_name, Prefix=session.get('s3_prefix', '')):
+                            if 'Contents' in page:
+                                for obj in page['Contents']:
+                                    if obj['Key'].endswith(f"_{secure_filename(file_info['filename'])}"):
+                                        total_llm_content_bytes += obj['Size']
+                                        break
+                    except Exception as e:
+                        logger.warning(f"Could not get size of text file from S3: {e}")
+                else:
+                    # Local mode - find file on disk and get its size
+                    session_folder = session.get('session_folder', '')
+                    if os.path.exists(session_folder):
+                        for uploaded_file in os.listdir(session_folder):
+                            if uploaded_file.endswith(f"_{secure_filename(file_info['filename'])}"):
+                                filepath = os.path.join(session_folder, uploaded_file)
+                                try:
+                                    total_llm_content_bytes += os.path.getsize(filepath)
+                                except Exception as e:
+                                    logger.warning(f"Could not get size of text file: {e}")
+                                break
+        
+        # Convert to MiB and format with 3 decimal places
+        total_llm_content_mib = total_llm_content_bytes / (1024 * 1024)
+        llm_content_size_display = f"{total_llm_content_mib:.3f} MiB" if total_llm_content_bytes > 0 else "0.000 MiB"
+        
         result = {
             'message': f'Successfully processed {len(uploaded_files)} files',
             'files': uploaded_files,
             'context_length': total_context_length,
             'context_display': context_display,
             'uploaded_files': current_uploaded_files,
-            'pdf_count': len(current_pdf_files)
+            'pdf_count': len(current_pdf_files),
+            'markdown_size_display': llm_content_size_display  # Keep same key name for frontend compatibility
         }
         request_end_time = time.time()
         request_duration = request_end_time - request_start_time
@@ -1762,8 +2304,10 @@ def upload_files():
         return jsonify(result)
         
     except Exception as e:
+        import traceback
         logger.error(f"Upload error: {e}")
-        return jsonify({'error': 'Upload failed'}), 500
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @app.route('/clear')
 def clear_session():
@@ -1823,6 +2367,16 @@ def remove_file():
         if 'pdf_files' in session:
             pdf_to_remove = next((f for f in session['pdf_files'] if f['filename'] == filename), None)
             session['pdf_files'] = [f for f in session['pdf_files'] if f['filename'] != filename]
+            
+            # If we removed a PDF and there are still PDFs remaining, reset initialization
+            # If no PDFs remain, we can keep the initialization state as is (no PDFs to initialize)
+            if pdf_to_remove and session['pdf_files']:
+                session['pdfs_initialized'] = False
+                logger.info("Reset PDF initialization state due to PDF file removal (PDFs still remain)")
+            elif pdf_to_remove and not session['pdf_files']:
+                # All PDFs removed - reset state for cleanliness
+                session['pdfs_initialized'] = False
+                logger.info("Reset PDF initialization state - no PDFs remain")
         
         # Remove the actual file from storage (including markdown files)
         if USE_S3_BUCKET:
@@ -1948,12 +2502,16 @@ def remove_file():
         return jsonify({'error': 'Failed to remove file'}), 500
 
 if __name__ == '__main__':
-    # Register signal handlers for graceful shutdown
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    
-    # Register cleanup function for normal exit
-    atexit.register(cleanup_resources)
+    # Only register signal handlers and cleanup in the actual app process
+    # In debug mode, this prevents the reloader process from interfering
+    if os.environ.get('WERKZEUG_RUN_MAIN') is not None or not args.debug:
+        # Register signal handlers for graceful shutdown
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        # Register cleanup function for normal exit
+        atexit.register(cleanup_resources)
+        logger.info(f"Registered signal handlers and cleanup (debug={args.debug}, WERKZEUG_RUN_MAIN={os.environ.get('WERKZEUG_RUN_MAIN')})")
 
     # Initialize AWS clients
     initialize_aws_clients()
