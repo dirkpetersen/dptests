@@ -308,7 +308,49 @@ def _format_table_data(table_data):
     return '\n' + '\n'.join(table_md) + '\n'
 
 
-def process_folder(folder_path, output_folder=None, show_progress=True, show_table_detection=True, use_fast_conversion=False):
+def merge_markdown_files(md_files, output_path, folder_name):
+    """
+    Merge multiple markdown files into a single document.
+    
+    Args:
+        md_files (list): List of markdown file paths
+        output_path (str): Path for the merged output file
+        folder_name (str): Name of the source folder for the title
+    
+    Returns:
+        str: Path to the merged markdown file
+    """
+    merged_content = []
+    
+    for md_file in md_files:
+        md_path = Path(md_file)
+        original_pdf_name = md_path.stem + '.pdf'
+        
+        # Add filename header
+        merged_content.append(f"# {original_pdf_name}\n")
+        
+        # Read and add file content
+        try:
+            with open(md_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    merged_content.append(content)
+                    merged_content.append("\n\n---\n")  # Separator between files
+        except Exception as e:
+            merged_content.append(f"Error reading {original_pdf_name}: {e}\n\n---\n")
+    
+    # Remove the last separator
+    if merged_content and merged_content[-1] == "\n\n---\n":
+        merged_content.pop()
+    
+    # Write merged content
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(merged_content))
+    
+    return str(output_path)
+
+
+def process_folder(folder_path, output_folder=None, show_progress=True, show_table_detection=True, use_fast_conversion=False, merge=False):
     """
     Convert all PDF files in a folder to markdown.
     
@@ -318,9 +360,10 @@ def process_folder(folder_path, output_folder=None, show_progress=True, show_tab
         show_progress (bool): Whether to show progress bar for file processing
         show_table_detection (bool): Whether to show table detection for each file
         use_fast_conversion (bool): Whether to use pymupdf4llm for fast conversion
+        merge (bool): Whether to merge all markdown files into a single document
     
     Returns:
-        list: Paths to created markdown files
+        list: Paths to created markdown files (or single merged file if merge=True)
     """
     folder_path = Path(folder_path)
     
@@ -377,6 +420,26 @@ def process_folder(folder_path, output_folder=None, show_progress=True, show_tab
             else:
                 print(f"Error converting {pdf_file.name}: {e}")
     
+    # If merge is enabled, merge all markdown files into one
+    if merge and converted_files:
+        merged_filename = f"{folder_path.name}.md"
+        merged_path = output_folder / merged_filename
+        
+        # Sort files by name for consistent ordering
+        sorted_files = sorted(converted_files, key=lambda x: Path(x).name.lower())
+        
+        merged_file = merge_markdown_files(sorted_files, merged_path, folder_path.name)
+        
+        # Clean up individual markdown files
+        for md_file in converted_files:
+            try:
+                Path(md_file).unlink()
+            except Exception:
+                pass  # Continue if cleanup fails
+        
+        print(f"Merged {len(converted_files)} files into: {merged_filename}")
+        return [merged_file]
+    
     return converted_files
 
 
@@ -390,6 +453,7 @@ Examples:
   %(prog)s document.pdf output.md          # Convert to output.md
   %(prog)s /path/to/pdfs/                  # Convert all PDFs in folder
   %(prog)s /path/to/pdfs/ /path/to/output/ # Convert all PDFs to output folder
+  %(prog)s /path/to/pdfs/ --merge          # Merge all PDFs into single [directory-name].md
         """
     )
     
@@ -397,6 +461,7 @@ Examples:
     parser.add_argument('output', nargs='?', help='Output file/folder (optional)')
     parser.add_argument('--no-progress', action='store_true', help='Disable progress bars')
     parser.add_argument('--no-table-detection', action='store_true', help='Skip table detection phase')
+    parser.add_argument('--merge', action='store_true', help='Merge all PDFs in folder into single markdown file named [directory-name].md')
     
     args = parser.parse_args()
     
@@ -407,6 +472,10 @@ Examples:
             # Single file conversion
             if input_path.suffix.lower() != '.pdf':
                 print(f"Error: Input file must be a PDF file, got: {input_path.suffix}")
+                sys.exit(1)
+            
+            if args.merge:
+                print("Error: --merge flag can only be used with folders, not individual files")
                 sys.exit(1)
             
             show_progress = not args.no_progress
@@ -440,8 +509,17 @@ Examples:
             show_progress = not args.no_progress
             show_table_detection = not args.no_table_detection
             use_fast_conversion = not show_progress and not show_table_detection and pymupdf4llm
-            converted_files = process_folder(input_path, args.output, show_progress, show_table_detection, use_fast_conversion)
-            print(f"Converted {len(converted_files)} PDF files to Markdown")
+            converted_files = process_folder(input_path, args.output, show_progress, show_table_detection, use_fast_conversion, args.merge)
+            
+            if args.merge:
+                if converted_files:
+                    # Count original PDFs by checking how many were processed
+                    pdf_count = len(list(input_path.glob("*.pdf")))
+                    print(f"Successfully merged {pdf_count} PDF files into: {Path(converted_files[0]).name}")
+                else:
+                    print("No PDF files found to merge")
+            else:
+                print(f"Converted {len(converted_files)} PDF files to Markdown")
         
         else:
             print(f"Error: Input path does not exist: {input_path}")
