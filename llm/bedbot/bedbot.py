@@ -26,6 +26,17 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Try to import vector store functionality
+try:
+    from vector_store import initialize_vector_store_manager, get_vector_store_manager, is_vector_store_available, FAISS_AVAILABLE
+    VECTOR_STORE_MODULE_AVAILABLE = True
+    logger.info("Vector store module loaded successfully")
+except ImportError as e:
+    VECTOR_STORE_MODULE_AVAILABLE = False
+    FAISS_AVAILABLE = False
+    logger.warning(f"Vector store module not available: {e}")
+    logger.info("Running without vector store functionality")
+
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='BedBot - AI Chat Assistant')
 parser.add_argument('--no-bucket', action='store_true', help='Use local filesystem instead of S3 bucket')
@@ -39,6 +50,9 @@ DEBUG_MODE = args.debug
 MAX_FILE_SIZE = 4.5 * 1024 * 1024  # 4.5 MB per file
 MAX_FILES_PER_SESSION = 1000
 BEDROCK_MODEL = os.getenv('BEDROCK_MODEL', args.model)
+# Vector Store Configuration
+USE_FAISS_STORE = (VECTOR_STORE_MODULE_AVAILABLE and FAISS_AVAILABLE and 
+                   os.getenv('FAISS_STORE', '0').strip().lower() in ('1', 'true', 'yes', 'on'))
 # PDF merging configuration removed - no longer supported
 # PDF conversion configuration - temporarily disable to test
 PDF_CONVERSION_ENABLED = os.getenv('PDF_CONVERSION', '1').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -55,6 +69,7 @@ BEDROCK_TIMEOUT = int(os.getenv('BEDROCK_TIMEOUT', '900'))
 if DEBUG_MODE:
     logger.info(f"PDF conversion enabled: {PDF_CONVERSION_ENABLED} (PDF_CONVERSION={os.getenv('PDF_CONVERSION', '1')})")
     logger.info(f"PDF local convert enabled: {PDF_LOCAL_CONVERT} (PDF_LOCAL_CONVERT={os.getenv('PDF_LOCAL_CONVERT', '0')})")
+    logger.info(f"Vector store enabled: {USE_FAISS_STORE} (FAISS_STORE={os.getenv('FAISS_STORE', '0')}, module_available={VECTOR_STORE_MODULE_AVAILABLE}, faiss_available={FAISS_AVAILABLE})")
     logger.info(f"Max concurrent Bedrock connections: {BEDROCK_MAX_CONCURRENT} (BEDROCK_MAXCON={os.getenv('BEDROCK_MAXCON', '3')})")
     logger.info(f"PDF conversion model: {PDF_CONVERT_MODEL} (PDF_CONVERT_MODEL={os.getenv('PDF_CONVERT_MODEL', 'default')})")
     logger.info(f"Chat model: {BEDROCK_MODEL} (BEDROCK_MODEL={os.getenv('BEDROCK_MODEL', 'default')}, --model={args.model})")
@@ -351,6 +366,8 @@ def initialize_aws_clients():
         bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region, config=config)
         s3_client = session_aws.client('s3', region_name=profile_region, config=config) if USE_S3_BUCKET else None
         
+        # Vector store manager will be initialized after S3 bucket is ready
+        
         if DEBUG_MODE:
             logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
             logger.info(f"Using region: {profile_region}")
@@ -359,6 +376,8 @@ def initialize_aws_clients():
                 logger.info("S3 bucket mode enabled")
             else:
                 logger.info("Local filesystem mode enabled (--no-bucket)")
+            if USE_FAISS_STORE:
+                logger.info("Vector store mode enabled")
         
         return True
         
@@ -367,6 +386,20 @@ def initialize_aws_clients():
         bedrock_client = None
         s3_client = None
         return False
+
+def initialize_vector_store_if_enabled():
+    """Initialize vector store manager after S3 bucket is ready"""
+    global s3_bucket_name, s3_client
+    
+    if USE_FAISS_STORE:
+        try:
+            vector_manager = initialize_vector_store_manager(s3_client, s3_bucket_name)
+            if vector_manager:
+                logger.info(f"Vector store manager initialized successfully with bucket: {s3_bucket_name or 'local'}")
+            else:
+                logger.warning("Failed to initialize vector store manager")
+        except Exception as e:
+            logger.error(f"Error initializing vector store manager: {e}")
 
 def handle_flask_restart_bucket():
     """Handle S3 bucket name loading during Flask debug restart"""
@@ -425,21 +458,9 @@ def allowed_file(filename):
 
 # PDF parallel chunking functionality removed - no longer supported
 
-try:
-    from io import BytesIO
-    from docling.datamodel.base_models import DocumentStream, InputFormat
-    from docling.document_converter import DocumentConverter, PdfFormatOption
-    from docling.datamodel.pipeline_options import PdfPipelineOptions
-    from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-    import ballermann
-    DOCLING_AVAILABLE = True
-except ImportError:
-    DOCLING_AVAILABLE = False
-    logger.warning("docling not found - will use fitz text extraction")
-
 def pdf2markdown(pdf_input, is_bytes=False):
     """
-    Convert PDF to markdown using docling if available, otherwise fitz text extraction
+    Convert PDF to markdown using fitz text extraction
     Args:
         pdf_input: Path to PDF file or PDF bytes
         is_bytes: True if pdf_input is bytes, False if it's a file path
@@ -447,62 +468,7 @@ def pdf2markdown(pdf_input, is_bytes=False):
         Markdown string ready for LLM consumption
     """
     try:
-        if DOCLING_AVAILABLE:
-            try:
-                # PyPdfium without EasyOCR - as per docling example
-                pipeline_options = PdfPipelineOptions()
-                pipeline_options.do_ocr = False
-                pipeline_options.do_table_structure = True
-                pipeline_options.table_structure_options.do_cell_matching = False
-                
-                # Disable GPU usage to avoid CUDA errors
-                if hasattr(pipeline_options, 'ocr_options'):
-                    pipeline_options.ocr_options.use_gpu = False
-                if hasattr(pipeline_options, 'table_structure_options') and hasattr(pipeline_options.table_structure_options, 'use_gpu'):
-                    pipeline_options.table_structure_options.use_gpu = False
-                
-                # Initialize converter with PyPdfium backend (no OCR)
-                converter = DocumentConverter(
-                    format_options={
-                        InputFormat.PDF: PdfFormatOption(
-                            pipeline_options=pipeline_options, 
-                            backend=PyPdfiumDocumentBackend
-                        )
-                    }
-                )
-                
-                logger.info("Docling configured with PyPdfium backend: OCR=False, Tables=True, Cell matching=False, GPU=False")
-                
-                # Use docling for better PDF conversion with table focus
-                if is_bytes:
-                    # pdf_input is already bytes
-                    buf = BytesIO(pdf_input)
-                    source = DocumentStream(name="document.pdf", stream=buf)
-                else:
-                    # Convert file path for docling
-                    source = pdf_input
-                
-                result = converter.convert(source)
-                
-                # Get markdown content from docling result
-                if hasattr(result, 'document') and hasattr(result.document, 'export_to_markdown'):
-                    markdown_content = result.document.export_to_markdown()
-                    if markdown_content and markdown_content.strip():
-                        doc_header = "# Document\n\n*Converted from PDF using docling*\n\n"
-                        return doc_header + markdown_content.strip()
-                
-                # If docling result doesn't have expected structure, fall back to text
-                logger.warning("Docling conversion successful but couldn't extract markdown, using fitz fallback")
-                
-            except Exception as docling_error:
-                error_msg = str(docling_error)
-                if "meta tensor" in error_msg or "torch" in error_msg.lower():
-                    logger.warning(f"Docling PyTorch/GPU error, falling back to fitz: {error_msg}")
-                else:
-                    logger.warning(f"Docling conversion failed, falling back to fitz: {error_msg}")
-                # Continue to fitz fallback
-        
-        # Fallback to fitz text extraction
+        # Use fitz text extraction
         if is_bytes:
             doc = fitz.open(stream=pdf_input, filetype="pdf")
         else:
@@ -535,8 +501,7 @@ def pdf2markdown(pdf_input, is_bytes=False):
             return "# Document\n\n*No content could be extracted from this PDF*"
         
         full_content = "".join(markdown_parts)
-        conversion_method = "docling (fallback to fitz)" if DOCLING_AVAILABLE else "fitz"
-        doc_header = f"# Document\n\n*Converted from PDF using {conversion_method}*\n\n"
+        doc_header = "# Document\n\n*Converted from PDF using fitz*\n\n"
         doc_footer = f"\n\n---\n*Document processed: {len(markdown_parts)} pages*"
         
         return doc_header + full_content + doc_footer
@@ -849,12 +814,26 @@ def convert_pdfs_parallel(pdf_conversion_tasks):
         file_key, s3_key, s3_bucket, filename = task
         try:
             logger.info(f"[Parallel] Starting conversion: {filename}")
-            if PDF_LOCAL_CONVERT:
-                markdown_content = convert_pdf_to_markdown_local(s3_key, is_s3=True, s3_bucket=s3_bucket)
-            else:
-                markdown_content = convert_pdf_to_markdown_bedrock(s3_key, is_s3=True, s3_bucket=s3_bucket, model_id=PDF_CONVERT_MODEL)
+            
+            markdown_content = None
+            try:
+                if PDF_LOCAL_CONVERT:
+                    markdown_content = convert_pdf_to_markdown_local(s3_key, is_s3=True, s3_bucket=s3_bucket)
+                else:
+                    markdown_content = convert_pdf_to_markdown_bedrock(s3_key, is_s3=True, s3_bucket=s3_bucket, model_id=PDF_CONVERT_MODEL)
+            except SystemError as sys_err:
+                logger.error(f"[Parallel] System error during conversion: {filename} - {sys_err}")
+                return file_key, None, f"System error: {str(sys_err)}"
+            except MemoryError as mem_err:
+                logger.error(f"[Parallel] Memory error during conversion: {filename} - {mem_err}")
+                return file_key, None, f"Memory error: {str(mem_err)}"
+            except Exception as inner_e:
+                logger.error(f"[Parallel] Conversion error: {filename} - {inner_e}")
+                return file_key, None, str(inner_e)
+            
             logger.info(f"[Parallel] Completed conversion: {filename} ({len(markdown_content) if markdown_content else 0} chars)")
             return file_key, markdown_content, None
+            
         except Exception as e:
             logger.error(f"[Parallel] Failed conversion: {filename} - {e}")
             return file_key, None, str(e)
@@ -1141,13 +1120,15 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
                 else:
                     logger.info(f"PDF {i+1}: {pdf_info.get('filename', 'unknown')} at {pdf_info.get('path', 'unknown')}")
         
-        # Prepare PDF content if needed
+        # Prepare PDF content if needed (skip if vector store is enabled)
         pdf_content = []
-        if send_pdfs and pdf_files:
+        if send_pdfs and pdf_files and not USE_FAISS_STORE:
             logger.info(f"Including PDFs in conversation ({'first time' if not conversation_history else 'model switched'})")
             
             # Build PDF content using existing logic
             pdf_content = build_pdf_content(pdf_files)
+        elif send_pdfs and pdf_files and USE_FAISS_STORE:
+            logger.info(f"Skipping PDF upload to Bedrock - using vector store retrieval instead ({len(pdf_files)} PDFs indexed)")
                 
         # Add conversation history if provided (text-only, no document re-uploads)
         if conversation_history:
@@ -1156,9 +1137,56 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
                 messages.append({"role": "user", "content": [{"text": entry['user']}]})
                 messages.append({"role": "assistant", "content": [{"text": entry['bot']}]})
         
-        # Create current message prompt  
-        if context and not send_pdfs:
-            enhanced_prompt = f"{context}\n\n{prompt}"
+        # Create current message prompt with vector store context if enabled
+        vector_context = ""
+        if USE_FAISS_STORE and 'session_id' in session:
+            try:
+                vector_manager = get_vector_store_manager()
+                if vector_manager:
+                    # Get vector store stats for debugging
+                    stats = vector_manager.get_session_stats(session['session_id'])
+                    logger.info(f"Vector store stats: {stats}")
+                    
+                    # Check if user is asking for comprehensive analysis
+                    comprehensive_keywords = ['all', 'list all', 'all candidates', 'all resumes', 'comprehensive', 'complete list', 'entire', 'every']
+                    is_comprehensive_query = any(keyword in prompt.lower() for keyword in comprehensive_keywords)
+                    
+                    if is_comprehensive_query:
+                        logger.info("Detected comprehensive analysis request - retrieving from all documents")
+                        vector_context = vector_manager.get_all_documents_for_session(
+                            session_id=session['session_id'],
+                            max_chars=35000  # Increased limit to accommodate all 58 resumes
+                        )
+                    else:
+                        logger.info("Using targeted vector search")
+                        vector_context = vector_manager.get_context_for_session(
+                            session_id=session['session_id'],
+                            query=prompt,
+                            max_chunks=50,  # Increased to capture more resumes
+                            max_chars=15000  # Increased character limit
+                        )
+                    
+                    if vector_context:
+                        logger.info(f"Retrieved vector context: {len(vector_context)} chars")
+                    else:
+                        logger.info("No relevant vector context found - check if documents are properly indexed")
+                else:
+                    logger.warning("Vector store manager not available")
+            except Exception as e:
+                logger.error(f"Error retrieving vector context: {e}")
+        
+        # Combine contexts: prioritize vector context when available
+        combined_context = ""
+        if vector_context:
+            combined_context += f"Relevant document excerpts:\n{vector_context}\n\n"
+            logger.info("Using vector store context - skipping traditional document context")
+        elif context and not send_pdfs:
+            # Only use traditional context if no vector context is available
+            combined_context += context
+            logger.info("Using traditional document context (no vector context available)")
+        
+        if combined_context and not send_pdfs:
+            enhanced_prompt = f"{combined_context}\n\n{prompt}"
         else:
             enhanced_prompt = prompt
         
@@ -1415,9 +1443,17 @@ def chat():
         logger.info(f"Chat request - PDFs initialized: {pdfs_initialized}")
         
         # Determine if we need to send PDFs (first time with PDFs or PDFs not yet initialized)
-        send_pdfs = pdf_files and not pdfs_initialized
+        # When vector store is enabled, we don't send PDFs to Bedrock at all
+        if USE_FAISS_STORE and pdf_files and not pdfs_initialized:
+            # Mark PDFs as initialized immediately since we use vector store instead
+            session['pdfs_initialized'] = True
+            session.modified = True
+            send_pdfs = False
+            logger.info(f"Vector store enabled - marking {len(pdf_files)} PDFs as initialized without sending to Bedrock")
+        else:
+            send_pdfs = pdf_files and not pdfs_initialized
         
-        logger.info(f"PDF decision: pdf_files={len(pdf_files) if pdf_files else 0}, pdfs_initialized={pdfs_initialized}, send_pdfs={send_pdfs}")
+        logger.info(f"PDF decision: pdf_files={len(pdf_files) if pdf_files else 0}, pdfs_initialized={pdfs_initialized}, send_pdfs={send_pdfs}, vector_store={USE_FAISS_STORE}")
         
         # Build conversation history for Bedrock (exclude current session initialization if it exists)
         conversation_history = []
@@ -1596,6 +1632,29 @@ def upload_files():
                                 else:
                                     # Regular text content
                                     new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
+                                    
+                                    # Add to vector store if enabled (S3 mode)
+                                    if USE_FAISS_STORE:
+                                        try:
+                                            vector_manager = get_vector_store_manager()
+                                            if vector_manager:
+                                                logger.info(f"Adding text file to vector store: session_id={session['session_id']}, file={file.filename}")
+                                                success = vector_manager.add_document_from_s3(
+                                                    session_id=session['session_id'],
+                                                    s3_key=s3_key,
+                                                    source_filename=file.filename
+                                                )
+                                                if success:
+                                                    logger.info(f"Successfully added {file.filename} text file to vector store")
+                                                else:
+                                                    logger.warning(f"Failed to add {file.filename} to vector store")
+                                            else:
+                                                logger.error("Vector store manager is None for text file")
+                                        except Exception as vs_error:
+                                            logger.error(f"Error adding {file.filename} to vector store: {vs_error}")
+                                            import traceback
+                                            logger.error(f"Full traceback: {traceback.format_exc()}")
+                                    
                                     uploaded_files.append({
                                         'filename': file.filename,
                                         'size': file_size,
@@ -1669,6 +1728,23 @@ def upload_files():
                                     # Also add markdown content to text context for immediate use
                                     new_text_content += f"\n\n--- Content from {file.filename} (converted from PDF) ---\n{markdown_content}"
                                     
+                                    # Add to vector store if enabled
+                                    if USE_FAISS_STORE:
+                                        try:
+                                            vector_manager = get_vector_store_manager()
+                                            if vector_manager:
+                                                success = vector_manager.add_document_from_file(
+                                                    session_id=session['session_id'],
+                                                    file_path=md_filepath,
+                                                    source_filename=file.filename
+                                                )
+                                                if success:
+                                                    logger.info(f"Added {file.filename} markdown to vector store")
+                                                else:
+                                                    logger.warning(f"Failed to add {file.filename} to vector store")
+                                        except Exception as vs_error:
+                                            logger.error(f"Error adding {file.filename} to vector store: {vs_error}")
+                                    
                                 except Exception as e:
                                     logger.error(f"Error saving markdown locally: {e}")
                                     # Fall back to PDF-only storage
@@ -1697,6 +1773,24 @@ def upload_files():
                         else:
                             # Regular text content
                             new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
+                            
+                            # Add to vector store if enabled (local mode)
+                            if USE_FAISS_STORE:
+                                try:
+                                    vector_manager = get_vector_store_manager()
+                                    if vector_manager:
+                                        success = vector_manager.add_document_from_file(
+                                            session_id=session['session_id'],
+                                            file_path=filepath,
+                                            source_filename=file.filename
+                                        )
+                                        if success:
+                                            logger.info(f"Added {file.filename} text file to vector store")
+                                        else:
+                                            logger.warning(f"Failed to add {file.filename} to vector store")
+                                except Exception as vs_error:
+                                    logger.error(f"Error adding {file.filename} to vector store: {vs_error}")
+                            
                             uploaded_files.append({
                                 'filename': file.filename,
                                 'size': os.path.getsize(filepath),
@@ -1748,6 +1842,28 @@ def upload_files():
                             
                             # Also add markdown content to text context for immediate use
                             new_text_content += f"\n\n--- Content from {result['filename']} (converted from PDF) ---\n{result['markdown_content']}"
+                            
+                            # Add to vector store if enabled
+                            if USE_FAISS_STORE:
+                                try:
+                                    vector_manager = get_vector_store_manager()
+                                    if vector_manager:
+                                        logger.info(f"Adding to vector store: session_id={session['session_id']}, file={result['filename']}")
+                                        success = vector_manager.add_document_from_s3(
+                                            session_id=session['session_id'],
+                                            s3_key=md_s3_key,
+                                            source_filename=result['filename']
+                                        )
+                                        if success:
+                                            logger.info(f"Successfully added {result['filename']} markdown to vector store")
+                                        else:
+                                            logger.warning(f"Failed to add {result['filename']} to vector store")
+                                    else:
+                                        logger.error("Vector store manager is None - not initialized properly")
+                                except Exception as vs_error:
+                                    logger.error(f"Error adding {result['filename']} to vector store: {vs_error}")
+                                    import traceback
+                                    logger.error(f"Full traceback: {traceback.format_exc()}")
                             
                         except Exception as e:
                             logger.error(f"Error uploading markdown to S3 for {result['filename']}: {e}")
@@ -1964,6 +2080,16 @@ def clear_session():
             # Remove from tracking set
             session_upload_folders.discard(session_folder)
     
+    # Clear vector store for this session if enabled
+    if USE_FAISS_STORE and 'session_id' in session:
+        try:
+            vector_manager = get_vector_store_manager()
+            if vector_manager:
+                vector_manager.clear_session(session['session_id'])
+                logger.info(f"Cleared vector store for session: {session['session_id']}")
+        except Exception as e:
+            logger.error(f"Error clearing vector store: {e}")
+    
     session.clear()
     return redirect(url_for('index'))
 
@@ -2089,6 +2215,19 @@ def remove_file():
         if 'pdf_files' in session:
             pdf_to_remove = next((f for f in session['pdf_files'] if f['filename'] == filename), None)
             session['pdf_files'] = [f for f in session['pdf_files'] if f['filename'] != filename]
+        
+        # Remove from vector store if enabled
+        if USE_FAISS_STORE and 'session_id' in session:
+            try:
+                vector_manager = get_vector_store_manager()
+                if vector_manager:
+                    success = vector_manager.remove_document_from_session(session['session_id'], filename)
+                    if success:
+                        logger.info(f"Removed {filename} from vector store")
+                    else:
+                        logger.info(f"Document {filename} was not found in vector store (may not have been added)")
+            except Exception as e:
+                logger.error(f"Error removing {filename} from vector store: {e}")
             
             # If we removed a PDF and there are still PDFs remaining, reset initialization
             # If no PDFs remain, we can keep the initialization state as is (no PDFs to initialize)
@@ -2223,6 +2362,28 @@ def remove_file():
         logger.error(f"Remove file error: {e}")
         return jsonify({'error': 'Failed to remove file'}), 500
 
+@app.route('/vector_stats')
+def get_vector_stats():
+    """Get vector store statistics for debugging"""
+    try:
+        if not USE_FAISS_STORE:
+            return jsonify({'error': 'Vector store not enabled', 'enabled': False})
+        
+        if 'session_id' not in session:
+            return jsonify({'error': 'No session found', 'enabled': True})
+        
+        vector_manager = get_vector_store_manager()
+        if not vector_manager:
+            return jsonify({'error': 'Vector store manager not available', 'enabled': True})
+        
+        stats = vector_manager.get_session_stats(session['session_id'])
+        stats['enabled'] = True
+        return jsonify(stats)
+        
+    except Exception as e:
+        logger.error(f"Error getting vector stats: {e}")
+        return jsonify({'error': str(e), 'enabled': USE_FAISS_STORE})
+
 if __name__ == '__main__':
     # Only register signal handlers and cleanup in the actual app process
     # In debug mode, this prevents the reloader process from interfering
@@ -2247,6 +2408,9 @@ if __name__ == '__main__':
     elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
         # Flask debug restart - load existing bucket
         handle_flask_restart_bucket()    
+
+    # Initialize vector store manager now that S3 bucket is ready
+    initialize_vector_store_if_enabled()
 
     try:
         logger.info("Starting BedBot application...")
