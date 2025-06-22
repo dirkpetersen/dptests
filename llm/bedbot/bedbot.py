@@ -1155,15 +1155,15 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
                         logger.info("Detected comprehensive analysis request - retrieving from all documents")
                         vector_context = vector_manager.get_all_documents_for_session(
                             session_id=session['session_id'],
-                            max_chars=35000  # Increased limit to accommodate all 58 resumes
+                            max_chars=50000  # Balanced for performance vs comprehensiveness
                         )
                     else:
                         logger.info("Using targeted vector search")
                         vector_context = vector_manager.get_context_for_session(
                             session_id=session['session_id'],
                             query=prompt,
-                            max_chunks=50,  # Increased to capture more resumes
-                            max_chars=15000  # Increased character limit
+                            max_chunks=20,  # Balanced for performance
+                            max_chars=25000  # Reasonable size for fast responses
                         )
                     
                     if vector_context:
@@ -1207,7 +1207,7 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
         })
         
         inference_config = {
-            "maxTokens": 4000,
+            "maxTokens": 4000,  # Balanced for performance
             "temperature": 0.7,
             "topP": 0.9
         }

@@ -38,7 +38,7 @@ class FAISSVectorStore:
     """FAISS-based vector store for document embeddings and retrieval"""
     
     def __init__(self, session_id: str, embedding_model: str = "all-MiniLM-L6-v2", 
-                 chunk_size: int = 512, chunk_overlap: int = 50):
+                 chunk_size: int = 2048, chunk_overlap: int = 200):
         """
         Initialize FAISS vector store
         
@@ -76,39 +76,73 @@ class FAISSVectorStore:
         logger.info(f"Initialized FAISS vector store for session: {session_id}")
     
     def _chunk_text(self, text: str, source: str) -> List[DocumentChunk]:
-        """Split text into overlapping chunks"""
+        """Split text into overlapping chunks optimized for large documents and context windows"""
         chunks = []
         
-        # Simple sentence-aware chunking
-        sentences = text.split('. ')
+        # For large documents, use paragraph-aware chunking for better semantic coherence
+        paragraphs = text.split('\n\n')
         current_chunk = ""
         chunk_count = 0
         
-        for sentence in sentences:
-            # Add sentence to current chunk
-            test_chunk = current_chunk + sentence + ". "
+        for paragraph in paragraphs:
+            # Clean paragraph
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+                
+            # Try adding paragraph to current chunk
+            test_chunk = current_chunk + "\n\n" + paragraph if current_chunk else paragraph
             
             if len(test_chunk) <= self.chunk_size:
                 current_chunk = test_chunk
             else:
-                # Current chunk is full, save it and start new one
+                # Current chunk is getting too large
                 if current_chunk.strip():
+                    # Save current chunk
                     chunk_id = f"{source}_{chunk_count}"
                     chunks.append(DocumentChunk(
                         text=current_chunk.strip(),
                         source=source,
                         chunk_id=chunk_id,
-                        metadata={'chunk_index': chunk_count}
+                        metadata={'chunk_index': chunk_count, 'char_count': len(current_chunk)}
                     ))
                     chunk_count += 1
                 
-                # Start new chunk with overlap
+                # Handle overlap for continuity
                 if self.chunk_overlap > 0 and current_chunk:
-                    # Take last chunk_overlap characters as overlap
+                    # Take last overlap characters, but try to break at sentence boundary
                     overlap_text = current_chunk[-self.chunk_overlap:]
-                    current_chunk = overlap_text + sentence + ". "
+                    # Find last sentence boundary in overlap
+                    last_sentence = overlap_text.rfind('. ')
+                    if last_sentence > 0:
+                        overlap_text = overlap_text[last_sentence + 2:]
+                    current_chunk = overlap_text + "\n\n" + paragraph
                 else:
-                    current_chunk = sentence + ". "
+                    current_chunk = paragraph
+                
+                # If single paragraph is larger than chunk_size, split by sentences
+                if len(current_chunk) > self.chunk_size:
+                    sentences = current_chunk.split('. ')
+                    sentence_chunk = ""
+                    
+                    for sentence in sentences:
+                        test_sentence_chunk = sentence_chunk + sentence + ". "
+                        if len(test_sentence_chunk) <= self.chunk_size:
+                            sentence_chunk = test_sentence_chunk
+                        else:
+                            # Save sentence chunk
+                            if sentence_chunk.strip():
+                                chunk_id = f"{source}_{chunk_count}"
+                                chunks.append(DocumentChunk(
+                                    text=sentence_chunk.strip(),
+                                    source=source,
+                                    chunk_id=chunk_id,
+                                    metadata={'chunk_index': chunk_count, 'char_count': len(sentence_chunk)}
+                                ))
+                                chunk_count += 1
+                            sentence_chunk = sentence + ". "
+                    
+                    current_chunk = sentence_chunk
         
         # Add final chunk if not empty
         if current_chunk.strip():
@@ -117,10 +151,10 @@ class FAISSVectorStore:
                 text=current_chunk.strip(),
                 source=source,
                 chunk_id=chunk_id,
-                metadata={'chunk_index': chunk_count}
+                metadata={'chunk_index': chunk_count, 'char_count': len(current_chunk)}
             ))
         
-        logger.info(f"Chunked document {source} into {len(chunks)} chunks")
+        logger.info(f"Chunked document {source} ({len(text)} chars) into {len(chunks)} chunks")
         return chunks
     
     def add_document(self, text: str, source: str, metadata: Dict = None) -> int:
@@ -220,7 +254,7 @@ class FAISSVectorStore:
             logger.error(f"Error searching vector store: {e}")
             return []
     
-    def get_all_documents_context(self, max_chars: int = 15000) -> str:
+    def get_all_documents_context(self, max_chars: int = 50000) -> str:
         """
         Get context from all documents in the store (for comprehensive analysis)
         
@@ -248,7 +282,7 @@ class FAISSVectorStore:
             logger.info(f"Processing {num_documents} documents for comprehensive analysis")
             
             # Calculate chars per document to ensure all documents are included
-            chars_per_doc = min(500, max_chars // num_documents) if num_documents > 0 else 500
+            chars_per_doc = min(2000, max_chars // num_documents) if num_documents > 0 else 2000
             logger.info(f"Allocating {chars_per_doc} chars per document to fit all {num_documents} documents")
             
             # Take one chunk from each document to ensure broad coverage
@@ -275,7 +309,7 @@ class FAISSVectorStore:
             logger.error(f"Error generating comprehensive context: {e}")
             return ""
 
-    def get_context_for_query(self, query: str, max_chunks: int = 5, max_chars: int = 4000) -> str:
+    def get_context_for_query(self, query: str, max_chunks: int = 20, max_chars: int = 25000) -> str:
         """
         Get relevant context for a query, formatted for LLM consumption
         
@@ -471,7 +505,7 @@ class VectorStoreManager:
             logger.error(f"Error searching session {session_id}: {e}")
             return []
     
-    def get_all_documents_for_session(self, session_id: str, max_chars: int = 15000) -> str:
+    def get_all_documents_for_session(self, session_id: str, max_chars: int = 50000) -> str:
         """Get context from all documents in a session's vector store"""
         try:
             if session_id not in self.sessions:
@@ -484,7 +518,7 @@ class VectorStoreManager:
             logger.error(f"Error getting all documents for session {session_id}: {e}")
             return ""
 
-    def get_context_for_session(self, session_id: str, query: str, max_chunks: int = 5, max_chars: int = 4000) -> str:
+    def get_context_for_session(self, session_id: str, query: str, max_chunks: int = 20, max_chars: int = 25000) -> str:
         """Get relevant context for a query from session's vector store"""
         try:
             if session_id not in self.sessions:
