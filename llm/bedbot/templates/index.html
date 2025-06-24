@@ -85,6 +85,27 @@
             .right-panel {
                 display: none; /* Hide right panel in single column mode */
             }
+            
+            .left-panel {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                min-height: 0; /* Important for flex scrolling */
+            }
+            
+            .left-panel .upload-section {
+                flex-shrink: 0; /* Don't shrink upload section */
+            }
+            
+            .left-panel .chat-messages {
+                flex: 1;
+                min-height: 0; /* Important for flex scrolling */
+                overflow-y: auto;
+            }
+            
+            .left-panel .chat-input-container {
+                flex-shrink: 0; /* Keep input area always visible */
+            }
         }
 
         /* 2-column layout - hide chat elements in left panel, show in right panel */
@@ -102,6 +123,7 @@
             padding: 20px;
             text-align: center;
             position: relative;
+            flex-shrink: 0; /* Don't shrink header */
         }
 
         .chat-header h1 {
@@ -137,6 +159,7 @@
             padding: 15px 20px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
+            flex-shrink: 0; /* Don't shrink upload section */
         }
 
         .upload-controls {
@@ -180,6 +203,7 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
+            min-height: 0; /* Important for flex scrolling */
         }
 
         .message {
@@ -319,6 +343,7 @@
             padding: 20px;
             background: white;
             border-top: 1px solid #e9ecef;
+            flex-shrink: 0; /* Never shrink the input area */
         }
 
         .chat-input-wrapper {
@@ -574,6 +599,17 @@
             margin-left: 2px;
         }
 
+        .tooltip-icon {
+            margin-left: 4px;
+            color: #6c757d;
+            font-size: 11px;
+            cursor: help;
+        }
+
+        .tooltip-icon:hover {
+            color: #4facfe;
+        }
+
         .model-select {
             width: 100%;
             padding: 8px 12px;
@@ -663,10 +699,11 @@
                                 <i class="fas fa-brain"></i> Select or Enter AI Model
                             </label>
                             <div class="vector-store-option" id="vectorStoreOption" style="display: none;">
-                                <label class="checkbox-label">
+                                <label class="checkbox-label" title="If your text is short, e.g. less than 100 pages, it will fit into the context window of an LLM and you do not need a vector store">
                                     <input type="checkbox" id="useVectorStore" />
                                     <span class="checkmark"></span>
                                     Use Vector Store
+                                    <i class="far fa-question-circle tooltip-icon"></i>
                                 </label>
                             </div>
                         </div>
@@ -1426,10 +1463,16 @@
                     // Show the vector store option
                     vectorStoreOption.style.display = 'block';
                     
-                    // Load vector store preference from cookie
+                    // Load vector store preference from cookie, default to enabled when FAISS is available
                     const vectorStoreCookie = getCookie('use_vector_store');
-                    if (vectorStoreCookie === 'true') {
+                    if (vectorStoreCookie !== null) {
+                        // User has a saved preference
+                        useVectorStoreCheckbox.checked = (vectorStoreCookie === 'true');
+                    } else {
+                        // No saved preference, default to enabled when FAISS is available
                         useVectorStoreCheckbox.checked = true;
+                        // Save this default preference
+                        setCookie('use_vector_store', 'true', 30);
                     }
                     
                     // Add event listener for vector store checkbox
