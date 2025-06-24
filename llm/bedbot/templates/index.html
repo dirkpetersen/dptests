@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BedBot - AI Chat Assistant</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css">
     <style>
         * {
             margin: 0;
@@ -32,6 +33,67 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+        }
+
+        /* 2-column layout for low vertical space */
+        @media (max-height: 700px) {
+            .chat-container {
+                max-width: 1200px;
+                width: 95%;
+                height: 95vh;
+                flex-direction: row;
+            }
+            
+            .left-panel {
+                width: 400px;
+                display: flex;
+                flex-direction: column;
+                border-right: 1px solid #e9ecef;
+                overflow-y: auto;
+            }
+            
+            .right-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-width: 0; /* Prevent flex item from overflowing */
+            }
+            
+            .chat-header {
+                border-radius: 20px 0 0 0;
+            }
+            
+            .right-panel .chat-header {
+                border-radius: 0 20px 0 0;
+                border-left: none;
+            }
+        }
+
+        /* Default single-column layout for normal screens */
+        @media (min-height: 701px) {
+            .left-panel {
+                width: 100%;
+            }
+            
+            .right-panel {
+                display: none; /* Hide right panel in single column mode */
+            }
+        }
+
+        /* Default single-column layout - show chat elements in left panel */
+        @media (min-height: 701px) {
+            .right-panel {
+                display: none; /* Hide right panel in single column mode */
+            }
+        }
+
+        /* 2-column layout - hide chat elements in left panel, show in right panel */
+        @media (max-height: 700px) {
+            .left-panel .chat-messages,
+            .left-panel .typing-indicator,
+            .left-panel .chat-input-container {
+                display: none; /* Hide chat elements in left panel for 2-column mode */
+            }
         }
 
         .chat-header {
@@ -502,6 +564,22 @@
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
 
+        .model-help-text {
+            margin-top: 5px;
+        }
+
+        .model-help-text small {
+            color: #6c757d;
+            font-size: 11px;
+        }
+
+        .model-help-text .fas {
+            margin-right: 4px;
+        }
+
+
+
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -531,86 +609,213 @@
 </head>
 <body>
     <div class="chat-container">
-        <div class="chat-header">
-            <h1><i class="fas fa-robot"></i> BedBot</h1>
-            <div class="subtitle">Powered by AWS Bedrock</div>
-            <button class="clear-btn" onclick="clearChat()">
-                <i class="fas fa-trash"></i> Clear
-            </button>
-        </div>
-
-        <div class="upload-section">
-            <div class="upload-controls">
-                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #4facfe; margin-bottom: 10px;"></i>
-                    <div class="upload-text">
-                        <strong>Click to upload documents</strong> or drag and drop<br>
-                        <small>Supports: TXT, PDF, DOC, DOCX, MD, JSON, CSV (Max: 2GB total)</small>
-                    </div>
-                    <input type="file" id="fileInput" class="file-input" multiple accept=".txt,.pdf,.doc,.docx,.md,.json,.csv">
-                </div>
-                
-                <div class="model-selector" id="modelSelector">
-                    <label for="modelSelect">
-                        <i class="fas fa-brain"></i> Select AI Model
-                    </label>
-                    <select class="model-select" id="modelSelect">
-                        <option value="">Loading models...</option>
-                    </select>
-                </div>
-                
-                <div class="upload-status" id="uploadStatus"></div>
-                <div class="uploaded-files" id="uploadedFiles"></div>
+        <!-- Left Panel (Controls) - shown on the left in 2-column layout -->
+        <div class="left-panel">
+            <div class="chat-header">
+                <h1><i class="fas fa-robot"></i> BedBot</h1>
+                <div class="subtitle">Powered by AWS Bedrock</div>
+                <button class="clear-btn" onclick="clearChat()">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
             </div>
-        </div>
 
-        <div class="chat-messages" id="chatMessages">
-            <div class="message bot">
-                <div class="message-avatar">
+            <div class="upload-section">
+                <div class="upload-controls">
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #4facfe; margin-bottom: 10px;"></i>
+                        <div class="upload-text">
+                            <strong>Click to upload documents</strong> or drag and drop<br>
+                            <small>Supports: TXT, PDF, DOC, DOCX, MD, JSON, CSV (Max: 2GB total)</small>
+                        </div>
+                        <input type="file" id="fileInput" class="file-input" multiple accept=".txt,.pdf,.doc,.docx,.md,.json,.csv">
+                    </div>
+                    
+                    <div class="model-selector" id="modelSelector">
+                        <label for="modelSelect">
+                            <i class="fas fa-brain"></i> Select or Enter AI Model
+                        </label>
+                        <select class="model-select" id="modelSelect">
+                            <option value="">Loading models...</option>
+                        </select>
+                        <div class="model-help-text">
+                            <small><i class="fas fa-info-circle"></i> Choose from dropdown or type any Bedrock model ID</small>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-status" id="uploadStatus"></div>
+                    <div class="uploaded-files" id="uploadedFiles"></div>
+                </div>
+            </div>
+            
+            <!-- Chat elements for single-column mode -->
+            <div class="chat-messages">
+                <!-- Welcome message will be added by JavaScript -->
+            </div>
+
+            <div class="typing-indicator">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                     <i class="fas fa-robot"></i>
                 </div>
-                <div class="message-content">
-                    Hello! I'm BedBot, your AI assistant powered by AWS Bedrock. You can chat with me and upload documents for context-aware conversations. How can I help you today?
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        class="chat-input" 
+                        id="messageInput" 
+                        placeholder="Type your message here..."
+                        rows="2"
+                    ></textarea>
+                    <div class="input-buttons">
+                        <button class="mic-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice input">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="typing-indicator" id="typingIndicator">
-            <div class="message-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <i class="fas fa-robot"></i>
+        <!-- Right Panel (Chat) - shown on the right in 2-column layout -->
+        <div class="right-panel">
+            <div class="chat-header">
+                <h1><i class="fas fa-comments"></i> Chat</h1>
+                <div class="subtitle">AI Conversation</div>
             </div>
-            <div class="typing-dots">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-            </div>
-        </div>
 
-        <div class="chat-input-container">
-            <div class="chat-input-wrapper">
-                <textarea 
-                    class="chat-input" 
-                    id="messageInput" 
-                    placeholder="Type your message here..."
-                    rows="2"
-                ></textarea>
-                <div class="input-buttons">
-                    <button class="mic-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice input">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+            <div class="chat-messages">
+                <!-- Welcome message will be added by JavaScript -->
+            </div>
+
+            <div class="typing-indicator">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        class="chat-input" 
+                        placeholder="Type your message here..."
+                        rows="2"
+                    ></textarea>
+                    <div class="input-buttons">
+                        <button class="mic-btn" onclick="toggleVoiceRecording()" title="Voice input">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button class="send-btn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
     <script>
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const typingIndicator = document.getElementById('typingIndicator');
+        
+        // Function to get the active chat container based on current layout
+        function getActiveChatContainer() {
+            // Check if we're in 2-column mode (low height)
+            if (window.innerHeight <= 700) {
+                // Use right panel chat container
+                return document.querySelector('.right-panel .chat-messages');
+            } else {
+                // Use left panel chat container (single column mode)
+                return document.querySelector('.left-panel .chat-messages');
+            }
+        }
+        
+        function getActiveTypingIndicator() {
+            if (window.innerHeight <= 700) {
+                return document.querySelector('.right-panel .typing-indicator');
+            } else {
+                return document.querySelector('.left-panel .typing-indicator');
+            }
+        }
+        
+        function getActiveMessageInput() {
+            if (window.innerHeight <= 700) {
+                return document.querySelector('.right-panel .chat-input');
+            } else {
+                return document.querySelector('.left-panel .chat-input');
+            }
+        }
+        
+        function getActiveSendButton() {
+            if (window.innerHeight <= 700) {
+                return document.querySelector('.right-panel .send-btn');
+            } else {
+                return document.querySelector('.left-panel .send-btn');
+            }
+        }
+        
+        function getActiveMicButton() {
+            if (window.innerHeight <= 700) {
+                return document.querySelector('.right-panel .mic-btn');
+            } else {
+                return document.querySelector('.left-panel .mic-btn');
+            }
+        }
+        
+        // Function to move messages between containers when layout changes
+        function moveMessagesToActiveContainer() {
+            const leftChatContainer = document.querySelector('.left-panel .chat-messages');
+            const rightChatContainer = document.querySelector('.right-panel .chat-messages');
+            const activeChatContainer = getActiveChatContainer();
+            
+            // Determine which container has messages and which should receive them
+            const sourceContainer = activeChatContainer === leftChatContainer ? rightChatContainer : leftChatContainer;
+            
+            // Move all messages from source to active container
+            while (sourceContainer.firstChild) {
+                activeChatContainer.appendChild(sourceContainer.firstChild);
+            }
+            
+            // Sync input content between containers
+            const leftInput = document.querySelector('.left-panel .chat-input');
+            const rightInput = document.querySelector('.right-panel .chat-input');
+            const activeInput = getActiveMessageInput();
+            const inactiveInput = activeInput === leftInput ? rightInput : leftInput;
+            
+            // Copy content from inactive to active input
+            if (inactiveInput.value && !activeInput.value) {
+                activeInput.value = inactiveInput.value;
+                activeInput.style.height = 'auto';
+                activeInput.style.height = Math.min(activeInput.scrollHeight, 120) + 'px';
+                inactiveInput.value = ''; // Clear inactive input
+            }
+            
+            // Scroll to bottom of active container
+            activeChatContainer.scrollTop = activeChatContainer.scrollHeight;
+        }
+        
+        // Handle window resize to switch between layouts
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(function() {
+                moveMessagesToActiveContainer();
+            }, 250); // Debounce resize events
+        });
         const uploadArea = document.querySelector('.upload-area');
         const fileInput = document.getElementById('fileInput');
         const uploadStatus = document.getElementById('uploadStatus');
@@ -621,19 +826,27 @@
         let recognition = null;
         let isRecording = false;
 
-        // Auto-resize textarea
-        messageInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-        });
+        // Set up dynamic event handlers for input fields
+        function setupInputHandlers() {
+            // Auto-resize textarea for both panels
+            document.querySelectorAll('.chat-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                });
 
-        // Send message on Enter (but allow Shift+Enter for new lines)
-        messageInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
+                // Send message on Enter (but allow Shift+Enter for new lines)
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+            });
+        }
+        
+        // Call setup function
+        setupInputHandlers();
 
         // File upload handling
         fileInput.addEventListener('change', handleFileUpload);
@@ -651,9 +864,10 @@
 
             recognition.onstart = function() {
                 isRecording = true;
-                micBtn.classList.add('recording');
-                micBtn.innerHTML = '<i class="fas fa-stop"></i>';
-                micBtn.title = 'Stop recording';
+                const activeMicBtn = getActiveMicButton();
+                activeMicBtn.classList.add('recording');
+                activeMicBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                activeMicBtn.title = 'Stop recording';
                 finalTranscript = '';
                 interimTranscript = '';
             };
@@ -679,14 +893,15 @@
                     const newText = currentFinalTranscript.substring(finalTranscript.length).trim();
                     
                     if (newText) {
-                        const currentValue = messageInput.value;
+                        const activeMessageInput = getActiveMessageInput();
+                        const currentValue = activeMessageInput.value;
                         // Add space before new text if input is not empty
                         const separator = currentValue.trim() ? ' ' : '';
-                        messageInput.value = currentValue + separator + newText;
+                        activeMessageInput.value = currentValue + separator + newText;
                         
-                        messageInput.style.height = 'auto';
-                        messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-                        messageInput.focus();
+                        activeMessageInput.style.height = 'auto';
+                        activeMessageInput.style.height = Math.min(activeMessageInput.scrollHeight, 120) + 'px';
+                        activeMessageInput.focus();
                     }
                     
                     finalTranscript = currentFinalTranscript;
@@ -748,16 +963,18 @@
             // Helper function to stop recording
             function stopRecording() {
                 isRecording = false;
-                micBtn.classList.remove('recording');
-                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-                micBtn.title = 'Voice input';
+                const activeMicBtn = getActiveMicButton();
+                activeMicBtn.classList.remove('recording');
+                activeMicBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                activeMicBtn.title = 'Voice input';
                 
                 // Clean up any extra spaces in the input
-                const currentValue = messageInput.value;
+                const activeMessageInput = getActiveMessageInput();
+                const currentValue = activeMessageInput.value;
                 const cleanedValue = currentValue.replace(/\s+/g, ' ').trim();
-                messageInput.value = cleanedValue;
-                messageInput.style.height = 'auto';
-                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+                activeMessageInput.value = cleanedValue;
+                activeMessageInput.style.height = 'auto';
+                activeMessageInput.style.height = Math.min(activeMessageInput.scrollHeight, 120) + 'px';
                 
                 // Reset transcripts
                 finalTranscript = '';
@@ -770,8 +987,10 @@
                 }
             }
         } else {
-            // Hide microphone button if speech recognition is not supported
-            micBtn.style.display = 'none';
+            // Hide microphone buttons if speech recognition is not supported
+            document.querySelectorAll('.mic-btn').forEach(btn => {
+                btn.style.display = 'none';
+            });
         }
 
         // Drag and drop
@@ -794,13 +1013,14 @@
         });
 
         async function sendMessage() {
-            const message = messageInput.value.trim();
+            const activeMessageInput = getActiveMessageInput();
+            const message = activeMessageInput.value.trim();
             if (!message) return;
 
             // Add user message
             addMessage(message, 'user');
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
+            activeMessageInput.value = '';
+            activeMessageInput.style.height = 'auto';
 
             // Show typing indicator
             showTyping();
@@ -849,19 +1069,26 @@
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(messageContent);
             
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Use the active chat container based on current layout
+            const activeChatContainer = getActiveChatContainer();
+            activeChatContainer.appendChild(messageDiv);
+            activeChatContainer.scrollTop = activeChatContainer.scrollHeight;
         }
 
         function showTyping() {
-            typingIndicator.style.display = 'flex';
-            sendBtn.disabled = true;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            const activeTypingIndicator = getActiveTypingIndicator();
+            activeTypingIndicator.style.display = 'flex';
+            const activeSendBtn = getActiveSendButton();
+            activeSendBtn.disabled = true;
+            const activeChatContainer = getActiveChatContainer();
+            activeChatContainer.scrollTop = activeChatContainer.scrollHeight;
         }
 
         function hideTyping() {
-            typingIndicator.style.display = 'none';
-            sendBtn.disabled = false;
+            const activeTypingIndicator = getActiveTypingIndicator();
+            activeTypingIndicator.style.display = 'none';
+            const activeSendBtn = getActiveSendButton();
+            activeSendBtn.disabled = false;
         }
 
         let isUploading = false;
@@ -1020,96 +1247,223 @@
             window.location.href = '/clear';
         }
 
-        // Model selector functionality
+        // Cookie utility functions
+        function setCookie(name, value, days = 30) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        // Track current model and Tom Select instance
+        let currentModel = null;
+        let modelSelect = null;
+        let allBedrockModels = []; // Store all available models
+
+        // Model selector functionality using Tom Select
         async function loadModels() {
             try {
                 const response = await fetch('/models');
                 const data = await response.json();
                 console.log('Available models:', data);
                 
-                if (data.models && data.models.length > 1) {
-                    // Show model selector if multiple models available
-                    const modelSelector = document.getElementById('modelSelector');
-                    const modelSelect = document.getElementById('modelSelect');
+                const modelSelector = document.getElementById('modelSelector');
+                const selectElement = document.getElementById('modelSelect');
+                
+                // Clear existing options and add configured models
+                selectElement.innerHTML = '';
+                
+                // Store all models for dynamic loading
+                allBedrockModels = data.models || [];
+                
+                // Add only configured models initially
+                const configuredModels = data.models.filter(model => model.type === 'configured');
+                
+                // Check if we should hide the selector (0 or 1 configured models)
+                if (configuredModels.length <= 1) {
+                    console.log(`Only ${configuredModels.length} configured model(s), hiding model selector`);
+                    modelSelector.style.display = 'none';
                     
-                    // Clear loading option
-                    modelSelect.innerHTML = '';
-                    
-                    // Add models to dropdown
-                    data.models.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.id;
-                        option.textContent = model.name;
-                        if (model.id === data.current) {
-                            option.selected = true;
-                        }
-                        modelSelect.appendChild(option);
-                    });
-                    
-                    // Show the selector
-                    modelSelector.classList.add('show');
-                    
-                    // Add change handler
-                    modelSelect.addEventListener('change', async function() {
-                        const selectedModel = this.value;
-                        console.log('Selected model:', selectedModel);
-                        if (selectedModel) {
-                            try {
-                                const response = await fetch('/change_model', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({ model: selectedModel })
-                                });
-                                
-                                if (response.ok) {
-                                    const data = await response.json();
-                                    console.log('Model changed to:', data.model);
-                                    
-                                    // Add system message about model change - keep existing chat history
-                                    if (data.model_changed) {
-                                        const selectedOption = this.options[this.selectedIndex];
-                                        const uploadedFiles = document.getElementById('uploadedFiles');
-                                        const hasFiles = uploadedFiles && uploadedFiles.classList.contains('show');
-                                        
-                                        const changeMessage = `🧠 Switched to ${selectedOption.textContent} model.${hasFiles ? ' Your uploaded documents will be re-processed with the new model.' : ''}`;
-                                        addMessage(changeMessage, 'bot');
-                                    }
-                                } else {
-                                    console.error('Failed to change model');
-                                    alert('Failed to change model. Please try again.');
-                                }
-                            } catch (error) {
-                                console.error('Error changing model:', error);
-                                alert('Error changing model. Please try again.');
-                            }
-                        }
-                    });
+                    // If there's exactly one model, set it as current and return early
+                    if (configuredModels.length === 1) {
+                        currentModel = configuredModels[0].id;
+                    }
+                    return;
                 }
+                
+                configuredModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.id;
+                    selectElement.appendChild(option);
+                });
+                
+                // Initialize Tom Select
+                modelSelect = new TomSelect('#modelSelect', {
+                    create: true,
+                    sortField: {
+                        field: 'text',
+                        direction: 'asc'
+                    },
+                    placeholder: 'Select model or type to search...',
+                    maxItems: 1,
+                    load: function(query, callback) {
+                        console.log('Tom Select load called with query:', query);
+                        
+                        if (!query || query.length === 0) {
+                            return callback();
+                        }
+                        
+                        // Load all available Bedrock models when user starts typing
+                        const availableModels = allBedrockModels
+                            .filter(model => model.type === 'available')
+                            .map(model => ({
+                                value: model.id,
+                                text: model.id
+                            }));
+                        
+                        console.log(`Loading ${availableModels.length} additional models`);
+                        callback(availableModels);
+                    },
+                    shouldLoad: function(query) {
+                        // Only load when user types something
+                        return query && query.length > 0;
+                    },
+                    createFilter: function(input) {
+                        // Allow creating custom Bedrock model IDs
+                        if (!input || !input.trim()) return false;
+                        
+                        const trimmed = input.trim();
+                        const bedrockPattern = /^(us\.|anthropic\.|amazon\.|ai21\.|cohere\.|meta\.|stability\.|mistral\.)/;
+                        
+                        return bedrockPattern.test(trimmed) || trimmed.length > 3;
+                    },
+                    render: {
+                        no_results: function(data, escape) {
+                            return '<div class="no-results">Type to search all Bedrock models or enter custom model ID</div>';
+                        }
+                    }
+                });
+                
+                // Set current model value
+                if (data.current) {
+                    modelSelect.setValue(data.current);
+                    currentModel = data.current;
+                }
+                
+                // Add event handler for changes
+                modelSelect.on('change', function(value) {
+                    console.log('Model selected via change:', value);
+                    if (value && value !== currentModel) {
+                        changeModel(value);
+                    }
+                });
+                
+                // Handle when user creates a new item (custom model) - but don't call changeModel
+                // since the change event will handle it
+                modelSelect.on('item_add', function(value, item) {
+                    console.log('Item added:', value, '- change event will handle model switch');
+                });
+                
+                // Show the selector
+                modelSelector.classList.add('show');
+                
             } catch (error) {
                 console.log('Error loading models:', error);
+                // In error case, hide the selector since we can't load models properly
+                const modelSelector = document.getElementById('modelSelector');
+                console.log('Error loading models, hiding model selector');
+                modelSelector.style.display = 'none';
             }
         }
 
+        async function changeModel(selectedModel) {
+            if (!selectedModel) return;
+            
+            try {
+                const response = await fetch('/change_model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ model: selectedModel })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Model changed to:', data.model);
+                    
+                    // Update the current model tracking
+                    currentModel = data.model;
+                    
+                    // Update Tom Select to show the confirmed model
+                    if (modelSelect) {
+                        modelSelect.setValue(data.model);
+                    }
+                    
+                    // Add system message about model change - keep existing chat history
+                    if (data.model_changed) {
+                        const uploadedFiles = document.getElementById('uploadedFiles');
+                        const hasFiles = uploadedFiles && uploadedFiles.classList.contains('show');
+                        
+                        const modelType = data.is_custom ? 'custom' : 'predefined';
+                        const changeMessage = `🧠 Switched to ${selectedModel} (${modelType} model).${hasFiles ? ' Your uploaded documents will be re-processed with the new model.' : ''}`;
+                        addMessage(changeMessage, 'bot');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    console.error('Failed to change model:', errorData.error);
+                    alert(`Failed to change model: ${errorData.error}`);
+                    
+                    // Revert to previous model
+                    if (modelSelect && currentModel) {
+                        modelSelect.setValue(currentModel);
+                    }
+                }
+            } catch (error) {
+                console.error('Error changing model:', error);
+                alert('Error changing model. Please try again.');
+                
+                // Revert to previous model
+                if (modelSelect && currentModel) {
+                    modelSelect.setValue(currentModel);
+                }
+            }
+        }
+
+
         // Load chat history and files on page load
         window.addEventListener('load', async function() {
+            let hasHistory = false;
             try {
                 const response = await fetch('/history');
                 const history = await response.json();
                 
-                // Clear default message if there's history
                 if (history.length > 0) {
-                    chatMessages.innerHTML = '';
+                    hasHistory = true;
+                    history.forEach(item => {
+                        addMessage(item.user, 'user');
+                        // Use HTML version if available, otherwise fall back to markdown
+                        addMessage(item.bot_html || item.bot, 'bot');
+                    });
                 }
-                
-                history.forEach(item => {
-                    addMessage(item.user, 'user');
-                    // Use HTML version if available, otherwise fall back to markdown
-                    addMessage(item.bot_html || item.bot, 'bot');
-                });
             } catch (error) {
                 console.log('No chat history available');
+            }
+            
+            // Add welcome message only if there's no history
+            if (!hasHistory) {
+                addMessage("Hello! I'm BedBot, your AI assistant powered by AWS Bedrock. You can chat with me and upload documents for context-aware conversations. How can I help you today?", 'bot');
             }
 
             // Load uploaded files
@@ -1123,6 +1477,9 @@
             
             // Load available models
             loadModels();
+            
+            // Ensure messages are in the correct container for current layout
+            moveMessagesToActiveContainer();
         });
     </script>
 </body>
