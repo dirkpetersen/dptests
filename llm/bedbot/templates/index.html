@@ -539,12 +539,39 @@
             display: block;
         }
 
-        .model-selector label {
-            display: block;
+        .model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 5px;
+        }
+
+        .model-selector label {
             font-size: 13px;
             color: #495057;
             font-weight: 600;
+        }
+
+        .vector-store-option {
+            margin-left: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6c757d;
+            font-weight: normal;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .checkmark {
+            margin-left: 2px;
         }
 
         .model-select {
@@ -631,15 +658,21 @@
                     </div>
                     
                     <div class="model-selector" id="modelSelector">
-                        <label for="modelSelect">
-                            <i class="fas fa-brain"></i> Select or Enter AI Model
-                        </label>
+                        <div class="model-header">
+                            <label for="modelSelect">
+                                <i class="fas fa-brain"></i> Select or Enter AI Model
+                            </label>
+                            <div class="vector-store-option" id="vectorStoreOption" style="display: none;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="useVectorStore" />
+                                    <span class="checkmark"></span>
+                                    Use Vector Store
+                                </label>
+                            </div>
+                        </div>
                         <select class="model-select" id="modelSelect">
                             <option value="">Loading models...</option>
                         </select>
-                        <div class="model-help-text">
-                            <small><i class="fas fa-info-circle"></i> Choose from dropdown or type any Bedrock model ID</small>
-                        </div>
                     </div>
                     
                     <div class="upload-status" id="uploadStatus"></div>
@@ -1026,12 +1059,19 @@
             showTyping();
 
             try {
+                // Check if vector store is enabled by user
+                const useVectorStoreCheckbox = document.getElementById('useVectorStore');
+                const useVectorStore = useVectorStoreCheckbox && useVectorStoreCheckbox.checked;
+                
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ 
+                        message: message,
+                        use_vector_store: useVectorStore
+                    })
                 });
 
                 const data = await response.json();
@@ -1377,6 +1417,35 @@
                 
                 // Show the selector
                 modelSelector.classList.add('show');
+                
+                // Handle vector store option
+                if (data.faiss_enabled) {
+                    const vectorStoreOption = document.getElementById('vectorStoreOption');
+                    const useVectorStoreCheckbox = document.getElementById('useVectorStore');
+                    
+                    // Show the vector store option
+                    vectorStoreOption.style.display = 'block';
+                    
+                    // Load vector store preference from cookie
+                    const vectorStoreCookie = getCookie('use_vector_store');
+                    if (vectorStoreCookie === 'true') {
+                        useVectorStoreCheckbox.checked = true;
+                    }
+                    
+                    // Add event listener for vector store checkbox
+                    useVectorStoreCheckbox.addEventListener('change', function() {
+                        const isEnabled = this.checked;
+                        setCookie('use_vector_store', isEnabled ? 'true' : 'false', 30);
+                        console.log('Vector store preference saved:', isEnabled);
+                        
+                        // Notify the user about the change
+                        if (isEnabled) {
+                            addMessage(`🔍 Vector store enabled. I'll now use semantic search to find relevant content from your uploaded documents for more accurate answers.`, 'bot');
+                        } else {
+                            addMessage(`🔍 Vector store disabled. I'll use the traditional method of including all document content in queries.`, 'bot');
+                        }
+                    });
+                }
                 
             } catch (error) {
                 console.log('Error loading models:', error);

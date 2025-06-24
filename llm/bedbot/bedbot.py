@@ -11,7 +11,6 @@ from botocore.exceptions import ClientError
 from botocore.config import Config
 import markdown
 import fitz  # PyMuPDF
-import pymupdf4llm
 import re
 from dotenv import load_dotenv
 import signal
@@ -28,9 +27,14 @@ logger = logging.getLogger(__name__)
 
 # Try to import vector store functionality
 try:
-    from vector_store import initialize_vector_store_manager, get_vector_store_manager, is_vector_store_available, FAISS_AVAILABLE
-    VECTOR_STORE_MODULE_AVAILABLE = True
-    logger.info("Vector store module loaded successfully")
+    if os.getenv('FAISS_STORE', '0').strip().lower() in ('1', 'true', 'yes', 'on'):
+        from vector_store import initialize_vector_store_manager, get_vector_store_manager, is_vector_store_available, FAISS_AVAILABLE
+        VECTOR_STORE_MODULE_AVAILABLE = True
+        logger.info("Vector store module loaded successfully")
+    else:
+        VECTOR_STORE_MODULE_AVAILABLE = False
+        FAISS_AVAILABLE = False
+        logger.info("Vector store module not enabled (FAISS_STORE=0)")
 except ImportError as e:
     VECTOR_STORE_MODULE_AVAILABLE = False
     FAISS_AVAILABLE = False
@@ -366,8 +370,6 @@ def initialize_aws_clients():
         bedrock_client = session_aws.client('bedrock-runtime', region_name=profile_region, config=config)
         s3_client = session_aws.client('s3', region_name=profile_region, config=config) if USE_S3_BUCKET else None
         
-        # Vector store manager will be initialized after S3 bucket is ready
-        
         if DEBUG_MODE:
             logger.info(f"Initialized Bedrock client with profile: {session_aws.profile_name or 'default'}")
             logger.info(f"Using region: {profile_region}")
@@ -377,7 +379,7 @@ def initialize_aws_clients():
             else:
                 logger.info("Local filesystem mode enabled (--no-bucket)")
             if USE_FAISS_STORE:
-                logger.info("Vector store mode enabled")
+                logger.info("Vector store mode enabled (independent of file storage)")
         
         return True
         
@@ -388,18 +390,41 @@ def initialize_aws_clients():
         return False
 
 def initialize_vector_store_if_enabled():
-    """Initialize vector store manager after S3 bucket is ready"""
-    global s3_bucket_name, s3_client
-    
+    """Initialize vector store manager - independent of S3"""
     if USE_FAISS_STORE:
         try:
-            vector_manager = initialize_vector_store_manager(s3_client, s3_bucket_name)
+            logger.info("🔄 Initializing vector store manager")
+            vector_manager = initialize_vector_store_manager()
             if vector_manager:
-                logger.info(f"Vector store manager initialized successfully with bucket: {s3_bucket_name or 'local'}")
+                logger.info("✅ Vector store manager initialized successfully")
             else:
-                logger.warning("Failed to initialize vector store manager")
+                logger.error("❌ Failed to initialize vector store manager")
         except Exception as e:
-            logger.error(f"Error initializing vector store manager: {e}")
+            logger.error(f"❌ Error initializing vector store manager: {e}")
+
+def ensure_vector_store_configured():
+    """Ensure vector store manager is properly configured"""
+    if not USE_FAISS_STORE:
+        return True
+        
+    vector_manager = get_vector_store_manager()
+    if not vector_manager:
+        logger.error("❌ Vector store manager not available")
+        # Try to initialize it
+        try:
+            logger.info("🔄 Attempting to initialize vector store manager")
+            vector_manager = initialize_vector_store_manager()
+            if vector_manager:
+                logger.info("✅ Vector store manager initialized successfully")
+                return True
+            else:
+                logger.error("❌ Failed to initialize vector store manager")
+                return False
+        except Exception as e:
+            logger.error(f"❌ Error initializing vector store manager: {e}")
+            return False
+    
+    return True
 
 def handle_flask_restart_bucket():
     """Handle S3 bucket name loading during Flask debug restart"""
@@ -477,7 +502,12 @@ def pdf2markdown(pdf_input, is_bytes=False):
         markdown_parts = []
         
         # Process each page with fitz
-        for page_num in range(len(doc)):
+        total_pages = len(doc)
+        pages_with_content = 0
+        
+        logger.info(f"PDF has {total_pages} pages - processing all pages")
+        
+        for page_num in range(total_pages):
             page = doc[page_num]
             page_markdown = f"\n## Page {page_num + 1}\n\n"
             
@@ -486,6 +516,12 @@ def pdf2markdown(pdf_input, is_bytes=False):
                 text = page.get_text("text")
                 if text and text.strip():
                     page_markdown += f"{text.strip()}\n\n"
+                    pages_with_content += 1
+                    
+                    # Log page content for debugging (first few and last few pages)
+                    if page_num < 3 or page_num >= total_pages - 3:
+                        text_preview = text.strip()[:200] + "..." if len(text.strip()) > 200 else text.strip()
+                        logger.info(f"📄 Page {page_num + 1} content preview: {text_preview}")
                     
             except Exception as e:
                 logger.warning(f"Error processing page {page_num + 1}: {e}")
@@ -494,17 +530,33 @@ def pdf2markdown(pdf_input, is_bytes=False):
             if page_markdown.strip() != f"## Page {page_num + 1}":
                 markdown_parts.append(page_markdown)
         
+        logger.info(f"✅ Processed {total_pages} pages, {pages_with_content} pages contained text content")
+        
         doc.close()
+        
+        # Explicit cleanup to prevent memory leaks
+        import gc
+        gc.collect()
         
         # Assemble final document
         if not markdown_parts:
+            logger.error("❌ No content could be extracted from PDF")
             return "# Document\n\n*No content could be extracted from this PDF*"
         
         full_content = "".join(markdown_parts)
         doc_header = "# Document\n\n*Converted from PDF using fitz*\n\n"
         doc_footer = f"\n\n---\n*Document processed: {len(markdown_parts)} pages*"
         
-        return doc_header + full_content + doc_footer
+        final_markdown = doc_header + full_content + doc_footer
+        
+        logger.info(f"✅ Final PDF conversion: {len(final_markdown):,} chars total")
+        logger.info(f"📊 Content breakdown: {len(doc_header)} header + {len(full_content):,} content + {len(doc_footer)} footer")
+        
+        # Log beginning of final content for debugging
+        content_start = final_markdown[:1000] + "..." if len(final_markdown) > 1000 else final_markdown
+        logger.info(f"📝 Final markdown start: {content_start}")
+        
+        return final_markdown
         
     except Exception as e:
         logger.error(f"Error in pdf2markdown conversion: {e}")
@@ -844,6 +896,16 @@ def convert_pdfs_parallel(pdf_conversion_tasks):
         if DEBUG_MODE and max_workers > 2:
             max_workers = 2
             logger.info(f"Reduced max_workers to {max_workers} for debug mode")
+        
+        # Further reduce if we detect memory pressure
+        try:
+            import psutil
+            available_memory_gb = psutil.virtual_memory().available / (1024**3)
+            if available_memory_gb < 2:  # Less than 2GB available
+                max_workers = min(max_workers, 1)
+                logger.warning(f"Low memory detected ({available_memory_gb:.1f}GB), reducing to {max_workers} workers")
+        except ImportError:
+            logger.info("psutil not available - cannot check memory pressure")
             
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all tasks
@@ -1070,7 +1132,7 @@ def send_bedrock_message(messages):
         else:
             raise api_error
 
-def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, send_pdfs=False):
+def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, send_pdfs=False, use_vector_store=False):
     """Call AWS Bedrock model using Converse API with document support and conversation history"""
     if not bedrock_client:
         return "Error: Bedrock client not initialized. Please check your AWS credentials."
@@ -1139,7 +1201,16 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
         
         # Create current message prompt with vector store context if enabled
         vector_context = ""
-        if USE_FAISS_STORE and 'session_id' in session:
+        # Initialize query analysis variables
+        is_comprehensive_query = False
+        is_document_listing = False
+        needs_full_context = False
+        complex_query_indicators = [
+            'explain', 'how', 'why', 'what', 'where', 'when', 'which',
+            'analyze', 'describe', 'detail', 'elaborate', 'clarify'
+        ]
+        
+        if USE_FAISS_STORE and use_vector_store and 'session_id' in session:
             try:
                 vector_manager = get_vector_store_manager()
                 if vector_manager:
@@ -1147,29 +1218,110 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
                     stats = vector_manager.get_session_stats(session['session_id'])
                     logger.info(f"Vector store stats: {stats}")
                     
-                    # Check if user is asking for comprehensive analysis
-                    comprehensive_keywords = ['all', 'list all', 'all candidates', 'all resumes', 'comprehensive', 'complete list', 'entire', 'every']
+                    # Enhanced comprehensive analysis detection
+                    comprehensive_keywords = [
+                        'all', 'list all', 'all candidates', 'all resumes', 'comprehensive', 
+                        'complete list', 'entire', 'every', 'controls', 'requirements', 
+                        'sections', 'everything', 'full list', 'complete', 'summary',
+                        'overview', 'catalog', 'inventory', 'enumerate'
+                    ]
                     is_comprehensive_query = any(keyword in prompt.lower() for keyword in comprehensive_keywords)
                     
-                    if is_comprehensive_query:
+                    # Enhanced document analysis patterns
+                    document_analysis_patterns = [
+                        'list all controls', 'all controls', 'all requirements', 'list controls', 
+                        'show controls', 'what are the controls', 'summarize controls',
+                        'show all', 'list everything', 'complete analysis', 'full analysis',
+                        'document summary', 'key points', 'main sections', 'all sections',
+                        'what does the document contain', 'document contents'
+                    ]
+                    is_document_listing = any(pattern in prompt.lower() for pattern in document_analysis_patterns)
+                    
+                    # Check for document-wide queries that need full context
+                    full_context_patterns = [
+                        'compare', 'contrast', 'relationship', 'correlation', 'across',
+                        'throughout', 'entire document', 'whole document', 'full document'
+                    ]
+                    needs_full_context = any(pattern in prompt.lower() for pattern in full_context_patterns)
+                    
+                    if is_comprehensive_query or is_document_listing or needs_full_context:
                         logger.info("Detected comprehensive analysis request - retrieving from all documents")
-                        vector_context = vector_manager.get_all_documents_for_session(
-                            session_id=session['session_id'],
-                            max_chars=50000  # Balanced for performance vs comprehensiveness
-                        )
+                        # Significantly increase limits for document listing tasks
+                        # Use different retrieval strategies based on query type
+                        if needs_full_context:
+                            # For comparison/relationship queries, get maximum context using full retrieval
+                            vector_context = vector_manager.get_all_documents_for_session(
+                                session_id=session['session_id'],
+                                max_chars=200000,  # Reduced to prevent memory issues
+                                force_full_retrieval=True
+                            )
+                            logger.info(f"Full context retrieval: {len(vector_context)} chars for cross-document analysis")
+                        else:
+                            # For listing/enumeration queries, use comprehensive retrieval with ALL chunks
+                            vector_context = vector_manager.get_all_documents_for_session(
+                                session_id=session['session_id'],
+                                max_chars=150000,  # Reduced to prevent memory issues
+                                force_full_retrieval=True  # Use ALL chunks
+                            )
+                            logger.info(f"Comprehensive retrieval: {len(vector_context)} chars for document listing")
                     else:
                         logger.info("Using targeted vector search")
+                        # Enhanced targeted search with better parameters
+                        search_chunks = 30  # Default for normal queries
+                        search_chars = 25000  # Default char limit
+                        
+                        # Increase search scope for complex queries
+                        complex_query_indicators = [
+                            'explain', 'how', 'why', 'what', 'where', 'when', 'which',
+                            'analyze', 'describe', 'detail', 'elaborate', 'clarify'
+                        ]
+                        if any(indicator in prompt.lower() for indicator in complex_query_indicators):
+                            search_chunks = 50
+                            search_chars = 50000
+                            logger.info("Enhanced search for complex query")
+                        
                         vector_context = vector_manager.get_context_for_session(
                             session_id=session['session_id'],
                             query=prompt,
-                            max_chunks=20,  # Balanced for performance
-                            max_chars=25000  # Reasonable size for fast responses
+                            max_chunks=search_chunks,
+                            max_chars=search_chars
                         )
                     
                     if vector_context:
                         logger.info(f"Retrieved vector context: {len(vector_context)} chars")
+                        
+                        # Check if retrieved context seems insufficient for comprehensive queries
+                        if (is_comprehensive_query or is_document_listing) and len(vector_context) < 10000:
+                            logger.warning(f"Vector context ({len(vector_context)} chars) may be insufficient for comprehensive query")
+                            # Try alternative retrieval strategy
+                            try:
+                                alternative_context = vector_manager.get_all_documents_for_session(
+                                    session_id=session['session_id'],
+                                    max_chars=300000,  # Higher fallback limit
+                                    force_full_retrieval=True  # Use comprehensive method
+                                )
+                                if alternative_context and len(alternative_context) > len(vector_context):
+                                    vector_context = alternative_context
+                                    logger.info(f"Using alternative retrieval: {len(vector_context)} chars")
+                            except Exception as alt_error:
+                                logger.warning(f"Alternative retrieval failed: {alt_error}")
                     else:
                         logger.info("No relevant vector context found - check if documents are properly indexed")
+                        
+                        # Fallback: try to get any available context for comprehensive queries
+                        if is_comprehensive_query or is_document_listing:
+                            try:
+                                logger.info("Attempting fallback retrieval for comprehensive query")
+                                fallback_context = vector_manager.get_all_documents_for_session(
+                                    session_id=session['session_id'],
+                                    max_chars=200000,
+                                    force_full_retrieval=True
+                                )
+                                if fallback_context:
+                                    vector_context = fallback_context
+                                    logger.info(f"Fallback retrieval successful: {len(vector_context)} chars")
+                            except Exception as fallback_error:
+                                logger.error(f"Fallback retrieval failed: {fallback_error}")
                 else:
                     logger.warning("Vector store manager not available")
             except Exception as e:
@@ -1177,9 +1329,18 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
         
         # Combine contexts: prioritize vector context when available
         combined_context = ""
+        context_instructions = ""
+        
         if vector_context:
-            combined_context += f"Relevant document excerpts:\n{vector_context}\n\n"
-            logger.info("Using vector store context - skipping traditional document context")
+            # Add context-specific instructions for the AI model
+            if is_comprehensive_query or is_document_listing or needs_full_context:
+                context_instructions = "COMPREHENSIVE ANALYSIS REQUESTED:\nThe user is asking for a complete, thorough analysis. Please provide comprehensive information covering all relevant aspects from the documents. Do not summarize - provide detailed, complete responses.\n\n"
+            elif any(indicator in prompt.lower() for indicator in complex_query_indicators):
+                context_instructions = "DETAILED EXPLANATION REQUESTED:\nPlease provide a thorough explanation with supporting details from the documents.\n\n"
+            
+            combined_context += context_instructions
+            combined_context += f"Document content for analysis:\n{vector_context}\n\n"
+            logger.info(f"Using enhanced vector store context with instructions ({len(combined_context)} total chars)")
         elif context and not send_pdfs:
             # Only use traditional context if no vector context is available
             combined_context += context
@@ -1206,9 +1367,22 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
             "content": current_content
         })
         
+        # Adjust inference parameters based on query type
+        max_tokens = 4000  # Default
+        temperature = 0.7  # Default
+        
+        # Use different parameters for comprehensive analysis
+        if is_comprehensive_query or is_document_listing or needs_full_context:
+            max_tokens = 4000  # Keep same for now, but could increase if needed
+            temperature = 0.5  # Lower temperature for more structured, comprehensive responses
+            logger.info("Using comprehensive analysis inference parameters")
+        elif any(indicator in prompt.lower() for indicator in complex_query_indicators):
+            temperature = 0.6  # Slightly lower for detailed explanations
+            logger.info("Using detailed explanation inference parameters")
+        
         inference_config = {
-            "maxTokens": 4000,  # Balanced for performance
-            "temperature": 0.7,
+            "maxTokens": max_tokens,
+            "temperature": temperature,
             "topP": 0.9
         }
         
@@ -1414,10 +1588,18 @@ def index():
         session['uploaded_files'] = []
         session['pdf_files'] = []
         session['pdfs_initialized'] = False  # Track if PDFs have been sent to Bedrock
-        # Set default model (first in the list)
-        default_model = BEDROCK_MODEL.split(',')[0].strip()
-        session['selected_model'] = default_model
-        logger.info(f"New session created with default model: {default_model}")
+        
+        # Check for cookie preference first, then use default
+        cookie_model = request.cookies.get('preferred_model')
+        if cookie_model:
+            session['selected_model'] = cookie_model
+            logger.info(f"New session created with cookie model: {cookie_model}")
+        else:
+            # Set default model (first in the list)
+            default_model = BEDROCK_MODEL.split(',')[0].strip()
+            session['selected_model'] = default_model
+            logger.info(f"New session created with default model: {default_model}")
+            
         # Create session upload location
         get_session_upload_location()
     return render_template('index.html')
@@ -1427,6 +1609,7 @@ def chat():
     try:
         data = request.get_json()
         user_message = data.get('message', '').strip()
+        use_vector_store = data.get('use_vector_store', False)
         
         if not user_message:
             return jsonify({'error': 'Empty message'}), 400
@@ -1441,10 +1624,15 @@ def chat():
         logger.info(f"Chat request - PDF files in session: {len(pdf_files)}")
         logger.info(f"Chat request - Chat history length: {len(chat_history)}")
         logger.info(f"Chat request - PDFs initialized: {pdfs_initialized}")
+        logger.info(f"Chat request - User vector store preference: {use_vector_store}")
+        
+        # Determine if we should use vector store (both system enabled and user preference)
+        use_vector_for_request = USE_FAISS_STORE and use_vector_store
+        logger.info(f"Chat request - Using vector store: {use_vector_for_request} (system: {USE_FAISS_STORE}, user: {use_vector_store})")
         
         # Determine if we need to send PDFs (first time with PDFs or PDFs not yet initialized)
-        # When vector store is enabled, we don't send PDFs to Bedrock at all
-        if USE_FAISS_STORE and pdf_files and not pdfs_initialized:
+        # When vector store is enabled by user, we don't send PDFs to Bedrock at all
+        if use_vector_for_request and pdf_files and not pdfs_initialized:
             # Mark PDFs as initialized immediately since we use vector store instead
             session['pdfs_initialized'] = True
             session.modified = True
@@ -1481,7 +1669,8 @@ def chat():
             context=context,
             pdf_files=pdf_files,
             conversation_history=conversation_history,
-            send_pdfs=send_pdfs
+            send_pdfs=send_pdfs,
+            use_vector_store=use_vector_store
         )
         
         # Check if bot_response contains an error (starts with ❌)
@@ -1533,6 +1722,11 @@ def upload_files():
         import time
         request_start_time = time.time()
         logger.info(f"=== UPLOAD REQUEST START (timestamp: {request_start_time}) ===")
+        
+        # Ensure vector store is properly configured before processing files
+        if not ensure_vector_store_configured():
+            logger.warning("⚠️ Vector store configuration issue - files will be uploaded but not indexed")
+        
         if 'files' not in request.files:
             return jsonify({'error': 'No files provided'}), 400
         
@@ -1633,25 +1827,27 @@ def upload_files():
                                     # Regular text content
                                     new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
                                     
-                                    # Add to vector store if enabled (S3 mode)
+                                    # Add to vector store if enabled - SIMPLIFIED APPROACH
                                     if USE_FAISS_STORE:
                                         try:
+                                            logger.info(f"📄 Adding text file to vector store: {file.filename}")
                                             vector_manager = get_vector_store_manager()
                                             if vector_manager:
-                                                logger.info(f"Adding text file to vector store: session_id={session['session_id']}, file={file.filename}")
-                                                success = vector_manager.add_document_from_s3(
+                                                # Simple approach: just pass the content we already have
+                                                success = vector_manager.add_document_from_content(
                                                     session_id=session['session_id'],
-                                                    s3_key=s3_key,
-                                                    source_filename=file.filename
+                                                    content=content,
+                                                    source_filename=file.filename,
+                                                    metadata={'s3_key': s3_key}
                                                 )
                                                 if success:
-                                                    logger.info(f"Successfully added {file.filename} text file to vector store")
+                                                    logger.info(f"✅ Successfully added {file.filename} text file to vector store")
                                                 else:
-                                                    logger.warning(f"Failed to add {file.filename} to vector store")
+                                                    logger.error(f"❌ Failed to add {file.filename} to vector store")
                                             else:
-                                                logger.error("Vector store manager is None for text file")
+                                                logger.error("❌ Vector store manager is None for text file")
                                         except Exception as vs_error:
-                                            logger.error(f"Error adding {file.filename} to vector store: {vs_error}")
+                                            logger.error(f"❌ Critical error adding {file.filename} to vector store: {vs_error}")
                                             import traceback
                                             logger.error(f"Full traceback: {traceback.format_exc()}")
                                     
@@ -1728,22 +1924,30 @@ def upload_files():
                                     # Also add markdown content to text context for immediate use
                                     new_text_content += f"\n\n--- Content from {file.filename} (converted from PDF) ---\n{markdown_content}"
                                     
-                                    # Add to vector store if enabled
+                                    # Add to vector store if enabled - SIMPLIFIED APPROACH
                                     if USE_FAISS_STORE:
                                         try:
                                             vector_manager = get_vector_store_manager()
                                             if vector_manager:
-                                                success = vector_manager.add_document_from_file(
+                                                logger.info(f"📄 Adding PDF markdown to vector store: {file.filename}")
+                                                logger.info(f"📊 Markdown content size: {len(markdown_content):,} chars, {len(markdown_content.split()):,} words")
+                                                
+                                                # Log content preview for debugging
+                                                content_preview = markdown_content[:500] + "..." if len(markdown_content) > 500 else markdown_content
+                                                logger.info(f"📝 Content preview: {content_preview}")
+                                                
+                                                success = vector_manager.add_document_from_content(
                                                     session_id=session['session_id'],
-                                                    file_path=md_filepath,
-                                                    source_filename=file.filename
+                                                    content=markdown_content,
+                                                    source_filename=file.filename,
+                                                    metadata={'file_path': md_filepath, 'type': 'pdf_markdown'}
                                                 )
                                                 if success:
-                                                    logger.info(f"Added {file.filename} markdown to vector store")
+                                                    logger.info(f"✅ Added {file.filename} markdown to vector store")
                                                 else:
-                                                    logger.warning(f"Failed to add {file.filename} to vector store")
+                                                    logger.error(f"❌ Failed to add {file.filename} to vector store")
                                         except Exception as vs_error:
-                                            logger.error(f"Error adding {file.filename} to vector store: {vs_error}")
+                                            logger.error(f"❌ Error adding {file.filename} to vector store: {vs_error}")
                                     
                                 except Exception as e:
                                     logger.error(f"Error saving markdown locally: {e}")
@@ -1774,22 +1978,24 @@ def upload_files():
                             # Regular text content
                             new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
                             
-                            # Add to vector store if enabled (local mode)
+                            # Add to vector store if enabled - SIMPLIFIED APPROACH
                             if USE_FAISS_STORE:
                                 try:
                                     vector_manager = get_vector_store_manager()
                                     if vector_manager:
-                                        success = vector_manager.add_document_from_file(
+                                        logger.info(f"📄 Adding text file to vector store: {file.filename}")
+                                        success = vector_manager.add_document_from_content(
                                             session_id=session['session_id'],
-                                            file_path=filepath,
-                                            source_filename=file.filename
+                                            content=content,
+                                            source_filename=file.filename,
+                                            metadata={'file_path': filepath}
                                         )
                                         if success:
-                                            logger.info(f"Added {file.filename} text file to vector store")
+                                            logger.info(f"✅ Added {file.filename} text file to vector store")
                                         else:
-                                            logger.warning(f"Failed to add {file.filename} to vector store")
+                                            logger.error(f"❌ Failed to add {file.filename} to vector store")
                                 except Exception as vs_error:
-                                    logger.error(f"Error adding {file.filename} to vector store: {vs_error}")
+                                    logger.error(f"❌ Error adding {file.filename} to vector store: {vs_error}")
                             
                             uploaded_files.append({
                                 'filename': file.filename,
@@ -1843,25 +2049,33 @@ def upload_files():
                             # Also add markdown content to text context for immediate use
                             new_text_content += f"\n\n--- Content from {result['filename']} (converted from PDF) ---\n{result['markdown_content']}"
                             
-                            # Add to vector store if enabled
+                            # Add to vector store if enabled - SIMPLIFIED APPROACH
                             if USE_FAISS_STORE:
                                 try:
                                     vector_manager = get_vector_store_manager()
                                     if vector_manager:
-                                        logger.info(f"Adding to vector store: session_id={session['session_id']}, file={result['filename']}")
-                                        success = vector_manager.add_document_from_s3(
+                                        logger.info(f"📄 Adding PDF markdown to vector store: {result['filename']}")
+                                        logger.info(f"📊 Markdown content size: {len(result['markdown_content']):,} chars, {len(result['markdown_content'].split()):,} words")
+                                        
+                                        # Log content preview for debugging
+                                        content_preview = result['markdown_content'][:500] + "..." if len(result['markdown_content']) > 500 else result['markdown_content']
+                                        logger.info(f"📝 Content preview: {content_preview}")
+                                        
+                                        # Simple approach: pass the markdown content directly
+                                        success = vector_manager.add_document_from_content(
                                             session_id=session['session_id'],
-                                            s3_key=md_s3_key,
-                                            source_filename=result['filename']
+                                            content=result['markdown_content'],
+                                            source_filename=result['filename'],
+                                            metadata={'s3_key': md_s3_key, 'type': 'pdf_markdown'}
                                         )
                                         if success:
-                                            logger.info(f"Successfully added {result['filename']} markdown to vector store")
+                                            logger.info(f"✅ Successfully added {result['filename']} markdown to vector store")
                                         else:
-                                            logger.warning(f"Failed to add {result['filename']} to vector store")
+                                            logger.error(f"❌ Failed to add {result['filename']} to vector store - check logs for details")
                                     else:
-                                        logger.error("Vector store manager is None - not initialized properly")
+                                        logger.error("❌ Vector store manager is None - not initialized properly")
                                 except Exception as vs_error:
-                                    logger.error(f"Error adding {result['filename']} to vector store: {vs_error}")
+                                    logger.error(f"❌ Critical error adding {result['filename']} to vector store: {vs_error}")
                                     import traceback
                                     logger.error(f"Full traceback: {traceback.format_exc()}")
                             
@@ -2101,29 +2315,126 @@ def get_history():
 def get_files():
     return jsonify(session.get('uploaded_files', []))
 
+def process_model_name(model_id):
+    """Process model name: remove :xxxk suffix and add us. prefix if needed"""
+    # Remove :xxxk pattern from the end (where xxx is any number)
+    import re
+    processed_id = re.sub(r':\d+k$', '', model_id)
+    
+    # Add us. prefix if not already present and not already a full ARN
+    if not processed_id.startswith('us.') and not processed_id.startswith('arn:'):
+        processed_id = f"us.{processed_id}"
+    
+    return processed_id
+
+@app.route('/all_bedrock_models')
+def get_all_bedrock_models():
+    """Fetch all available Bedrock foundation models"""
+    try:
+        if not bedrock_client:
+            return jsonify({'error': 'Bedrock client not initialized'}), 500
+        
+        # Use regular boto3 client for listing models (not bedrock-runtime)
+        bedrock_list_client = session_aws.client('bedrock', region_name=profile_region)
+        
+        response = bedrock_list_client.list_foundation_models()
+        
+        all_models = []
+        for model in response.get('modelSummaries', []):
+            model_id = model.get('modelId', '')
+            model_name = model.get('modelName', model_id)
+            
+            # Process model name according to requirements
+            processed_id = process_model_name(model_id)
+            
+            all_models.append({
+                'id': processed_id,
+                'name': f"{model_name} ({processed_id})",
+                'original_id': model_id,
+                'provider': model.get('providerName', ''),
+                'input_modalities': model.get('inputModalities', []),
+                'output_modalities': model.get('outputModalities', [])
+            })
+        
+        # Sort by provider and name for better organization
+        all_models.sort(key=lambda x: (x['provider'], x['name']))
+        
+        logger.info(f"Retrieved {len(all_models)} Bedrock foundation models")
+        return jsonify({
+            'models': all_models,
+            'count': len(all_models)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching Bedrock models: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/models')
 def get_models():
-    """Return available Bedrock models from BEDROCK_MODEL configuration"""
+    """Return available Bedrock models from BEDROCK_MODEL configuration plus all Bedrock models"""
     try:
-        # Split BEDROCK_MODEL by comma and strip whitespace
-        models = [model.strip() for model in BEDROCK_MODEL.split(',') if model.strip()]
+        # Get configured models
+        configured_models = [model.strip() for model in BEDROCK_MODEL.split(',') if model.strip()]
         
-        # Return models with exact names from config
         model_list = []
-        for model in models:
+        
+        # Add configured models first
+        for model in configured_models:
             model_list.append({
                 'id': model,
-                'name': model  # Use exact model name instead of display name
+                'name': model,
+                'type': 'configured'
             })
+        
+        # Try to get all Bedrock models for enhanced search
+        try:
+            if bedrock_client:
+                bedrock_list_client = session_aws.client('bedrock', region_name=profile_region)
+                response = bedrock_list_client.list_foundation_models()
+                
+                for model in response.get('modelSummaries', []):
+                    model_id = model.get('modelId', '')
+                    model_name = model.get('modelName', model_id)
+                    
+                    # Process model name
+                    processed_id = process_model_name(model_id)
+                    
+                    # Skip if already in configured models
+                    if processed_id not in configured_models:
+                        model_list.append({
+                            'id': processed_id,
+                            'name': processed_id,  # Just show the model ID
+                            'type': 'available',
+                            'provider': model.get('providerName', '')
+                        })
+                
+                logger.info(f"Enhanced model list with {len(model_list)} total models")
+        except Exception as bedrock_error:
+            logger.warning(f"Could not fetch additional Bedrock models: {bedrock_error}")
+        
+        # Get current model from session or cookie preference
+        current_model = session.get('selected_model')
+        if not current_model:
+            # Check cookie preference
+            cookie_model = request.cookies.get('preferred_model')
+            if cookie_model:
+                current_model = cookie_model
+                session['selected_model'] = cookie_model
+                session.modified = True
+                logger.info(f"Loaded model from cookie: {cookie_model}")
+            else:
+                current_model = configured_models[0] if configured_models else None
         
         return jsonify({
             'models': model_list,
-            'current': models[0] if models else None  # First model is default
+            'current': current_model,
+            'allow_custom': True,
+            'faiss_enabled': USE_FAISS_STORE
         })
         
     except Exception as e:
         logger.error(f"Error getting models: {e}")
-        return jsonify({'models': [], 'current': None})
+        return jsonify({'models': [], 'current': None, 'allow_custom': True})
 
 @app.route('/test_models')
 def test_models():
@@ -2178,10 +2489,10 @@ def change_model():
         if not new_model:
             return jsonify({'error': 'No model specified'}), 400
         
-        # Validate that the model is in the allowed list
+        # For custom models, we'll validate by attempting a test call later
+        # Get predefined models for validation
         available_models = [model.strip() for model in BEDROCK_MODEL.split(',') if model.strip()]
-        if new_model not in available_models:
-            return jsonify({'error': 'Model not available'}), 400
+        is_custom_model = new_model not in available_models
         
         # Store the selected model in the session
         session['selected_model'] = new_model
@@ -2190,8 +2501,27 @@ def change_model():
         session['pdfs_initialized'] = False  # Reset PDF initialization so they get re-sent to new model
         session.modified = True
         
-        logger.info(f"Model changed to: {new_model}, PDFs will be re-initialized with new model")
-        return jsonify({'success': True, 'model': new_model, 'model_changed': True})
+        logger.info(f"Model changed to: {new_model} (custom: {is_custom_model}), PDFs will be re-initialized with new model")
+        
+        # Create response with cookie
+        response = jsonify({
+            'success': True, 
+            'model': new_model, 
+            'model_changed': True,
+            'is_custom': is_custom_model
+        })
+        
+        # Set cookie to remember user preference (expires in 30 days)
+        response.set_cookie(
+            'preferred_model', 
+            new_model, 
+            max_age=30*24*60*60,  # 30 days
+            secure=False,  # Set to True in production with HTTPS
+            httponly=False,  # Allow JavaScript access for frontend
+            samesite='Lax'
+        )
+        
+        return response
         
     except Exception as e:
         logger.error(f"Error changing model: {e}")
@@ -2377,12 +2707,274 @@ def get_vector_stats():
             return jsonify({'error': 'Vector store manager not available', 'enabled': True})
         
         stats = vector_manager.get_session_stats(session['session_id'])
+        
+        # Check if we got an error from get_session_stats
+        if 'error' in stats:
+            # Vector store session doesn't exist - return detailed error info
+            available_sessions = list(vector_manager.sessions.keys())
+            return jsonify({
+                'error': stats['error'],
+                'enabled': True,
+                'debug_info': {
+                    'current_session_id': session['session_id'],
+                    'available_sessions': available_sessions,
+                    'total_sessions': len(vector_manager.sessions),
+                    'session_files_count': len(session.get('uploaded_files', [])) + len(session.get('pdf_files', [])),
+                    'issue': 'Vector store session was never created or was lost'
+                }
+            })
+        
         stats['enabled'] = True
+        
+        # Add session file information for comparison
+        session_files = session.get('uploaded_files', [])
+        session_pdfs = session.get('pdf_files', [])
+        
+        stats['session_files'] = {
+            'uploaded_files': len(session_files),
+            'pdf_files': len(session_pdfs),
+            'file_list': [f['filename'] for f in session_files],
+            'pdf_list': [f['filename'] for f in session_pdfs]
+        }
+        
+        # Check for discrepancies
+        all_session_files = set(f['filename'] for f in session_files + session_pdfs)
+        vector_files = set(doc['source'] for doc in stats.get('documents', []))
+        
+        missing_from_vector = all_session_files - vector_files
+        extra_in_vector = vector_files - all_session_files
+        
+        if missing_from_vector:
+            stats['warnings'] = stats.get('warnings', [])
+            stats['warnings'].append(f"Files uploaded but not in vector store: {list(missing_from_vector)}")
+        
+        if extra_in_vector:
+            stats['warnings'] = stats.get('warnings', [])
+            stats['warnings'].append(f"Files in vector store but not in session: {list(extra_in_vector)}")
+        
         return jsonify(stats)
         
     except Exception as e:
         logger.error(f"Error getting vector stats: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e), 'enabled': USE_FAISS_STORE})
+
+@app.route('/debug_document/<filename>')
+def debug_document(filename):
+    """Debug endpoint to examine actual content in vector store"""
+    try:
+        if not USE_FAISS_STORE:
+            return jsonify({'error': 'Vector store not enabled'})
+        
+        if 'session_id' not in session:
+            return jsonify({'error': 'No session found'})
+        
+        vector_manager = get_vector_store_manager()
+        if not vector_manager:
+            return jsonify({'error': 'Vector store manager not available'})
+        
+        # Get sample chunks from the specified document
+        sample_chunks = vector_manager.get_document_sample(
+            session_id=session['session_id'], 
+            source=filename, 
+            max_chunks=10
+        )
+        
+        return jsonify({
+            'filename': filename,
+            'sample_chunks': sample_chunks,
+            'total_samples': len(sample_chunks)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error debugging document {filename}: {e}")
+        return jsonify({'error': str(e)})
+
+@app.route('/debug_vector_raw')
+def debug_vector_raw():
+    """Raw debug endpoint to examine vector store internal state"""
+    try:
+        if not USE_FAISS_STORE:
+            return jsonify({'error': 'Vector store not enabled'})
+        
+        if 'session_id' not in session:
+            return jsonify({'error': 'No session found'})
+        
+        vector_manager = get_vector_store_manager()
+        if not vector_manager:
+            return jsonify({'error': 'Vector store manager not available'})
+        
+        # Get the actual vector store instance
+        session_id = session['session_id']
+        available_sessions = list(vector_manager.sessions.keys())
+        
+        debug_session_info = {
+            'current_session_id': session_id,
+            'available_sessions': available_sessions,
+            'session_exists': session_id in vector_manager.sessions,
+            'total_sessions': len(vector_manager.sessions)
+        }
+        
+        if session_id not in vector_manager.sessions:
+            return jsonify({
+                'error': 'Session vector store not found',
+                'debug_info': debug_session_info
+            })
+        
+        store = vector_manager.sessions[session['session_id']]
+        
+        # Get raw debug info
+        debug_info = {
+            'documents_count': len(store.documents),
+            'metadata_count': len(store.doc_metadata),
+            'index_total': store.index.ntotal,
+            'all_sources': list(set(chunk.source for chunk in store.documents)),
+            'metadata_sources': [meta['source'] for meta in store.doc_metadata.values()],
+            'first_5_chunks': []
+        }
+        
+        # Get first 5 chunks regardless of source
+        for i, chunk in enumerate(store.documents[:5]):
+            debug_info['first_5_chunks'].append({
+                'index': i,
+                'source': chunk.source,
+                'chunk_id': chunk.chunk_id,
+                'text_length': len(chunk.text),
+                'text_preview': chunk.text[:200] + "..." if len(chunk.text) > 200 else chunk.text
+            })
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        logger.error(f"Error in raw vector debug: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)})
+
+@app.route('/debug_vector_manager')
+def debug_vector_manager():
+    """Debug the vector store manager initialization"""
+    try:
+        debug_info = {
+            'USE_FAISS_STORE': USE_FAISS_STORE,
+            'FAISS_AVAILABLE': FAISS_AVAILABLE,
+            'VECTOR_STORE_MODULE_AVAILABLE': VECTOR_STORE_MODULE_AVAILABLE
+        }
+        
+        vector_manager = get_vector_store_manager()
+        debug_info['vector_manager_exists'] = vector_manager is not None
+        
+        if vector_manager:
+            debug_info['total_sessions'] = len(vector_manager.sessions)
+            debug_info['sessions_list'] = list(vector_manager.sessions.keys())
+        
+        # Check global variables
+        global s3_bucket_name, s3_client
+        debug_info['global_s3_bucket_name'] = s3_bucket_name
+        debug_info['global_s3_client_exists'] = s3_client is not None
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        logger.error(f"Error debugging vector manager: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)})
+
+@app.route('/search_document/<filename>/<query>')
+def search_document(filename, query):
+    """Search for specific content within a document"""
+    try:
+        if not USE_FAISS_STORE:
+            return jsonify({'error': 'Vector store not enabled'})
+        
+        if 'session_id' not in session:
+            return jsonify({'error': 'No session found'})
+        
+        vector_manager = get_vector_store_manager()
+        if not vector_manager:
+            return jsonify({'error': 'Vector store manager not available'})
+        
+        # Search for content in the specific document
+        results = vector_manager.search_session(session['session_id'], f"{query} source:{filename}", top_k=10)
+        
+        # Filter results to only include the specific document
+        filtered_results = []
+        for chunk, score in results:
+            if chunk.source == filename:
+                filtered_results.append({
+                    'chunk_id': chunk.chunk_id,
+                    'text': chunk.text,
+                    'score': score,
+                    'source': chunk.source
+                })
+        
+        return jsonify({
+            'filename': filename,
+            'query': query,
+            'results': filtered_results,
+            'total_results': len(filtered_results)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error searching document {filename}: {e}")
+        return jsonify({'error': str(e)})
+
+@app.route('/debug_content_flow/<filename>')
+def debug_content_flow(filename):
+    """Debug the content flow from PDF to vector store"""
+    try:
+        if not USE_FAISS_STORE:
+            return jsonify({'error': 'Vector store not enabled'})
+        
+        if 'session_id' not in session:
+            return jsonify({'error': 'No session found'})
+        
+        # Get all chunks for this document from vector store
+        vector_manager = get_vector_store_manager()
+        if not vector_manager:
+            return jsonify({'error': 'Vector store manager not available'})
+        
+        if session['session_id'] not in vector_manager.sessions:
+            return jsonify({'error': 'Session not found in vector store'})
+        
+        store = vector_manager.sessions[session['session_id']]
+        
+        # Get all chunks for this document
+        document_chunks = []
+        total_chars = 0
+        for chunk in store.documents:
+            if chunk.source == filename:
+                document_chunks.append({
+                    'chunk_id': chunk.chunk_id,
+                    'text_length': len(chunk.text),
+                    'text_preview': chunk.text[:300] + "..." if len(chunk.text) > 300 else chunk.text,
+                    'metadata': chunk.metadata
+                })
+                total_chars += len(chunk.text)
+        
+        # Get document metadata
+        doc_metadata = None
+        for doc_hash, meta in store.doc_metadata.items():
+            if meta['source'] == filename and not meta.get('removed', False):
+                doc_metadata = meta
+                break
+        
+        return jsonify({
+            'filename': filename,
+            'total_chunks': len(document_chunks),
+            'total_characters': total_chars,
+            'chunks': document_chunks[:10],  # First 10 chunks
+            'document_metadata': doc_metadata,
+            'session_id': session['session_id']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error debugging content flow for {filename}: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     # Only register signal handlers and cleanup in the actual app process
@@ -2405,11 +2997,15 @@ if __name__ == '__main__':
         bucket_created = create_s3_bucket()
         if not bucket_created:
             logger.info("Switched to local filesystem mode (--no-bucket equivalent)")
+        else:
+            logger.info(f"S3 bucket created successfully: {s3_bucket_name}")
     elif USE_S3_BUCKET and os.environ.get('WERKZEUG_RUN_MAIN'):
         # Flask debug restart - load existing bucket
-        handle_flask_restart_bucket()    
+        handle_flask_restart_bucket()
+        logger.info(f"S3 bucket loaded from restart: {s3_bucket_name}")
 
-    # Initialize vector store manager now that S3 bucket is ready
+    # Initialize vector store manager independently
+    logger.info("Initializing vector store")
     initialize_vector_store_if_enabled()
 
     try:
