@@ -3005,7 +3005,8 @@ if __name__ == '__main__':
         logger.info(f"S3 bucket loaded from restart: {s3_bucket_name}")
 
     # Initialize vector store manager independently
-    logger.info("Initializing vector store")
+    if USE_FAISS_STORE:
+        logger.info("Initializing vector store")
     initialize_vector_store_if_enabled()
 
     try:
