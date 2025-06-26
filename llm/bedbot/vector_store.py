@@ -155,6 +155,16 @@ class FAISSVectorStore:
             ))
         
         logger.info(f"Chunked document {source} ({len(text)} chars) into {len(chunks)} chunks")
+        
+        # Debug: log first chunk preview for NIST documents
+        if chunks and ("nist" in source.lower() or "800-171" in source.lower()):
+            first_chunk_preview = chunks[0].text[:200] + "..." if len(chunks[0].text) > 200 else chunks[0].text
+            logger.info(f"🔍 First chunk preview for {source}: {first_chunk_preview}")
+            
+            # Check if we're getting substantive content or just headers
+            if "cover" in first_chunk_preview.lower() or "publication" in first_chunk_preview.lower():
+                logger.warning(f"⚠️ {source} first chunk appears to be header/cover content - check PDF conversion")
+        
         return chunks
     
     def add_document(self, text: str, source: str, metadata: Dict = None) -> int:
@@ -170,6 +180,14 @@ class FAISSVectorStore:
             Number of chunks added
         """
         try:
+            # Validate input
+            if not text or not text.strip():
+                logger.error(f"❌ Document {source} is empty or contains no text")
+                return 0
+            
+            if len(text) < 50:  # Very short documents might indicate processing issues
+                logger.warning(f"⚠️ Document {source} is very short ({len(text)} chars) - possible processing issue")
+            
             # Generate document hash for deduplication
             doc_hash = hashlib.md5(f"{source}_{text}".encode()).hexdigest()
             
@@ -178,22 +196,67 @@ class FAISSVectorStore:
                 logger.info(f"Document {source} already exists in vector store")
                 return 0
             
+            # Log document stats
+            logger.info(f"📄 Processing document: {source}")
+            logger.info(f"   - Size: {len(text):,} characters ({len(text.split()):,} words)")
+            logger.info(f"   - Expected chunks: ~{len(text) // self.chunk_size}")
+            
             # Chunk the document
             chunks = self._chunk_text(text, source)
             
             if not chunks:
-                logger.warning(f"No chunks generated for document: {source}")
+                logger.error(f"❌ No chunks generated for document: {source}")
                 return 0
             
-            # Generate embeddings for all chunks
+            # Validate chunk generation
+            total_chunk_chars = sum(len(chunk.text) for chunk in chunks)
+            coverage_ratio = total_chunk_chars / len(text)
+            
+            if coverage_ratio < 0.8:  # Less than 80% coverage suggests issues
+                logger.warning(f"⚠️ Document {source} chunking coverage is low: {coverage_ratio:.1%}")
+                logger.warning(f"   - Original: {len(text):,} chars")
+                logger.warning(f"   - Chunks total: {total_chunk_chars:,} chars")
+            
+            logger.info(f"✅ Chunked document {source}: {len(chunks)} chunks, {coverage_ratio:.1%} coverage")
+            
+            # Generate embeddings for all chunks with memory safety
             chunk_texts = [chunk.text for chunk in chunks]
-            embeddings = self.embedding_model.encode(chunk_texts, convert_to_numpy=True)
+            
+            logger.info(f"🔄 Generating embeddings for {len(chunk_texts)} chunks...")
+            try:
+                # Process in smaller batches to prevent memory issues
+                batch_size = 50  # Process 50 chunks at a time
+                all_embeddings = []
+                
+                for i in range(0, len(chunk_texts), batch_size):
+                    batch = chunk_texts[i:i + batch_size]
+                    logger.info(f"Processing embedding batch {i//batch_size + 1}/{(len(chunk_texts) + batch_size - 1)//batch_size}")
+                    
+                    batch_embeddings = self.embedding_model.encode(batch, convert_to_numpy=True)
+                    all_embeddings.append(batch_embeddings)
+                
+                # Combine all embeddings
+                import numpy as np
+                embeddings = np.vstack(all_embeddings) if all_embeddings else np.array([])
+                
+            except Exception as embed_error:
+                logger.error(f"❌ Failed to generate embeddings for {source}: {embed_error}")
+                return 0
+            
+            # Validate embeddings
+            if embeddings.shape[0] != len(chunks):
+                logger.error(f"❌ Embedding count mismatch for {source}: {embeddings.shape[0]} != {len(chunks)}")
+                return 0
             
             # Normalize embeddings for cosine similarity
             faiss.normalize_L2(embeddings)
             
             # Add to FAISS index
-            self.index.add(embeddings)
+            try:
+                self.index.add(embeddings)
+            except Exception as faiss_error:
+                logger.error(f"❌ Failed to add embeddings to FAISS index for {source}: {faiss_error}")
+                return 0
             
             # Store document chunks
             start_idx = len(self.documents)
@@ -206,15 +269,19 @@ class FAISSVectorStore:
                 'start_idx': start_idx,
                 'end_idx': len(self.documents),
                 'metadata': metadata or {},
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'original_size': len(text),
+                'coverage_ratio': coverage_ratio
             }
             
             self.is_dirty = True
-            logger.info(f"Added document {source} with {len(chunks)} chunks to vector store")
+            logger.info(f"✅ Successfully added document {source} with {len(chunks)} chunks to vector store")
             return len(chunks)
             
         except Exception as e:
-            logger.error(f"Error adding document {source} to vector store: {e}")
+            logger.error(f"❌ Critical error adding document {source} to vector store: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return 0
     
     def search(self, query: str, top_k: int = 5, score_threshold: float = 0.1) -> List[Tuple[DocumentChunk, float]]:
@@ -279,27 +346,42 @@ class FAISSVectorStore:
                 by_source[doc.source].append(doc)
             
             num_documents = len(by_source)
-            logger.info(f"Processing {num_documents} documents for comprehensive analysis")
+            logger.info(f"Processing {num_documents} documents for comprehensive analysis - using ALL available chunks")
+            logger.info(f"Maximum context limit: {max_chars:,} characters")
             
-            # Calculate chars per document to ensure all documents are included
-            chars_per_doc = min(2000, max_chars // num_documents) if num_documents > 0 else 2000
-            logger.info(f"Allocating {chars_per_doc} chars per document to fit all {num_documents} documents")
-            
-            # Take one chunk from each document to ensure broad coverage
+            # Use ALL chunks from each document for comprehensive coverage
             for source, chunks in by_source.items():
-                # Take the first chunk from each document (usually contains name/header info)
-                chunk = chunks[0]
                 source_text = f"\n--- From {source} ---\n"
-                
-                # Limit chunk text to allocated chars per document
-                chunk_text = chunk.text[:chars_per_doc]
-                if len(chunk.text) > chars_per_doc:
-                    chunk_text += "..."
-                chunk_text += "\n"
-                
                 context_parts.append(source_text)
-                context_parts.append(chunk_text)
-                total_chars += len(source_text) + len(chunk_text)
+                total_chars += len(source_text)
+                
+                logger.info(f"Processing ALL {len(chunks)} chunks from {source}")
+                
+                # Use ALL chunks from each document
+                for i, chunk in enumerate(chunks):
+                    # Add full chunk text without arbitrary limits
+                    chunk_text = chunk.text + "\n\n"
+                    
+                    # Check if adding this chunk would exceed the total limit
+                    if total_chars + len(chunk_text) > max_chars:
+                        # Try to fit as much as possible
+                        remaining_chars = max_chars - total_chars
+                        if remaining_chars > 100:  # Only add if we have meaningful space
+                            chunk_text = chunk.text[:remaining_chars - 50] + "...\n\n"
+                            context_parts.append(chunk_text)
+                            total_chars += len(chunk_text)
+                        logger.info(f"Reached character limit after {i+1}/{len(chunks)} chunks from {source}")
+                        break
+                    
+                    context_parts.append(chunk_text)
+                    total_chars += len(chunk_text)
+                
+                # Log completion for this document
+                logger.info(f"Added complete content from {source}: {len([c for c in chunks if any(c.text in part for part in context_parts)])} chunks included")
+                
+                # Stop if we've reached the total limit
+                if total_chars >= max_chars:
+                    break
             
             context = "".join(context_parts).strip()
             logger.info(f"Generated comprehensive context: {len(context)} chars from {len(by_source)} documents")
@@ -309,7 +391,7 @@ class FAISSVectorStore:
             logger.error(f"Error generating comprehensive context: {e}")
             return ""
 
-    def get_context_for_query(self, query: str, max_chunks: int = 20, max_chars: int = 25000) -> str:
+    def get_context_for_query(self, query: str, max_chunks: int = 50, max_chars: int = 50000) -> str:
         """
         Get relevant context for a query, formatted for LLM consumption
         
@@ -367,6 +449,79 @@ class FAISSVectorStore:
             logger.error(f"Error generating context for query: {e}")
             return ""
     
+    def get_full_documents_context(self, max_chars: int = 200000) -> str:
+        """
+        Get ALL content from ALL documents with minimal limits for maximum comprehensiveness
+        
+        Args:
+            max_chars: Very high limit for comprehensive analysis (default 500K)
+            
+        Returns:
+            Complete document content formatted for LLM consumption
+        """
+        try:
+            if not self.documents:
+                return ""
+            
+            context_parts = []
+            total_chars = 0
+            
+            # Group documents by source
+            by_source = {}
+            for doc in self.documents:
+                if doc.source not in by_source:
+                    by_source[doc.source] = []
+                by_source[doc.source].append(doc)
+            
+            logger.info(f"🔄 Retrieving COMPLETE content from {len(by_source)} documents (limit: {max_chars:,} chars)")
+            
+            # Process ALL chunks from ALL documents
+            for source, chunks in by_source.items():
+                source_text = f"\n=== COMPLETE CONTENT FROM {source.upper()} ===\n\n"
+                context_parts.append(source_text)
+                total_chars += len(source_text)
+                
+                logger.info(f"📋 Adding ALL {len(chunks)} chunks from {source}")
+                
+                chunks_added = 0
+                for chunk in chunks:
+                    chunk_text = chunk.text + "\n\n"
+                    
+                    # Memory safety: check both total limit and individual chunk size
+                    if len(chunk_text) > 50000:  # Skip extremely large chunks that might cause issues
+                        logger.warning(f"⚠️ Skipping very large chunk ({len(chunk_text):,} chars) from {source}")
+                        continue
+                    
+                    # Only stop if we absolutely must (very high limit)
+                    if total_chars + len(chunk_text) > max_chars:
+                        logger.warning(f"⚠️ Reached {max_chars:,} char limit after {chunks_added}/{len(chunks)} chunks from {source}")
+                        break
+                    
+                    context_parts.append(chunk_text)
+                    total_chars += len(chunk_text)
+                    chunks_added += 1
+                    
+                    # Safety check: prevent memory issues with too many parts
+                    if len(context_parts) > 1000:  # Reasonable limit on list size
+                        logger.warning(f"⚠️ Reached maximum context parts limit (1000) for {source}")
+                        break
+                
+                logger.info(f"✅ Added {chunks_added}/{len(chunks)} chunks from {source} ({sum(len(c.text) for c in chunks[:chunks_added]):,} chars)")
+                
+                # Add document separator
+                if total_chars < max_chars - 100:
+                    separator = f"\n--- End of {source} ---\n\n"
+                    context_parts.append(separator)
+                    total_chars += len(separator)
+            
+            context = "".join(context_parts).strip()
+            logger.info(f"🎯 Generated COMPLETE context: {len(context):,} chars from {len(by_source)} documents")
+            return context
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating complete documents context: {e}")
+            return ""
+    
     def remove_document(self, source: str) -> bool:
         """
         Remove a document from the vector store
@@ -396,19 +551,62 @@ class FAISSVectorStore:
             return False
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get vector store statistics"""
-        active_docs = sum(1 for meta in self.doc_metadata.values() if not meta.get('removed', False))
-        total_chunks = sum(meta['chunk_count'] for meta in self.doc_metadata.values() if not meta.get('removed', False))
+        """Get vector store statistics with detailed document info"""
+        active_docs = []
+        total_chunks = 0
+        
+        for doc_hash, meta in self.doc_metadata.items():
+            if not meta.get('removed', False):
+                doc_info = {
+                    'source': meta['source'],
+                    'chunks': meta['chunk_count'],
+                    'original_size': meta.get('original_size', 0),
+                    'coverage': meta.get('coverage_ratio', 0),
+                    'timestamp': meta['timestamp']
+                }
+                active_docs.append(doc_info)
+                total_chunks += meta['chunk_count']
         
         return {
             'session_id': self.session_id,
-            'total_documents': active_docs,
+            'total_documents': len(active_docs),
             'total_chunks': total_chunks,
             'index_size': self.index.ntotal,
             'embedding_model': self.embedding_model_name,
             'embedding_dim': self.embedding_dim,
-            'is_dirty': self.is_dirty
+            'is_dirty': self.is_dirty,
+            'documents': active_docs  # Detailed document list
         }
+    
+    def get_document_sample(self, source: str, max_chunks: int = 5) -> List[str]:
+        """Get sample chunks from a specific document for debugging"""
+        try:
+            logger.info(f"🔍 Searching for chunks from source: '{source}'")
+            logger.info(f"🔍 Total documents in store: {len(self.documents)}")
+            
+            # Debug: show all unique sources
+            all_sources = set(chunk.source for chunk in self.documents)
+            logger.info(f"🔍 All sources in vector store: {list(all_sources)}")
+            
+            sample_chunks = []
+            for chunk in self.documents:
+                logger.debug(f"🔍 Comparing chunk source '{chunk.source}' with target '{source}'")
+                if chunk.source == source:
+                    sample_chunks.append({
+                        'chunk_id': chunk.chunk_id,
+                        'text_preview': chunk.text[:200] + "..." if len(chunk.text) > 200 else chunk.text,
+                        'text_length': len(chunk.text)
+                    })
+                    if len(sample_chunks) >= max_chunks:
+                        break
+            
+            logger.info(f"🔍 Found {len(sample_chunks)} matching chunks for '{source}'")
+            return sample_chunks
+        except Exception as e:
+            logger.error(f"❌ Error getting document sample for {source}: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return []
     
     def clear(self):
         """Clear all documents from the vector store"""
@@ -424,10 +622,10 @@ class FAISSVectorStore:
 class VectorStoreManager:
     """Manages vector store instances per session"""
     
-    def __init__(self, s3_client=None, s3_bucket=None):
+    def __init__(self):
+        """Initialize vector store manager without S3 dependency"""
         self.sessions: Dict[str, FAISSVectorStore] = {}
-        self.s3_client = s3_client  
-        self.s3_bucket = s3_bucket
+        logger.info("Vector store manager initialized independently of S3")
     
     def get_or_create_store(self, session_id: str) -> Optional[FAISSVectorStore]:
         """Get or create a vector store for a session"""
@@ -446,29 +644,26 @@ class VectorStoreManager:
             logger.error(f"Error creating vector store for session {session_id}: {e}")
             return None
     
-    def add_document_from_s3(self, session_id: str, s3_key: str, source_filename: str) -> bool:
-        """Add a document to vector store from S3"""
+    # S3-specific method removed - use add_document_from_content instead
+    
+    def add_document_from_content(self, session_id: str, content: str, source_filename: str, metadata: dict = None) -> bool:
+        """Add a document to vector store from content string - SIMPLE approach"""
         try:
-            if not self.s3_client or not self.s3_bucket:
-                logger.error("S3 client or bucket not configured")
-                return False
-            
             # Get vector store
             store = self.get_or_create_store(session_id)
             if not store:
+                logger.error(f"❌ Failed to get/create vector store for session {session_id}")
                 return False
             
-            # Read document from S3
-            response = self.s3_client.get_object(Bucket=self.s3_bucket, Key=s3_key)
-            content = response['Body'].read().decode('utf-8', errors='ignore')
-            
-            # Add to vector store
-            chunks_added = store.add_document(content, source_filename, {'s3_key': s3_key})
-            logger.info(f"Added document {source_filename} from S3 to vector store: {chunks_added} chunks")
+            # Add to vector store directly
+            chunks_added = store.add_document(content, source_filename, metadata or {})
+            logger.info(f"✅ Added document {source_filename} to vector store: {chunks_added} chunks")
             return chunks_added > 0
             
         except Exception as e:
-            logger.error(f"Error adding document from S3 to vector store: {e}")
+            logger.error(f"❌ Error adding document {source_filename} to vector store: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return False
     
     def add_document_from_file(self, session_id: str, file_path: str, source_filename: str) -> bool:
@@ -505,14 +700,18 @@ class VectorStoreManager:
             logger.error(f"Error searching session {session_id}: {e}")
             return []
     
-    def get_all_documents_for_session(self, session_id: str, max_chars: int = 50000) -> str:
+    def get_all_documents_for_session(self, session_id: str, max_chars: int = 50000, force_full_retrieval: bool = False) -> str:
         """Get context from all documents in a session's vector store"""
         try:
             if session_id not in self.sessions:
                 logger.info(f"No vector store found for session: {session_id}")
                 return ""
             
-            return self.sessions[session_id].get_all_documents_context(max_chars)
+            if force_full_retrieval:
+                # Use the new comprehensive method with much higher limits
+                return self.sessions[session_id].get_full_documents_context(max_chars)
+            else:
+                return self.sessions[session_id].get_all_documents_context(max_chars)
             
         except Exception as e:
             logger.error(f"Error getting all documents for session {session_id}: {e}")
@@ -565,12 +764,24 @@ class VectorStoreManager:
         except Exception as e:
             logger.error(f"Error getting stats for session {session_id}: {e}")
             return {'error': str(e)}
+    
+    def get_document_sample(self, session_id: str, source: str, max_chunks: int = 5) -> List[str]:
+        """Get sample chunks from a specific document for debugging"""
+        try:
+            if session_id not in self.sessions:
+                return []
+            
+            return self.sessions[session_id].get_document_sample(source, max_chunks)
+            
+        except Exception as e:
+            logger.error(f"Error getting document sample for session {session_id}: {e}")
+            return []
 
 # Global vector store manager instance
 vector_store_manager = None
 
-def initialize_vector_store_manager(s3_client=None, s3_bucket=None) -> Optional[VectorStoreManager]:
-    """Initialize the global vector store manager"""
+def initialize_vector_store_manager() -> Optional[VectorStoreManager]:
+    """Initialize the global vector store manager - S3 independent"""
     global vector_store_manager
     
     try:
@@ -578,8 +789,8 @@ def initialize_vector_store_manager(s3_client=None, s3_bucket=None) -> Optional[
             logger.warning("FAISS not available, vector store disabled")
             return None
         
-        vector_store_manager = VectorStoreManager(s3_client, s3_bucket)
-        logger.info("Initialized vector store manager")
+        vector_store_manager = VectorStoreManager()
+        logger.info("Initialized vector store manager independently")
         return vector_store_manager
         
     except Exception as e:

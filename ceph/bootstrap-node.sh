@@ -4,7 +4,7 @@ CEPH_RELEASE=19.2.2  # replace this with the active release
 #CEPH_RELEASE=18.2.7
 
 # Configuration: Number of HDDs that should share one SSD for DB
-: "${HDDS_PER_SSD:=6}"
+: "${HDDS_PER_SSD:=2}"
 
 # Accept mode as first argument: 'first' or 'others'
 MODE="$1"
@@ -136,7 +136,7 @@ except:
         echo "This node will be added to the cluster by the first node via orchestrator."
         echo "Preparing node for cluster joining..."
         SKIP_BOOTSTRAP=true
-        SKIP_OSD_CREATION=true  # OSDs will be created after node is added to cluster
+        SKIP_OSD_CREATION=false  # Create OSDs if node now has cluster config
     fi
 fi
 
@@ -165,6 +165,12 @@ fi
 
 # Create OSDs with shared WAL and DB on SSD (only if not skipping)
 if [[ "${SKIP_OSD_CREATION}" != "true" ]]; then
+    # Check if we have cluster config (required for OSD creation)
+    if [[ ! -f /etc/ceph/ceph.conf ]]; then
+        echo "No cluster configuration found. Node needs to be added to cluster first."
+        echo "OSDs will be created when this script runs again after cluster joining."
+        exit 0
+    fi
     echo "Creating OSDs with shared WAL/DB configuration..."
 else
     echo "Skipping OSD creation for this mode."
@@ -265,19 +271,30 @@ if [[ ${#SSD_DEVICES[@]} -eq 0 ]]; then
 else
     echo "Creating OSDs with shared DB configuration (up to ${HDDS_PER_SSD} HDDs per SSD)..."
     
+    # Calculate maximum HDDs we can use based on available SSDs
+    max_usable_hdds=$((${#SSD_DEVICES[@]} * HDDS_PER_SSD))
+    actual_hdds_to_use=${#HDD_DEVICES[@]}
+    
+    if [[ ${#HDD_DEVICES[@]} -gt ${max_usable_hdds} ]]; then
+        actual_hdds_to_use=${max_usable_hdds}
+        echo "Found ${#HDD_DEVICES[@]} HDDs but can only use ${actual_hdds_to_use} HDDs with ${#SSD_DEVICES[@]} SSDs (${HDDS_PER_SSD} HDDs per SSD)."
+        excess_hdd_count=$((${#HDD_DEVICES[@]} - actual_hdds_to_use))
+        echo "Ignoring ${excess_hdd_count} excess HDDs: ${HDD_DEVICES[@]:${actual_hdds_to_use}}"
+    fi
+    
     # Process HDDs in groups, assigning one SSD for DB per group
     hdd_index=0
     ssd_index=0
     
-    while [[ ${hdd_index} -lt ${#HDD_DEVICES[@]} && ${ssd_index} -lt ${#SSD_DEVICES[@]} ]]; do
+    while [[ ${hdd_index} -lt ${actual_hdds_to_use} && ${ssd_index} -lt ${#SSD_DEVICES[@]} ]]; do
         # Calculate how many HDDs to assign to this SSD (respect HDDS_PER_SSD limit)
-        remaining_hdds=$((${#HDD_DEVICES[@]} - hdd_index))
+        remaining_hdds=$((actual_hdds_to_use - hdd_index))
         hdds_for_this_ssd=$((remaining_hdds < HDDS_PER_SSD ? remaining_hdds : HDDS_PER_SSD))
         
         # Build comma-separated list of HDDs for this batch
         data_devices_list=""
         for ((i=0; i<hdds_for_this_ssd; i++)); do
-            if [[ $((hdd_index + i)) -lt ${#HDD_DEVICES[@]} ]]; then
+            if [[ $((hdd_index + i)) -lt ${actual_hdds_to_use} ]]; then
                 if [[ -n "${data_devices_list}" ]]; then
                     data_devices_list="$data_devices_list,${HDD_DEVICES[$((hdd_index + i))]}"
                 else
@@ -303,17 +320,12 @@ else
         ssd_index=$((ssd_index + 1))
     done
     
-    # Use any remaining SSDs for data-only OSDs
-    while [[ ${ssd_index} -lt ${#SSD_DEVICES[@]} ]]; do
-        ssd="${SSD_DEVICES[$ssd_index]}"
-        echo "Creating SSD OSD on $ssd (data only)..."
-        /usr/local/bin/cephadm shell --fsid $FSID -c /etc/ceph/ceph.conf -k /etc/ceph/ceph.client.admin.keyring -- \
-          ceph orch daemon add osd "$HOSTNAME:data_devices=$ssd"
-        if [[ $? -ne 0 ]]; then
-            echo "Warning: Failed to create SSD OSD on $ssd"
-        fi
-        ssd_index=$((ssd_index + 1))
-    done
+    # Report any unused SSDs
+    if [[ ${ssd_index} -lt ${#SSD_DEVICES[@]} ]]; then
+        unused_ssd_count=$((${#SSD_DEVICES[@]} - ssd_index))
+        echo "Note: ${unused_ssd_count} SSDs remain unused: ${SSD_DEVICES[@]:${ssd_index}}"
+        echo "These SSDs could be used for additional HDD groups if more HDDs were available."
+    fi
 fi
 
 echo "OSD creation complete on ${HOSTNAME}. Cluster status:"

@@ -10,24 +10,52 @@ BedBot is a powerful AI chat assistant powered by AWS Bedrock Nova that allows y
 
 ## Table of Contents
 
-- [Features](#features)
-- [Use Cases](#use-cases)
-- [Prerequisites](#prerequisites)
-- [AWS Setup](#aws-setup)
-  - [Creating a New AWS Profile](#creating-a-new-aws-profile)
-  - [Requesting Bedrock Model Access](#requesting-bedrock-model-access)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-  - [Basic Chat](#basic-chat)
-  - [Document Upload and Analysis](#document-upload-and-analysis)
-  - [Voice Input](#voice-input)
-- [Command Line Options](#command-line-options)
-- [Storage Modes](#storage-modes)
-- [Troubleshooting](#troubleshooting)
-- [Advanced Features](#advanced-features)
-- [Security Considerations](#security-considerations)
-- [Contributing](#contributing)
+- [BedBot - AI Chat Assistant](#bedbot---ai-chat-assistant)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Use Cases](#use-cases)
+    - [Document Analysis and Comparison](#document-analysis-and-comparison)
+    - [Content Creation and Review](#content-creation-and-review)
+    - [Educational and Training](#educational-and-training)
+    - [Business Intelligence](#business-intelligence)
+  - [Prerequisites](#prerequisites)
+  - [AWS Setup](#aws-setup)
+    - [Creating a New AWS Profile](#creating-a-new-aws-profile)
+    - [Requesting Bedrock Model Access](#requesting-bedrock-model-access)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables)
+    - [Model Selection](#model-selection)
+  - [Usage](#usage)
+    - [Basic Startup](#basic-startup)
+    - [Basic Chat](#basic-chat)
+    - [Document Upload and Analysis](#document-upload-and-analysis)
+    - [Voice Input](#voice-input)
+  - [Command Line Options](#command-line-options)
+  - [Storage Modes](#storage-modes)
+    - [Local Filesystem Mode (`--no-bucket`)](#local-filesystem-mode---no-bucket)
+    - [S3 Storage Mode (default)](#s3-storage-mode-default)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
+      - [1. "Bedrock client not initialized"](#1-bedrock-client-not-initialized)
+      - [2. "Model access denied" or "ValidationException"](#2-model-access-denied-or-validationexception)
+      - [3. "Failed to create S3 bucket"](#3-failed-to-create-s3-bucket)
+      - [4. File upload fails](#4-file-upload-fails)
+      - [5. Voice input not working](#5-voice-input-not-working)
+    - [Debug Mode](#debug-mode)
+    - [Log Analysis](#log-analysis)
+  - [Advanced Features](#advanced-features)
+    - [Session Management](#session-management)
+    - [Document Context](#document-context)
+    - [PDF Processing](#pdf-processing)
+    - [Security Features](#security-features)
+  - [Security Considerations](#security-considerations)
+    - [Data Privacy](#data-privacy)
+    - [AWS Permissions](#aws-permissions)
+    - [Network Security](#network-security)
+    - [Recommended IAM Policy](#recommended-iam-policy)
+  - [Contributing](#contributing)
+    - [Development Setup](#development-setup)
 
 ## Features
 
@@ -366,36 +394,46 @@ Check the console output for:
 - Consider VPN or private network access for sensitive documents
 
 ### Recommended IAM Policy
+
+For the IAM user account running BedBot create 2 new inline policies 
+
+Policy: UseBedrock
+
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "bedrock:InvokeModel",
-                "bedrock:ListFoundationModels"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:CreateBucket",
-                "s3:DeleteBucket",
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:DeleteObject",
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::bedbot-*",
-                "arn:aws:s3:::bedbot-*/*"
-            ]
-        }
-    ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": [
+				"bedrock:InvokeModel",
+				"bedrock:InvokeModelWithResponseStream",
+				"bedrock:ListFoundationModels"
+			],
+			"Resource": "*"
+		}
+	]
 }
 ```
+
+Policy: AllowS3BucketsWithPrefix_bedbot
+
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": "s3:*",
+			"Resource": [
+				"arn:aws:s3:::bedbot-*",
+				"arn:aws:s3:::bedbot-*/*"
+			]
+		}
+	]
+}
+```
+
 
 ## Contributing
 
