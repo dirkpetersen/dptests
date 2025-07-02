@@ -16,6 +16,52 @@ if [[ "$MODE" != "first" && "$MODE" != "others" ]]; then
     exit 1
 fi
 
+# Function to wait for cluster integration on nodes joining existing cluster
+wait_for_cluster_integration() {
+    local max_attempts=60  # 10 minutes
+    local attempt=0
+    
+    echo "Waiting for cluster integration..."
+    
+    # Wait for ceph.conf
+    while [[ ! -f /etc/ceph/ceph.conf ]]; do
+        attempt=$((attempt + 1))
+        if [[ $attempt -ge $max_attempts ]]; then
+            echo "Error: Cluster config not deployed after $max_attempts attempts"
+            return 1
+        fi
+        echo "Waiting for /etc/ceph/ceph.conf... (Attempt $attempt/$max_attempts)"
+        sleep 10
+    done
+    
+    # Wait for admin keyring
+    attempt=0
+    while [[ ! -f /etc/ceph/ceph.client.admin.keyring ]]; do
+        attempt=$((attempt + 1))
+        if [[ $attempt -ge $max_attempts ]]; then
+            echo "Error: Admin keyring not deployed after $max_attempts attempts"
+            return 1
+        fi
+        echo "Waiting for /etc/ceph/ceph.client.admin.keyring... (Attempt $attempt/$max_attempts)"
+        sleep 10
+    done
+    
+    # Wait for cephadm to be able to connect to cluster
+    attempt=0
+    while ! /usr/local/bin/cephadm shell -- ceph -s &>/dev/null; do
+        attempt=$((attempt + 1))
+        if [[ $attempt -ge $max_attempts ]]; then
+            echo "Error: Cannot connect to cluster after $max_attempts attempts"
+            return 1
+        fi
+        echo "Waiting for cluster connectivity... (Attempt $attempt/$max_attempts)"
+        sleep 10
+    done
+    
+    echo "Node successfully integrated into cluster"
+    return 0
+}
+
 echo "Running in '$MODE' mode..."
 
 curl -o /usr/local/bin/cephadm https://download.ceph.com/rpm-${CEPH_RELEASE}/el9/noarch/cephadm
@@ -133,10 +179,15 @@ except:
             SKIP_OSD_CREATION=false
         fi
     else
-        echo "This node will be added to the cluster by the first node via orchestrator."
-        echo "Preparing node for cluster joining..."
-        SKIP_BOOTSTRAP=true
-        SKIP_OSD_CREATION=false  # Create OSDs if node now has cluster config
+        echo "This node needs to be added to the cluster by the orchestrator."
+        echo "After running this script on the first node, add this node using:"
+        echo "  ceph orch host add $(hostname) $(hostname -I | awk '{print $1}') --labels _admin"
+        echo ""
+        echo "Then wait for the orchestrator to deploy configuration files."
+        echo "You can re-run this script after the node is added to create OSDs."
+        
+        # Exit here - don't try to create OSDs yet
+        exit 0
     fi
 fi
 
@@ -165,6 +216,15 @@ fi
 
 # Create OSDs with shared WAL and DB on SSD (only if not skipping)
 if [[ "${SKIP_OSD_CREATION}" != "true" ]]; then
+    # For nodes that were just added, wait for integration
+    if [[ "$MODE" == "others" ]] && [[ ! -f /etc/ceph/ceph.conf ]]; then
+        echo "Waiting for orchestrator to deploy cluster configuration..."
+        if ! wait_for_cluster_integration; then
+            echo "Failed to integrate with cluster. Please check orchestrator status."
+            exit 1
+        fi
+    fi
+    
     # Check if we have cluster config (required for OSD creation)
     if [[ ! -f /etc/ceph/ceph.conf ]]; then
         echo "No cluster configuration found. Node needs to be added to cluster first."
