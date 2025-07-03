@@ -30,8 +30,14 @@ fi
 #
 # Environment variables can be used to override default configurations, e.g.:
 #   AWS_REGION, EC2_TYPE, AMI_IMAGE, ROOT_VOLUME_SIZE, INSTANCE_NAME,
-#   DOMAIN, CLOUD_INIT_FILE, EC2_USER, EC2_SECURITY_GROUP, EBS_TYPE,
+#   DOMAIN, CLOUD_INIT_FILE, EC2_USER, EC2_SECURITY_GROUPS, EBS_TYPE,
 #   EBS_SIZE, EBS_QTY, EC2_KEY_NAME, EC2_KEY_FILE, AWS_AZ.
+#
+# EC2_SECURITY_GROUPS: Space-separated list of security group names.
+#   Examples:
+#     EC2_SECURITY_GROUPS="SSH-HTTP-ICMP"                    # Single group
+#     EC2_SECURITY_GROUPS="SSH-HTTP-ICMP ceph-cluster-sg"   # Multiple groups
+#     EC2_SECURITY_GROUPS="sg1 sg2 sg3"                     # Three groups
 
 declare -a TARGET_INSTANCE_IDS # Array to store instance IDs for all target slots
 declare -a TARGET_PUBLIC_IPS   # Array to store public IPs for all target slots
@@ -59,7 +65,7 @@ fi
 : "${DOMAIN:="ai.oregonstate.edu"}"
 : "${CLOUD_INIT_FILE:="ec2-cloud-init.txt"}"
 : "${EC2_USER:="rocky"}"
-: "${EC2_SECURITY_GROUP:="SSH-HTTP-ICMP"}"
+: "${EC2_SECURITY_GROUPS:="SSH-HTTP-ICMP ceph-cluster-sg"}"
 : "${EBS_TYPE:="st1"}"
 : "${EBS_SIZE:="125"}"
 : "${EBS_QTY:="3"}" #: "normally 6"
@@ -116,62 +122,90 @@ function discover_or_launch_instances() {
         fi
     done
 
-    # Determine and configure the security group REGARDLESS of whether new instances are launched.
-    # This security group will be used by all instances, new or existing.
-    echo "Fetching security group ID for: ${EC2_SECURITY_GROUP}"
-    local security_group_id # Declare here so it's available for launch if needed
-    security_group_id=$(aws ec2 describe-security-groups \
-        --region "${AWS_REGION}" \
-        --filters "Name=group-name,Values=${EC2_SECURITY_GROUP}" \
-        --query 'SecurityGroups[0].GroupId' \
-        --output text)
-
-    if [[ -z "$security_group_id" ]]; then
-        echo "Error: Security group '${EC2_SECURITY_GROUP}' not found in region '${AWS_REGION}'."
+    # Determine and configure the security groups REGARDLESS of whether new instances are launched.
+    # These security groups will be used by all instances, new or existing.
+    echo "Resolving security groups: ${EC2_SECURITY_GROUPS}"
+    local security_group_ids=() # Array to store resolved security group IDs
+    
+    # Validate that at least one security group is provided
+    if [[ -z "${EC2_SECURITY_GROUPS// }" ]]; then
+        echo "Error: EC2_SECURITY_GROUPS cannot be empty. Please specify at least one security group."
         exit 1
     fi
-    echo "Using security group ID: ${security_group_id} (Name: ${EC2_SECURITY_GROUP})"
+    
+    # Convert space-separated list to array
+    read -ra SG_NAMES <<< "${EC2_SECURITY_GROUPS}"
+    
+    echo "Found ${#SG_NAMES[@]} security group(s) to resolve."
+    
+    # Resolve each security group name to ID
+    for sg_name in "${SG_NAMES[@]}"; do
+        echo "Fetching security group ID for: ${sg_name}"
+        local sg_id
+        sg_id=$(aws ec2 describe-security-groups \
+            --region "${AWS_REGION}" \
+            --filters "Name=group-name,Values=${sg_name}" \
+            --query 'SecurityGroups[0].GroupId' \
+            --output text)
 
-    # Ensure the security group allows SSH from itself for intra-cluster communication (e.g., Ceph orchestration)
+        if [[ -z "$sg_id" || "$sg_id" == "None" ]]; then
+            echo "Error: Security group '${sg_name}' not found in region '${AWS_REGION}'."
+            exit 1
+        fi
+        
+        security_group_ids+=("$sg_id")
+        echo "✓ Resolved ${sg_name} -> ${sg_id}"
+    done
+    
+    # Create space-separated string of security group IDs for AWS CLI
+    local security_groups_param
+    security_groups_param=$(IFS=' '; echo "${security_group_ids[*]}")
+    echo "Using security group IDs: ${security_groups_param}"
+
+    # Ensure the first security group allows SSH from itself for intra-cluster communication (e.g., Ceph orchestration)
+    # We only check/add this rule to the first security group to avoid duplication
+    local primary_sg_id="${security_group_ids[0]}"
+    echo "Checking SSH self-access rule for primary security group: ${primary_sg_id}"
+    
     # Check if the rule already exists: TCP, port 22, source is the security group itself.
     local rule_exists
     rule_exists=$(aws ec2 describe-security-groups \
         --region "${AWS_REGION}" \
-        --group-ids "${security_group_id}" \
+        --group-ids "${primary_sg_id}" \
         --filters "Name=ip-permission.protocol,Values=tcp" \
                   "Name=ip-permission.from-port,Values=22" \
                   "Name=ip-permission.to-port,Values=22" \
-                  "Name=ip-permission.user-id-group-pairs.group-id,Values=${security_group_id}" \
-        --query "SecurityGroups[0].IpPermissions[?FromPort==\`22\` && ToPort==\`22\` && IpProtocol=='tcp' && UserIdGroupPairs[?GroupId=='${security_group_id}']].UserIdGroupPairs" \
+                  "Name=ip-permission.user-id-group-pairs.group-id,Values=${primary_sg_id}" \
+        --query "SecurityGroups[0].IpPermissions[?FromPort==\`22\` && ToPort==\`22\` && IpProtocol=='tcp' && UserIdGroupPairs[?GroupId=='${primary_sg_id}']].UserIdGroupPairs" \
         --output text 2>/dev/null)
 
     if [[ -z "$rule_exists" ]]; then
-        echo "Adding ingress rule to security group ${security_group_id} to allow SSH (port 22) from itself..."
+        echo "Adding ingress rule to security group ${primary_sg_id} to allow SSH (port 22) from itself..."
         local auth_stderr_file
         auth_stderr_file=$(mktemp)
         if aws ec2 authorize-security-group-ingress \
             --region "${AWS_REGION}" \
-            --group-id "${security_group_id}" \
+            --group-id "${primary_sg_id}" \
             --protocol tcp \
             --port 22 \
-            --source-group "${security_group_id}" 2> "${auth_stderr_file}"; then
-            echo "Successfully added SSH ingress rule (port 22, source: self) to security group ${security_group_id}."
+            --source-group "${primary_sg_id}" 2> "${auth_stderr_file}"; then
+            echo "Successfully added SSH ingress rule (port 22, source: self) to security group ${primary_sg_id}."
         else
             # Check if the error was because the rule already exists
             if grep -q "InvalidPermission.Duplicate" "${auth_stderr_file}"; then
-                echo "SSH ingress rule (port 22, source: self) already exists in security group ${security_group_id} (confirmed by authorize attempt; this is not an error)."
+                echo "SSH ingress rule (port 22, source: self) already exists in security group ${primary_sg_id} (confirmed by authorize attempt; this is not an error)."
             else
                 # A real error occurred
-                echo "Error: Failed to add SSH ingress rule to security group ${security_group_id}. Ceph internode SSH might fail."
+                echo "Error: Failed to add SSH ingress rule to security group ${primary_sg_id}. Ceph internode SSH might fail."
                 echo "AWS CLI Error: $(cat "${auth_stderr_file}")"
-                echo "Please manually add an Inbound rule: TCP, Port 22, Source: ${security_group_id}"
+                echo "Please manually add an Inbound rule: TCP, Port 22, Source: ${primary_sg_id}"
                 # Consider exiting here if this rule is critical and automation fails:
                 # exit 1
             fi
         fi
         rm -f "${auth_stderr_file}"
     else
-        echo "SSH ingress rule (port 22, source: self) already exists in security group ${security_group_id}."
+        echo "SSH ingress rule (port 22, source: self) already exists in security group ${primary_sg_id}."
     fi
 
     local num_to_launch=${#indices_to_create[@]}
@@ -206,7 +240,7 @@ function discover_or_launch_instances() {
             --count ${num_to_launch} \
             --instance-type ${EC2_TYPE} \
             --key-name ${EC2_KEY_NAME} \
-            --security-group-ids "${security_group_id}" \
+            --security-group-ids ${security_groups_param} \
             --block-device-mappings "${blk_dev_json}" \
             ${userdata_param} \
             ${az_param} \
