@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Source remote file copy functions if available
+if [[ -f "$(dirname "$0")/remote-file-copy.sh" ]]; then
+    source "$(dirname "$0")/remote-file-copy.sh"
+elif [[ -f "./remote-file-copy.sh" ]]; then
+    source "./remote-file-copy.sh"
+fi
+
 # AWS EC2 Instance Launch and Configuration Script
 #
 # This script automates the process of launching one or more AWS EC2 instances.
@@ -473,14 +480,6 @@ function bootstrap_nodes() {
     done
     echo "SSH key is available on ${first_node_fqdn}."
     
-    # If there's only one node, we're done
-    if [[ $NUM_INSTANCES -eq 1 ]]; then
-        # Clean up bootstrap script
-        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${first_node_public_ip}" "rm -f /tmp/bootstrap-node.sh"
-        echo "Single node cluster bootstrap complete."
-        return 0
-    fi
     
     echo "=== Preparing additional nodes for cluster joining ==="
     
@@ -517,7 +516,7 @@ function bootstrap_nodes() {
     
     echo "=== Adding nodes to cluster via orchestrator ==="
     
-    # Copy SSH public key to all additional nodes and add them to cluster
+    # Add each additional node to cluster using the join_cluster mode
     for i in $(seq 1 $((NUM_INSTANCES - 1))); do
         local target_public_ip="${TARGET_PUBLIC_IPS[$i]}"
         local target_fqdn="${TARGET_FQDNS[$i]}"
@@ -529,100 +528,56 @@ function bootstrap_nodes() {
             continue
         fi
         
-        echo "Adding ${target_fqdn} to cluster..."
+        echo "Adding ${target_fqdn} to cluster via join_cluster mode..."
         
-        # Copy SSH public key from first node to this node
-        echo "Copying SSH public key to ${target_fqdn}..."
-        if ! ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            "${EC2_USER}@${first_node_public_ip}" \
-            "sudo /usr/local/bin/cephadm shell -- ssh-copy-id -f -i /etc/ceph/ceph.pub root@${target_internal_ip}"; then
-            echo "Warning: Failed to copy SSH key to ${target_fqdn}. Trying manual approach..."
-            
-            # Manual SSH key distribution as fallback
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${first_node_public_ip}" "sudo cat /etc/ceph/ceph.pub" | \
-            ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                "${EC2_USER}@${target_public_ip}" \
-                "sudo mkdir -p /root/.ssh && sudo chmod 700 /root/.ssh && sudo tee -a /root/.ssh/authorized_keys >/dev/null && sudo chmod 600 /root/.ssh/authorized_keys"
+        # Copy bootstrap script to the node
+        if ! scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            ./bootstrap-node.sh "${EC2_USER}@${target_public_ip}:/tmp/bootstrap-node.sh"; then
+            echo "Error: Failed to copy bootstrap-node.sh to ${target_fqdn}. Skipping this node."
+            continue
         fi
         
-        # Add the host to the cluster
-        echo "Adding host ${target_hostname} (${target_internal_ip}) to cluster..."
+        # Use join_cluster mode to add the node to cluster from the first node
+        echo "Executing join_cluster mode on first node for ${target_fqdn}..."
         if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
             "${EC2_USER}@${first_node_public_ip}" \
-            "sudo /usr/local/bin/cephadm shell -- ceph orch host add ${target_hostname} ${target_internal_ip}"; then
+            "sudo FIRST_NODE_INTERNAL_IP=${first_node_internal_ip} TARGET_HOSTNAME=${target_hostname} TARGET_INTERNAL_IP=${target_internal_ip} EC2_USER=${EC2_USER} FIRST_NODE_PUBLIC_IP=${first_node_public_ip} TARGET_PUBLIC_IP=${target_public_ip} EC2_KEY_FILE=${EC2_KEY_FILE} bash /tmp/bootstrap-node.sh join_cluster"; then
             echo "Successfully added ${target_fqdn} to cluster."
             
-            # Wait for the node to be fully joined to the cluster
-            echo "Waiting for ${target_fqdn} to be fully integrated into the cluster..."
-            local join_attempts=30
-            local join_count=0
-            while [[ ${join_count} -lt ${join_attempts} ]]; do
-                # Check if the node appears in host list
-                if host_list_output=$(ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                    "${EC2_USER}@${first_node_public_ip}" \
-                    "sudo /usr/local/bin/cephadm shell -- ceph orch host ls --format json" 2>/dev/null); then
-                    
-                    if echo "${host_list_output}" | jq -r '.[].hostname' 2>/dev/null | grep -q "^${target_hostname}$"; then
-                        echo "${target_fqdn} is now fully integrated into the cluster."
-                        break
-                    fi
+            # Wait for cluster configuration to be distributed to the new node  
+            echo "Waiting for cluster configuration to be available on ${target_fqdn}..."
+            local config_attempts=30
+            local config_count=0
+            while [[ ${config_count} -lt ${config_attempts} ]]; do
+                if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                    "${EC2_USER}@${target_public_ip}" "sudo test -f /etc/ceph/ceph.conf" 2>/dev/null; then
+                    echo "Cluster configuration is now available on ${target_fqdn}."
+                    break
                 fi
                 
-                join_count=$((join_count + 1))
-                echo "Waiting for ${target_fqdn} to appear in cluster host list... (Attempt ${join_count}/${join_attempts})"
+                config_count=$((config_count + 1))
+                echo "Waiting for cluster config on ${target_fqdn}... (Attempt ${config_count}/${config_attempts})"
                 sleep 10
             done
             
-            if [[ ${join_count} -eq ${join_attempts} ]]; then
-                echo "Warning: ${target_fqdn} did not fully join the cluster within expected time."
+            if [[ ${config_count} -eq ${config_attempts} ]]; then
+                echo "Warning: Cluster configuration did not become available on ${target_fqdn} within expected time."
+                echo "Skipping OSD creation for this node."
             else
-                # Wait for cluster configuration to be distributed to the new node
-                echo "Waiting for cluster configuration to be available on ${target_fqdn}..."
-                local config_attempts=30
-                local config_count=0
-                while [[ ${config_count} -lt ${config_attempts} ]]; do
-                    if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                        "${EC2_USER}@${target_public_ip}" "sudo test -f /etc/ceph/ceph.conf" 2>/dev/null; then
-                        echo "Cluster configuration is now available on ${target_fqdn}."
-                        break
-                    fi
-                    
-                    config_count=$((config_count + 1))
-                    echo "Waiting for cluster config on ${target_fqdn}... (Attempt ${config_count}/${config_attempts})"
-                    sleep 10
-                done
+                # Now create OSDs on this node
+                echo "Creating OSDs on ${target_fqdn} (cluster config available)..."
                 
-                if [[ ${config_count} -eq ${config_attempts} ]]; then
-                    echo "Warning: Cluster configuration did not become available on ${target_fqdn} within expected time."
-                    echo "Skipping OSD creation for this node."
+                # Execute bootstrap script with 'others' argument to create OSDs
+                if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                    "${EC2_USER}@${target_public_ip}" "sudo HDDS_PER_SSD=${HDDS_PER_SSD:-6} bash /tmp/bootstrap-node.sh others"; then
+                    echo "OSDs created successfully on ${target_fqdn}."
                 else
-                    # Now create OSDs on this node
-                    echo "Creating OSDs on ${target_fqdn} (cluster config available)..."
-                    
-                    # Copy bootstrap script to the node
-                    if scp -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                        ./bootstrap-node.sh "${EC2_USER}@${target_public_ip}:/tmp/bootstrap-node.sh"; then
-                        
-                        # Execute bootstrap script with 'others' argument to create OSDs
-                        if ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                            "${EC2_USER}@${target_public_ip}" "sudo HDDS_PER_SSD=${HDDS_PER_SSD:-6} bash /tmp/bootstrap-node.sh others"; then
-                            echo "OSDs created successfully on ${target_fqdn}."
-                        else
-                            echo "Warning: Failed to create OSDs on ${target_fqdn}."
-                        fi
-                        
-                        # Clean up bootstrap script
-                        ssh -i "${EC2_KEY_FILE}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                            "${EC2_USER}@${target_public_ip}" "rm -f /tmp/bootstrap-node.sh" 2>/dev/null || true
-                    else
-                        echo "Warning: Failed to copy bootstrap script to ${target_fqdn} for OSD creation."
-                    fi
+                    echo "Warning: Failed to create OSDs on ${target_fqdn}."
                 fi
             fi
         else
-            echo "Warning: Failed to add ${target_fqdn} to cluster. Manual addition may be required."
-            echo "Run on first node: ceph orch host add ${target_hostname} ${target_internal_ip}"
+            echo "Warning: Failed to add ${target_fqdn} to cluster via join_cluster mode."
+            echo "Manual addition may be required: ceph orch host add ${target_hostname} ${target_internal_ip}"
         fi
     done
     

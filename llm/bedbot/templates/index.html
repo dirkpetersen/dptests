@@ -1456,20 +1456,20 @@
                 modelSelector.classList.add('show');
                 
                 // Handle vector store option
-                if (data.faiss_enabled) {
+                if (data.vector_store_enabled) {
                     const vectorStoreOption = document.getElementById('vectorStoreOption');
                     const useVectorStoreCheckbox = document.getElementById('useVectorStore');
                     
                     // Show the vector store option
                     vectorStoreOption.style.display = 'block';
                     
-                    // Load vector store preference from cookie, default to enabled when FAISS is available
+                    // Load vector store preference from cookie, default to enabled when vector store is available
                     const vectorStoreCookie = getCookie('use_vector_store');
                     if (vectorStoreCookie !== null) {
                         // User has a saved preference
                         useVectorStoreCheckbox.checked = (vectorStoreCookie === 'true');
                     } else {
-                        // No saved preference, default to enabled when FAISS is available
+                        // No saved preference, default to enabled when vector store is available
                         useVectorStoreCheckbox.checked = true;
                         // Save this default preference
                         setCookie('use_vector_store', 'true', 30);

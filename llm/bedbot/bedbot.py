@@ -27,17 +27,17 @@ logger = logging.getLogger(__name__)
 
 # Try to import vector store functionality
 try:
-    if os.getenv('FAISS_STORE', '0').strip().lower() in ('1', 'true', 'yes', 'on'):
-        from vector_store import initialize_vector_store_manager, get_vector_store_manager, is_vector_store_available, FAISS_AVAILABLE
+    if os.getenv('VECTOR_STORE', '0').strip().lower() in ('1', 'true', 'yes', 'on'):
+        from vector_store import initialize_vector_store_manager, get_vector_store_manager, is_vector_store_available, VECTOR_STORE_AVAILABLE
         VECTOR_STORE_MODULE_AVAILABLE = True
         logger.info("Vector store module loaded successfully")
     else:
         VECTOR_STORE_MODULE_AVAILABLE = False
-        FAISS_AVAILABLE = False
-        logger.info("Vector store module not enabled (FAISS_STORE=0)")
+        VECTOR_STORE_AVAILABLE = False
+        logger.info("Vector store module not enabled (VECTOR_STORE=0)")
 except ImportError as e:
     VECTOR_STORE_MODULE_AVAILABLE = False
-    FAISS_AVAILABLE = False
+    VECTOR_STORE_AVAILABLE = False
     logger.warning(f"Vector store module not available: {e}")
     logger.info("Running without vector store functionality")
 
@@ -55,8 +55,8 @@ MAX_FILE_SIZE = 4.5 * 1024 * 1024  # 4.5 MB per file
 MAX_FILES_PER_SESSION = 1000
 BEDROCK_MODEL = os.getenv('BEDROCK_MODEL', args.model)
 # Vector Store Configuration
-USE_FAISS_STORE = (VECTOR_STORE_MODULE_AVAILABLE and FAISS_AVAILABLE and 
-                   os.getenv('FAISS_STORE', '0').strip().lower() in ('1', 'true', 'yes', 'on'))
+USE_VECTOR_STORE = (VECTOR_STORE_MODULE_AVAILABLE and VECTOR_STORE_AVAILABLE and 
+                   os.getenv('VECTOR_STORE', '0').strip().lower() in ('1', 'true', 'yes', 'on'))
 # PDF merging configuration removed - no longer supported
 # PDF conversion configuration - temporarily disable to test
 PDF_CONVERSION_ENABLED = os.getenv('PDF_CONVERSION', '1').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -73,7 +73,7 @@ BEDROCK_TIMEOUT = int(os.getenv('BEDROCK_TIMEOUT', '900'))
 if DEBUG_MODE:
     logger.info(f"PDF conversion enabled: {PDF_CONVERSION_ENABLED} (PDF_CONVERSION={os.getenv('PDF_CONVERSION', '1')})")
     logger.info(f"PDF local convert enabled: {PDF_LOCAL_CONVERT} (PDF_LOCAL_CONVERT={os.getenv('PDF_LOCAL_CONVERT', '0')})")
-    logger.info(f"Vector store enabled: {USE_FAISS_STORE} (FAISS_STORE={os.getenv('FAISS_STORE', '0')}, module_available={VECTOR_STORE_MODULE_AVAILABLE}, faiss_available={FAISS_AVAILABLE})")
+    logger.info(f"Vector store enabled: {USE_VECTOR_STORE} (VECTOR_STORE={os.getenv('VECTOR_STORE', '0')}, module_available={VECTOR_STORE_MODULE_AVAILABLE}, vector_store_available={VECTOR_STORE_AVAILABLE})")
     logger.info(f"Max concurrent Bedrock connections: {BEDROCK_MAX_CONCURRENT} (BEDROCK_MAXCON={os.getenv('BEDROCK_MAXCON', '3')})")
     logger.info(f"PDF conversion model: {PDF_CONVERT_MODEL} (PDF_CONVERT_MODEL={os.getenv('PDF_CONVERT_MODEL', 'default')})")
     logger.info(f"Chat model: {BEDROCK_MODEL} (BEDROCK_MODEL={os.getenv('BEDROCK_MODEL', 'default')}, --model={args.model})")
@@ -378,7 +378,7 @@ def initialize_aws_clients():
                 logger.info("S3 bucket mode enabled")
             else:
                 logger.info("Local filesystem mode enabled (--no-bucket)")
-            if USE_FAISS_STORE:
+            if USE_VECTOR_STORE:
                 logger.info("Vector store mode enabled (independent of file storage)")
         
         return True
@@ -391,7 +391,7 @@ def initialize_aws_clients():
 
 def initialize_vector_store_if_enabled():
     """Initialize vector store manager - independent of S3"""
-    if USE_FAISS_STORE:
+    if USE_VECTOR_STORE:
         try:
             logger.info("🔄 Initializing vector store manager")
             vector_manager = initialize_vector_store_manager()
@@ -404,7 +404,7 @@ def initialize_vector_store_if_enabled():
 
 def ensure_vector_store_configured():
     """Ensure vector store manager is properly configured"""
-    if not USE_FAISS_STORE:
+    if not USE_VECTOR_STORE:
         return True
         
     vector_manager = get_vector_store_manager()
@@ -1184,12 +1184,12 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
         
         # Prepare PDF content if needed (skip if vector store is enabled)
         pdf_content = []
-        if send_pdfs and pdf_files and not USE_FAISS_STORE:
+        if send_pdfs and pdf_files and not USE_VECTOR_STORE:
             logger.info(f"Including PDFs in conversation ({'first time' if not conversation_history else 'model switched'})")
             
             # Build PDF content using existing logic
             pdf_content = build_pdf_content(pdf_files)
-        elif send_pdfs and pdf_files and USE_FAISS_STORE:
+        elif send_pdfs and pdf_files and USE_VECTOR_STORE:
             logger.info(f"Skipping PDF upload to Bedrock - using vector store retrieval instead ({len(pdf_files)} PDFs indexed)")
                 
         # Add conversation history if provided (text-only, no document re-uploads)
@@ -1210,7 +1210,7 @@ def call_bedrock(prompt, context="", pdf_files=None, conversation_history=None, 
             'analyze', 'describe', 'detail', 'elaborate', 'clarify'
         ]
         
-        if USE_FAISS_STORE and use_vector_store and 'session_id' in session:
+        if USE_VECTOR_STORE and use_vector_store and 'session_id' in session:
             try:
                 vector_manager = get_vector_store_manager()
                 if vector_manager:
@@ -1627,8 +1627,8 @@ def chat():
         logger.info(f"Chat request - User vector store preference: {use_vector_store}")
         
         # Determine if we should use vector store (both system enabled and user preference)
-        use_vector_for_request = USE_FAISS_STORE and use_vector_store
-        logger.info(f"Chat request - Using vector store: {use_vector_for_request} (system: {USE_FAISS_STORE}, user: {use_vector_store})")
+        use_vector_for_request = USE_VECTOR_STORE and use_vector_store
+        logger.info(f"Chat request - Using vector store: {use_vector_for_request} (system: {USE_VECTOR_STORE}, user: {use_vector_store})")
         
         # Determine if we need to send PDFs (first time with PDFs or PDFs not yet initialized)
         # When vector store is enabled by user, we don't send PDFs to Bedrock at all
@@ -1641,7 +1641,7 @@ def chat():
         else:
             send_pdfs = pdf_files and not pdfs_initialized
         
-        logger.info(f"PDF decision: pdf_files={len(pdf_files) if pdf_files else 0}, pdfs_initialized={pdfs_initialized}, send_pdfs={send_pdfs}, vector_store={USE_FAISS_STORE}")
+        logger.info(f"PDF decision: pdf_files={len(pdf_files) if pdf_files else 0}, pdfs_initialized={pdfs_initialized}, send_pdfs={send_pdfs}, vector_store={USE_VECTOR_STORE}")
         
         # Build conversation history for Bedrock (exclude current session initialization if it exists)
         conversation_history = []
@@ -1791,44 +1791,85 @@ def upload_files():
                             content = read_file_content(s3_key, is_s3=True)
                             if content:
                                 if isinstance(content, dict) and content.get('type') == 'pdf':
-                                    # Always add PDF to the list first, regardless of markdown conversion success
-                                    pdf_info = {
-                                        's3_key': s3_key,
-                                        'filename': file.filename,
-                                        'timestamped_filename': timestamped_filename,
-                                        'has_markdown': False
-                                    }
-                                    
-                                    # Add to parallel conversion queue if enabled
-                                    if PDF_CONVERSION_ENABLED:
-                                        file_key = f"{file.filename}_{len(pdf_conversion_tasks)}"  # Unique key
-                                        pdf_conversion_tasks.append((file_key, s3_key, s3_bucket_name, file.filename))
-                                        pdf_files_info[file_key] = {
-                                            'pdf_info': pdf_info,
-                                            'session_location': session_location,
-                                            'timestamped_filename': timestamped_filename
-                                        }
-                                        conversion_method = "local" if PDF_LOCAL_CONVERT else "Bedrock"
-                                        logger.info(f"Added PDF to parallel conversion queue ({conversion_method}): {file.filename}")
+                                    # Handle PDF processing differently based on vector store usage
+                                    if USE_VECTOR_STORE:
+                                        # Use vector store direct PDF processing with unstructured.io
+                                        try:
+                                            logger.info(f"📄 Adding PDF directly to vector store: {file.filename}")
+                                            vector_manager = get_vector_store_manager()
+                                            if vector_manager:
+                                                # Use direct PDF processing with unstructured.io
+                                                success = vector_manager.add_pdf_document_from_s3(
+                                                    session_id=session['session_id'],
+                                                    s3_key=s3_key,  # S3 key for the PDF
+                                                    s3_bucket=s3_bucket_name,  # S3 bucket name
+                                                    source_filename=file.filename,
+                                                    metadata={
+                                                        's3_key': s3_key,
+                                                        's3_bucket': s3_bucket_name,
+                                                        'processing_method': 'unstructured.io_direct'
+                                                    }
+                                                )
+                                                if success:
+                                                    logger.info(f"✅ Successfully added PDF {file.filename} to vector store with unstructured.io")
+                                                else:
+                                                    logger.error(f"❌ Failed to add PDF {file.filename} to vector store")
+                                            else:
+                                                logger.error("❌ Vector store manager is None for PDF")
+                                        except Exception as vs_error:
+                                            logger.error(f"❌ Critical error adding PDF {file.filename} to vector store: {vs_error}")
+                                            import traceback
+                                            logger.error(f"Full traceback: {traceback.format_exc()}")
+                                        
+                                        # For vector store mode, we don't need to add to pdf_files list
+                                        # since it's processed directly into the vector store
+                                        uploaded_files.append({
+                                            'filename': file.filename,
+                                            'size': file_size,
+                                            'status': 'success',
+                                            'type': 'pdf',
+                                            'processing': 'vector_store_direct'
+                                        })
                                     else:
-                                        logger.info(f"PDF conversion disabled - PDF will be processed directly by Bedrock: {file.filename}")
-                                    
-                                    # Always add the PDF file (markdown will be added later if conversion succeeds)
-                                    new_pdf_files.append(pdf_info)
-                                    logger.info(f"Added PDF to new_pdf_files: {pdf_info['filename']} (will attempt conversion: {PDF_CONVERSION_ENABLED})")
-                                    
-                                    uploaded_files.append({
-                                        'filename': file.filename,
-                                        'size': file_size,
-                                        'status': 'success',
-                                        'type': 'pdf'
-                                    })
+                                        # Traditional PDF processing (convert to markdown)
+                                        pdf_info = {
+                                            's3_key': s3_key,
+                                            'filename': file.filename,
+                                            'timestamped_filename': timestamped_filename,
+                                            'has_markdown': False
+                                        }
+                                        
+                                        # Add to parallel conversion queue if enabled
+                                        if PDF_CONVERSION_ENABLED:
+                                            file_key = f"{file.filename}_{len(pdf_conversion_tasks)}"  # Unique key
+                                            pdf_conversion_tasks.append((file_key, s3_key, s3_bucket_name, file.filename))
+                                            pdf_files_info[file_key] = {
+                                                'pdf_info': pdf_info,
+                                                'session_location': session_location,
+                                                'timestamped_filename': timestamped_filename
+                                            }
+                                            conversion_method = "local" if PDF_LOCAL_CONVERT else "Bedrock"
+                                            logger.info(f"Added PDF to parallel conversion queue ({conversion_method}): {file.filename}")
+                                        else:
+                                            logger.info(f"PDF conversion disabled - PDF will be processed directly by Bedrock: {file.filename}")
+                                        
+                                        # Always add the PDF file (markdown will be added later if conversion succeeds)
+                                        new_pdf_files.append(pdf_info)
+                                        logger.info(f"Added PDF to new_pdf_files: {pdf_info['filename']} (will attempt conversion: {PDF_CONVERSION_ENABLED})")
+                                        
+                                        uploaded_files.append({
+                                            'filename': file.filename,
+                                            'size': file_size,
+                                            'status': 'success',
+                                            'type': 'pdf',
+                                            'processing': 'traditional_markdown'
+                                        })
                                 else:
                                     # Regular text content
                                     new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
                                     
                                     # Add to vector store if enabled - SIMPLIFIED APPROACH
-                                    if USE_FAISS_STORE:
+                                    if USE_VECTOR_STORE:
                                         try:
                                             logger.info(f"📄 Adding text file to vector store: {file.filename}")
                                             vector_manager = get_vector_store_manager()
@@ -1925,7 +1966,7 @@ def upload_files():
                                     new_text_content += f"\n\n--- Content from {file.filename} (converted from PDF) ---\n{markdown_content}"
                                     
                                     # Add to vector store if enabled - SIMPLIFIED APPROACH
-                                    if USE_FAISS_STORE:
+                                    if USE_VECTOR_STORE:
                                         try:
                                             vector_manager = get_vector_store_manager()
                                             if vector_manager:
@@ -1979,7 +2020,7 @@ def upload_files():
                             new_text_content += f"\n\n--- Content from {file.filename} ---\n{content}"
                             
                             # Add to vector store if enabled - SIMPLIFIED APPROACH
-                            if USE_FAISS_STORE:
+                            if USE_VECTOR_STORE:
                                 try:
                                     vector_manager = get_vector_store_manager()
                                     if vector_manager:
@@ -2050,7 +2091,7 @@ def upload_files():
                             new_text_content += f"\n\n--- Content from {result['filename']} (converted from PDF) ---\n{result['markdown_content']}"
                             
                             # Add to vector store if enabled - SIMPLIFIED APPROACH
-                            if USE_FAISS_STORE:
+                            if USE_VECTOR_STORE:
                                 try:
                                     vector_manager = get_vector_store_manager()
                                     if vector_manager:
@@ -2295,7 +2336,7 @@ def clear_session():
             session_upload_folders.discard(session_folder)
     
     # Clear vector store for this session if enabled
-    if USE_FAISS_STORE and 'session_id' in session:
+    if USE_VECTOR_STORE and 'session_id' in session:
         try:
             vector_manager = get_vector_store_manager()
             if vector_manager:
@@ -2429,7 +2470,7 @@ def get_models():
             'models': model_list,
             'current': current_model,
             'allow_custom': True,
-            'faiss_enabled': USE_FAISS_STORE
+            'vector_store_enabled': USE_VECTOR_STORE
         })
         
     except Exception as e:
@@ -2547,7 +2588,7 @@ def remove_file():
             session['pdf_files'] = [f for f in session['pdf_files'] if f['filename'] != filename]
         
         # Remove from vector store if enabled
-        if USE_FAISS_STORE and 'session_id' in session:
+        if USE_VECTOR_STORE and 'session_id' in session:
             try:
                 vector_manager = get_vector_store_manager()
                 if vector_manager:
@@ -2696,7 +2737,7 @@ def remove_file():
 def get_vector_stats():
     """Get vector store statistics for debugging"""
     try:
-        if not USE_FAISS_STORE:
+        if not USE_VECTOR_STORE:
             return jsonify({'error': 'Vector store not enabled', 'enabled': False})
         
         if 'session_id' not in session:
@@ -2758,13 +2799,13 @@ def get_vector_stats():
         logger.error(f"Error getting vector stats: {e}")
         import traceback
         logger.error(f"Full traceback: {traceback.format_exc()}")
-        return jsonify({'error': str(e), 'enabled': USE_FAISS_STORE})
+        return jsonify({'error': str(e), 'enabled': USE_VECTOR_STORE})
 
 @app.route('/debug_document/<filename>')
 def debug_document(filename):
     """Debug endpoint to examine actual content in vector store"""
     try:
-        if not USE_FAISS_STORE:
+        if not USE_VECTOR_STORE:
             return jsonify({'error': 'Vector store not enabled'})
         
         if 'session_id' not in session:
@@ -2795,7 +2836,7 @@ def debug_document(filename):
 def debug_vector_raw():
     """Raw debug endpoint to examine vector store internal state"""
     try:
-        if not USE_FAISS_STORE:
+        if not USE_VECTOR_STORE:
             return jsonify({'error': 'Vector store not enabled'})
         
         if 'session_id' not in session:
@@ -2857,8 +2898,8 @@ def debug_vector_manager():
     """Debug the vector store manager initialization"""
     try:
         debug_info = {
-            'USE_FAISS_STORE': USE_FAISS_STORE,
-            'FAISS_AVAILABLE': FAISS_AVAILABLE,
+            'USE_VECTOR_STORE': USE_VECTOR_STORE,
+            'VECTOR_STORE_AVAILABLE': VECTOR_STORE_AVAILABLE,
             'VECTOR_STORE_MODULE_AVAILABLE': VECTOR_STORE_MODULE_AVAILABLE
         }
         
@@ -2886,7 +2927,7 @@ def debug_vector_manager():
 def search_document(filename, query):
     """Search for specific content within a document"""
     try:
-        if not USE_FAISS_STORE:
+        if not USE_VECTOR_STORE:
             return jsonify({'error': 'Vector store not enabled'})
         
         if 'session_id' not in session:
@@ -2925,7 +2966,7 @@ def search_document(filename, query):
 def debug_content_flow(filename):
     """Debug the content flow from PDF to vector store"""
     try:
-        if not USE_FAISS_STORE:
+        if not USE_VECTOR_STORE:
             return jsonify({'error': 'Vector store not enabled'})
         
         if 'session_id' not in session:
@@ -3005,7 +3046,7 @@ if __name__ == '__main__':
         logger.info(f"S3 bucket loaded from restart: {s3_bucket_name}")
 
     # Initialize vector store manager independently
-    if USE_FAISS_STORE:
+    if USE_VECTOR_STORE:
         logger.info("Initializing vector store")
     initialize_vector_store_if_enabled()
 

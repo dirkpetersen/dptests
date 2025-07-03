@@ -6,15 +6,30 @@ CEPH_RELEASE=19.2.2  # replace this with the active release
 # Configuration: Number of HDDs that should share one SSD for DB
 : "${HDDS_PER_SSD:=2}"
 
-# Accept mode as first argument: 'first' or 'others'
+# Accept mode as first argument: 'first', 'others', or 'join_cluster'
 MODE="$1"
 
-if [[ "$MODE" != "first" && "$MODE" != "others" ]]; then
-    echo "Usage: $0 {first|others}"
-    echo "  first  - Bootstrap the first node (MON node) of a new Ceph cluster"
-    echo "  others - Join an existing Ceph cluster as an additional node"
+if [[ "$MODE" != "first" && "$MODE" != "others" && "$MODE" != "join_cluster" ]]; then
+    echo "Usage: $0 {first|others|join_cluster}"
+    echo "  first        - Bootstrap the first node (MON node) of a new Ceph cluster"
+    echo "  others       - Join an existing Ceph cluster as an additional node"
+    echo "  join_cluster - Add this node to cluster via orchestrator (called from first node)"
     exit 1
 fi
+
+# Function to execute ceph orch commands with debug logging
+ceph_orch_debug() {
+    local cmd="$*"
+    echo "DEBUG: Executing ceph orch command: $cmd"
+    /usr/local/bin/cephadm shell -- ceph orch $cmd
+}
+
+# Function to execute ceph commands with debug logging
+ceph_debug() {
+    local cmd="$*"
+    echo "DEBUG: Executing ceph command: $cmd"
+    /usr/local/bin/cephadm shell -- ceph $cmd
+}
 
 # Function to wait for cluster integration on nodes joining existing cluster
 wait_for_cluster_integration() {
@@ -63,6 +78,13 @@ wait_for_cluster_integration() {
 }
 
 echo "Running in '$MODE' mode..."
+
+# Source remote file copy functions if available
+if [[ -f "$(dirname "$0")/remote-file-copy.sh" ]]; then
+    source "$(dirname "$0")/remote-file-copy.sh"
+elif [[ -f "./remote-file-copy.sh" ]]; then
+    source "./remote-file-copy.sh"
+fi
 
 curl -o /usr/local/bin/cephadm https://download.ceph.com/rpm-${CEPH_RELEASE}/el9/noarch/cephadm
 chmod +x /usr/local/bin/cephadm
@@ -119,7 +141,7 @@ if [[ "$MODE" == "first" ]]; then
         existing_osds_count=0
         
         # Try to get OSD count for this host from Ceph
-        if existing_osds_output=$(/usr/local/bin/cephadm shell -- ceph orch ps --daemon_type osd --hostname "${HOSTNAME}" --format json 2>/dev/null); then
+        if existing_osds_output=$(ceph_orch_debug "ps --daemon_type osd --hostname ${HOSTNAME} --format json" 2>/dev/null); then
             existing_osds_count=$(echo "${existing_osds_output}" | python3 -c "
 import json, sys
 try:
@@ -159,7 +181,7 @@ elif [[ "$MODE" == "others" ]]; then
         existing_osds_count=0
         
         # Try to get OSD count for this host from Ceph
-        if existing_osds_output=$(/usr/local/bin/cephadm shell -- ceph orch ps --daemon_type osd --hostname "${HOSTNAME}" --format json 2>/dev/null); then
+        if existing_osds_output=$(ceph_orch_debug "ps --daemon_type osd --hostname ${HOSTNAME} --format json" 2>/dev/null); then
             existing_osds_count=$(echo "${existing_osds_output}" | python3 -c "
 import json, sys
 try:
@@ -188,6 +210,83 @@ except:
         
         # Exit here - don't try to create OSDs yet
         exit 0
+    fi
+elif [[ "$MODE" == "join_cluster" ]]; then
+    echo "Join cluster mode: Adding node to existing cluster via orchestrator..."
+    
+    # Get parameters from environment variables (set by calling script)
+    : "${FIRST_NODE_INTERNAL_IP:?}"
+    : "${TARGET_HOSTNAME:?}"
+    : "${TARGET_INTERNAL_IP:?}"
+    
+    echo "Joining cluster with first node at ${FIRST_NODE_INTERNAL_IP}"
+    echo "This node: ${TARGET_HOSTNAME} (${TARGET_INTERNAL_IP})"
+    
+    # Copy SSH public key from first node to target node
+    echo "Setting up SSH key distribution..."
+    echo "DEBUG: Executing ceph command: shell -- ssh-copy-id -f -i /etc/ceph/ceph.pub root@${TARGET_INTERNAL_IP}"
+    if ! /usr/local/bin/cephadm shell -- ssh-copy-id -f -i /etc/ceph/ceph.pub root@${TARGET_INTERNAL_IP}; then
+        echo "Warning: Failed to copy SSH key via ceph shell. Trying remote file copy fallback..."
+        
+        # Fallback: Use remote file copy function if available
+        if declare -f remote_ssh_key_copy >/dev/null 2>&1; then
+            echo "Using remote_ssh_key_copy as fallback..."
+            # We need to determine the source user from environment (set by calling script)
+            local source_user="${EC2_USER:-rocky}"
+            local first_node_public_ip="${FIRST_NODE_PUBLIC_IP:-}"
+            local target_public_ip="${TARGET_PUBLIC_IP:-}"
+            
+            if [[ -n "$first_node_public_ip" && -n "$target_public_ip" ]]; then
+                if remote_ssh_key_copy "${source_user}@${first_node_public_ip}:/etc/ceph/ceph.pub" "${source_user}@${target_public_ip}"; then
+                    echo "SSH key successfully copied using remote file copy function."
+                else
+                    echo "Warning: Remote file copy also failed. Manual SSH key setup may be required."
+                fi
+            else
+                echo "Warning: Missing IP addresses for remote file copy fallback."
+                echo "Set FIRST_NODE_PUBLIC_IP and TARGET_PUBLIC_IP environment variables."
+            fi
+        else
+            echo "Warning: Remote file copy function not available. Manual SSH key setup may be required."
+        fi
+    fi
+    
+    # Add the host to the cluster
+    echo "Adding host ${TARGET_HOSTNAME} (${TARGET_INTERNAL_IP}) to cluster..."
+    echo "DEBUG: Executing ceph orch command: host add ${TARGET_HOSTNAME} ${TARGET_INTERNAL_IP}"
+    if /usr/local/bin/cephadm shell -- ceph orch host add ${TARGET_HOSTNAME} ${TARGET_INTERNAL_IP}; then
+        echo "Successfully added ${TARGET_HOSTNAME} to cluster."
+        
+        # Wait for the node to be fully joined to the cluster
+        echo "Waiting for ${TARGET_HOSTNAME} to be fully integrated into the cluster..."
+        local join_attempts=30
+        local join_count=0
+        while [[ ${join_count} -lt ${join_attempts} ]]; do
+            # Check if the node appears in host list
+            echo "DEBUG: Executing ceph orch command: host ls --format json"
+            if host_list_output=$(/usr/local/bin/cephadm shell -- ceph orch host ls --format json 2>/dev/null); then
+                if echo "${host_list_output}" | jq -r '.[].hostname' 2>/dev/null | grep -q "^${TARGET_HOSTNAME}$"; then
+                    echo "${TARGET_HOSTNAME} is now fully integrated into the cluster."
+                    break
+                fi
+            fi
+            
+            join_count=$((join_count + 1))
+            echo "Waiting for ${TARGET_HOSTNAME} to appear in cluster host list... (Attempt ${join_count}/${join_attempts})"
+            sleep 10
+        done
+        
+        if [[ ${join_count} -eq ${join_attempts} ]]; then
+            echo "Warning: ${TARGET_HOSTNAME} did not fully join the cluster within expected time."
+            return 1
+        fi
+        
+        echo "Node successfully joined cluster."
+        return 0
+    else
+        echo "Error: Failed to add ${TARGET_HOSTNAME} to cluster."
+        echo "Manual addition required: ceph orch host add ${TARGET_HOSTNAME} ${TARGET_INTERNAL_IP}"
+        return 1
     fi
 fi
 
@@ -247,8 +346,8 @@ FSID="$(grep fsid /etc/ceph/ceph.conf | awk '{print $3}')"
 HOSTNAME="$(hostname)"
 
 # Get available devices from ceph orch device ls
-device_output=$(/usr/local/bin/cephadm shell --fsid "${FSID}" -c /etc/ceph/ceph.conf -k /etc/ceph/ceph.client.admin.keyring -- \
-    ceph orch device ls --format json 2>/dev/null)
+device_output=$(FSID="${FSID}" /usr/local/bin/cephadm shell --fsid "${FSID}" -c /etc/ceph/ceph.conf -k /etc/ceph/ceph.client.admin.keyring -- \
+    bash -c 'echo "DEBUG: Executing ceph orch command: device ls --format json"; ceph orch device ls --format json' 2>/dev/null)
 
 if [[ $? -eq 0 && -n "${device_output}" ]]; then
     echo "Using ceph orch device ls to detect devices..."
@@ -367,6 +466,7 @@ else
             ssd_device="${SSD_DEVICES[$ssd_index]}"
             echo "Creating $hdds_for_this_ssd OSDs with data on [$data_devices_list], DB on $ssd_device..."
             
+            echo "DEBUG: Executing ceph orch command: daemon add osd $HOSTNAME:data_devices=$data_devices_list,db_devices=$ssd_device,osds_per_device=1"
             /usr/local/bin/cephadm shell --fsid "${FSID}" -c /etc/ceph/ceph.conf -k /etc/ceph/ceph.client.admin.keyring -- \
               ceph orch daemon add osd "$HOSTNAME:data_devices=$data_devices_list,db_devices=$ssd_device,osds_per_device=1"
             
@@ -389,4 +489,5 @@ else
 fi
 
 echo "OSD creation complete on ${HOSTNAME}. Cluster status:"
+echo "DEBUG: Executing ceph command: -s"
 /usr/local/bin/cephadm shell -- ceph -s
