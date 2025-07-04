@@ -58,8 +58,8 @@ fi
 
 # Configuration Variables
 : "${AWS_REGION:="us-west-2"}"
-: "${EC2_TYPE:="c5ad.large"}"  # c5ad.large / c7gd.medium
-: "${AMI_IMAGE:="ami-0fadb4bc4d6071e9e"}"  x86: ami-0fadb4bc4d6071e9e arm: ami-03be04a3da3a40226
+: "${EC2_TYPE:="c8gd.large"}"  # c5ad.large / c7gd.medium / c8gd.large
+: "${AMI_IMAGE:="ami-03be04a3da3a40226"}"  x86: ami-0fadb4bc4d6071e9e arm: ami-03be04a3da3a40226
 : "${ROOT_VOLUME_SIZE:="16"}"
 : "${INSTANCE_NAME:="ceph-test"}"
 : "${DOMAIN:="ai.oregonstate.edu"}"
@@ -69,7 +69,6 @@ fi
 : "${EBS_TYPE:="st1"}"
 : "${EBS_SIZE:="125"}"
 : "${EBS_QTY:="7"}" #: "normally 6"
-
 
 function discover_or_launch_instances() {
     echo "Discovering existing instances and launching missing ones up to target count: ${NUM_INSTANCES}..."
