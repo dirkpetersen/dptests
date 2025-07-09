@@ -1,13 +1,14 @@
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
-#include <cufft.h>
+#include <curand.h>
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include <memory>
+#include <thread>
 #include <iomanip>
+#include <cmath>
 
-#define CUDA_CHECK(call) \
+#define CHECK_CUDA(call) \
     do { \
         cudaError_t error = call; \
         if (error != cudaSuccess) { \
@@ -16,7 +17,7 @@
         } \
     } while(0)
 
-#define CUBLAS_CHECK(call) \
+#define CHECK_CUBLAS(call) \
     do { \
         cublasStatus_t status = call; \
         if (status != CUBLAS_STATUS_SUCCESS) { \
@@ -25,269 +26,313 @@
         } \
     } while(0)
 
+__global__ void memoryBandwidthKernel(float* data, size_t size, int iterations) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    
+    for (int iter = 0; iter < iterations; iter++) {
+        for (size_t i = idx; i < size; i += stride) {
+            data[i] = data[i] * 1.001f + 0.001f;
+        }
+    }
+}
+
+__global__ void computeIntensiveKernel(float* data, size_t size, int iterations) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    
+    for (int iter = 0; iter < iterations; iter++) {
+        for (size_t i = idx; i < size; i += stride) {
+            float val = data[i];
+            val = sinf(val) + cosf(val);
+            val = expf(val * 0.1f);
+            val = logf(val + 1.0f);
+            val = sqrtf(val);
+            data[i] = val;
+        }
+    }
+}
+
 class GPUBenchmark {
 private:
-    int num_gpus;
+    int numGPUs;
+    std::vector<int> gpuIds;
     std::vector<cudaStream_t> streams;
-    std::vector<cublasHandle_t> cublas_handles;
-    std::vector<float*> d_matrices_a, d_matrices_b, d_matrices_c;
-    std::vector<float*> d_memory_test;
-    std::vector<cufftComplex*> d_fft_data;
-    std::vector<cufftHandle> fft_plans;
-    
-    static const int MATRIX_SIZE = 8192;
-    static const int FFT_SIZE = 1048576;
-    static const size_t MEMORY_SIZE = 16ULL * 1024 * 1024 * 1024; // 16GB per GPU
+    std::vector<cublasHandle_t> cublasHandles;
+    std::vector<float*> deviceMemory;
+    std::vector<size_t> memoryPerGPU;
     
 public:
-    GPUBenchmark(int gpus) : num_gpus(gpus) {
-        int available_gpus;
-        cudaGetDeviceCount(&available_gpus);
+    GPUBenchmark(int num_gpus) : numGPUs(num_gpus) {
+        int totalGPUs;
+        CHECK_CUDA(cudaGetDeviceCount(&totalGPUs));
         
-        if (num_gpus > available_gpus) {
-            std::cerr << "Requested " << num_gpus << " GPUs but only " << available_gpus << " available" << std::endl;
-            exit(1);
+        if (numGPUs > totalGPUs) {
+            std::cerr << "Requested " << numGPUs << " GPUs but only " << totalGPUs << " available" << std::endl;
+            numGPUs = totalGPUs;
         }
         
-        std::cout << "Initializing benchmark on " << num_gpus << " GPUs..." << std::endl;
+        gpuIds.resize(numGPUs);
+        streams.resize(numGPUs);
+        cublasHandles.resize(numGPUs);
+        deviceMemory.resize(numGPUs);
+        memoryPerGPU.resize(numGPUs);
         
-        streams.resize(num_gpus);
-        cublas_handles.resize(num_gpus);
-        d_matrices_a.resize(num_gpus);
-        d_matrices_b.resize(num_gpus);
-        d_matrices_c.resize(num_gpus);
-        d_memory_test.resize(num_gpus);
-        d_fft_data.resize(num_gpus);
-        fft_plans.resize(num_gpus);
-        
-        for (int i = 0; i < num_gpus; i++) {
-            CUDA_CHECK(cudaSetDevice(i));
+        for (int i = 0; i < numGPUs; i++) {
+            gpuIds[i] = i;
+            CHECK_CUDA(cudaSetDevice(i));
             
-            // Create streams
-            CUDA_CHECK(cudaStreamCreate(&streams[i]));
+            size_t free, total;
+            CHECK_CUDA(cudaMemGetInfo(&free, &total));
+            memoryPerGPU[i] = free * 0.8; // Use 80% of available memory
             
-            // Create cuBLAS handles
-            CUBLAS_CHECK(cublasCreate(&cublas_handles[i]));
-            CUBLAS_CHECK(cublasSetStream(cublas_handles[i], streams[i]));
+            CHECK_CUDA(cudaMalloc(&deviceMemory[i], memoryPerGPU[i]));
+            CHECK_CUDA(cudaStreamCreate(&streams[i]));
+            CHECK_CUBLAS(cublasCreate(&cublasHandles[i]));
+            CHECK_CUBLAS(cublasSetStream(cublasHandles[i], streams[i]));
             
-            // Allocate matrices for GEMM
-            size_t matrix_bytes = MATRIX_SIZE * MATRIX_SIZE * sizeof(float);
-            CUDA_CHECK(cudaMalloc(&d_matrices_a[i], matrix_bytes));
-            CUDA_CHECK(cudaMalloc(&d_matrices_b[i], matrix_bytes));
-            CUDA_CHECK(cudaMalloc(&d_matrices_c[i], matrix_bytes));
-            
-            // Allocate memory test buffer
-            CUDA_CHECK(cudaMalloc(&d_memory_test[i], MEMORY_SIZE));
-            
-            // Allocate FFT data
-            CUDA_CHECK(cudaMalloc(&d_fft_data[i], FFT_SIZE * sizeof(cufftComplex)));
-            
-            // Create FFT plan
-            cufftPlan1d(&fft_plans[i], FFT_SIZE, CUFFT_C2C, 1);
-            cufftSetStream(fft_plans[i], streams[i]);
-            
-            // Initialize matrices with random data
-            initializeMatrices(i);
-            
-            cudaDeviceProp prop;
-            cudaGetDeviceProperties(&prop, i);
-            std::cout << "GPU " << i << ": " << prop.name << " (" 
-                      << prop.totalGlobalMem / (1024*1024*1024) << " GB)" << std::endl;
+            std::cout << "GPU " << i << ": Allocated " << memoryPerGPU[i] / (1024*1024*1024) << " GB" << std::endl;
         }
     }
     
     ~GPUBenchmark() {
-        for (int i = 0; i < num_gpus; i++) {
-            CUDA_CHECK(cudaSetDevice(i));
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            if (deviceMemory[i]) CHECK_CUDA(cudaFree(deviceMemory[i]));
+            if (streams[i]) CHECK_CUDA(cudaStreamDestroy(streams[i]));
+            if (cublasHandles[i]) CHECK_CUBLAS(cublasDestroy(cublasHandles[i]));
+        }
+    }
+    
+    void initializeData() {
+        std::cout << "Initializing data on all GPUs..." << std::endl;
+        
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
             
-            cudaStreamDestroy(streams[i]);
-            cublasDestroy(cublas_handles[i]);
-            cufftDestroy(fft_plans[i]);
+            curandGenerator_t gen;
+            curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+            curandSetPseudoRandomGeneratorSeed(gen, time(NULL) + i);
+            curandSetStream(gen, streams[i]);
             
-            cudaFree(d_matrices_a[i]);
-            cudaFree(d_matrices_b[i]);
-            cudaFree(d_matrices_c[i]);
-            cudaFree(d_memory_test[i]);
-            cudaFree(d_fft_data[i]);
+            size_t numElements = memoryPerGPU[i] / sizeof(float);
+            curandGenerateUniform(gen, deviceMemory[i], numElements);
+            
+            curandDestroyGenerator(gen);
+        }
+        
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            CHECK_CUDA(cudaStreamSynchronize(streams[i]));
         }
     }
     
-    void initializeMatrices(int gpu_id) {
-        CUDA_CHECK(cudaSetDevice(gpu_id));
-        
-        size_t matrix_elements = MATRIX_SIZE * MATRIX_SIZE;
-        size_t matrix_bytes = matrix_elements * sizeof(float);
-        
-        std::vector<float> h_matrix(matrix_elements);
-        for (size_t i = 0; i < matrix_elements; i++) {
-            h_matrix[i] = static_cast<float>(rand()) / RAND_MAX;
-        }
-        
-        CUDA_CHECK(cudaMemcpyAsync(d_matrices_a[gpu_id], h_matrix.data(), matrix_bytes, 
-                                  cudaMemcpyHostToDevice, streams[gpu_id]));
-        CUDA_CHECK(cudaMemcpyAsync(d_matrices_b[gpu_id], h_matrix.data(), matrix_bytes, 
-                                  cudaMemcpyHostToDevice, streams[gpu_id]));
-        
-        // Initialize FFT data
-        std::vector<cufftComplex> h_fft_data(FFT_SIZE);
-        for (int i = 0; i < FFT_SIZE; i++) {
-            h_fft_data[i].x = static_cast<float>(rand()) / RAND_MAX;
-            h_fft_data[i].y = static_cast<float>(rand()) / RAND_MAX;
-        }
-        CUDA_CHECK(cudaMemcpyAsync(d_fft_data[gpu_id], h_fft_data.data(), 
-                                  FFT_SIZE * sizeof(cufftComplex), 
-                                  cudaMemcpyHostToDevice, streams[gpu_id]));
-    }
-    
-    double runMatrixMultiply(int iterations = 100) {
-        std::cout << "Running matrix multiplication benchmark..." << std::endl;
-        
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        const float alpha = 1.0f, beta = 0.0f;
-        
-        for (int iter = 0; iter < iterations; iter++) {
-            for (int i = 0; i < num_gpus; i++) {
-                CUDA_CHECK(cudaSetDevice(i));
-                CUBLAS_CHECK(cublasSgemm(cublas_handles[i], CUBLAS_OP_N, CUBLAS_OP_N,
-                                       MATRIX_SIZE, MATRIX_SIZE, MATRIX_SIZE,
-                                       &alpha,
-                                       d_matrices_a[i], MATRIX_SIZE,
-                                       d_matrices_b[i], MATRIX_SIZE,
-                                       &beta,
-                                       d_matrices_c[i], MATRIX_SIZE));
-            }
-        }
-        
-        for (int i = 0; i < num_gpus; i++) {
-            CUDA_CHECK(cudaSetDevice(i));
-            CUDA_CHECK(cudaStreamSynchronize(streams[i]));
-        }
-        
-        auto end = std::chrono::high_resolution_clock::now();
-        double elapsed = std::chrono::duration<double>(end - start).count();
-        
-        double flops = static_cast<double>(num_gpus) * iterations * 2.0 * 
-                      MATRIX_SIZE * MATRIX_SIZE * MATRIX_SIZE;
-        double tflops = flops / elapsed / 1e12;
-        
-        std::cout << "Matrix Multiply: " << std::fixed << std::setprecision(2) 
-                  << tflops << " TFLOPS" << std::endl;
-        
-        return elapsed;
-    }
-    
-    double runFFTBenchmark(int iterations = 1000) {
-        std::cout << "Running FFT benchmark..." << std::endl;
-        
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        for (int iter = 0; iter < iterations; iter++) {
-            for (int i = 0; i < num_gpus; i++) {
-                CUDA_CHECK(cudaSetDevice(i));
-                cufftExecC2C(fft_plans[i], d_fft_data[i], d_fft_data[i], CUFFT_FORWARD);
-            }
-        }
-        
-        for (int i = 0; i < num_gpus; i++) {
-            CUDA_CHECK(cudaSetDevice(i));
-            CUDA_CHECK(cudaStreamSynchronize(streams[i]));
-        }
-        
-        auto end = std::chrono::high_resolution_clock::now();
-        double elapsed = std::chrono::duration<double>(end - start).count();
-        
-        std::cout << "FFT Performance: " << std::fixed << std::setprecision(2)
-                  << (num_gpus * iterations) / elapsed << " FFTs/sec" << std::endl;
-        
-        return elapsed;
-    }
-    
-    double runMemoryBandwidthTest() {
+    void runMemoryBandwidthTest(int durationMs) {
         std::cout << "Running memory bandwidth test..." << std::endl;
         
         auto start = std::chrono::high_resolution_clock::now();
+        auto end = start + std::chrono::milliseconds(durationMs);
         
-        const int iterations = 10;
-        for (int iter = 0; iter < iterations; iter++) {
-            for (int i = 0; i < num_gpus; i++) {
-                CUDA_CHECK(cudaSetDevice(i));
-                CUDA_CHECK(cudaMemsetAsync(d_memory_test[i], iter % 256, MEMORY_SIZE, streams[i]));
+        int iterations = 0;
+        while (std::chrono::high_resolution_clock::now() < end) {
+            for (int i = 0; i < numGPUs; i++) {
+                CHECK_CUDA(cudaSetDevice(i));
+                
+                size_t numElements = memoryPerGPU[i] / sizeof(float);
+                int numBlocks = std::min(65535, (int)((numElements + 255) / 256));
+                int threadsPerBlock = 256;
+                
+                memoryBandwidthKernel<<<numBlocks, threadsPerBlock, 0, streams[i]>>>(
+                    deviceMemory[i], numElements, 10);
             }
+            iterations++;
         }
         
-        for (int i = 0; i < num_gpus; i++) {
-            CUDA_CHECK(cudaSetDevice(i));
-            CUDA_CHECK(cudaStreamSynchronize(streams[i]));
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            CHECK_CUDA(cudaStreamSynchronize(streams[i]));
         }
         
-        auto end = std::chrono::high_resolution_clock::now();
-        double elapsed = std::chrono::duration<double>(end - start).count();
+        auto actualEnd = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(actualEnd - start);
         
-        double bytes_processed = static_cast<double>(num_gpus) * iterations * MEMORY_SIZE;
-        double bandwidth_gbps = bytes_processed / elapsed / 1e9;
+        size_t totalBytes = 0;
+        for (int i = 0; i < numGPUs; i++) {
+            totalBytes += memoryPerGPU[i];
+        }
         
-        std::cout << "Memory Bandwidth: " << std::fixed << std::setprecision(2)
-                  << bandwidth_gbps << " GB/s" << std::endl;
-        
-        return elapsed;
+        double bandwidth = (double)(totalBytes * iterations * 2) / (1024.0 * 1024.0 * 1024.0) / (duration.count() / 1000.0);
+        std::cout << "Memory bandwidth: " << std::fixed << std::setprecision(2) << bandwidth << " GB/s" << std::endl;
     }
     
-    void runComprehensiveBenchmark(int duration_seconds = 60) {
-        std::cout << "\n=== GPU Benchmark Started ===" << std::endl;
-        std::cout << "Target duration: " << duration_seconds << " seconds" << std::endl;
-        std::cout << "Using " << num_gpus << " GPU(s)" << std::endl;
+    void runComputeTest(int durationMs) {
+        std::cout << "Running compute-intensive test..." << std::endl;
         
-        auto benchmark_start = std::chrono::high_resolution_clock::now();
-        double total_elapsed = 0;
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = start + std::chrono::milliseconds(durationMs);
         
-        while (total_elapsed < duration_seconds) {
-            auto cycle_start = std::chrono::high_resolution_clock::now();
-            
-            runMatrixMultiply(20);
-            runFFTBenchmark(100);
-            runMemoryBandwidthTest();
-            
-            auto cycle_end = std::chrono::high_resolution_clock::now();
-            total_elapsed = std::chrono::duration<double>(cycle_end - benchmark_start).count();
-            
-            std::cout << "Elapsed: " << std::fixed << std::setprecision(1) 
-                      << total_elapsed << "s" << std::endl;
+        int iterations = 0;
+        while (std::chrono::high_resolution_clock::now() < end) {
+            for (int i = 0; i < numGPUs; i++) {
+                CHECK_CUDA(cudaSetDevice(i));
+                
+                size_t numElements = memoryPerGPU[i] / sizeof(float);
+                int numBlocks = std::min(65535, (int)((numElements + 255) / 256));
+                int threadsPerBlock = 256;
+                
+                computeIntensiveKernel<<<numBlocks, threadsPerBlock, 0, streams[i]>>>(
+                    deviceMemory[i], numElements, 100);
+            }
+            iterations++;
         }
         
-        std::cout << "\n=== Benchmark Complete ===" << std::endl;
-        std::cout << "Total runtime: " << std::fixed << std::setprecision(2) 
-                  << total_elapsed << " seconds" << std::endl;
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            CHECK_CUDA(cudaStreamSynchronize(streams[i]));
+        }
+        
+        auto actualEnd = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(actualEnd - start);
+        
+        size_t totalElements = 0;
+        for (int i = 0; i < numGPUs; i++) {
+            totalElements += memoryPerGPU[i] / sizeof(float);
+        }
+        
+        double flops = (double)(totalElements * iterations * 100 * 6) / (duration.count() / 1000.0) / 1e12;
+        std::cout << "Compute performance: " << std::fixed << std::setprecision(2) << flops << " TFLOPS" << std::endl;
+    }
+    
+    void runMatrixMultiplication(int durationMs) {
+        std::cout << "Running matrix multiplication test..." << std::endl;
+        
+        std::vector<float*> matrixA(numGPUs);
+        std::vector<float*> matrixB(numGPUs);
+        std::vector<float*> matrixC(numGPUs);
+        
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            
+            size_t availableElements = memoryPerGPU[i] / sizeof(float);
+            int matrixSize = (int)sqrt(availableElements / 3);
+            matrixSize = (matrixSize / 32) * 32; // Align to 32
+            
+            size_t matrixBytes = matrixSize * matrixSize * sizeof(float);
+            
+            CHECK_CUDA(cudaMalloc(&matrixA[i], matrixBytes));
+            CHECK_CUDA(cudaMalloc(&matrixB[i], matrixBytes));
+            CHECK_CUDA(cudaMalloc(&matrixC[i], matrixBytes));
+            
+            curandGenerator_t gen;
+            curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+            curandSetPseudoRandomGeneratorSeed(gen, time(NULL) + i);
+            curandSetStream(gen, streams[i]);
+            
+            curandGenerateUniform(gen, matrixA[i], matrixSize * matrixSize);
+            curandGenerateUniform(gen, matrixB[i], matrixSize * matrixSize);
+            
+            curandDestroyGenerator(gen);
+            
+            std::cout << "GPU " << i << ": Matrix size " << matrixSize << "x" << matrixSize << std::endl;
+        }
+        
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = start + std::chrono::milliseconds(durationMs);
+        
+        int iterations = 0;
+        while (std::chrono::high_resolution_clock::now() < end) {
+            for (int i = 0; i < numGPUs; i++) {
+                CHECK_CUDA(cudaSetDevice(i));
+                
+                size_t availableElements = memoryPerGPU[i] / sizeof(float);
+                int matrixSize = (int)sqrt(availableElements / 3);
+                matrixSize = (matrixSize / 32) * 32;
+                
+                const float alpha = 1.0f, beta = 0.0f;
+                CHECK_CUBLAS(cublasSgemm(cublasHandles[i],
+                    CUBLAS_OP_N, CUBLAS_OP_N,
+                    matrixSize, matrixSize, matrixSize,
+                    &alpha,
+                    matrixA[i], matrixSize,
+                    matrixB[i], matrixSize,
+                    &beta,
+                    matrixC[i], matrixSize));
+            }
+            iterations++;
+        }
+        
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            CHECK_CUDA(cudaStreamSynchronize(streams[i]));
+        }
+        
+        auto actualEnd = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(actualEnd - start);
+        
+        double totalFlops = 0;
+        for (int i = 0; i < numGPUs; i++) {
+            size_t availableElements = memoryPerGPU[i] / sizeof(float);
+            int matrixSize = (int)sqrt(availableElements / 3);
+            matrixSize = (matrixSize / 32) * 32;
+            totalFlops += 2.0 * matrixSize * matrixSize * matrixSize;
+        }
+        
+        double tflops = totalFlops * iterations / (duration.count() / 1000.0) / 1e12;
+        std::cout << "Matrix multiplication: " << std::fixed << std::setprecision(2) << tflops << " TFLOPS" << std::endl;
+        
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            CHECK_CUDA(cudaFree(matrixA[i]));
+            CHECK_CUDA(cudaFree(matrixB[i]));
+            CHECK_CUDA(cudaFree(matrixC[i]));
+        }
+    }
+    
+    void printGPUInfo() {
+        std::cout << "\n=== GPU Information ===" << std::endl;
+        for (int i = 0; i < numGPUs; i++) {
+            CHECK_CUDA(cudaSetDevice(i));
+            
+            cudaDeviceProp prop;
+            CHECK_CUDA(cudaGetDeviceProperties(&prop, i));
+            
+            std::cout << "GPU " << i << ": " << prop.name << std::endl;
+            std::cout << "  Compute Capability: " << prop.major << "." << prop.minor << std::endl;
+            std::cout << "  Memory: " << prop.totalGlobalMem / (1024*1024*1024) << " GB" << std::endl;
+            std::cout << "  SMs: " << prop.multiProcessorCount << std::endl;
+            std::cout << "  Max Threads per SM: " << prop.maxThreadsPerMultiProcessor << std::endl;
+        }
+        std::cout << std::endl;
     }
 };
 
 int main(int argc, char* argv[]) {
-    int num_gpus = 1;
-    int duration = 60;
+    int numGPUs = 1;
     
     if (argc > 1) {
-        num_gpus = std::atoi(argv[1]);
-        if (num_gpus <= 0) {
-            std::cerr << "Number of GPUs must be positive" << std::endl;
+        numGPUs = std::atoi(argv[1]);
+        if (numGPUs <= 0) {
+            std::cerr << "Invalid number of GPUs: " << numGPUs << std::endl;
             return 1;
         }
     }
     
-    if (argc > 2) {
-        duration = std::atoi(argv[2]);
-        if (duration <= 0) {
-            std::cerr << "Duration must be positive" << std::endl;
-            return 1;
-        }
-    }
-    
-    std::cout << "GPU Comprehensive Benchmark" << std::endl;
-    std::cout << "Requested GPUs: " << num_gpus << std::endl;
-    std::cout << "Duration: " << duration << " seconds" << std::endl;
+    std::cout << "=== Multi-GPU CUDA Benchmark ===" << std::endl;
+    std::cout << "Requested GPUs: " << numGPUs << std::endl;
     
     try {
-        GPUBenchmark benchmark(num_gpus);
-        benchmark.runComprehensiveBenchmark(duration);
+        GPUBenchmark benchmark(numGPUs);
+        benchmark.printGPUInfo();
+        benchmark.initializeData();
+        
+        const int testDuration = 15000; // 15 seconds per test
+        
+        benchmark.runMemoryBandwidthTest(testDuration);
+        benchmark.runComputeTest(testDuration);
+        benchmark.runMatrixMultiplication(testDuration);
+        
+        std::cout << "\n=== Benchmark Complete ===" << std::endl;
+        
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
