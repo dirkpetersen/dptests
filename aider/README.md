@@ -188,3 +188,14 @@ export ANTHROPIC_SMALL_FAST_MODEL="us.anthropic.claude-3-5-haiku-20241022-v1:0"
 /usr/local/bin/claude --model ${ANTHROPIC_MODEL} $@' > ~/bin/claude
 chmod +x ~/bin/claude
 ```
+
+Now you can also use Claude Code with 3rd Party LLM such as the new Kimi K2, dor example via Moonshot: 
+
+```
+export ANTHROPIC_AUTH_TOKEN=xxxxxxxxxxx
+export ANTHROPIC_BASE_URL=https://api.moonshot.ai/anthropic
+```
+
+
+
+
